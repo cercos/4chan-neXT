@@ -16,3 +16,4 @@ node_modules/
 /test/
 /builds/crx/crx.7z
 /builds/*.js.map
+/builds/*.crx
