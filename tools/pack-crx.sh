@@ -55,7 +55,8 @@ fi
 
 EXT_NAME="$(node -e "const fs=require('fs'); const p=require('path'); const pkg=JSON.parse(fs.readFileSync(p.join(process.argv[1], 'package.json'), 'utf8')); process.stdout.write(pkg.meta.path);" "$ROOT_DIR")"
 VERSION="$(node -e "const fs=require('fs'); const p=require('path'); const v=JSON.parse(fs.readFileSync(p.join(process.argv[1], 'version.json'), 'utf8')); process.stdout.write(v.version);" "$ROOT_DIR")"
-OUT_FILE="${CRX_OUTPUT_FILE:-$ROOT_DIR/builds/${EXT_NAME}-${VERSION}.crx}"
+OUT_SUFFIX="${CRX_OUTPUT_SUFFIX:-}"
+OUT_FILE="${CRX_OUTPUT_FILE:-$ROOT_DIR/builds/${EXT_NAME}-${VERSION}${OUT_SUFFIX}.crx}"
 
 TMP_DIR="$(mktemp -d "${TMPDIR:-/tmp}/crx-pack.XXXXXX")"
 trap 'rm -rf "$TMP_DIR"' EXIT
