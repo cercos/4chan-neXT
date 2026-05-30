@@ -242,18 +242,72 @@
   color: var(--xt-highlight-side-arrow, rgba(221, 0, 0, .8));
 }
 
-:root:not(.werkTyme) .catalog-thread.filter-highlight .catalog-thumb,
+:root:not(.werkTyme):not(.catalog-mode) .catalog-thread.filter-highlight .catalog-thumb,
 :root.werkTyme .catalog-thread.filter-highlight:not(:hover),
 :root.werkTyme:not(.catalog-hover-expand) .catalog-thread.filter-highlight,
 :root.werkTyme.catalog-hover-expand .catalog-thread.filter-highlight > .catalog-container:hover > .catalog-post,
 :root.catalog $site$catalog$thread.filter-highlight$site$highlightable$catalog {
   box-shadow: 0 0 3px 3px var(--xt-highlight-shadow, rgba(255, 0, 0, .5));
 }
-:root:not(.werkTyme) .catalog-thread.watched .catalog-thumb,
-:root:root.werkTyme .catalog-thread.watched:not(:hover),
-:root:root.werkTyme:not(.catalog-hover-expand) .catalog-thread.watched,
-:root.werkTyme.catalog-hover-expand .catalog-thread.watched > .catalog-container:hover > .catalog-post {
-  border: 2px solid var(--xt-watched-border, rgba(255, 0, 0, .75));
+:root.catalog-mode .catalog-thread.filter-highlight,
+:root.catalog-mode .catalog-thread > .catalog-container.filter-highlight {
+  background: var(--xt-filter-highlight, rgba(221, 0, 0, .5)) !important;
+}
+:root.xt-highlight-catalog-own .catalog-thread.yourPost,
+:root.xt-highlight-catalog-own .catalog-thread > .catalog-container.yourPost {
+  background: color-mix(in srgb, var(--xt-catalog-own-highlight, var(--xt-highlight-own, transparent)) calc(var(--xt-catalog-own-highlight-opacity, 1) * 100%), transparent) !important;
+}
+:root.xt-highlight-catalog-own .catalog-thread.yourPost > .catalog-container,
+:root.xt-highlight-catalog-own .catalog-thread > .catalog-container.yourPost {
+  background: color-mix(in srgb, var(--xt-catalog-own-highlight, var(--xt-highlight-own, transparent)) calc(var(--xt-catalog-own-highlight-opacity, 1) * 100%), transparent) !important;
+}
+:root.xt-highlight-catalog-own .catalog-thread.yourPost .post.catalog-post,
+:root.xt-highlight-catalog-own .catalog-thread > .catalog-container.yourPost .post.catalog-post {
+  background: color-mix(in srgb, var(--xt-catalog-own-highlight, var(--xt-highlight-own, transparent)) calc(var(--xt-catalog-own-highlight-opacity, 1) * 100%), transparent) !important;
+  border-left: 3px dashed color-mix(in srgb, var(--xt-catalog-own-highlight, var(--xt-highlight-own, var(--xt-border-highlight))) calc(var(--xt-catalog-own-highlight-opacity, 1) * 100%), transparent);
+  color: var(--xt-catalog-own-text, var(--xt-text-color)) !important;
+}
+:root.xt-highlight-catalog-own .catalog-thread.yourPost .post.catalog-post a,
+:root.xt-highlight-catalog-own .catalog-thread > .catalog-container.yourPost .post.catalog-post a {
+  color: var(--xt-catalog-own-link, var(--xt-link-text-color)) !important;
+}
+:root.xt-highlight-catalog-own .catalog-thread.yourPost .post.catalog-post .quote,
+:root.xt-highlight-catalog-own .catalog-thread > .catalog-container.yourPost .post.catalog-post .quote {
+  color: var(--xt-catalog-own-quote, var(--xt-quote-text-color)) !important;
+}
+:root.xt-highlight-catalog-own .catalog-thread.yourPost .post.catalog-post .deadlink,
+:root.xt-highlight-catalog-own .catalog-thread > .catalog-container.yourPost .post.catalog-post .deadlink {
+  color: var(--xt-catalog-own-dead-link, var(--xt-dead-link-text-color, var(--xt-dead-link))) !important;
+}
+:root.xt-highlight-catalog-own .catalog-thread.yourPost .post.catalog-post > *,
+:root.xt-highlight-catalog-own .catalog-thread.yourPost .post.catalog-post .postMessage,
+:root.xt-highlight-catalog-own .catalog-thread > .catalog-container.yourPost .post.catalog-post > *,
+:root.xt-highlight-catalog-own .catalog-thread > .catalog-container.yourPost .post.catalog-post .postMessage {
+  background: transparent !important;
+}
+:root.xt-highlight-catalog-watched .catalog-thread.watched {
+  background: color-mix(in srgb, var(--xt-catalog-watched-highlight, transparent) calc(var(--xt-catalog-watched-highlight-opacity, 1) * 100%), transparent) !important;
+}
+:root.xt-highlight-catalog-watched .catalog-thread.watched > .catalog-container,
+:root.xt-highlight-catalog-watched .catalog-thread.watched .post.catalog-post {
+  background: color-mix(in srgb, var(--xt-catalog-watched-highlight, transparent) calc(var(--xt-catalog-watched-highlight-opacity, 1) * 100%), transparent) !important;
+}
+:root.xt-highlight-catalog-watched .catalog-thread.watched .catalog-post {
+  border: 2px solid color-mix(in srgb, var(--xt-catalog-watched-highlight, var(--xt-watched-border, rgba(255, 0, 0, .75))) calc(var(--xt-catalog-watched-highlight-opacity, 1) * 100%), transparent);
+  color: var(--xt-catalog-watched-text, var(--xt-text-color)) !important;
+}
+:root.xt-highlight-catalog-watched .catalog-thread.watched .post.catalog-post a {
+  color: var(--xt-catalog-watched-link, var(--xt-link-text-color)) !important;
+}
+:root.xt-highlight-catalog-watched .catalog-thread.watched .post.catalog-post .quote {
+  color: var(--xt-catalog-watched-quote, var(--xt-quote-text-color)) !important;
+}
+:root.xt-highlight-catalog-watched .catalog-thread.watched .post.catalog-post .deadlink {
+  color: var(--xt-catalog-watched-dead-link, var(--xt-dead-link-text-color, var(--xt-dead-link))) !important;
+}
+:root.xt-highlight-catalog-watched .catalog-thread.watched .post.catalog-post > *,
+:root.xt-highlight-catalog-watched .catalog-thread.watched .post.catalog-post .postMessage {
+  background: transparent !important;
 }
 
 .unread-line {

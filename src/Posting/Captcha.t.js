@@ -83,18 +83,34 @@ const CaptchaT = {
   },
 
   getOne() {
-    let response = null;
-    if (this.nodes.container) {
-      response = {};
-      for (const key of ['t-response', 't-challenge']) {
-        response[key] = $(`[name='${key}']`, this.nodes.container)?.value;
+    if (!this.nodes.container) { return null; }
+
+    const response = $(`[name='t-response']`, this.nodes.container)?.value?.trim();
+    const challenge = $(`[name='t-challenge']`, this.nodes.container)?.value?.trim();
+
+    if (response) {
+      if (!challenge) { return null; }
+      return {
+        't-response': response,
+        't-challenge': challenge,
+      };
+    }
+
+    let isVerificationNotRequired = false;
+    for (const el of this.nodes.container.querySelectorAll('#t-msg, #t-task, #t-desc, .fourchanx-captcha-load-hint, .fourchanx-captcha-status-text')) {
+      if (/Verification not required/i.test(el.textContent || '')) {
+        isVerificationNotRequired = true;
+        break;
       }
     }
-    if (!response?.['t-response']) {
-      const el = $('#t-msg, #t-task', this.nodes.container || d);
-      if (!el || !/Verification not required/i.test(el.textContent)) { return null; }
-    }
-    return response;
+    if (!isVerificationNotRequired || !challenge) { return null; }
+
+    // Keep the challenge token for "verification not required" submissions.
+    return {
+      't-response': '',
+      't-challenge': challenge,
+    };
+
   },
 
   setUsed() {
@@ -103,6 +119,17 @@ const CaptchaT = {
       this.setState('idle');
       this.updateProgress();
     }
+  },
+
+  forceLoad() {
+    if (!this.isEnabled || !this.nodes.container) { return; }
+    const TCaptcha = getTCaptcha();
+    if (!TCaptcha?.load) { return; }
+    this.currentThread = this.getThread();
+    TCaptcha.saveTicket?.(false);
+    TCaptcha.clearChallenge?.();
+    TCaptcha.load(this.currentThread.boardID, this.currentThread.threadID);
+    this.setState('loading');
   },
 
   occupied() {

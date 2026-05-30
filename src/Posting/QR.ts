@@ -1365,6 +1365,7 @@ var QR = {
     let connErr, err;
     if (this !== QR.req) { return; } // aborted
     delete QR.req;
+    const submittedCaptcha = QR.currentCaptcha;
 
     const post = QR.posts[0];
     post.unlock();
@@ -1374,7 +1375,7 @@ var QR = {
       if (el) el.target = '_blank'; // duplicate image link
     } else if (connErr = (!this.response || (this.response.title !== 'Post successful!'))) {
       err = QR.connectionError();
-      if ((QR.captcha === Captcha.v2) && QR.currentCaptcha) { Captcha.cache.save(QR.currentCaptcha); }
+      if ((QR.captcha === Captcha.v2) && submittedCaptcha) { Captcha.cache.save(submittedCaptcha); }
     } else if (this.status !== 200) {
       err = `Error ${this.statusText} (${this.status})`;
     }
@@ -1386,15 +1387,24 @@ var QR = {
       let m;
       QR.errorCount = (QR.errorCount || 0) + 1;
       if (/captcha|verification/i.test(err.textContent)) {
-        // Remove the obnoxious 4chan Pass ad.
-        if (/mistyped/i.test(err.textContent)) {
-          err = 'You mistyped the CAPTCHA, or the CAPTCHA malfunctioned.';
+        const wasNoopTCaptcha = (QR.captcha === Captcha.t) &&
+          !!submittedCaptcha?.['t-challenge'] &&
+          !submittedCaptcha?.['t-response'];
+        if (wasNoopTCaptcha) {
           QR.captcha.setState?.('failed');
-        } else if (/expired/i.test(err.textContent)) {
-          err = 'This CAPTCHA is no longer valid because it has expired.';
-          QR.captcha.setState?.('expired');
+          QR.captcha.forceLoad?.();
+          err = 'Captcha is now required. A new captcha has been requested.';
         } else {
-          QR.captcha.setState?.('failed');
+          // Remove the obnoxious 4chan Pass ad.
+          if (/mistyped/i.test(err.textContent)) {
+            err = 'You mistyped the CAPTCHA, or the CAPTCHA malfunctioned.';
+            QR.captcha.setState?.('failed');
+          } else if (/expired/i.test(err.textContent)) {
+            err = 'This CAPTCHA is no longer valid because it has expired.';
+            QR.captcha.setState?.('expired');
+          } else {
+            QR.captcha.setState?.('failed');
+          }
         }
         // Do not auto post with a wrong captcha.
         QR.cooldown.auto = false;

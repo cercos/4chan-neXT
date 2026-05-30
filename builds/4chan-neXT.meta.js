@@ -1,6 +1,6 @@
 // ==UserScript==
 // @name         4chan-neXT
-// @version      1.0.0
+// @version      1.0.1
 // @minGMVer     1.14
 // @minFFVer     78
 // @namespace    4chan-neXT

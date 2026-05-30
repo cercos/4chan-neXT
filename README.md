@@ -3,6 +3,10 @@
 4chan-neXT is an actively maintained userscript fork of 4chan X for anonymous imageboards.
 It continues the 4chan XT codebase with ongoing fixes and updates.
 
+## Latest Release
+
+- `1.0.1` (2026-05-30): Fix captcha submission flow when the UI reports "Verification not required."
+
 ## Install
 
 - Releases: https://github.com/TuxedoTako/4chan-xt/releases
@@ -23,6 +27,7 @@ Useful build flags:
 - `-platform=userscript` or `-platform=crx`: build only one target.
 - `-no-format`: skip output formatting steps.
 - `-test`: include tests in build.
+- `npm run build:crxp`: build and pack CRX using a key from `../4chan-xt.keys/*.pem` (override with `CRX_KEY_FILE`).
 
 ## Reporting Issues
 

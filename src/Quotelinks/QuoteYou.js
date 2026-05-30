@@ -33,15 +33,15 @@ var QuoteYou = {
 
     if (!['index', 'thread', 'archive'].includes(g.VIEW)) { return; }
 
-    if (Conf['Highlight Own Posts']) {
+    if ((Conf['Enable Thread Highlights'] !== false) && Conf['Highlight Own Posts']) {
       $.addClass(doc, 'highlight-own');
     }
 
-    if (Conf['Highlight Posts Quoting You']) {
+    if ((Conf['Enable Thread Highlights'] !== false) && Conf['Highlight Posts Quoting You']) {
       $.addClass(doc, 'highlight-you');
     }
 
-    if (Conf['Highlight Ghost Posts']) {
+    if ((Conf['Enable Thread Highlights'] !== false) && Conf['Highlight Ghost Posts']) {
       $.addClass(doc, 'highlight-ghost');
     }
 

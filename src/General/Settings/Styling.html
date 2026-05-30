@@ -13,49 +13,86 @@
 <details open>
   <summary>Highlight Colors</summary>
   <div data-name="Highlight Colors">
-    <label><input type="checkbox" id="styling-enable-highlights"> Enable post highlights</label>
     <div class="styling-tree">
-      <div class="styling-inline-option">
-        <label><input type="checkbox" name="Highlight Own Posts"> Your post</label>
-        <span class="styling-inline-controls styling-highlight-controls">
-          <input type="color" name="Highlight Own Color" title="Highlight background color">
-          <span class="styling-highlight-manual" data-highlight-text-manual="own">
-            <input type="color" name="Highlight Own Text Color" title="Text color">
-            <input type="color" name="Highlight Own Link Color" title="Link color">
-            <input type="color" name="Highlight Own Quote Color" title="Quote color">
-            <input type="color" name="Highlight Own Dead Link Color" title="Dead link color">
-          </span>
-          <label class="styling-inline-toggle" title="Automatically choose readable text colors for this highlight"><input type="checkbox" name="Highlight Own Text Auto"> Auto text</label>
-          <input type="range" name="Highlight Own Opacity" min="0" max="1" step="0.05" title="Highlight opacity">
-        </span>
+      <div data-name="Thread Highlights">
+        <label><input type="checkbox" name="Enable Thread Highlights"> Threads</label>
+        <div class="styling-tree">
+          <div class="styling-inline-option">
+            <label><input type="checkbox" name="Highlight Own Posts"> Your post</label>
+            <span class="styling-inline-controls styling-highlight-controls">
+              <input type="color" name="Highlight Own Color" title="Highlight background color">
+              <span class="styling-highlight-manual" data-highlight-text-manual="own">
+                <input type="color" name="Highlight Own Text Color" title="Text color">
+                <input type="color" name="Highlight Own Link Color" title="Link color">
+                <input type="color" name="Highlight Own Quote Color" title="Quote color">
+                <input type="color" name="Highlight Own Dead Link Color" title="Dead link color">
+              </span>
+              <label class="styling-inline-toggle" title="Automatically choose readable text colors for this highlight"><input type="checkbox" name="Highlight Own Text Auto"> Auto text</label>
+              <input type="range" name="Highlight Own Opacity" min="0" max="1" step="0.05" title="Highlight opacity">
+            </span>
+          </div>
+          <div class="styling-inline-option">
+            <label><input type="checkbox" name="Highlight Posts Quoting You"> Quotes you</label>
+            <span class="styling-inline-controls styling-highlight-controls">
+              <input type="color" name="Highlight You Color" title="Highlight background color">
+              <span class="styling-highlight-manual" data-highlight-text-manual="you">
+                <input type="color" name="Highlight You Text Color" title="Text color">
+                <input type="color" name="Highlight You Link Color" title="Link color">
+                <input type="color" name="Highlight You Quote Color" title="Quote color">
+                <input type="color" name="Highlight You Dead Link Color" title="Dead link color">
+              </span>
+              <label class="styling-inline-toggle" title="Automatically choose readable text colors for this highlight"><input type="checkbox" name="Highlight You Text Auto"> Auto text</label>
+              <input type="range" name="Highlight You Opacity" min="0" max="1" step="0.05" title="Highlight opacity">
+            </span>
+          </div>
+          <div class="styling-inline-option">
+            <label><input type="checkbox" name="Highlight Ghost Posts"> Ghost post</label>
+            <span class="styling-inline-controls styling-highlight-controls">
+              <input type="color" name="Highlight Ghost Color" title="Highlight background color">
+              <span class="styling-highlight-manual" data-highlight-text-manual="ghost">
+                <input type="color" name="Highlight Ghost Text Color" title="Text color">
+                <input type="color" name="Highlight Ghost Link Color" title="Link color">
+                <input type="color" name="Highlight Ghost Quote Color" title="Quote color">
+                <input type="color" name="Highlight Ghost Dead Link Color" title="Dead link color">
+              </span>
+              <label class="styling-inline-toggle" title="Automatically choose readable text colors for this highlight"><input type="checkbox" name="Highlight Ghost Text Auto"> Auto text</label>
+              <input type="range" name="Highlight Ghost Opacity" min="0" max="1" step="0.05" title="Highlight opacity">
+            </span>
+          </div>
+        </div>
       </div>
-      <div class="styling-inline-option">
-        <label><input type="checkbox" name="Highlight Posts Quoting You"> Quotes you</label>
-        <span class="styling-inline-controls styling-highlight-controls">
-          <input type="color" name="Highlight You Color" title="Highlight background color">
-          <span class="styling-highlight-manual" data-highlight-text-manual="you">
-            <input type="color" name="Highlight You Text Color" title="Text color">
-            <input type="color" name="Highlight You Link Color" title="Link color">
-            <input type="color" name="Highlight You Quote Color" title="Quote color">
-            <input type="color" name="Highlight You Dead Link Color" title="Dead link color">
-          </span>
-          <label class="styling-inline-toggle" title="Automatically choose readable text colors for this highlight"><input type="checkbox" name="Highlight You Text Auto"> Auto text</label>
-          <input type="range" name="Highlight You Opacity" min="0" max="1" step="0.05" title="Highlight opacity">
-        </span>
-      </div>
-      <div class="styling-inline-option">
-        <label><input type="checkbox" name="Highlight Ghost Posts"> Ghost post</label>
-        <span class="styling-inline-controls styling-highlight-controls">
-          <input type="color" name="Highlight Ghost Color" title="Highlight background color">
-          <span class="styling-highlight-manual" data-highlight-text-manual="ghost">
-            <input type="color" name="Highlight Ghost Text Color" title="Text color">
-            <input type="color" name="Highlight Ghost Link Color" title="Link color">
-            <input type="color" name="Highlight Ghost Quote Color" title="Quote color">
-            <input type="color" name="Highlight Ghost Dead Link Color" title="Dead link color">
-          </span>
-          <label class="styling-inline-toggle" title="Automatically choose readable text colors for this highlight"><input type="checkbox" name="Highlight Ghost Text Auto"> Auto text</label>
-          <input type="range" name="Highlight Ghost Opacity" min="0" max="1" step="0.05" title="Highlight opacity">
-        </span>
+      <div data-name="Catalog Highlights">
+        <label><input type="checkbox" name="Enable Catalog Highlights"> Catalog</label>
+        <div class="styling-tree">
+          <div class="styling-inline-option">
+            <label><input type="checkbox" name="Catalog Highlight Own Posts"> Your post</label>
+            <span class="styling-inline-controls styling-highlight-controls">
+              <input type="color" name="Catalog Highlight Own Color" title="Catalog your-post highlight color">
+              <span class="styling-highlight-manual" data-highlight-text-manual="catalog-own">
+                <input type="color" name="Catalog Highlight Own Text Color" title="Text color">
+                <input type="color" name="Catalog Highlight Own Link Color" title="Link color">
+                <input type="color" name="Catalog Highlight Own Quote Color" title="Quote color">
+                <input type="color" name="Catalog Highlight Own Dead Link Color" title="Dead link color">
+              </span>
+              <label class="styling-inline-toggle" title="Automatically choose readable text colors for this highlight"><input type="checkbox" name="Catalog Highlight Own Text Auto"> Auto text</label>
+              <input type="range" name="Catalog Highlight Own Opacity" min="0" max="1" step="0.05" title="Highlight opacity">
+            </span>
+          </div>
+          <div class="styling-inline-option">
+            <label><input type="checkbox" name="Catalog Highlight Watched Threads"> Watched thread</label>
+            <span class="styling-inline-controls styling-highlight-controls">
+              <input type="color" name="Catalog Highlight Watched Color" title="Catalog watched-thread highlight color">
+              <span class="styling-highlight-manual" data-highlight-text-manual="catalog-watched">
+                <input type="color" name="Catalog Highlight Watched Text Color" title="Text color">
+                <input type="color" name="Catalog Highlight Watched Link Color" title="Link color">
+                <input type="color" name="Catalog Highlight Watched Quote Color" title="Quote color">
+                <input type="color" name="Catalog Highlight Watched Dead Link Color" title="Dead link color">
+              </span>
+              <label class="styling-inline-toggle" title="Automatically choose readable text colors for this highlight"><input type="checkbox" name="Catalog Highlight Watched Text Auto"> Auto text</label>
+              <input type="range" name="Catalog Highlight Watched Opacity" min="0" max="1" step="0.05" title="Highlight opacity">
+            </span>
+          </div>
+        </div>
       </div>
     </div>
   </div>

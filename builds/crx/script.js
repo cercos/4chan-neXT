@@ -85,8 +85,8 @@
   'use strict';
 
   var version = {
-    "version": "1.0.0",
-    "date": "2026-05-29T00:00:00Z"
+    "version": "1.0.1",
+    "date": "2026-05-30T00:00:00Z"
   }
   ;
 
@@ -94,7 +94,7 @@
    "name": "4chan-neXT",
    "path": "4chan-neXT",
    "fork": "cercos",
-   "page": "https://github.com/cercos/4chan-next",
+   "page": "https://4chan-next.com",
    "downloads": "https://github.com/cercos/4chan-next/releases",
    "oldVersions": "https://raw.githubusercontent.com/ccd0/4chan-x/",
    "faq": "https://github.com/cercos/4chan-next/wiki/Frequently-Asked-Questions",
@@ -1235,6 +1235,24 @@ http://eye.swfchan.com/search/?q=%name;types:swf
     'Highlight Own Opacity':       '',
     'Highlight You Opacity':       '',
     'Highlight Ghost Opacity':     '',
+    'Enable Thread Highlights':    true,
+    'Enable Catalog Highlights':   true,
+    'Catalog Highlight Own Posts': true,
+    'Catalog Highlight Watched Threads': true,
+    'Catalog Highlight Own Color': '',
+    'Catalog Highlight Own Opacity': '',
+    'Catalog Highlight Watched Color': '',
+    'Catalog Highlight Watched Opacity': '',
+    'Catalog Highlight Own Text Auto': true,
+    'Catalog Highlight Own Text Color': '',
+    'Catalog Highlight Own Link Color': '',
+    'Catalog Highlight Own Quote Color': '',
+    'Catalog Highlight Own Dead Link Color': '',
+    'Catalog Highlight Watched Text Auto': true,
+    'Catalog Highlight Watched Text Color': '',
+    'Catalog Highlight Watched Link Color': '',
+    'Catalog Highlight Watched Quote Color': '',
+    'Catalog Highlight Watched Dead Link Color': '',
     'Scroll Marker Own Color':     '',
     'Scroll Marker You Color':     '',
     'Scroll Marker Ghost Color':   '',
@@ -3019,49 +3037,86 @@ current-archive-text:"Archive"]
 <details open>
   <summary>Highlight Colors</summary>
   <div data-name="Highlight Colors">
-    <label><input type="checkbox" id="styling-enable-highlights"> Enable post highlights</label>
     <div class="styling-tree">
-      <div class="styling-inline-option">
-        <label><input type="checkbox" name="Highlight Own Posts"> Your post</label>
-        <span class="styling-inline-controls styling-highlight-controls">
-          <input type="color" name="Highlight Own Color" title="Highlight background color">
-          <span class="styling-highlight-manual" data-highlight-text-manual="own">
-            <input type="color" name="Highlight Own Text Color" title="Text color">
-            <input type="color" name="Highlight Own Link Color" title="Link color">
-            <input type="color" name="Highlight Own Quote Color" title="Quote color">
-            <input type="color" name="Highlight Own Dead Link Color" title="Dead link color">
-          </span>
-          <label class="styling-inline-toggle" title="Automatically choose readable text colors for this highlight"><input type="checkbox" name="Highlight Own Text Auto"> Auto text</label>
-          <input type="range" name="Highlight Own Opacity" min="0" max="1" step="0.05" title="Highlight opacity">
-        </span>
+      <div data-name="Thread Highlights">
+        <label><input type="checkbox" name="Enable Thread Highlights"> Threads</label>
+        <div class="styling-tree">
+          <div class="styling-inline-option">
+            <label><input type="checkbox" name="Highlight Own Posts"> Your post</label>
+            <span class="styling-inline-controls styling-highlight-controls">
+              <input type="color" name="Highlight Own Color" title="Highlight background color">
+              <span class="styling-highlight-manual" data-highlight-text-manual="own">
+                <input type="color" name="Highlight Own Text Color" title="Text color">
+                <input type="color" name="Highlight Own Link Color" title="Link color">
+                <input type="color" name="Highlight Own Quote Color" title="Quote color">
+                <input type="color" name="Highlight Own Dead Link Color" title="Dead link color">
+              </span>
+              <label class="styling-inline-toggle" title="Automatically choose readable text colors for this highlight"><input type="checkbox" name="Highlight Own Text Auto"> Auto text</label>
+              <input type="range" name="Highlight Own Opacity" min="0" max="1" step="0.05" title="Highlight opacity">
+            </span>
+          </div>
+          <div class="styling-inline-option">
+            <label><input type="checkbox" name="Highlight Posts Quoting You"> Quotes you</label>
+            <span class="styling-inline-controls styling-highlight-controls">
+              <input type="color" name="Highlight You Color" title="Highlight background color">
+              <span class="styling-highlight-manual" data-highlight-text-manual="you">
+                <input type="color" name="Highlight You Text Color" title="Text color">
+                <input type="color" name="Highlight You Link Color" title="Link color">
+                <input type="color" name="Highlight You Quote Color" title="Quote color">
+                <input type="color" name="Highlight You Dead Link Color" title="Dead link color">
+              </span>
+              <label class="styling-inline-toggle" title="Automatically choose readable text colors for this highlight"><input type="checkbox" name="Highlight You Text Auto"> Auto text</label>
+              <input type="range" name="Highlight You Opacity" min="0" max="1" step="0.05" title="Highlight opacity">
+            </span>
+          </div>
+          <div class="styling-inline-option">
+            <label><input type="checkbox" name="Highlight Ghost Posts"> Ghost post</label>
+            <span class="styling-inline-controls styling-highlight-controls">
+              <input type="color" name="Highlight Ghost Color" title="Highlight background color">
+              <span class="styling-highlight-manual" data-highlight-text-manual="ghost">
+                <input type="color" name="Highlight Ghost Text Color" title="Text color">
+                <input type="color" name="Highlight Ghost Link Color" title="Link color">
+                <input type="color" name="Highlight Ghost Quote Color" title="Quote color">
+                <input type="color" name="Highlight Ghost Dead Link Color" title="Dead link color">
+              </span>
+              <label class="styling-inline-toggle" title="Automatically choose readable text colors for this highlight"><input type="checkbox" name="Highlight Ghost Text Auto"> Auto text</label>
+              <input type="range" name="Highlight Ghost Opacity" min="0" max="1" step="0.05" title="Highlight opacity">
+            </span>
+          </div>
+        </div>
       </div>
-      <div class="styling-inline-option">
-        <label><input type="checkbox" name="Highlight Posts Quoting You"> Quotes you</label>
-        <span class="styling-inline-controls styling-highlight-controls">
-          <input type="color" name="Highlight You Color" title="Highlight background color">
-          <span class="styling-highlight-manual" data-highlight-text-manual="you">
-            <input type="color" name="Highlight You Text Color" title="Text color">
-            <input type="color" name="Highlight You Link Color" title="Link color">
-            <input type="color" name="Highlight You Quote Color" title="Quote color">
-            <input type="color" name="Highlight You Dead Link Color" title="Dead link color">
-          </span>
-          <label class="styling-inline-toggle" title="Automatically choose readable text colors for this highlight"><input type="checkbox" name="Highlight You Text Auto"> Auto text</label>
-          <input type="range" name="Highlight You Opacity" min="0" max="1" step="0.05" title="Highlight opacity">
-        </span>
-      </div>
-      <div class="styling-inline-option">
-        <label><input type="checkbox" name="Highlight Ghost Posts"> Ghost post</label>
-        <span class="styling-inline-controls styling-highlight-controls">
-          <input type="color" name="Highlight Ghost Color" title="Highlight background color">
-          <span class="styling-highlight-manual" data-highlight-text-manual="ghost">
-            <input type="color" name="Highlight Ghost Text Color" title="Text color">
-            <input type="color" name="Highlight Ghost Link Color" title="Link color">
-            <input type="color" name="Highlight Ghost Quote Color" title="Quote color">
-            <input type="color" name="Highlight Ghost Dead Link Color" title="Dead link color">
-          </span>
-          <label class="styling-inline-toggle" title="Automatically choose readable text colors for this highlight"><input type="checkbox" name="Highlight Ghost Text Auto"> Auto text</label>
-          <input type="range" name="Highlight Ghost Opacity" min="0" max="1" step="0.05" title="Highlight opacity">
-        </span>
+      <div data-name="Catalog Highlights">
+        <label><input type="checkbox" name="Enable Catalog Highlights"> Catalog</label>
+        <div class="styling-tree">
+          <div class="styling-inline-option">
+            <label><input type="checkbox" name="Catalog Highlight Own Posts"> Your post</label>
+            <span class="styling-inline-controls styling-highlight-controls">
+              <input type="color" name="Catalog Highlight Own Color" title="Catalog your-post highlight color">
+              <span class="styling-highlight-manual" data-highlight-text-manual="catalog-own">
+                <input type="color" name="Catalog Highlight Own Text Color" title="Text color">
+                <input type="color" name="Catalog Highlight Own Link Color" title="Link color">
+                <input type="color" name="Catalog Highlight Own Quote Color" title="Quote color">
+                <input type="color" name="Catalog Highlight Own Dead Link Color" title="Dead link color">
+              </span>
+              <label class="styling-inline-toggle" title="Automatically choose readable text colors for this highlight"><input type="checkbox" name="Catalog Highlight Own Text Auto"> Auto text</label>
+              <input type="range" name="Catalog Highlight Own Opacity" min="0" max="1" step="0.05" title="Highlight opacity">
+            </span>
+          </div>
+          <div class="styling-inline-option">
+            <label><input type="checkbox" name="Catalog Highlight Watched Threads"> Watched thread</label>
+            <span class="styling-inline-controls styling-highlight-controls">
+              <input type="color" name="Catalog Highlight Watched Color" title="Catalog watched-thread highlight color">
+              <span class="styling-highlight-manual" data-highlight-text-manual="catalog-watched">
+                <input type="color" name="Catalog Highlight Watched Text Color" title="Text color">
+                <input type="color" name="Catalog Highlight Watched Link Color" title="Link color">
+                <input type="color" name="Catalog Highlight Watched Quote Color" title="Quote color">
+                <input type="color" name="Catalog Highlight Watched Dead Link Color" title="Dead link color">
+              </span>
+              <label class="styling-inline-toggle" title="Automatically choose readable text colors for this highlight"><input type="checkbox" name="Catalog Highlight Watched Text Auto"> Auto text</label>
+              <input type="range" name="Catalog Highlight Watched Opacity" min="0" max="1" step="0.05" title="Highlight opacity">
+            </span>
+          </div>
+        </div>
       </div>
     </div>
   </div>
@@ -3381,7 +3436,7 @@ current-archive-text:"Archive"]
 }
 
 /* Settings */
-#fourchanx-settings details, .section-main div::before {
+.section-main div::before {
   border-color: var(--xt-border);
 }
 .suboption-list > div:last-of-type {
@@ -3592,18 +3647,72 @@ current-archive-text:"Archive"]
   color: var(--xt-highlight-side-arrow, rgba(221, 0, 0, .8));
 }
 
-:root:not(.werkTyme) .catalog-thread.filter-highlight .catalog-thumb,
+:root:not(.werkTyme):not(.catalog-mode) .catalog-thread.filter-highlight .catalog-thumb,
 :root.werkTyme .catalog-thread.filter-highlight:not(:hover),
 :root.werkTyme:not(.catalog-hover-expand) .catalog-thread.filter-highlight,
 :root.werkTyme.catalog-hover-expand .catalog-thread.filter-highlight > .catalog-container:hover > .catalog-post,
 :root.catalog $site$catalog$thread.filter-highlight$site$highlightable$catalog {
   box-shadow: 0 0 3px 3px var(--xt-highlight-shadow, rgba(255, 0, 0, .5));
 }
-:root:not(.werkTyme) .catalog-thread.watched .catalog-thumb,
-:root:root.werkTyme .catalog-thread.watched:not(:hover),
-:root:root.werkTyme:not(.catalog-hover-expand) .catalog-thread.watched,
-:root.werkTyme.catalog-hover-expand .catalog-thread.watched > .catalog-container:hover > .catalog-post {
-  border: 2px solid var(--xt-watched-border, rgba(255, 0, 0, .75));
+:root.catalog-mode .catalog-thread.filter-highlight,
+:root.catalog-mode .catalog-thread > .catalog-container.filter-highlight {
+  background: var(--xt-filter-highlight, rgba(221, 0, 0, .5)) !important;
+}
+:root.xt-highlight-catalog-own .catalog-thread.yourPost,
+:root.xt-highlight-catalog-own .catalog-thread > .catalog-container.yourPost {
+  background: color-mix(in srgb, var(--xt-catalog-own-highlight, var(--xt-highlight-own, transparent)) calc(var(--xt-catalog-own-highlight-opacity, 1) * 100%), transparent) !important;
+}
+:root.xt-highlight-catalog-own .catalog-thread.yourPost > .catalog-container,
+:root.xt-highlight-catalog-own .catalog-thread > .catalog-container.yourPost {
+  background: color-mix(in srgb, var(--xt-catalog-own-highlight, var(--xt-highlight-own, transparent)) calc(var(--xt-catalog-own-highlight-opacity, 1) * 100%), transparent) !important;
+}
+:root.xt-highlight-catalog-own .catalog-thread.yourPost .post.catalog-post,
+:root.xt-highlight-catalog-own .catalog-thread > .catalog-container.yourPost .post.catalog-post {
+  background: color-mix(in srgb, var(--xt-catalog-own-highlight, var(--xt-highlight-own, transparent)) calc(var(--xt-catalog-own-highlight-opacity, 1) * 100%), transparent) !important;
+  border-left: 3px dashed color-mix(in srgb, var(--xt-catalog-own-highlight, var(--xt-highlight-own, var(--xt-border-highlight))) calc(var(--xt-catalog-own-highlight-opacity, 1) * 100%), transparent);
+  color: var(--xt-catalog-own-text, var(--xt-text-color)) !important;
+}
+:root.xt-highlight-catalog-own .catalog-thread.yourPost .post.catalog-post a,
+:root.xt-highlight-catalog-own .catalog-thread > .catalog-container.yourPost .post.catalog-post a {
+  color: var(--xt-catalog-own-link, var(--xt-link-text-color)) !important;
+}
+:root.xt-highlight-catalog-own .catalog-thread.yourPost .post.catalog-post .quote,
+:root.xt-highlight-catalog-own .catalog-thread > .catalog-container.yourPost .post.catalog-post .quote {
+  color: var(--xt-catalog-own-quote, var(--xt-quote-text-color)) !important;
+}
+:root.xt-highlight-catalog-own .catalog-thread.yourPost .post.catalog-post .deadlink,
+:root.xt-highlight-catalog-own .catalog-thread > .catalog-container.yourPost .post.catalog-post .deadlink {
+  color: var(--xt-catalog-own-dead-link, var(--xt-dead-link-text-color, var(--xt-dead-link))) !important;
+}
+:root.xt-highlight-catalog-own .catalog-thread.yourPost .post.catalog-post > *,
+:root.xt-highlight-catalog-own .catalog-thread.yourPost .post.catalog-post .postMessage,
+:root.xt-highlight-catalog-own .catalog-thread > .catalog-container.yourPost .post.catalog-post > *,
+:root.xt-highlight-catalog-own .catalog-thread > .catalog-container.yourPost .post.catalog-post .postMessage {
+  background: transparent !important;
+}
+:root.xt-highlight-catalog-watched .catalog-thread.watched {
+  background: color-mix(in srgb, var(--xt-catalog-watched-highlight, transparent) calc(var(--xt-catalog-watched-highlight-opacity, 1) * 100%), transparent) !important;
+}
+:root.xt-highlight-catalog-watched .catalog-thread.watched > .catalog-container,
+:root.xt-highlight-catalog-watched .catalog-thread.watched .post.catalog-post {
+  background: color-mix(in srgb, var(--xt-catalog-watched-highlight, transparent) calc(var(--xt-catalog-watched-highlight-opacity, 1) * 100%), transparent) !important;
+}
+:root.xt-highlight-catalog-watched .catalog-thread.watched .catalog-post {
+  border: 2px solid color-mix(in srgb, var(--xt-catalog-watched-highlight, var(--xt-watched-border, rgba(255, 0, 0, .75))) calc(var(--xt-catalog-watched-highlight-opacity, 1) * 100%), transparent);
+  color: var(--xt-catalog-watched-text, var(--xt-text-color)) !important;
+}
+:root.xt-highlight-catalog-watched .catalog-thread.watched .post.catalog-post a {
+  color: var(--xt-catalog-watched-link, var(--xt-link-text-color)) !important;
+}
+:root.xt-highlight-catalog-watched .catalog-thread.watched .post.catalog-post .quote {
+  color: var(--xt-catalog-watched-quote, var(--xt-quote-text-color)) !important;
+}
+:root.xt-highlight-catalog-watched .catalog-thread.watched .post.catalog-post .deadlink {
+  color: var(--xt-catalog-watched-dead-link, var(--xt-dead-link-text-color, var(--xt-dead-link))) !important;
+}
+:root.xt-highlight-catalog-watched .catalog-thread.watched .post.catalog-post > *,
+:root.xt-highlight-catalog-watched .catalog-thread.watched .post.catalog-post .postMessage {
+  background: transparent !important;
 }
 
 .unread-line {
@@ -4855,6 +4964,11 @@ div[data-checked="false"] > .suboption-list {
 }
 .section-styling .styling-inline-option:hover {
   background: color-mix(in srgb, currentColor 8%, transparent);
+}
+.section-styling .styling-group-label {
+  font-weight: 600;
+  margin: 8px 4px 3px;
+  opacity: .9;
 }
 .section-styling .styling-inline-option > label {
   align-items: center;
@@ -8253,18 +8367,34 @@ svg.icon {
     },
 
     getOne() {
-      let response = null;
-      if (this.nodes.container) {
-        response = {};
-        for (const key of ['t-response', 't-challenge']) {
-          response[key] = $(`[name='${key}']`, this.nodes.container)?.value;
+      if (!this.nodes.container) { return null; }
+
+      const response = $(`[name='t-response']`, this.nodes.container)?.value?.trim();
+      const challenge = $(`[name='t-challenge']`, this.nodes.container)?.value?.trim();
+
+      if (response) {
+        if (!challenge) { return null; }
+        return {
+          't-response': response,
+          't-challenge': challenge,
+        };
+      }
+
+      let isVerificationNotRequired = false;
+      for (const el of this.nodes.container.querySelectorAll('#t-msg, #t-task, #t-desc, .fourchanx-captcha-load-hint, .fourchanx-captcha-status-text')) {
+        if (/Verification not required/i.test(el.textContent || '')) {
+          isVerificationNotRequired = true;
+          break;
         }
       }
-      if (!response?.['t-response']) {
-        const el = $('#t-msg, #t-task', this.nodes.container || d);
-        if (!el || !/Verification not required/i.test(el.textContent)) { return null; }
-      }
-      return response;
+      if (!isVerificationNotRequired || !challenge) { return null; }
+
+      // Keep the challenge token for "verification not required" submissions.
+      return {
+        't-response': '',
+        't-challenge': challenge,
+      };
+
     },
 
     setUsed() {
@@ -8273,6 +8403,17 @@ svg.icon {
         this.setState('idle');
         this.updateProgress();
       }
+    },
+
+    forceLoad() {
+      if (!this.isEnabled || !this.nodes.container) { return; }
+      const TCaptcha = getTCaptcha();
+      if (!TCaptcha?.load) { return; }
+      this.currentThread = this.getThread();
+      TCaptcha.saveTicket?.(false);
+      TCaptcha.clearChallenge?.();
+      TCaptcha.load(this.currentThread.boardID, this.currentThread.threadID);
+      this.setState('loading');
     },
 
     occupied() {
@@ -12138,15 +12279,15 @@ svg.icon {
 
       if (!['index', 'thread', 'archive'].includes(g.VIEW)) { return; }
 
-      if (Conf['Highlight Own Posts']) {
+      if ((Conf['Enable Thread Highlights'] !== false) && Conf['Highlight Own Posts']) {
         $.addClass(doc, 'highlight-own');
       }
 
-      if (Conf['Highlight Posts Quoting You']) {
+      if ((Conf['Enable Thread Highlights'] !== false) && Conf['Highlight Posts Quoting You']) {
         $.addClass(doc, 'highlight-you');
       }
 
-      if (Conf['Highlight Ghost Posts']) {
+      if ((Conf['Enable Thread Highlights'] !== false) && Conf['Highlight Ghost Posts']) {
         $.addClass(doc, 'highlight-ghost');
       }
 
@@ -21321,6 +21462,7 @@ aero|asia|biz|cat|com|coop|dance|info|int|jobs|mobi|moe|museum|name|net|org|post
         return;
       } // aborted
       delete QR.req;
+      const submittedCaptcha = QR.currentCaptcha;
       const post = QR.posts[0];
       post.unlock();
       if (err = this.response?.getElementById('errmsg')) { // error!
@@ -21329,8 +21471,8 @@ aero|asia|biz|cat|com|coop|dance|info|int|jobs|mobi|moe|museum|name|net|org|post
           el.target = '_blank'; // duplicate image link
       } else if (connErr = (!this.response || (this.response.title !== 'Post successful!'))) {
         err = QR.connectionError();
-        if ((QR.captcha === Captcha.v2) && QR.currentCaptcha) {
-          Captcha.cache.save(QR.currentCaptcha);
+        if ((QR.captcha === Captcha.v2) && submittedCaptcha) {
+          Captcha.cache.save(submittedCaptcha);
         }
       } else if (this.status !== 200) {
         err = `Error ${this.statusText} (${this.status})`;
@@ -21343,15 +21485,24 @@ aero|asia|biz|cat|com|coop|dance|info|int|jobs|mobi|moe|museum|name|net|org|post
         let m;
         QR.errorCount = (QR.errorCount || 0) + 1;
         if (/captcha|verification/i.test(err.textContent)) {
-          // Remove the obnoxious 4chan Pass ad.
-          if (/mistyped/i.test(err.textContent)) {
-            err = 'You mistyped the CAPTCHA, or the CAPTCHA malfunctioned.';
+          const wasNoopTCaptcha = (QR.captcha === Captcha.t) &&
+            !!submittedCaptcha?.['t-challenge'] &&
+            !submittedCaptcha?.['t-response'];
+          if (wasNoopTCaptcha) {
             QR.captcha.setState?.('failed');
-          } else if (/expired/i.test(err.textContent)) {
-            err = 'This CAPTCHA is no longer valid because it has expired.';
-            QR.captcha.setState?.('expired');
+            QR.captcha.forceLoad?.();
+            err = 'Captcha is now required. A new captcha has been requested.';
           } else {
-            QR.captcha.setState?.('failed');
+            // Remove the obnoxious 4chan Pass ad.
+            if (/mistyped/i.test(err.textContent)) {
+              err = 'You mistyped the CAPTCHA, or the CAPTCHA malfunctioned.';
+              QR.captcha.setState?.('failed');
+            } else if (/expired/i.test(err.textContent)) {
+              err = 'This CAPTCHA is no longer valid because it has expired.';
+              QR.captcha.setState?.('expired');
+            } else {
+              QR.captcha.setState?.('failed');
+            }
           }
           // Do not auto post with a wrong captcha.
           QR.cooldown.auto = false;
@@ -25385,10 +25536,14 @@ Enable it on boards.${location.hostname.split('.')[1]}.org in your browser's pri
           return;
         container.dataset.checked = checkbox.checked ? 'true' : 'false';
       };
-      const highlightKeys = [
+      const threadHighlightKeys = [
         'Highlight Own Posts',
         'Highlight Posts Quoting You',
         'Highlight Ghost Posts',
+      ];
+      const catalogHighlightKeys = [
+        'Catalog Highlight Own Posts',
+        'Catalog Highlight Watched Threads',
       ];
       const markerColorLinkPairs = [
         ['Scroll Marker Own Color', 'own'],
@@ -25417,6 +25572,20 @@ Enable it on boards.${location.hostname.split('.')[1]}.org in your browser's pri
           opacityKey: 'Highlight Ghost Opacity',
           keys: ['Highlight Ghost Text Color', 'Highlight Ghost Link Color', 'Highlight Ghost Quote Color', 'Highlight Ghost Dead Link Color'],
         },
+        {
+          manualGroup: 'catalog-own',
+          autoKey: 'Catalog Highlight Own Text Auto',
+          colorKey: 'Catalog Highlight Own Color',
+          opacityKey: 'Catalog Highlight Own Opacity',
+          keys: ['Catalog Highlight Own Text Color', 'Catalog Highlight Own Link Color', 'Catalog Highlight Own Quote Color', 'Catalog Highlight Own Dead Link Color'],
+        },
+        {
+          manualGroup: 'catalog-watched',
+          autoKey: 'Catalog Highlight Watched Text Auto',
+          colorKey: 'Catalog Highlight Watched Color',
+          opacityKey: 'Catalog Highlight Watched Opacity',
+          keys: ['Catalog Highlight Watched Text Color', 'Catalog Highlight Watched Link Color', 'Catalog Highlight Watched Quote Color', 'Catalog Highlight Watched Dead Link Color'],
+        },
       ];
       const textColorKeys = [
         'Text Color',
@@ -25431,27 +25600,16 @@ Enable it on boards.${location.hostname.split('.')[1]}.org in your browser's pri
         'Scrollbar Mark Ghost Posts',
         'Scrollbar Mark Unread Line',
         'Scroll Marker Match Highlights',
+        'Enable Thread Highlights',
+        'Enable Catalog Highlights',
+        'Catalog Highlight Own Posts',
+        'Catalog Highlight Watched Threads',
         'Highlight Own Posts',
         'Highlight Posts Quoting You',
         'Unread Line',
         'siteStyle',
         'siteStyleHome',
       ]);
-      const highlightToggle = $('#styling-enable-highlights', section);
-      const syncHighlightToggle = () => {
-        if (!highlightToggle)
-          return;
-        let enabledCount = 0;
-        for (const key of highlightKeys) {
-          if (inputs[key]?.checked)
-            enabledCount++;
-        }
-        highlightToggle.checked = enabledCount === highlightKeys.length;
-        highlightToggle.indeterminate = enabledCount > 0 && enabledCount < highlightKeys.length;
-        const container = highlightToggle.closest('[data-name]');
-        if (container)
-          container.dataset.checked = enabledCount > 0 ? 'true' : 'false';
-      };
       const markerColorLinkToggle = inputs['Scroll Marker Match Highlights'];
       const textColorModeSelect = inputs['textColorMode'];
       const textColorManualTree = $('#styling-text-color-manual', section);
@@ -25516,6 +25674,26 @@ Enable it on boards.${location.hostname.split('.')[1]}.org in your browser's pri
         }
       };
       const refreshStylingPreview = () => Settings.refreshStylingPreviewFromDialog();
+      const syncCatalogHighlightControls = () => {
+        const catalogEnabled = !!inputs['Enable Catalog Highlights']?.checked;
+        for (const key of catalogHighlightKeys) {
+          const enabled = catalogEnabled && !!inputs[key]?.checked;
+          const controls = key === 'Catalog Highlight Own Posts' ?
+            [
+              'Catalog Highlight Own Color', 'Catalog Highlight Own Opacity', 'Catalog Highlight Own Text Auto',
+              'Catalog Highlight Own Text Color', 'Catalog Highlight Own Link Color', 'Catalog Highlight Own Quote Color', 'Catalog Highlight Own Dead Link Color',
+            ] :
+            [
+              'Catalog Highlight Watched Color', 'Catalog Highlight Watched Opacity', 'Catalog Highlight Watched Text Auto',
+              'Catalog Highlight Watched Text Color', 'Catalog Highlight Watched Link Color', 'Catalog Highlight Watched Quote Color', 'Catalog Highlight Watched Dead Link Color',
+            ];
+          for (const controlKey of controls) {
+            const control = inputs[controlKey];
+            if (control)
+              control.disabled = !enabled;
+          }
+        }
+      };
       const syncMarkerColorControls = () => {
         const linked = !!markerColorLinkToggle?.checked;
         if (linked) {
@@ -25578,22 +25756,6 @@ Enable it on boards.${location.hostname.split('.')[1]}.org in your browser's pri
           Settings.setColorInputValue(inp, key, '');
         }
       };
-      if (highlightToggle) {
-        $.on(highlightToggle, 'change', () => {
-          const enabled = highlightToggle.checked;
-          highlightToggle.indeterminate = false;
-          for (const key of highlightKeys) {
-            const target = inputs[key];
-            if (!target || target.checked === enabled)
-              continue;
-            target.checked = enabled;
-            $.cb.checked.call(target);
-            setCheckedState(target);
-          }
-          syncHighlightToggle();
-          refreshStylingPreview();
-        });
-      }
       if (markerColorLinkToggle) {
         $.on(markerColorLinkToggle, 'change', () => {
           Conf['Scroll Marker Match Highlights'] = !!markerColorLinkToggle.checked;
@@ -25643,9 +25805,14 @@ Enable it on boards.${location.hostname.split('.')[1]}.org in your browser's pri
         }
         if (input.type === 'checkbox') {
           $.on(input, 'change', function () { setCheckedState(this); });
-          if (highlightKeys.includes(name)) {
-            $.on(input, 'change', syncHighlightToggle);
+          if (threadHighlightKeys.includes(name)) {
             $.on(input, 'change', refreshStylingPreview);
+          }
+          if (catalogHighlightKeys.includes(name)) {
+            $.on(input, 'change', syncCatalogHighlightControls);
+          }
+          if (name === 'Enable Catalog Highlights') {
+            $.on(input, 'change', syncCatalogHighlightControls);
           }
           if (markerRefreshKeys.has(name)) {
             $.on(input, 'change', () => $.event('RefreshScrollMarkers'));
@@ -25701,8 +25868,8 @@ Enable it on boards.${location.hostname.split('.')[1]}.org in your browser's pri
           if (key in Settings)
             Settings[key].call(inp);
         }
-        syncHighlightToggle();
         syncMarkerColorControls();
+        syncCatalogHighlightControls();
         syncTextColorControls();
         syncHighlightTextControls();
         seedManualHighlightTextColors();
@@ -25738,7 +25905,13 @@ Enable it on boards.${location.hostname.split('.')[1]}.org in your browser's pri
       const randomize = $('#styling-randomize', section);
       if (randomize) {
         $.on(randomize, 'click', () => {
-          for (const key of ['Highlight Own Color', 'Highlight You Color', 'Highlight Ghost Color']) {
+          for (const key of [
+            'Highlight Own Color',
+            'Highlight You Color',
+            'Highlight Ghost Color',
+            'Catalog Highlight Own Color',
+            'Catalog Highlight Watched Color',
+          ]) {
             const color = Settings.randomHighlightColor();
             Conf[key] = color;
             $.set(key, color);
@@ -25757,6 +25930,12 @@ Enable it on boards.${location.hostname.split('.')[1]}.org in your browser's pri
           for (const key of [
             'Highlight Own Color', 'Highlight You Color', 'Highlight Ghost Color',
             'Highlight Own Opacity', 'Highlight You Opacity', 'Highlight Ghost Opacity',
+            'Enable Thread Highlights', 'Enable Catalog Highlights',
+            'Catalog Highlight Own Posts', 'Catalog Highlight Watched Threads',
+            'Catalog Highlight Own Color', 'Catalog Highlight Watched Color',
+            'Catalog Highlight Own Opacity', 'Catalog Highlight Watched Opacity',
+            'Catalog Highlight Own Text Color', 'Catalog Highlight Own Link Color', 'Catalog Highlight Own Quote Color', 'Catalog Highlight Own Dead Link Color',
+            'Catalog Highlight Watched Text Color', 'Catalog Highlight Watched Link Color', 'Catalog Highlight Watched Quote Color', 'Catalog Highlight Watched Dead Link Color',
             'Highlight Own Text Color', 'Highlight Own Link Color', 'Highlight Own Quote Color', 'Highlight Own Dead Link Color',
             'Highlight You Text Color', 'Highlight You Link Color', 'Highlight You Quote Color', 'Highlight You Dead Link Color',
             'Highlight Ghost Text Color', 'Highlight Ghost Link Color', 'Highlight Ghost Quote Color', 'Highlight Ghost Dead Link Color',
@@ -25771,7 +25950,17 @@ Enable it on boards.${location.hostname.split('.')[1]}.org in your browser's pri
                 inp.value = '1';
             }
           }
-          for (const key of ['Highlight Own Text Auto', 'Highlight You Text Auto', 'Highlight Ghost Text Auto']) {
+          for (const key of [
+            'Highlight Own Text Auto', 'Highlight You Text Auto', 'Highlight Ghost Text Auto',
+            'Catalog Highlight Own Text Auto', 'Catalog Highlight Watched Text Auto',
+          ]) {
+            Conf[key] = true;
+            $.set(key, true);
+            const inp = inputs[key];
+            if (inp && inp.type === 'checkbox')
+              inp.checked = true;
+          }
+          for (const key of ['Enable Thread Highlights', 'Enable Catalog Highlights', 'Catalog Highlight Own Posts', 'Catalog Highlight Watched Threads']) {
             Conf[key] = true;
             $.set(key, true);
             const inp = inputs[key];
@@ -25779,6 +25968,7 @@ Enable it on boards.${location.hostname.split('.')[1]}.org in your browser's pri
               inp.checked = true;
           }
           syncAutoHighlightPreviewInputs();
+          syncCatalogHighlightControls();
           syncHighlightTextControls();
           Settings.applyStylingVars();
           refreshUnsetColorInputs();
@@ -25879,9 +26069,10 @@ Enable it on boards.${location.hostname.split('.')[1]}.org in your browser's pri
       const ownEnabled = readChecked('Highlight Own Posts');
       const youEnabled = readChecked('Highlight Posts Quoting You');
       const ghostEnabled = readChecked('Highlight Ghost Posts');
-      panel.dataset.highlightOwn = ownEnabled ? 'true' : 'false';
-      panel.dataset.highlightYou = youEnabled ? 'true' : 'false';
-      panel.dataset.highlightGhost = ghostEnabled ? 'true' : 'false';
+      const threadHighlightsEnabled = readChecked('Enable Thread Highlights', true);
+      panel.dataset.highlightOwn = (threadHighlightsEnabled && ownEnabled) ? 'true' : 'false';
+      panel.dataset.highlightYou = (threadHighlightsEnabled && youEnabled) ? 'true' : 'false';
+      panel.dataset.highlightGhost = (threadHighlightsEnabled && ghostEnabled) ? 'true' : 'false';
     },
     initCustomCSSEditor(section, textarea) {
       if (!textarea)
@@ -26028,12 +26219,25 @@ Enable it on boards.${location.hostname.split('.')[1]}.org in your browser's pri
           root.style.removeProperty(cssVar);
       };
       Settings.syncLinkedMarkerColors();
+      const threadHighlightsEnabled = Conf['Enable Thread Highlights'] !== false;
+      const catalogHighlightsEnabled = Conf['Enable Catalog Highlights'] !== false;
+      const catalogOwnEnabled = catalogHighlightsEnabled && Conf['Catalog Highlight Own Posts'] !== false;
+      const catalogWatchedEnabled = catalogHighlightsEnabled && Conf['Catalog Highlight Watched Threads'] !== false;
+      doc.classList.toggle('highlight-own', threadHighlightsEnabled && !!Conf['Highlight Own Posts']);
+      doc.classList.toggle('highlight-you', threadHighlightsEnabled && !!Conf['Highlight Posts Quoting You']);
+      doc.classList.toggle('highlight-ghost', threadHighlightsEnabled && !!Conf['Highlight Ghost Posts']);
+      doc.classList.toggle('xt-highlight-catalog-own', catalogOwnEnabled);
+      doc.classList.toggle('xt-highlight-catalog-watched', catalogWatchedEnabled);
       setVar('--xt-highlight-own', Conf['Highlight Own Color']);
       setVar('--xt-highlight-you', Conf['Highlight You Color']);
       setVar('--xt-highlight-ghost', Conf['Highlight Ghost Color']);
       setVar('--xt-highlight-own-opacity', Conf['Highlight Own Opacity'] === '' ? '' : String(Conf['Highlight Own Opacity']));
       setVar('--xt-highlight-you-opacity', Conf['Highlight You Opacity'] === '' ? '' : String(Conf['Highlight You Opacity']));
       setVar('--xt-highlight-ghost-opacity', Conf['Highlight Ghost Opacity'] === '' ? '' : String(Conf['Highlight Ghost Opacity']));
+      setVar('--xt-catalog-own-highlight', catalogOwnEnabled ? Conf['Catalog Highlight Own Color'] : '');
+      setVar('--xt-catalog-own-highlight-opacity', (catalogOwnEnabled && Conf['Catalog Highlight Own Opacity'] !== '') ? String(Conf['Catalog Highlight Own Opacity']) : '');
+      setVar('--xt-catalog-watched-highlight', catalogWatchedEnabled ? Conf['Catalog Highlight Watched Color'] : '');
+      setVar('--xt-catalog-watched-highlight-opacity', (catalogWatchedEnabled && Conf['Catalog Highlight Watched Opacity'] !== '') ? String(Conf['Catalog Highlight Watched Opacity']) : '');
       const linkMarkerColors = !!Conf['Scroll Marker Match Highlights'];
       setVar('--xt-scroll-marker-own', linkMarkerColors ? Conf['Highlight Own Color'] : Conf['Scroll Marker Own Color']);
       setVar('--xt-scroll-marker-you', linkMarkerColors ? Conf['Highlight You Color'] : Conf['Scroll Marker You Color']);
@@ -26080,6 +26284,8 @@ Enable it on boards.${location.hostname.split('.')[1]}.org in your browser's pri
       const ownPalette = withManual(autoHighlightPalette('Highlight Own Color', 'Highlight Own Opacity'), 'Highlight Own Text Auto', 'Highlight Own Text Color', 'Highlight Own Link Color', 'Highlight Own Quote Color', 'Highlight Own Dead Link Color');
       const youPalette = withManual(autoHighlightPalette('Highlight You Color', 'Highlight You Opacity'), 'Highlight You Text Auto', 'Highlight You Text Color', 'Highlight You Link Color', 'Highlight You Quote Color', 'Highlight You Dead Link Color');
       const ghostPalette = withManual(autoHighlightPalette('Highlight Ghost Color', 'Highlight Ghost Opacity'), 'Highlight Ghost Text Auto', 'Highlight Ghost Text Color', 'Highlight Ghost Link Color', 'Highlight Ghost Quote Color', 'Highlight Ghost Dead Link Color');
+      const catalogOwnPalette = withManual(autoHighlightPalette('Catalog Highlight Own Color', 'Catalog Highlight Own Opacity'), 'Catalog Highlight Own Text Auto', 'Catalog Highlight Own Text Color', 'Catalog Highlight Own Link Color', 'Catalog Highlight Own Quote Color', 'Catalog Highlight Own Dead Link Color');
+      const catalogWatchedPalette = withManual(autoHighlightPalette('Catalog Highlight Watched Color', 'Catalog Highlight Watched Opacity'), 'Catalog Highlight Watched Text Auto', 'Catalog Highlight Watched Text Color', 'Catalog Highlight Watched Link Color', 'Catalog Highlight Watched Quote Color', 'Catalog Highlight Watched Dead Link Color');
       setVar('--xt-highlight-own-text', ownPalette?.text || '');
       setVar('--xt-highlight-own-link', ownPalette?.link || '');
       setVar('--xt-highlight-own-quote', ownPalette?.quote || '');
@@ -26092,6 +26298,14 @@ Enable it on boards.${location.hostname.split('.')[1]}.org in your browser's pri
       setVar('--xt-highlight-ghost-link', ghostPalette?.link || '');
       setVar('--xt-highlight-ghost-quote', ghostPalette?.quote || '');
       setVar('--xt-highlight-ghost-dead-link', ghostPalette?.deadLink || '');
+      setVar('--xt-catalog-own-text', catalogOwnPalette?.text || '');
+      setVar('--xt-catalog-own-link', catalogOwnPalette?.link || '');
+      setVar('--xt-catalog-own-quote', catalogOwnPalette?.quote || '');
+      setVar('--xt-catalog-own-dead-link', catalogOwnPalette?.deadLink || '');
+      setVar('--xt-catalog-watched-text', catalogWatchedPalette?.text || '');
+      setVar('--xt-catalog-watched-link', catalogWatchedPalette?.link || '');
+      setVar('--xt-catalog-watched-quote', catalogWatchedPalette?.quote || '');
+      setVar('--xt-catalog-watched-dead-link', catalogWatchedPalette?.deadLink || '');
       Settings.refreshUnsetStylingColorInputs();
       Settings.refreshStylingPreviewFromDialog();
     },
@@ -26215,6 +26429,10 @@ Enable it on boards.${location.hostname.split('.')[1]}.org in your browser's pri
           return 'var(--xt-highlight-you, var(--xt-border-highlight, #ff5050))';
         case 'Highlight Ghost Color':
           return 'var(--xt-highlight-ghost, #888888)';
+        case 'Catalog Highlight Own Color':
+          return 'var(--xt-catalog-own-highlight, var(--xt-highlight-own, #d83030))';
+        case 'Catalog Highlight Watched Color':
+          return 'var(--xt-catalog-watched-highlight, var(--xt-watched-border, rgba(255, 0, 0, .75)))';
         case 'Scroll Marker Own Color':
           return 'var(--xt-scroll-marker-own, var(--xt-border-highlight, #d83030))';
         case 'Scroll Marker You Color':
@@ -26255,6 +26473,22 @@ Enable it on boards.${location.hostname.split('.')[1]}.org in your browser's pri
           return 'var(--xt-highlight-ghost-quote, var(--xt-quote-text-color, #2f7d1a))';
         case 'Highlight Ghost Dead Link Color':
           return 'var(--xt-highlight-ghost-dead-link, var(--xt-dead-link-text-color, #4c63be))';
+        case 'Catalog Highlight Own Text Color':
+          return 'var(--xt-catalog-own-text, var(--xt-text-color, #111111))';
+        case 'Catalog Highlight Own Link Color':
+          return 'var(--xt-catalog-own-link, var(--xt-link-text-color, #0b52d6))';
+        case 'Catalog Highlight Own Quote Color':
+          return 'var(--xt-catalog-own-quote, var(--xt-quote-text-color, #2f7d1a))';
+        case 'Catalog Highlight Own Dead Link Color':
+          return 'var(--xt-catalog-own-dead-link, var(--xt-dead-link-text-color, #4c63be))';
+        case 'Catalog Highlight Watched Text Color':
+          return 'var(--xt-catalog-watched-text, var(--xt-text-color, #111111))';
+        case 'Catalog Highlight Watched Link Color':
+          return 'var(--xt-catalog-watched-link, var(--xt-link-text-color, #0b52d6))';
+        case 'Catalog Highlight Watched Quote Color':
+          return 'var(--xt-catalog-watched-quote, var(--xt-quote-text-color, #2f7d1a))';
+        case 'Catalog Highlight Watched Dead Link Color':
+          return 'var(--xt-catalog-watched-dead-link, var(--xt-dead-link-text-color, #4c63be))';
         default:
           return '';
       }
@@ -26574,15 +26808,31 @@ Enable it on boards.${location.hostname.split('.')[1]}.org in your browser's pri
         'customCSSHome',
         'siteStyle',
         'siteStyleHome',
+        'Enable Thread Highlights',
+        'Enable Catalog Highlights',
         'textColorMode',
         'Text Color',
         'Link Text Color',
         'Quote Text Color',
         'Dead Link Text Color',
         'Scroll Marker Match Highlights',
+        'Catalog Highlight Own Posts',
+        'Catalog Highlight Watched Threads',
         'Highlight Own Color',
         'Highlight You Color',
         'Highlight Ghost Color',
+        'Catalog Highlight Own Color',
+        'Catalog Highlight Watched Color',
+        'Catalog Highlight Own Text Auto',
+        'Catalog Highlight Watched Text Auto',
+        'Catalog Highlight Own Text Color',
+        'Catalog Highlight Own Link Color',
+        'Catalog Highlight Own Quote Color',
+        'Catalog Highlight Own Dead Link Color',
+        'Catalog Highlight Watched Text Color',
+        'Catalog Highlight Watched Link Color',
+        'Catalog Highlight Watched Quote Color',
+        'Catalog Highlight Watched Dead Link Color',
         'Highlight Own Text Auto',
         'Highlight You Text Auto',
         'Highlight Ghost Text Auto',
@@ -26601,6 +26851,8 @@ Enable it on boards.${location.hostname.split('.')[1]}.org in your browser's pri
         'Highlight Own Opacity',
         'Highlight You Opacity',
         'Highlight Ghost Opacity',
+        'Catalog Highlight Own Opacity',
+        'Catalog Highlight Watched Opacity',
         'Scroll Marker Own Color',
         'Scroll Marker You Color',
         'Scroll Marker Ghost Color',

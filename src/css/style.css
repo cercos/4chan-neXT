@@ -1117,6 +1117,11 @@ div[data-checked="false"] > .suboption-list {
 .section-styling .styling-inline-option:hover {
   background: color-mix(in srgb, currentColor 8%, transparent);
 }
+.section-styling .styling-group-label {
+  font-weight: 600;
+  margin: 8px 4px 3px;
+  opacity: .9;
+}
 .section-styling .styling-inline-option > label {
   align-items: center;
   display: flex;

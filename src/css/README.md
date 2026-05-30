@@ -26,6 +26,10 @@ customize, you can overwrite these css variables:
 | `--xt-filter-highlight` | Filter highlight border color |
 | `--xt-highlight-shadow` | Filter highlight border color |
 | `--xt-watched-border` | Border color of watched threads |
+| `--xt-catalog-own-highlight` | Catalog highlight color for your own thread |
+| `--xt-catalog-own-highlight-opacity` | Catalog highlight opacity for your own thread |
+| `--xt-catalog-watched-highlight` | Catalog highlight color for watched threads |
+| `--xt-catalog-watched-highlight-opacity` | Catalog highlight opacity for watched threads |
 | `--xt-qphl` | Quote highlight border color |
 | `--xt-highlight-side-arrow` | Own posts highlight arrow color |
 | `--xt-scroll-maker-you` | Scroll marker for posts quoting you |

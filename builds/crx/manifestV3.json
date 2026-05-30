@@ -1,6 +1,6 @@
 {
   "name": "4chan-neXT",
-  "version": "1.0.0",
+  "version": "1.0.1",
   "manifest_version": 3,
   "description": "4chan-neXT is a script that adds various features to anonymous imageboards.",
   "icons": {
@@ -54,7 +54,7 @@
   "background": {
     "service_worker": "eventPage.js"
   },
-  "homepage_url": "https://github.com/cercos/4chan-next",
+  "homepage_url": "https://4chan-next.com",
   "minimum_chrome_version": "90",
   "applications": {
     "gecko": {
