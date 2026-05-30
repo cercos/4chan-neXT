@@ -31,7 +31,7 @@
 }
 
 /* Settings */
-#fourchanx-settings fieldset, .section-main div::before {
+.section-main div::before {
   border-color: var(--xt-border);
 }
 .suboption-list > div:last-of-type {
@@ -56,6 +56,117 @@
 .inline {
   border-color: var(--xt-border);
   background-color: var(--xt-inline, rgba(255, 255, 255, .14));
+}
+
+/* Optional post text/link color overrides (auto or manual from Styling). */
+:root.xt-custom-text-colors .post,
+:root.xt-custom-text-colors .postInfo,
+:root.xt-custom-text-colors .postMessage,
+:root.xt-custom-text-colors .summary,
+:root.xt-custom-text-colors .fileText,
+:root.xt-custom-text-colors .fileText a {
+  color: var(--xt-text-color);
+}
+:root.xt-custom-text-colors .post a,
+:root.xt-custom-text-colors .summary a,
+:root.xt-custom-text-colors #arc-list a {
+  color: var(--xt-link-text-color);
+}
+:root.xt-custom-text-colors .post .quote,
+:root.xt-custom-text-colors #arc-list .quote {
+  color: var(--xt-quote-text-color) !important;
+}
+:root.xt-custom-text-colors .backlink.deadlink,
+:root.xt-custom-text-colors .quotelink.deadlink {
+  color: var(--xt-dead-link-text-color, var(--xt-dead-link)) !important;
+}
+
+/* Highlight-specific auto text colors derived from highlight background colors. */
+:root.xt-custom-text-colors .quotesYou$site$highlightable$op,
+:root.xt-custom-text-colors .quotesYou$site$highlightable$reply {
+  color: var(--xt-highlight-you-text, var(--xt-text-color));
+}
+:root.xt-custom-text-colors .quotesYou$site$highlightable$op .postInfo,
+:root.xt-custom-text-colors .quotesYou$site$highlightable$reply .postInfo,
+:root.xt-custom-text-colors .quotesYou$site$highlightable$op .postMessage,
+:root.xt-custom-text-colors .quotesYou$site$highlightable$reply .postMessage,
+:root.xt-custom-text-colors .quotesYou$site$highlightable$op .summary,
+:root.xt-custom-text-colors .quotesYou$site$highlightable$reply .summary,
+:root.xt-custom-text-colors .quotesYou$site$highlightable$op .fileText,
+:root.xt-custom-text-colors .quotesYou$site$highlightable$reply .fileText {
+  color: var(--xt-highlight-you-text, var(--xt-text-color));
+}
+:root.xt-custom-text-colors .quotesYou$site$highlightable$op a,
+:root.xt-custom-text-colors .quotesYou$site$highlightable$reply a {
+  color: var(--xt-highlight-you-link, var(--xt-link-text-color)) !important;
+}
+:root.xt-custom-text-colors .quotesYou$site$highlightable$op .quote,
+:root.xt-custom-text-colors .quotesYou$site$highlightable$reply .quote {
+  color: var(--xt-highlight-you-quote, var(--xt-quote-text-color)) !important;
+}
+:root.xt-custom-text-colors .quotesYou$site$highlightable$op .backlink.deadlink,
+:root.xt-custom-text-colors .quotesYou$site$highlightable$reply .backlink.deadlink,
+:root.xt-custom-text-colors .quotesYou$site$highlightable$op .quotelink.deadlink,
+:root.xt-custom-text-colors .quotesYou$site$highlightable$reply .quotelink.deadlink {
+  color: var(--xt-highlight-you-dead-link, var(--xt-dead-link-text-color, var(--xt-dead-link))) !important;
+}
+
+:root.xt-custom-text-colors .yourPost$site$highlightable$op,
+:root.xt-custom-text-colors .yourPost$site$highlightable$reply {
+  color: var(--xt-highlight-own-text, var(--xt-text-color));
+}
+:root.xt-custom-text-colors .yourPost$site$highlightable$op .postInfo,
+:root.xt-custom-text-colors .yourPost$site$highlightable$reply .postInfo,
+:root.xt-custom-text-colors .yourPost$site$highlightable$op .postMessage,
+:root.xt-custom-text-colors .yourPost$site$highlightable$reply .postMessage,
+:root.xt-custom-text-colors .yourPost$site$highlightable$op .summary,
+:root.xt-custom-text-colors .yourPost$site$highlightable$reply .summary,
+:root.xt-custom-text-colors .yourPost$site$highlightable$op .fileText,
+:root.xt-custom-text-colors .yourPost$site$highlightable$reply .fileText {
+  color: var(--xt-highlight-own-text, var(--xt-text-color));
+}
+:root.xt-custom-text-colors .yourPost$site$highlightable$op a,
+:root.xt-custom-text-colors .yourPost$site$highlightable$reply a {
+  color: var(--xt-highlight-own-link, var(--xt-link-text-color)) !important;
+}
+:root.xt-custom-text-colors .yourPost$site$highlightable$op .quote,
+:root.xt-custom-text-colors .yourPost$site$highlightable$reply .quote {
+  color: var(--xt-highlight-own-quote, var(--xt-quote-text-color)) !important;
+}
+:root.xt-custom-text-colors .yourPost$site$highlightable$op .backlink.deadlink,
+:root.xt-custom-text-colors .yourPost$site$highlightable$reply .backlink.deadlink,
+:root.xt-custom-text-colors .yourPost$site$highlightable$op .quotelink.deadlink,
+:root.xt-custom-text-colors .yourPost$site$highlightable$reply .quotelink.deadlink {
+  color: var(--xt-highlight-own-dead-link, var(--xt-dead-link-text-color, var(--xt-dead-link))) !important;
+}
+
+:root.xt-custom-text-colors .from-archive$site$highlightable$op,
+:root.xt-custom-text-colors .from-archive$site$highlightable$reply {
+  color: var(--xt-highlight-ghost-text, var(--xt-text-color));
+}
+:root.xt-custom-text-colors .from-archive$site$highlightable$op .postInfo,
+:root.xt-custom-text-colors .from-archive$site$highlightable$reply .postInfo,
+:root.xt-custom-text-colors .from-archive$site$highlightable$op .postMessage,
+:root.xt-custom-text-colors .from-archive$site$highlightable$reply .postMessage,
+:root.xt-custom-text-colors .from-archive$site$highlightable$op .summary,
+:root.xt-custom-text-colors .from-archive$site$highlightable$reply .summary,
+:root.xt-custom-text-colors .from-archive$site$highlightable$op .fileText,
+:root.xt-custom-text-colors .from-archive$site$highlightable$reply .fileText {
+  color: var(--xt-highlight-ghost-text, var(--xt-text-color));
+}
+:root.xt-custom-text-colors .from-archive$site$highlightable$op a,
+:root.xt-custom-text-colors .from-archive$site$highlightable$reply a {
+  color: var(--xt-highlight-ghost-link, var(--xt-link-text-color)) !important;
+}
+:root.xt-custom-text-colors .from-archive$site$highlightable$op .quote,
+:root.xt-custom-text-colors .from-archive$site$highlightable$reply .quote {
+  color: var(--xt-highlight-ghost-quote, var(--xt-quote-text-color)) !important;
+}
+:root.xt-custom-text-colors .from-archive$site$highlightable$op .backlink.deadlink,
+:root.xt-custom-text-colors .from-archive$site$highlightable$reply .backlink.deadlink,
+:root.xt-custom-text-colors .from-archive$site$highlightable$op .quotelink.deadlink,
+:root.xt-custom-text-colors .from-archive$site$highlightable$reply .quotelink.deadlink {
+  color: var(--xt-highlight-ghost-dead-link, var(--xt-dead-link-text-color, var(--xt-dead-link))) !important;
 }
 
 /* Fappe and Werk Tyme */
@@ -108,11 +219,18 @@
 }
 :root.highlight-you .quotesYou$site$highlightable$op,
 :root.highlight-you .quotesYou$site$highlightable$reply {
-  border-left: 3px solid var(--xt-border-highlight);
+  border-left: 3px solid var(--xt-highlight-you, var(--xt-border-highlight));
+  background-color: color-mix(in srgb, var(--xt-highlight-you, transparent) calc(var(--xt-highlight-you-opacity, 1) * 100%), transparent);
 }
 :root.highlight-own .yourPost$site$highlightable$op,
 :root.highlight-own .yourPost$site$highlightable$reply {
-  border-left: 3px dashed var(--xt-border-highlight) ;
+  border-left: 3px dashed var(--xt-highlight-own, var(--xt-border-highlight));
+  background-color: color-mix(in srgb, var(--xt-highlight-own, transparent) calc(var(--xt-highlight-own-opacity, 1) * 100%), transparent);
+}
+:root.highlight-ghost .from-archive$site$highlightable$op,
+:root.highlight-ghost .from-archive$site$highlightable$reply {
+  border-left: 3px dotted var(--xt-highlight-ghost, #888);
+  background-color: color-mix(in srgb, var(--xt-highlight-ghost, transparent) calc(var(--xt-highlight-ghost-opacity, 1) * 100%), transparent);
 }
 .filter-highlight$site$highlightable$op,
 .filter-highlight$site$highlightable$reply {

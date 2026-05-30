@@ -22,6 +22,7 @@ import { svgPathData as caretLeftSvg, width as caretLeftW, height as caretLeftH 
 import { svgPathData as caretDownSvg, width as caretDownW, height as caretDownH } from "@fas/faCaretDown";
 import { svgPathData as scissorsSvg, width as scissorsW, height as scissorsH } from "@fas/faScissors";
 import { svgPathData as xmarkSvg, width as xmarkW, height as xmarkH } from "@fas/faXmark";
+import { svgPathData as checkSvg, width as checkW, height as checkH } from "@fas/faCheck";
 import { svgPathData as arrowRightLongSvg, width as arrowRightLongW, height as arrowRightLongH } from "@fas/faArrowRightLong";
 import { svgPathData as plusSvg, width as plusW, height as plusH } from "@fas/faPlus";
 import { svgPathData as squarePlusSvg, width as squarePlusW, height as squarePlusH } from "@fa/faSquarePlus";
@@ -59,6 +60,7 @@ const icons = {
    caretDown:       toSvg(caretDownSvg, caretDownW, caretDownH),
    scissors:        toSvg(scissorsSvg, scissorsW, scissorsH),
    xmark:           toSvg(xmarkSvg, xmarkW, xmarkH),
+   check:           toSvg(checkSvg, checkW, checkH),
    arrowRightLong:  toSvg(arrowRightLongSvg, arrowRightLongW, arrowRightLongH),
    plus:            toSvg(plusSvg, plusW, plusH),
    squarePlus:      toSvg(squarePlusSvg, squarePlusW, squarePlusH),

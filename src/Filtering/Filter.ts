@@ -36,6 +36,8 @@ interface FilterObj {
   poster?: boolean;
   replies?: boolean;
   reason?: string;
+  override?: boolean;
+  label?: string;
 }
 
 export interface FilterResults {
@@ -67,8 +69,11 @@ var Filter = {
       $.addClass(doc, 'hide-backlinks');
     }
 
+    const easyLines = Filter.easyFilterLines();
     for (var key in Config.filter) {
-      for (var line of (Conf[key] as string).split('\n')) {
+      const lines = (Conf[key] as string).split('\n');
+      if (key === 'general' && easyLines.length) lines.push(...easyLines);
+      for (var line of lines) {
         let hl:       string;
         let regexp:   RegExp | string;
         let top:      boolean;
@@ -80,6 +85,7 @@ var Filter = {
         let poster =  false;
         let replies = false;
         let noti =    false;
+        let override = false;
         let stub =    Conf.Stubs;
 
         if (line[0] === '#') continue;
@@ -153,6 +159,10 @@ var Filter = {
             hide = /(?:^|;)\s*hide(?:[;:]|$)/.test(options);
           }
 
+          // Whitelist: a matching highlight with this flag prevents the post from
+          // being hidden by any other rule. Only meaningful on highlight filters.
+          override = !!hl && /(?:^|;)\s*override(?:[;:]|$)/.test(options);
+
           // Hide the post (default case).
           hide = hide || !(hl || noti);
 
@@ -163,8 +173,12 @@ var Filter = {
           replies = /(?:^|;)\s*replies(?:[;:]|$)/.test(options);
         }
 
+        const label = (regexp instanceof RegExp)
+          ? `${key}: /${regexp.source}/${regexp.flags}`
+          : `${key}: ${regexp}`;
+
         const filterObj: FilterObj
-          = { regexp, boards, excludes, mask, hide, stub, hl, top, noti, reason, poster, replies };
+          = { regexp, boards, excludes, mask, hide, stub, hl, top, noti, reason, poster, replies, override, label };
 
         // Fields that this filter applies to (for 'general' filters)
         if (key === 'general') {
@@ -244,6 +258,7 @@ var Filter = {
     let noti           = false;
     let poster         = false;
     let replies        = false;
+    let hlOverride     = false;
     let reasons: string[];
     if (QuoteYou.isYou(post)) {
       hideable = false;
@@ -280,6 +295,7 @@ var Filter = {
           if (filter.hl && !hl?.includes(filter.hl)) {
             (hl || (hl = [])).push(filter.hl);
           }
+          if (filter.override && filter.hl) hlOverride = true;
           if (!top) { ({ top } = filter); }
           if (filter.noti) noti = true;
           if (filter.poster) poster = true;
@@ -287,8 +303,69 @@ var Filter = {
         }
       }
     }
+    if (hide && hlOverride) {
+      hide = false;
+      reasons = undefined;
+    }
     post.filterResults = {hide, stub, hl, top, noti, poster, replies, reasons};
     return post.filterResults;
+  },
+
+  easyFilterLines(): string[] {
+    const raw = Conf['easyFilters'];
+    let rules: any[] = [];
+    if (Array.isArray(raw)) {
+      rules = raw;
+    } else if (typeof raw === 'string' && raw.trim()) {
+      try {
+        rules = JSON.parse(raw);
+      } catch {
+        rules = [];
+      }
+    }
+    if (!Array.isArray(rules)) return [];
+
+    const lines: string[] = [];
+    for (const rule of rules) {
+      if (!rule || typeof rule !== 'object') continue;
+      if (rule.enabled === false) continue;
+
+      const pattern = typeof rule.pattern === 'string' ? rule.pattern
+        : typeof rule.match === 'string' ? rule.match
+        : '';
+      const match = pattern.trim();
+      if (!match) continue;
+
+      const flags = rule.caseSensitive ? '' : 'i';
+      let line = `/${Filter.escape(match)}/${flags}`;
+
+      const options: string[] = [];
+      if (typeof rule.boards === 'string' && rule.boards.trim()) {
+        options.push(`boards:${rule.boards.trim()}`);
+      }
+
+      const type = (rule.type in Config.filter) ? rule.type : ({
+        title: 'subject', body: 'comment', name: 'name',
+      } as Record<string, string>)[rule.field] || 'general';
+      options.push(`type:${type === 'general' ? 'subject,name,comment' : type}`);
+
+      const hide = (rule.hide != null)
+        ? !!rule.hide
+        : !['highlight', 'notify'].includes(rule.action);
+
+      if (!hide) {
+        const color = typeof rule.color === 'string' ? rule.color.trim() : '';
+        options.push(color ? `highlight:${color}` : 'highlight');
+        options.push(`top:${rule.auto ? 'yes' : 'no'}`);
+        if (rule.override) options.push('override');
+      }
+
+      if (rule.action === 'notify') options.push('notify');
+
+      if (options.length) line += `;${options.join(';')}`;
+      lines.push(line);
+    }
+    return lines;
   },
 
   node(this: Post) {
@@ -469,13 +546,12 @@ var Filter = {
   addFilter(type: FilterType, re: string, cb?: () => void) {
     if (!$.hasOwn(Config.filter, type)) { return; }
     return $.get(type, Conf[type], function(item) {
-      let save = item[type];
-      // Add a new line before the regexp unless the text is empty.
-      save =
-        save ?
-          `${save}\n${re}`
-        :
-          re;
+      const existingLines = (item[type] || '').split('\n');
+      const existingSet = new Set(existingLines.map(line => line.trim()).filter(Boolean));
+      const linesToAdd = re.split('\n').map(line => line.trim()).filter(Boolean)
+        .filter(line => !existingSet.has(line));
+      if (!linesToAdd.length) { return cb?.(); }
+      const save = [...existingLines, ...linesToAdd].filter(Boolean).join('\n');
       return $.set(type, save, cb);
     });
   },
@@ -492,12 +568,16 @@ var Filter = {
 
   showFilters(type) {
     // Open the settings and display & focus the relevant filter textarea.
-    Settings.open('Filter');
-    const section = $('.section-container');
-    const select = $('select[name=filter]', section);
-    select.value = type;
-    Settings.selectFilter.call(select);
-    return $.onExists(section, 'textarea', function(ta) {
+    Settings.forcedFiltersMode = 'advanced';
+    Settings.forcedFilterType = type;
+    if (Settings.dialog) {
+      const filteringTab = $('.tab-filtering', Settings.dialog) as HTMLAnchorElement | null;
+      filteringTab?.click();
+    } else {
+      Settings.open('Filter');
+    }
+    const section = Settings.dialog ? $('section', Settings.dialog) : $('.section-container');
+    return $.onExists(section, `textarea[name="${type}"]`, function(ta: HTMLTextAreaElement) {
       const tl = ta.textLength;
       ta.setSelectionRange(tl, tl);
       return ta.focus();
@@ -508,13 +588,25 @@ var Filter = {
     const post: Post = this instanceof Post ? this : Get.postFromNode(this);
     const files = post.files.filter(f => f.MD5);
     if (!files.length) { return; }
+    const md5s = new Set(files.map(f => f.MD5));
     const filter = files.map(f => `/${f.MD5}/`).join('\n');
     Filter.addFilter('MD5', filter);
-    const origin = post.origin || post;
-    if (origin.isReply) {
-      PostHiding.hide(origin, undefined, undefined, files.map(f => `Filtered MD5 ${f.MD5}`).join(' & '));
-    } else if (g.VIEW === 'index') {
-      ThreadHiding.hide(origin.thread);
+    const reason = files.map(f => `Filtered MD5 ${f.MD5}`).join(' & ');
+    const origin = (post.origin || post) as Post;
+    const hideMatchingPost = (candidate: Post) => {
+      if (candidate.isHidden || !candidate.files.some(file => file.MD5 && md5s.has(file.MD5))) return;
+      delete candidate.filterResults;
+      if (candidate.isReply) {
+        PostHiding.hide(candidate, undefined, undefined, reason);
+      } else if (g.VIEW === 'index') {
+        ThreadHiding.hide(candidate.thread);
+      }
+    };
+
+    if (g.VIEW === 'thread') {
+      g.posts.forEach(hideMatchingPost);
+    } else {
+      hideMatchingPost(origin);
     }
 
     if (!Conf['MD5 Quick Filter Notifications']) {
@@ -527,8 +619,12 @@ var Filter = {
 
     let {notice} = Filter.quickFilterMD5;
     if (notice) {
-      notice.filters.push(filter);
-      notice.posts.push(origin);
+      if (!notice.filters.includes(filter)) {
+        notice.filters.push(filter);
+      }
+      if (!notice.posts.includes(origin)) {
+        notice.posts.push(origin);
+      }
       $('span', notice.el).textContent = `${notice.filters.length} MD5s filtered.`;
       notice.resetTimer();
     } else {
@@ -545,6 +641,7 @@ var Filter = {
 
   quickFilterCB: {
     show() {
+      Settings.forcedFiltersMode = 'advanced';
       Filter.showFilters('MD5');
       return this.close();
     },

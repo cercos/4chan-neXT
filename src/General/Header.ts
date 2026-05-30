@@ -547,7 +547,7 @@ var Header = {
   },
 
   editCustomNav() {
-    Settings.open('Advanced');
+    Settings.open('Interface');
     const settings = $.id('fourchanx-settings');
     return $('[name=boardnav]', settings).focus();
   },

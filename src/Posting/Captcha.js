@@ -30,7 +30,7 @@ const Captcha = {
       return !(
         this.haveCookie() || this.captchas.length || QR.req || this.submitCB
       ) && (
-          (QR.posts.length > 1) || Conf['Auto-load captcha'] || !QR.posts[0].isOnlyQuotes() || QR.posts[0].file
+          (QR.posts.length > 1) || !QR.posts[0].isOnlyQuotes() || QR.posts[0].file
         );
     },
 
@@ -262,7 +262,30 @@ const Captcha = {
     },
 
     setupJS() {
-      $.global('setupCaptcha', { recaptchaKey: meta.recaptchaKey });
+      const render = () => {
+        const { classList } = document.documentElement;
+        const container = $('#qr .captcha-container');
+        if (!container) { return; }
+        container.dataset.widgetID = window.grecaptcha.render(container, {
+          sitekey: meta.recaptchaKey,
+          theme: classList.contains('tomorrow') || classList.contains('spooky') || classList.contains('dark-captcha') ? 'dark' : 'light',
+          callback: response => window.dispatchEvent(new CustomEvent('captcha:success', { detail: response }))
+        });
+      };
+      if (window.grecaptcha) {
+        render();
+      } else {
+        const cbNative = window.onRecaptchaLoaded;
+        window.onRecaptchaLoaded = function() {
+          render();
+          cbNative?.();
+        };
+        if (!document.head.querySelector('script[src^="https://www.google.com/recaptcha/api.js"]')) {
+          const script = document.createElement('script');
+          script.src = 'https://www.google.com/recaptcha/api.js?onload=onRecaptchaLoaded&render=explicit';
+          document.head.appendChild(script);
+        }
+      }
     },
 
     afterSetup(mutations) {
@@ -346,7 +369,10 @@ const Captcha = {
     count() {
       const count = Captcha.cache.getCount();
       const loading = Captcha.cache.submitCB ? '...' : '';
-      this.nodes.counter.textContent = `Captchas: ${count}${loading}`;
+      this.nodes.counter.textContent = count || loading ?
+        `Captchas: ${count}${loading}`
+      :
+        'Get Captcha';
       return this.moreNeeded();
     },
 
@@ -355,7 +381,10 @@ const Captcha = {
         this.destroy();
         return this.setup(false, true);
       } else {
-        $.global('resetCaptcha');
+        const container = $('#qr .captcha-container');
+        if (window.grecaptcha && container?.dataset.widgetID != null) {
+          window.grecaptcha.reset(container.dataset.widgetID);
+        }
       }
     },
 

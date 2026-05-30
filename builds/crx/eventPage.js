@@ -128,6 +128,12 @@ const PageContextFunctions = {
   },
   setupTCaptcha: ({ boardID, threadID, autoLoad }) => {
     const { TCaptcha } = window;
+    if (!TCaptcha?.init) {
+      window.dispatchEvent(new CustomEvent('CreateNotification', {
+        detail: { type: 'warning', content: 'Captcha unavailable. Reload the page and try again.' }
+      }));
+      return;
+    }
     TCaptcha.init(document.querySelector('#qr .captcha-container'), boardID, +threadID);
     TCaptcha.setErrorCb(err => window.dispatchEvent(new CustomEvent('CreateNotification', {
       detail: { type: 'warning', content: '' + err }

@@ -1,5 +1,5 @@
-<fieldset>
-  <legend>Archives</legend>
+<details open>
+  <summary>Archives</summary>
   <div class="warning" data-feature="404 Redirect"><code>404 Redirect</code> is disabled.</div>
   <select id="archive-board-select"></select>
   <table id="archive-table">
@@ -18,73 +18,36 @@
   </div>
   <textarea hidden name="archiveLists" class="field" spellcheck="false"></textarea>
   <button id="update-archives">Update now</button> Last updated: <time id="lastarchivecheck"></time> <label><input type="checkbox" name="archiveAutoUpdate"> Auto-update</label>
-</fieldset>
+</details>
 
-<fieldset>
-  <legend>External Catalog</legend>
+<details open>
+  <summary>External Catalog</summary>
   <div class="warning" data-feature="External Catalog"><code>External Catalog</code> is disabled. This will be used only as a fallback.</div>
   <div>
     URLs of external catalog sites, where <code>%board</code> is to be replaced by the board name.<br>
     Each URL should be followed by <code>;boards:</code> and optionally <code>;exclude:</code> and a list of supported/excluded boards in the format explained in the Filter guide.
   </div>
   <textarea hidden name="externalCatalogURLs" class="field" spellcheck="false"></textarea>
-</fieldset>
+</details>
 
-<fieldset>
-  <legend>Override 4chan Image Host</legend>
+<details open>
+  <summary>Override 4chan Image Host</summary>
   <div>Change 4chan image links to this domain. Leave blank for no change.</div>
   <div><input name="fourchanImageHost" class="field" spellcheck="false" list="list-fourchanImageHost"></div>
   <datalist id="list-fourchanImageHost"></datalist>
-</fieldset>
+</details>
 
-<fieldset>
-  <legend>Captcha Language</legend>
+<details open>
+  <summary>Captcha Language</summary>
   <div>Choose from <a href="https://developers.google.com/recaptcha/docs/language" target="_blank">list of language codes</a>. Leave blank to autoselect.</div>
   <div><input name="captchaLanguage" class="field" spellcheck="false"></div>
-</fieldset>
+</details>
 
-<fieldset>
-  <legend>Custom Board Navigation</legend>
-  <div><textarea hidden name="boardnav" class="field" spellcheck="false"></textarea></div>
-  <span class="note">New lines will be converted into spaces.</span><br><br>
-  <div class="note">In the following examples for /g/, <code>g</code> can be changed to a different board ID (<code>a</code>, <code>b</code>, etc...), the current board (<code>current</code>), or the Twitter link (<code>@</code>).</div>
-  <div>Board link: <code>g</code></div>
-  <div>Archive link: <code>g-archive</code></div>
-  <div>Internal archive link: <code>g-expired</code></div>
-  <div>Title link: <code>g-title</code></div>
-  <div>Board link (Replace with title when on that board): <code>g-replace</code></div>
-  <div>Full text link: <code>g-full</code></div>
-  <div>Custom text link: <code>g-text:&quot;Install Gentoo&quot;</code></div>
-  <div>Index-only link: <code>g-index</code></div>
-  <div>Catalog-only link: <code>g-catalog</code></div>
-  <div>Index mode: <code>g-mode:&quot;infinite scrolling&quot;</code></div>
-  <div>Index sort: <code>g-sort:&quot;creation date rev&quot;</code></div>
-  <div>External link: <code>external-text:&quot;Google&quot;,&quot;http://www.google.com&quot;</code></div>
-  <div>Open in new tab: <code>g-nt</code></div>
-  <div>Combinations are possible: <code>g-index-text:&quot;Technology Index&quot;</code></div>
-  <div>Full board list toggle: <code>toggle-all</code></div>
-  <br>
-  <div class="note">
-    <code>[ toggle-all ] [current-title] [g-title / a-title / jp-title] [x / wsg / h] [t-text:&quot;Piracy&quot;]</code><br>
-    will give you<br>
-    <code>[ + ] [Technology] [Technology / Anime & Manga / Otaku Culture] [x / wsg / h] [Piracy]</code><br>
-    if you are on /g/.
-  </div>
-  <div class="note">
-    For custom styling, you can wrap groups or individual links in <code>{{</code> and <code>}}</code>, to wrap them in
-    a span. You can also add classes in double quotes right after the {{. For example: <br />
-    <code>[g-title] {{"favorites"[a-title / jp-title]}}</code><br />
-    Results in:<br />
-    <code>[&lt;a [...] &gt;Technology&lt;/a&gt;] &lt;span class="favorites"&gt;[&lt;a [...] &gt;Anime &amp;amp;
-      Manga&lt;/a&gt; / &lt;a [...] &gt;Otaku Culture&lt;/a&gt;]&lt;/span&gt;</code>
-  </div>
-</fieldset>
-
-<fieldset>
-  <legend>
+<details open>
+  <summary>
     Time Formatting
     <span class="warning" data-feature="Time Formatting">is disabled, relative time setting still applies.</span>
-  </legend>
+  </summary>
   <div><input name="time" class="field" spellcheck="false">: <span class="time-preview"></span></div>
   <div>Supported <a href="http://man7.org/linux/man-pages/man1/date.1.html" target="_blank">format specifiers</a>:</div>
   <div>Day: <code>%a</code>, <code>%A</code>, <code>%d</code>, <code>%e</code></div>
@@ -104,20 +67,20 @@
       <option value="BothRelativeFirst">Show both relative date and timestamp</option>
     </select>
   </div>
-</fieldset>
+</details>
 
-<fieldset>
-  <legend>Quote Backlinks formatting <span class="warning" data-feature="Quote Backlinks">is disabled.</span></legend>
+<details open>
+  <summary>Quote Backlinks formatting <span class="warning" data-feature="Quote Backlinks">is disabled.</span></summary>
   <div><input name="backlink" class="field" spellcheck="false">: <span class="backlink-preview"></span></div>
-</fieldset>
+</details>
 
-<fieldset>
-  <legend>Default pasted content filename</legend>
+<details open>
+  <summary>Default pasted content filename</summary>
   <div><input name="pastedname" class="field" spellcheck="false">.png</div>
-</fieldset>
+</details>
 
-<fieldset>
-  <legend>File Info Formatting <span class="warning" data-feature="File Info Formatting">is disabled.</span></legend>
+<details open>
+  <summary>File Info Formatting <span class="warning" data-feature="File Info Formatting">is disabled.</span></summary>
   <div><input name="fileInfo" class="field" spellcheck="false">: <span class="file-info file-info-preview"></span></div>
   <div>Link: <code>%l</code> (truncated), <code>%L</code> (untruncated), <code>%T</code> (4chan filename)</div>
   <div>Filename: <code>%n</code> (truncated), <code>%N</code> (untruncated), <code>%t</code> (4chan filename)</div>
@@ -128,10 +91,10 @@
   <div>Resolution: <code>%r</code> (Displays &#039;PDF&#039; for PDF files)</div>
   <div>Tag: <code>%g</code>
   <div>Literal <code>%</code>: <code>%%</code></div>
-</fieldset>
+</details>
 
-<fieldset>
-  <legend>Quick Reply Personas</legend>
+<details open>
+  <summary>Quick Reply Personas</summary>
   <textarea hidden class="personafield field" name="QR.personas" spellcheck="false"></textarea>
   <p>
     One item per line.<br>
@@ -145,61 +108,33 @@
     <li>Force values as defaults with the <code>always</code> keyword, for example: <code>options:&quot;sage&quot;;always</code>.</li>
     <li>Select specific boards for an item, separated with commas, for example: <code>options:&quot;sage&quot;;boards:jp;always</code>.</li>
   </ul>
-</fieldset>
+</details>
 
-<fieldset>
-  <legend>Unread Favicon <span class="warning" data-feature="Unread Favicon">is disabled.</span></legend>
-  <select name="favicon">
-    <option value="ferongr">ferongr</option>
-    <option value="xat-">xat-</option>
-    <option value="4chanJS">4chanJS</option>
-    <option value="Mayhem">Mayhem</option>
-    <option value="Original">Original</option>
-    <option value="Metro">Metro</option>
-  </select>
-  <span class="favicon-preview"></span>
-</fieldset>
-
-<fieldset>
-  <legend>Thread Updater <span class="warning" data-feature="Thread Updater">is disabled.</span></legend>
+<details open>
+  <summary>Thread Updater <span class="warning" data-feature="Thread Updater">is disabled.</span></summary>
   <div>
     Interval: <input type="number" name="Interval" class="field" min="1"> seconds
   </div>
-</fieldset>
+</details>
 
-<fieldset>
-    <legend>Custom Cooldown Time</legend>
+<details open>
+    <summary>Custom Cooldown Time</summary>
     <div>
         Seconds: <input type="number" name="customCooldown" class="field" min="0">
     </div>
-</fieldset>
+</details>
 
-<fieldset>
-  <legend>
-    <label><input type="checkbox" name="Custom CSS"> Custom CSS</label>
-  </legend>
-  <div>For more information about customizing 4chan X&#039;s CSS, see the <a href="<%= meta.cssGuide %>" target="_blank">styling guide</a>.</div>
-  <button id="apply-css">Apply CSS</button>
-  <textarea hidden name="usercss" class="field" spellcheck="false"></textarea>
-</fieldset>
-
-<fieldset>
-  <legend>Javascript Whitelist</legend>
+<details open>
+  <summary>Javascript Whitelist</summary>
   <div>
     Sources from which Javascript is allowed to be loaded by <a href="http://content-security-policy.com/#source_list" target="_blank">Content Security Policy</a>.<br>
     Lines starting with a <code>#</code> will be ignored. Remove or comment out all lines to allow everything.
   </div>
   <textarea hidden name="jsWhitelist" class="field" spellcheck="false"></textarea>
-</fieldset>
+</details>
 
-<fieldset>
-  <legend>Known Banners</legend>
-  <div>List of known banners, used for click-to-change feature.</div>
-  <textarea hidden name="knownBanners" class="field" spellcheck="false"></textarea>
-</fieldset>
-
-<fieldset>
-  <legend>X (formerly Twitter) embeds</legend>
+<details open>
+  <summary>X (formerly Twitter) embeds</summary>
   <div>Only applies if embeds are enabled in the main settings</div>
   <label>Service to use for embeds
     <select name="XEmbedder">
@@ -216,10 +151,10 @@
   <label>FxTwitter maximum amount of replies include
     <input name="fxtMaxReplies" type="number" min="0" step="1" max="100" class="field" />
   </label>
-</fieldset>
+</details>
 
-<fieldset>
-  <legend>Thread updater sound</legend>
+<details open>
+  <summary>Thread updater sound</summary>
   <label>
     Sound volume, between 0 and 1:
     <input name="beepVolume" type="number" min=".01" max="1" step=".01" class="field" />
@@ -228,4 +163,4 @@
     Sound url. Can be a base64 one starting with <code>data:</code>. Leave empty for the default beep.
     <input type="string" name="beepSource" class="field wide" />
   </label>
-</fieldset>
+</details>

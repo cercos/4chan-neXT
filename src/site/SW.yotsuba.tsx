@@ -82,7 +82,7 @@ const SWYotsuba = {
       isArchived: '.archivedIcon'
     },
     file: {
-      text:  '.file > :first-child',
+      text:  '.fileText',
       link:  '.fileText > a',
       thumb: 'a.fileThumb > [data-md5]'
     },
@@ -265,7 +265,7 @@ $\
       size:       info[1],
       dimensions: info[0].match(/\d+x\d+/)?.[0],
       tag:        info[0].match(/,[^,]*, ([a-z]+)\)/i)?.[1],
-      MD5:        text.dataset.md5
+      MD5:        text.dataset.md5 || (text.parentElement as HTMLElement | null)?.dataset.md5
     }
     );
     if (thumb) {

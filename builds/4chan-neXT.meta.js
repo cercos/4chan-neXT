@@ -1,13 +1,14 @@
 // ==UserScript==
-// @name         4chan XT
-// @version      2.24.2
+// @name         4chan-neXT
+// @version      1.0.0
 // @minGMVer     1.14
 // @minFFVer     78
-// @namespace    4chan-XT
-// @description  4chan XT is a script that adds various features to anonymous imageboards.
-// @license      MIT; https://github.com/TuxedoTako/4chan-xt/blob/project-XT/LICENSE
+// @namespace    4chan-neXT
+// @description  4chan-neXT is a script that adds various features to anonymous imageboards.
+// @license      MIT; https://github.com/cercos/4chan-next/blob/project-neXT/LICENSE
 // @include      https://boards.4chan.org/*
 // @include      https://sys.4chan.org/*
+// @include      https://4chan.org/*
 // @include      https://www.4chan.org/*
 // @include      https://i.4cdn.org/*
 // @include      https://is.4chan.org/*
@@ -40,7 +41,6 @@
 // @exclude      https://www.4chan.org/advertise?*
 // @exclude      https://www.4chan.org/donate
 // @exclude      https://www.4chan.org/donate?*
-// @exclude      https://www.4chan.org/
 // @connect      4chan.org
 // @connect      4channel.org
 // @connect      4cdn.org
@@ -78,7 +78,7 @@
 // @grant        GM.xmlHttpRequest
 // @run-at       document-start
 // @updateURL    none
-// @downloadURL  https://github.com/TuxedoTako/4chan-xt/releases/latest/download/4chan-XT.min.user.js
+// @downloadURL  https://github.com/cercos/4chan-next/releases/latest/download/4chan-neXT.user.js
 // @icon         data:image/png;base64,iVBORw0KGgoAAAANSUhEUgAAADAAAAAwCAMAAABg3Am1AAAACVBMVEUAAGcAAABmzDNZt9VtAAAAAXRSTlMAQObYZgAAAF5JREFUeNrtkTESABAQxPD/R6tsE2dUGYUtFJvLDKf93KevHJAjpBorAQWSBIKqFASC4G0pCAkm4GfaEvgYXl0T6HBaE97f0vmnfYHbZOMLZCx9ISdKWwjOWZSC8GYm4SUGwfYgqI4AAAAASUVORK5CYII=
 // @license      MIT
 // ==/UserScript==

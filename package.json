@@ -1,21 +1,21 @@
 {
-  "name": "4chan-XT",
-  "description": "4chan XT is a script that adds various features to anonymous imageboards.",
+  "name": "4chan-neXT",
+  "description": "4chan-neXT is a script that adds various features to anonymous imageboards.",
   "meta": {
-    "name": "4chan XT",
-    "path": "4chan-XT",
-    "fork": "TuxedoTako",
-    "page": "https://github.com/TuxedoTako/4chan-xt",
-    "downloads": "https://github.com/TuxedoTako/4chan-xt/releases",
+    "name": "4chan-neXT",
+    "path": "4chan-neXT",
+    "fork": "cercos",
+    "page": "https://4chan-next.com",
+    "downloads": "https://github.com/cercos/4chan-next/releases",
     "oldVersions": "https://raw.githubusercontent.com/ccd0/4chan-x/",
-    "faq": "https://github.com/TuxedoTako/4chan-xt/wiki/Frequently-Asked-Questions",
+    "faq": "https://github.com/cercos/4chan-next/wiki/Frequently-Asked-Questions",
     "upstreamFaq": "https://github.com/ccd0/4chan-x/wiki/Frequently-Asked-Questions",
     "captchaFAQ": "https://github.com/ccd0/4chan-x/wiki/Captcha-FAQ",
     "cssGuide": "https://github.com/ccd0/4chan-x/wiki/Styling-Guide",
-    "license": "https://github.com/TuxedoTako/4chan-xt/blob/project-XT/LICENSE",
-    "changelog": "https://github.com/TuxedoTako/4chan-xt/blob/project-XT/CHANGELOG.md",
-    "issues": "https://github.com/TuxedoTako/4chan-xt/issues",
-    "newIssue": "https://github.com/TuxedoTako/4chan-xt/issues",
+    "license": "https://github.com/cercos/4chan-next/blob/project-neXT/LICENSE",
+    "changelog": "https://github.com/cercos/4chan-next/blob/project-neXT/CHANGELOG.md",
+    "issues": "https://github.com/cercos/4chan-next/issues",
+    "newIssue": "https://github.com/cercos/4chan-next/issues",
     "newIssueMaxLength": 8181,
     "alternatives": "https://www.4chan-x.net/4chan_alternatives.html",
     "appid": "lacclbnghgdicfifcamcmcnilckjamag",
@@ -24,6 +24,7 @@
     "includes_only": [
       "https://boards.4chan.org/*",
       "https://sys.4chan.org/*",
+      "https://4chan.org/*",
       "https://www.4chan.org/*",
       "https://i.4cdn.org/*",
       "https://is.4chan.org/*",
@@ -64,8 +65,7 @@
       "https://www.4chan.org/advertise",
       "https://www.4chan.org/advertise?*",
       "https://www.4chan.org/donate",
-      "https://www.4chan.org/donate?*",
-      "https://www.4chan.org/"
+      "https://www.4chan.org/donate?*"
     ],
     "grants": [
       "GM_getValue",
@@ -107,7 +107,7 @@
   },
   "repository": {
     "type": "git",
-    "url": "https://github.com/TuxedoTako/4chan-xt.git"
+    "url": "https://github.com/cercos/4chan-next.git"
   },
   "contributors": [
     "James Campos <james.r.campos@gmail.com>",

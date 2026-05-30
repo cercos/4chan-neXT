@@ -1,6 +1,6 @@
-# CSS variables used by 4chan XT
+# CSS variables used by 4chan-neXT
 
-A lot of the css from vanilla 4chan is kept, but 4chan XT does also provide a lot of css itself. If you want to
+A lot of the css from vanilla 4chan is kept, but 4chan-neXT does also provide a lot of css itself. If you want to
 customize, you can overwrite these css variables:
 
 | variable | description |

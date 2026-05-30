@@ -2,6 +2,8 @@ import { Conf, d, g } from "../globals/globals";
 import $ from "../platform/$";
 import QR from "./QR";
 
+const getTCaptcha = () => window.TCaptcha || window.wrappedJSObject?.TCaptcha || (typeof unsafeWindow !== 'undefined' ? unsafeWindow.TCaptcha : undefined);
+
 const CaptchaT = {
   init() {
     if (d.cookie.indexOf('pass_enabled=1') >= 0) { return; }
@@ -14,8 +16,7 @@ const CaptchaT = {
     $.after(QR.nodes.com.parentNode, root);
   },
 
-  moreNeeded() {
-  },
+  moreNeeded() {},
 
   getThread() {
     return {
@@ -26,57 +27,464 @@ const CaptchaT = {
 
   setup(focus) {
     if (!this.isEnabled) { return; }
+    const TCaptcha = getTCaptcha();
+    if (!TCaptcha?.init) {
+      QR.error('Captcha unavailable. Reload the page and try again.');
+      return;
+    }
+    this.patchFormatter(TCaptcha);
+    this.setStacked(!!Conf['Stacked TCaptcha'], TCaptcha);
 
     if (!this.nodes.container) {
       this.nodes.container = $.el('div', {className: 'captcha-container'});
       $.prepend(this.nodes.root, this.nodes.container);
-      CaptchaT.currentThread = CaptchaT.getThread();
-      CaptchaT.currentThread.autoLoad = Conf['Auto-load captcha'] ? '1' : '0';
-      $.global('setupTCaptcha', CaptchaT.currentThread);
+      this.currentThread = this.getThread();
+      TCaptcha.init(this.nodes.container, this.currentThread.boardID, +this.currentThread.threadID);
+      this.setStacked(!!Conf['Stacked TCaptcha'], TCaptcha);
+      TCaptcha.setErrorCb?.(() => {});
+      if (Conf['Auto-load captcha']) {
+        TCaptcha.load(this.currentThread.boardID, this.currentThread.threadID);
+        this.setState('loading');
+      }
+    } else if (Conf['Auto-load captcha'] && Conf['Stacked TCaptcha']) {
+      $('#t-load', this.nodes.container)?.click();
+      this.setState('loading');
     }
 
-    if (focus) $('#t-resp').focus();
+    this.ensureLoadButtonHook();
+    this.ensureStatusNode();
+    this.ensureProgressNode();
+    if (!this.cachedButtons?.length) {
+      this.setState('idle');
+      this.updateProgress();
+    }
+
+    if (focus) { $('#t-resp')?.focus(); }
   },
 
   destroy() {
     if (!this.isEnabled || !this.nodes.container) { return; }
-    $.global('destroyTCaptcha');
+    getTCaptcha()?.destroy?.();
     $.rm(this.nodes.container);
     delete this.nodes.container;
+    this.cachedButtons = [];
+    this.currentHighlightIndex = -1;
+    this.setState('idle');
   },
 
   updateThread() {
     if (!this.isEnabled) { return; }
-    const {boardID, threadID} = (CaptchaT.currentThread || {});
-    const newThread = CaptchaT.getThread();
-    if ((newThread.boardID !== boardID) || (newThread.threadID !== threadID)) {
-      CaptchaT.destroy();
-      CaptchaT.setup();
+    const {boardID, threadID} = (this.currentThread || {});
+    const next = this.getThread();
+    if ((next.boardID !== boardID) || (next.threadID !== threadID)) {
+      this.destroy();
+      this.setup();
     }
   },
 
   getOne() {
-    let el;
-    let response = {};
+    let response = null;
     if (this.nodes.container) {
-      for (var key of ['t-response', 't-challenge']) {
-        response[key] = $(`[name='${key}']`, this.nodes.container).value;
+      response = {};
+      for (const key of ['t-response', 't-challenge']) {
+        response[key] = $(`[name='${key}']`, this.nodes.container)?.value;
       }
     }
-    if (!response['t-response'] && !((el = $('#t-msg, #t-task')) && /Verification not required/i.test(el.textContent))) {
-      response = null;
+    if (!response?.['t-response']) {
+      const el = $('#t-msg, #t-task', this.nodes.container || d);
+      if (!el || !/Verification not required/i.test(el.textContent)) { return null; }
     }
     return response;
   },
 
   setUsed() {
     if (this.isEnabled && this.nodes.container) {
-      $.global('TCaptchaClearChallenge');
+      getTCaptcha()?.clearChallenge?.();
+      this.setState('idle');
+      this.updateProgress();
     }
   },
 
   occupied() {
     return !!this.nodes.container;
-  }
+  },
+
+  setState(state) {
+    const root = $('#qr');
+    if (!root) { return; }
+    for (const name of ['idle', 'loading', 'ready', 'complete', 'failed', 'expired']) {
+      root.classList.remove(`captcha-t-state-${name}`);
+    }
+    root.classList.add(`captcha-t-state-${state}`);
+    const container = this.nodes?.container;
+    if (!container) { return; }
+    const borderColors = {
+      idle: '#8ca0b5',
+      loading: '#6f93b8',
+      ready: '#8ca0b5',
+      complete: '#2c9c47',
+      failed: '#cf4a4a',
+      expired: '#d0a64d',
+    };
+    container.style.border = `2px solid ${borderColors[state] || borderColors.idle}`;
+    container.style.borderRadius = '4px';
+    container.style.transition = 'border-color .2s ease';
+    this.setStatusMessage({
+      idle: '',
+      loading: '',
+      ready: '',
+      complete: 'Done.',
+      failed: 'Failed.',
+      expired: 'Expired.',
+    }[state] || '', state);
+  },
+
+  ensureLoadButtonHook() {
+    const container = this.nodes?.container;
+    if (!container) { return; }
+    const loadButton = $('#t-load', container);
+    if (!loadButton || loadButton.dataset.fourchanxHooked) { return; }
+    loadButton.addEventListener('click', () => this.setState('loading'));
+    loadButton.dataset.fourchanxHooked = '1';
+  },
+
+  ensureStatusNode() {
+    const container = this.nodes?.container;
+    if (!container) { return; }
+    const ctrl = $('#t-ctrl', container);
+    const loadButton = $('#t-load', container);
+    if (!ctrl || !loadButton || $('.fourchanx-captcha-load-hint', ctrl)) { return; }
+    const hint = $.el('span', {
+      className: 'fourchanx-captcha-load-hint'
+    });
+    loadButton.after(hint);
+  },
+
+  setStatusMessage(text, state = 'idle') {
+    const container = this.nodes?.container;
+    if (!container) { return; }
+    const statusNode = $('.fourchanx-captcha-load-hint', container);
+    if (!statusNode) { return; }
+    for (const name of ['idle', 'loading', 'ready', 'complete', 'failed', 'expired']) {
+      statusNode.classList.remove(`state-${name}`);
+    }
+
+    if (!text) {
+      statusNode.replaceChildren();
+      return;
+    }
+
+    statusNode.classList.add(`state-${state}`);
+    statusNode.replaceChildren();
+
+    const iconByState = {
+      complete: '✓',
+      failed: '✕',
+      expired: '!'
+    };
+    const icon = iconByState[state];
+    if (icon) {
+      statusNode.appendChild($.el('span', {
+        className: `fourchanx-captcha-status-icon state-${state}`,
+        textContent: icon,
+        title: text
+      }));
+    }
+
+    statusNode.appendChild($.el('span', {
+      className: 'fourchanx-captcha-status-text',
+      textContent: text
+    }));
+  },
+
+  messageStateFromText(text) {
+    const plain = `${text || ''}`.toLowerCase();
+    if (/expired/.test(plain)) { return 'expired'; }
+    if (/done|verification not required/.test(plain)) { return 'complete'; }
+    if (/error|failed|couldn\'t|mistyped|malfunctioned/.test(plain)) { return 'failed'; }
+    if (/loading/.test(plain)) { return 'loading'; }
+    return 'idle';
+  },
+
+  formatTaskMessage(text, state) {
+    const icon = {
+      loading: '◔',
+      complete: '✓',
+      failed: '✕',
+      expired: '⏱',
+      idle: '○'
+    }[state] || '○';
+    return `<div id="t-desc" class="tcaptcha-message state-${state}">` +
+      `<span class="tcaptcha-message-icon" aria-hidden="true">${icon}</span>` +
+      `<span class="tcaptcha-message-text">${text || ''}</span>` +
+    `</div>`;
+  },
+
+  ensureProgressNode() {
+    const container = this.nodes?.container;
+    if (!container) { return; }
+    const ctrl = $('#t-ctrl', container);
+    if (!ctrl || $('.fourchanx-captcha-progress', ctrl)) { return; }
+    const progress = $.el('span', {
+      className: 'fourchanx-captcha-progress'
+    });
+    $.add(ctrl, progress);
+  },
+
+  updateProgress(TCaptcha) {
+    const container = this.nodes?.container;
+    if (!container) { return; }
+    const progress = $('.fourchanx-captcha-progress', container);
+    if (!progress) { return; }
+    const tasks = TCaptcha?.tasks;
+    if (!tasks?.length || !isFinite(TCaptcha?.taskId)) {
+      progress.textContent = '';
+      return;
+    }
+    progress.textContent = `${TCaptcha.taskId + 1}/${tasks.length}`;
+  },
+
+  formatDescription(str) {
+    if (!str) { return ''; }
+    return str
+      .replace(/Use the scroll bar below to\s*|,\s*then click next\.?/gi, '')
+      .replace(/(?:^|>)\s*([a-z])/i, m => m.toUpperCase()) + '.';
+  },
+
+  updateHighlight() {
+    this.cachedButtons ||= [];
+    this.cachedButtons.forEach((btn, index) => {
+      const isActive = index === this.currentHighlightIndex;
+      btn.classList.toggle('active', isActive);
+      if (isActive) {
+        btn.scrollIntoView({block: 'nearest'});
+      }
+    });
+  },
+
+  initializeEventHandler(container, TCaptcha) {
+    if (!container || container.dataset.hasFourChanXStackedClick) { return; }
+    container.addEventListener('click', e => {
+      if (!(e.target instanceof Element)) { return; }
+      const button = e.target.closest('.tcaptcha-image');
+      if (!button || !this.cachedButtons?.length) { return; }
+      const index = this.cachedButtons.indexOf(button);
+      if (index !== -1) {
+        this.submitCaptchaAnswer(index, TCaptcha);
+      }
+    });
+    container.dataset.hasFourChanXStackedClick = '1';
+  },
+
+  createImageGrid(TCaptcha) {
+    const container = $('#t-task', this.nodes.container);
+    const task = TCaptcha.getCurrentTask?.();
+    if (!TCaptcha.node || !container || !task) { return; }
+    this.setState('ready');
+    this.updateProgress(TCaptcha);
+
+    TCaptcha.node.style.height = 'auto';
+    TCaptcha.node.style.overflow = 'visible';
+
+    let descriptionHTML = '';
+    if (task.img) {
+      descriptionHTML = `<div id="t-desc"><img src="data:image/png;base64,${task.img}" alt=""></div>`;
+    } else if (task.str) {
+      descriptionHTML = `<div id="t-desc">${this.formatDescription(task.str)}</div>`;
+    } else {
+      descriptionHTML = '<div id="t-desc"></div>';
+    }
+
+    const imageHTMLs = (task.items || []).map(bitmap =>
+      `<button type="button" class="tcaptcha-image">
+        <img src="data:image/png;base64,${bitmap}" alt="">
+      </button>`
+    ).join('');
+
+    container.innerHTML = descriptionHTML + imageHTMLs;
+
+    this.cachedButtons = Array.from(container.querySelectorAll('.tcaptcha-image'));
+    this.currentHighlightIndex = -1;
+    this.initializeEventHandler(container, TCaptcha);
+    TCaptcha.taskNode = container;
+  },
+
+  submitCaptchaAnswer(imageNumber, TCaptcha) {
+    if (!TCaptcha?.respNode || !TCaptcha.tasks || imageNumber < 0) { return; }
+    const totalTasks = TCaptcha.tasks.length - 1;
+    if (totalTasks < 0) { return; }
+
+    TCaptcha.respNode.value += imageNumber;
+    const nextId = TCaptcha.taskId + 1;
+    if (nextId <= totalTasks) {
+      TCaptcha.setTaskId(nextId);
+      this.createImageGrid(TCaptcha);
+    } else {
+      TCaptcha.setTaskNodeContent('Done.');
+      this.setState('complete');
+      this.updateProgress({ taskId: totalTasks, tasks: TCaptcha.tasks });
+      this.cachedButtons = [];
+      this.currentHighlightIndex = -1;
+    }
+  },
+
+  installStackedKeyHandler(TCaptcha) {
+    if (this.keyHandlerInstalled) { return; }
+    this.keyHandlerInstalled = true;
+    window.addEventListener('keydown', e => {
+      if (!TCaptcha.__fourchanXStackedEnabled) { return; }
+      if (!this.nodes?.container || !document.body.contains(this.nodes.container)) { return; }
+
+      if (e.shiftKey && e.code === 'Space') {
+        e.preventDefault();
+        e.stopImmediatePropagation();
+
+        document.querySelector('#notifications .notification.warning a.close')?.closest('.notification')?.remove();
+        this.cachedButtons = (this.cachedButtons || []).filter(btn => document.body.contains(btn));
+
+        if (this.cachedButtons.length > 0) {
+          this.currentHighlightIndex = (this.currentHighlightIndex + 1) % this.cachedButtons.length;
+          this.updateHighlight();
+        } else {
+          TCaptcha.onReloadClick();
+        }
+        return;
+      }
+
+      if (e.key === 'Enter' && this.cachedButtons?.length > 0 && this.currentHighlightIndex >= 0) {
+        e.preventDefault();
+        e.stopImmediatePropagation();
+        this.submitCaptchaAnswer(this.currentHighlightIndex, TCaptcha);
+      }
+    }, true);
+  },
+
+  patchFormatter(TCaptcha) {
+    if (this.formatterPatched) { return; }
+    this.formatterPatched = true;
+
+    const styleID = 'fourchanx-tcaptcha-formatter-style';
+    if (!document.getElementById(styleID)) {
+      const style = document.createElement('style');
+      style.id = styleID;
+      style.textContent = `
+        #qr.fourchanx-stacked-captcha .captcha-container { width: 100% !important; height: auto !important; min-height: 145px; overflow: visible !important; }
+        #qr.fourchanx-stacked-captcha #t-ctrl { flex-wrap: wrap; gap: 4px; align-items: center; }
+        #qr.fourchanx-stacked-captcha .tcaptcha-image { padding: 0; margin: 3px; border: none; background: none; cursor: pointer !important; }
+        #qr.fourchanx-stacked-captcha .tcaptcha-image img { height: 100%; width: 100%; display: block; }
+        #qr.fourchanx-stacked-captcha .tcaptcha-image.active { outline: 3px solid #00c06f; }
+        #qr.fourchanx-stacked-captcha #t-desc { white-space: pre-line; text-align: center; font-size: 14px; user-select: none; width: 100%; }
+        #qr.fourchanx-stacked-captcha #t-desc.tcaptcha-message { padding-bottom: 15px; box-sizing: border-box; display: inline-flex; align-items: center; justify-content: center; gap: 6px; }
+        #qr.fourchanx-stacked-captcha #t-desc.tcaptcha-message .tcaptcha-message-icon { display: inline-flex; align-items: center; justify-content: center; width: 1.2em; height: 1.2em; border: 2px solid currentColor; border-radius: 50%; font-weight: bold; font-size: 11px; line-height: 1; box-sizing: border-box; }
+        #qr.fourchanx-stacked-captcha #t-desc.tcaptcha-message.state-complete .tcaptcha-message-icon { color: #2c9c47; }
+        #qr.fourchanx-stacked-captcha #t-desc.tcaptcha-message.state-failed .tcaptcha-message-icon { color: #cf4a4a; }
+        #qr.fourchanx-stacked-captcha #t-desc.tcaptcha-message.state-expired .tcaptcha-message-icon { color: #c38c2f; }
+        #qr.fourchanx-stacked-captcha #t-desc.tcaptcha-message.state-loading .tcaptcha-message-icon { color: #4f7eaa; }
+        #qr.fourchanx-stacked-captcha #t-desc.tcaptcha-message.state-idle .tcaptcha-message-icon { color: #6f7c8f; }
+        #qr.fourchanx-stacked-captcha #t-desc img { margin: 3px !important; max-width: 100%; height: auto; }
+        #qr.fourchanx-stacked-captcha #t-task { display: flex; flex-wrap: wrap; gap: 3px; width: 100%; justify-content: center; margin: 0 auto; overflow: auto; max-height: 70vh; padding: 0 !important; height: auto !important; white-space: normal !important; align-items: normal !important; scrollbar-gutter: stable; overflow-x: hidden; box-sizing: border-box; }
+        #qr.fourchanx-stacked-captcha #t-load { cursor: pointer !important; min-height: 24px; padding: 0 8px; }
+        #qr.fourchanx-stacked-captcha #t-next { display: none !important; }
+        #qr.fourchanx-stacked-captcha .fourchanx-captcha-progress { margin-left: auto; font-weight: bold; min-width: 3em; text-align: right; }
+        #qr.fourchanx-stacked-captcha #t-slider { display: none !important; }
+      `;
+      document.head.appendChild(style);
+    }
+
+    if (!TCaptcha.__fourchanXOriginal) {
+      TCaptcha.__fourchanXOriginal = {
+        setChallenge: TCaptcha.setChallenge,
+        setTaskId: TCaptcha.setTaskId,
+        setTaskNodeContent: TCaptcha.setTaskNodeContent,
+        buildSliderNode: TCaptcha.buildSliderNode,
+        buildNextNode: TCaptcha.buildNextNode,
+      };
+    }
+  },
+
+  setStacked(enabled, TCaptcha) {
+    const root = $('#qr');
+    if (!root) { return; }
+    root.classList.toggle('fourchanx-stacked-captcha', enabled);
+    if (TCaptcha.node) {
+      if (enabled) {
+        TCaptcha.node.style.height = 'auto';
+        TCaptcha.node.style.overflow = 'visible';
+      } else {
+        TCaptcha.node.style.height = '145px';
+        TCaptcha.node.style.overflow = 'hidden';
+      }
+    }
+    if (TCaptcha.taskNode) {
+      if (enabled) {
+        TCaptcha.taskNode.style.height = 'auto';
+        TCaptcha.taskNode.style.alignItems = 'flex-start';
+      } else {
+        TCaptcha.taskNode.style.height = '80px';
+        TCaptcha.taskNode.style.alignItems = 'center';
+      }
+    }
+      if (!enabled) {
+      if (TCaptcha.__fourchanXOriginal) {
+        const o = TCaptcha.__fourchanXOriginal;
+        TCaptcha.setChallenge = o.setChallenge;
+        TCaptcha.setTaskId = o.setTaskId;
+        TCaptcha.setTaskNodeContent = o.setTaskNodeContent;
+        TCaptcha.buildSliderNode = o.buildSliderNode;
+        TCaptcha.buildNextNode = o.buildNextNode;
+      }
+      TCaptcha.__fourchanXStackedEnabled = false;
+      this.cachedButtons = [];
+      this.currentHighlightIndex = -1;
+      this.updateProgress();
+      return;
+    }
+    if (TCaptcha.__fourchanXStackedEnabled) { return; }
+    TCaptcha.__fourchanXStackedEnabled = true;
+    this.installStackedKeyHandler(TCaptcha);
+
+    const o = TCaptcha.__fourchanXOriginal;
+    TCaptcha.setChallenge = function(challenge) {
+      if (!challenge?.tasks) { return o.setChallenge.call(this, challenge); }
+      this.challengeIdNode.value = challenge.challenge;
+      this.respNode.value = '';
+      this.tasks = challenge.tasks;
+      this.setTaskId(0);
+      CaptchaT.createImageGrid(this);
+    };
+    TCaptcha.setTaskId = function(index) {
+      this.taskId = index;
+      CaptchaT.setState('ready');
+      CaptchaT.updateProgress(this);
+    };
+    TCaptcha.setTaskNodeContent = function(text) {
+      const container = $('#t-task', CaptchaT.nodes.container);
+      const state = CaptchaT.messageStateFromText(text);
+      CaptchaT.setState(state);
+      if (container) { container.innerHTML = ''; }
+      CaptchaT.setStatusMessage(text, state);
+      CaptchaT.cachedButtons = [];
+      CaptchaT.currentHighlightIndex = -1;
+      CaptchaT.updateProgress();
+    };
+    TCaptcha.buildSliderNode = function() {
+      const slider = document.createElement('span');
+      slider.id = 't-slider';
+      slider.hidden = true;
+      return slider;
+    };
+    TCaptcha.buildNextNode = function() {
+      const next = document.createElement('span');
+      next.id = 't-next';
+      return next;
+    };
+
+    if (TCaptcha.tasks?.length) {
+      this.createImageGrid(TCaptcha);
+    } else {
+      this.setState('idle');
+      this.updateProgress();
+    }
+  },
 };
 export default CaptchaT;

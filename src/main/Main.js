@@ -79,7 +79,7 @@ import QuoteYou from "../Quotelinks/QuoteYou";
 import Quotify from "../Quotelinks/Quotify";
 import Site from "../site/Site";
 import SW from "../site/SW";
-import CSS from "../css/CSS";
+import CSS, { www } from "../css/CSS";
 import meta from '../../package.json';
 import Header from "../General/Header";
 import { c, Conf, d, doc, docSet, E, g } from "../globals/globals";
@@ -89,6 +89,7 @@ import CaptchaReplace from "../Posting/Captcha.replace";
 import Get from "../General/Get";
 import { dict, platform } from "../platform/helpers";
 import RestoreDeletedFromArchive from "../Archive/RestoreDeletedFromArchive";
+import GhostPosts from "../Archive/GhostPosts";
 import ScrollMarkers from "../Miscellaneous/ScrollMarkers";
 // #region tests_enabled
 import Test from "../General/Test";
@@ -104,10 +105,19 @@ import Test from "../General/Test";
  */
 var Main = {
   init() {
-    // Return if the url is exactly https://www.4chan.org, this is only the home page which has a cloudflare checking
-    // system which breaks this script. Keep it in the includes so it can be found on greasy fork.
-    // __cf is also a cloudflare check page
-    if (location.hostname === 'www.4chan.org' || location.search.includes("__cf")) return;
+    // __cf is a cloudflare check page.
+    if (location.search.includes("__cf")) return;
+    // Keep the full script disabled on boardless home pages, but still apply
+    // home-page styling preferences (site style + optional custom CSS).
+    if (Main.isHomePage()) {
+      Main.initHomePageStyleBridge();
+      return;
+    }
+
+    // Apply native-extension disable as early as possible so 4chan's own
+    // extension does not initialize alongside XT.
+    Main.maybeDisableNativeExtensionEarly();
+
     // XXX dwb userscripts extension reloads scripts run at document-start when replaceState/pushState is called.
     // XXX Firefox reinjects WebExtension content scripts when extension is updated / reloaded.
     try {
@@ -252,6 +262,113 @@ var Main = {
     });
   },
 
+  maybeDisableNativeExtensionEarly() {
+    if (!/\.4chan(?:nel)?\.org$/.test(location.hostname)) { return; }
+    const apply = function(disableNativeExtension) {
+      if (!disableNativeExtension) { return; }
+      if ($.hasStorage) {
+        $.global('disableNativeExtension');
+      } else {
+        $.global('disableNativeExtensionNoStorage');
+      }
+    };
+
+    // Prefer sync reads where available so this runs before native scripts init.
+    if ($.getSync) {
+      try {
+        const raw = $.getValue?.(g.NAMESPACE + 'Disable Native Extension');
+        if (raw != null) {
+          apply(dict.json(raw));
+          return;
+        }
+      } catch (err) {}
+    }
+
+    // Fallback for async-only storage APIs.
+    ($.getSync || $.get)({'Disable Native Extension': true}, items => {
+      apply(items['Disable Native Extension']);
+    });
+  },
+
+  isHomePage() {
+    if (!['www.4chan.org', 'www.4channel.org', '4chan.org', '4channel.org'].includes(location.hostname)) {
+      return false;
+    }
+    return /^\/(?:index\.php)?\/?$/.test(location.pathname);
+  },
+
+  normalizeSiteStyle(style) {
+    if (!style) return '';
+    const normalized = String(style)
+      .trim()
+      .toLowerCase()
+      .replace(/\bnew\b/g, '')
+      .trim()
+      .replace(/[_\s]+/g, '-')
+      .replace(/-+/g, '-')
+      .replace(/^-|-$/g, '');
+    return normalized;
+  },
+
+  initHomePageStyleBridge() {
+    const defaults = {
+      siteStyleHome: false,
+      siteStyle: '',
+      customCSSHome: false,
+      'Custom CSS': true,
+      usercss: '',
+    };
+    ($.getSync || $.get)(defaults, (items) => {
+      const normalizedStyle = Main.normalizeSiteStyle(items.siteStyle);
+      if (items.siteStyleHome && normalizedStyle) {
+        // Persist 4chan's own theme cookie so future homepage requests render
+        // server-side with the right stylesheet.
+        Main.setSiteStyleHomeCookie(items.siteStyle);
+        // Tag <html> so 4chan-X / custom CSS rules targeting :root.<theme> match.
+        $.addClass(doc, normalizedStyle);
+        // Switch the active <link rel="stylesheet"> to the alternate matching
+        // the chosen theme, so the homepage repaints immediately.
+        Main.applyHomePageSiteStyle(items.siteStyle);
+      }
+      if (items.customCSSHome && items['Custom CSS'] && items.usercss) {
+        Main.installHomePageCustomCSS(items.usercss);
+      }
+    });
+  },
+
+  applyHomePageSiteStyle(preferred) {
+    const want = Main.normalizeSiteStyle(preferred);
+    if (!want) return;
+
+    $.onExists(doc, 'head', () => {
+      $.rm($.id('fourchanx-homepage-theme-css'));
+      // www.css has :root.<theme> rules that target 4chan's homepage chrome
+      // (body, #bd, #ft, #header, etc.). The theme class is added on <html>
+      // by initHomePageStyleBridge, which activates the matching rules.
+      $.addStyle(www, 'fourchanx-homepage-theme-css');
+    });
+  },
+
+  installHomePageCustomCSS(usercss) {
+    let style = null;
+    const ensure = () => {
+      if (!d.head) return;
+      if (!style || !style.isConnected) {
+        style = $.el('style', { id: 'custom-css-home', textContent: usercss });
+        $.add(d.head, style);
+        return;
+      }
+      if (style.textContent !== usercss) style.textContent = usercss;
+      // Keep our <style> as the last child of <head> so it wins specificity ties.
+      if (d.head.lastElementChild !== style) $.add(d.head, style);
+    };
+    $.onExists(doc, 'head', () => {
+      ensure();
+      new MutationObserver(ensure).observe(d.head, { childList: true });
+    });
+    $.on(window, 'pageshow', ensure);
+  },
+
   upgrade(items) {
     const {previousversion} = items;
     const changes = Settings.upgrade(items, previousversion);
@@ -358,6 +475,9 @@ var Main = {
 
   initStyle() {
     if (!Main.isThisPageLegit()) { return; }
+    if (Conf['siteStyleHome'] && Conf['siteStyle']) {
+      Main.setSiteStyleHomeCookie(Conf['siteStyle']);
+    }
 
     // disable the mobile layout
     const mobileLink = $('link[href*=mobile]', d.head);
@@ -383,12 +503,42 @@ var Main = {
   setClass() {
     let mainStyleSheet, style, styleSheets;
     const knownStyles = ['yotsuba', 'yotsuba-b', 'futaba', 'burichan', 'photon', 'tomorrow', 'spooky'];
+    let preferredStyleApplied = false;
+    const applyPreferredStyle = function() {
+      if (preferredStyleApplied || g.SITE.software !== 'yotsuba' || !Conf['siteStyle']) { return; }
+      const preferred = Conf['siteStyle'];
+
+      const styleSelector = $.id('styleSelector');
+      if (styleSelector?.options?.length) {
+        const hasPreferred = Array.from(styleSelector.options).some(option => option.value === preferred);
+        if (hasPreferred) {
+          if (styleSelector.value !== preferred) {
+            styleSelector.value = preferred;
+            styleSelector.dispatchEvent(new Event('change', { bubbles: true }));
+          }
+          preferredStyleApplied = true;
+          return;
+        }
+      }
+
+      if (!styleSheets || !mainStyleSheet) { return; }
+      for (var styleSheet of styleSheets) {
+        if (styleSheet.title?.trim() === preferred) {
+          if (mainStyleSheet.href !== styleSheet.href) {
+            mainStyleSheet.href = styleSheet.href;
+          }
+          preferredStyleApplied = true;
+          break;
+        }
+      }
+    };
 
     if ((g.SITE.software === 'yotsuba') && (g.VIEW === 'catalog')) {
       if (mainStyleSheet = $.id('base-css')) {
         style = mainStyleSheet.href.match(/catalog_(\w+)/)?.[1].replace('_new', '').replace(/_+/g, '-');
         if (knownStyles.includes(style)) {
           $.addClass(doc, style);
+          Settings.applyStylingVars();
           return;
         }
       }
@@ -397,21 +547,31 @@ var Main = {
     style = (mainStyleSheet = (styleSheets = null));
 
     const setStyle = function() {
+      let activeStyleTitle = null;
       // Use preconfigured CSS for 4chan's default themes.
       if (g.SITE.software === 'yotsuba') {
         $.rmClass(doc, style);
         style = null;
         for (var styleSheet of styleSheets) {
           if (styleSheet.href === mainStyleSheet?.href) {
+            activeStyleTitle = styleSheet.title?.trim() || null;
             style = styleSheet.title.toLowerCase().replace('new', '').trim().replace(/\s+/g, '-');
             if (style === '_special') { style = styleSheet.href.match(/[a-z]*(?=[^/]*$)/)[0]; }
             if (!knownStyles.includes(style)) { style = null; }
             break;
           }
         }
+        if (activeStyleTitle && (Conf['siteStyle'] !== activeStyleTitle)) {
+          Conf['siteStyle'] = activeStyleTitle;
+          $.set('siteStyle', activeStyleTitle);
+          if (Conf['siteStyleHome']) {
+            Main.setSiteStyleHomeCookie(activeStyleTitle);
+          }
+        }
         if (style) {
           $.addClass(doc, style);
           $.rm(Main.bgColorStyle);
+          Settings.applyStylingVars();
           return;
         }
       }
@@ -441,7 +601,9 @@ var Main = {
         css += '.watch-thread-link { --xt-watcher: #c8c8c8 }';
       }
       Main.bgColorStyle.textContent = css;
-      return $.after($.id('fourchanx-css'), Main.bgColorStyle);
+      $.after($.id('fourchanx-css'), Main.bgColorStyle);
+      Settings.applyStylingVars();
+      return;
     };
 
     $.onExists(d.head, g.SITE.selectors.styleSheet, function(el) {
@@ -449,6 +611,23 @@ var Main = {
       if (g.SITE.software === 'yotsuba') {
         styleSheets = $$('link[rel="alternate stylesheet"]', d.head);
       }
+      applyPreferredStyle();
+      $.onExists(doc, '#styleSelector', function(styleSelector) {
+        const syncSiteStyle = function() {
+          const selected = styleSelector.value;
+          if (!selected) { return; }
+          if (Conf['siteStyle'] !== selected) {
+            Conf['siteStyle'] = selected;
+            $.set('siteStyle', selected);
+          }
+          if (Conf['siteStyleHome']) {
+            Main.setSiteStyleHomeCookie(selected);
+          }
+        };
+        $.on(styleSelector, 'change', syncSiteStyle);
+        syncSiteStyle();
+        applyPreferredStyle();
+      });
       new MutationObserver(setStyle).observe(mainStyleSheet, {
         attributes: true,
         attributeFilter: ['href']
@@ -461,6 +640,22 @@ var Main = {
         $.on(styleSheet, 'load', setStyle);
       }
       return setStyle();
+    }
+  },
+
+  setSiteStyleHomeCookie(style) {
+    const domain = location.hostname.includes('4channel.org') ? '4channel.org' : '4chan.org';
+    const expires = 60 * 60 * 24 * 365; // 1 year
+    const cleanupDomains = [location.hostname, domain, `.${domain}`];
+    const past = 'Thu, 01 Jan 1970 00:00:00 GMT';
+    for (const key of ['ws_style', 'nws_style']) {
+      // Remove stale duplicates (host-only and dotted-domain variants) that
+      // can shadow each other in undefined order.
+      d.cookie = `${key}=; Expires=${past}; Path=/`;
+      for (const cookieDomain of cleanupDomains) {
+        d.cookie = `${key}=; Expires=${past}; Path=/; Domain=${cookieDomain}`;
+      }
+      d.cookie = `${key}=${style}; Max-Age=${expires}; Path=/; Domain=${domain}`;
     }
   },
 
@@ -882,6 +1077,7 @@ User agent: ${navigator.userAgent}\
     ['Linkify',                   Linkify],
     ['Reveal Spoilers',           RemoveSpoilers],
     ['Resurrect Quotes',          Quotify],
+    ['Fetch Ghost Posts',         GhostPosts],
     ['Filter',                    Filter],
     ['Thread Hiding Buttons',     ThreadHiding],
     ['Reply Hiding Buttons',      PostHiding],

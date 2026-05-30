@@ -31,6 +31,42 @@ import Icon from '../Icons/icon';
  */
 
 var ThreadWatcher = {
+  drag: {
+    start(e) {
+      ThreadWatcher.draggingLine = this;
+      this.classList.add('drag');
+      if (e.dataTransfer) {
+        e.dataTransfer.effectAllowed = 'move';
+        e.dataTransfer.setData('text/plain', ThreadWatcher.keyFromLine(this));
+      }
+    },
+    end() {
+      ThreadWatcher.clearDragState();
+    },
+    enter() {
+      if (ThreadWatcher.draggingLine && ThreadWatcher.draggingLine !== this) {
+        this.classList.add('over');
+      }
+    },
+    leave() {
+      this.classList.remove('over');
+    },
+    over(e) {
+      if (ThreadWatcher.draggingLine && ThreadWatcher.draggingLine !== this) {
+        e.preventDefault();
+        e.dataTransfer.dropEffect = 'move';
+      }
+    },
+    drop(e) {
+      if (!ThreadWatcher.draggingLine || ThreadWatcher.draggingLine === this) { return; }
+      e.preventDefault();
+      this.classList.remove('over');
+      const { before } = ThreadWatcher.dropPosition(this, e);
+      ThreadWatcher.reorderInDOM(ThreadWatcher.draggingLine, this, before);
+      ThreadWatcher.clearDragState();
+    }
+  },
+
   init() {
     let sc;
     if (!(this.enabled = Conf['Thread Watcher'])) { return; }
@@ -48,19 +84,24 @@ var ThreadWatcher = {
     this.status = $('#watcher-status', this.dialog);
     this.list   = this.dialog.lastElementChild;
     this.refreshButton = $('.refresh', this.dialog);
+    this.markReadButton = $('.mark-read', this.dialog);
     this.menuButton = $('.menu-button', this.dialog);
     this.closeButton = $('.move > .close', this.dialog);
     this.unreaddb = Unread.db || UnreadIndex.db || new DataBoard('lastReadPosts');
     this.unreadEnabled = Conf['Remember Last Read Post'];
 
     Icon.set(this.refreshButton, 'refresh');
+    Icon.set(this.markReadButton, 'check');
     Icon.set(this.menuButton, 'caretDown');
     Icon.set(this.closeButton, 'xmark');
 
     $.on(d, 'QRPostSuccessful',   this.cb.post);
     $.on(sc, 'click', this.toggleWatcher);
     $.on(this.refreshButton, 'click', this.buttonFetchAll);
+    $.on(this.markReadButton, 'click', this.cb.markAllRead);
     $.on(this.closeButton, 'click', this.toggleWatcher);
+    $.on(window, 'resize scroll', () => ThreadWatcher.positionThumbnailHover(ThreadWatcher.hoveredThumbnail));
+    $.on(this.list, 'scroll', () => ThreadWatcher.positionThumbnailHover(ThreadWatcher.hoveredThumbnail));
 
     this.menu.addHeaderMenuEntry();
     $.onExists(doc, 'body', this.addDialog);
@@ -176,13 +217,18 @@ var ThreadWatcher = {
 
   addDialog() {
     if (!Main.isThisPageLegit()) { return; }
+    ThreadWatcher.applyLayout();
     ThreadWatcher.build();
     return $.prepend(d.body, ThreadWatcher.dialog);
   },
 
   toggleWatcher() {
     $.toggleClass(ThreadWatcher.shortcut, 'disabled');
-    return ThreadWatcher.dialog.hidden = !ThreadWatcher.dialog.hidden;
+    const hidden = (ThreadWatcher.dialog.hidden = !ThreadWatcher.dialog.hidden);
+    if (hidden) {
+      ThreadWatcher.hideThumbnailHover();
+    }
+    return hidden;
   },
 
   cb: {
@@ -244,6 +290,49 @@ var ThreadWatcher = {
         }
       }
       $.event('CloseMenu');
+    },
+    markAllRead() {
+      if ($.hasClass(this, 'disabled') || !ThreadWatcher.unreadEnabled) { return; }
+      for (var {siteID, boardID, threadID, data} of ThreadWatcher.getAll()) {
+        if (data.last != null) {
+          ThreadWatcher.unreaddb.set({siteID, boardID, threadID, val: data.last});
+        }
+        ThreadWatcher.update(siteID, boardID, threadID, {
+          unread: 0,
+          quotingYou: 0,
+          dismiss: data.quotingYou || 0
+        });
+      }
+    },
+    markRead() {
+      if ($.hasClass(this, 'disabled') || !ThreadWatcher.unreadEnabled) { return; }
+      const line = this.parentNode;
+      if (!line) { return; }
+      const {siteID} = line.dataset;
+      const [boardID, threadID] = line.dataset.fullID.split('.');
+      const data = ThreadWatcher.db?.get({siteID, boardID, threadID: +threadID});
+      if (!data) { return; }
+      if (data.last != null) {
+        ThreadWatcher.unreaddb.set({siteID, boardID, threadID: +threadID, val: data.last});
+      }
+      ThreadWatcher.update(siteID, boardID, +threadID, {
+        unread: 0,
+        quotingYou: 0,
+        dismiss: data.quotingYou || 0
+      });
+    },
+    thumbnailHoverIn() {
+      ThreadWatcher.showThumbnailHover(this);
+    },
+    thumbnailHoverMove() {
+      if (ThreadWatcher.hoveredThumbnail === this) {
+        ThreadWatcher.positionThumbnailHover(this);
+      }
+    },
+    thumbnailHoverOut() {
+      if (ThreadWatcher.hoveredThumbnail === this) {
+        ThreadWatcher.hideThumbnailHover();
+      }
     },
     toggle() {
       const {thread} = Get.postFromNode(this);
@@ -425,6 +514,7 @@ var ThreadWatcher = {
       if (!data.isDead && (data.last !== -1)) {
         if (Conf['Show Page'] && (data.page == null)) { force = true; }
         if ((data.modified == null)) { force = (thread.force = true); }
+        if (ThreadWatcher.showThumbnails() && !data.thumbURL) { force = (thread.force = true); }
       }
     }
     const {siteID, boardID} = board[0];
@@ -486,6 +576,9 @@ var ThreadWatcher = {
             ThreadWatcher.fetchStatus(thread);
           }
         }
+        if (ThreadWatcher.showThumbnails() && !data.thumbURL) {
+          ThreadWatcher.fetchStatus(thread);
+        }
       } else {
         ThreadWatcher.fetchStatus(thread);
       }
@@ -510,12 +603,13 @@ var ThreadWatcher = {
       last = this.response.posts[this.response.posts.length-1].no;
       const replies = this.response.posts.length-1;
       isDead = (isArchived = !!(this.response.posts[0].archived || isArchiveURL));
+      const thumbURL = ThreadWatcher.getOPThumbURL({siteID, boardID, postObj: this.response.posts[0]});
       if (isDead && Conf['Auto Prune']) {
         ThreadWatcher.rm(siteID, boardID, threadID);
         return;
       }
 
-      if ((last === data.last) && (isDead === data.isDead) && (isArchived === data.isArchived)) { return; }
+      if ((last === data.last) && (isDead === data.isDead) && (isArchived === data.isArchived) && (!thumbURL || thumbURL === data.thumbURL)) { return; }
 
       const lastReadPost = ThreadWatcher.unreaddb.get({siteID, boardID, threadID, defaultValue: 0});
       let unread = data.unread || 0;
@@ -555,6 +649,9 @@ var ThreadWatcher = {
       }
 
       if (!newData) { newData = {}; }
+      if ((thumbURL != null) && (thumbURL !== data.thumbURL)) {
+        newData.thumbURL = thumbURL;
+      }
       $.extend(newData, {last, replies, isDead, isArchived, unread, quotingYou});
       return ThreadWatcher.update(siteID, boardID, threadID, newData);
 
@@ -567,6 +664,21 @@ var ThreadWatcher = {
       } else {
         return ThreadWatcher.update(siteID, boardID, threadID, {isDead: true});
       }
+    }
+  },
+
+  getOPThumbURL({siteID, boardID, thread, postObj}) {
+    if (thread?.OP?.file?.thumbURL) { return thread.OP.file.thumbURL; }
+    if (!postObj) { return; }
+    const site = g.sites[siteID];
+    if (site?.Build?.parseJSON) {
+      try {
+        const post = site.Build.parseJSON(postObj, {siteID, boardID});
+        if (post?.file?.thumbURL) { return post.file.thumbURL; }
+      } catch (err) {}
+    }
+    if ((postObj.tim != null) && site?.urls?.thumb) {
+      return site.urls.thumb({siteID, boardID}, `${postObj.tim}s.jpg`);
     }
   },
 
@@ -591,6 +703,16 @@ var ThreadWatcher = {
         }
       }
     }
+    if (!groupByBoard) {
+      all.sort((a, b) => {
+        const ao = a.data.order;
+        const bo = b.data.order;
+        if ((ao == null) && (bo == null)) { return 0; }
+        if (ao == null) { return 1; }
+        if (bo == null) { return -1; }
+        return ao - bo;
+      });
+    }
     return all;
   },
 
@@ -598,7 +720,8 @@ var ThreadWatcher = {
     let page;
     const x = $.el('a', {
       textContent: '✕',
-      href: 'javascript:;'
+      href: 'javascript:;',
+      draggable: false
     });
     Icon.set(x, 'xmark');
     $.on(x, 'click', ThreadWatcher.cb.rm);
@@ -610,8 +733,28 @@ var ThreadWatcher = {
     const link = $.el('a', {
       href: g.sites[siteID]?.urls.thread({siteID, boardID, threadID}, isArchived) || '',
       title: excerpt,
-      className: 'watcher-link'
+      className: 'watcher-link',
+      draggable: false
     });
+
+    if (ThreadWatcher.showThumbnails()) {
+      const thumb = data.thumbURL ?
+        $.el('img', {
+          src: data.thumbURL,
+          alt: '',
+          className: 'watcher-thumb'
+        })
+      :
+        $.el('span', {
+          className: 'watcher-thumb watcher-thumb-missing'
+        });
+      if (Conf['Thread Watcher Thumbnail Hover'] && thumb.nodeName === 'IMG') {
+        $.on(thumb, 'mouseover', ThreadWatcher.cb.thumbnailHoverIn);
+        $.on(thumb, 'mousemove', ThreadWatcher.cb.thumbnailHoverMove);
+        $.on(thumb, 'mouseout', ThreadWatcher.cb.thumbnailHoverOut);
+      }
+      $.add(link, thumb);
+    }
 
     if (Conf['Show Page'] && (data.page != null)) {
       page = $.el('span', {
@@ -635,7 +778,7 @@ var ThreadWatcher = {
     });
     $.add(link, title);
 
-    const div = $.el('div');
+    const div = $.el('div', { draggable: true });
     const fullID = `${boardID}.${threadID}`;
     div.dataset.fullID = fullID;
     div.dataset.siteID = siteID;
@@ -650,8 +793,95 @@ var ThreadWatcher = {
       if (data.unread) { $.addClass(div, 'replies-unread'); }
       if ((data.quotingYou || 0) > (data.dismiss || 0)) { $.addClass(div, 'replies-quoting-you'); }
     }
-    $.add(div, [x, $.tn(' '), link]);
+    for (var event of ['start', 'end', 'enter', 'leave', 'over']) {
+      $.on(div, `drag${event}`, ThreadWatcher.drag[event]);
+    }
+    $.on(div, 'drop', ThreadWatcher.drag.drop);
+    const nodes = [x, link];
+    if (Conf['Show Mark Thread Read Icons']) {
+      const markRead = $.el('a', {
+        href: 'javascript:;',
+        className: 'watcher-mark-read',
+        draggable: false,
+        title: ThreadWatcher.unreadEnabled ?
+          'Mark this watched thread as read'
+        :
+          'Mark read is unavailable because Remember Last Read Post is disabled.'
+      });
+      Icon.set(markRead, 'check');
+      if (!ThreadWatcher.unreadEnabled || (!data.unread && !((data.quotingYou || 0) > (data.dismiss || 0)))) {
+        $.addClass(markRead, 'disabled');
+      }
+      $.on(markRead, 'mousedown pointerdown', e => e.stopPropagation());
+      $.on(markRead, 'click', ThreadWatcher.cb.markRead);
+      nodes.push(markRead);
+    }
+    $.add(div, nodes);
     return div;
+  },
+
+  keyFromLine(line) {
+    return `${line.dataset.siteID}/${line.dataset.fullID}`;
+  },
+
+  threadKey({siteID, boardID, threadID}) {
+    return `${siteID}/${boardID}.${threadID}`;
+  },
+
+  dropPosition(line, e) {
+    const rect = line.getBoundingClientRect();
+    return { before: e.clientY < rect.top + (rect.height / 2) };
+  },
+
+  clearDragState() {
+    if (ThreadWatcher.draggingLine) {
+      ThreadWatcher.draggingLine.classList.remove('drag');
+    }
+    ThreadWatcher.draggingLine = null;
+    for (const line of $$('#watched-threads > div', ThreadWatcher.list)) {
+      line.classList.remove('over');
+      delete line.dataset.dropBefore;
+    }
+  },
+
+  reorderInDOM(sourceLine, targetLine, before) {
+    if (!sourceLine || !targetLine || sourceLine === targetLine) { return; }
+    const list = ThreadWatcher.list;
+    if (!list) { return; }
+    if (before) {
+      list.insertBefore(sourceLine, targetLine);
+    } else {
+      list.insertBefore(sourceLine, targetLine.nextSibling);
+    }
+    ThreadWatcher.persistOrderFromDOM();
+    ThreadWatcher.refreshIcon();
+  },
+
+  persistOrder(threads) {
+    if (!threads) {
+      threads = ThreadWatcher.getAll(false, true);
+    }
+    for (let i = 0; i < threads.length; i++) {
+      const thread = threads[i];
+      const order = i + 1;
+      if (thread.data.order === order) { continue; }
+      thread.data.order = order;
+      ThreadWatcher.db.extend({siteID: thread.siteID, boardID: thread.boardID, threadID: +thread.threadID, val: {order}});
+    }
+  },
+
+  persistOrderFromDOM() {
+    const lines = $$('#watched-threads > div', ThreadWatcher.list);
+    for (let i = 0; i < lines.length; i++) {
+      const line = lines[i];
+      const siteID = line.dataset.siteID;
+      const [boardID, threadID] = line.dataset.fullID.split('.');
+      const order = i + 1;
+      const data = ThreadWatcher.db.get({siteID, boardID, threadID});
+      if (!data || data.order === order) { continue; }
+      data.order = order;
+      ThreadWatcher.db.extend({siteID, boardID, threadID: +threadID, val: {order}});
+    }
   },
 
   setPrefixes(threads) {
@@ -680,6 +910,8 @@ var ThreadWatcher = {
   },
 
   build() {
+    ThreadWatcher.applyLayout();
+    ThreadWatcher.hideThumbnailHover();
     const nodes = [];
     const threads = ThreadWatcher.getAll();
     ThreadWatcher.setPrefixes(threads);
@@ -688,6 +920,10 @@ var ThreadWatcher = {
       var thread;
       if ((data.excerpt == null) && (siteID === g.SITE.ID) && (thread = g.threads.get(`${boardID}.${threadID}`)) && thread.OP) {
         ThreadWatcher.db.extend({boardID, threadID, val: {excerpt: Get.threadExcerpt(thread)}});
+      }
+      if ((data.thumbURL == null) && (siteID === g.SITE.ID) && (thread = g.threads.get(`${boardID}.${threadID}`)) && thread.OP?.file?.thumbURL) {
+        ThreadWatcher.db.extend({boardID, threadID, val: {thumbURL: thread.OP.file.thumbURL}});
+        data.thumbURL = thread.OP.file.thumbURL;
       }
       nodes.push(ThreadWatcher.makeLine(siteID, boardID, threadID, data));
     }
@@ -722,6 +958,123 @@ var ThreadWatcher = {
   refreshIcon() {
     for (var className of ['replies-unread', 'replies-quoting-you']) {
       ThreadWatcher.shortcut.classList.toggle(className, !!$(`.${className}`, ThreadWatcher.dialog));
+    }
+    if (ThreadWatcher.markReadButton) {
+      const hasUnread = !!$('.replies-unread, .replies-quoting-you', ThreadWatcher.list);
+      ThreadWatcher.markReadButton.classList.toggle('disabled', !ThreadWatcher.unreadEnabled || !hasUnread);
+      ThreadWatcher.markReadButton.title = !ThreadWatcher.unreadEnabled ?
+        'Mark all read is unavailable because Remember Last Read Post is disabled.'
+      : hasUnread ?
+        'Mark all watched threads as read'
+      :
+        'No unread watched threads';
+    }
+  },
+
+  ensureThumbnailHover() {
+    if (ThreadWatcher.thumbnailHover) { return ThreadWatcher.thumbnailHover; }
+    const hover = $.el('img', {
+      id: 'tw-ihover',
+      alt: ''
+    });
+    hover.hidden = true;
+    $.add(Header.hover, hover);
+    return (ThreadWatcher.thumbnailHover = hover);
+  },
+
+  hideThumbnailHover() {
+    const hover = ThreadWatcher.thumbnailHover;
+    if (!hover) { return; }
+    hover.hidden = true;
+    hover.removeAttribute('src');
+    hover.removeAttribute('style');
+    delete ThreadWatcher.hoveredThumbnail;
+  },
+
+  showThumbnailHover(thumb) {
+    if (!Conf['Thread Watcher Thumbnail Hover'] || !thumb?.src) { return; }
+    if (!doc.contains(thumb)) { return; }
+    const hover = ThreadWatcher.ensureThumbnailHover();
+    hover.hidden = false;
+    hover.src = thumb.src;
+    ThreadWatcher.hoveredThumbnail = thumb;
+    ThreadWatcher.positionThumbnailHover(thumb);
+    if (!hover.complete) {
+      const onLoad = function() {
+        $.off(hover, 'load', onLoad);
+        if (ThreadWatcher.hoveredThumbnail === thumb) {
+          ThreadWatcher.positionThumbnailHover(thumb);
+        }
+      };
+      $.on(hover, 'load', onLoad);
+    }
+  },
+
+  positionThumbnailHover(thumb) {
+    const hover = ThreadWatcher.thumbnailHover;
+    if (!hover || hover.hidden || !thumb || !ThreadWatcher.dialog) { return; }
+    if (!doc.contains(thumb)) {
+      ThreadWatcher.hideThumbnailHover();
+      return;
+    }
+    const dialogRect = ThreadWatcher.dialog.getBoundingClientRect();
+    const thumbRect = thumb.getBoundingClientRect();
+    const gap = 8;
+    const viewportPadding = 8;
+    const availableWidth = dialogRect.left - gap - viewportPadding;
+    if (availableWidth < 80) {
+      ThreadWatcher.hideThumbnailHover();
+      return;
+    }
+    const targetWidth = Math.max(80, Math.floor((availableWidth * ThreadWatcher.thumbnailPreviewSize()) / 99));
+    hover.style.width = `${targetWidth}px`;
+    hover.style.maxWidth = `${targetWidth}px`;
+    hover.style.maxHeight = `${Math.max(120, doc.clientHeight - (viewportPadding * 2))}px`;
+    const width = hover.offsetWidth;
+    const height = hover.offsetHeight;
+    let left = dialogRect.left - gap - width;
+    if (left < viewportPadding) { left = viewportPadding; }
+    let top = thumbRect.top + ((thumbRect.height - height) / 2);
+    top = Math.max(viewportPadding, Math.min(doc.clientHeight - height - viewportPadding, top));
+    hover.style.left = `${left}px`;
+    hover.style.top = `${top}px`;
+  },
+
+  showThumbnails() {
+    return Conf['Show OP Thumbnails'];
+  },
+
+  thumbnailSize() {
+    let size = parseInt(Conf['Thread Watcher Thumbnail Size'], 10);
+    if (isNaN(size)) { size = 40; }
+    return Math.max(16, Math.min(160, size));
+  },
+
+  thumbnailPreviewSize() {
+    let size = parseInt(Conf['Thread Watcher Thumbnail Preview Size'], 10);
+    if (isNaN(size)) { size = 40; }
+    return Math.max(10, Math.min(99, size));
+  },
+
+  maxHeight() {
+    let height = parseInt(Conf['Thread Watcher Max Height'], 10);
+    if (isNaN(height)) { height = 210; }
+    return Math.max(120, Math.min(999, height));
+  },
+
+  maxWidth() {
+    let width = parseInt(Conf['Thread Watcher Max Width'], 10);
+    if (isNaN(width)) { width = 250; }
+    return Math.max(120, Math.min(999, width));
+  },
+
+  applyLayout() {
+    if (!ThreadWatcher.dialog) { return; }
+    ThreadWatcher.dialog.style.setProperty('--watcher-thumb-size', `${ThreadWatcher.thumbnailSize()}px`);
+    ThreadWatcher.dialog.style.setProperty('--watcher-max-height', `${ThreadWatcher.maxHeight()}px`);
+    ThreadWatcher.dialog.style.setProperty('--watcher-max-width', `${ThreadWatcher.maxWidth()}px`);
+    if (ThreadWatcher.markReadButton) {
+      ThreadWatcher.markReadButton.hidden = !Conf['Show Mark All Read Icon'];
     }
   },
 
@@ -790,11 +1143,15 @@ var ThreadWatcher = {
       data.isDead = true;
     }
     if (thread.OP) { data.excerpt = Get.threadExcerpt(thread); }
+    if (thread.OP?.file?.thumbURL) { data.thumbURL = thread.OP.file.thumbURL; }
     return ThreadWatcher.addRaw(boardID, threadID, data, cb, manual);
   },
 
   addRaw(boardID, threadID, data, cb, manual) {
     const oldData = ThreadWatcher.db.get({ boardID, threadID, defaultValue: dict() });
+    if (oldData.order == null) {
+      oldData.order = ThreadWatcher.getAll().length;
+    }
     delete oldData.last;
     delete oldData.modified;
     $.extend(oldData, data);
@@ -905,6 +1262,37 @@ var ThreadWatcher = {
             return true;
           }
         },
+        {
+          text: 'Max H/W',
+          open() {
+            this.el.innerHTML = `Max H <input type="number" value="${ThreadWatcher.maxHeight()}" min="120" max="999" class="field" style="width:4.2em"> W<input type="number" value="${ThreadWatcher.maxWidth()}" min="120" max="999" class="field" style="width:4.2em">`;
+            const [heightInput, widthInput] = $$('input', this.el);
+            for (const input of [heightInput, widthInput]) {
+              $.on(input, 'click', e => e.stopPropagation());
+              $.on(input, 'mousedown', e => e.stopPropagation());
+              $.on(input, 'pointerdown', e => e.stopPropagation());
+            }
+            $.on(heightInput, 'change', function() {
+              let height = parseInt(this.value, 10);
+              if (isNaN(height)) { height = 210; }
+              height = Math.max(120, Math.min(999, height));
+              this.value = `${height}`;
+              $.set('Thread Watcher Max Height', height);
+              Conf['Thread Watcher Max Height'] = height;
+              ThreadWatcher.applyLayout();
+            });
+            $.on(widthInput, 'change', function() {
+              let width = parseInt(this.value, 10);
+              if (isNaN(width)) { width = 250; }
+              width = Math.max(120, Math.min(999, width));
+              this.value = `${width}`;
+              $.set('Thread Watcher Max Width', width);
+              Conf['Thread Watcher Max Width'] = width;
+              ThreadWatcher.applyLayout();
+            });
+            return true;
+          }
+        },
       ];
 
       for (var {text, title, cb, open} of entries) {
@@ -922,16 +1310,23 @@ var ThreadWatcher = {
 
       // Settings checkbox entries:
       for (var name in Config.threadWatcher) {
+        if (['Show OP Thumbnails', 'Thread Watcher Thumbnail Hover'].includes(name)) { continue; }
         var conf = Config.threadWatcher[name];
         this.addCheckbox(name, conf[1]);
       }
 
+      this.addThumbnailControls();
+
     },
 
     addCheckbox(name, desc) {
+      const label = ({
+        'Show Mark All Read Icon': 'Mark All Read Icon',
+        'Show Mark Thread Read Icons': 'Mark Thread Read Icons'
+      })[name] || name;
       const entry = {
         type: 'thread watcher',
-        el: UI.checkbox(name, name.replace(' Thread Watcher', ''))
+        el: UI.checkbox(name, label.replace(' Thread Watcher', ''))
       };
       entry.el.title = desc;
       const input = entry.el.firstElementChild;
@@ -941,10 +1336,71 @@ var ThreadWatcher = {
         entry.el.title += '\n[Remember Last Read Post is disabled.]';
       }
       $.on(input, 'change', $.cb.checked);
-      if (['Current Board', 'Show Page', 'Show Unread Count', 'Show Site Prefix'].includes(name))
+      if (['Current Board', 'Show Page', 'Show Unread Count', 'Show Mark All Read Icon', 'Show Site Prefix', 'Show Mark Thread Read Icons'].includes(name))
         $.on(input, 'change', () => ThreadWatcher.refresh());
       if (['Show Page', 'Show Unread Count', 'Auto Update Thread Watcher'].includes(name))
         $.on(input, 'change', ThreadWatcher.fetchAuto);
+      return this.menu.addEntry(entry);
+    },
+
+    addThumbnailControls() {
+      const entry = {
+        type: 'thread watcher',
+        el: $.el('a', {
+          textContent: 'Thumbnails',
+          href: 'javascript:;'
+        }),
+        open() {
+          this.el.innerHTML = `<span style="display:inline-flex;align-items:center;gap:4px;"><label style="display:inline-flex;align-items:center;gap:4px;"><input type="checkbox"${Conf['Show OP Thumbnails'] ? ' checked' : ''}>Thumbnails</label><input type="number" value="${ThreadWatcher.thumbnailSize()}" min="16" max="160" class="field" style="width:3.2em"></span><br><span style="display:inline-flex;align-items:center;gap:4px;"><label style="display:inline-flex;align-items:center;gap:4px;"><input type="checkbox"${Conf['Thread Watcher Thumbnail Hover'] ? ' checked' : ''}>Hover Preview</label><input type="number" value="${ThreadWatcher.thumbnailPreviewSize()}" min="10" max="99" class="field" style="width:3.2em"><span>%</span></span>`;
+          const [thumbToggle, previewToggle] = $$('input[type="checkbox"]', this.el);
+          const [sizeInput, previewSizeInput] = $$('input[type="number"]', this.el);
+          for (const input of [thumbToggle, previewToggle, sizeInput, previewSizeInput]) {
+            $.on(input, 'click', e => e.stopPropagation());
+            $.on(input, 'mousedown', e => e.stopPropagation());
+            $.on(input, 'pointerdown', e => e.stopPropagation());
+          }
+          $.on(thumbToggle, 'change', function() {
+            $.set('Show OP Thumbnails', this.checked);
+            Conf['Show OP Thumbnails'] = this.checked;
+            if (!this.checked) {
+              ThreadWatcher.hideThumbnailHover();
+            }
+            if (this.checked) {
+              ThreadWatcher.fetchAllStatus();
+            }
+            ThreadWatcher.refresh();
+          });
+          $.on(previewToggle, 'change', function() {
+            $.set('Thread Watcher Thumbnail Hover', this.checked);
+            Conf['Thread Watcher Thumbnail Hover'] = this.checked;
+            if (!this.checked) {
+              ThreadWatcher.hideThumbnailHover();
+            }
+            ThreadWatcher.refresh();
+          });
+          $.on(sizeInput, 'change', function() {
+            let size = parseInt(this.value, 10);
+            if (isNaN(size)) { size = 40; }
+            size = Math.max(16, Math.min(160, size));
+            this.value = `${size}`;
+            $.set('Thread Watcher Thumbnail Size', size);
+            Conf['Thread Watcher Thumbnail Size'] = size;
+            ThreadWatcher.applyLayout();
+            ThreadWatcher.refresh();
+          });
+          $.on(previewSizeInput, 'change', function() {
+            let size = parseInt(this.value, 10);
+            if (isNaN(size)) { size = 40; }
+            size = Math.max(10, Math.min(99, size));
+            this.value = `${size}`;
+            $.set('Thread Watcher Thumbnail Preview Size', size);
+            Conf['Thread Watcher Thumbnail Preview Size'] = size;
+            ThreadWatcher.positionThumbnailHover(ThreadWatcher.hoveredThumbnail);
+          });
+          return true;
+        }
+      };
+      entry.open = entry.open.bind(entry);
       return this.menu.addEntry(entry);
     }
   }

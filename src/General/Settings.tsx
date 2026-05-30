@@ -4,7 +4,8 @@ import SaucePage from './Settings/Sauce.html';
 import AdvancedPage from './Settings/Advanced.html';
 import KeybindsPage from './Settings/Keybinds.html';
 import FilterSelectPage from './Settings/Filter-select.html';
-import ExportDialog from './Settings/Export.html';
+import SimpleFiltersPage from './Settings/SimpleFilters.html';
+import StylingPage from './Settings/Styling.html';
 import Redirect from '../Archive/Redirect';
 import Config from '../config/Config';
 import ImageHost from '../Images/ImageHost';
@@ -18,35 +19,66 @@ import Unread from '../Monitoring/Unread';
 import $$ from '../platform/$$';
 import $ from '../platform/$';
 import meta from '../../package.json';
-import { c, Conf, d, doc, g } from '../globals/globals';
+import { c, Conf, d, doc, E, g } from '../globals/globals';
 import Header from './Header';
 import h, { hFragment } from '../globals/jsx';
 import { dict } from '../platform/helpers';
 import Icon from '../Icons/icon';
-import UI from './UI';
+import { dragstart } from './UI';
+import Filter from '../Filtering/Filter';
+import QuoteYou from '../Quotelinks/QuoteYou';
+import Index from './Index';
 
 var Settings = {
   dialog: undefined as HTMLDivElement | undefined,
+  searchQuery: '',
+  activeSection: null as any,
+  renderedSection: null as any,
+  rememberLayout: false,
+  savedWindowLayout: '',
+  detailsState: dict() as Record<string, boolean>,
+  pointerDownInsideDialog: false,
+  customCSSEditorThemeObserver: null as MutationObserver | null,
+  stylingPreviewPanel: null as HTMLDivElement | null,
+  prepareDrag(e) {
+    const settingsWindow = $('#fourchanx-settings', Settings.dialog) as HTMLDivElement;
+    const rect = settingsWindow.getBoundingClientRect();
+    settingsWindow.style.left = `${rect.left}px`;
+    settingsWindow.style.top = `${rect.top}px`;
+    settingsWindow.style.right = '';
+    settingsWindow.style.bottom = '';
+    settingsWindow.style.margin = '0';
+    settingsWindow.style.transform = 'none';
+    dragstart.call(this, e);
+  },
 
   init() {
     // 4chan X settings link
     const link = $.el('a', {
       className: 'settings-link',
       title:     `${meta.name} Settings`,
-      href:      'javascript:;'
+      href:      '#'
     });
     Icon.set(link, 'wrench', 'Settings');
-    $.on(link, 'click', Settings.open);
+    $.on(link, 'click', e => {
+      e.preventDefault();
+      Settings.open();
+    });
 
     Header.addShortcut('settings', link, 820);
 
     const add = this.addSection;
 
-    add('Main',     this.main);
-    add('Filter',   this.filter);
-    add('Sauce',    this.sauce);
-    add('Advanced', this.advanced);
-    add('Keybinds', this.keybinds);
+    add('All Settings',    this.allSettings);
+    add('General',         this.general);
+    add('Interface',       this.interface);
+    add('Threads & Posts', this.threadsAndPosts);
+    add('Media',           this.media);
+    add('Posting',         this.posting);
+    add('Filtering',       this.filter);
+    add('Styling',         this.styling);
+    add('Keybinds',        this.keybinds);
+    add('Advanced',        this.advanced);
 
     $.on(d, 'AddSettingsSection',   Settings.addSection);
     $.on(d, 'OpenSettings', e => Settings.open(e.detail));
@@ -60,6 +92,8 @@ var Settings = {
         $.global('disableNativeExtensionNoStorage');
       }
     }
+
+    Settings.applyStylingVars();
   },
 
   open(openSection) {
@@ -70,40 +104,65 @@ var Settings = {
     Settings.dialog = (dialog = $.el('div',
       { id: 'overlay' }
       , SettingsPage));
+    const settingsWindow = $('#fourchanx-settings', dialog) as HTMLDivElement;
 
-    $.on($('.export', dialog), 'click',  Settings.export);
-    $.on($('.import', dialog), 'click',  Settings.import);
-    $.on($('.reset',  dialog), 'click',  Settings.reset);
-    $.on($('input',   dialog), 'change', Settings.onImport);
+    $.on($('.export', dialog), 'click', e => { e.preventDefault(); Settings.export(); });
+    $.on($('.import', dialog), 'click', e => { e.preventDefault(); Settings.import.call(e.currentTarget); });
+    $.on($('.reset',  dialog), 'click', e => { e.preventDefault(); Settings.reset(); });
+    $.on($('input[type=file]', dialog), 'change', Settings.onImport);
+    $.on($('.settings-search input', dialog), 'input', Settings.onSearchInput);
+    $.on($('.expand-all',   dialog), 'click', e => { e.preventDefault(); Settings.toggleAllDetails(true); });
+    $.on($('.collapse-all', dialog), 'click', e => { e.preventDefault(); Settings.toggleAllDetails(false); });
+    $.on($('.move', settingsWindow), 'touchstart mousedown', Settings.prepareDrag);
+    $.on($('#settings-remember-layout', dialog), 'change', Settings.onRememberLayoutChange);
+    for (const actionEl of $$('.settings-titlebar-actions > *', settingsWindow)) {
+      $.on(actionEl, 'touchstart mousedown', e => e.stopPropagation());
+    }
 
     const links = [];
-    for (var section of Settings.sections) {
-      var link = $.el('a', {
+    for (const section of Settings.sections) {
+      const link = $.el('a', {
         className: `tab-${section.hyphenatedTitle}`,
         textContent: section.title,
-        href: 'javascript:;'
+        href: '#'
       }
       );
-      $.on(link, 'click', Settings.openSection.bind(section));
-      links.push(link, $.tn(' | '));
-      if (section.title === openSection) { sectionToOpen = link; }
+      $.on(link, 'click', e => {
+        e.preventDefault();
+        Settings.openSection.call(section);
+      });
+      links.push(link);
+      if (
+        section.title === openSection
+        || (['Filter', 'Filters', 'Simple Filters'].includes(openSection) && section.title === 'Filtering')
+        || (openSection === 'Main' && section.title === 'General')
+      ) { sectionToOpen = link; }
     }
-    links.pop();
     $.add($('.sections-list', dialog), links);
     if (openSection !== 'none') { (sectionToOpen ? sectionToOpen : links[0]).click(); }
 
     Icon.set($('.close', dialog), 'xmark');
-    $.on($('.close', dialog), 'click', Settings.close);
+    $.on($('.close', dialog), 'click', e => { e.preventDefault(); Settings.close(); });
     $.on(window, 'beforeunload', Settings.close);
-    $.on(dialog, 'click', () => {
+    $.on(dialog, 'mousedown touchstart', e => {
+      Settings.pointerDownInsideDialog = settingsWindow.contains(e.target as Node);
+    });
+    $.on(dialog, 'click', e => {
+      if (e.target !== dialog) { return; }
+      if (Settings.pointerDownInsideDialog) {
+        Settings.pointerDownInsideDialog = false;
+        return;
+      }
       // Do not close when the mouse ends up outside the modal when selecting text in an input.
       if (d.activeElement?.tagName === 'INPUT' || d.activeElement?.tagName === 'TEXTAREA') return;
       Settings.close();
     });
-    $.on(dialog.firstElementChild, 'click', e => e.stopPropagation());
+    $.on(settingsWindow, 'click', e => e.stopPropagation());
 
     $.add(d.body, dialog);
+    Settings.restoreWindowLayout(settingsWindow);
     links[0].focus();
+    Settings.loadLayoutPrefs();
 
     $.event('OpenSettings', null, dialog);
   },
@@ -112,8 +171,288 @@ var Settings = {
     if (!Settings.dialog) { return; }
     // Unfocus current field to trigger change event.
     d.activeElement?.blur();
+    if (Settings.rememberLayout) {
+      Settings.persistCurrentDetailsState();
+      const settingsWindow = $('#fourchanx-settings', Settings.dialog) as HTMLDivElement | null;
+      if (settingsWindow) Settings.saveWindowLayout(settingsWindow);
+    }
+    Settings.closeImpExpPicker();
     $.rm(Settings.dialog);
+    Settings.searchQuery = '';
+    Settings.activeSection = null;
+    Settings.renderedSection = null;
+    Settings.rememberLayout = false;
+    Settings.savedWindowLayout = '';
+    Settings.detailsState = dict();
+    Settings.customCSSEditorThemeObserver?.disconnect();
+    Settings.customCSSEditorThemeObserver = null;
+    Settings.closeStylingPreview();
     delete Settings.dialog;
+  },
+
+  toggleAllDetails(open) {
+    if (!Settings.dialog) return;
+    const section = $('section', Settings.dialog);
+    if (!section) return;
+    for (const details of $$('details', section)) {
+      (details as HTMLDetailsElement).open = open;
+    }
+    if (Settings.rememberLayout) {
+      Settings.persistCurrentDetailsState();
+      $.set('settings.detailsState', Settings.detailsState);
+    }
+  },
+
+  loadLayoutPrefs() {
+    if (!Settings.dialog) return;
+    $.get({
+      'settings.rememberLayout': false,
+      'settings.windowLayout': '',
+      'settings.detailsState': dict(),
+    }, prefs => {
+      if (!Settings.dialog) return;
+      Settings.rememberLayout = !!prefs['settings.rememberLayout'];
+      Settings.savedWindowLayout = typeof prefs['settings.windowLayout'] === 'string' ? prefs['settings.windowLayout'] : '';
+      const detailsState = prefs['settings.detailsState'];
+      Settings.detailsState = (detailsState && typeof detailsState === 'object') ? detailsState : dict();
+
+      const toggle = $('#settings-remember-layout', Settings.dialog) as HTMLInputElement | null;
+      if (toggle) toggle.checked = Settings.rememberLayout;
+
+      const settingsWindow = $('#fourchanx-settings', Settings.dialog) as HTMLDivElement | null;
+      if (settingsWindow && Settings.rememberLayout) {
+        Settings.restoreWindowLayout(settingsWindow);
+      }
+
+      if (Settings.renderedSection) {
+        const section = $('section', Settings.dialog);
+        if (section) {
+          Settings.decorateDetailsWithKeys(section, Settings.renderedSection);
+        }
+      }
+    });
+  },
+
+  onRememberLayoutChange() {
+    const enabled = (this as HTMLInputElement).checked;
+    Settings.rememberLayout = enabled;
+    $.set('settings.rememberLayout', enabled);
+
+    if (!enabled) {
+      Settings.savedWindowLayout = '';
+      Settings.detailsState = dict();
+      $.delete(['settings.windowLayout', 'settings.detailsState']);
+      return;
+    }
+
+    if (Settings.dialog) {
+      const settingsWindow = $('#fourchanx-settings', Settings.dialog) as HTMLDivElement | null;
+      if (settingsWindow) Settings.saveWindowLayout(settingsWindow);
+      Settings.persistCurrentDetailsState();
+      $.set({
+        'settings.windowLayout': Settings.savedWindowLayout,
+        'settings.detailsState': Settings.detailsState
+      });
+    }
+  },
+
+  restoreWindowLayout(settingsWindow: HTMLDivElement) {
+    if (Settings.rememberLayout && Settings.savedWindowLayout) {
+      settingsWindow.style.cssText += `;${Settings.savedWindowLayout}`;
+      return;
+    }
+    if (!settingsWindow.style.left && !settingsWindow.style.right && !settingsWindow.style.top && !settingsWindow.style.bottom) {
+      const rect = settingsWindow.getBoundingClientRect();
+      settingsWindow.style.left = `${Math.max(0, (doc.clientWidth - rect.width) / 2)}px`;
+      settingsWindow.style.top = `${Math.max(0, (doc.clientHeight - rect.height) / 2)}px`;
+    }
+  },
+
+  saveWindowLayout(settingsWindow: HTMLDivElement) {
+    const style = settingsWindow.style;
+    let layout = '';
+    if (style.left) layout += `left:${style.left};`;
+    if (style.right) layout += `right:${style.right};`;
+    if (style.top) layout += `top:${style.top};`;
+    if (style.bottom) layout += `bottom:${style.bottom};`;
+    if (style.width) layout += `width:${style.width};`;
+    if (style.height) layout += `height:${style.height};`;
+    Settings.savedWindowLayout = layout;
+    $.set('settings.windowLayout', layout);
+  },
+
+  detailStateScope(root, sectionInfo) {
+    let sectionTitle = sectionInfo?.title || '';
+    if (sectionTitle === 'All Settings') {
+      const block = root.closest('.settings-section-block') as HTMLElement | null;
+      sectionTitle = $('.settings-section-header', block)?.textContent?.trim() || '';
+    }
+    // Use the same scope key for both "All Settings" and single-section views
+    // so collapse state stays in sync across both places.
+    return `section:${sectionTitle}`;
+  },
+
+  detailsStateKey(details: HTMLDetailsElement, sectionInfo) {
+    const root = details.parentElement as HTMLElement | null;
+    if (!root) return '';
+    const scope = Settings.detailStateScope(root, sectionInfo);
+    const summary = details.querySelector('summary')?.textContent?.trim() || '';
+    const peers = $$('details', root)
+      .filter(peer => (peer.querySelector('summary')?.textContent?.trim() || '') === summary);
+    const index = Math.max(0, peers.indexOf(details));
+    return `${scope}|${summary}|${index}`;
+  },
+
+  decorateDetailsWithKeys(sectionRoot, sectionInfo, applyRememberedState = true) {
+    for (const details of $$('details', sectionRoot)) {
+      const key = Settings.detailsStateKey(details as HTMLDetailsElement, sectionInfo);
+      if (!key) continue;
+      (details as HTMLElement).dataset.detailsStateKey = key;
+      if (applyRememberedState && Settings.rememberLayout && Object.prototype.hasOwnProperty.call(Settings.detailsState, key)) {
+        (details as HTMLDetailsElement).open = !!Settings.detailsState[key];
+      }
+      if ((details as any)._detailsStateBound) continue;
+      (details as any)._detailsStateBound = true;
+      $.on(details, 'toggle', function() {
+        if (!Settings.rememberLayout) return;
+        const stateKey = (this as HTMLElement).dataset.detailsStateKey;
+        if (!stateKey) return;
+        Settings.detailsState[stateKey] = (this as HTMLDetailsElement).open;
+        $.set('settings.detailsState', Settings.detailsState);
+      });
+    }
+  },
+
+  persistCurrentDetailsState() {
+    if (!Settings.dialog || !Settings.renderedSection) return;
+    const section = $('section', Settings.dialog);
+    if (!section) return;
+    Settings.decorateDetailsWithKeys(section, Settings.renderedSection, false);
+    for (const details of $$('details', section)) {
+      const key = (details as HTMLElement).dataset.detailsStateKey;
+      if (!key) continue;
+      Settings.detailsState[key] = (details as HTMLDetailsElement).open;
+    }
+  },
+
+  getActiveSection() {
+    const selectedTab = $('.tab-selected', Settings.dialog);
+    if (!selectedTab) return null;
+    for (const section of Settings.sections) {
+      if (selectedTab.classList.contains(`tab-${section.hyphenatedTitle}`)) return section;
+    }
+    return null;
+  },
+
+  onSearchInput() {
+    Settings.searchQuery = (this as HTMLInputElement).value.toLowerCase().trim();
+    if (Settings.searchQuery) {
+      Settings.ensureAllSettingsRendered();
+    } else {
+      Settings.renderActiveSection();
+    }
+    Settings.applySearch();
+  },
+
+  applySearch() {
+    if (!Settings.dialog) return;
+    const query = Settings.searchQuery;
+    const win = $('#fourchanx-settings', Settings.dialog);
+    win.classList.toggle('settings-searching', !!query);
+    const section = $('section', Settings.dialog);
+    if (!section) return;
+
+    for (const el of $$('.settings-search-hidden', section)) {
+      $.rmClass(el, 'settings-search-hidden');
+    }
+    Settings.highlightSettingRow(section, query);
+
+    if (!query) return;
+
+    for (const el of $$('div[data-name], tr[data-name], details, .settings-group-heading, table, thead, tbody, summary, h4, .settings-section-block', section)) {
+      $.addClass(el, 'settings-search-hidden');
+    }
+
+    for (const row of $$('div[data-name], tr[data-name]', section)) {
+      const settingTitle = `${row.dataset.settingTitle || ''}`.toLowerCase();
+      const settingDescription = `${row.dataset.settingDescription || ''}`.toLowerCase();
+      const settingName = `${row.dataset.name || ''}`.toLowerCase();
+      const fullText = `${settingName} ${settingTitle} ${settingDescription} ${row.textContent || ''}`.toLowerCase();
+      if (fullText.indexOf(query) < 0) continue;
+
+      const rowEl = row as HTMLElement;
+      Settings.revealSearchMatch(rowEl, section);
+
+      // Only reveal descendant rider settings when the setting's title itself
+      // matched, to avoid broad description matches expanding unrelated rows.
+      const titleMatched = settingTitle.indexOf(query) >= 0 || settingName.indexOf(query) >= 0;
+      if (!titleMatched) continue;
+      for (const sublist of $$('.suboption-list', rowEl)) {
+        for (const rider of $$('div[data-name], tr[data-name]', sublist)) {
+          Settings.revealSearchMatch(rider as HTMLElement, section);
+        }
+      }
+    }
+
+    for (const el of $$('summary, th, h4', section)) {
+      if ((el.textContent || '').toLowerCase().indexOf(query) < 0) continue;
+      Settings.revealSearchMatch(el as HTMLElement, section);
+    }
+
+    for (const heading of $$('.settings-section-header', section)) {
+      if (!Settings.matchesSectionTitle(heading.textContent || '', query)) continue;
+      const block = heading.closest('.settings-section-block') as HTMLElement | null;
+      if (!block) continue;
+      for (const el of $$('.settings-search-hidden', block)) {
+        $.rmClass(el, 'settings-search-hidden');
+      }
+      Settings.revealSearchMatch(block, section);
+    }
+  },
+
+  matchesSectionTitle(text, query) {
+    const title = (text || '').toLowerCase();
+    if (!title || !query) return false;
+    if (query.includes(' ')) return title.indexOf(query) >= 0;
+    const rx = RegExp(`\\b${Settings.escapeRegExp(query)}\\b`, 'i');
+    return rx.test(text);
+  },
+
+  revealSearchMatch(node, root) {
+    let cur = node;
+    while (cur && cur !== root) {
+      cur.classList.remove('settings-search-hidden');
+      if (cur.tagName === 'DETAILS') {
+        const summary = cur.firstElementChild as HTMLElement | null;
+        if (summary?.tagName === 'SUMMARY') {
+          summary.classList.remove('settings-search-hidden');
+        }
+      } else if (cur.tagName === 'TABLE') {
+        for (const child of cur.children) {
+          if (child.tagName === 'THEAD' || child.tagName === 'TBODY') {
+            child.classList.remove('settings-search-hidden');
+          }
+        }
+      }
+      cur = cur.parentElement;
+    }
+  },
+
+  highlightSettingRow(root, query) {
+    for (const el of $$('.setting-title, .setting-description, .settings-section-header, summary, th, h4', root)) {
+      const source = (el as HTMLElement).dataset.rawText ?? el.textContent ?? '';
+      (el as HTMLElement).dataset.rawText = source;
+      if (query) {
+        const rx = RegExp(`(${Settings.escapeRegExp(query)})`, 'ig');
+        el.innerHTML = source.replace(rx, '<mark>$1</mark>');
+      } else {
+        el.textContent = source;
+      }
+    }
+  },
+
+  escapeRegExp(s) {
+    return s.replace(/[.*+?^${}()|[\]\\]/g, '\\$&');
   },
 
   sections: [],
@@ -122,22 +461,74 @@ var Settings = {
     if (typeof title !== 'string') {
       ({title, open} = title.detail);
     }
-    const hyphenatedTitle = title.toLowerCase().replace(/\s+/g, '-');
+    const hyphenatedTitle = title.toLowerCase().replace(/[^a-z0-9]+/g, '-').replace(/^-|-$/g, '');
     Settings.sections.push({title, hyphenatedTitle, open});
   },
 
   openSection() {
+    Settings.activeSection = this;
+    Settings.selectSectionTab(this);
+    if (Settings.searchQuery && this.title !== 'All Settings') {
+      Settings.ensureAllSettingsRendered();
+      Settings.applySearch();
+      return;
+    }
+    Settings.renderSection(this);
+  },
+
+  selectSectionTab(sectionInfo) {
     let selected;
     if (selected = $('.tab-selected', Settings.dialog)) {
       $.rmClass(selected, 'tab-selected');
     }
-    $.addClass($(`.tab-${this.hyphenatedTitle}`, Settings.dialog), 'tab-selected');
+    $.addClass($(`.tab-${sectionInfo.hyphenatedTitle}`, Settings.dialog), 'tab-selected');
+  },
+
+  getAllSettingsSection() {
+    return Settings.sections.find(section => section.title === 'All Settings') || null;
+  },
+
+  ensureAllSettingsRendered() {
+    const allSettingsSection = Settings.getAllSettingsSection();
+    if (!allSettingsSection) return;
+    if (Settings.renderedSection === allSettingsSection) return;
+    Settings.renderSection(allSettingsSection);
+  },
+
+  renderActiveSection() {
+    const section = Settings.activeSection || Settings.getActiveSection() || Settings.sections[0];
+    if (!section) return;
+    Settings.renderSection(section);
+  },
+
+  renderSection(sectionInfo) {
     const section = $('section', Settings.dialog);
+    if (!section) return;
     $.rmAll(section);
-    section.className = `section-${this.hyphenatedTitle}`;
-    this.open(section, g);
+    section.className = `section-${sectionInfo.hyphenatedTitle}`;
+    sectionInfo.open(section, g);
+    Settings.decorateDetailsWithKeys(section, sectionInfo);
     section.scrollTop = 0;
+    Settings.renderedSection = sectionInfo;
+    Settings.applySearch();
     $.event('OpenSettings', null, section);
+  },
+
+  allSettings(section) {
+    for (const sectionInfo of Settings.sections) {
+      if (sectionInfo.title === 'All Settings') continue;
+      const block = $.el('div', {
+        className: `settings-section-block section-${sectionInfo.hyphenatedTitle}`,
+      });
+      const heading = $.el('h3', {
+        className: 'settings-section-header',
+        textContent: sectionInfo.title,
+      });
+      const content = $.el('div', { className: 'settings-section-content' });
+      sectionInfo.open(content, g);
+      $.add(block, [heading, content]);
+      $.add(section, block);
+    }
   },
 
   warnings: {
@@ -168,79 +559,154 @@ Enable it on boards.${location.hostname.split('.')[1]}.org in your browser's pri
     }
   },
 
-  main(section) {
-    let key;
-    const warnings = $.el('fieldset',
-      {hidden: true}
-    ,
-      {innerHTML: '<legend>Warnings</legend><ul></ul>'});
-    const addWarning = function(item) {
-      $.add($('ul', warnings), item);
-      warnings.hidden = false;
-    };
-    for (key in Settings.warnings) {
-      var warning = Settings.warnings[key];
-      warning(addWarning);
-    }
-    $.add(section, warnings);
-
-    const items  = dict();
-    const inputs = dict();
-    const addCheckboxes = function(root, obj) {
-      const containers = [root];
-      const result = [];
-      for (key in obj) {
-        var arr = obj[key];
-        if (arr instanceof Array) {
-          var description = arr[1];
-          var div = $.el('div',
-            { innerHTML: `<label><input type="checkbox" name="${key}">${key}</label><span class="description">: ${description}</span>` });
-          div.dataset.name = key;
-          var input = $('input', div);
-          $.on(input, 'change', $.cb.checked);
-          $.on(input, 'change', function() { this.parentNode.parentNode.dataset.checked = this.checked; });
-          items[key] = Conf[key];
-          inputs[key] = input;
-          var level = arr[2] || 0;
-          if (containers.length <= level) {
-            var container = $.el('div', {className: 'suboption-list' });
-            $.add(containers[containers.length-1].lastElementChild, container);
-            containers[level] = container;
-          } else if (containers.length > (level+1)) {
-            containers.splice(level+1, containers.length - (level+1));
-          }
-          result.push($.add(containers[level], div));
-        }
+  getMainSettingLookup() {
+    const lookup = dict();
+    for (const keyFS in Config.main) {
+      const obj = Config.main[keyFS];
+      for (const key in obj) {
+        const arr = obj[key];
+        if (Array.isArray(arr)) lookup[key] = arr;
       }
-      return result;
-    };
+    }
+    return lookup;
+  },
 
-    for (var keyFS in Config.main) {
-      var obj = Config.main[keyFS];
-      var fs = $.el('fieldset',
-        { innerHTML: `<legend>${keyFS}</legend>` });
-      addCheckboxes(fs, obj);
+  addCheckboxes(root, obj, items, inputs, includeSetting = (_key: string) => true) {
+    const containers = [root];
+    let count = 0;
+    for (const key in obj) {
+      const arr = obj[key];
+      if (!(arr instanceof Array)) continue;
+      if (!includeSetting(key)) continue;
+      const description = arr[1] || '';
+      const div = $.el('div',
+        { innerHTML: `<label><input type="checkbox" name="${key}"><span class="setting-title">${key}</span></label><span class="description">: <span class="setting-description">${description}</span></span>` });
+      div.dataset.name = key;
+      div.dataset.settingTitle = key;
+      div.dataset.settingDescription = description;
+      const input = $('input', div) as HTMLInputElement;
+      $.on(input, 'change', $.cb.checked);
+      $.on(input, 'change', function() { this.parentNode.parentNode.dataset.checked = this.checked; });
+      items[key] = Conf[key];
+      inputs[key] = input;
+      const level = arr[2] || 0;
+      if (containers.length <= level) {
+        const container = $.el('div', { className: 'suboption-list' });
+        $.add(containers[containers.length-1].lastElementChild, container);
+        containers[level] = container;
+      } else if (containers.length > (level+1)) {
+        containers.splice(level+1, containers.length - (level+1));
+      }
+      $.add(containers[level], div);
+      count++;
+    }
+    return count;
+  },
+
+  selectGroup(obj, keys, baseLevel = 0) {
+    const group = dict();
+    for (const key of keys) {
+      const arr = obj[key];
+      if (!arr) continue;
+      const [defaultValue, description, level] = arr;
+      const adjustedLevel = Math.max(0, (level || 0) - baseLevel);
+      group[key] = [defaultValue, description, adjustedLevel];
+    }
+    return group;
+  },
+
+  renderMainGroups(section, options) {
+    const {
+      categories,
+      includeWarnings,
+      includeJSONIndex,
+      includeHiddenCount,
+      hideLegendFor = [],
+      includeSetting = (_key: string) => true
+    } = options;
+
+    if (includeWarnings) {
+      const warnings = $.el('details',
+        { hidden: true, open: true },
+        { innerHTML: '<summary>Warnings</summary><ul></ul>' });
+      const addWarning = function(item) {
+        $.add($('ul', warnings), item);
+        warnings.hidden = false;
+      };
+      for (const key in Settings.warnings) {
+        Settings.warnings[key](addWarning);
+      }
+      $.add(section, warnings);
+    }
+
+    const items = dict();
+    const inputs = dict();
+
+    for (const cat of categories) {
+      let keyFS, subgroups;
+      if (typeof cat === 'string') {
+        keyFS = cat;
+        subgroups = null;
+      } else {
+        keyFS = cat.name;
+        subgroups = cat.subgroups;
+      }
+      const obj = Config.main[keyFS];
+      if (!obj) continue;
+
+      if (subgroups) {
+        for (const [legendTitle, keys, baseLevel] of subgroups) {
+          const fs = $.el('details',
+            { open: true },
+            { innerHTML: `<summary>${legendTitle}</summary>` });
+          const group = Settings.selectGroup(obj, keys, baseLevel || 0);
+          if (!Settings.addCheckboxes(fs, group, items, inputs, includeSetting)) continue;
+          if (legendTitle === 'Captcha') {
+            $.add(fs, $.el('p',
+              { innerHTML: `For more info on captcha options and issues, see the <a href="${meta.captchaFAQ}" target="_blank">captcha FAQ</a>.` }));
+          }
+          $.add(section, fs);
+        }
+        continue;
+      }
+
+      const legendTitle = keyFS === 'Filtering' ? 'Content Controls' : keyFS;
+      let fs;
+      if (hideLegendFor.includes(keyFS)) {
+        fs = $.el('div');
+      } else {
+        fs = $.el('details',
+          { open: true },
+          { innerHTML: `<summary>${legendTitle}</summary>` });
+      }
+      if (!Settings.addCheckboxes(fs, obj, items, inputs, includeSetting)) continue;
       if (keyFS === 'Posting and Captchas') {
         $.add(fs, $.el('p',
-          {innerHTML: 'For more info on captcha options and issues, see the <a href="' + meta.captchaFAQ + '" target="_blank">captcha FAQ</a>.'})
-        );
+          { innerHTML: `For more info on captcha options and issues, see the <a href="${meta.captchaFAQ}" target="_blank">captcha FAQ</a>.` }));
       }
       $.add(section, fs);
     }
-    addCheckboxes($('div[data-name="JSON Index"] > .suboption-list', section), Config.Index);
+
+    if (includeJSONIndex) {
+      const root = $('div[data-name="JSON Index"] > .suboption-list', section);
+      if (root) Settings.addCheckboxes(root, Config.Index, items, inputs);
+    }
 
     $.get(items, function(items) {
-      for (key in items) {
-        var val = items[key];
+      for (const key in items) {
+        const val = items[key];
+        if (!inputs[key]) continue;
         inputs[key].checked = val;
         inputs[key].parentNode.parentNode.dataset.checked = val;
       }
     });
 
+    if (!includeHiddenCount) return;
+
     const div = $.el('div',
-      {innerHTML: '<button></button><span class="description">: Clear manually-hidden threads and posts on all boards. Reload the page to apply.'});
+      { innerHTML: '<button></button><span class="description">: Clear manually-hidden threads and posts on all boards. Reload the page to apply.' });
     const button = $('button', div);
-    $.get({hiddenThreads: dict(), hiddenPosts: dict()}, function({hiddenThreads, hiddenPosts}) {
+    $.get({ hiddenThreads: dict(), hiddenPosts: dict() }, function({ hiddenThreads, hiddenPosts }) {
       let board, ID, site, thread;
       let hiddenNum = 0;
       for (ID in hiddenThreads) {
@@ -279,7 +745,7 @@ Enable it on boards.${location.hostname.split('.')[1]}.org in your browser's pri
     });
     $.on(button, 'click', function() {
       this.textContent = 'Hidden: 0';
-      $.get('hiddenThreads', dict(), function({hiddenThreads}){
+      $.get('hiddenThreads', dict(), function({ hiddenThreads }) {
         if ($.hasStorage && (g.SITE.software === 'yotsuba')) {
           let boardID;
           for (boardID in hiddenThreads['4chan.org']?.boards) {
@@ -292,79 +758,1866 @@ Enable it on boards.${location.hostname.split('.')[1]}.org in your browser's pri
         $.delete(['hiddenThreads', 'hiddenPosts']);
       });
     });
-    $('input[name="Stubs"]', section).closest('fieldset').insertAdjacentElement('beforeend', div);
+    const stubs = $('input[name="Stubs"]', section);
+    if (stubs) stubs.closest('details').insertAdjacentElement('beforeend', div);
+    else $.add(section, div);
   },
 
-  isExportModalOpen: false,
+  addSelectFieldset(section, title, rows) {
+    const fs = $.el('details',
+      { open: true },
+      { innerHTML: `<summary>${title}</summary>` });
+    const items = dict();
+    const inputs = dict();
+    for (const row of rows) {
+      const div = $.el('div');
+      div.dataset.name = row.name;
+      const label = $.el('label');
+      const select = $.el('select', { name: row.name }) as HTMLSelectElement;
+      for (const option of row.options) {
+        select.appendChild($.el('option', { value: option[0], textContent: option[1] }));
+      }
+      $.add(label, [
+        $.el('span', { textContent: `${row.label}: ` }),
+        select
+      ]);
+      $.add(div, [
+        label,
+        $.el('span', { className: 'description', textContent: row.description ? `: ${row.description}` : '' })
+      ]);
+      $.on(select, 'change', $.cb.value);
+      items[row.name] = Conf[row.name];
+      inputs[row.name] = select;
+      $.add(fs, div);
+    }
+    $.add(section, fs);
+    $.get(items, function(items) {
+      for (const key in items) {
+        inputs[key].value = items[key];
+      }
+    });
+  },
 
-  async export() {
-    let exportHistory = Conf['Export History'];
-    let cancelled = false;
+  general(section) {
+    Settings.renderMainGroups(section, {
+      categories: [{
+        name: 'Miscellaneous',
+        subgroups: [
+          ['System', ['JSON Index', `Use ${meta.name} Catalog`, 'Index Refresh Notifications', 'Open Threads in New Tab', 'External Catalog', '404 Redirect', 'Archive Report', 'Exempt Archives from Encryption', 'Show Updated Notifications']],
+          ['History', ['Export History', 'Ask to Export History']],
+          ['Compatibility', ['Disable Native Extension', 'Enable Native Flash Embedding']]
+        ]
+      }],
+      includeWarnings: true,
+      includeJSONIndex: true
+    });
+  },
 
-    if (Conf['Ask to Export History']) {
-      if (Settings.isExportModalOpen) return;
+  interface(section) {
+    const items = dict();
+    const inputs = dict();
 
-      const dialog = UI.dialog('export-dialog', { innerHTML: ExportDialog });
-      const form = $('form', dialog) as HTMLFormElement;
-      const { history, ask } = form.elements as any as { history: HTMLInputElement, ask: HTMLInputElement };
-      history.checked = Conf['Export History'];
-      $.add(d.body, dialog);
+    const fsNav = $.el('details',
+      { open: true },
+      { innerHTML: '<summary>Custom Board Navigation</summary>' });
+    const navContent = $.el('div', {
+      innerHTML:
+        '<div><textarea name="boardnav" class="field boardnav-field" spellcheck="false"></textarea></div>' +
+        '<span class="note">New lines will be converted into spaces.</span><br><br>' +
+        '<details class="boardnav-instructions">' +
+          '<summary>Syntax guide</summary>' +
+          '<div class="note">In the following examples for /g/, <code>g</code> can be changed to a different board ID (<code>a</code>, <code>b</code>, etc...), the current board (<code>current</code>), or the Twitter link (<code>@</code>).</div>' +
+          '<div>Board link: <code>g</code></div>' +
+          '<div>Archive link: <code>g-archive</code></div>' +
+          '<div>Internal archive link: <code>g-expired</code></div>' +
+          '<div>Title link: <code>g-title</code></div>' +
+          '<div>Board link (Replace with title when on that board): <code>g-replace</code></div>' +
+          '<div>Full text link: <code>g-full</code></div>' +
+          '<div>Custom text link: <code>g-text:"Install Gentoo"</code></div>' +
+          '<div>Index-only link: <code>g-index</code></div>' +
+          '<div>Catalog-only link: <code>g-catalog</code></div>' +
+          '<div>Index mode: <code>g-mode:"infinite scrolling"</code></div>' +
+          '<div>Index sort: <code>g-sort:"creation date rev"</code></div>' +
+          '<div>External link: <code>external-text:"Google","http://www.google.com"</code></div>' +
+          '<div>Open in new tab: <code>g-nt</code></div>' +
+          '<div>Combinations are possible: <code>g-index-text:"Technology Index"</code></div>' +
+          '<div>Full board list toggle: <code>toggle-all</code></div>' +
+          '<br>' +
+          '<div class="note">' +
+            '<code>[ toggle-all ] [current-title] [g-title / a-title / jp-title] [x / wsg / h] [t-text:"Piracy"]</code><br>' +
+            'will give you<br>' +
+            '<code>[ + ] [Technology] [Technology / Anime &amp; Manga / Otaku Culture] [x / wsg / h] [Piracy]</code><br>' +
+            'if you are on /g/.' +
+          '</div>' +
+          '<div class="note">' +
+            'For custom styling, you can wrap groups or individual links in <code>{{</code> and <code>}}</code>, to wrap them in a span. You can also add classes in double quotes right after the {{. For example: <br>' +
+            '<code>[g-title] {{"favorites"[a-title / jp-title]}}</code><br>' +
+            'Results in:<br>' +
+            '<code>[&lt;a [...] &gt;Technology&lt;/a&gt;] &lt;span class="favorites"&gt;[&lt;a [...] &gt;Anime &amp;amp; Manga&lt;/a&gt; / &lt;a [...] &gt;Otaku Culture&lt;/a&gt;]&lt;/span&gt;</code>' +
+          '</div>' +
+        '</details>'
+    });
+    const textarea = $('textarea', navContent) as HTMLTextAreaElement;
+    $.on(textarea, 'change', $.cb.value);
+    $.on(textarea, 'change', Settings.boardnav);
+    items['boardnav'] = Conf['boardnav'];
+    inputs['boardnav'] = textarea;
+    $.add(fsNav, navContent);
+    $.add(section, fsNav);
 
-      const exportBtnRect = ($('.export', Settings.dialog) as HTMLElement).getBoundingClientRect();
-      dialog.style.top = `${exportBtnRect.y + exportBtnRect.height}px`;
-      dialog.style.left = `${exportBtnRect.x}px`;
+    Settings.renderMainGroups(section, {
+      categories: [
+        {
+          name: 'Miscellaneous',
+          subgroups: [
+            ['UI', ['Announcement Hiding', 'Follow Cursor', 'Catalog Links']],
+            ['Notifications', ['Desktop Notifications', 'Posting Success Notifications']],
+            ['Keyboard and Navigation', ['Keybinds', 'Comment Expansion', 'Thread Expansion', 'Index Navigation', 'Reply Navigation', 'Unique ID and Capcode Navigation', 'Normalize URL', 'Disable Autoplaying Sounds']]
+          ]
+        },
+        'Menu'
+      ]
+    });
 
-      Settings.isExportModalOpen = true;
+    $.get(items, function(items) {
+      for (const key in items) {
+        const input = inputs[key];
+        if (input.type === 'checkbox') {
+          input.checked = items[key];
+          input.parentNode.parentNode.dataset.checked = items[key];
+        } else {
+          input.value = items[key];
+        }
+      }
+    });
+  },
 
-      await new Promise<void>(resolve => {
-        const close = () => {
-          dialog.remove();
-          resolve();
-          Settings.isExportModalOpen = false;
-        };
+  threadsAndPosts(section) {
+    const items = dict();
+    const inputs = dict();
 
-        $.on(form, 'submit', (e) => {
-          e.preventDefault();
-          exportHistory = history.checked
-          $.set('Export History', exportHistory);
-          $.set('Ask to Export History', ask.checked);
-          close();
+    const fsFmt = $.el('details',
+      { open: true },
+      { innerHTML: '<summary>Formatting</summary>' });
+    const lookup = Settings.getMainSettingLookup();
+    const fmtGroup = dict();
+    for (const key of [
+      'Custom Board Titles',
+      'Persistent Custom Board Titles',
+      'Color User IDs',
+      'Count Posts by ID',
+      'Remove Spoilers',
+      'Reveal Spoilers',
+      'Time Formatting',
+      'Relative Post Dates',
+      'Relative Date Title',
+      'File Info Formatting',
+      'Quote Backlinks',
+    ]) {
+      if (lookup[key]) fmtGroup[key] = lookup[key];
+    }
+    Settings.addCheckboxes(fsFmt, fmtGroup, items, inputs);
+    $.add(section, fsFmt);
+
+    const stylingOnlyKeys = new Set([
+      'Scrollbar Markers',
+      'Scrollbar Mark Own Posts',
+      'Scrollbar Mark Quotes You',
+      'Scrollbar Mark Ghost Posts',
+      'Scrollbar Mark Unread Line',
+      'Highlight Posts Quoting You',
+      'Highlight Own Posts',
+      'Highlight Ghost Posts'
+    ]);
+
+    Settings.renderMainGroups(section, {
+      categories: ['Filtering', 'Monitoring', 'Quote Links'],
+      includeHiddenCount: true,
+      includeSetting: (key: string) => !stylingOnlyKeys.has(key)
+    });
+
+    Settings.addThreadWatcherFieldset(section);
+
+    Settings.addSelectFieldset(section, 'Thread Title', [
+      {
+        name: 'Thread Title',
+        label: 'Title Content',
+        description: 'Choose whether thread tabs use the original thread excerpt or the board title.',
+        options: [
+          ['excerpt', 'Original thread title'],
+          ['board', 'Board title']
+        ]
+      },
+      {
+        name: 'Unread Title Count',
+        label: 'Unread Count',
+        description: 'Controls how unread and quoted-you indicators appear in the tab title.',
+        options: [
+          ['always', 'Always show count'],
+          ['hide-zero', 'Hide zero count'],
+          ['quoted', 'Show quote marker'],
+          ['quoted-hide-zero', 'Quote marker and hide zero']
+        ]
+      }
+    ]);
+
+    const fsUC = $.el('details',
+      { open: true },
+      { innerHTML: '<summary>Updater & Cooldown</summary>' });
+    const divInterval = $.el('div',
+      { innerHTML: '<label>Update Interval: <input type="number" name="Interval" class="field" min="1"></label><span class="description">: Seconds between updates.</span>' });
+    divInterval.dataset.name = 'Interval';
+    const intervalInput = $('input', divInterval) as HTMLInputElement;
+    $.on(intervalInput, 'change', ThreadUpdater.cb.interval);
+    items['Interval'] = Conf['Interval'];
+    inputs['Interval'] = intervalInput;
+    $.add(fsUC, divInterval);
+    const divCooldown = $.el('div',
+      { innerHTML: '<label>Custom Cooldown: <input type="number" name="customCooldown" class="field" min="0"></label><span class="description">: Seconds to wait after posting.</span>' });
+    divCooldown.dataset.name = 'customCooldown';
+    const cooldownInput = $('input', divCooldown) as HTMLInputElement;
+    $.on(cooldownInput, 'change', $.cb.value);
+    items['customCooldown'] = Conf['customCooldown'];
+    inputs['customCooldown'] = cooldownInput;
+    $.add(fsUC, divCooldown);
+    $.add(section, fsUC);
+
+    $.get(items, function(items) {
+      for (const key in items) {
+        const input = inputs[key];
+        if (input.type === 'checkbox') {
+          input.checked = items[key];
+          input.parentNode.parentNode.dataset.checked = items[key];
+        } else {
+          input.value = items[key];
+        }
+      }
+    });
+  },
+
+  addThreadWatcherFieldset(section) {
+    const fs = $.el('details',
+      { open: true },
+      { innerHTML: '<summary>Thread Watcher</summary>' });
+    const items = dict();
+    const inputs = dict();
+
+    const displayName = (name: string) => ({
+      'Show Mark All Read Icon': 'Mark All Read Icon',
+      'Show Mark Thread Read Icons': 'Mark Thread Read Icons',
+      'Show OP Thumbnails': 'Thumbnails',
+    } as Record<string, string>)[name] || name;
+
+    const watcherOrder = [
+      'Current Board',
+      'Auto Update Thread Watcher',
+      'Auto Watch',
+      'Auto Watch Reply',
+      'Auto Prune',
+      'Show Page',
+      'Show Unread Count',
+      'Show Site Prefix',
+      'Show OP Thumbnails',
+      'Show Mark All Read Icon',
+      'Show Mark Thread Read Icons',
+      'Require OP Quote Link',
+    ];
+
+    const syncThumbSizeToDialog = (size: number) => {
+      const watcher = $.id('thread-watcher');
+      if (watcher) watcher.style.setProperty('--watcher-thumb-size', `${size}px`);
+    };
+    const syncWatcherHeightToDialog = (height: number) => {
+      const watcher = $.id('thread-watcher');
+      if (watcher) watcher.style.setProperty('--watcher-max-height', `${height}px`);
+    };
+    const syncWatcherWidthToDialog = (width: number) => {
+      const watcher = $.id('thread-watcher');
+      if (watcher) watcher.style.setProperty('--watcher-max-width', `${width}px`);
+    };
+
+    for (const name of watcherOrder) {
+      if (!Config.threadWatcher[name]) continue;
+      const arr = Config.threadWatcher[name];
+      const description = arr[1] || '';
+      let div: HTMLDivElement;
+
+      if (name === 'Show OP Thumbnails') {
+        div = $.el('div',
+          { innerHTML: `<label><input type="checkbox" name="${name}">${displayName(name)}</label><span class="thread-watcher-inline-number">Size <input type="number" name="Thread Watcher Thumbnail Size" min="16" max="160" step="1" class="thread-watcher-size-input"></span><span class="thread-watcher-inline-subsetting"><label><input type="checkbox" name="Thread Watcher Thumbnail Hover">Hover Preview</label><span class="thread-watcher-inline-number">Size <input type="number" name="Thread Watcher Thumbnail Preview Size" min="10" max="99" step="1" class="thread-watcher-preview-size-input">%</span></span><span class="description">: <span class="setting-description">${description}</span></span>` });
+        div.dataset.name = `${name} Thread Watcher Thumbnail Size Thread Watcher Thumbnail Hover Thread Watcher Thumbnail Preview Size`;
+        div.dataset.settingTitle = displayName(name);
+        div.dataset.settingDescription = `${description} Thread Watcher Thumbnail Size Thread Watcher Thumbnail Hover Thread Watcher Thumbnail Preview Size`;
+
+        const sizeInput = $('input[name="Thread Watcher Thumbnail Size"]', div) as HTMLInputElement;
+        const previewToggle = $('input[name="Thread Watcher Thumbnail Hover"]', div) as HTMLInputElement;
+        const previewSizeInput = $('input[name="Thread Watcher Thumbnail Preview Size"]', div) as HTMLInputElement;
+        $.on(sizeInput, 'change', function() {
+          let size = parseInt(this.value, 10);
+          if (isNaN(size)) size = 40;
+          size = Math.max(16, Math.min(160, size));
+          this.value = `${size}`;
+          $.set(this.name, size);
+          Conf[this.name] = size;
+          syncThumbSizeToDialog(size);
         });
-
-        $.on($('#cancel-export', dialog), 'click', () => {
-          cancelled = true;
-          close();
+        $.on(previewToggle, 'change', $.cb.checked);
+        $.on(previewToggle, 'change', function() {
+          if (!this.checked) {
+            const hover = $.id('tw-ihover');
+            if (hover) {
+              hover.hidden = true;
+              hover.removeAttribute('src');
+              hover.removeAttribute('style');
+            }
+          }
         });
-      });
+        $.on(previewSizeInput, 'change', function() {
+          let size = parseInt(this.value, 10);
+          if (isNaN(size)) size = 40;
+          size = Math.max(10, Math.min(99, size));
+          this.value = `${size}`;
+          $.set(this.name, size);
+          Conf[this.name] = size;
+        });
+        items['Thread Watcher Thumbnail Size'] = Conf['Thread Watcher Thumbnail Size'];
+        items['Thread Watcher Thumbnail Hover'] = Conf['Thread Watcher Thumbnail Hover'];
+        items['Thread Watcher Thumbnail Preview Size'] = Conf['Thread Watcher Thumbnail Preview Size'];
+        inputs['Thread Watcher Thumbnail Size'] = sizeInput;
+        inputs['Thread Watcher Thumbnail Hover'] = previewToggle;
+        inputs['Thread Watcher Thumbnail Preview Size'] = previewSizeInput;
+      } else {
+        div = $.el('div',
+          { innerHTML: `<label><input type="checkbox" name="${name}">${displayName(name)}</label><span class="description">: <span class="setting-description">${description}</span></span>` });
+        div.dataset.name = name;
+        div.dataset.settingTitle = displayName(name);
+        div.dataset.settingDescription = description;
+      }
 
-      if (cancelled) return;
+      const level = arr[2] || 0;
+      if (level > 0) div.classList.add('thread-watcher-subsetting');
+      const input = $('input', div) as HTMLInputElement;
+      $.on(input, 'change', $.cb.checked);
+      $.on(input, 'change', function() { this.parentNode.parentNode.dataset.checked = this.checked; });
+      items[name] = Conf[name];
+      inputs[name] = input;
+      $.add(fs, div);
     }
 
+    const heightDiv = $.el('div',
+      { innerHTML: '<label>TW Max H <input type="number" name="Thread Watcher Max Height" min="120" max="999" step="1" class="thread-watcher-height-input"></label><label class="thread-watcher-inline-number">W <input type="number" name="Thread Watcher Max Width" min="120" max="999" step="1" class="thread-watcher-width-input"></label><span class="description">: <span class="setting-description">Maximum watched-thread list height and width in pixels.</span></span>' });
+    heightDiv.dataset.name = 'Thread Watcher Max Height Thread Watcher Max Width';
+    heightDiv.dataset.settingTitle = 'TW Max H/W';
+    heightDiv.dataset.settingDescription = 'Maximum watched-thread list height and width in pixels.';
+    const heightInput = $('input[name="Thread Watcher Max Height"]', heightDiv) as HTMLInputElement;
+    const widthInput = $('input[name="Thread Watcher Max Width"]', heightDiv) as HTMLInputElement;
+    $.on(heightInput, 'change', function() {
+      let height = parseInt(this.value, 10);
+      if (isNaN(height)) height = 210;
+      height = Math.max(120, Math.min(999, height));
+      this.value = `${height}`;
+      $.set(this.name, height);
+      Conf[this.name] = height;
+      syncWatcherHeightToDialog(height);
+    });
+    $.on(widthInput, 'change', function() {
+      let width = parseInt(this.value, 10);
+      if (isNaN(width)) width = 250;
+      width = Math.max(120, Math.min(999, width));
+      this.value = `${width}`;
+      $.set(this.name, width);
+      Conf[this.name] = width;
+      syncWatcherWidthToDialog(width);
+    });
+    items['Thread Watcher Max Height'] = Conf['Thread Watcher Max Height'];
+    items['Thread Watcher Max Width'] = Conf['Thread Watcher Max Width'];
+    inputs['Thread Watcher Max Height'] = heightInput;
+    inputs['Thread Watcher Max Width'] = widthInput;
+    $.add(fs, heightDiv);
+
+    $.add(section, fs);
+    $.get(items, function(items) {
+      for (const key in items) {
+        const input = inputs[key];
+        if (input.type === 'checkbox') {
+          input.checked = items[key];
+          input.parentNode.parentNode.dataset.checked = items[key];
+        } else {
+          input.value = items[key];
+        }
+      }
+      const thumbSize = parseInt(`${items['Thread Watcher Thumbnail Size']}`, 10);
+      if (Number.isFinite(thumbSize)) syncThumbSizeToDialog(Math.max(16, Math.min(160, thumbSize)));
+      const watcherHeight = parseInt(`${items['Thread Watcher Max Height']}`, 10);
+      if (Number.isFinite(watcherHeight)) syncWatcherHeightToDialog(Math.max(120, Math.min(999, watcherHeight)));
+      const watcherWidth = parseInt(`${items['Thread Watcher Max Width']}`, 10);
+      if (Number.isFinite(watcherWidth)) syncWatcherWidthToDialog(Math.max(120, Math.min(999, watcherWidth)));
+    });
+  },
+
+  media(section) {
+    const items = dict();
+    const inputs = dict();
+    const lookup = Settings.getMainSettingLookup();
+
+    const groups: [string, string[]][] = [
+      ['Image Behavior', ['Image Expansion', 'Image Hover', 'Image Hover in Catalog', 'Replace Thumbnails', 'Replace GIF', 'Replace JPG', 'Replace PNG', 'Replace WEBM', 'Restart when Opened']],
+      ['Images', ['Gallery', 'Fullscreen Gallery', 'PDF in Gallery', 'Sauce', 'Reveal Spoiler Thumbnails', 'Image Prefetching', 'Fappe Tyme', 'Werk Tyme']],
+      ['Videos', ['WEBM Metadata', 'Autoplay', 'Show Controls', 'Click Passthrough', 'Allow Sound', 'Mouse Wheel Volume', 'Loop in New Tab', 'Volume in New Tab', 'Enable sound posts']]
+    ];
+    for (const [legendTitle, keys] of groups) {
+      const fs = $.el('details', { open: true }, { innerHTML: `<summary>${legendTitle}</summary>` });
+      const group = dict();
+      for (const key of keys) {
+        if (lookup[key]) group[key] = lookup[key];
+      }
+      if (!Settings.addCheckboxes(fs, group, items, inputs)) continue;
+      $.add(section, fs);
+    }
+
+    Settings.renderMainGroups(section, {
+      categories: ['Linkification']
+    });
+
+    $.get(items, function(items) {
+      for (const key in items) {
+        const input = inputs[key];
+        if (!input) continue;
+        input.checked = items[key];
+        input.parentNode.parentNode.dataset.checked = items[key];
+      }
+    });
+
+    const sauceFS = $.el('details',
+      { open: true },
+      { innerHTML: '<summary>Sauce</summary>' });
+    const sauceWrap = $.el('div');
+    Settings.sauce(sauceWrap);
+    $.add(sauceFS, sauceWrap);
+    $.add(section, sauceFS);
+  },
+
+  posting(section) {
+    Settings.renderMainGroups(section, {
+      categories: ['Posting and Captchas']
+    });
+
+    const fs = $.el('details',
+      { open: true },
+      { innerHTML: '<summary>Quick Reply Personas</summary>' });
+    const div = $.el('div', {
+      innerHTML:
+        '<textarea name="QR.personas" class="personafield field" spellcheck="false"></textarea>' +
+        '<p>' +
+          'One item per line.<br>' +
+          'Items will be added in the relevant input\'s auto-completion list.<br>' +
+          'Password items will always be used, since there is no password input.<br>' +
+          'Lines starting with a <code>#</code> will be ignored.' +
+        '</p>' +
+        '<ul>You can use these settings with each item, separate them with semicolons:' +
+          '<li>Possible items are: <code>name</code>, <code>options</code> (or equivalently <code>email</code>), <code>subject</code> and <code>password</code>.</li>' +
+          '<li>Wrap values of items with quotes, like this: <code>options:"sage"</code>.</li>' +
+          '<li>Force values as defaults with the <code>always</code> keyword, for example: <code>options:"sage";always</code>.</li>' +
+          '<li>Select specific boards for an item, separated with commas, for example: <code>options:"sage";boards:jp;always</code>.</li>' +
+        '</ul>'
+    });
+    div.dataset.name = 'QR.personas';
+    const textarea = $('textarea', div) as HTMLTextAreaElement;
+    $.on(textarea, 'change', $.cb.value);
+    $.add(fs, div);
+    $.add(section, fs);
+    $.get('QR.personas', Conf['QR.personas'], function(item) {
+      textarea.value = item['QR.personas'];
+      textarea.hidden = false;
+    });
+  },
+
+  styling(section) {
+    let input: HTMLInputElement, name: string;
+    $.extend(section, { innerHTML: StylingPage });
+
+    const inputs: Record<string, HTMLInputElement> = dict();
+    for (input of $$('[name]', section)) {
+      inputs[input.name] = input;
+    }
+    Settings.populateSiteStylePicker(section, inputs['siteStyle'] as HTMLSelectElement);
+
+    const setCheckedState = (checkbox: HTMLInputElement) => {
+      const container = checkbox.closest('[data-name]') as HTMLElement | null;
+      if (!container) return;
+      const owner = container.firstElementChild?.querySelector?.('input[type="checkbox"]') as HTMLInputElement | null;
+      if (owner !== checkbox) return;
+      container.dataset.checked = checkbox.checked ? 'true' : 'false';
+    };
+
+    const highlightKeys = [
+      'Highlight Own Posts',
+      'Highlight Posts Quoting You',
+      'Highlight Ghost Posts',
+    ] as const;
+    const markerColorLinkPairs = [
+      ['Scroll Marker Own Color', 'own'],
+      ['Scroll Marker You Color', 'you'],
+      ['Scroll Marker Ghost Color', 'ghost'],
+    ] as const;
+    const highlightTextControlGroups = [
+      {
+        manualGroup: 'own',
+        autoKey: 'Highlight Own Text Auto',
+        colorKey: 'Highlight Own Color',
+        opacityKey: 'Highlight Own Opacity',
+        keys: ['Highlight Own Text Color', 'Highlight Own Link Color', 'Highlight Own Quote Color', 'Highlight Own Dead Link Color'] as const,
+      },
+      {
+        manualGroup: 'you',
+        autoKey: 'Highlight You Text Auto',
+        colorKey: 'Highlight You Color',
+        opacityKey: 'Highlight You Opacity',
+        keys: ['Highlight You Text Color', 'Highlight You Link Color', 'Highlight You Quote Color', 'Highlight You Dead Link Color'] as const,
+      },
+      {
+        manualGroup: 'ghost',
+        autoKey: 'Highlight Ghost Text Auto',
+        colorKey: 'Highlight Ghost Color',
+        opacityKey: 'Highlight Ghost Opacity',
+        keys: ['Highlight Ghost Text Color', 'Highlight Ghost Link Color', 'Highlight Ghost Quote Color', 'Highlight Ghost Dead Link Color'] as const,
+      },
+    ] as const;
+    const textColorKeys = [
+      'Text Color',
+      'Link Text Color',
+      'Quote Text Color',
+      'Dead Link Text Color',
+    ] as const;
+    const markerRefreshKeys = new Set([
+      'Scrollbar Markers',
+      'Scrollbar Mark Own Posts',
+      'Scrollbar Mark Quotes You',
+      'Scrollbar Mark Ghost Posts',
+      'Scrollbar Mark Unread Line',
+      'Scroll Marker Match Highlights',
+      'Highlight Own Posts',
+      'Highlight Posts Quoting You',
+      'Unread Line',
+      'siteStyle',
+      'siteStyleHome',
+    ]);
+    const highlightToggle = $('#styling-enable-highlights', section) as HTMLInputElement | null;
+    const syncHighlightToggle = () => {
+      if (!highlightToggle) return;
+      let enabledCount = 0;
+      for (const key of highlightKeys) {
+        if (inputs[key]?.checked) enabledCount++;
+      }
+      highlightToggle.checked = enabledCount === highlightKeys.length;
+      highlightToggle.indeterminate = enabledCount > 0 && enabledCount < highlightKeys.length;
+      const container = highlightToggle.closest('[data-name]') as HTMLElement | null;
+      if (container) container.dataset.checked = enabledCount > 0 ? 'true' : 'false';
+    };
+    const markerColorLinkToggle = inputs['Scroll Marker Match Highlights'];
+    const textColorModeSelect = inputs['textColorMode'] as HTMLSelectElement | null;
+    const textColorManualTree = $('#styling-text-color-manual', section) as HTMLElement | null;
+    const highlightTextKeys = new Set(
+      highlightTextControlGroups.flatMap(group => Array.from(group.keys))
+    );
+    const baseTextPalette = (baseBackground: [number, number, number]) => {
+      const textColorMode = Conf['textColorMode'] === 'manual' ? 'manual' : 'auto';
+      const autoTextPalette = Settings.autoTextPalette(baseBackground);
+      return {
+        text: textColorMode === 'auto' ? autoTextPalette.text : (Conf['Text Color'] || autoTextPalette.text),
+        link: textColorMode === 'auto' ? autoTextPalette.link : (Conf['Link Text Color'] || autoTextPalette.link),
+        quote: textColorMode === 'auto' ? autoTextPalette.quote : (Conf['Quote Text Color'] || autoTextPalette.quote),
+        deadLink: textColorMode === 'auto' ? autoTextPalette.deadLink : (Conf['Dead Link Text Color'] || autoTextPalette.deadLink),
+      };
+    };
+    const syncAutoHighlightPreviewInputs = () => {
+      const baseBackground = Settings.getTextBaseBackground();
+      const basePalette = baseTextPalette(baseBackground);
+      for (const group of highlightTextControlGroups) {
+        const autoToggle = inputs[group.autoKey] as HTMLInputElement | null;
+        if (!autoToggle || !autoToggle.checked) continue;
+        const palette = Settings.autoHighlightTextPalette(group.colorKey, group.opacityKey, baseBackground) || basePalette;
+        const nextValues = [palette.text, palette.link, palette.quote, palette.deadLink] as const;
+        for (let i = 0; i < group.keys.length; i++) {
+          const key = group.keys[i];
+          const next = nextValues[i];
+          if (!next) continue;
+          const colorInput = inputs[key];
+          if (!colorInput) continue;
+          colorInput.value = next;
+          delete colorInput.dataset.unset;
+        }
+      }
+    };
+    const seedManualHighlightTextColors = (
+      targetGroup?: typeof highlightTextControlGroups[number],
+      overwrite = false,
+    ) => {
+      const baseBackground = Settings.getTextBaseBackground();
+      const basePalette = baseTextPalette(baseBackground);
+      const groups = targetGroup ? [targetGroup] : highlightTextControlGroups;
+      for (const group of groups) {
+        const autoToggle = inputs[group.autoKey] as HTMLInputElement | null;
+        if (!autoToggle || autoToggle.checked) continue;
+        const autoPalette = Settings.autoHighlightTextPalette(group.colorKey, group.opacityKey, baseBackground) || basePalette;
+        const nextValues = [autoPalette.text, autoPalette.link, autoPalette.quote, autoPalette.deadLink] as const;
+        for (let i = 0; i < group.keys.length; i++) {
+          const key = group.keys[i];
+          const next = nextValues[i];
+          if (!next) continue;
+          if (overwrite || !Conf[key]) {
+            Conf[key] = next;
+            $.set(key, next);
+          }
+          const colorInput = inputs[key];
+          if (!colorInput) continue;
+          colorInput.value = Conf[key] || next;
+          delete colorInput.dataset.unset;
+        }
+      }
+    };
+    const refreshStylingPreview = () => Settings.refreshStylingPreviewFromDialog();
+    const syncMarkerColorControls = () => {
+      const linked = !!markerColorLinkToggle?.checked;
+      if (linked) {
+        Settings.syncLinkedMarkerColors(inputs);
+      }
+      for (const [key, markerType] of markerColorLinkPairs) {
+        const colorInput = inputs[key];
+        if (colorInput) colorInput.disabled = linked;
+        const row = $(`[data-marker-color="${markerType}"]`, section) as HTMLElement | null;
+        if (row) {
+          row.dataset.colorLinked = linked ? 'true' : 'false';
+          const clearButton = $(`[data-clear="${key}"]`, row) as HTMLButtonElement | null;
+          if (clearButton) clearButton.disabled = linked;
+        }
+      }
+    };
+    const syncTextColorControls = () => {
+      const manualMode = (textColorModeSelect?.value || 'auto') === 'manual';
+      if (textColorManualTree) textColorManualTree.hidden = !manualMode;
+      for (const key of textColorKeys) {
+        const colorInput = inputs[key];
+        if (colorInput) colorInput.disabled = !manualMode;
+        const clearButton = $(`[data-clear="${key}"]`, section) as HTMLButtonElement | null;
+        if (clearButton) clearButton.disabled = !manualMode;
+      }
+    };
+    const syncHighlightTextControls = () => {
+      for (const group of highlightTextControlGroups) {
+        const autoToggle = inputs[group.autoKey] as HTMLInputElement | null;
+        const auto = autoToggle ? autoToggle.checked : true;
+        const manualRoot = $(`[data-highlight-text-manual="${group.manualGroup}"]`, section) as HTMLElement | null;
+        if (manualRoot) manualRoot.hidden = auto;
+        for (const key of group.keys) {
+          const colorInput = inputs[key];
+          if (colorInput) colorInput.disabled = auto;
+          const clearButton = $(`[data-clear="${key}"]`, section) as HTMLButtonElement | null;
+          if (clearButton) clearButton.disabled = auto;
+        }
+      }
+    };
+    const refreshUnsetColorInputs = () => {
+      for (const key in inputs) {
+        const inp = inputs[key];
+        if (inp.type !== 'color' || inp.dataset.unset !== '1') continue;
+        if (highlightTextKeys.has(key)) {
+          const group = highlightTextControlGroups.find(item => item.keys.includes(key as any));
+          const autoToggle = group ? inputs[group.autoKey] : null;
+          if (autoToggle && !autoToggle.checked) continue;
+        }
+        Settings.setColorInputValue(inp, key, '');
+      }
+    };
+
+    if (highlightToggle) {
+      $.on(highlightToggle, 'change', () => {
+        const enabled = highlightToggle.checked;
+        highlightToggle.indeterminate = false;
+        for (const key of highlightKeys) {
+          const target = inputs[key];
+          if (!target || target.checked === enabled) continue;
+          target.checked = enabled;
+          $.cb.checked.call(target);
+          setCheckedState(target);
+        }
+        syncHighlightToggle();
+        refreshStylingPreview();
+      });
+    }
+    if (markerColorLinkToggle) {
+      $.on(markerColorLinkToggle, 'change', () => {
+        Conf['Scroll Marker Match Highlights'] = !!markerColorLinkToggle.checked;
+        syncMarkerColorControls();
+        Settings.applyStylingVars();
+        refreshStylingPreview();
+      });
+    }
+    if (textColorModeSelect) {
+      $.on(textColorModeSelect, 'change', () => {
+        Conf['textColorMode'] = textColorModeSelect.value;
+        syncTextColorControls();
+        syncAutoHighlightPreviewInputs();
+        Settings.applyStylingVars();
+        refreshStylingPreview();
+      });
+    }
+    for (const group of highlightTextControlGroups) {
+      const autoToggle = inputs[group.autoKey] as HTMLInputElement | null;
+      if (!autoToggle) continue;
+      $.on(autoToggle, 'change', () => {
+        Conf[group.autoKey] = !!autoToggle.checked;
+        if (autoToggle.checked) {
+          syncAutoHighlightPreviewInputs();
+        } else {
+          seedManualHighlightTextColors(group, true);
+        }
+        syncHighlightTextControls();
+        Settings.applyStylingVars();
+        refreshStylingPreview();
+      });
+    }
+
+    const items: Record<string, any> = dict();
+    for (name in inputs) {
+      input = inputs[name];
+      if (name === 'Custom CSS') continue; // handled below (special toggle)
+      items[name] = Conf[name];
+      const event = (
+        (input.nodeName === 'SELECT') ||
+        ['checkbox', 'radio', 'color', 'range'].includes(input.type) ||
+        ((input.nodeName === 'TEXTAREA') && !(name in Settings))
+      ) ? 'change' : 'input';
+      const persist = $.cb[input.type === 'checkbox' ? 'checked' : 'value'];
+      $.on(input, event, persist);
+      if ((input.type === 'color' || input.type === 'range') && event !== 'input') {
+        $.on(input, 'input', persist);
+      }
+      if (input.type === 'checkbox') {
+        $.on(input, 'change', function() { setCheckedState(this as HTMLInputElement); });
+        if (highlightKeys.includes(name as typeof highlightKeys[number])) {
+          $.on(input, 'change', syncHighlightToggle);
+          $.on(input, 'change', refreshStylingPreview);
+        }
+        if (markerRefreshKeys.has(name)) {
+          $.on(input, 'change', () => $.event('RefreshScrollMarkers'));
+        }
+      }
+      if (name in Settings) $.on(input, event, Settings[name]);
+      if (input.type === 'color') {
+        const applyColor = function() {
+          delete (this as HTMLInputElement).dataset.unset;
+          syncAutoHighlightPreviewInputs();
+          Settings.applyStylingVars();
+          refreshStylingPreview();
+        };
+        $.on(input, event, applyColor);
+        if (event !== 'input') $.on(input, 'input', applyColor);
+      } else if (input.type === 'range') {
+        const applyRange = () => {
+          syncAutoHighlightPreviewInputs();
+          Settings.applyStylingVars();
+          refreshStylingPreview();
+        };
+        $.on(input, event, applyRange);
+        if (event !== 'input') $.on(input, 'input', applyRange);
+      }
+    }
+
+    // Custom CSS toggle + textarea behavior (mirrors Advanced wiring).
+    const customCSS: HTMLInputElement  = inputs['Custom CSS'];
+    const applyCSS:  HTMLButtonElement = $('#apply-css', section);
+    customCSS.checked          =  Conf['Custom CSS'];
+    inputs['usercss'].disabled = !Conf['Custom CSS'];
+    applyCSS.disabled          = !Conf['Custom CSS'];
+    $.on(customCSS, 'change', Settings.togglecss);
+    $.on(applyCSS, 'click', () => CustomCSS.update());
+    Settings.initCustomCSSEditor(section, inputs['usercss'] as unknown as HTMLTextAreaElement);
+
+    $.get(items, (loaded: Record<string, any>) => {
+      for (const key in loaded) {
+        const val = loaded[key];
+        const inp = inputs[key];
+        if (inp.type === 'checkbox') {
+          inp.checked = !!val;
+          setCheckedState(inp);
+        } else if (inp.type === 'color') {
+          Settings.setColorInputValue(inp, key, val);
+        } else if (inp.type === 'range') {
+          inp.value = (val === '' || val == null) ? '1' : String(val);
+        } else if (key === 'siteStyle' && !val) {
+          // Keep whichever style is currently active selected in the picker
+          // when no explicit site style preference has been saved yet.
+        } else {
+          inp.value = val ?? '';
+        }
+        inp.hidden = false;
+        if (key in Settings) Settings[key].call(inp);
+      }
+      syncHighlightToggle();
+      syncMarkerColorControls();
+      syncTextColorControls();
+      syncHighlightTextControls();
+      seedManualHighlightTextColors();
+      syncAutoHighlightPreviewInputs();
+      Settings.applyStylingVars();
+      refreshUnsetColorInputs();
+      Settings.refreshCustomCSSEditor(section);
+      refreshStylingPreview();
+    });
+
+    // Clear buttons next to each color input — reset the Conf key to '' so
+    // the theme default takes over again.
+    for (const btn of $$('[data-clear]', section) as HTMLButtonElement[]) {
+      $.on(btn, 'click', () => {
+        const key = btn.dataset.clear!;
+        Conf[key] = '';
+        $.set(key, '');
+        Settings.applyStylingVars();
+        const target = inputs[key];
+        if (target) {
+          Settings.setColorInputValue(target, key, '');
+        }
+        syncAutoHighlightPreviewInputs();
+        refreshStylingPreview();
+      });
+    }
+
+    // Randomize / reset highlight color buttons.
+    const openPreview = $('#styling-open-preview', section);
+    if (openPreview) {
+      $.on(openPreview, 'click', () => {
+        Settings.openStylingPreview(section);
+      });
+    }
+    const randomize = $('#styling-randomize', section);
+    if (randomize) {
+      $.on(randomize, 'click', () => {
+        for (const key of ['Highlight Own Color', 'Highlight You Color', 'Highlight Ghost Color'] as const) {
+          const color = Settings.randomHighlightColor();
+          Conf[key] = color;
+          $.set(key, color);
+          const inp = inputs[key];
+          if (inp) Settings.setColorInputValue(inp, key, color);
+        }
+        syncAutoHighlightPreviewInputs();
+        Settings.applyStylingVars();
+        refreshStylingPreview();
+      });
+    }
+    const resetBtn = $('#styling-reset-highlights', section);
+    if (resetBtn) {
+      $.on(resetBtn, 'click', () => {
+        for (const key of [
+          'Highlight Own Color', 'Highlight You Color', 'Highlight Ghost Color',
+          'Highlight Own Opacity', 'Highlight You Opacity', 'Highlight Ghost Opacity',
+          'Highlight Own Text Color', 'Highlight Own Link Color', 'Highlight Own Quote Color', 'Highlight Own Dead Link Color',
+          'Highlight You Text Color', 'Highlight You Link Color', 'Highlight You Quote Color', 'Highlight You Dead Link Color',
+          'Highlight Ghost Text Color', 'Highlight Ghost Link Color', 'Highlight Ghost Quote Color', 'Highlight Ghost Dead Link Color',
+        ] as const) {
+          Conf[key] = '';
+          $.set(key, '');
+          const inp = inputs[key];
+          if (inp) {
+            if (inp.type === 'color') delete inp.dataset.unset;
+            else inp.value = '1';
+          }
+        }
+        for (const key of ['Highlight Own Text Auto', 'Highlight You Text Auto', 'Highlight Ghost Text Auto'] as const) {
+          Conf[key] = true;
+          $.set(key, true);
+          const inp = inputs[key];
+          if (inp && inp.type === 'checkbox') inp.checked = true;
+        }
+        syncAutoHighlightPreviewInputs();
+        syncHighlightTextControls();
+        Settings.applyStylingVars();
+        refreshUnsetColorInputs();
+        refreshStylingPreview();
+      });
+    }
+  },
+
+  stylingPreviewSampleText() {
+    const sample = $('.thread .postMessage, .postContainer .postMessage', d.body) as HTMLElement | null;
+    const fallback = 'Sample thread text. Adjust settings above to see post colors update live.';
+    if (!sample) return fallback;
+    const text = (sample.textContent || '').replace(/\s+/g, ' ').trim();
+    if (!text) return fallback;
+    return text.length > 180 ? `${text.slice(0, 177)}...` : text;
+  },
+
+  stylingPreviewPostHTML({
+    postID,
+    extraClass = '',
+    author = 'Anonymous',
+    message = '',
+  }: {
+    postID: number;
+    extraClass?: string;
+    author?: string;
+    message?: string;
+  }) {
+    const safeMessage = E(message || Settings.stylingPreviewSampleText());
+    const classes = `postContainer replyContainer styling-preview-post ${extraClass}`.trim();
+    return `
+      <div class="${classes}" id="pc${postID}" itemprop="comment" itemscope itemtype="https://schema.org/Comment" data-full-i-d="g.${postID}">
+        <div class="sideArrows" id="sa${postID}">&gt;&gt;</div>
+        <div id="p${postID}" class="post reply">
+          <div class="postInfoM mobile" id="pim${postID}">
+            <span class="nameBlock"><span class="name">${E(author)}</span><br></span>
+            <span class="dateTime postNum" data-utc="1780096072"><time datetime="2026-05-29T19:07:52-04:00">05/29/26(Fri)19:07:52</time> <a href="#p${postID}" rel="nofollow" title="Link to this post">No.</a><a href="javascript:quote('${postID}');" rel="nofollow" title="Reply to this post">${postID}</a></span>
+          </div>
+          <div class="postInfo desktop" id="pi${postID}">
+            <span class="nameBlock"><span class="name" itemprop="author" itemscope itemtype="https://schema.org/Person"><span itemprop="name">${E(author)}</span></span> </span>
+            <span class="dateTime" data-utc="1780096072">05/29/26(Fri)19:07:52</span>&nbsp;<span class="postNum desktop"><a href="#p${postID}" rel="nofollow" title="Link to this post">No.</a><a href="javascript:quote('${postID}');" rel="nofollow" title="Reply to this post">${postID}</a></span><a class="menu-button" href="javascript:;"><svg xmlns="http://www.w3.org/2000/svg" class="icon" viewBox="0 0 320 512"><path d="M137.4 374.6c12.5 12.5 32.8 12.5 45.3 0l128-128c9.2-9.2 11.9-22.9 6.9-34.9s-16.6-19.8-29.6-19.8L32 192c-12.9 0-24.6 7.8-29.6 19.8s-2.2 25.7 6.9 34.9l128 128z" fill="currentColor"></path></svg></a><span class="container"></span>
+          </div>
+          <blockquote class="postMessage" id="m${postID}" itemprop="text">${safeMessage}</blockquote>
+        </div>
+      </div>
+    `;
+  },
+
+  openStylingPreview(section?: HTMLElement) {
+    if (!Settings.dialog) return;
+    const targetSection = section || ($('.section-styling', Settings.dialog) as HTMLElement | null);
+    if (!targetSection) return;
+    const trigger = $('#styling-open-preview', targetSection) as HTMLButtonElement | null;
+
+    if (Settings.stylingPreviewPanel && Settings.stylingPreviewPanel.isConnected) {
+      const collapsed = Settings.stylingPreviewPanel.dataset.collapsed === 'true';
+      Settings.stylingPreviewPanel.dataset.collapsed = collapsed ? 'false' : 'true';
+      if (trigger) trigger.textContent = collapsed ? 'Hide preview' : 'Preview states';
+      return;
+    }
+
+    const panel = $.el('div', { className: 'styling-preview styling-preview-dock dialog' }) as HTMLDivElement;
+    panel.dataset.collapsed = 'false';
+    panel.innerHTML = `
+      <div class="board styling-preview-thread">
+        <div class="thread" id="t503286550">
+          ${Settings.stylingPreviewPostHTML({ postID: 503286554, message: 'Normal: thread is already discussing this topic.' })}
+          ${Settings.stylingPreviewPostHTML({ postID: 503286555, extraClass: 'yourPost', author: 'You', message: 'This is a post you created.' })}
+          ${Settings.stylingPreviewPostHTML({ postID: 503286556, extraClass: 'quotesYou', message: 'This is a post quoting you.' })}
+          ${Settings.stylingPreviewPostHTML({ postID: 503286557, extraClass: 'from-archive', author: 'Archived', message: 'This is a ghost post (deleted).' })}
+        </div>
+      </div>
+    `;
+
+    const actions = $('.styling-actions', targetSection) as HTMLElement | null;
+    if (actions?.parentElement) {
+      actions.parentElement.insertBefore(panel, actions.nextSibling);
+    } else {
+      $.add(targetSection, panel);
+    }
+    Settings.stylingPreviewPanel = panel;
+    if (trigger) trigger.textContent = 'Hide preview';
+    Settings.refreshStylingPreviewFromDialog();
+  },
+
+  closeStylingPreview() {
+    if (!Settings.stylingPreviewPanel) return;
+    const trigger = Settings.dialog ? ($('#styling-open-preview', Settings.dialog) as HTMLButtonElement | null) : null;
+    if (trigger) trigger.textContent = 'Preview states';
+    $.rm(Settings.stylingPreviewPanel);
+    Settings.stylingPreviewPanel = null;
+  },
+
+  refreshStylingPreviewFromDialog() {
+    const panel = Settings.stylingPreviewPanel;
+    if (!panel) return;
+    if (!panel.isConnected) {
+      Settings.stylingPreviewPanel = null;
+      return;
+    }
+    const readChecked = (name: string, fallback = false) => {
+      const input = Settings.dialog ? ($(`[name="${name}"]`, Settings.dialog) as HTMLInputElement | null) : null;
+      if (input) return !!input.checked;
+      return Conf[name] == null ? fallback : !!Conf[name];
+    };
+    const ownEnabled = readChecked('Highlight Own Posts');
+    const youEnabled = readChecked('Highlight Posts Quoting You');
+    const ghostEnabled = readChecked('Highlight Ghost Posts');
+
+    panel.dataset.highlightOwn = ownEnabled ? 'true' : 'false';
+    panel.dataset.highlightYou = youEnabled ? 'true' : 'false';
+    panel.dataset.highlightGhost = ghostEnabled ? 'true' : 'false';
+  },
+
+  initCustomCSSEditor(section: HTMLElement, textarea: HTMLTextAreaElement | null) {
+    if (!textarea) return;
+    // Keep textarea layout deterministic so the text layer stays aligned with
+    // the highlighted overlay regardless of theme or browser defaults.
+    textarea.wrap = 'off';
+    textarea.spellcheck = false;
+    const editor = $('.custom-css-editor', section) as HTMLDivElement | null;
+    const highlight = $('.custom-css-highlight', section) as HTMLPreElement | null;
+    const themeSelect = $('#custom-css-theme', section) as HTMLSelectElement | null;
+    const heightSelect = $('#custom-css-expanded-height', section) as HTMLSelectElement | null;
+    const expandButton = $('#custom-css-expand', section) as HTMLButtonElement | null;
+    if (!editor || !highlight || !themeSelect || !heightSelect || !expandButton) return;
+
+    const syncScroll = () => {
+      highlight.scrollTop = textarea.scrollTop;
+      highlight.scrollLeft = textarea.scrollLeft;
+    };
+
+    const updateExpandedState = (expanded: boolean, save = false) => {
+      editor.dataset.expanded = expanded ? 'true' : 'false';
+      expandButton.dataset.expanded = editor.dataset.expanded;
+      expandButton.textContent = expanded ? 'Collapse editor' : 'Expand editor';
+      if (expanded) {
+        editor.style.setProperty('--custom-css-expanded-height', `${heightSelect.value || 500}px`);
+      }
+      if (save) $.set('settings.customCSSEditorExpanded', expanded);
+    };
+
+    const updateExpandedHeight = (save = false) => {
+      editor.style.setProperty('--custom-css-expanded-height', `${heightSelect.value || 500}px`);
+      if (save) $.set('settings.customCSSEditorExpandedHeight', heightSelect.value || '500');
+    };
+
+    const updateTheme = (save = false) => {
+      const choice = themeSelect.value || 'xt-system';
+      editor.dataset.theme = Settings.resolveCustomCSSEditorTheme(choice);
+      if (save) $.set('settings.customCSSEditorTheme', choice);
+    };
+
+    $.on(textarea, 'input', () => Settings.renderCustomCSSHighlight(textarea, highlight));
+    $.on(textarea, 'scroll', syncScroll);
+    $.on(textarea, 'change', () => Settings.renderCustomCSSHighlight(textarea, highlight));
+    $.on(themeSelect, 'change', () => updateTheme(true));
+    $.on(heightSelect, 'change', () => updateExpandedHeight(true));
+    $.on(expandButton, 'click', () => updateExpandedState(editor.dataset.expanded !== 'true', true));
+    Settings.customCSSEditorThemeObserver?.disconnect();
+    Settings.customCSSEditorThemeObserver = new MutationObserver(() => {
+      if (themeSelect.value === 'xt-system') updateTheme(false);
+    });
+    Settings.customCSSEditorThemeObserver.observe(doc, {
+      attributes: true,
+      attributeFilter: ['class'],
+    });
+
+    $.get({
+      'settings.customCSSEditorTheme': 'xt-system',
+      'settings.customCSSEditorExpandedHeight': '500',
+      'settings.customCSSEditorExpanded': false,
+    }, prefs => {
+      const theme = prefs['settings.customCSSEditorTheme'];
+      const height = prefs['settings.customCSSEditorExpandedHeight'];
+      const expanded = !!prefs['settings.customCSSEditorExpanded'];
+
+      themeSelect.value = ['xt-system', 'xt-light', 'xt-dark', 'xt-solarized'].includes(theme) ? theme : 'xt-system';
+      heightSelect.value = ['400', '500', '700'].includes(String(height)) ? String(height) : '500';
+
+      updateTheme(false);
+      updateExpandedHeight(false);
+      updateExpandedState(expanded, false);
+      Settings.renderCustomCSSHighlight(textarea, highlight);
+      syncScroll();
+    });
+  },
+
+  resolveCustomCSSEditorTheme(theme: string) {
+    if (theme !== 'xt-system') return theme || 'xt-light';
+    const classList = doc.classList;
+    if (classList.contains('tomorrow')) return 'xt-system-tomorrow';
+    if (classList.contains('spooky')) return 'xt-system-spooky';
+    if (classList.contains('yotsuba-b')) return 'xt-system-yotsuba-b';
+    if (classList.contains('burichan')) return 'xt-system-burichan';
+    if (classList.contains('yotsuba')) return 'xt-system-yotsuba';
+    if (classList.contains('futaba')) return 'xt-system-futaba';
+    if (classList.contains('photon')) return 'xt-system-photon';
+    return 'xt-system-default';
+  },
+
+  refreshCustomCSSEditor(section: HTMLElement) {
+    const textarea = $('textarea[name="usercss"]', section) as HTMLTextAreaElement | null;
+    const highlight = $('.custom-css-highlight', section) as HTMLPreElement | null;
+    if (!textarea || !highlight) return;
+    Settings.renderCustomCSSHighlight(textarea, highlight);
+    highlight.scrollTop = textarea.scrollTop;
+    highlight.scrollLeft = textarea.scrollLeft;
+  },
+
+  renderCustomCSSHighlight(textarea: HTMLTextAreaElement, highlight: HTMLPreElement) {
+    // Keep a trailing newline so the last line remains visible while typing.
+    const source = textarea.value ? `${textarea.value}\n` : '\n';
+    highlight.innerHTML = Settings.highlightCSSSource(source);
+  },
+
+  highlightCSSSource(source: string) {
+    const wrapped = dict() as Record<string, string>;
+    let wrappedCount = 0;
+    const encodeTokenID = (index: number) => {
+      let id = '';
+      let value = index;
+      do {
+        id = String.fromCharCode(97 + (value % 26)) + id;
+        value = Math.floor(value / 26) - 1;
+      } while (value >= 0);
+      return id;
+    };
+    const stash = (text: string, className: string) => {
+      const id = encodeTokenID(wrappedCount++);
+      wrapped[id] = `<span class="${className}">${E(text)}</span>`;
+      return `\uE000${id}\uE001`;
+    };
+
+    let code = source;
+    code = code.replace(/\/\*[\s\S]*?\*\//g, match => stash(match, 'css-token-comment'));
+    code = code.replace(/"(?:\\.|[^"\\])*"|'(?:\\.|[^'\\])*'/g, match => stash(match, 'css-token-string'));
+    code = E(code);
+
+    code = code.replace(/(^|[\s{;])(@[a-z-]+)/gim, '$1<span class="css-token-atrule">$2</span>');
+    code = code.replace(/(^|[;{]\s*)((?:--)?[-a-z_][\w-]*)(\s*:)/gim, '$1<span class="css-token-property">$2</span>$3');
+    code = code.replace(/#(?:[0-9a-f]{3}|[0-9a-f]{4}|[0-9a-f]{6}|[0-9a-f]{8})\b/gi, '<span class="css-token-color">$&</span>');
+    code = code.replace(/\b-?(?:\d+|\d*\.\d+)(?:px|em|rem|%|vh|vw|vmin|vmax|s|ms|deg|rad|fr|ch|ex)?\b/gi, '<span class="css-token-number">$&</span>');
+    code = code.replace(/\b!important\b/gi, '<span class="css-token-important">$&</span>');
+
+    code = code.replace(/\uE000([a-z]+)\uE001/g, (_, id) => wrapped[id] || '');
+    return code;
+  },
+
+  // Write styling Conf values to CSS custom properties on :root so they apply
+  // immediately, both inside the settings dialog and on the page behind it.
+  applyStylingVars() {
+    const root = doc as HTMLElement;
+    const setVar = (cssVar: string, value: string) => {
+      if (value) root.style.setProperty(cssVar, value);
+      else root.style.removeProperty(cssVar);
+    };
+    Settings.syncLinkedMarkerColors();
+    setVar('--xt-highlight-own',   Conf['Highlight Own Color']);
+    setVar('--xt-highlight-you',   Conf['Highlight You Color']);
+    setVar('--xt-highlight-ghost', Conf['Highlight Ghost Color']);
+    setVar('--xt-highlight-own-opacity',
+      Conf['Highlight Own Opacity'] === '' ? '' : String(Conf['Highlight Own Opacity']));
+    setVar('--xt-highlight-you-opacity',
+      Conf['Highlight You Opacity'] === '' ? '' : String(Conf['Highlight You Opacity']));
+    setVar('--xt-highlight-ghost-opacity',
+      Conf['Highlight Ghost Opacity'] === '' ? '' : String(Conf['Highlight Ghost Opacity']));
+    const linkMarkerColors = !!Conf['Scroll Marker Match Highlights'];
+    setVar('--xt-scroll-marker-own',
+      linkMarkerColors ? Conf['Highlight Own Color'] : Conf['Scroll Marker Own Color']);
+    setVar('--xt-scroll-marker-you',
+      linkMarkerColors ? Conf['Highlight You Color'] : Conf['Scroll Marker You Color']);
+    setVar('--xt-scroll-marker-ghost',
+      linkMarkerColors ? Conf['Highlight Ghost Color'] : Conf['Scroll Marker Ghost Color']);
+    setVar('--xt-scroll-marker-unread', Conf['Scroll Marker Unread Color']);
+    setVar('--xt-scroll-marker-own-opacity',
+      Conf['Scroll Marker Own Opacity'] === '' ? '' : String(Conf['Scroll Marker Own Opacity']));
+    setVar('--xt-scroll-marker-you-opacity',
+      Conf['Scroll Marker You Opacity'] === '' ? '' : String(Conf['Scroll Marker You Opacity']));
+    setVar('--xt-scroll-marker-ghost-opacity',
+      Conf['Scroll Marker Ghost Opacity'] === '' ? '' : String(Conf['Scroll Marker Ghost Opacity']));
+    setVar('--xt-scroll-marker-unread-opacity',
+      Conf['Scroll Marker Unread Opacity'] === '' ? '' : String(Conf['Scroll Marker Unread Opacity']));
+
+    const baseBackground = Settings.getTextBaseBackground();
+    const textColorMode = Conf['textColorMode'] === 'manual' ? 'manual' : 'auto';
+    const autoTextPalette = Settings.autoTextPalette(baseBackground);
+    const textColor = textColorMode === 'auto' ? autoTextPalette.text : Conf['Text Color'];
+    const linkColor = textColorMode === 'auto' ? autoTextPalette.link : Conf['Link Text Color'];
+    const quoteColor = textColorMode === 'auto' ? autoTextPalette.quote : Conf['Quote Text Color'];
+    const deadLinkColor = textColorMode === 'auto' ? autoTextPalette.deadLink : Conf['Dead Link Text Color'];
+    const hasAnyTextOverride = !!(textColor || linkColor || quoteColor || deadLinkColor);
+    if (hasAnyTextOverride) {
+      $.addClass(doc, 'xt-custom-text-colors');
+    } else {
+      $.rmClass(doc, 'xt-custom-text-colors');
+    }
+    setVar('--xt-text-color', textColor || '');
+    setVar('--xt-link-text-color', linkColor || '');
+    setVar('--xt-quote-text-color', quoteColor || '');
+    setVar('--xt-dead-link-text-color', deadLinkColor || '');
+
+    const autoHighlightPalette = (
+      colorKey: 'Highlight Own Color' | 'Highlight You Color' | 'Highlight Ghost Color',
+      opacityKey: 'Highlight Own Opacity' | 'Highlight You Opacity' | 'Highlight Ghost Opacity',
+    ) => Settings.autoHighlightTextPalette(colorKey, opacityKey, baseBackground);
+    const withManual = (
+      autoPalette: ReturnType<typeof Settings.autoTextPalette> | null,
+      autoKey: 'Highlight Own Text Auto' | 'Highlight You Text Auto' | 'Highlight Ghost Text Auto',
+      textKey: 'Highlight Own Text Color' | 'Highlight You Text Color' | 'Highlight Ghost Text Color',
+      linkKey: 'Highlight Own Link Color' | 'Highlight You Link Color' | 'Highlight Ghost Link Color',
+      quoteKey: 'Highlight Own Quote Color' | 'Highlight You Quote Color' | 'Highlight Ghost Quote Color',
+      deadKey: 'Highlight Own Dead Link Color' | 'Highlight You Dead Link Color' | 'Highlight Ghost Dead Link Color',
+    ) => {
+      const base = autoPalette || {
+        text: textColor || '',
+        link: linkColor || '',
+        quote: quoteColor || '',
+        deadLink: deadLinkColor || '',
+      };
+      if (Conf[autoKey]) return base;
+      return {
+        text: Conf[textKey] || base.text,
+        link: Conf[linkKey] || base.link,
+        quote: Conf[quoteKey] || base.quote,
+        deadLink: Conf[deadKey] || base.deadLink,
+      };
+    };
+    const ownPalette = withManual(
+      autoHighlightPalette('Highlight Own Color', 'Highlight Own Opacity'),
+      'Highlight Own Text Auto',
+      'Highlight Own Text Color',
+      'Highlight Own Link Color',
+      'Highlight Own Quote Color',
+      'Highlight Own Dead Link Color',
+    );
+    const youPalette = withManual(
+      autoHighlightPalette('Highlight You Color', 'Highlight You Opacity'),
+      'Highlight You Text Auto',
+      'Highlight You Text Color',
+      'Highlight You Link Color',
+      'Highlight You Quote Color',
+      'Highlight You Dead Link Color',
+    );
+    const ghostPalette = withManual(
+      autoHighlightPalette('Highlight Ghost Color', 'Highlight Ghost Opacity'),
+      'Highlight Ghost Text Auto',
+      'Highlight Ghost Text Color',
+      'Highlight Ghost Link Color',
+      'Highlight Ghost Quote Color',
+      'Highlight Ghost Dead Link Color',
+    );
+    setVar('--xt-highlight-own-text', ownPalette?.text || '');
+    setVar('--xt-highlight-own-link', ownPalette?.link || '');
+    setVar('--xt-highlight-own-quote', ownPalette?.quote || '');
+    setVar('--xt-highlight-own-dead-link', ownPalette?.deadLink || '');
+    setVar('--xt-highlight-you-text', youPalette?.text || '');
+    setVar('--xt-highlight-you-link', youPalette?.link || '');
+    setVar('--xt-highlight-you-quote', youPalette?.quote || '');
+    setVar('--xt-highlight-you-dead-link', youPalette?.deadLink || '');
+    setVar('--xt-highlight-ghost-text', ghostPalette?.text || '');
+    setVar('--xt-highlight-ghost-link', ghostPalette?.link || '');
+    setVar('--xt-highlight-ghost-quote', ghostPalette?.quote || '');
+    setVar('--xt-highlight-ghost-dead-link', ghostPalette?.deadLink || '');
+    Settings.refreshUnsetStylingColorInputs();
+    Settings.refreshStylingPreviewFromDialog();
+  },
+
+  autoTextPalette(rgb?: [number, number, number]) {
+    const bg = rgb || Settings.getTextBaseBackground();
+    const lightText = '#f2f2f2';
+    const darkText = '#111111';
+    const lightContrast = Settings.contrastRatio(Settings.hexToRgb(lightText)!, bg);
+    const darkContrast = Settings.contrastRatio(Settings.hexToRgb(darkText)!, bg);
+    const useLight = lightContrast >= darkContrast;
+    const text = useLight ? lightText : darkText;
+    const palette = useLight
+      ? {
+          text,
+          link: '#9cc1ff',
+          quote: '#a8dd72',
+          deadLink: '#b8c5ff',
+        }
+      : {
+          text,
+          link: '#0b52d6',
+          quote: '#2f7d1a',
+          deadLink: '#4c63be',
+        };
+    // Keep links/quotes readable; fall back to text color if contrast gets too low.
+    const minRatio = 3;
+    const safe = (hex: string) => {
+      const c = Settings.hexToRgb(hex);
+      return c && (Settings.contrastRatio(c, bg) >= minRatio) ? hex : text;
+    };
+    return {
+      text,
+      link: safe(palette.link),
+      quote: safe(palette.quote),
+      deadLink: safe(palette.deadLink),
+    };
+  },
+
+  hexToRgb(value: string): [number, number, number] | null {
+    const hex = value?.match(/^#([0-9a-f]{3}|[0-9a-f]{6})$/i)?.[1];
+    if (!hex) return null;
+    if (hex.length === 3) {
+      return [
+        parseInt(`${hex[0]}${hex[0]}`, 16),
+        parseInt(`${hex[1]}${hex[1]}`, 16),
+        parseInt(`${hex[2]}${hex[2]}`, 16),
+      ];
+    }
+    return [
+      parseInt(hex.slice(0, 2), 16),
+      parseInt(hex.slice(2, 4), 16),
+      parseInt(hex.slice(4, 6), 16),
+    ];
+  },
+
+  mixRgb(base: [number, number, number], overlay: [number, number, number], alpha: number): [number, number, number] {
+    const a = $.minmax(alpha, 0, 1);
+    const out = [0, 1, 2].map(i => Math.round((base[i] * (1 - a)) + (overlay[i] * a)));
+    return [out[0], out[1], out[2]];
+  },
+
+  contrastRatio(fg: [number, number, number], bg: [number, number, number]) {
+    const l1 = Settings.relativeLuminance(fg);
+    const l2 = Settings.relativeLuminance(bg);
+    const hi = Math.max(l1, l2);
+    const lo = Math.min(l1, l2);
+    return (hi + 0.05) / (lo + 0.05);
+  },
+
+  relativeLuminance(rgb: [number, number, number]) {
+    const toLinear = (channel: number) => {
+      const c = channel / 255;
+      return c <= 0.04045 ? c / 12.92 : Math.pow((c + 0.055) / 1.055, 2.4);
+    };
+    const [r, g, b] = rgb.map(toLinear);
+    return (0.2126 * r) + (0.7152 * g) + (0.0722 * b);
+  },
+
+  getTextBaseBackground(): [number, number, number] {
+    const parseColor = (value: string): [number, number, number] | null => {
+      if (!value) return null;
+      const rgb = value.match(/^rgba?\(([^)]+)\)$/i)?.[1];
+      if (rgb) {
+        const parts = rgb.split(',').map(part => parseFloat(part.trim()));
+        if (parts.length >= 3 && parts.slice(0, 3).every(part => Number.isFinite(part))) {
+          return [parts[0], parts[1], parts[2]];
+        }
+      }
+      return Settings.hexToRgb(value);
+    };
+
+    let bg: [number, number, number] | null = null;
+    if (g.SITE?.bgColoredEl && d.body) {
+      try {
+        const probe = g.SITE.bgColoredEl();
+        probe.style.position = 'absolute';
+        probe.style.visibility = 'hidden';
+        $.add(d.body, probe);
+        bg = parseColor(window.getComputedStyle(probe).backgroundColor);
+        $.rm(probe);
+      } catch (err) {
+        // fall through to body background.
+      }
+    }
+    if (!bg && d.body) {
+      bg = parseColor(window.getComputedStyle(d.body).backgroundColor);
+    }
+    return bg || [255, 255, 255];
+  },
+
+  autoHighlightTextPalette(
+    colorKey: 'Highlight Own Color' | 'Highlight You Color' | 'Highlight Ghost Color',
+    opacityKey: 'Highlight Own Opacity' | 'Highlight You Opacity' | 'Highlight Ghost Opacity',
+    baseBackground = Settings.getTextBaseBackground(),
+  ) {
+    const color = Conf[colorKey];
+    const rgb = Settings.hexToRgb(color);
+    if (!rgb) return null;
+    const alpha = (
+      Conf[opacityKey] === '' || Conf[opacityKey] == null
+    ) ? 1 : $.minmax(parseFloat(String(Conf[opacityKey])), 0, 1);
+    if (!Number.isFinite(alpha) || alpha <= 0) return null;
+    return Settings.autoTextPalette(Settings.mixRgb(baseBackground, rgb, alpha));
+  },
+
+  colorExpressionForKey(key: string): string {
+    switch (key) {
+      case 'Highlight Own Color':
+        return 'var(--xt-highlight-own, var(--xt-border-highlight, #d83030))';
+      case 'Highlight You Color':
+        return 'var(--xt-highlight-you, var(--xt-border-highlight, #ff5050))';
+      case 'Highlight Ghost Color':
+        return 'var(--xt-highlight-ghost, #888888)';
+      case 'Scroll Marker Own Color':
+        return 'var(--xt-scroll-marker-own, var(--xt-border-highlight, #d83030))';
+      case 'Scroll Marker You Color':
+        return 'var(--xt-scroll-marker-you, var(--xt-border-highlight, #ff5050))';
+      case 'Scroll Marker Ghost Color':
+        return 'var(--xt-scroll-marker-ghost, #888888)';
+      case 'Scroll Marker Unread Color':
+        return 'var(--xt-scroll-marker-unread, #ffd400)';
+      case 'Text Color':
+        return 'var(--xt-text-color, #111111)';
+      case 'Link Text Color':
+        return 'var(--xt-link-text-color, #0b52d6)';
+      case 'Quote Text Color':
+        return 'var(--xt-quote-text-color, #2f7d1a)';
+      case 'Dead Link Text Color':
+        return 'var(--xt-dead-link-text-color, #4c63be)';
+      case 'Highlight Own Text Color':
+        return 'var(--xt-highlight-own-text, var(--xt-text-color, #111111))';
+      case 'Highlight Own Link Color':
+        return 'var(--xt-highlight-own-link, var(--xt-link-text-color, #0b52d6))';
+      case 'Highlight Own Quote Color':
+        return 'var(--xt-highlight-own-quote, var(--xt-quote-text-color, #2f7d1a))';
+      case 'Highlight Own Dead Link Color':
+        return 'var(--xt-highlight-own-dead-link, var(--xt-dead-link-text-color, #4c63be))';
+      case 'Highlight You Text Color':
+        return 'var(--xt-highlight-you-text, var(--xt-text-color, #111111))';
+      case 'Highlight You Link Color':
+        return 'var(--xt-highlight-you-link, var(--xt-link-text-color, #0b52d6))';
+      case 'Highlight You Quote Color':
+        return 'var(--xt-highlight-you-quote, var(--xt-quote-text-color, #2f7d1a))';
+      case 'Highlight You Dead Link Color':
+        return 'var(--xt-highlight-you-dead-link, var(--xt-dead-link-text-color, #4c63be))';
+      case 'Highlight Ghost Text Color':
+        return 'var(--xt-highlight-ghost-text, var(--xt-text-color, #111111))';
+      case 'Highlight Ghost Link Color':
+        return 'var(--xt-highlight-ghost-link, var(--xt-link-text-color, #0b52d6))';
+      case 'Highlight Ghost Quote Color':
+        return 'var(--xt-highlight-ghost-quote, var(--xt-quote-text-color, #2f7d1a))';
+      case 'Highlight Ghost Dead Link Color':
+        return 'var(--xt-highlight-ghost-dead-link, var(--xt-dead-link-text-color, #4c63be))';
+      default:
+        return '';
+    }
+  },
+
+  toHexColor(value: string): string | null {
+    if (!value) return null;
+    const hex = value.trim().toLowerCase();
+    const longHex = hex.match(/^#([0-9a-f]{6})$/i)?.[0];
+    if (longHex) return longHex.toLowerCase();
+    const shortHex = hex.match(/^#([0-9a-f]{3})$/i)?.[1];
+    if (shortHex) {
+      return `#${shortHex[0]}${shortHex[0]}${shortHex[1]}${shortHex[1]}${shortHex[2]}${shortHex[2]}`.toLowerCase();
+    }
+    const rgb = hex.match(/^rgba?\(([^)]+)\)$/i)?.[1];
+    if (!rgb) return null;
+    const parts = rgb.split(',').map(part => parseFloat(part.trim()));
+    if (parts.length < 3 || parts.slice(0, 3).some(part => !Number.isFinite(part))) return null;
+    const to = (n: number) => Math.round($.minmax(n, 0, 255)).toString(16).padStart(2, '0');
+    return `#${to(parts[0])}${to(parts[1])}${to(parts[2])}`;
+  },
+
+  resolvedColorForKey(key: string): string | null {
+    const expression = Settings.colorExpressionForKey(key);
+    if (!expression || !d.body) return null;
+    const probe = $.el('span');
+    probe.style.position = 'absolute';
+    probe.style.visibility = 'hidden';
+    probe.style.pointerEvents = 'none';
+    probe.style.color = expression;
+    $.add(d.body, probe);
+    const color = Settings.toHexColor(window.getComputedStyle(probe).color);
+    $.rm(probe);
+    return color;
+  },
+
+  setColorInputValue(input: HTMLInputElement, key: string, rawValue: unknown) {
+    const explicit = (typeof rawValue === 'string' && /^#[0-9a-f]{6}$/i.test(rawValue))
+      ? rawValue.toLowerCase()
+      : null;
+    const fallback = Settings.resolvedColorForKey(key) || '#000000';
+    input.value = explicit || fallback;
+    if (explicit) {
+      delete input.dataset.unset;
+    } else {
+      input.dataset.unset = '1';
+    }
+  },
+
+  refreshUnsetStylingColorInputs() {
+    if (!Settings.dialog) return;
+    for (const input of $$(
+      '#fourchanx-settings input[type="color"][name][data-unset="1"]',
+      Settings.dialog,
+    ) as HTMLInputElement[]) {
+      Settings.setColorInputValue(input, input.name, '');
+    }
+  },
+
+  syncLinkedMarkerColors(inputs?: Record<string, HTMLInputElement>) {
+    if (!Conf['Scroll Marker Match Highlights']) return;
+    const colorPairs = [
+      ['Highlight Own Color', 'Scroll Marker Own Color'],
+      ['Highlight You Color', 'Scroll Marker You Color'],
+      ['Highlight Ghost Color', 'Scroll Marker Ghost Color'],
+    ] as const;
+    for (const [highlightKey, markerKey] of colorPairs) {
+      const color = Conf[highlightKey] || '';
+      if (Conf[markerKey] !== color) {
+        Conf[markerKey] = color;
+        $.set(markerKey, color);
+      }
+      const markerInput = inputs?.[markerKey]
+        || ($(`#fourchanx-settings [name="${markerKey}"]`) as HTMLInputElement | null);
+      if (!markerInput) continue;
+      Settings.setColorInputValue(markerInput, markerKey, color);
+    }
+  },
+
+  randomHighlightColor(): string {
+    // HSL with a moderate saturation/lightness keeps colors legible against
+    // most board themes without going eye-burningly saturated.
+    const h = Math.floor(Math.random() * 360);
+    const s = 55 + Math.floor(Math.random() * 25);
+    const l = 40 + Math.floor(Math.random() * 25);
+    const c = (1 - Math.abs(2 * l / 100 - 1)) * (s / 100);
+    const hh = h / 60;
+    const x = c * (1 - Math.abs((hh % 2) - 1));
+    let r = 0, g = 0, b = 0;
+    if (hh < 1)      { r = c; g = x; }
+    else if (hh < 2) { r = x; g = c; }
+    else if (hh < 3) { g = c; b = x; }
+    else if (hh < 4) { g = x; b = c; }
+    else if (hh < 5) { r = x; b = c; }
+    else             { r = c; b = x; }
+    const m = l / 100 - c / 2;
+    const to = (v: number) => Math.round((v + m) * 255).toString(16).padStart(2, '0');
+    return `#${to(r)}${to(g)}${to(b)}`;
+  },
+
+  populateSiteStylePicker(section: HTMLElement, select: HTMLSelectElement) {
+    if (!select) return;
+    const note = $('#styling-site-style-note', section) as HTMLElement | null;
+    const seen = new Set<string>();
+    const addOption = (value: string, text: string) => {
+      if (!value || seen.has(value)) return;
+      seen.add(value);
+      $.add(select, $.el('option', { value, textContent: text || value }));
+    };
+
+    const nativeSelector = $.id('styleSelector') as HTMLSelectElement | null;
+    if (nativeSelector?.options?.length) {
+      for (const opt of nativeSelector.options) {
+        addOption(opt.value, opt.textContent || opt.value);
+      }
+      if (nativeSelector.value && seen.has(nativeSelector.value)) {
+        select.value = nativeSelector.value;
+      }
+      select.disabled = false;
+      if (note) note.hidden = true;
+      return;
+    }
+
+    for (const link of $$('link[rel="alternate stylesheet"]', d.head) as HTMLLinkElement[]) {
+      const value = link.title?.trim();
+      if (!value) continue;
+      addOption(value, value);
+    }
+
+    if (seen.size === 0) {
+      select.disabled = true;
+      if (note) {
+        note.hidden = false;
+        note.textContent = 'Style options are only available on supported board pages.';
+      }
+    } else {
+      select.disabled = false;
+      if (select.options.length && select.selectedIndex < 0) {
+        select.selectedIndex = 0;
+      }
+      if (note) note.hidden = true;
+    }
+  },
+
+  siteStyle(this: HTMLSelectElement) {
+    const style = this.value;
+    if (!style) return;
+
+    const nativeSelector = $.id('styleSelector') as HTMLSelectElement | null;
+    if (nativeSelector?.options?.length) {
+      const hasStyle = Array.from(nativeSelector.options).some(opt => opt.value === style);
+      if (hasStyle && nativeSelector.value !== style) {
+        nativeSelector.value = style;
+        nativeSelector.dispatchEvent(new Event('change', { bubbles: true }));
+      }
+    }
+
+    if (Conf['siteStyleHome']) {
+      Settings.setSiteStyleHomeCookie(style);
+    }
+  },
+
+  siteStyleHome(this: HTMLInputElement) {
+    if (!this.checked) return;
+    const style = Conf['siteStyle'] || ($('#fourchanx-settings [name="siteStyle"]') as HTMLSelectElement | null)?.value || '';
+    if (!style) return;
+    if (!Conf['siteStyle']) {
+      Conf['siteStyle'] = style;
+      $.set('siteStyle', style);
+    }
+    Settings.setSiteStyleHomeCookie(style);
+  },
+
+  setSiteStyleHomeCookie(style: string) {
+    if (!style) return;
+    const domain = location.hostname.includes('4channel.org') ? '4channel.org' : '4chan.org';
+    const expires = 60 * 60 * 24 * 365; // 1 year
+    const cleanupDomains = [location.hostname, domain, `.${domain}`];
+    const past = 'Thu, 01 Jan 1970 00:00:00 GMT';
+    for (const key of ['ws_style', 'nws_style']) {
+      d.cookie = `${key}=; Expires=${past}; Path=/`;
+      for (const cookieDomain of cleanupDomains) {
+        d.cookie = `${key}=; Expires=${past}; Path=/; Domain=${cookieDomain}`;
+      }
+      d.cookie = `${key}=${style}; Max-Age=${expires}; Path=/; Domain=${domain}`;
+    }
+  },
+
+  exportOptionOrder: [
+    'General',
+    'Interface',
+    'Threads & Posts',
+    'Watched Threads',
+    'Media',
+    'Posting',
+    'Filters',
+    'Styling',
+    'Custom CSS',
+    'Keybinds',
+    'Advanced'
+  ],
+
+  exportSectionOrder: [
+    { name: 'General', option: 'General' },
+    { name: 'Interface', option: 'Interface' },
+    { name: 'Threads & Posts', option: 'Threads & Posts', children: ['Watched Threads'] },
+    { name: 'Media', option: 'Media' },
+    { name: 'Posting', option: 'Posting' },
+    { name: 'Filters', option: 'Filters' },
+    { name: 'Styling', option: 'Styling', children: ['Custom CSS'] },
+    { name: 'Keybinds', option: 'Keybinds' },
+    { name: 'Advanced', option: 'Advanced' }
+  ],
+
+  impExpPicker: null as HTMLDivElement | null,
+
+  exportOptionKeys() {
+    const options: Record<string, string[]> = dict();
+    const keysIn = (category: string) => {
+      const obj = Config.main[category] || dict();
+      const keys: string[] = [];
+      for (const key in obj) {
+        if (Array.isArray(obj[key])) keys.push(key);
+      }
+      return keys;
+    };
+    const stylingOnlyKeys = [
+      'Scrollbar Markers',
+      'Scrollbar Mark Own Posts',
+      'Scrollbar Mark Quotes You',
+      'Scrollbar Mark Ghost Posts',
+      'Scrollbar Mark Unread Line',
+      'Highlight Posts Quoting You',
+      'Highlight Own Posts',
+      'Highlight Ghost Posts'
+    ];
+
+    options['General'] = [
+      'JSON Index',
+      `Use ${meta.name} Catalog`,
+      'Index Refresh Notifications',
+      'Open Threads in New Tab',
+      'External Catalog',
+      '404 Redirect',
+      'Archive Report',
+      'Exempt Archives from Encryption',
+      'Show Updated Notifications',
+      'Export History',
+      'Ask to Export History',
+      'Disable Native Extension',
+      'Enable Native Flash Embedding',
+      ...Object.keys(Config.Index)
+    ];
+
+    options['Interface'] = [
+      'Announcement Hiding',
+      'Follow Cursor',
+      'Catalog Links',
+      'Desktop Notifications',
+      'Posting Success Notifications',
+      'Keybinds',
+      'Comment Expansion',
+      'Thread Expansion',
+      'Index Navigation',
+      'Reply Navigation',
+      'Unique ID and Capcode Navigation',
+      'Normalize URL',
+      'Disable Autoplaying Sounds',
+      'boardnav',
+      ...keysIn('Menu')
+    ];
+
+    options['Threads & Posts'] = [
+      'Custom Board Titles',
+      'Persistent Custom Board Titles',
+      'Color User IDs',
+      'Count Posts by ID',
+      'Remove Spoilers',
+      'Reveal Spoilers',
+      'Time Formatting',
+      'Relative Post Dates',
+      'Relative Date Title',
+      'File Info Formatting',
+      'Quote Backlinks',
+      ...keysIn('Filtering').filter(key => !stylingOnlyKeys.includes(key)),
+      ...keysIn('Monitoring').filter(key => !stylingOnlyKeys.includes(key)),
+      ...keysIn('Quote Links').filter(key => !stylingOnlyKeys.includes(key)),
+      ...Object.keys(Config.threadWatcher),
+      'Thread Watcher Thumbnail Size',
+      'Thread Watcher Thumbnail Preview Size',
+      'Thread Watcher Max Height',
+      'Thread Watcher Max Width',
+      'Thread Title',
+      'Unread Title Count',
+      'Interval',
+      'customCooldown'
+    ];
+
+    options['Watched Threads'] = ['watchedThreads', 'watcherBackup'];
+
+    options['Media'] = [
+      ...keysIn('Images and Videos'),
+      ...keysIn('Linkification'),
+      'sauces',
+      'selectedArchives'
+    ];
+
+    options['Posting'] = [
+      ...keysIn('Posting and Captchas'),
+      'QR.personas'
+    ];
+
+    options['Filters'] = Object.keys(Config.filter).concat(['easyFilters']);
+
+    options['Styling'] = [
+      'customCSSHome',
+      'siteStyle',
+      'siteStyleHome',
+      'textColorMode',
+      'Text Color',
+      'Link Text Color',
+      'Quote Text Color',
+      'Dead Link Text Color',
+      'Scroll Marker Match Highlights',
+      'Highlight Own Color',
+      'Highlight You Color',
+      'Highlight Ghost Color',
+      'Highlight Own Text Auto',
+      'Highlight You Text Auto',
+      'Highlight Ghost Text Auto',
+      'Highlight Own Text Color',
+      'Highlight Own Link Color',
+      'Highlight Own Quote Color',
+      'Highlight Own Dead Link Color',
+      'Highlight You Text Color',
+      'Highlight You Link Color',
+      'Highlight You Quote Color',
+      'Highlight You Dead Link Color',
+      'Highlight Ghost Text Color',
+      'Highlight Ghost Link Color',
+      'Highlight Ghost Quote Color',
+      'Highlight Ghost Dead Link Color',
+      'Highlight Own Opacity',
+      'Highlight You Opacity',
+      'Highlight Ghost Opacity',
+      'Scroll Marker Own Color',
+      'Scroll Marker You Color',
+      'Scroll Marker Ghost Color',
+      'Scroll Marker Unread Color',
+      'Scroll Marker Own Opacity',
+      'Scroll Marker You Opacity',
+      'Scroll Marker Ghost Opacity',
+      'Scroll Marker Unread Opacity',
+      ...stylingOnlyKeys,
+      'settings.customCSSEditorTheme',
+      'settings.customCSSEditorExpandedHeight',
+      'settings.customCSSEditorExpanded'
+    ];
+
+    options['Custom CSS'] = ['Custom CSS', 'usercss'];
+    options['Keybinds'] = Object.keys(Config.hotkeys);
+    options['Advanced'] = [
+      'archives',
+      'archiveLists',
+      'archiveAutoUpdate',
+      'lastarchivecheck',
+      'externalCatalogURLs',
+      'fourchanImageHost',
+      'captchaLanguage',
+      'time',
+      'timeLocale',
+      'RelativeTime',
+      'backlink',
+      'pastedname',
+      'fileInfo',
+      'jsWhitelist',
+      'XEmbedder',
+      'fxtLang',
+      'fxtUrl',
+      'fxtMaxReplies',
+      'beepVolume',
+      'beepSource'
+    ];
+
+    return options;
+  },
+
+  optionForKey(key: string, keysByOption: Record<string, string[]>) {
+    for (const name in keysByOption) {
+      if (keysByOption[name].includes(key)) return name;
+    }
+    return 'General';
+  },
+
+  optionsPresentIn(conf: Record<string, any>) {
+    const keysByOption = Settings.exportOptionKeys();
+    const present: Record<string, boolean> = dict();
+    for (const key in conf) {
+      present[Settings.optionForKey(key, keysByOption)] = true;
+    }
+    return present;
+  },
+
+  groupFilenameTag(groups: string[]) {
+    if (!groups?.length || groups.length === Settings.exportOptionOrder.length) return '';
+    return '-' + groups.map(group => group.toLowerCase().replace(/[^a-z0-9]+/g, '-')).join('-');
+  },
+
+  export() {
     // Make sure to export the most recent data, but don't overwrite existing `Conf` object.
     const Conf2 = dict();
     $.extend(Conf2, Conf);
-    if (!exportHistory) {
-      delete Conf2.hiddenThreads;
-      delete Conf2.hiddenPosts;
-      delete Conf2.hiddenPosterIds;
-      delete Conf2.lastReadPosts;
-      delete Conf2.yourPosts;
-      delete Conf2.watchedThreads;
-      delete Conf2.cooldowns;
-      delete Conf2['Index Sort'];
-    }
     $.get(Conf2, function(Conf2) {
       // Don't export cached JSON data.
       delete Conf2['boardConfig'];
-      Settings.downloadExport({version: g.VERSION, date: Date.now(), Conf: Conf2});
+      const defaultCheckedOptions: Record<string, boolean> = dict();
+      for (const name of Settings.exportOptionOrder) {
+        defaultCheckedOptions[name] = true;
+      }
+      defaultCheckedOptions['Watched Threads'] = !!Conf['Export History'];
+      Settings.openImpExpPicker({
+        title: 'Export Settings',
+        action: 'Export',
+        conf: Conf2,
+        defaultCheckedGroups: defaultCheckedOptions,
+        onConfirm: checkedOptions => Settings.doExport(checkedOptions, Conf2)
+      });
     });
+  },
+
+  doExport(checkedOptions: Record<string, boolean>, conf: Record<string, any>) {
+    const keysByOption = Settings.exportOptionKeys();
+    const out: Record<string, any> = dict();
+    for (const key in conf) {
+      const option = Settings.optionForKey(key, keysByOption);
+      if (checkedOptions[option]) out[key] = conf[key];
+    }
+    const groups = Settings.exportOptionOrder.filter(name => checkedOptions[name]);
+    const exportHistory = !!checkedOptions['Watched Threads'];
+    Conf['Export History'] = exportHistory;
+    $.set('Export History', exportHistory);
+    Settings.downloadExport({version: g.VERSION, date: Date.now(), groups, Conf: out});
   },
 
   downloadExport(data) {
     const blob = new Blob([JSON.stringify(data, null, 2)], {type: 'application/json'});
     const url = URL.createObjectURL(blob);
+    const tag = Settings.groupFilenameTag(data.groups);
     const a = $.el('a', {
-      download: `${meta.name} v${g.VERSION}-${data.date}.json`,
+      download: `${meta.name} v${g.VERSION}-${data.date}${tag}.json`,
       href: url
     }
     );
@@ -379,24 +2632,33 @@ Enable it on boards.${location.hostname.split('.')[1]}.org in your browser's pri
   },
 
   onImport() {
+    if ((this as HTMLInputElement).type !== 'file') { return; }
     let file;
     if (!(file = this.files[0])) { return; }
     this.value = null;
-    const output = $('.imp-exp-result');
-    if (!confirm('Your current settings will be entirely overwritten, are you sure?')) {
-      output.textContent = 'Import aborted.';
-      return;
-    }
+    const output = $('.imp-exp-result', Settings.dialog);
 
     const reader = new FileReader();
     reader.onload = function(e) {
       try {
-        Settings.loadSettings(dict.json(e.target.result), function (err) {
-          if (err) {
-            output.textContent = 'Import failed due to an error.';
-          } else if (confirm('Import successful. Reload now?')) {
-            window.location.reload();
-          }
+        let data = dict.json(e.target.result);
+        // Accept older/minimal exports that store settings directly at the top level.
+        if (!data?.Conf && (data?.watchedThreads || data?.watcherBackup)) {
+          data = {
+            version: data.version || g.VERSION,
+            date: data.date || Date.now(),
+            Conf: data
+          };
+        }
+        if (!data?.Conf) {
+          output.textContent = 'Import failed: file is not a valid settings export.';
+          return;
+        }
+        Settings.openImpExpPicker({
+          title: 'Import Settings',
+          action: 'Import',
+          conf: data.Conf,
+          onConfirm: checkedOptions => Settings.doImport(data, checkedOptions)
         });
       } catch (error) {
         const err = error;
@@ -405,6 +2667,242 @@ Enable it on boards.${location.hostname.split('.')[1]}.org in your browser's pri
       }
     };
     reader.readAsText(file);
+  },
+
+  doImport(data: Record<string, any>, checkedGroups: Record<string, boolean>) {
+    const output = $('.imp-exp-result', Settings.dialog);
+    if (!Object.keys(checkedGroups).length) {
+      output.textContent = 'Import aborted.';
+      return;
+    }
+    const keysByGroup = Settings.exportOptionKeys();
+    const presentGroups = Settings.optionsPresentIn(data.Conf);
+    // Only do full overwrite when the user explicitly includes General.
+    // This prevents section-only imports (e.g. Watched Threads) from wiping unrelated settings.
+    const allSelected = !!checkedGroups['General'] && Object.keys(presentGroups).every(name => checkedGroups[name]);
+
+    if (allSelected && !confirm('Your current settings will be entirely overwritten, are you sure?')) {
+      output.textContent = 'Import aborted.';
+      return;
+    }
+
+    const selected: Record<string, any> = dict();
+    $.extend(selected, data);
+    selected.Conf = dict();
+
+    for (const key in data.Conf) {
+      const group = Settings.optionForKey(key, keysByGroup);
+      if (checkedGroups[group]) {
+        selected.Conf[key] = data.Conf[key];
+      }
+    }
+
+    if (selected.version && selected.version !== g.VERSION) {
+      Settings.upgrade(selected.Conf, selected.version);
+      const upgradedAndSelected: Record<string, any> = dict();
+      for (const key in selected.Conf) {
+        const group = Settings.optionForKey(key, keysByGroup);
+        if (checkedGroups[group]) upgradedAndSelected[key] = selected.Conf[key];
+      }
+      selected.Conf = upgradedAndSelected;
+    }
+
+    if (allSelected) {
+      Settings.loadSettings(selected, function(err) {
+        if (err) {
+          output.textContent = 'Import failed due to an error.';
+        } else if (confirm('Import successful. Reload now?')) {
+          window.location.reload();
+        }
+      });
+      return;
+    }
+
+    $.set(selected.Conf, function(err) {
+      if (err) {
+        output.textContent = 'Import failed due to an error.';
+      } else if (confirm('Import successful. Reload now?')) {
+        window.location.reload();
+      }
+    });
+  },
+
+  openImpExpPicker({
+    title,
+    action,
+    conf,
+    defaultCheckedGroups,
+    onConfirm
+  }: {
+    title: string;
+    action: string;
+    conf: Record<string, any>;
+    defaultCheckedGroups?: Record<string, boolean>;
+    onConfirm: (checkedGroups: Record<string, boolean>) => void;
+  }) {
+    if (!Settings.dialog) return;
+    Settings.closeImpExpPicker();
+
+    const presentGroups = Settings.optionsPresentIn(conf);
+    const overlay = $.el('div', { className: 'imp-exp-picker-overlay' }) as HTMLDivElement;
+    const picker = $.el('div', { className: 'imp-exp-picker dialog' }) as HTMLDivElement;
+    $.add(overlay, picker);
+
+    $.add(picker, $.el('h3', {
+      className: 'imp-exp-picker-title',
+      textContent: title
+    }));
+
+    const list = $.el('div', { className: 'imp-exp-picker-list' }) as HTMLDivElement;
+    const checkboxes: Record<string, HTMLInputElement> = dict();
+    const syncSectionStates: (() => void)[] = [];
+    let syncToggle = () => {};
+    let hasAny = false;
+    for (const sectionInfo of Settings.exportSectionOrder) {
+      const hasSectionOption = !!presentGroups[sectionInfo.option];
+      const childOptions = (sectionInfo.children || []).filter(name => presentGroups[name]);
+      const sectionOptions = [
+        ...(hasSectionOption ? [sectionInfo.option] : []),
+        ...childOptions
+      ];
+      if (!sectionOptions.length) continue;
+      hasAny = true;
+
+      const sectionRow = $.el('div', { className: 'imp-exp-picker-section' });
+      const sectionTitleRow = $.el('div', { className: 'imp-exp-picker-row imp-exp-picker-section-title' });
+      const sectionInput = $.el('input', {
+        type: 'checkbox',
+        checked: sectionOptions.every(name => !defaultCheckedGroups || defaultCheckedGroups[name] !== false),
+        autocomplete: 'off'
+      }) as HTMLInputElement;
+      const sectionLabel = $.el('label');
+      $.add(sectionLabel, sectionInput);
+      $.add(sectionLabel, $.tn(` ${sectionInfo.name}`));
+      $.add(sectionTitleRow, sectionLabel);
+      $.add(sectionRow, sectionTitleRow);
+      if (hasSectionOption) {
+        checkboxes[sectionInfo.option] = sectionInput;
+      }
+
+      if (childOptions.length) {
+        const children = $.el('div', { className: 'imp-exp-picker-children' });
+        for (const name of childOptions) {
+          const input = $.el('input', {
+            type: 'checkbox',
+            checked: defaultCheckedGroups ? (defaultCheckedGroups[name] !== false) : true,
+            name: 'fcx-impexp-group',
+            autocomplete: 'off'
+          }) as HTMLInputElement;
+          const label = $.el('label');
+          $.add(label, input);
+          $.add(label, $.tn(` ${name}`));
+          checkboxes[name] = input;
+          const row = $.el('div', { className: 'imp-exp-picker-row imp-exp-picker-child' });
+          $.add(row, label);
+          $.add(children, row);
+        }
+        $.add(sectionRow, children);
+      }
+
+      const syncSection = () => {
+        const inputs = sectionOptions.map(name => checkboxes[name]).filter(Boolean);
+        const checked = inputs.filter(input => input.checked).length;
+        sectionInput.checked = checked === inputs.length;
+        sectionInput.indeterminate = checked > 0 && checked < inputs.length;
+      };
+      syncSectionStates.push(syncSection);
+
+      $.on(sectionInput, 'change', () => {
+        const target = sectionInput.checked;
+        sectionInput.indeterminate = false;
+        for (const name of sectionOptions) {
+          checkboxes[name].checked = target;
+        }
+        syncToggle();
+      });
+
+      for (const name of sectionOptions) {
+        if (name === sectionInfo.option) continue;
+        $.on(checkboxes[name], 'change', syncSection);
+      }
+      syncSection();
+      $.add(list, sectionRow);
+    }
+
+    if (hasAny) {
+      const toggleRow = $.el('div', { className: 'imp-exp-picker-row imp-exp-picker-toggle' });
+      const toggleInput = $.el('input', {
+        type: 'checkbox',
+        checked: true,
+        name: 'fcx-impexp-toggle',
+        autocomplete: 'off'
+      }) as HTMLInputElement;
+      const toggleLabel = $.el('label');
+      $.add(toggleLabel, toggleInput);
+      $.add(toggleLabel, $.tn(' Check all'));
+      $.add(toggleRow, toggleLabel);
+      $.prepend(list, toggleRow);
+
+      syncToggle = () => {
+        const inputs = Object.values(checkboxes);
+        const checked = inputs.filter(input => input.checked).length;
+        toggleInput.checked = checked === inputs.length;
+        toggleInput.indeterminate = checked > 0 && checked < inputs.length;
+      };
+
+      $.on(toggleInput, 'change', () => {
+        const target = toggleInput.checked;
+        toggleInput.indeterminate = false;
+        for (const input of Object.values(checkboxes)) {
+          input.checked = target;
+        }
+        for (const syncSection of syncSectionStates) syncSection();
+      });
+
+      for (const input of Object.values(checkboxes)) {
+        $.on(input, 'change', syncToggle);
+      }
+      syncToggle();
+      $.add(picker, list);
+    } else {
+      $.add(picker, $.el('p', {
+        className: 'imp-exp-picker-empty',
+        textContent: 'No recognizable settings groups found.'
+      }));
+    }
+
+    const buttons = $.el('div', { className: 'imp-exp-picker-buttons' }) as HTMLDivElement;
+    const cancelBtn = $.el('button', { type: 'button', textContent: 'Cancel' }) as HTMLButtonElement;
+    const confirmBtn = $.el('button', {
+      type: 'button',
+      textContent: action,
+      disabled: !hasAny
+    }) as HTMLButtonElement;
+    $.add(buttons, [cancelBtn, confirmBtn]);
+    $.add(picker, buttons);
+
+    const close = () => Settings.closeImpExpPicker();
+    $.on(cancelBtn, 'click', close);
+    $.on(overlay, 'click', e => {
+      if (e.target === overlay) close();
+    });
+    $.on(confirmBtn, 'click', () => {
+      const checked: Record<string, boolean> = dict();
+      for (const [name, input] of Object.entries(checkboxes)) {
+        if (input.checked) checked[name] = true;
+      }
+      Settings.closeImpExpPicker();
+      onConfirm(checked);
+    });
+
+    $.add(Settings.dialog, overlay);
+    Settings.impExpPicker = overlay;
+  },
+
+  closeImpExpPicker() {
+    if (!Settings.impExpPicker) return;
+    $.rm(Settings.impExpPicker);
+    Settings.impExpPicker = null;
   },
 
   upgrade(data, version) {
@@ -467,7 +2965,7 @@ Enable it on boards.${location.hostname.split('.')[1]}.org in your browser's pri
     if (compareString < '00002.00003.00001.00000') {
       if (data['boardnav']) {
         set('boardnav', data['boardnav'].replace(
-          '[external-text:"FAQ","4chan XT"]',
+          '[external-text:"FAQ","4chan-neXT"]',
           `[external-text:"FAQ","${meta.faq}"]`
         ));
       }
@@ -505,16 +3003,112 @@ Enable it on boards.${location.hostname.split('.')[1]}.org in your browser's pri
     }
   },
 
+  filtersPreviewState: null as null | {
+    panel: HTMLDivElement;
+    simpleTbody: HTMLTableSectionElement | null;
+    advancedType: string | null;
+    advancedTextarea: HTMLTextAreaElement | null;
+  },
+  forcedFiltersMode: null as null | string,
+  forcedFilterType: null as null | string,
+
   filter(section) {
+    const simplePanel = $.el('div') as HTMLDivElement;
+    const advancedPanel = $.el('div') as HTMLDivElement;
+    const previewPanel = $.el('div') as HTMLDivElement;
+    const previewState = {
+      panel: previewPanel,
+      simpleTbody: null as HTMLTableSectionElement | null,
+      advancedType: null as string | null,
+      advancedTextarea: null as HTMLTextAreaElement | null,
+    };
+    Settings.filtersPreviewState = previewState;
+    Settings.advancedFilter(advancedPanel, previewState);
+    Settings.easyFilters(simplePanel, previewState);
+    $.add(advancedPanel, previewPanel);
+
+    const simpleDetails = $.el('details',
+      { open: true },
+      { innerHTML: '<summary>Simple Rules</summary>' }) as HTMLDetailsElement;
+    const advancedDetails = $.el('details',
+      { open: false },
+      { innerHTML: '<summary>Advanced Rules</summary>' }) as HTMLDetailsElement;
+    $.add(simpleDetails, simplePanel);
+    $.add(advancedDetails, advancedPanel);
+
+    $.add(section, [simpleDetails, advancedDetails]);
+
+    const detailsByMode = {
+      simple: simpleDetails,
+      advanced: advancedDetails
+    } as Record<string, HTMLDetailsElement>;
+    const applyForcedFilterType = () => {
+      if (!Settings.forcedFilterType) return;
+      const select = $('select[name=filter]', advancedPanel) as (HTMLSelectElement & { filterPreviewState?: any }) | null;
+      if (!select) return;
+      const forceType = Settings.forcedFilterType;
+      Settings.forcedFilterType = null;
+      select.value = forceType;
+      Settings.selectFilter.call(select);
+    };
+    const filteringSectionInfo = { title: 'Filtering' } as any;
+    const hasRememberedAccordionState = () => {
+      if (!Settings.rememberLayout) return false;
+      for (const details of Object.values(detailsByMode)) {
+        const key = Settings.detailsStateKey(details, filteringSectionInfo);
+        if (!key) continue;
+        if (Object.prototype.hasOwnProperty.call(Settings.detailsState, key)) return true;
+      }
+      return false;
+    };
+    let syncing = false;
+    const openMode = (mode: string) => {
+      syncing = true;
+      for (const key in detailsByMode) {
+        detailsByMode[key].open = key === mode;
+      }
+      syncing = false;
+      if (mode === 'advanced') applyForcedFilterType();
+      $.set('settings.filtersMode', mode);
+      Settings.refreshCombinedFilterPreview(previewState);
+    };
+
+    for (const [mode, details] of Object.entries(detailsByMode)) {
+      $.on(details, 'toggle', function() {
+        if (syncing || !this.open) return;
+        openMode(mode);
+      });
+    }
+
+    $.get('settings.filtersMode', 'simple', (item) => {
+      if (hasRememberedAccordionState()) {
+        if (Settings.forcedFiltersMode && detailsByMode[Settings.forcedFiltersMode]) {
+          openMode(Settings.forcedFiltersMode);
+          Settings.forcedFiltersMode = null;
+        } else {
+          Settings.refreshCombinedFilterPreview(previewState);
+        }
+        return;
+      }
+      let mode = Settings.forcedFiltersMode || item['settings.filtersMode'];
+      Settings.forcedFiltersMode = null;
+      if (!['simple', 'advanced'].includes(mode)) mode = 'simple';
+      openMode(mode);
+    });
+  },
+
+  advancedFilter(section, previewState) {
     $.extend(section, { innerHTML: FilterSelectPage });
-    const select = $('select', section);
+    const select = $('select', section) as HTMLSelectElement & { filterPreviewState?: any };
+    select.filterPreviewState = previewState;
     $.on(select, 'change', Settings.selectFilter);
     Settings.selectFilter.call(select);
   },
 
-  selectFilter(this: HTMLSelectElement) {
+  selectFilter(this: HTMLSelectElement & { filterPreviewState?: any }) {
     let name: string;
     const div = this.nextElementSibling as HTMLElement;
+    const previewState = this.filterPreviewState;
     if ((name = this.value) !== 'guide') {
       if (!$.hasOwn(Config.filter, name)) { return; }
       $.rmAll(div);
@@ -527,6 +3121,7 @@ Enable it on boards.${location.hostname.split('.')[1]}.org in your browser's pri
       $.get(name, Conf[name], function(item) {
         ta.value = item[name];
         $.add(div, ta);
+        Settings.addFilterStats(name, ta, div, previewState);
       });
       return;
     }
@@ -536,6 +3131,676 @@ Enable it on boards.${location.hostname.split('.')[1]}.org in your browser's pri
     $.extend(div, { innerHTML: FilterGuidePage });
     $('#filterTypes', div).textContent = `type:\u200B${filterTypes};`;
     $('.warning', div).hidden = Conf['Filter'];
+  },
+
+  easyFilterTypes: [
+    ['General', 'general'],
+    ['Post Number', 'postID'],
+    ['Name', 'name'],
+    ['Unique ID', 'uniqueID'],
+    ['Tripcode', 'tripcode'],
+    ['Capcode', 'capcode'],
+    ['Pass Date', 'pass'],
+    ['Email', 'email'],
+    ['Subject', 'subject'],
+    ['Comment', 'comment'],
+    ['Flag', 'flag'],
+    ['Filename', 'filename'],
+    ['Dimensions', 'dimensions'],
+    ['Filesize', 'filesize'],
+    ['Image MD5', 'MD5'],
+  ] as [string, string][],
+
+  easyFilters(section: HTMLElement, previewState: any) {
+    $.extend(section, { innerHTML: SimpleFiltersPage });
+    const tbody = $('tbody', section) as HTMLTableSectionElement;
+    const addButton = $('.easy-filter-add', section);
+    const saveButton = $('.easy-filter-save', section);
+    const status = $('.easy-filter-status', section);
+    if (previewState) previewState.simpleTbody = tbody;
+
+    const markDirty = () => {
+      status.textContent = 'Unsaved changes.';
+      Settings.refreshCombinedFilterPreview(previewState);
+    };
+
+    const save = () => {
+      const rules = Settings.collectEasyFilters(tbody);
+      const serialized = JSON.stringify(rules);
+      $.set('easyFilters', serialized);
+      Conf['easyFilters'] = serialized;
+      status.textContent = `Saved ${rules.length} rule${rules.length === 1 ? '' : 's'}.`;
+      Settings.refreshCombinedFilterPreview(previewState);
+    };
+
+    const addRow = (rule: any = {}) => {
+      const row = Settings.easyFilterRow(rule, markDirty);
+      $.add(tbody, row);
+      return row;
+    };
+
+    const rules = Settings.parseEasyFilters();
+    if (rules.length) {
+      for (const rule of rules) addRow(rule);
+    } else {
+      addRow({ enabled: true, hide: true, type: 'tripcode' });
+    }
+
+    $.on(addButton, 'click', () => {
+      const row = addRow({ enabled: true, hide: true, type: 'tripcode' });
+      const patternInput = $('.easy-filter-pattern', row) as HTMLInputElement;
+      if (patternInput) {
+        patternInput.focus();
+        patternInput.select();
+      }
+      markDirty();
+    });
+
+    $.on(saveButton, 'click', save);
+
+    status.textContent = `Loaded ${rules.length} rule${rules.length === 1 ? '' : 's'}.`;
+    Settings.refreshCombinedFilterPreview(previewState);
+  },
+
+  parseEasyFilters(): any[] {
+    const raw = Conf['easyFilters'];
+    let rules: any[] = [];
+    if (Array.isArray(raw)) {
+      rules = raw;
+    } else if (typeof raw === 'string' && raw.trim()) {
+      try { rules = JSON.parse(raw); } catch { rules = []; }
+    }
+    if (!Array.isArray(rules)) return [];
+
+    return rules.map((rule) => {
+      if (!rule || typeof rule !== 'object') return {};
+      const type = (rule.type in Config.filter) ? rule.type : ({
+        title: 'subject', body: 'comment', name: 'name',
+      } as Record<string, string>)[rule.field] || 'general';
+      const hide = (rule.hide != null)
+        ? !!rule.hide
+        : !['highlight', 'notify'].includes(rule.action);
+      return {
+        enabled: rule.enabled != null ? !!rule.enabled : true,
+        pattern: typeof rule.pattern === 'string' ? rule.pattern
+          : typeof rule.match === 'string' ? rule.match : '',
+        boards: typeof rule.boards === 'string' ? rule.boards : '',
+        type,
+        color: typeof rule.color === 'string' ? rule.color : '',
+        auto: !!rule.auto,
+        hide,
+        override: !!rule.override,
+      };
+    });
+  },
+
+  easyFilterRow(rule: any, markDirty: () => void): HTMLTableRowElement {
+    const tr = $.el('tr', {
+      innerHTML: `
+        <td><input class="easy-filter-enabled" type="checkbox"></td>
+        <td><input class="field easy-filter-pattern" type="text"></td>
+        <td><input class="field easy-filter-boards" type="text" placeholder="all or g,v"></td>
+        <td><select class="easy-filter-type"></select></td>
+        <td><input class="field easy-filter-color" type="text" placeholder="highlight class"></td>
+        <td><input class="easy-filter-auto" type="checkbox" title="Move highlighted OPs to top"></td>
+        <td><input class="easy-filter-hide" type="checkbox"></td>
+        <td><input class="easy-filter-override" type="checkbox" title="Whitelist: matching highlight prevents this thread from being hidden by other rules"></td>
+        <td><button class="easy-filter-remove" type="button" title="Remove">\u00D7</button></td>
+      `,
+    }) as HTMLTableRowElement;
+
+    const typeSelect = $('.easy-filter-type', tr) as HTMLSelectElement;
+    for (const [label, value] of Settings.easyFilterTypes) {
+      $.add(typeSelect, $.el('option', { textContent: label, value }));
+    }
+
+    const enabledInput = $('.easy-filter-enabled', tr) as HTMLInputElement;
+    const patternInput = $('.easy-filter-pattern', tr) as HTMLInputElement;
+    const boardsInput = $('.easy-filter-boards', tr) as HTMLInputElement;
+    const colorInput = $('.easy-filter-color', tr) as HTMLInputElement;
+    const autoInput = $('.easy-filter-auto', tr) as HTMLInputElement;
+    const hideInput = $('.easy-filter-hide', tr) as HTMLInputElement;
+    const overrideInput = $('.easy-filter-override', tr) as HTMLInputElement;
+    const removeButton = $('.easy-filter-remove', tr);
+
+    enabledInput.checked = rule.enabled != null ? !!rule.enabled : true;
+    patternInput.value = rule.pattern || '';
+    boardsInput.value = rule.boards || '';
+    typeSelect.value = (rule.type in Config.filter) ? rule.type : 'general';
+    colorInput.value = rule.color || '';
+    autoInput.checked = !!rule.auto;
+    hideInput.checked = rule.hide != null ? !!rule.hide : true;
+    overrideInput.checked = !!rule.override;
+
+    // Override only applies to highlight rules. Grey it out when this row is set
+    // to hide, since "hide + override" has no meaning.
+    const syncOverrideState = () => {
+      const disabled = hideInput.checked;
+      overrideInput.disabled = disabled;
+      if (disabled) overrideInput.checked = false;
+    };
+    syncOverrideState();
+    $.on(hideInput, 'change', syncOverrideState);
+
+    for (const input of $$('input, select', tr)) {
+      $.on(input, 'change', markDirty);
+      if ((input as HTMLInputElement).type === 'text') {
+        $.on(input, 'input', markDirty);
+      }
+    }
+
+    $.on(removeButton, 'click', () => {
+      $.rm(tr);
+      markDirty();
+    });
+
+    return tr;
+  },
+
+  collectEasyFilters(tbody: HTMLTableSectionElement): any[] {
+    const rules: any[] = [];
+    for (const tr of $$('tr', tbody)) {
+      const pattern = ($('.easy-filter-pattern', tr) as HTMLInputElement).value.trim();
+      if (!pattern) continue;
+      const type = ($('.easy-filter-type', tr) as HTMLSelectElement).value;
+      const hide = ($('.easy-filter-hide', tr) as HTMLInputElement).checked;
+      rules.push({
+        enabled: ($('.easy-filter-enabled', tr) as HTMLInputElement).checked,
+        pattern,
+        boards: ($('.easy-filter-boards', tr) as HTMLInputElement).value.trim(),
+        type: (type in Config.filter) ? type : 'general',
+        color: ($('.easy-filter-color', tr) as HTMLInputElement).value.trim(),
+        auto: ($('.easy-filter-auto', tr) as HTMLInputElement).checked,
+        hide,
+        override: !hide && ($('.easy-filter-override', tr) as HTMLInputElement).checked,
+      });
+    }
+    return rules;
+  },
+
+  easyFilterRuleFromRow(tr: HTMLTableRowElement) {
+    const pattern = ($('.easy-filter-pattern', tr) as HTMLInputElement).value.trim();
+    if (!pattern) return null;
+    const type = ($('.easy-filter-type', tr) as HTMLSelectElement).value;
+    const hide = ($('.easy-filter-hide', tr) as HTMLInputElement).checked;
+    return {
+      enabled: ($('.easy-filter-enabled', tr) as HTMLInputElement).checked,
+      pattern,
+      boards: ($('.easy-filter-boards', tr) as HTMLInputElement).value.trim(),
+      type: (type in Config.filter) ? type : 'general',
+      color: ($('.easy-filter-color', tr) as HTMLInputElement).value.trim(),
+      auto: ($('.easy-filter-auto', tr) as HTMLInputElement).checked,
+      hide,
+      override: !hide && ($('.easy-filter-override', tr) as HTMLInputElement).checked,
+    };
+  },
+
+  easyFilterRuleToLine(rule: any): string | null {
+    if (!rule?.enabled) return null;
+    const match = (rule.pattern || '').trim();
+    if (!match) return null;
+
+    const flags = rule.caseSensitive ? '' : 'i';
+    let line = `/${Filter.escape(match)}/${flags}`;
+
+    const options: string[] = [];
+    if (typeof rule.boards === 'string' && rule.boards.trim()) {
+      options.push(`boards:${rule.boards.trim()}`);
+    }
+
+    const type = (rule.type in Config.filter) ? rule.type : 'general';
+    options.push(`type:${type === 'general' ? 'subject,name,comment' : type}`);
+
+    const hide = (rule.hide != null) ? !!rule.hide : !['highlight', 'notify'].includes(rule.action);
+    if (!hide) {
+      const color = (rule.color || '').trim();
+      options.push(color ? `highlight:${color}` : 'highlight');
+      options.push(`top:${rule.auto ? 'yes' : 'no'}`);
+      if (rule.override) options.push('override');
+    }
+    if (rule.action === 'notify') options.push('notify');
+
+    if (options.length) line += `;${options.join(';')}`;
+    return line;
+  },
+
+  addFilterStats(type: string, textarea: HTMLTextAreaElement, container: HTMLElement, previewState: any) {
+    if (previewState) {
+      previewState.advancedType = type;
+      previewState.advancedTextarea = textarea;
+      const refresh = () => Settings.refreshCombinedFilterPreview(previewState);
+      $.on(textarea, 'input', refresh);
+      $.on(textarea, 'change', refresh);
+      refresh();
+      return;
+    }
+  },
+
+  refreshCombinedFilterPreview(previewState = Settings.filtersPreviewState) {
+    const panel = previewState?.panel;
+    if (!panel) return;
+    $.rmAll(panel);
+
+    if (!previewState.simpleTbody && !previewState.advancedTextarea) {
+      $.add(panel, $.el('div', {
+        className: 'filter-stats-empty',
+        textContent: 'No filters loaded yet.',
+      }));
+      return;
+    }
+
+    if (previewState.simpleTbody) {
+      const simpleGroup = $.el('div', { className: 'filter-preview-group' });
+      $.add(simpleGroup, $.el('div', { className: 'filter-preview-heading', textContent: 'Simple Filters' }));
+      const simplePanel = $.el('div', { className: 'filter-stats' });
+      $.add(simpleGroup, simplePanel);
+      Settings.renderEasyFilterPreview(previewState.simpleTbody, simplePanel);
+      $.add(panel, simpleGroup);
+    }
+
+    if (previewState.advancedTextarea) {
+      const advancedGroup = $.el('div', { className: 'filter-preview-group' });
+      const advancedLabel = previewState.advancedType
+        ? `Advanced Filters (${previewState.advancedType})` : 'Advanced Filters';
+      $.add(advancedGroup, $.el('div', { className: 'filter-preview-heading', textContent: advancedLabel }));
+      const advancedPanel = $.el('div', { className: 'filter-stats' });
+      $.add(advancedGroup, advancedPanel);
+      Settings.renderFilterStats(previewState.advancedType, previewState.advancedTextarea, advancedPanel);
+      $.add(panel, advancedGroup);
+    }
+  },
+
+  renderEasyFilterPreview(tbody: HTMLTableSectionElement, panel: HTMLElement) {
+    $.rmAll(panel);
+    if (!g.BOARD?.threads || !['index', 'thread', 'catalog'].includes(g.VIEW)) {
+      $.add(panel, $.el('div', {
+        className: 'filter-stats-empty',
+        textContent: 'Thread match preview is available on board and catalog pages.',
+      }));
+      return;
+    }
+
+    const entries = Settings.filterPreviewEntries();
+    if (!entries.length) {
+      $.add(panel, $.el('div', {
+        className: 'filter-stats-empty',
+        textContent: 'No loaded thread data to preview.',
+      }));
+      return;
+    }
+
+    const stats: any[] = [];
+    let totalMatches = 0;
+    let totalHidden = 0;
+    let activeRules = 0;
+    let rowNo = 0;
+    for (const tr of $$('tr', tbody)) {
+      rowNo++;
+      const rule = Settings.easyFilterRuleFromRow(tr);
+      if (!rule) continue;
+      const lineText = Settings.easyFilterRuleToLine(rule);
+      if (!lineText) {
+        stats.push({ rowNo, rule, disabled: true });
+        continue;
+      }
+
+      activeRules++;
+      const parsed = Settings.parseFilterPreviewLine('general', lineText);
+      if (parsed?.invalid) {
+        stats.push({ rowNo, rule, invalid: parsed.invalid });
+        continue;
+      }
+      if (parsed?.skip) continue;
+
+      const result = Settings.collectFilterPreviewMatches(parsed, entries);
+      totalMatches += result.matches.length;
+      totalHidden += result.hiddenThreadCount;
+      stats.push({ rowNo, rule, matches: result.matches, hiddenThreadCount: result.hiddenThreadCount });
+    }
+
+    if (!stats.length) {
+      $.add(panel, $.el('div', {
+        className: 'filter-stats-empty',
+        textContent: 'Add a pattern to preview thread matches.',
+      }));
+      return;
+    }
+
+    $.add(panel, $.el('div', {
+      className: 'filter-stats-summary',
+      textContent: `${activeRules} active rule${activeRules === 1 ? '' : 's'}, ${totalMatches} matching thread${totalMatches === 1 ? '' : 's'}, ${totalHidden} hidden thread${totalHidden === 1 ? '' : 's'}.`,
+    }));
+
+    const maxThreads = 50;
+    for (const stat of stats) {
+      const row = $.el('div', { className: 'filter-stat-row' });
+      let ruleText = `${stat.rule.type}: ${stat.rule.pattern}`;
+      if (ruleText.length > 120) ruleText = `${ruleText.slice(0, 117)}...`;
+
+      if (stat.disabled) {
+        $.add(row, [
+          $.el('span', { className: 'filter-stat-count', textContent: `Rule ${stat.rowNo}: disabled` }),
+          $.tn(' '),
+          $.el('code', { textContent: ruleText }),
+        ]);
+        $.add(panel, row);
+        continue;
+      }
+      if (stat.invalid) {
+        $.add(row, $.el('div', {
+          className: 'filter-stat-invalid',
+          textContent: `Rule ${stat.rowNo}: invalid regex (${stat.invalid})`,
+        }));
+        $.add(panel, row);
+        continue;
+      }
+
+      const matchCount = stat.matches.length;
+      let summaryText = `Rule ${stat.rowNo}: ${matchCount} matching thread${matchCount === 1 ? '' : 's'}`;
+      if (stat.hiddenThreadCount) summaryText += `, ${stat.hiddenThreadCount} hidden`;
+
+      if (matchCount) {
+        const details = $.el('details', { className: 'filter-stat' }) as HTMLDetailsElement;
+        const summaryEl = $.el('summary');
+        $.add(summaryEl, [
+          $.el('span', { className: 'filter-stat-count', textContent: summaryText }),
+          $.tn(' '),
+          $.el('code', { textContent: ruleText }),
+        ]);
+        $.add(details, summaryEl);
+
+        const list = $.el('ul', { className: 'filter-stat-threads' });
+        stat.matches.slice(0, maxThreads).forEach((m: any) => {
+          const { entry, hidesThread } = m;
+          const { href, text } = Settings.filterPreviewThreadLink(entry);
+          const li = $.el('li');
+          $.add(li, $.el('a', { href, textContent: text }));
+          if (hidesThread) $.add(li, $.tn(' (hidden)'));
+          $.add(list, li);
+        });
+        if (stat.matches.length > maxThreads) {
+          $.add(list, $.el('li', {
+            className: 'filter-stat-more',
+            textContent: `...and ${stat.matches.length - maxThreads} more.`,
+          }));
+        }
+        $.add(details, list);
+        $.add(row, details);
+      } else {
+        $.add(row, [
+          $.el('span', { className: 'filter-stat-count', textContent: summaryText }),
+          $.tn(' '),
+          $.el('code', { textContent: ruleText }),
+        ]);
+      }
+      $.add(panel, row);
+    }
+  },
+
+  renderFilterStats(type: string, textarea: HTMLTextAreaElement, panel: HTMLElement) {
+    $.rmAll(panel);
+    if (!g.BOARD?.threads || !['index', 'thread', 'catalog'].includes(g.VIEW)) {
+      $.add(panel, $.el('div', {
+        className: 'filter-stats-empty',
+        textContent: 'Thread match preview is available on board and catalog pages.',
+      }));
+      return;
+    }
+    const entries = Settings.filterPreviewEntries();
+    if (!entries.length) {
+      $.add(panel, $.el('div', {
+        className: 'filter-stats-empty',
+        textContent: 'No loaded thread data to preview.',
+      }));
+      return;
+    }
+
+    const lines = textarea.value.split('\n');
+
+    if (type === 'MD5') {
+      let activeLines = 0;
+      for (const line of lines) {
+        const trimmed = line.trim();
+        if (trimmed && trimmed[0] !== '#') activeLines++;
+      }
+      if (activeLines > 250) {
+        $.add(panel, $.el('div', {
+          className: 'filter-stats-empty',
+          textContent: `Preview disabled for MD5 while ${activeLines} lines are loaded.`,
+        }));
+        return;
+      }
+    }
+
+    const stats: any[] = [];
+    let totalMatches = 0;
+    let totalHidden = 0;
+    lines.forEach((line, i) => {
+      const trimmed = line.trim();
+      if (!trimmed) return;
+      const parsed = Settings.parseFilterPreviewLine(type, line);
+      if (parsed?.skip) return;
+      if (parsed?.invalid) {
+        stats.push({ lineNo: i + 1, line, invalid: parsed.invalid });
+        return;
+      }
+      const result = Settings.collectFilterPreviewMatches(parsed, entries);
+      totalMatches += result.matches.length;
+      totalHidden += result.hiddenThreadCount;
+      stats.push({ lineNo: i + 1, line, matches: result.matches, hiddenThreadCount: result.hiddenThreadCount });
+    });
+
+    if (!stats.length) {
+      $.add(panel, $.el('div', {
+        className: 'filter-stats-empty',
+        textContent: 'No filter lines to preview.',
+      }));
+      return;
+    }
+
+    $.add(panel, $.el('div', {
+      className: 'filter-stats-summary',
+      textContent: `${stats.length} line${stats.length === 1 ? '' : 's'}, ${totalMatches} matching thread${totalMatches === 1 ? '' : 's'}, ${totalHidden} hidden thread${totalHidden === 1 ? '' : 's'}.`,
+    }));
+
+    const maxThreads = 50;
+    for (const stat of stats) {
+      const row = $.el('div', { className: 'filter-stat-row' });
+      if (stat.invalid) {
+        $.add(row, $.el('div', {
+          className: 'filter-stat-invalid',
+          textContent: `Line ${stat.lineNo}: invalid regex (${stat.invalid})`,
+        }));
+        $.add(panel, row);
+        continue;
+      }
+      let lineText = stat.line.trim();
+      if (lineText.length > 120) lineText = `${lineText.slice(0, 117)}...`;
+      const matchCount = stat.matches.length;
+      let summaryText = `Line ${stat.lineNo}: ${matchCount} matching thread${matchCount === 1 ? '' : 's'}`;
+      if (stat.hiddenThreadCount) summaryText += `, ${stat.hiddenThreadCount} hidden`;
+
+      if (matchCount) {
+        const details = $.el('details', { className: 'filter-stat' }) as HTMLDetailsElement;
+        const summaryEl = $.el('summary');
+        $.add(summaryEl, [
+          $.el('span', { className: 'filter-stat-count', textContent: summaryText }),
+          $.tn(' '),
+          $.el('code', { textContent: lineText }),
+        ]);
+        $.add(details, summaryEl);
+        const list = $.el('ul', { className: 'filter-stat-threads' });
+        stat.matches.slice(0, maxThreads).forEach((m: any) => {
+          const { entry, hidesThread } = m;
+          const { href, text } = Settings.filterPreviewThreadLink(entry);
+          const li = $.el('li');
+          $.add(li, $.el('a', { href, textContent: text }));
+          if (hidesThread) $.add(li, $.tn(' (hidden)'));
+          $.add(list, li);
+        });
+        if (stat.matches.length > maxThreads) {
+          $.add(list, $.el('li', {
+            className: 'filter-stat-more',
+            textContent: `...and ${stat.matches.length - maxThreads} more.`,
+          }));
+        }
+        $.add(details, list);
+        $.add(row, details);
+      } else {
+        $.add(row, [
+          $.el('span', { className: 'filter-stat-count', textContent: summaryText }),
+          $.tn(' '),
+          $.el('code', { textContent: lineText }),
+        ]);
+      }
+      $.add(panel, row);
+    }
+  },
+
+  parseFilterPreviewLine(key: string, line: string): any {
+    if (line[0] === '#') return { skip: true };
+    const regexpMatch = line.match(/\/(.*)\/(\w*)/);
+    if (!regexpMatch) return { skip: true };
+
+    const isstring = key === 'uniqueID' || key === 'MD5';
+    let regexp: any = regexpMatch[1];
+    if (!isstring) {
+      try {
+        regexp = RegExp(regexpMatch[1], regexpMatch[2]);
+      } catch (err) {
+        return { invalid: err.message };
+      }
+    }
+    const filter = line.replace(regexpMatch[0], '');
+
+    const boards = Filter.parseBoards(filter.match(/(?:^|;)\s*boards:([^;]+)/)?.[1]);
+    const excludes = Filter.parseBoards(filter.match(/(?:^|;)\s*exclude:([^;]+)/)?.[1]);
+
+    const op = filter.match(/(?:^|;)\s*op:(no|only)/)?.[1] || '';
+    let mask = ({ no: 1, only: 2 } as Record<string, number>)[op] || 0;
+    const file = filter.match(/(?:^|;)\s*file:(no|only)/)?.[1] || '';
+    mask = mask | (({ no: 4, only: 8 } as Record<string, number>)[file] || 0);
+
+    const noti = /(?:^|;)\s*notify/.test(filter);
+    const hl = /(?:^|;)\s*highlight/.test(filter);
+    const hide = !(hl || noti);
+
+    const keys = (key === 'general')
+      ? (filter.match(/(?:^|;)\s*type:([^;]*)/)?.[1].split(',') || ['subject', 'name', 'filename', 'comment'])
+      : [key];
+
+    return { regexp, isstring, boards, excludes, mask, hide, keys };
+  },
+
+  collectFilterPreviewMatches(parsed: any, entries: any[]) {
+    const matches: any[] = [];
+    let hiddenThreadCount = 0;
+    for (const entry of entries) {
+      let threadMatched = false;
+      let hidesThread = false;
+      for (const post of entry.posts) {
+        if (!Settings.filterPreviewMatchesPost(parsed, post)) continue;
+        threadMatched = true;
+        if (parsed.hide && !post.isReply && !QuoteYou.isYou(post)) hidesThread = true;
+      }
+      if (threadMatched) {
+        matches.push({ entry, hidesThread });
+        if (hidesThread) hiddenThreadCount++;
+      }
+    }
+    return { matches, hiddenThreadCount };
+  },
+
+  filterPreviewMatchesPost(parsed: any, post: any): boolean {
+    let mask = post.isReply ? 2 : 1;
+    mask = mask | (post.file ? 4 : 8);
+    const board = `${post.siteID}/${post.boardID}`;
+    const site = `${post.siteID}/*`;
+    if (
+      (parsed.boards && !(parsed.boards[board] || parsed.boards[site])) ||
+      (parsed.excludes && (parsed.excludes[board] || parsed.excludes[site])) ||
+      (parsed.mask & mask)
+    ) return false;
+
+    for (const key of parsed.keys) {
+      for (const value of Filter.values(key, post)) {
+        if (parsed.isstring) {
+          if (parsed.regexp === value) return true;
+        } else {
+          (parsed.regexp as RegExp).lastIndex = 0;
+          if ((parsed.regexp as RegExp).test(value)) return true;
+        }
+      }
+    }
+    return false;
+  },
+
+  filterPreviewEntries(): any[] {
+    const entries: any[] = [];
+
+    if (g.VIEW === 'index' && (Index as any)?.parsedThreads) {
+      for (const threadID in (Index as any).parsedThreads) {
+        const parsed = (Index as any).parsedThreads[threadID];
+        const thread = g.BOARD?.threads?.get?.(+threadID) || g.BOARD?.threads?.get?.(threadID as any);
+        const posts: any[] = [];
+        if (thread?.posts) {
+          thread.posts.forEach((post: any) => {
+            if (post.isClone || post.isFetchedQuote) return;
+            posts.push(post);
+          });
+        }
+        if (!posts.length) posts.push(parsed);
+        entries.push({ id: +threadID, boardID: parsed.boardID, siteID: parsed.siteID, thread, op: parsed, posts });
+      }
+      return entries;
+    }
+
+    if (g.VIEW === 'catalog' && (Filter as any)?.catalogData) {
+      for (const threadID in (Filter as any).catalogData) {
+        const data = (Filter as any).catalogData[threadID];
+        const parsed = g.SITE.Build.parseJSON(data, g.BOARD);
+        const thread = g.BOARD?.threads?.get?.(+threadID) || g.BOARD?.threads?.get?.(threadID as any);
+        const posts: any[] = [];
+        if (thread?.posts) {
+          thread.posts.forEach((post: any) => {
+            if (post.isClone || post.isFetchedQuote) return;
+            posts.push(post);
+          });
+        }
+        if (!posts.length) posts.push(parsed);
+        entries.push({ id: +threadID, boardID: parsed.boardID, siteID: parsed.siteID, thread, op: parsed, posts });
+      }
+      return entries;
+    }
+
+    if (g.BOARD?.threads) {
+      g.BOARD.threads.forEach((thread: any) => {
+        if (!thread?.OP || thread.OP.isFetchedQuote) return;
+        const posts: any[] = [];
+        thread.posts.forEach((post: any) => {
+          if (post.isClone || post.isFetchedQuote) return;
+          posts.push(post);
+        });
+        if (!posts.length) posts.push(thread.OP);
+        entries.push({ id: thread.ID, boardID: thread.boardID, siteID: thread.siteID, thread, op: thread.OP, posts });
+      });
+    }
+    return entries;
+  },
+
+  filterPreviewThreadLink(entry: any): { href: string; text: string } {
+    const { id, boardID, op } = entry;
+    let href = (g.SITE.Build as any).postURL?.(boardID, id, id) || (g.SITE.Build as any).threadURL?.(boardID, id) || '';
+    if (!href) href = `#p${id}`;
+    let title = op.info.subject || op.info.comment || op.info.nameBlock || '';
+    if (!title && op.info.commentHTML?.innerHTML) {
+      title = g.sites[op.siteID]?.Build?.parseComment?.(op.info.commentHTML.innerHTML) || '';
+    }
+    title = title.replace(/\s+/g, ' ').trim();
+    if (title.length > 90) title = `${title.slice(0, 87)}...`;
+    let text = `/${boardID}/${id}`;
+    if (title) text += ` - ${title}`;
+    return { href, text };
   },
 
   sauce(section) {
@@ -593,8 +3858,10 @@ Enable it on boards.${location.hostname.split('.')[1]}.org in your browser's pri
     });
 
     const listImageHost = $.id('list-fourchanImageHost');
-    for (var textContent of ImageHost.suggestions) {
-      $.add(listImageHost, $.el('option', {textContent}));
+    if (listImageHost) {
+      for (const textContent of ImageHost.suggestions) {
+        $.add(listImageHost, $.el('option', {textContent}));
+      }
     }
 
     const interval  : HTMLInputElement  = inputs['Interval'];
@@ -602,16 +3869,25 @@ Enable it on boards.${location.hostname.split('.')[1]}.org in your browser's pri
     const applyCSS  : HTMLButtonElement = $('#apply-css', section);
     const timeLocale: HTMLInputElement  = inputs.timeLocale;
 
-    interval.value             =  Conf['Interval'];
-    customCSS.checked          =  Conf['Custom CSS'];
-    inputs['usercss'].disabled = !Conf['Custom CSS'];
-    applyCSS.disabled          = !Conf['Custom CSS'];
-    timeLocale.value           =  Conf.timeLocale;
-
-    $.on(interval,  'change', ThreadUpdater.cb.interval);
-    $.on(customCSS, 'change', Settings.togglecss);
-    $.on(applyCSS, 'click', () => CustomCSS.update());
-    $.on(timeLocale, 'change', Settings.setTimeLocale);
+    if (interval) {
+      interval.value = Conf['Interval'];
+      $.on(interval, 'change', ThreadUpdater.cb.interval);
+    }
+    if (customCSS) {
+      customCSS.checked = Conf['Custom CSS'];
+      $.on(customCSS, 'change', Settings.togglecss);
+    }
+    if (inputs['usercss']) {
+      inputs['usercss'].disabled = !Conf['Custom CSS'];
+    }
+    if (applyCSS) {
+      applyCSS.disabled = !Conf['Custom CSS'];
+      $.on(applyCSS, 'click', () => CustomCSS.update());
+    }
+    if (timeLocale) {
+      timeLocale.value = Conf.timeLocale;
+      $.on(timeLocale, 'change', Settings.setTimeLocale);
+    }
 
     const itemsArchive = dict();
     for (name of ['archives', 'selectedArchives', 'lastarchivecheck']) { itemsArchive[name] = Conf[name]; }
@@ -625,12 +3901,18 @@ Enable it on boards.${location.hostname.split('.')[1]}.org in your browser's pri
     const table          = $('#archive-table', section);
     const updateArchives = $('#update-archives', section);
 
-    $.on(boardSelect, 'change', function() {
-      $('tbody > :not([hidden])', table).hidden = true;
-      $(`tbody > .${this.value}`, table).hidden = false;
-    });
+    if (boardSelect && table) {
+      $.on(boardSelect, 'change', function() {
+        const active = $('tbody > :not([hidden])', table);
+        if (active) active.hidden = true;
+        const next = $(`tbody > .${this.value}`, table);
+        if (next) next.hidden = false;
+      });
+    }
 
-    $.on(updateArchives, 'click', () => Redirect.update(() => Settings.addArchiveTable(section)));
+    if (updateArchives) {
+      $.on(updateArchives, 'click', () => Redirect.update(() => Settings.addArchiveTable(section)));
+    }
 
     $.on(inputs.beepVolume, 'change', () => { ThreadUpdater.playBeep(false); });
     $.on(inputs.beepSource, 'change', () => { ThreadUpdater.playBeep(false); });
@@ -808,7 +4090,13 @@ Enable it on boards.${location.hostname.split('.')[1]}.org in your browser's pri
   },
 
   togglecss() {
-    if (($('textarea[name=usercss]', $.x('ancestor::fieldset[1]', this)).disabled = ($.id('apply-css').disabled = !this.checked))) {
+    const details = $.x('ancestor::details[1]', this) as HTMLElement | null;
+    const textarea = details ? ($('textarea[name=usercss]', details) as HTMLTextAreaElement | null) : null;
+    const applyCSS = details ? ($('#apply-css', details) as HTMLButtonElement | null) : null;
+    const disabled = !this.checked;
+    if (textarea) textarea.disabled = disabled;
+    if (applyCSS) applyCSS.disabled = disabled;
+    if (disabled) {
       CustomCSS.rmStyle();
     } else {
       CustomCSS.addStyle();
@@ -835,15 +4123,27 @@ Enable it on boards.${location.hostname.split('.')[1]}.org in your browser's pri
   keybinds(section) {
     let key;
     $.extend(section, { innerHTML: KeybindsPage });
-    $('.warning', section).hidden = Conf['Keybinds'];
+    const warning = $('.warning', section);
+    if (warning) warning.hidden = Conf['Keybinds'];
 
-    const tbody  = $('tbody', section);
+    const details = $.el('details',
+      { open: true },
+      { innerHTML: '<summary>Keybind Actions</summary>' }) as HTMLDetailsElement;
+    const contentNodes = [...section.childNodes];
+    $.rmAll(section);
+    $.add(details, contentNodes);
+    $.add(section, details);
+
+    const tbody  = $('tbody', details);
     const items  = dict();
     const inputs = Settings.keyBindInputs;
     for (key in Config.hotkeys) {
       var arr = Config.hotkeys[key];
       var tr = $.el('tr',
-        { innerHTML: `<td>${arr[1]}</td><td><input class="field"></td>` });
+        { innerHTML: `<td class="setting-title">${arr[1]}</td><td><input class="field"></td>` });
+      tr.dataset.name = `${key} ${arr[1]}`;
+      tr.dataset.settingTitle = arr[1];
+      tr.dataset.settingDescription = key;
       var input = $('input', tr);
       input.name = key;
       input.spellcheck = false;
@@ -859,7 +4159,7 @@ Enable it on boards.${location.hostname.split('.')[1]}.org in your browser's pri
         inputs[key].value = val;
       }
     });
-    $.on($('#reset-keys', section), 'click', Settings.resetKeybinds);
+    $.on($('#reset-keys', details), 'click', Settings.resetKeybinds);
   },
 
   keybind(e) {

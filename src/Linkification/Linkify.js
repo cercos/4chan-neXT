@@ -16,9 +16,13 @@ import Embedding from "./Embedding";
  */
 var Linkify = {
   init() {
-    if (!['index', 'thread', 'archive'].includes(g.VIEW) || !Conf['Linkify']) { return; }
+    if (!['index', 'thread', 'archive'].includes(g.VIEW)) { return; }
 
-    if (Conf['Comment Expansion']) {
+    const shouldLinkify = Conf['Linkify'];
+    const shouldRewriteX = Conf['Convert X to xcancel'];
+    if (!shouldLinkify && !shouldRewriteX) { return; }
+
+    if (shouldLinkify && Conf['Comment Expansion']) {
       ExpandComment.callbacks.push(this.node);
     }
 
@@ -27,14 +31,24 @@ var Linkify = {
       cb:   this.node
     });
 
-    return Embedding.init();
+    if (shouldLinkify) {
+      return Embedding.init();
+    }
   },
 
   node() {
     let link;
     if (this.isClone) { return Embedding.events(this); }
-    if (!Linkify.regString.test(this.info.comment)) { return; }
+    if (!Linkify.regString.test(this.info.comment)) {
+      if (Conf['Convert X to xcancel']) {
+        for (link of $$('a', this.nodes.comment)) {
+          Linkify.rewriteXLink(link);
+        }
+      }
+      return;
+    }
     for (link of $$('a', this.nodes.comment)) {
+      Linkify.rewriteXLink(link);
       if (g.SITE.isLinkified?.(link)) {
         $.addClass(link, 'linkify');
         if (ImageHost.useFaster) { ImageHost.fixLinks([link]); }
@@ -198,7 +212,7 @@ aero|asia|biz|cat|com|coop|dance|info|int|jobs|mobi|moe|museum|name|net|org|post
       className: 'linkify',
       rel:       'noreferrer noopener',
       target:    '_blank',
-      href:      text
+      href:      Linkify.rewriteXURL(text)
     }
     );
 
@@ -207,6 +221,42 @@ aero|asia|biz|cat|com|coop|dance|info|int|jobs|mobi|moe|museum|name|net|org|post
     range.insertNode(a);
 
     return a;
+  },
+
+  rewriteXLink(link) {
+    if (!Conf['Convert X to xcancel']) { return; }
+    const href = Linkify.rewriteXURL(link.href);
+    if (href !== link.href) {
+      link.href = href;
+    }
+  },
+
+  rewriteXURL(urlString) {
+    if (!Conf['Convert X to xcancel']) { return urlString; }
+    try {
+      const base = (typeof location === 'object' && location?.href) ? location.href : undefined;
+      const url = base ? new URL(urlString, base) : new URL(urlString);
+      if (!/^https?:$/.test(url.protocol)) { return urlString; }
+
+      // Direct links.
+      if (/(?:^|\.)twitter\.com$/i.test(url.hostname) || /(?:^|\.)x\.com$/i.test(url.hostname)) {
+        url.hostname = 'xcancel.com';
+        return url.toString();
+      }
+
+      // Wrapped redirect links (e.g. ?url=https://x.com/...).
+      const redirectParams = ['url', 'u', 'to', 'target', 'dest', 'destination', 'redirect', 'redir', 'r'];
+      for (const key of redirectParams) {
+        const value = url.searchParams.get(key);
+        if (!value) { continue; }
+        const rewritten = Linkify.rewriteXURL(value);
+        if (rewritten !== value) {
+          url.searchParams.set(key, rewritten);
+          return url.toString();
+        }
+      }
+    } catch {}
+    return urlString;
   }
 };
 export default Linkify;

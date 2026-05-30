@@ -41,6 +41,8 @@ import iconCss from '../Icons/icons.css';
 
 import fxTwitterCss from '../Linkification/Embedding/FxTwitter.css';
 
+export { burichan, futaba, photon, spooky, style, tomorrow, variableBase, www, yotsuba, yotsubaB };
+
 const mainCSS = style + variableBase + yotsuba +yotsubaB+futaba+burichan+tomorrow + photon + spooky + iconCss + fxTwitterCss;
 const faIcons: { name: string, data: string }[] = [
   { name: "audio", data: linkifyAudio },

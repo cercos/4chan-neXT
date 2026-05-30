@@ -3,6 +3,7 @@ import Config from "../config/Config";
 import Get from "../General/Get";
 import Header from "../General/Header";
 import UI from "../General/UI";
+import Filter from "../Filtering/Filter";
 import { Conf, d, doc, g } from "../globals/globals";
 import Nav from "../Miscellaneous/Nav";
 import $ from "../platform/$";
@@ -67,8 +68,14 @@ var ImageExpand = {
 
   cb: {
     toggle(e) {
-      if ($.modifiedClick(e)) { return; }
       const post = Get.postFromNode(this);
+      if (e.shiftKey && Conf['MD5 Quick Filter in Threads']) {
+        Filter.quickFilterMD5.call(post);
+        e.preventDefault();
+        e.stopImmediatePropagation();
+        return;
+      }
+      if ($.modifiedClick(e)) { return; }
       const {file} = post;
       if (file.isExpanded && ImageCommon.onControls(e)) { return; }
       e.preventDefault();

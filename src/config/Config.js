@@ -63,6 +63,15 @@ const Config = {
         true,
         'Localize and format timestamps. Has more options on the "Advanced" tab.'
       ],
+      'Relative Post Dates': [
+        false,
+        'Display dates like "3 minutes ago". Tooltip shows the timestamp.'
+      ],
+      'Relative Date Title': [
+        false,
+        'Show Relative Post Date only when hovering over dates.',
+        1
+      ],
       'Comment Expansion': [
         true,
         'Expand comments that are too long to display on the index. Not applicable with JSON Index.'
@@ -142,8 +151,7 @@ const Config = {
       ],
       'Scroll Markers': [
         true,
-        'Mark your posts and replies to them on the scroll bar. Relies on the "Highlight Posts Quoting You" and ' +
-          '"Highlight Own Posts" settings'
+        'Mark your posts and replies to them on the scroll bar.'
       ],
     },
 
@@ -182,6 +190,11 @@ const Config = {
         false,
         'Embed content in a frame that remains in place when the page is scrolled.',
         2
+      ],
+      'Convert X to xcancel': [
+        false,
+        'Rewrite twitter.com / x.com links to xcancel.com so clicks open the privacy front-end instead.',
+        1
       ],
     },
 
@@ -239,6 +252,14 @@ const Config = {
         true,
         'Show the reason the post was hidden in the stub. If disabled, you can hover over the stub to see the reason.'
       ],
+      'Show Threads With Yous': [
+        false,
+        'Show hidden threads on the index/catalog when they have unread replies quoting you. They re-hide once the (You) is read.'
+      ],
+      'Group Hidden Threads By Filter': [
+        false,
+        'When showing hidden threads in catalog mode, group them under a header for the filter rule that hid them, with a separate "Manually hidden" section.'
+      ],
     },
 
     'Images and Videos': {
@@ -279,6 +300,10 @@ const Config = {
       'Reveal Spoiler Thumbnails': [
         false,
         'Replace spoiler thumbnails with the original image.'
+      ],
+      'Replace Thumbnails': [
+        false,
+        'Replace image and video thumbnails with the original media. Probably will degrade browser performance ;)'
       ],
       'Replace GIF': [
         false,
@@ -488,6 +513,35 @@ const Config = {
         false,
         'Activate Reply Pruning by default in all threads.',
         1
+      ],
+      'Detailed Thread Stats': [
+        true,
+        'Display page / purge position and unique IP count in the thread stats.',
+        1
+      ],
+      'Scrollbar Markers': [
+        true,
+        'Show colored markers along the right edge of the page for tracked posts. Uses the highlight colors from the Style settings.'
+      ],
+      'Scrollbar Mark Own Posts': [
+        true,
+        'Mark your own posts in the scrollbar.',
+        1
+      ],
+      'Scrollbar Mark Quotes You': [
+        true,
+        'Mark posts that quote you in the scrollbar.',
+        1
+      ],
+      'Scrollbar Mark Ghost Posts': [
+        true,
+        'Mark deleted (ghost) posts in the scrollbar.',
+        1
+      ],
+      'Scrollbar Mark Unread Line': [
+        true,
+        'Mark the unread line position in the scrollbar.',
+        1
       ]
     },
 
@@ -566,9 +620,53 @@ const Config = {
         false,
         'Use the non-Javascript fallback captcha even if Javascript is enabled.'
       ],
+      'Stacked TCaptcha': [
+        false,
+        'Show 4chan\'s TCaptcha as a stacked image grid in Quick Reply instead of the default slider/next UI.'
+      ],
       'Pass Link': [
         false,
         'Add a 4chan Pass login link to the bottom of the page.'
+      ],
+      'Auto-process Images': [
+        true,
+        'Automatically convert unsupported image formats and resize oversized image uploads in Quick Reply.',
+        1
+      ],
+      'Strip Video Audio': [
+        true,
+        'Remove audio from MP4 and WebM uploads in Quick Reply on boards that do not allow audio.',
+        1
+      ],
+      'Strip All Media Metadata': [
+        false,
+        'Strip metadata from all uploaded media in Quick Reply, regardless of type.',
+        1
+      ],
+      'Image Metadata': [
+        true,
+        'Strip metadata from image uploads in Quick Reply when "Strip All Media Metadata" is disabled.',
+        2
+      ],
+      'Video Metadata': [
+        true,
+        'Strip metadata from video uploads in Quick Reply when "Strip All Media Metadata" is disabled.',
+        2
+      ],
+      'Audio Metadata': [
+        false,
+        'Strip metadata from audio uploads in Quick Reply when "Strip All Media Metadata" is disabled.',
+        2
+      ],
+      'Other Metadata': [
+        false,
+        'Strip metadata from non-image/video/audio uploads in Quick Reply when "Strip All Media Metadata" is disabled and supported in-browser.',
+        2
+      ],
+      'Comment Preview': [
+        false,
+        'Show a live WYSIWYG preview of your post in the Quick Reply.',
+        1
       ]
     },
 
@@ -619,6 +717,10 @@ const Config = {
         true,
         'Link dead quotes to the archives, and support inlining/previewing of archive links like quote links.'
       ],
+      'Fetch Ghost Posts': [
+        false,
+        'When opening a thread, fetch deleted posts from the configured archive and insert them inline. Requires Resurrect Quotes and a Foolfuuka archive for the board.'
+      ],
       'Remember Your Posts': [
         true,
         'Remember your posting history.'
@@ -636,6 +738,11 @@ const Config = {
       'Highlight Own Posts': [
         true,
         'Highlights own posts.',
+        1
+      ],
+      'Highlight Ghost Posts': [
+        true,
+        'Highlights deleted posts that have been restored from an archive.',
         1
       ],
       'Mark OP Quotes': [
@@ -710,6 +817,13 @@ const Config = {
   },
 
   'Default Volume': 1.0,
+  'Thread Watcher Thumbnail Size': 40,
+  'Thread Watcher Thumbnail Preview Size': 40,
+  'Thread Watcher Max Height': 210,
+  'Thread Watcher Max Width': 250,
+  'Thread Title': 'excerpt',
+  'Unread Title Count': 'always',
+  'Comment Preview Position': 'button',
 
   threadWatcher: {
     'Current Board': [
@@ -740,9 +854,25 @@ const Config = {
       true,
       'Show number of unread posts in watched threads.'
     ],
+    'Show Mark All Read Icon': [
+      true,
+      'Show the mark-all-read icon in the thread watcher header.'
+    ],
+    'Show Mark Thread Read Icons': [
+      false,
+      'Show a per-thread mark-as-read icon in each watched thread entry.'
+    ],
     'Show Site Prefix': [
       true,
       'When multiple sites are shown in the thread watcher, add a prefix to board names to distinguish them.'
+    ],
+    'Show OP Thumbnails': [
+      false,
+      'Show OP thumbnails in watched thread entries.'
+    ],
+    'Thread Watcher Thumbnail Hover': [
+      false,
+      'Show a larger OP thumbnail preview when hovering watched-thread thumbnails.'
     ],
     'Require OP Quote Link': [
       false,
@@ -813,6 +943,8 @@ const Config = {
     MD5: ''
   },
 
+  easyFilters: '',
+
   sauces: `\
 # Known filename formats:
 https://www.pixiv.net/member_illust.php?mode=medium&illust_id=%$1;regexp:/^(\\d+)_p\\d+/
@@ -830,7 +962,7 @@ https://yandex.com/images/search?rpt=imageview&url=%IMG
 
 # Specialized reverse image search:
 //iqdb.org/?url=%IMG
-https://trace.moe/?auto&url=%IMG;text:wait
+https://trace.moe/?auto&url=%IMG;text:trace
 #//3d.iqdb.org/?url=%IMG
 #//saucenao.com/search.php?url=%IMG
 
@@ -852,6 +984,47 @@ http://eye.swfchan.com/search/?q=%name;types:swf
   },
 
   'Custom CSS': true,
+  customCSSHome: false,
+  siteStyle: '',
+  siteStyleHome: false,
+  textColorMode: 'auto',
+  'Text Color': '',
+  'Link Text Color': '',
+  'Quote Text Color': '',
+  'Dead Link Text Color': '',
+  'Scroll Marker Match Highlights': true,
+
+  // Styling — highlight background colors and per-marker scroll colors.
+  // Empty string = use the stylesheet default for the active theme.
+  'Highlight Own Color':         '',
+  'Highlight You Color':         '',
+  'Highlight Ghost Color':       '',
+  'Highlight Own Text Auto':     true,
+  'Highlight You Text Auto':     true,
+  'Highlight Ghost Text Auto':   true,
+  'Highlight Own Text Color':    '',
+  'Highlight Own Link Color':    '',
+  'Highlight Own Quote Color':   '',
+  'Highlight Own Dead Link Color': '',
+  'Highlight You Text Color':    '',
+  'Highlight You Link Color':    '',
+  'Highlight You Quote Color':   '',
+  'Highlight You Dead Link Color': '',
+  'Highlight Ghost Text Color':  '',
+  'Highlight Ghost Link Color':  '',
+  'Highlight Ghost Quote Color': '',
+  'Highlight Ghost Dead Link Color': '',
+  'Highlight Own Opacity':       '',
+  'Highlight You Opacity':       '',
+  'Highlight Ghost Opacity':     '',
+  'Scroll Marker Own Color':     '',
+  'Scroll Marker You Color':     '',
+  'Scroll Marker Ghost Color':   '',
+  'Scroll Marker Unread Color':  '',
+  'Scroll Marker Own Opacity':   '',
+  'Scroll Marker You Opacity':   '',
+  'Scroll Marker Ghost Opacity': '',
+  'Scroll Marker Unread Opacity': '',
 
   Index: {
     'Index Mode': 'paged',

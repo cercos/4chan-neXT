@@ -229,6 +229,9 @@ export default function EmbedFxTwitter(a: HTMLAnchorElement): HTMLElement {
 
     const rendered = await renderFullTweet(tweet);
     el.innerHTML = rendered.innerHTML;
+    for (const link of el.querySelectorAll('a')) {
+      Linkify.rewriteXLink(link);
+    }
     for (const textEl of el.getElementsByClassName('fxt-text')) {
       Linkify.process(textEl);
     }

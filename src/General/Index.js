@@ -7,6 +7,7 @@
  */
 import Callbacks from '../classes/Callbacks';
 import CatalogThread from '../classes/CatalogThread';
+import DataBoard from '../classes/DataBoard';
 import Notice from '../classes/Notice';
 import Post from '../classes/Post';
 import Thread from '../classes/Thread';
@@ -21,6 +22,7 @@ import ThreadWatcher from '../Monitoring/ThreadWatcher';
 import $$ from '../platform/$$';
 import $ from '../platform/$';
 import QuotePreview from '../Quotelinks/QuotePreview';
+import QuoteYou from '../Quotelinks/QuoteYou';
 import { c, Conf, d, doc, g } from '../globals/globals';
 import Header from './Header';
 import UI from './UI';
@@ -86,7 +88,10 @@ var Index = {
       href: 'javascript:;',
     });
     Icon.set(this.button, 'refresh', 'Refresh')
-    $.on(this.button, 'click', () => Index.update());
+    $.on(this.button, 'click', (e) => {
+      e.preventDefault();
+      Index.update();
+    });
     Header.addShortcut('index-refresh', this.button, 590);
 
     // Header "Index Navigation" submenu
@@ -347,7 +352,8 @@ var Index = {
       if (n) { return $.event('IndexRefresh'); }
     },
 
-    toggleHiddenThreads() {
+    toggleHiddenThreads(e) {
+      e?.preventDefault();
       $('#hidden-toggle a', Index.navLinks).textContent = (Index.showHiddenThreads = !Index.showHiddenThreads) ?
         'Hide'
       :
@@ -465,7 +471,8 @@ var Index = {
       return Index.userPageNav(+a.pathname.split(/\/+/)[2] || 1);
     },
 
-    refreshFront() {
+    refreshFront(e) {
+      e?.preventDefault();
       Index.pushState({page: 1});
       return Index.update();
     },
@@ -695,14 +702,23 @@ var Index = {
     const pagesRoot  = $('.pages', Index.pagelist);
 
     // Previous/Next buttons
-    const prev = pagesRoot.previousElementSibling.firstElementChild;
-    const next = pagesRoot.nextElementSibling.firstElementChild;
+    const prev = pagesRoot.previousElementSibling?.firstElementChild;
+    const next = pagesRoot.nextElementSibling?.firstElementChild;
+    const setNav = function(link, href, disabled) {
+      if (!link) { return; }
+      link.href = href === 1 ? './' : href;
+      const button = link.firstElementChild;
+      if (button) { button.disabled = disabled; }
+      if (disabled) {
+        link.setAttribute('aria-disabled', 'true');
+      } else {
+        link.removeAttribute('aria-disabled');
+      }
+    };
     let href = Math.max(pageNum - 1, 1);
-    prev.href = href === 1 ? './' : href;
-    prev.firstElementChild.disabled = href === pageNum;
+    setNav(prev, href, href === pageNum);
     href = Math.min(pageNum + 1, maxPageNum);
-    next.href = href === 1 ? './' : href;
-    next.firstElementChild.disabled = href === pageNum;
+    setNav(next, href, href === pageNum);
 
     // <strong> current page
     if (strong = $('strong', pagesRoot)) {
@@ -847,6 +863,7 @@ var Index = {
     Index.threadPosition    = dict();
     Index.parsedThreads     = dict();
     Index.replyData         = dict();
+    Index.threadsWithYous   = dict();
     for (let i = 0; i < Index.liveThreadData.length; i++) {
       var obj, results;
       var data = Index.liveThreadData[i];
@@ -856,6 +873,9 @@ var Index = {
       results = Filter.test(obj);
       obj.isOnTop  = results.top;
       obj.isHidden = results.hide || ThreadHiding.isHidden(obj.boardID, obj.threadID);
+      if (obj.isHidden && Conf['Show Threads With Yous']) {
+        Index.threadsWithYous[data.no] = Index.threadHasUnreadYous(data.no);
+      }
       if (data.last_replies) {
         for (var reply of data.last_replies) {
           Index.replyData[`${g.BOARD}.${reply.no}`] = reply;
@@ -883,6 +903,65 @@ var Index = {
 
   isHiddenReply(threadID, replyData) {
     return PostHiding.isHidden(g.BOARD.ID, threadID, replyData.no) || Filter.isHidden(g.SITE.Build.parseJSON(replyData, g.BOARD));
+  },
+
+  threadHasUnreadYous(threadID) {
+    if (!Conf['Show Threads With Yous'] || !QuoteYou.db) { return false; }
+    const cached = Index.threadsWithYous?.[threadID];
+    if (cached != null) { return cached; }
+    const threadData = Index.liveThreadDict?.[threadID];
+    if (!threadData?.last_replies?.length) { return false; }
+
+    if (!Index.lastReadPostsDB) {
+      Index.lastReadPostsDB = new DataBoard('lastReadPosts');
+    }
+
+    const boardID = g.BOARD.ID;
+    const siteID = g.SITE.ID;
+    const lastReadPost = Index.lastReadPostsDB.get({
+      siteID,
+      boardID,
+      threadID,
+      defaultValue: 0
+    });
+    const youOP = !Conf['Require OP Quote Link'] && QuoteYou.db.get({
+      siteID,
+      boardID,
+      threadID,
+      postID: threadID
+    });
+
+    for (var reply of threadData.last_replies) {
+      const postID = reply.no;
+      if (postID <= lastReadPost) { continue; }
+      if (QuoteYou.db.get({siteID, boardID, threadID, postID})) { continue; }
+      if (youOP) { return Index.threadsWithYous[threadID] = true; }
+      if (!reply.com) { continue; }
+
+      const regexp = g.SITE.regexp.quotelinkHTML;
+      regexp.lastIndex = 0;
+      let match;
+      while (match = regexp.exec(reply.com)) {
+        if (QuoteYou.db.get({
+          siteID,
+          boardID:  match[1] ? encodeURIComponent(match[1]) : boardID,
+          threadID: match[2] || threadID,
+          postID:   match[3] || match[2] || threadID
+        })) {
+          return Index.threadsWithYous[threadID] = true;
+        }
+      }
+    }
+
+    return Index.threadsWithYous[threadID] = false;
+  },
+
+  showThreadInCatalog(threadID) {
+    const hidden = Index.isHidden(threadID);
+    if (Index.showHiddenThreads) {
+      return hidden;
+    }
+    return !hidden || Index.threadHasUnreadYous(threadID);
   },
 
   buildThreads(threadIDs, isCatalog, withReplies) {
@@ -1103,7 +1182,7 @@ var Index = {
         threadIDs = Index.sortedThreadIDs;
         break;
       case 'catalog':
-        threadIDs = Index.sortedThreadIDs.filter(ID => !Index.isHidden(ID) !== Index.showHiddenThreads);
+        threadIDs = Index.sortedThreadIDs.filter(ID => Index.showThreadInCatalog(ID));
         break;
       default:
         threadIDs = Index.threadsOnPage(Index.currentPage);
@@ -1129,6 +1208,7 @@ var Index = {
 
   buildStructure(threadIDs) {
     const threads = Index.buildThreads(threadIDs, false, Conf['Show Replies']);
+    Index.showHiddenThreadsWithYousInIndex(threads);
     const nodes = [];
     for (var thread of threads) {
       nodes.push(thread.nodes.root, $.el('hr'));
@@ -1138,6 +1218,17 @@ var Index = {
       $.event('PostsInserted', null, Index.root);
     }
     Index.loaded = true;
+  },
+
+  showHiddenThreadsWithYousInIndex(threads) {
+    if (Conf['Index Mode'] === 'catalog' || !Conf['Show Threads With Yous']) { return; }
+    for (var thread of threads) {
+      if (!thread.isHidden || !Index.threadHasUnreadYous(thread.ID)) { continue; }
+      if (thread.stub && thread.nodes.root.contains(thread.stub)) {
+        $.rm(thread.stub);
+      }
+      thread.nodes.root.hidden = false;
+    }
   },
 
   buildCatalog(threadIDs) {
@@ -1155,10 +1246,123 @@ var Index = {
         if (Index.root.parentNode) {
           $.event('PostsInserted', null, Index.root);
         }
+        Index.groupHiddenCatalogThreads(threadIDs);
         return Index.loaded = true;
       }
     };
     fn();
+  },
+
+  groupHiddenCatalogThreads(threadIDs) {
+    if (!Conf['Group Hidden Threads By Filter']) { return; }
+    const hiddenThreadIDs = threadIDs.filter(ID => Index.isHidden(ID));
+    if (!hiddenThreadIDs.length) { return; }
+
+    const groupedThreads = new Map();
+    const manualHiddenThreads = [];
+    const hiddenNodes = [];
+
+    for (var threadID of hiddenThreadIDs) {
+      const node = $.id(`t${threadID}`);
+      if (!node || (node.parentNode !== Index.root)) { continue; }
+      hiddenNodes.push(node);
+      Index.clearHiddenFilterValueFromCatalogThread(node);
+
+      if (ThreadHiding.db?.get({boardID: g.BOARD.ID, threadID})) {
+        manualHiddenThreads.push(node);
+        continue;
+      }
+
+      const reason = (Index.parsedThreads[threadID]?.filterResults?.reasons?.[0] || 'Filtered').trim();
+      const parsed = Index.parseHiddenFilterReason(reason);
+      const key = parsed.key;
+      let group = groupedThreads.get(key);
+      if (!group) {
+        group = { label: parsed.label, nodes: [] };
+        groupedThreads.set(key, group);
+      }
+      if (parsed.value) {
+        Index.applyHiddenFilterValueToCatalogThread(node, parsed.label, parsed.value);
+      }
+      group.nodes.push(node);
+    }
+
+    if (!hiddenNodes.length) { return; }
+    for (var hiddenNode of hiddenNodes) {
+      $.rm(hiddenNode);
+    }
+
+    const frag = d.createDocumentFragment();
+    for (const [, group] of groupedThreads) {
+      frag.appendChild($.el('div', {
+        className: 'catalog-group-header',
+        textContent: `${group.label} (${group.nodes.length})`
+      }));
+      frag.append(...group.nodes);
+    }
+    if (manualHiddenThreads.length) {
+      frag.appendChild($.el('div', {
+        className: 'catalog-group-header',
+        textContent: `Manually hidden (${manualHiddenThreads.length})`
+      }));
+      frag.append(...manualHiddenThreads);
+    }
+    Index.root.appendChild(frag);
+  },
+
+  parseHiddenFilterReason(reason) {
+    const match = reason.match(/^Filtered\s+([A-Za-z0-9_]+)\s+(.+)$/);
+    if (!match) {
+      return { key: reason, label: reason, value: null };
+    }
+    const type = match[1];
+    const value = match[2];
+    const highCardinalityTypes = new Set([
+      'MD5',
+      'postID',
+      'uniqueID',
+      'name',
+      'tripcode',
+      'email',
+      'filename',
+      'capcode',
+      'flag',
+      'dimensions',
+      'filesize'
+    ]);
+    if (!highCardinalityTypes.has(type)) {
+      return { key: reason, label: reason, value: null };
+    }
+    return { key: `Filtered ${type}`, label: `Filtered ${type}`, value };
+  },
+
+  applyHiddenFilterValueToCatalogThread(node, label, value) {
+    // keep one tooltip and one compact value row per card
+    const valueLine = label === 'Filtered MD5' ? value : `${label}: ${value}`;
+    const link = $('.catalog-link', node);
+    if (link) {
+      link.title = valueLine;
+      link.dataset.hiddenFilterMatch = valueLine;
+    }
+
+    const old = $('.catalog-group-match', node);
+    if (old) { $.rm(old); }
+    const stats = $('.catalog-stats', node);
+    if (!stats) { return; }
+    $.add(stats, $.el('span', {
+      className: 'catalog-group-match',
+      textContent: valueLine
+    }));
+  },
+
+  clearHiddenFilterValueFromCatalogThread(node) {
+    const old = $('.catalog-group-match', node);
+    if (old) { $.rm(old); }
+    const link = $('.catalog-link', node);
+    if (link?.dataset.hiddenFilterMatch) {
+      delete link.dataset.hiddenFilterMatch;
+      link.removeAttribute('title');
+    }
   },
 
   buildCatalogPart(threadIDs) {
@@ -1167,6 +1371,7 @@ var Index = {
     Index.sizeCatalogViews(threads);
     const nodes = [];
     for (var thread of threads) {
+      Index.clearHiddenFilterValueFromCatalogThread(thread.catalogView.nodes.root);
       thread.OP.setCatalogOP(true);
       $.add(thread.catalogView.nodes.root, thread.OP.nodes.root);
       nodes.push(thread.catalogView.nodes.root);
@@ -1177,7 +1382,8 @@ var Index = {
     return nodes;
   },
 
-  clearSearch() {
+  clearSearch(e) {
+    e?.preventDefault();
     Index.searchInput.value = '';
     Index.onSearchInput();
     return Index.searchInput.focus();

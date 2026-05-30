@@ -43,6 +43,11 @@
     Highlighted OPs will have their threads put on top of the board index by default.<br>
     For example: <code>top:yes;</code> or <code>top:no;</code>.
   </li>
+  <li>
+    Whitelist a thread against hide filters. When a highlight rule matches with <code>override</code>, the thread stays visible and highlighted even if another rule would normally hide it.<br>
+    Only applies to highlight rules; ignored on hide and notify rules.<br>
+    For example: <code>/4chan X/i;boards:g;highlight;override</code> keeps any <code>/g/</code> thread whose subject mentions "4chan X" visible even if its OP body matches a hide filter elsewhere in your list.
+  </li>
   <li>Show a desktop notification instead of hiding: <code>notify;</code>.</li>
   <li>Hide all posts from this poster: <code>poster;</code>.</li>
   <li>Recursively hide replies: <code>replies;</code>.</li>

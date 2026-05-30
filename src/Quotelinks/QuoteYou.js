@@ -41,6 +41,10 @@ var QuoteYou = {
       $.addClass(doc, 'highlight-you');
     }
 
+    if (Conf['Highlight Ghost Posts']) {
+      $.addClass(doc, 'highlight-ghost');
+    }
+
     if (Conf['Comment Expansion']) {
       ExpandComment.callbacks.push(this.node);
     }

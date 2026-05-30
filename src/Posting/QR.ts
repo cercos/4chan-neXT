@@ -14,6 +14,7 @@ import Menu from '../Menu/Menu';
 import UI from '../General/UI';
 import BoardConfig from '../General/BoardConfig';
 import Get from '../General/Get';
+import { VideoStripper } from './VideoStripper';
 import { DAY, dict, SECOND } from '../platform/helpers';
 import Icon from '../Icons/icon';
 
@@ -40,6 +41,9 @@ var QR = {
   max_size: 0,
   max_size_video: 0,
   max_comment: 0,
+  max_name: 100,
+  max_email: 100,
+  max_sub: 100,
   max_width_video: 0,
   max_height_video: 0,
   max_duration_video: 0,
@@ -91,6 +95,16 @@ var QR = {
   },
   shortcut: undefined as HTMLAnchorElement,
   hasFocus: false,
+  pendingFiles: [] as {
+    file: File,
+    post: post,
+    isText: boolean,
+  }[],
+  isProcessingPendingFiles: false,
+  fileBatchSize: 3,
+  heavyBatchFileCount: 8,
+  heavyBatchSize: 64 * 1024 * 1024,
+  metadataStrippedFlag: '__4chanXTMetadataStripped',
 
   req: undefined as (XMLHttpRequest & { isUploadFinished: boolean, progress: string }) | undefined,
   selected: undefined as post,
@@ -98,6 +112,15 @@ var QR = {
   mimeTypes: ['image/jpeg', 'image/png', 'image/gif', 'application/pdf', 'application/vnd.adobe.flash.movie', 'application/x-shockwave-flash', 'video/webm', 'video/mp4'],
 
   validExtension: /\.(jpe?g|png|gif|pdf|swf|webm|mp4)$/i,
+
+  markMetadataStripped(file: File) {
+    (file as File & { [key: string]: any })[QR.metadataStrippedFlag] = true;
+    return file;
+  },
+
+  isMetadataStripped(file: File) {
+    return !!(file as File & { [key: string]: any })[QR.metadataStrippedFlag];
+  },
 
   typeFromExtension: {
     'jpg':  'image/jpeg',
@@ -161,7 +184,13 @@ var QR = {
 
   initReady() {
     let origToggle;
-    const captchaVersion = $('#g-recaptcha, #captcha-forced-noscript') ? 'v2' : 't';
+    const captchaVersion = $('#t-root') ?
+      't'
+    :
+      $('#g-recaptcha, #captcha-forced-noscript') ?
+        'v2'
+      :
+        (g.SITE.software === 'yotsuba' ? 't' : 'v2');
     QR.captcha = Captcha[captchaVersion];
     QR.postingIsEnabled = true;
 
@@ -175,6 +204,9 @@ var QR = {
     QR.max_size       = prop('max_filesize',      4194304);
     QR.max_size_video = prop('max_webm_filesize', QR.max_size);
     QR.max_comment    = prop('max_comment_chars', 2000);
+    QR.max_name       = prop('max_name_chars', 100);
+    QR.max_email      = prop('max_email_chars', 100);
+    QR.max_sub        = prop('max_subject_chars', 100);
 
     QR.max_width_video = (QR.max_height_video = 2048);
     QR.max_duration_video = prop('max_webm_duration', 120);
@@ -693,34 +725,79 @@ var QR = {
     });
   },
 
-  handleFiles(files: File[]) {
+  handleFiles(files: File[] | FileList) {
     if (this !== QR) { // file input
-      files  = [...this.files];
+      files  = Array.from(this.files as ArrayLike<File>);
       this.value = null;
+    } else {
+      files = Array.from(files as ArrayLike<File>);
     }
     if (!files.length) { return; }
     QR.cleanNotifications();
-    for (var file of files) {
-      QR.handleFile(file, files.length);
+    QR.warnHeavyBatch(files);
+    for (const file of files) {
+      QR.queueFile(file, files.length);
     }
+    QR.processPendingFiles();
     $.addClass(QR.nodes.el, 'dump');
     if ((d.activeElement === QR.nodes.fileButton) && $.hasClass(QR.nodes.fileSubmit, 'has-file')) {
       return QR.nodes.filename.focus();
     }
   },
 
-  handleFile(file: File, nfiles: number) {
+  queueFile(file: File, nfiles: number) {
+    const post = QR.pickPostForFile(file, nfiles);
+    const isText = /^text\//.test(file.type);
+    if (!post) { return; }
+    if (isText) {
+      post.pasting = true;
+    } else {
+      post.pendingFile = true;
+    }
+    QR.pendingFiles.push({ file, post, isText });
+  },
+
+  pickPostForFile(file: File, nfiles: number) {
     let post;
     const isText = /^text\//.test(file.type);
     if (nfiles === 1) {
       post = QR.selected;
     } else {
       post = QR.posts[QR.posts.length - 1];
-      if (isText ? post.com || post.pasting : post.file) {
+      if (!post) { post = new QR.post(); }
+      if (isText ? post.com || post.pasting : post.file || post.pendingFile) {
         post = new QR.post();
       }
     }
-    return post[isText ? 'pasteText' : 'setFile'](file);
+    return post;
+  },
+
+  async processPendingFiles() {
+    if (QR.isProcessingPendingFiles) { return; }
+    QR.isProcessingPendingFiles = true;
+    try {
+      while (QR.pendingFiles.length) {
+        const batch = QR.pendingFiles.splice(0, QR.fileBatchSize);
+        await Promise.all(batch.map(({ file, post, isText }) => (
+          isText ? Promise.resolve(post.pasteText(file)) : post.setFile(file)
+        )));
+      }
+    } finally {
+      QR.isProcessingPendingFiles = false;
+    }
+  },
+
+  warnHeavyBatch(files: File[] | FileList) {
+    const fileList = Array.from(files as ArrayLike<File>);
+    const mediaFiles = fileList.filter(file => /^(image|video)\//.test(file.type));
+    if (!mediaFiles.length) { return; }
+    const totalSize = mediaFiles.reduce((size, file) => size + file.size, 0);
+    if ((mediaFiles.length < QR.heavyBatchFileCount) && (totalSize < QR.heavyBatchSize)) { return; }
+    const sizeLabel = $.bytesToString(totalSize);
+    new Notice('warning',
+      `Large media batch queued (${mediaFiles.length} files, ${sizeLabel}). Files will be processed in batches of ${QR.fileBatchSize}.`,
+      8
+    );
   },
 
   openFileInput() {
@@ -819,6 +896,10 @@ var QR = {
     }
 
     QR.flagsInput();
+    nodes.name.maxLength = QR.max_name;
+    nodes.email.maxLength = QR.max_email;
+    nodes.sub.maxLength = QR.max_sub;
+    nodes.com.maxLength = QR.max_comment;
 
     $.on(nodes.autohide,       'change',    QR.toggleHide);
     $.on(nodes.close,          'click',     QR.close);
@@ -913,32 +994,192 @@ var QR = {
       className: 'flagSelector'
     }) as HTMLSelectElement;
 
-    const addFlag = (value, textContent) => $.add(select, $.el('option', {value, textContent}));
+    const picker = $.el('div', {className: 'flagSelector-picker'}) as HTMLDivElement;
 
-    addFlag('0', (g.BOARD.config.country_flags ? 'Geographic Location' : 'None'));
-    for (var value in g.BOARD.config.board_flags) {
-      var textContent = g.BOARD.config.board_flags[value];
-      addFlag(value, textContent);
+    const toggle = $.el('button', {
+      type: 'button',
+      className: 'flagSelector-toggle field'
+    }) as HTMLButtonElement;
+    toggle.setAttribute('aria-expanded', 'false');
+
+    const icon = $.el('span', {className: 'flagSelector-icon flagSelector-icon-empty'});
+    icon.setAttribute('aria-hidden', 'true');
+
+    const label = $.el('span', {className: 'flagSelector-label'});
+
+    $.add(toggle, [icon, label]);
+    $.add(picker, toggle);
+
+    const menu = $.el('div', {className: 'flagSelector-menu', hidden: true}) as HTMLDivElement;
+
+    const entries: Record<string, {text: string, iconClass: string}> = {};
+    let open = false;
+
+    const closeMenu = () => {
+      if (!open) return;
+      open = false;
+      picker.classList.remove('open');
+      toggle.setAttribute('aria-expanded', 'false');
+      menu.hidden = true;
+    };
+
+    const updateMenuPosition = () => {
+      const rect = toggle.getBoundingClientRect();
+      const width = Math.max(rect.width, 180);
+      const pad = 8;
+      const left = Math.min(Math.max(rect.left, pad), Math.max(pad, window.innerWidth - width - pad));
+      const spaceBelow = window.innerHeight - rect.bottom - pad;
+      const spaceAbove = rect.top - pad;
+      const desired = Math.min(menu.scrollHeight || 320, 320);
+      const openUpward = spaceBelow < 150 && spaceAbove > spaceBelow;
+      const maxHeight = Math.max(100, openUpward ? spaceAbove : spaceBelow);
+      const height = Math.min(desired, maxHeight);
+      const top = openUpward ? rect.top - height : rect.bottom;
+      menu.style.left = `${left}px`;
+      menu.style.top = `${Math.max(pad, top)}px`;
+      menu.style.width = `${width}px`;
+      menu.style.maxHeight = `${maxHeight}px`;
+    };
+
+    const openMenu = () => {
+      if (open) return;
+      open = true;
+      picker.classList.add('open');
+      toggle.setAttribute('aria-expanded', 'true');
+      menu.hidden = false;
+      updateMenuPosition();
+    };
+
+    const syncSelected = () => {
+      let value = '' + (select.value || '');
+      if (!(value in entries)) {
+        value = '' + (select.options[0]?.value || '0');
+        select.value = value;
+      }
+      const data = entries[value];
+      icon.className = `flagSelector-icon ${data.iconClass}`.trim();
+      if (!data.iconClass) icon.classList.add('flagSelector-icon-empty');
+      label.textContent = data.text;
+      for (const opt of Array.from(menu.querySelectorAll<HTMLElement>('.flagSelector-option'))) {
+        opt.classList.toggle('selected', opt.dataset.value === value);
+      }
+    };
+
+    const addFlag = (value: string, textContent: string) => {
+      $.add(select, $.el('option', {value, textContent}));
+      const valueStr = '' + value;
+      const code = valueStr.toLowerCase().replace(/[^a-z0-9_-]+/g, '-');
+      const iconClass = valueStr !== '0' ? `bfl bfl-${code}` : '';
+
+      entries[valueStr] = {text: textContent, iconClass};
+
+      const option = $.el('button', {
+        type: 'button',
+        className: 'flagSelector-option'
+      }) as HTMLButtonElement;
+      option.dataset.value = valueStr;
+
+      const optionIcon = $.el('span', {className: `flagSelector-icon ${iconClass}`.trim()});
+      if (!iconClass) optionIcon.classList.add('flagSelector-icon-empty');
+      optionIcon.setAttribute('aria-hidden', 'true');
+
+      const optionLabel = $.el('span', {className: 'flagSelector-label', textContent});
+
+      $.add(option, [optionIcon, optionLabel]);
+      $.on(option, 'click', () => {
+        if (select.disabled) return;
+        select.value = valueStr;
+        select.dispatchEvent(new Event('change', {bubbles: true}));
+        closeMenu();
+      });
+      $.add(menu, option);
+    };
+
+    addFlag('0', g.BOARD.config.country_flags ? 'Geographic Location' : 'None');
+    for (const value in g.BOARD.config.board_flags) {
+      addFlag(value, g.BOARD.config.board_flags[value]);
     }
 
-    return select;
+    const onToggleClick = (e: Event) => {
+      e.preventDefault();
+      e.stopPropagation();
+      if (select.disabled) return;
+      if (open) closeMenu(); else openMenu();
+    };
+
+    const onOutsideMouseDown = (e: Event) => {
+      if (!open) return;
+      const target = e.target as Node;
+      if (picker.contains(target) || menu.contains(target)) return;
+      closeMenu();
+    };
+
+    const onDocKeydown = (e: Event) => {
+      if (!open) return;
+      if ((e as KeyboardEvent).key === 'Escape') {
+        closeMenu();
+        toggle.focus();
+      }
+    };
+
+    const onViewportChange = () => { if (open) closeMenu(); };
+
+    $.on(toggle, 'click', onToggleClick);
+    $.on(d, 'mousedown', onOutsideMouseDown);
+    $.on(d, 'keydown', onDocKeydown);
+    $.on(window, 'resize', onViewportChange);
+    $.on(window, 'scroll', onViewportChange);
+    $.on(QR.nodes.form, 'scroll', onViewportChange);
+    $.on(select, 'change', syncSelected);
+
+    new MutationObserver(() => {
+      toggle.disabled = select.disabled;
+      if (select.disabled) closeMenu();
+    }).observe(select, {attributes: true, attributeFilter: ['disabled']});
+
+    (select as any)._syncFlagPicker = syncSelected;
+    (select as any)._destroyFlagPicker = () => {
+      closeMenu();
+      $.off(toggle, 'click', onToggleClick);
+      $.off(d, 'mousedown', onOutsideMouseDown);
+      $.off(d, 'keydown', onDocKeydown);
+      $.off(window, 'resize', onViewportChange);
+      $.off(window, 'scroll', onViewportChange);
+      $.off(QR.nodes.form, 'scroll', onViewportChange);
+      $.off(select, 'change', syncSelected);
+      $.rm(menu);
+    };
+
+    $.add(d.body, menu);
+    syncSelected();
+    return {select, picker};
   },
 
   flagsInput() {
     const {nodes} = QR;
     if (!nodes) { return; }
     if (nodes.flag) {
+      (nodes.flag as any)._destroyFlagPicker?.();
+      const picker = (nodes.flag as any)._picker as HTMLElement | undefined;
+      if (picker) $.rm(picker);
       $.rm(nodes.flag);
       delete nodes.flag;
     }
 
-    if (g.BOARD.config.board_flags) {
-      const flag = QR.flags();
-      flag.dataset.name    = 'flag';
-      flag.dataset.default = '0';
-      nodes.flag = flag;
-      return $.add(nodes.form, flag);
-    }
+    if (!g.BOARD.config.board_flags) return;
+
+    const {select, picker} = QR.flags();
+    select.dataset.name    = 'flag';
+    select.dataset.default = '0';
+    nodes.flag = select;
+    (nodes.flag as any)._picker = picker;
+
+    $.add(nodes.form, select);
+    $.add(nodes.form, picker);
+  },
+
+  updateFlagSelector() {
+    (QR.nodes?.flag as any)?._syncFlagPicker?.();
   },
 
   submit(e) {
@@ -989,6 +1230,20 @@ var QR = {
 
     if ((g.BOARD.ID === 'r9k') && !post.com?.match(/[a-z-]/i)) {
       if (!err) { err = 'Original comment required.'; }
+    }
+
+    const unitLength = str => (str || '').replace(/[\uD800-\uDBFF][\uDC00-\uDFFF]/g, '_').length;
+    if (!err && !QR.forcedAnon && unitLength(post.name) > QR.max_name) {
+      err = `Name is too long (${unitLength(post.name)}/${QR.max_name}).`;
+    }
+    if (!err && unitLength(post.email) > QR.max_email) {
+      err = `Options is too long (${unitLength(post.email)}/${QR.max_email}).`;
+    }
+    if (!err && unitLength(post.sub) > QR.max_sub) {
+      err = `Subject is too long (${unitLength(post.sub)}/${QR.max_sub}).`;
+    }
+    if (!err && unitLength(post.com) > QR.max_comment) {
+      err = `Comment is too long (${unitLength(post.com)}/${QR.max_comment}).`;
     }
 
     if (QR.captcha.isEnabled && !((QR.captcha === Captcha.v2) && /\b_ct=/.test(d.cookie) && threadID) && !(err && !force)) {
@@ -1134,8 +1389,12 @@ var QR = {
         // Remove the obnoxious 4chan Pass ad.
         if (/mistyped/i.test(err.textContent)) {
           err = 'You mistyped the CAPTCHA, or the CAPTCHA malfunctioned.';
+          QR.captcha.setState?.('failed');
         } else if (/expired/i.test(err.textContent)) {
           err = 'This CAPTCHA is no longer valid because it has expired.';
+          QR.captcha.setState?.('expired');
+        } else {
+          QR.captcha.setState?.('failed');
         }
         // Do not auto post with a wrong captcha.
         QR.cooldown.auto = false;
@@ -1317,7 +1576,7 @@ var QR = {
       return file;
     }
 
-    return newFile;
+    return QR.markMetadataStripped(newFile);
   },
 
   previewUrl: undefined as string | undefined,
@@ -1810,6 +2069,7 @@ class post {
   declare URL?: string;
   declare com?: string;
   declare pasting?: boolean;
+  declare pendingFile?: boolean;
 
   constructor(select) {
     this.select = this.select.bind(this);
@@ -1956,6 +2216,7 @@ class post {
       if (!(node = QR.nodes[name])) { continue; }
       node.value = this[name] || node.dataset.default || '';
     }
+    QR.updateFlagSelector?.();
 
     (this.thread !== 'new' ? $.addClass : $.rmClass)(QR.nodes.el, 'reply-to-thread');
 
@@ -2084,17 +2345,85 @@ class post {
     }
   }
 
+  shouldStripMetadata(file: File) {
+    if (Conf['Strip All Media Metadata']) { return true; }
+    const category = file.type.split('/')[0];
+    switch (category) {
+      case 'image': return !!Conf['Image Metadata'];
+      case 'video': return !!Conf['Video Metadata'];
+      case 'audio': return !!Conf['Audio Metadata'];
+      default:      return !!Conf['Other Metadata'];
+    }
+  }
+
+  async stripImageMetadata(file: File): Promise<File> {
+    if (QR.isMetadataStripped(file)) { return file; }
+    const type = file.type.toLowerCase();
+    if (!['image/jpeg', 'image/png'].includes(type)) { return file; }
+    const outputType = type === 'image/jpeg' ? 'jpeg' : 'png';
+    const img = await createImageBitmap(file);
+    const width = img.width;
+    const height = img.height;
+    let canvas: HTMLCanvasElement | OffscreenCanvas;
+    let toBlob: (mime: string, quality: number) => Promise<Blob>;
+
+    if (window.OffscreenCanvas && !Conf['Avoid OffscreenCanvas']) {
+      canvas = new OffscreenCanvas(width, height);
+      toBlob = (mime, quality) => (canvas as OffscreenCanvas).convertToBlob({ type: mime, quality });
+    } else {
+      canvas = $.el('canvas', { width, height }) as HTMLCanvasElement;
+      toBlob = (mime, quality) => new Promise((resolve, reject) => {
+        (canvas as HTMLCanvasElement).toBlob(blob => {
+          if (blob) {
+            resolve(blob);
+          } else {
+            reject(new Error('Failed to strip image metadata.'));
+          }
+        }, mime, quality);
+      });
+    }
+    canvas.getContext('2d').drawImage(img, 0, 0, width, height);
+    const mime = `image/${outputType}`;
+    const stripped = await toBlob(mime, .92);
+    return QR.markMetadataStripped(new File([stripped], file.name, { type: file.type }));
+  }
+
+  async stripMetadata(file: File): Promise<File> {
+    if (QR.isMetadataStripped(file)) { return file; }
+    if (!this.shouldStripMetadata(file)) { return file; }
+    if (file.type.startsWith('image/')) {
+      const stripped = await this.stripImageMetadata(file);
+      if (stripped === file && !['image/jpeg', 'image/png'].includes(file.type.toLowerCase())) {
+        new Notice('warning', `Metadata stripping is not supported for ${file.type || 'this image type'}.`, 4);
+      }
+      return stripped;
+    }
+    if (file.type.startsWith('video/')) {
+      let stripped = await VideoStripper.stripMetadata(file);
+      if (stripped !== file) {
+        stripped = QR.markMetadataStripped(stripped);
+      }
+      if (stripped === file && !(/^video\/mp4$/i.test(file.type) || /\.mp4$/i.test(file.name))) {
+        new Notice('warning', `Metadata stripping is not supported for ${file.type || 'this video type'}.`, 4);
+      }
+      return stripped;
+    }
+    new Notice('warning', `Metadata stripping is not supported for ${file.type || 'this file type'}.`, 4);
+    return file;
+  }
+
   /**
-   * Checks if the mime type and file size are valid. For images, it will convert unsupported files to png, shrinks
-   * files with a resolution that is too big, and converts to jpeg if the file size is too big.
-   * It will not attempt to convert files that aren't images.
+   * Checks if the mime type and file size are valid. If "Auto-process Images" is enabled, it can convert unsupported
+   * image formats to png, shrink oversized images, and convert to jpeg when the file is too large.
    * @param file The old file.
    * @returns A promise with the old file if it was valid, or a new file if it wasn't.
    */
   async validateFile(file: File): Promise<File> {
+    const autoProcessImages = !!Conf['Auto-process Images'];
+
     // Do not check on altchans, those might support types 4chan doesn't
     if (location.hostname.endsWith('4chan.org') && !QR.mimeTypes.includes(file.type)) {
-      if (file.type.startsWith('image/')) {
+      if (autoProcessImages && file.type.startsWith('image/')) {
         const msg = `The ${file.type.slice(6)} image was converted to png.`;
         file = await QR.convert(file, 'png');
         new Notice('info', msg, 3);
@@ -2109,24 +2438,31 @@ class post {
       const { width: originalW, height: originalH } = img;
       let width = originalW, height = originalH;
 
-      if (width > QR.max_width) {
-        height = Math.round(height * (QR.max_width / width));
-        width = QR.max_width;
-      }
-      if (height > QR.max_height) {
-        width = Math.round(width * (QR.max_height / height));
-        height = QR.max_height;
-      }
-      if (width !== originalW || height !== originalH) {
-        file = await QR.convert(file, file.type === 'image/jpeg' ? 'jpeg' : 'png', { width, height, img });
-        img = undefined // just in case the file size shrinkage also needs to run using the new file
-        new Notice('warning',
-          `Image was too large got shrunk from ${originalW} * ${originalH} to ${width} * ${height}.` +
-          'It might have lost animation.'
-        );
+      if (autoProcessImages) {
+        if (width > QR.max_width) {
+          height = Math.round(height * (QR.max_width / width));
+          width = QR.max_width;
+        }
+        if (height > QR.max_height) {
+          width = Math.round(width * (QR.max_height / height));
+          height = QR.max_height;
+        }
+        if (width !== originalW || height !== originalH) {
+          file = await QR.convert(file, file.type === 'image/jpeg' ? 'jpeg' : 'png', { width, height, img });
+          img = undefined // just in case the file size shrinkage also needs to run using the new file
+          new Notice('warning',
+            `Image was too large got shrunk from ${originalW} * ${originalH} to ${width} * ${height}.` +
+            'It might have lost animation.'
+          );
+        }
+      } else if ((width > QR.max_width) || (height > QR.max_height)) {
+        throw new Error(`Image too large (image: ${originalW}x${originalH}px, max: ${QR.max_width}x${QR.max_height}px).`);
       }
 
       if (file.size > maxSize) {
+        if (!autoProcessImages) {
+          throw new Error(`File too large (file: ${$.bytesToString(file.size)}, max: ${$.bytesToString(maxSize)}).`);
+        }
           const originalSize = file.size;
           file = await QR.convert(file, 'jpeg', { maxSize, img });
           new Notice('warning',
@@ -2142,7 +2478,26 @@ class post {
   }
 
   async setFile(file: File) {
+    this.pendingFile = true;
     try {
+      if (
+        Conf['Strip Video Audio'] &&
+        BoardConfig.noAudio(g.BOARD.ID) &&
+        (/^video\/(webm|mp4)$/.test(file.type) || /\.(webm|mp4)$/i.test(file.name))
+      ) {
+        const stripped = await VideoStripper.stripAudio(file);
+        if (stripped !== file) {
+          file = stripped;
+          new Notice('info', 'Removed audio from video for this board.', 4);
+        }
+      }
+
+      const strippedMetadata = await this.stripMetadata(file);
+      if (strippedMetadata !== file) {
+        file = strippedMetadata;
+        new Notice('info', 'Removed media metadata from file.', 4);
+      }
+
       // Needs to be set before the validation for some error messages.
       this.file = file;
       this.filename = file.name;
@@ -2177,6 +2532,8 @@ class post {
     } catch (error) {
       console.error(error);
       this.fileError(error?.message || error || 'unknown error when setting a file');
+    } finally {
+      delete this.pendingFile;
     }
     this.preventAutoPost();
   }

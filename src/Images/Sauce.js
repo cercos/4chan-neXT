@@ -54,6 +54,10 @@ var Sauce = {
       }
     }
     if (!parts['text']) { parts['text'] = parts['url'].match(/(\w+)\.\w+\//)?.[1] || '?'; }
+    // Normalize legacy default trace.moe label.
+    if ((parts['text'] || '').trim().toLowerCase() === 'wait' && /(?:^|\/\/)trace\.moe\//i.test(parts['url'] || '')) {
+      parts['text'] = 'trace';
+    }
     if ('boards' in parts) {
       parts['boards'] = Filter.parseBoards(parts['boards']);
     }

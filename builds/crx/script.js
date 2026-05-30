@@ -1,5 +1,5 @@
 /*
-* 4chan XT
+* 4chan-neXT
 *
 * Licensed under the MIT license.
 * https://github.com/TuxedoTako/4chan-xt/blob/project-XT/LICENSE
@@ -85,25 +85,26 @@
   'use strict';
 
   var version = {
-    "version": "2.24.2",
-    "date": "2025-12-23T20:20:20Z"
-  };
+    "version": "1.0.0",
+    "date": "2026-05-29T00:00:00Z"
+  }
+  ;
 
   var meta = {
-   "name": "4chan XT",
-   "path": "4chan-XT",
-   "fork": "TuxedoTako",
-   "page": "https://github.com/TuxedoTako/4chan-xt",
-   "downloads": "https://github.com/TuxedoTako/4chan-xt/releases",
+   "name": "4chan-neXT",
+   "path": "4chan-neXT",
+   "fork": "cercos",
+   "page": "https://github.com/cercos/4chan-next",
+   "downloads": "https://github.com/cercos/4chan-next/releases",
    "oldVersions": "https://raw.githubusercontent.com/ccd0/4chan-x/",
-   "faq": "https://github.com/TuxedoTako/4chan-xt/wiki/Frequently-Asked-Questions",
+   "faq": "https://github.com/cercos/4chan-next/wiki/Frequently-Asked-Questions",
    "upstreamFaq": "https://github.com/ccd0/4chan-x/wiki/Frequently-Asked-Questions",
    "captchaFAQ": "https://github.com/ccd0/4chan-x/wiki/Captcha-FAQ",
    "cssGuide": "https://github.com/ccd0/4chan-x/wiki/Styling-Guide",
-   "license": "https://github.com/TuxedoTako/4chan-xt/blob/project-XT/LICENSE",
-   "changelog": "https://github.com/TuxedoTako/4chan-xt/blob/project-XT/CHANGELOG.md",
-   "issues": "https://github.com/TuxedoTako/4chan-xt/issues",
-   "newIssue": "https://github.com/TuxedoTako/4chan-xt/issues",
+   "license": "https://github.com/cercos/4chan-next/blob/project-neXT/LICENSE",
+   "changelog": "https://github.com/cercos/4chan-next/blob/project-neXT/CHANGELOG.md",
+   "issues": "https://github.com/cercos/4chan-next/issues",
+   "newIssue": "https://github.com/cercos/4chan-next/issues",
    "newIssueMaxLength": 8181,
    "alternatives": "https://www.4chan-x.net/4chan_alternatives.html",
    "appid": "lacclbnghgdicfifcamcmcnilckjamag",
@@ -280,6 +281,15 @@ div.boardTitle {
           true,
           'Localize and format timestamps. Has more options on the "Advanced" tab.'
         ],
+        'Relative Post Dates': [
+          false,
+          'Display dates like "3 minutes ago". Tooltip shows the timestamp.'
+        ],
+        'Relative Date Title': [
+          false,
+          'Show Relative Post Date only when hovering over dates.',
+          1
+        ],
         'Comment Expansion': [
           true,
           'Expand comments that are too long to display on the index. Not applicable with JSON Index.'
@@ -359,8 +369,7 @@ div.boardTitle {
         ],
         'Scroll Markers': [
           true,
-          'Mark your posts and replies to them on the scroll bar. Relies on the "Highlight Posts Quoting You" and ' +
-            '"Highlight Own Posts" settings'
+          'Mark your posts and replies to them on the scroll bar.'
         ],
       },
 
@@ -399,6 +408,11 @@ div.boardTitle {
           false,
           'Embed content in a frame that remains in place when the page is scrolled.',
           2
+        ],
+        'Convert X to xcancel': [
+          false,
+          'Rewrite twitter.com / x.com links to xcancel.com so clicks open the privacy front-end instead.',
+          1
         ],
       },
 
@@ -456,6 +470,14 @@ div.boardTitle {
           true,
           'Show the reason the post was hidden in the stub. If disabled, you can hover over the stub to see the reason.'
         ],
+        'Show Threads With Yous': [
+          false,
+          'Show hidden threads on the index/catalog when they have unread replies quoting you. They re-hide once the (You) is read.'
+        ],
+        'Group Hidden Threads By Filter': [
+          false,
+          'When showing hidden threads in catalog mode, group them under a header for the filter rule that hid them, with a separate "Manually hidden" section.'
+        ],
       },
 
       'Images and Videos': {
@@ -496,6 +518,10 @@ div.boardTitle {
         'Reveal Spoiler Thumbnails': [
           false,
           'Replace spoiler thumbnails with the original image.'
+        ],
+        'Replace Thumbnails': [
+          false,
+          'Replace image and video thumbnails with the original media. Probably will degrade browser performance ;)'
         ],
         'Replace GIF': [
           false,
@@ -705,6 +731,35 @@ div.boardTitle {
           false,
           'Activate Reply Pruning by default in all threads.',
           1
+        ],
+        'Detailed Thread Stats': [
+          true,
+          'Display page / purge position and unique IP count in the thread stats.',
+          1
+        ],
+        'Scrollbar Markers': [
+          true,
+          'Show colored markers along the right edge of the page for tracked posts. Uses the highlight colors from the Style settings.'
+        ],
+        'Scrollbar Mark Own Posts': [
+          true,
+          'Mark your own posts in the scrollbar.',
+          1
+        ],
+        'Scrollbar Mark Quotes You': [
+          true,
+          'Mark posts that quote you in the scrollbar.',
+          1
+        ],
+        'Scrollbar Mark Ghost Posts': [
+          true,
+          'Mark deleted (ghost) posts in the scrollbar.',
+          1
+        ],
+        'Scrollbar Mark Unread Line': [
+          true,
+          'Mark the unread line position in the scrollbar.',
+          1
         ]
       },
 
@@ -783,9 +838,53 @@ div.boardTitle {
           false,
           'Use the non-Javascript fallback captcha even if Javascript is enabled.'
         ],
+        'Stacked TCaptcha': [
+          false,
+          'Show 4chan\'s TCaptcha as a stacked image grid in Quick Reply instead of the default slider/next UI.'
+        ],
         'Pass Link': [
           false,
           'Add a 4chan Pass login link to the bottom of the page.'
+        ],
+        'Auto-process Images': [
+          true,
+          'Automatically convert unsupported image formats and resize oversized image uploads in Quick Reply.',
+          1
+        ],
+        'Strip Video Audio': [
+          true,
+          'Remove audio from MP4 and WebM uploads in Quick Reply on boards that do not allow audio.',
+          1
+        ],
+        'Strip All Media Metadata': [
+          false,
+          'Strip metadata from all uploaded media in Quick Reply, regardless of type.',
+          1
+        ],
+        'Image Metadata': [
+          true,
+          'Strip metadata from image uploads in Quick Reply when "Strip All Media Metadata" is disabled.',
+          2
+        ],
+        'Video Metadata': [
+          true,
+          'Strip metadata from video uploads in Quick Reply when "Strip All Media Metadata" is disabled.',
+          2
+        ],
+        'Audio Metadata': [
+          false,
+          'Strip metadata from audio uploads in Quick Reply when "Strip All Media Metadata" is disabled.',
+          2
+        ],
+        'Other Metadata': [
+          false,
+          'Strip metadata from non-image/video/audio uploads in Quick Reply when "Strip All Media Metadata" is disabled and supported in-browser.',
+          2
+        ],
+        'Comment Preview': [
+          false,
+          'Show a live WYSIWYG preview of your post in the Quick Reply.',
+          1
         ]
       },
 
@@ -836,6 +935,10 @@ div.boardTitle {
           true,
           'Link dead quotes to the archives, and support inlining/previewing of archive links like quote links.'
         ],
+        'Fetch Ghost Posts': [
+          false,
+          'When opening a thread, fetch deleted posts from the configured archive and insert them inline. Requires Resurrect Quotes and a Foolfuuka archive for the board.'
+        ],
         'Remember Your Posts': [
           true,
           'Remember your posting history.'
@@ -853,6 +956,11 @@ div.boardTitle {
         'Highlight Own Posts': [
           true,
           'Highlights own posts.',
+          1
+        ],
+        'Highlight Ghost Posts': [
+          true,
+          'Highlights deleted posts that have been restored from an archive.',
           1
         ],
         'Mark OP Quotes': [
@@ -927,6 +1035,13 @@ div.boardTitle {
     },
 
     'Default Volume': 1.0,
+    'Thread Watcher Thumbnail Size': 40,
+    'Thread Watcher Thumbnail Preview Size': 40,
+    'Thread Watcher Max Height': 210,
+    'Thread Watcher Max Width': 250,
+    'Thread Title': 'excerpt',
+    'Unread Title Count': 'always',
+    'Comment Preview Position': 'button',
 
     threadWatcher: {
       'Current Board': [
@@ -957,9 +1072,25 @@ div.boardTitle {
         true,
         'Show number of unread posts in watched threads.'
       ],
+      'Show Mark All Read Icon': [
+        true,
+        'Show the mark-all-read icon in the thread watcher header.'
+      ],
+      'Show Mark Thread Read Icons': [
+        false,
+        'Show a per-thread mark-as-read icon in each watched thread entry.'
+      ],
       'Show Site Prefix': [
         true,
         'When multiple sites are shown in the thread watcher, add a prefix to board names to distinguish them.'
+      ],
+      'Show OP Thumbnails': [
+        false,
+        'Show OP thumbnails in watched thread entries.'
+      ],
+      'Thread Watcher Thumbnail Hover': [
+        false,
+        'Show a larger OP thumbnail preview when hovering watched-thread thumbnails.'
       ],
       'Require OP Quote Link': [
         false,
@@ -1030,6 +1161,8 @@ div.boardTitle {
       MD5: ''
     },
 
+    easyFilters: '',
+
     sauces: `\
 # Known filename formats:
 https://www.pixiv.net/member_illust.php?mode=medium&illust_id=%$1;regexp:/^(\\d+)_p\\d+/
@@ -1047,7 +1180,7 @@ https://yandex.com/images/search?rpt=imageview&url=%IMG
 
 # Specialized reverse image search:
 //iqdb.org/?url=%IMG
-https://trace.moe/?auto&url=%IMG;text:wait
+https://trace.moe/?auto&url=%IMG;text:trace
 #//3d.iqdb.org/?url=%IMG
 #//saucenao.com/search.php?url=%IMG
 
@@ -1069,6 +1202,47 @@ http://eye.swfchan.com/search/?q=%name;types:swf
     },
 
     'Custom CSS': true,
+    customCSSHome: false,
+    siteStyle: '',
+    siteStyleHome: false,
+    textColorMode: 'auto',
+    'Text Color': '',
+    'Link Text Color': '',
+    'Quote Text Color': '',
+    'Dead Link Text Color': '',
+    'Scroll Marker Match Highlights': true,
+
+    // Styling — highlight background colors and per-marker scroll colors.
+    // Empty string = use the stylesheet default for the active theme.
+    'Highlight Own Color':         '',
+    'Highlight You Color':         '',
+    'Highlight Ghost Color':       '',
+    'Highlight Own Text Auto':     true,
+    'Highlight You Text Auto':     true,
+    'Highlight Ghost Text Auto':   true,
+    'Highlight Own Text Color':    '',
+    'Highlight Own Link Color':    '',
+    'Highlight Own Quote Color':   '',
+    'Highlight Own Dead Link Color': '',
+    'Highlight You Text Color':    '',
+    'Highlight You Link Color':    '',
+    'Highlight You Quote Color':   '',
+    'Highlight You Dead Link Color': '',
+    'Highlight Ghost Text Color':  '',
+    'Highlight Ghost Link Color':  '',
+    'Highlight Ghost Quote Color': '',
+    'Highlight Ghost Dead Link Color': '',
+    'Highlight Own Opacity':       '',
+    'Highlight You Opacity':       '',
+    'Highlight Ghost Opacity':     '',
+    'Scroll Marker Own Color':     '',
+    'Scroll Marker You Color':     '',
+    'Scroll Marker Ghost Color':   '',
+    'Scroll Marker Unread Color':  '',
+    'Scroll Marker Own Opacity':   '',
+    'Scroll Marker You Opacity':   '',
+    'Scroll Marker Ghost Opacity': '',
+    'Scroll Marker Unread Opacity': '',
 
     Index: {
       'Index Mode': 'paged',
@@ -1631,6 +1805,12 @@ current-archive-text:"Archive"]
     },
     setupTCaptcha: ({ boardID, threadID, autoLoad }) => {
       const { TCaptcha } = window;
+      if (!TCaptcha?.init) {
+        window.dispatchEvent(new CustomEvent('CreateNotification', {
+          detail: { type: 'warning', content: 'Captcha unavailable. Reload the page and try again.' }
+        }));
+        return;
+      }
       TCaptcha.init(document.querySelector('#qr .captcha-container'), boardID, +threadID);
       TCaptcha.setErrorCb(err => window.dispatchEvent(new CustomEvent('CreateNotification', {
         detail: { type: 'warning', content: '' + err }
@@ -2487,29 +2667,36 @@ current-archive-text:"Archive"]
     return { innerHTML, [isEscaped]: true };
   }
 
-  // \u00A0 is non breaking space
-  const separator = '\u00A0|\u00A0';
   const settingsHtml = h("div", { id: "fourchanx-settings", class: "dialog" },
-    h("nav", null,
-      h("div", { class: "sections-list" }),
+    h("div", { class: "settings-titlebar move" },
+      h("span", { class: "settings-title" },
+        meta.name,
+        " Settings"),
+      h("span", { class: "settings-titlebar-actions" },
+        h("a", { href: "#", class: "expand-all", title: "Expand all sections" }, "Expand all"),
+        h("a", { href: "#", class: "collapse-all", title: "Collapse all sections" }, "Collapse all"),
+        h("label", { class: "remember-layout-toggle", title: "Remember dialog layout and section collapse state" },
+          h("input", { id: "settings-remember-layout", type: "checkbox", autocomplete: "off" }),
+          h("span", null, "Remember layout")),
+        h("a", { href: "#", class: "close", title: "Close" }, "\u2715"))),
+    h("div", { class: "settings-body" },
+      h("nav", null,
+        h("div", { class: "settings-search" },
+          h("input", { type: "search", placeholder: "Search settings", autocomplete: "off" })),
+        h("div", { class: "sections-list" })),
+      h("div", { class: "section-container" },
+        h("section", null))),
+    h("div", { class: "settings-footer" },
+      h("div", { class: "settings-actions" },
+        h("a", { href: "#", class: "export" }, "Export"),
+        h("a", { href: "#", class: "import" }, "Import"),
+        h("a", { href: "#", class: "reset" }, "Reset Settings"),
+        h("input", { type: "file", hidden: true, accept: ".json,application/json" })),
       h("p", { class: "imp-exp-result warning" }),
       h("div", { class: "credits" },
-        h("a", { href: "javascript:;", class: "export" }, "Export"),
-        separator,
-        h("a", { href: "javascript:;", class: "import" }, "Import"),
-        separator,
-        h("a", { href: "javascript:;", class: "reset" }, "Reset Settings"),
-        separator,
-        h("input", { type: "file", hidden: true, accept: ".json,application/json" }),
         h("a", { href: meta.page, target: "_blank" }, meta.name),
-        separator,
         h("a", { href: meta.changelog, target: "_blank" }, g.VERSION),
-        separator,
-        h("a", { href: meta.issues, target: "_blank" }, "Issues"),
-        separator,
-        h("a", { href: "javascript:;", class: "close", title: "Close" }, "\u2715"))),
-    h("div", { class: "section-container" },
-      h("section", null)));
+        h("a", { href: meta.issues, target: "_blank" }, "Issues"))));
 
   var FilterGuidePage = `<div class="warning"><code>Filter</code> is disabled.</div>
 <p>
@@ -2556,6 +2743,11 @@ current-archive-text:"Archive"]
     Highlighted OPs will have their threads put on top of the board index by default.<br>
     For example: <code>top:yes;</code> or <code>top:no;</code>.
   </li>
+  <li>
+    Whitelist a thread against hide filters. When a highlight rule matches with <code>override</code>, the thread stays visible and highlighted even if another rule would normally hide it.<br>
+    Only applies to highlight rules; ignored on hide and notify rules.<br>
+    For example: <code>/4chan X/i;boards:g;highlight;override</code> keeps any <code>/g/</code> thread whose subject mentions "4chan X" visible even if its OP body matches a hide filter elsewhere in your list.
+  </li>
   <li>Show a desktop notification instead of hiding: <code>notify;</code>.</li>
   <li>Hide all posts from this poster: <code>poster;</code>.</li>
   <li>Recursively hide replies: <code>replies;</code>.</li>
@@ -2595,8 +2787,8 @@ current-archive-text:"Archive"]
 </div>
 <textarea hidden name="sauces" class="field" spellcheck="false"></textarea>`;
 
-  var AdvancedPage = `<fieldset>
-  <legend>Archives</legend>
+  var AdvancedPage = `<details open>
+  <summary>Archives</summary>
   <div class="warning" data-feature="404 Redirect"><code>404 Redirect</code> is disabled.</div>
   <select id="archive-board-select"></select>
   <table id="archive-table">
@@ -2615,73 +2807,36 @@ current-archive-text:"Archive"]
   </div>
   <textarea hidden name="archiveLists" class="field" spellcheck="false"></textarea>
   <button id="update-archives">Update now</button> Last updated: <time id="lastarchivecheck"></time> <label><input type="checkbox" name="archiveAutoUpdate"> Auto-update</label>
-</fieldset>
+</details>
 
-<fieldset>
-  <legend>External Catalog</legend>
+<details open>
+  <summary>External Catalog</summary>
   <div class="warning" data-feature="External Catalog"><code>External Catalog</code> is disabled. This will be used only as a fallback.</div>
   <div>
     URLs of external catalog sites, where <code>%board</code> is to be replaced by the board name.<br>
     Each URL should be followed by <code>;boards:</code> and optionally <code>;exclude:</code> and a list of supported/excluded boards in the format explained in the Filter guide.
   </div>
   <textarea hidden name="externalCatalogURLs" class="field" spellcheck="false"></textarea>
-</fieldset>
+</details>
 
-<fieldset>
-  <legend>Override 4chan Image Host</legend>
+<details open>
+  <summary>Override 4chan Image Host</summary>
   <div>Change 4chan image links to this domain. Leave blank for no change.</div>
   <div><input name="fourchanImageHost" class="field" spellcheck="false" list="list-fourchanImageHost"></div>
   <datalist id="list-fourchanImageHost"></datalist>
-</fieldset>
+</details>
 
-<fieldset>
-  <legend>Captcha Language</legend>
+<details open>
+  <summary>Captcha Language</summary>
   <div>Choose from <a href="https://developers.google.com/recaptcha/docs/language" target="_blank">list of language codes</a>. Leave blank to autoselect.</div>
   <div><input name="captchaLanguage" class="field" spellcheck="false"></div>
-</fieldset>
+</details>
 
-<fieldset>
-  <legend>Custom Board Navigation</legend>
-  <div><textarea hidden name="boardnav" class="field" spellcheck="false"></textarea></div>
-  <span class="note">New lines will be converted into spaces.</span><br><br>
-  <div class="note">In the following examples for /g/, <code>g</code> can be changed to a different board ID (<code>a</code>, <code>b</code>, etc...), the current board (<code>current</code>), or the Twitter link (<code>@</code>).</div>
-  <div>Board link: <code>g</code></div>
-  <div>Archive link: <code>g-archive</code></div>
-  <div>Internal archive link: <code>g-expired</code></div>
-  <div>Title link: <code>g-title</code></div>
-  <div>Board link (Replace with title when on that board): <code>g-replace</code></div>
-  <div>Full text link: <code>g-full</code></div>
-  <div>Custom text link: <code>g-text:&quot;Install Gentoo&quot;</code></div>
-  <div>Index-only link: <code>g-index</code></div>
-  <div>Catalog-only link: <code>g-catalog</code></div>
-  <div>Index mode: <code>g-mode:&quot;infinite scrolling&quot;</code></div>
-  <div>Index sort: <code>g-sort:&quot;creation date rev&quot;</code></div>
-  <div>External link: <code>external-text:&quot;Google&quot;,&quot;http://www.google.com&quot;</code></div>
-  <div>Open in new tab: <code>g-nt</code></div>
-  <div>Combinations are possible: <code>g-index-text:&quot;Technology Index&quot;</code></div>
-  <div>Full board list toggle: <code>toggle-all</code></div>
-  <br>
-  <div class="note">
-    <code>[ toggle-all ] [current-title] [g-title / a-title / jp-title] [x / wsg / h] [t-text:&quot;Piracy&quot;]</code><br>
-    will give you<br>
-    <code>[ + ] [Technology] [Technology / Anime & Manga / Otaku Culture] [x / wsg / h] [Piracy]</code><br>
-    if you are on /g/.
-  </div>
-  <div class="note">
-    For custom styling, you can wrap groups or individual links in <code>{{</code> and <code>}}</code>, to wrap them in
-    a span. You can also add classes in double quotes right after the {{. For example: <br />
-    <code>[g-title] {{"favorites"[a-title / jp-title]}}</code><br />
-    Results in:<br />
-    <code>[&lt;a [...] &gt;Technology&lt;/a&gt;] &lt;span class="favorites"&gt;[&lt;a [...] &gt;Anime &amp;amp;
-      Manga&lt;/a&gt; / &lt;a [...] &gt;Otaku Culture&lt;/a&gt;]&lt;/span&gt;</code>
-  </div>
-</fieldset>
-
-<fieldset>
-  <legend>
+<details open>
+  <summary>
     Time Formatting
     <span class="warning" data-feature="Time Formatting">is disabled, relative time setting still applies.</span>
-  </legend>
+  </summary>
   <div><input name="time" class="field" spellcheck="false">: <span class="time-preview"></span></div>
   <div>Supported <a href="http://man7.org/linux/man-pages/man1/date.1.html" target="_blank">format specifiers</a>:</div>
   <div>Day: <code>%a</code>, <code>%A</code>, <code>%d</code>, <code>%e</code></div>
@@ -2701,20 +2856,20 @@ current-archive-text:"Archive"]
       <option value="BothRelativeFirst">Show both relative date and timestamp</option>
     </select>
   </div>
-</fieldset>
+</details>
 
-<fieldset>
-  <legend>Quote Backlinks formatting <span class="warning" data-feature="Quote Backlinks">is disabled.</span></legend>
+<details open>
+  <summary>Quote Backlinks formatting <span class="warning" data-feature="Quote Backlinks">is disabled.</span></summary>
   <div><input name="backlink" class="field" spellcheck="false">: <span class="backlink-preview"></span></div>
-</fieldset>
+</details>
 
-<fieldset>
-  <legend>Default pasted content filename</legend>
+<details open>
+  <summary>Default pasted content filename</summary>
   <div><input name="pastedname" class="field" spellcheck="false">.png</div>
-</fieldset>
+</details>
 
-<fieldset>
-  <legend>File Info Formatting <span class="warning" data-feature="File Info Formatting">is disabled.</span></legend>
+<details open>
+  <summary>File Info Formatting <span class="warning" data-feature="File Info Formatting">is disabled.</span></summary>
   <div><input name="fileInfo" class="field" spellcheck="false">: <span class="file-info file-info-preview"></span></div>
   <div>Link: <code>%l</code> (truncated), <code>%L</code> (untruncated), <code>%T</code> (4chan filename)</div>
   <div>Filename: <code>%n</code> (truncated), <code>%N</code> (untruncated), <code>%t</code> (4chan filename)</div>
@@ -2725,10 +2880,10 @@ current-archive-text:"Archive"]
   <div>Resolution: <code>%r</code> (Displays &#039;PDF&#039; for PDF files)</div>
   <div>Tag: <code>%g</code>
   <div>Literal <code>%</code>: <code>%%</code></div>
-</fieldset>
+</details>
 
-<fieldset>
-  <legend>Quick Reply Personas</legend>
+<details open>
+  <summary>Quick Reply Personas</summary>
   <textarea hidden class="personafield field" name="QR.personas" spellcheck="false"></textarea>
   <p>
     One item per line.<br>
@@ -2742,61 +2897,33 @@ current-archive-text:"Archive"]
     <li>Force values as defaults with the <code>always</code> keyword, for example: <code>options:&quot;sage&quot;;always</code>.</li>
     <li>Select specific boards for an item, separated with commas, for example: <code>options:&quot;sage&quot;;boards:jp;always</code>.</li>
   </ul>
-</fieldset>
+</details>
 
-<fieldset>
-  <legend>Unread Favicon <span class="warning" data-feature="Unread Favicon">is disabled.</span></legend>
-  <select name="favicon">
-    <option value="ferongr">ferongr</option>
-    <option value="xat-">xat-</option>
-    <option value="4chanJS">4chanJS</option>
-    <option value="Mayhem">Mayhem</option>
-    <option value="Original">Original</option>
-    <option value="Metro">Metro</option>
-  </select>
-  <span class="favicon-preview"></span>
-</fieldset>
-
-<fieldset>
-  <legend>Thread Updater <span class="warning" data-feature="Thread Updater">is disabled.</span></legend>
+<details open>
+  <summary>Thread Updater <span class="warning" data-feature="Thread Updater">is disabled.</span></summary>
   <div>
     Interval: <input type="number" name="Interval" class="field" min="1"> seconds
   </div>
-</fieldset>
+</details>
 
-<fieldset>
-    <legend>Custom Cooldown Time</legend>
+<details open>
+    <summary>Custom Cooldown Time</summary>
     <div>
         Seconds: <input type="number" name="customCooldown" class="field" min="0">
     </div>
-</fieldset>
+</details>
 
-<fieldset>
-  <legend>
-    <label><input type="checkbox" name="Custom CSS"> Custom CSS</label>
-  </legend>
-  <div>For more information about customizing 4chan X&#039;s CSS, see the <a href="https://github.com/ccd0/4chan-x/wiki/Styling-Guide" target="_blank">styling guide</a>.</div>
-  <button id="apply-css">Apply CSS</button>
-  <textarea hidden name="usercss" class="field" spellcheck="false"></textarea>
-</fieldset>
-
-<fieldset>
-  <legend>Javascript Whitelist</legend>
+<details open>
+  <summary>Javascript Whitelist</summary>
   <div>
     Sources from which Javascript is allowed to be loaded by <a href="http://content-security-policy.com/#source_list" target="_blank">Content Security Policy</a>.<br>
     Lines starting with a <code>#</code> will be ignored. Remove or comment out all lines to allow everything.
   </div>
   <textarea hidden name="jsWhitelist" class="field" spellcheck="false"></textarea>
-</fieldset>
+</details>
 
-<fieldset>
-  <legend>Known Banners</legend>
-  <div>List of known banners, used for click-to-change feature.</div>
-  <textarea hidden name="knownBanners" class="field" spellcheck="false"></textarea>
-</fieldset>
-
-<fieldset>
-  <legend>X (formerly Twitter) embeds</legend>
+<details open>
+  <summary>X (formerly Twitter) embeds</summary>
   <div>Only applies if embeds are enabled in the main settings</div>
   <label>Service to use for embeds
     <select name="XEmbedder">
@@ -2813,10 +2940,10 @@ current-archive-text:"Archive"]
   <label>FxTwitter maximum amount of replies include
     <input name="fxtMaxReplies" type="number" min="0" step="1" max="100" class="field" />
   </label>
-</fieldset>
+</details>
 
-<fieldset>
-  <legend>Thread updater sound</legend>
+<details open>
+  <summary>Thread updater sound</summary>
   <label>
     Sound volume, between 0 and 1:
     <input name="beepVolume" type="number" min=".01" max="1" step=".01" class="field" />
@@ -2825,7 +2952,7 @@ current-archive-text:"Archive"]
     Sound url. Can be a base64 one starting with <code>data:</code>. Leave empty for the default beep.
     <input type="string" name="beepSource" class="field wide" />
   </label>
-</fieldset>`;
+</details>`;
 
   var KeybindsPage = `<div class="warning"><code>Keybinds</code> are disabled.</div>
 <div>Allowed keys: <kbd>a-z</kbd>, <kbd>0-9</kbd>, <kbd>Ctrl</kbd>, <kbd>Shift</kbd>, <kbd>Alt</kbd>, <kbd>Meta</kbd>, <kbd>Enter</kbd>, <kbd>Esc</kbd>, <kbd>Up</kbd>, <kbd>Down</kbd>, <kbd>Right</kbd>, <kbd>Left</kbd>.</div>
@@ -2855,13 +2982,231 @@ current-archive-text:"Archive"]
   </select>
 <div></div>`;
 
-  var ExportDialog = `<form id="export-form">
-  <div class="move">Export settings</div>
-  <label><input name="history" type="checkbox" />Export history (last read, your posts, etc)</label><br />
-  <label><input name="ask" type="checkbox" checked />Ask every time.</label><br />
-  <button type="submit">Export</button>
-  <button type="button" id="cancel-export">Cancel</button>
-</form>`;
+  var SimpleFiltersPage = `<table class="easy-filters-table">
+  <thead>
+    <tr>
+      <th>On</th>
+      <th>Pattern</th>
+      <th>Boards</th>
+      <th>Type</th>
+      <th>Color</th>
+      <th>Auto</th>
+      <th>Hide</th>
+      <th title="Whitelist: matching highlight prevents this thread from being hidden by other rules">Override</th>
+      <th>Del</th>
+    </tr>
+  </thead>
+  <tbody></tbody>
+</table>
+<div class="easy-filters-controls">
+  <button class="easy-filter-add" type="button">Add</button>
+  <button class="easy-filter-save" type="button">Save</button>
+  <span class="easy-filter-status"></span>
+</div>`;
+
+  var StylingPage = `<details open>
+  <summary>Site Style</summary>
+  <div class="styling-theme-row">
+    <label>Theme:
+      <select name="siteStyle">
+      </select>
+    </label>
+    <label><input type="checkbox" name="siteStyleHome"> Apply on home page</label>
+  </div>
+  <div id="styling-site-style-note" class="note" hidden></div>
+</details>
+
+<details open>
+  <summary>Highlight Colors</summary>
+  <div data-name="Highlight Colors">
+    <label><input type="checkbox" id="styling-enable-highlights"> Enable post highlights</label>
+    <div class="styling-tree">
+      <div class="styling-inline-option">
+        <label><input type="checkbox" name="Highlight Own Posts"> Your post</label>
+        <span class="styling-inline-controls styling-highlight-controls">
+          <input type="color" name="Highlight Own Color" title="Highlight background color">
+          <span class="styling-highlight-manual" data-highlight-text-manual="own">
+            <input type="color" name="Highlight Own Text Color" title="Text color">
+            <input type="color" name="Highlight Own Link Color" title="Link color">
+            <input type="color" name="Highlight Own Quote Color" title="Quote color">
+            <input type="color" name="Highlight Own Dead Link Color" title="Dead link color">
+          </span>
+          <label class="styling-inline-toggle" title="Automatically choose readable text colors for this highlight"><input type="checkbox" name="Highlight Own Text Auto"> Auto text</label>
+          <input type="range" name="Highlight Own Opacity" min="0" max="1" step="0.05" title="Highlight opacity">
+        </span>
+      </div>
+      <div class="styling-inline-option">
+        <label><input type="checkbox" name="Highlight Posts Quoting You"> Quotes you</label>
+        <span class="styling-inline-controls styling-highlight-controls">
+          <input type="color" name="Highlight You Color" title="Highlight background color">
+          <span class="styling-highlight-manual" data-highlight-text-manual="you">
+            <input type="color" name="Highlight You Text Color" title="Text color">
+            <input type="color" name="Highlight You Link Color" title="Link color">
+            <input type="color" name="Highlight You Quote Color" title="Quote color">
+            <input type="color" name="Highlight You Dead Link Color" title="Dead link color">
+          </span>
+          <label class="styling-inline-toggle" title="Automatically choose readable text colors for this highlight"><input type="checkbox" name="Highlight You Text Auto"> Auto text</label>
+          <input type="range" name="Highlight You Opacity" min="0" max="1" step="0.05" title="Highlight opacity">
+        </span>
+      </div>
+      <div class="styling-inline-option">
+        <label><input type="checkbox" name="Highlight Ghost Posts"> Ghost post</label>
+        <span class="styling-inline-controls styling-highlight-controls">
+          <input type="color" name="Highlight Ghost Color" title="Highlight background color">
+          <span class="styling-highlight-manual" data-highlight-text-manual="ghost">
+            <input type="color" name="Highlight Ghost Text Color" title="Text color">
+            <input type="color" name="Highlight Ghost Link Color" title="Link color">
+            <input type="color" name="Highlight Ghost Quote Color" title="Quote color">
+            <input type="color" name="Highlight Ghost Dead Link Color" title="Dead link color">
+          </span>
+          <label class="styling-inline-toggle" title="Automatically choose readable text colors for this highlight"><input type="checkbox" name="Highlight Ghost Text Auto"> Auto text</label>
+          <input type="range" name="Highlight Ghost Opacity" min="0" max="1" step="0.05" title="Highlight opacity">
+        </span>
+      </div>
+    </div>
+  </div>
+  <p>Background colors used for highlighted posts. Opacity is 0-1; 0 disables the background. Use "Reset to defaults" to restore theme defaults.</p>
+  <div class="styling-actions">
+    <button type="button" id="styling-randomize" title="Generate random highlight colors that contrast with the page background">Randomize</button>
+    <button type="button" id="styling-reset-highlights" title="Clear all highlight colors and use theme defaults">Reset to defaults</button>
+    <button type="button" id="styling-open-preview" title="Open a live preview of post highlight states">Preview states</button>
+  </div>
+</details>
+
+<details open>
+  <summary>Scrollbar Markers</summary>
+  <div data-name="Scrollbar Markers">
+    <label><input type="checkbox" name="Scrollbar Markers"> Scrollbar markers</label>
+    <div class="styling-tree">
+      <div class="styling-inline-option styling-marker-link-row">
+        <label>Marker colors</label>
+        <span class="styling-inline-controls">
+          <label class="styling-inline-toggle"><input type="checkbox" name="Scroll Marker Match Highlights"> Match highlights</label>
+        </span>
+      </div>
+      <div class="styling-inline-option" data-marker-color="own">
+        <label><input type="checkbox" name="Scrollbar Mark Own Posts"> Your posts</label>
+        <span class="styling-inline-controls">
+          <input type="color" name="Scroll Marker Own Color">
+          <input type="range" name="Scroll Marker Own Opacity" min="0" max="1" step="0.05">
+        </span>
+      </div>
+      <div class="styling-inline-option" data-marker-color="you">
+        <label><input type="checkbox" name="Scrollbar Mark Quotes You"> Quotes you</label>
+        <span class="styling-inline-controls">
+          <input type="color" name="Scroll Marker You Color">
+          <input type="range" name="Scroll Marker You Opacity" min="0" max="1" step="0.05">
+        </span>
+      </div>
+      <div class="styling-inline-option" data-marker-color="ghost">
+        <label><input type="checkbox" name="Scrollbar Mark Ghost Posts"> Ghost posts</label>
+        <span class="styling-inline-controls">
+          <input type="color" name="Scroll Marker Ghost Color">
+          <input type="range" name="Scroll Marker Ghost Opacity" min="0" max="1" step="0.05">
+        </span>
+      </div>
+      <div class="styling-inline-option" data-marker-color="unread">
+        <label><input type="checkbox" name="Scrollbar Mark Unread Line"> Unread line</label>
+        <span class="styling-inline-controls">
+          <input type="color" name="Scroll Marker Unread Color">
+          <input type="range" name="Scroll Marker Unread Opacity" min="0" max="1" step="0.05">
+        </span>
+      </div>
+    </div>
+  </div>
+</details>
+
+<details open>
+  <summary>Text Colors</summary>
+  <div class="styling-theme-row">
+    <label>Mode:
+      <select name="textColorMode">
+        <option value="auto">Auto</option>
+        <option value="manual">Manual</option>
+      </select>
+    </label>
+  </div>
+  <p>Auto chooses readable text/link colors from the active page background. Switch to Manual to set your own values.</p>
+  <div id="styling-text-color-manual" class="styling-tree">
+    <div class="styling-inline-option">
+      <label>Text</label>
+      <span class="styling-inline-controls">
+        <input type="color" name="Text Color">
+        <button type="button" data-clear="Text Color" title="Clear">✕</button>
+      </span>
+    </div>
+    <div class="styling-inline-option">
+      <label>Links</label>
+      <span class="styling-inline-controls">
+        <input type="color" name="Link Text Color">
+        <button type="button" data-clear="Link Text Color" title="Clear">✕</button>
+      </span>
+    </div>
+    <div class="styling-inline-option">
+      <label>Quotes</label>
+      <span class="styling-inline-controls">
+        <input type="color" name="Quote Text Color">
+        <button type="button" data-clear="Quote Text Color" title="Clear">✕</button>
+      </span>
+    </div>
+    <div class="styling-inline-option">
+      <label>Dead links</label>
+      <span class="styling-inline-controls">
+        <input type="color" name="Dead Link Text Color">
+        <button type="button" data-clear="Dead Link Text Color" title="Clear">✕</button>
+      </span>
+    </div>
+  </div>
+</details>
+
+<details open>
+  <summary>Unread Favicon</summary>
+  <select name="favicon">
+    <option value="ferongr">ferongr</option>
+    <option value="xat-">xat-</option>
+    <option value="4chanJS">4chanJS</option>
+    <option value="Mayhem">Mayhem</option>
+    <option value="Original">Original</option>
+    <option value="Metro">Metro</option>
+  </select>
+  <span class="favicon-preview"></span>
+</details>
+
+<details open>
+  <summary>Custom CSS</summary>
+  <div><label><input type="checkbox" name="Custom CSS"> Enable Custom CSS</label></div>
+  <div><label><input type="checkbox" name="customCSSHome"> Load on home page</label></div>
+  <div>For more information about customizing 4chan X&#039;s CSS, see the <a href="https://github.com/ccd0/4chan-x/wiki/Styling-Guide" target="_blank">styling guide</a>.</div>
+  <button id="apply-css">Apply CSS</button>
+  <div class="custom-css-controls">
+    <label>Syntax theme:
+      <select id="custom-css-theme">
+        <option value="xt-system" selected>System</option>
+        <option value="xt-light">Light</option>
+        <option value="xt-dark">Dark</option>
+        <option value="xt-solarized">Solarized</option>
+      </select>
+    </label>
+    <label>Expanded height:
+      <select id="custom-css-expanded-height">
+        <option value="400">400px</option>
+        <option value="500" selected>500px</option>
+        <option value="700">700px</option>
+      </select>
+    </label>
+    <button type="button" id="custom-css-expand" data-expanded="false">Expand editor</button>
+  </div>
+  <div class="custom-css-editor" data-theme="xt-system-default" data-expanded="false">
+    <pre class="custom-css-highlight" aria-hidden="true"></pre>
+    <textarea hidden name="usercss" class="field custom-css-textarea" spellcheck="false" wrap="off"></textarea>
+  </div>
+</details>
+
+<details open>
+  <summary>Known Banners</summary>
+  <div>List of known banners, used for click-to-change feature.</div>
+  <textarea hidden name="knownBanners" class="field" spellcheck="false"></textarea>
+</details>`;
 
   const $$ = (selector, root = d.body) => Array.from(root.querySelectorAll(selector));
 
@@ -3036,7 +3381,7 @@ current-archive-text:"Archive"]
 }
 
 /* Settings */
-#fourchanx-settings fieldset, .section-main div::before {
+#fourchanx-settings details, .section-main div::before {
   border-color: var(--xt-border);
 }
 .suboption-list > div:last-of-type {
@@ -3061,6 +3406,117 @@ current-archive-text:"Archive"]
 .inline {
   border-color: var(--xt-border);
   background-color: var(--xt-inline, rgba(255, 255, 255, .14));
+}
+
+/* Optional post text/link color overrides (auto or manual from Styling). */
+:root.xt-custom-text-colors .post,
+:root.xt-custom-text-colors .postInfo,
+:root.xt-custom-text-colors .postMessage,
+:root.xt-custom-text-colors .summary,
+:root.xt-custom-text-colors .fileText,
+:root.xt-custom-text-colors .fileText a {
+  color: var(--xt-text-color);
+}
+:root.xt-custom-text-colors .post a,
+:root.xt-custom-text-colors .summary a,
+:root.xt-custom-text-colors #arc-list a {
+  color: var(--xt-link-text-color);
+}
+:root.xt-custom-text-colors .post .quote,
+:root.xt-custom-text-colors #arc-list .quote {
+  color: var(--xt-quote-text-color) !important;
+}
+:root.xt-custom-text-colors .backlink.deadlink,
+:root.xt-custom-text-colors .quotelink.deadlink {
+  color: var(--xt-dead-link-text-color, var(--xt-dead-link)) !important;
+}
+
+/* Highlight-specific auto text colors derived from highlight background colors. */
+:root.xt-custom-text-colors .quotesYou$site$highlightable$op,
+:root.xt-custom-text-colors .quotesYou$site$highlightable$reply {
+  color: var(--xt-highlight-you-text, var(--xt-text-color));
+}
+:root.xt-custom-text-colors .quotesYou$site$highlightable$op .postInfo,
+:root.xt-custom-text-colors .quotesYou$site$highlightable$reply .postInfo,
+:root.xt-custom-text-colors .quotesYou$site$highlightable$op .postMessage,
+:root.xt-custom-text-colors .quotesYou$site$highlightable$reply .postMessage,
+:root.xt-custom-text-colors .quotesYou$site$highlightable$op .summary,
+:root.xt-custom-text-colors .quotesYou$site$highlightable$reply .summary,
+:root.xt-custom-text-colors .quotesYou$site$highlightable$op .fileText,
+:root.xt-custom-text-colors .quotesYou$site$highlightable$reply .fileText {
+  color: var(--xt-highlight-you-text, var(--xt-text-color));
+}
+:root.xt-custom-text-colors .quotesYou$site$highlightable$op a,
+:root.xt-custom-text-colors .quotesYou$site$highlightable$reply a {
+  color: var(--xt-highlight-you-link, var(--xt-link-text-color)) !important;
+}
+:root.xt-custom-text-colors .quotesYou$site$highlightable$op .quote,
+:root.xt-custom-text-colors .quotesYou$site$highlightable$reply .quote {
+  color: var(--xt-highlight-you-quote, var(--xt-quote-text-color)) !important;
+}
+:root.xt-custom-text-colors .quotesYou$site$highlightable$op .backlink.deadlink,
+:root.xt-custom-text-colors .quotesYou$site$highlightable$reply .backlink.deadlink,
+:root.xt-custom-text-colors .quotesYou$site$highlightable$op .quotelink.deadlink,
+:root.xt-custom-text-colors .quotesYou$site$highlightable$reply .quotelink.deadlink {
+  color: var(--xt-highlight-you-dead-link, var(--xt-dead-link-text-color, var(--xt-dead-link))) !important;
+}
+
+:root.xt-custom-text-colors .yourPost$site$highlightable$op,
+:root.xt-custom-text-colors .yourPost$site$highlightable$reply {
+  color: var(--xt-highlight-own-text, var(--xt-text-color));
+}
+:root.xt-custom-text-colors .yourPost$site$highlightable$op .postInfo,
+:root.xt-custom-text-colors .yourPost$site$highlightable$reply .postInfo,
+:root.xt-custom-text-colors .yourPost$site$highlightable$op .postMessage,
+:root.xt-custom-text-colors .yourPost$site$highlightable$reply .postMessage,
+:root.xt-custom-text-colors .yourPost$site$highlightable$op .summary,
+:root.xt-custom-text-colors .yourPost$site$highlightable$reply .summary,
+:root.xt-custom-text-colors .yourPost$site$highlightable$op .fileText,
+:root.xt-custom-text-colors .yourPost$site$highlightable$reply .fileText {
+  color: var(--xt-highlight-own-text, var(--xt-text-color));
+}
+:root.xt-custom-text-colors .yourPost$site$highlightable$op a,
+:root.xt-custom-text-colors .yourPost$site$highlightable$reply a {
+  color: var(--xt-highlight-own-link, var(--xt-link-text-color)) !important;
+}
+:root.xt-custom-text-colors .yourPost$site$highlightable$op .quote,
+:root.xt-custom-text-colors .yourPost$site$highlightable$reply .quote {
+  color: var(--xt-highlight-own-quote, var(--xt-quote-text-color)) !important;
+}
+:root.xt-custom-text-colors .yourPost$site$highlightable$op .backlink.deadlink,
+:root.xt-custom-text-colors .yourPost$site$highlightable$reply .backlink.deadlink,
+:root.xt-custom-text-colors .yourPost$site$highlightable$op .quotelink.deadlink,
+:root.xt-custom-text-colors .yourPost$site$highlightable$reply .quotelink.deadlink {
+  color: var(--xt-highlight-own-dead-link, var(--xt-dead-link-text-color, var(--xt-dead-link))) !important;
+}
+
+:root.xt-custom-text-colors .from-archive$site$highlightable$op,
+:root.xt-custom-text-colors .from-archive$site$highlightable$reply {
+  color: var(--xt-highlight-ghost-text, var(--xt-text-color));
+}
+:root.xt-custom-text-colors .from-archive$site$highlightable$op .postInfo,
+:root.xt-custom-text-colors .from-archive$site$highlightable$reply .postInfo,
+:root.xt-custom-text-colors .from-archive$site$highlightable$op .postMessage,
+:root.xt-custom-text-colors .from-archive$site$highlightable$reply .postMessage,
+:root.xt-custom-text-colors .from-archive$site$highlightable$op .summary,
+:root.xt-custom-text-colors .from-archive$site$highlightable$reply .summary,
+:root.xt-custom-text-colors .from-archive$site$highlightable$op .fileText,
+:root.xt-custom-text-colors .from-archive$site$highlightable$reply .fileText {
+  color: var(--xt-highlight-ghost-text, var(--xt-text-color));
+}
+:root.xt-custom-text-colors .from-archive$site$highlightable$op a,
+:root.xt-custom-text-colors .from-archive$site$highlightable$reply a {
+  color: var(--xt-highlight-ghost-link, var(--xt-link-text-color)) !important;
+}
+:root.xt-custom-text-colors .from-archive$site$highlightable$op .quote,
+:root.xt-custom-text-colors .from-archive$site$highlightable$reply .quote {
+  color: var(--xt-highlight-ghost-quote, var(--xt-quote-text-color)) !important;
+}
+:root.xt-custom-text-colors .from-archive$site$highlightable$op .backlink.deadlink,
+:root.xt-custom-text-colors .from-archive$site$highlightable$reply .backlink.deadlink,
+:root.xt-custom-text-colors .from-archive$site$highlightable$op .quotelink.deadlink,
+:root.xt-custom-text-colors .from-archive$site$highlightable$reply .quotelink.deadlink {
+  color: var(--xt-highlight-ghost-dead-link, var(--xt-dead-link-text-color, var(--xt-dead-link))) !important;
 }
 
 /* Fappe and Werk Tyme */
@@ -3113,11 +3569,18 @@ current-archive-text:"Archive"]
 }
 :root.highlight-you .quotesYou$site$highlightable$op,
 :root.highlight-you .quotesYou$site$highlightable$reply {
-  border-left: 3px solid var(--xt-border-highlight);
+  border-left: 3px solid var(--xt-highlight-you, var(--xt-border-highlight));
+  background-color: color-mix(in srgb, var(--xt-highlight-you, transparent) calc(var(--xt-highlight-you-opacity, 1) * 100%), transparent);
 }
 :root.highlight-own .yourPost$site$highlightable$op,
 :root.highlight-own .yourPost$site$highlightable$reply {
-  border-left: 3px dashed var(--xt-border-highlight) ;
+  border-left: 3px dashed var(--xt-highlight-own, var(--xt-border-highlight));
+  background-color: color-mix(in srgb, var(--xt-highlight-own, transparent) calc(var(--xt-highlight-own-opacity, 1) * 100%), transparent);
+}
+:root.highlight-ghost .from-archive$site$highlightable$op,
+:root.highlight-ghost .from-archive$site$highlightable$reply {
+  border-left: 3px dotted var(--xt-highlight-ghost, #888);
+  background-color: color-mix(in srgb, var(--xt-highlight-ghost, transparent) calc(var(--xt-highlight-ghost-opacity, 1) * 100%), transparent);
 }
 .filter-highlight$site$highlightable$op,
 .filter-highlight$site$highlightable$reply {
@@ -3487,7 +3950,7 @@ audio.controls-added {
 
 /* fixed, z-index */
 #overlay,
-#qp, #ihover,
+#qp, #ihover, #tw-ihover,
 #navlinks, .fixed #header-bar,
 :root.float #updater,
 :root.float #thread-stats,
@@ -3498,7 +3961,7 @@ audio.controls-added {
 #overlay {
   z-index: 999;
 }
-#qp, #ihover {
+#qp, #ihover, #tw-ihover {
   z-index: 60;
 }
 #menu, .gal-buttons {
@@ -3749,41 +4212,241 @@ audio.controls-added {
   box-shadow: 0 0 15px rgba(0, 0, 0, .15);
   height: 600px;
   max-height: 100%;
+  min-height: 360px;
   width: 900px;
   max-width: 100%;
+  min-width: 520px;
   margin: auto;
-  padding: 5px;
+  padding: 0;
   display: flex;
   flex-direction: column;
+  overflow: hidden;
+  resize: both;
+  position: absolute;
 }
-#fourchanx-settings > nav {
-  padding: 2px 2px 8px;
+.settings-titlebar {
+  box-sizing: border-box;
+  border-bottom: 1px solid rgba(128, 128, 128, .25);
   display: flex;
+  align-items: center;
+  justify-content: space-between;
+  padding: 6px 8px;
+  cursor: move;
 }
-#fourchanx-settings > nav a {
+.settings-title {
+  font-weight: 700;
+}
+.settings-titlebar-actions {
+  display: flex;
+  align-items: center;
+  gap: 10px;
+  font-size: 0.85em;
+}
+.settings-titlebar-actions > a:not(.close) {
+  text-decoration: none;
+  opacity: 0.8;
+}
+.settings-titlebar-actions > a:not(.close):hover {
+  opacity: 1;
   text-decoration: underline;
 }
-#fourchanx-settings > nav a.close {
+.settings-titlebar-actions .remember-layout-toggle {
+  align-items: center;
+  cursor: pointer;
+  display: inline-flex;
+  gap: 4px;
+  opacity: .85;
+  user-select: none;
+}
+.settings-titlebar-actions .remember-layout-toggle:hover {
+  opacity: 1;
+}
+.settings-titlebar-actions .remember-layout-toggle > span {
+  white-space: nowrap;
+}
+.settings-titlebar-actions .remember-layout-toggle input {
+  margin: 0;
+}
+#fourchanx-settings > .settings-body {
+  flex: 1;
+  min-height: 0;
+  display: flex;
+}
+#fourchanx-settings > .settings-body > nav {
+  box-sizing: border-box;
+  border-right: 1px solid rgba(128, 128, 128, .25);
+  padding: 8px;
+  display: flex;
+  flex-direction: column;
+  flex: 0 0 auto;
+  min-width: 148px;
+  max-width: 220px;
+}
+#fourchanx-settings > .settings-body > nav a {
   text-decoration: none;
-  padding: 0 2px;
+}
+#fourchanx-settings > .settings-body > nav .settings-search {
+  margin: 0 0 6px;
+}
+#fourchanx-settings > .settings-body > nav .settings-search input {
+  box-sizing: border-box;
+  width: 100%;
+}
+#fourchanx-settings .close {
+  text-decoration: none;
+  padding: 2px 4px;
   margin: 0;
 }
 .section-container {
   flex: 1;
   position: relative;
   overflow: auto;
-  padding-right: 5px;
+  padding: 8px 10px;
   overscroll-behavior: contain;
+}
+.section-container > section {
+  margin-bottom: 14px;
+}
+.settings-section-block {
+  margin: 0 0 12px;
+}
+.settings-section-content > :last-child {
+  margin-bottom: 0;
+}
+.settings-section-header {
+  border-bottom: 1px solid rgba(128, 128, 128, .25);
+  font-size: 18px;
+  font-weight: 700;
+  line-height: 1.25;
+  margin: 0 0 10px;
+  padding: 0 0 6px;
+}
+#fourchanx-settings.settings-searching .settings-section-header {
+  display: block;
+}
+.settings-search-hidden {
+  display: none !important;
+}
+.section-container mark {
+  background: rgba(255, 214, 83, .5);
+  color: inherit;
+  padding: 0;
 }
 .sections-list {
   flex: 1;
+  display: flex;
+  flex-direction: column;
+  gap: 2px;
+  overflow: auto;
+}
+.sections-list > a {
+  white-space: nowrap;
+  border-radius: 3px;
+  padding: 3px 5px;
+}
+.sections-list > a:hover,
+.sections-list > a:focus {
+  background: rgba(128, 128, 128, .12);
 }
 .export, .import, .reset {
   cursor: pointer;
   text-decoration: none !important;
 }
 .tab-selected {
+  background: rgba(128, 128, 128, .18);
   font-weight: 700;
+}
+.settings-footer {
+  border-top: 1px solid rgba(128, 128, 128, .25);
+  font-size: 11px;
+  line-height: 1.6;
+  padding: 6px 8px;
+  display: flex;
+  flex-wrap: wrap;
+  align-items: center;
+  gap: 4px 12px;
+}
+.settings-actions {
+  display: flex;
+  gap: 10px;
+  white-space: nowrap;
+}
+.credits {
+  display: flex;
+  gap: 10px;
+  white-space: nowrap;
+  margin-left: auto;
+}
+.imp-exp-result {
+  font-size: 11px;
+  margin: 0;
+}
+
+/* Import/Export picker */
+.imp-exp-picker-overlay {
+  position: fixed;
+  inset: 0;
+  background: rgba(0, 0, 0, .4);
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  z-index: 1002;
+}
+.imp-exp-picker {
+  min-width: 260px;
+  max-width: 80vw;
+  max-height: 80vh;
+  overflow: auto;
+  padding: 1em 1.25em;
+  display: flex;
+  flex-direction: column;
+  gap: .5em;
+}
+.imp-exp-picker-title {
+  margin: 0 0 .25em;
+  font-size: 1.1em;
+}
+.imp-exp-picker-list {
+  display: flex;
+  flex-direction: column;
+  gap: .35em;
+}
+.imp-exp-picker-section {
+  display: flex;
+  flex-direction: column;
+  gap: .15em;
+}
+.imp-exp-picker-row label {
+  display: flex;
+  align-items: center;
+  gap: .35em;
+  cursor: pointer;
+}
+.imp-exp-picker-section-title {
+  font-weight: bold;
+}
+.imp-exp-picker-children {
+  display: flex;
+  flex-direction: column;
+  gap: .15em;
+  margin-left: 1.3em;
+}
+.imp-exp-picker-toggle {
+  border-bottom: 1px solid currentColor;
+  padding-bottom: .25em;
+  margin-bottom: .15em;
+  opacity: .85;
+  font-weight: bold;
+}
+.imp-exp-picker-empty {
+  margin: .5em 0;
+  opacity: .8;
+}
+.imp-exp-picker-buttons {
+  display: flex;
+  justify-content: flex-end;
+  gap: .5em;
+  margin-top: .5em;
 }
 .section-sauce ul,
 .section-advanced ul {
@@ -3846,18 +4509,652 @@ div[data-checked="false"] > .suboption-list {
 #fourchanx-settings .section-main p {
   margin: .5em 0 0;
 }
-.section-filter ul {
+.section-filter ul,
+.section-filtering ul {
   padding: 0;
 }
-.section-filter li {
+.section-filter li,
+.section-filtering li {
   margin: 10px 40px;
   list-style: disc;
 }
-.section-filter textarea {
+.section-filter textarea,
+.section-filtering textarea {
   height: 500px;
 }
-.section-main a, .section-filter a, .section-advanced a {
+.section-interface .boardnav-instructions {
+  margin-top: 10px;
+}
+.section-interface .boardnav-instructions > summary {
+  font-weight: 600;
+}
+.section-main a, .section-filter a, .section-filtering a, .section-advanced a {
   text-decoration: underline;
+}
+#fourchanx-settings .thread-watcher-inline-number {
+  margin-left: 8px;
+  display: inline-flex;
+  align-items: center;
+  gap: 4px;
+}
+#fourchanx-settings .thread-watcher-inline-subsetting {
+  display: block;
+  margin: 4px 0 0 22px;
+}
+#fourchanx-settings .thread-watcher-size-input {
+  width: 3.2em;
+}
+#fourchanx-settings .thread-watcher-preview-size-input {
+  width: 3.2em;
+}
+#fourchanx-settings .thread-watcher-height-input {
+  width: 4.2em;
+}
+#fourchanx-settings .thread-watcher-width-input {
+  width: 4.2em;
+}
+.section-filtering .settings-subnav {
+  display: flex;
+  flex-wrap: wrap;
+  gap: 4px;
+  margin: 0 0 8px;
+}
+.section-filtering .settings-subnav-tab {
+  border: 1px solid;
+  border-radius: 3px;
+  padding: 2px 6px;
+  text-decoration: none;
+}
+.section-filtering .settings-subnav-tab-selected {
+  font-weight: 700;
+  background: rgba(128, 128, 128, .14);
+}
+.section-filtering .filter-stats {
+  border-top: 1px solid;
+  font-size: 11px;
+  line-height: 1.45;
+  margin-top: 8px;
+  padding-top: 8px;
+}
+.section-filtering .filter-preview-group {
+  margin: 0 0 12px;
+}
+.section-filtering .filter-preview-group:last-child {
+  margin-bottom: 0;
+}
+.section-filtering .filter-preview-heading {
+  font-weight: 700;
+  margin: 0 0 4px;
+}
+.section-filtering .filter-stats-summary {
+  font-weight: 700;
+  margin: 0 0 6px;
+}
+.section-filtering .filter-stats-empty {
+  opacity: .8;
+}
+.section-filtering .filter-stat-row {
+  margin: 0 0 6px;
+}
+.section-filtering .filter-stat {
+  margin: 0;
+}
+.section-filtering .filter-stat > summary {
+  cursor: pointer;
+  list-style-position: inside;
+}
+.section-filtering .filter-stat-threads {
+  margin: 4px 0 0 18px;
+  padding: 0;
+}
+.section-filtering .filter-stat-threads > li {
+  list-style: disc;
+  margin: 2px 0;
+}
+.section-filtering .filter-stat-invalid {
+  color: #c33;
+}
+.section-filtering .filter-stat-count {
+  font-weight: 700;
+}
+.section-filtering .filter-stat-more {
+  opacity: .8;
+}
+.section-filtering .easy-filters-table {
+  width: 100%;
+  border-collapse: separate;
+  border-spacing: 4px;
+}
+.section-filtering th,
+.section-filtering td {
+  padding: 0;
+  text-align: left;
+  vertical-align: middle;
+}
+.section-filtering .easy-filter-enabled,
+.section-filtering .easy-filter-auto,
+.section-filtering .easy-filter-hide,
+.section-filtering .easy-filter-override {
+  display: block;
+  margin: auto;
+}
+.section-filtering .easy-filter-pattern {
+  min-width: 200px;
+}
+.section-filtering .easy-filter-boards {
+  min-width: 96px;
+}
+.section-filtering .easy-filter-color {
+  width: 84px;
+}
+.section-filtering .easy-filter-remove {
+  min-width: 26px;
+  height: 24px;
+  line-height: 20px;
+  text-align: center;
+}
+.section-filtering .easy-filters-controls {
+  margin-top: 6px;
+}
+.section-filtering .easy-filter-save {
+  margin-left: 6px;
+}
+.section-filtering .easy-filter-status {
+  margin-left: 8px;
+  opacity: .85;
+}
+.section-styling .styling-table {
+  border-collapse: separate;
+  border-spacing: 6px;
+  margin: 6px 0;
+}
+.section-styling .styling-table th {
+  text-align: left;
+  font-weight: 400;
+  padding-right: 8px;
+}
+.section-styling .styling-table input[type="color"] {
+  vertical-align: middle;
+  height: 22px;
+  width: 46px;
+  padding: 0;
+  border: 1px solid rgba(128, 128, 128, .35);
+  background: transparent;
+}
+.section-styling .styling-table input[type="range"] {
+  vertical-align: middle;
+}
+.section-styling .styling-table [data-clear] {
+  margin-left: 4px;
+  padding: 0 6px;
+  line-height: 18px;
+  cursor: pointer;
+}
+.section-styling .styling-actions {
+  margin-top: 6px;
+  display: flex;
+  gap: 8px;
+}
+.styling-preview {
+  width: min(960px, 92vw);
+  max-height: 85vh;
+  overflow: auto;
+  padding: 10px 12px;
+}
+.styling-preview-dock {
+  margin-top: 10px;
+  width: auto;
+  max-height: none;
+  transition: max-height 150ms ease, opacity 120ms ease;
+}
+.styling-preview-dock[data-collapsed="true"] {
+  max-height: 0;
+  opacity: 0;
+  overflow: hidden;
+  padding: 0 12px;
+  margin: 0;
+  border-width: 0;
+}
+.styling-preview-thread {
+  background: transparent;
+  border: 1px solid rgba(128, 128, 128, .35);
+  margin: 0;
+  padding: 8px;
+}
+.styling-preview-thread > .thread {
+  display: block;
+  margin: 0;
+  padding: 0;
+}
+.styling-preview-post {
+  border: none;
+  border-radius: 0;
+  padding: 0;
+  margin: 0 0 6px;
+  background: transparent;
+}
+.styling-preview-post::after {
+  content: "";
+  display: block;
+  clear: both;
+}
+.styling-preview-post:last-child {
+  margin-bottom: 0;
+}
+.styling-preview-post > .reply {
+  display: inline-block;
+  max-width: min(100%, 880px);
+}
+.styling-preview-post .sideArrows {
+  display: inline-block;
+  float: left;
+  margin-right: 4px;
+}
+.styling-preview-post .postInfo,
+.styling-preview-post .postMessage {
+  color: var(--xt-text-color);
+}
+.styling-preview-post a {
+  color: var(--xt-link-text-color);
+}
+.styling-preview-post .quote {
+  color: var(--xt-quote-text-color) !important;
+}
+.styling-preview-post .backlink.deadlink,
+.styling-preview-post .quotelink.deadlink {
+  color: var(--xt-dead-link-text-color, var(--xt-dead-link)) !important;
+}
+.styling-preview[data-highlight-own="true"] .styling-preview-post.yourPost > .reply {
+  border-left: 3px dashed var(--xt-highlight-own, var(--xt-border-highlight));
+  background-color: color-mix(in srgb, var(--xt-highlight-own, transparent) calc(var(--xt-highlight-own-opacity, 1) * 100%), transparent);
+}
+.styling-preview[data-highlight-you="true"] .styling-preview-post.quotesYou > .reply {
+  border-left: 3px solid var(--xt-highlight-you, var(--xt-border-highlight));
+  background-color: color-mix(in srgb, var(--xt-highlight-you, transparent) calc(var(--xt-highlight-you-opacity, 1) * 100%), transparent);
+}
+.styling-preview[data-highlight-ghost="true"] .styling-preview-post.from-archive > .reply {
+  border-left: 3px dotted var(--xt-highlight-ghost, #888);
+  background-color: color-mix(in srgb, var(--xt-highlight-ghost, transparent) calc(var(--xt-highlight-ghost-opacity, 1) * 100%), transparent);
+}
+.styling-preview[data-highlight-own="false"] .styling-preview-post.yourPost > .reply,
+.styling-preview[data-highlight-you="false"] .styling-preview-post.quotesYou > .reply,
+.styling-preview[data-highlight-ghost="false"] .styling-preview-post.from-archive > .reply {
+  opacity: .6;
+}
+.styling-preview .styling-preview-post.yourPost .postInfo,
+.styling-preview .styling-preview-post.yourPost .postMessage {
+  color: var(--xt-highlight-own-text, var(--xt-text-color));
+}
+.styling-preview .styling-preview-post.yourPost a {
+  color: var(--xt-highlight-own-link, var(--xt-link-text-color)) !important;
+}
+.styling-preview .styling-preview-post.yourPost .quote {
+  color: var(--xt-highlight-own-quote, var(--xt-quote-text-color)) !important;
+}
+.styling-preview .styling-preview-post.yourPost .backlink.deadlink,
+.styling-preview .styling-preview-post.yourPost .quotelink.deadlink {
+  color: var(--xt-highlight-own-dead-link, var(--xt-dead-link-text-color, var(--xt-dead-link))) !important;
+}
+.styling-preview .styling-preview-post.quotesYou .postInfo,
+.styling-preview .styling-preview-post.quotesYou .postMessage {
+  color: var(--xt-highlight-you-text, var(--xt-text-color));
+}
+.styling-preview .styling-preview-post.quotesYou a {
+  color: var(--xt-highlight-you-link, var(--xt-link-text-color)) !important;
+}
+.styling-preview .styling-preview-post.quotesYou .quote {
+  color: var(--xt-highlight-you-quote, var(--xt-quote-text-color)) !important;
+}
+.styling-preview .styling-preview-post.quotesYou .backlink.deadlink,
+.styling-preview .styling-preview-post.quotesYou .quotelink.deadlink {
+  color: var(--xt-highlight-you-dead-link, var(--xt-dead-link-text-color, var(--xt-dead-link))) !important;
+}
+.styling-preview .styling-preview-post.from-archive .postInfo,
+.styling-preview .styling-preview-post.from-archive .postMessage {
+  color: var(--xt-highlight-ghost-text, var(--xt-text-color));
+}
+.styling-preview .styling-preview-post.from-archive a {
+  color: var(--xt-highlight-ghost-link, var(--xt-link-text-color)) !important;
+}
+.styling-preview .styling-preview-post.from-archive .quote {
+  color: var(--xt-highlight-ghost-quote, var(--xt-quote-text-color)) !important;
+}
+.styling-preview .styling-preview-post.from-archive .backlink.deadlink,
+.styling-preview .styling-preview-post.from-archive .quotelink.deadlink {
+  color: var(--xt-highlight-ghost-dead-link, var(--xt-dead-link-text-color, var(--xt-dead-link))) !important;
+}
+.section-styling .styling-theme-row {
+  align-items: center;
+  display: flex;
+  flex-wrap: wrap;
+  gap: 10px 14px;
+}
+.section-styling .styling-theme-row > label {
+  align-items: center;
+  display: inline-flex;
+  gap: 6px;
+}
+.section-styling .styling-theme-row select {
+  min-width: 180px;
+}
+.section-styling [data-name] > .styling-tree {
+  border-left: 1px solid color-mix(in srgb, currentColor 25%, transparent);
+  margin: 6px 0 0 10px;
+  padding-left: 8px;
+}
+.section-styling div[data-checked="false"] > .styling-tree {
+  display: none;
+}
+.section-styling .styling-inline-option {
+  align-items: center;
+  display: flex;
+  gap: 8px;
+  justify-content: space-between;
+  border-radius: 3px;
+  padding: 2px 4px;
+}
+.section-styling .styling-inline-option:hover {
+  background: color-mix(in srgb, currentColor 8%, transparent);
+}
+.section-styling .styling-inline-option > label {
+  align-items: center;
+  display: flex;
+  flex: 1 1 auto;
+  gap: 4px;
+  min-width: 0;
+}
+.section-styling .styling-inline-option > label::after {
+  content: "";
+  border-bottom: 1px dotted;
+  flex: 1 1 auto;
+  margin-left: 8px;
+  opacity: .35;
+}
+.section-styling .styling-marker-link-row > label::after {
+  display: none;
+}
+.section-styling .styling-inline-controls {
+  align-items: center;
+  display: inline-flex;
+  gap: 4px;
+}
+.section-styling .styling-inline-toggle {
+  align-items: center;
+  display: inline-flex;
+  gap: 4px;
+}
+.section-styling .styling-inline-controls input[type="color"] {
+  height: 22px;
+  width: 46px;
+  padding: 0;
+  border: 1px solid rgba(128, 128, 128, .35);
+  background: transparent;
+}
+.section-styling .styling-inline-controls input[type="range"] {
+  width: 156px;
+}
+.section-styling .styling-highlight-controls {
+  flex-wrap: nowrap;
+  gap: 6px;
+}
+.section-styling .styling-highlight-controls .styling-highlight-manual {
+  align-items: center;
+  display: inline-flex;
+  gap: 4px;
+}
+.section-styling .styling-highlight-controls .styling-highlight-manual input[type="color"] {
+  width: 34px;
+}
+.section-styling .styling-inline-option[data-color-linked="true"] .styling-inline-controls input[type="color"],
+.section-styling .styling-inline-option[data-color-linked="true"] .styling-inline-controls button[data-clear] {
+  opacity: .45;
+}
+.section-styling .custom-css-controls {
+  align-items: center;
+  display: flex;
+  flex-wrap: wrap;
+  gap: 8px;
+  margin: 8px 0;
+}
+.section-styling .custom-css-controls > label {
+  align-items: center;
+  display: inline-flex;
+  gap: 4px;
+}
+.section-styling #custom-css-expand {
+  margin-left: auto;
+}
+.section-styling .custom-css-editor {
+  --custom-css-expanded-height: 500px;
+  --custom-css-bg: #fbfbfb;
+  --custom-css-text: #1f2731;
+  --custom-css-caret: #1f2731;
+  --custom-css-border: rgba(128, 128, 128, .35);
+  --custom-css-font: 12px/1.42 ui-monospace, SFMono-Regular, Menlo, Monaco, Consolas, "Liberation Mono", "Courier New", monospace;
+  border: 1px solid var(--custom-css-border);
+  border-radius: 4px;
+  height: 220px;
+  overflow: hidden;
+  position: relative;
+}
+.section-styling .custom-css-editor[data-expanded="true"] {
+  height: var(--custom-css-expanded-height);
+}
+.section-styling .custom-css-editor[data-theme="xt-dark"],
+.section-styling .custom-css-editor[data-theme="xt-system-tomorrow"],
+.section-styling .custom-css-editor[data-theme="xt-system-spooky"] {
+  --custom-css-bg: #11161f;
+  --custom-css-text: #d6deeb;
+  --custom-css-caret: #d6deeb;
+  --custom-css-border: rgba(143, 164, 194, .45);
+  color-scheme: dark;
+}
+.section-styling .custom-css-editor[data-theme="xt-solarized"] {
+  --custom-css-bg: #fdf6e3;
+  --custom-css-text: #586e75;
+  --custom-css-caret: #586e75;
+  --custom-css-border: rgba(101, 123, 131, .45);
+}
+.section-styling .custom-css-editor[data-theme^="xt-system-"] {
+  --custom-css-bg: var(--xt-background, #fbfbfb);
+  --custom-css-text: var(--xt-menu-fg, var(--xt-header-dialog-fg, #1f2731));
+  --custom-css-caret: var(--custom-css-text);
+  --custom-css-border: rgba(128, 128, 128, .45);
+}
+.section-styling .custom-css-editor[data-theme="xt-system-default"] {
+  --custom-css-bg: #fbfbfb;
+  --custom-css-text: #1f2731;
+  --custom-css-caret: #1f2731;
+  --custom-css-border: rgba(128, 128, 128, .35);
+}
+.section-styling .custom-css-editor[data-theme="xt-system-yotsuba"],
+.section-styling .custom-css-editor[data-theme="xt-system-futaba"] {
+  --custom-css-text: #6f3a29;
+  --custom-css-caret: #6f3a29;
+}
+.section-styling .custom-css-editor[data-theme="xt-system-yotsuba-b"],
+.section-styling .custom-css-editor[data-theme="xt-system-burichan"] {
+  --custom-css-text: #2b355a;
+  --custom-css-caret: #2b355a;
+}
+.section-styling .custom-css-editor[data-theme="xt-system-photon"] {
+  --custom-css-text: #2b2b2b;
+  --custom-css-caret: #2b2b2b;
+}
+.section-styling .custom-css-highlight,
+.section-styling .custom-css-textarea {
+  background: var(--custom-css-bg);
+  font: var(--custom-css-font);
+  font-kerning: none;
+  font-variant-ligatures: none;
+  inset: 0;
+  letter-spacing: 0;
+  margin: 0;
+  overflow: auto;
+  overflow-wrap: normal;
+  padding: 8px;
+  position: absolute;
+  tab-size: 2;
+  text-shadow: none;
+  white-space: pre;
+  word-break: normal;
+}
+.section-styling .custom-css-highlight {
+  color: var(--custom-css-text);
+  pointer-events: none;
+}
+.section-styling .custom-css-textarea {
+  background: transparent;
+  border: 0;
+  color: var(--custom-css-caret);
+  caret-color: var(--custom-css-caret);
+  -webkit-text-fill-color: transparent;
+  resize: none;
+}
+.section-styling .custom-css-textarea:focus {
+  outline: none;
+}
+.section-styling .custom-css-highlight .css-token-comment {
+  color: #73838a;
+  font-style: italic;
+}
+.section-styling .custom-css-highlight .css-token-string {
+  color: #a22b73;
+}
+.section-styling .custom-css-highlight .css-token-atrule {
+  color: #8b3fd9;
+}
+.section-styling .custom-css-highlight .css-token-property {
+  color: #005eb8;
+}
+.section-styling .custom-css-highlight .css-token-number {
+  color: #b23d24;
+}
+.section-styling .custom-css-highlight .css-token-color {
+  color: #0f8c57;
+}
+.section-styling .custom-css-highlight .css-token-important {
+  color: #b54a00;
+  font-weight: 700;
+}
+.section-styling .custom-css-editor[data-theme="xt-dark"] .custom-css-highlight .css-token-comment,
+.section-styling .custom-css-editor[data-theme="xt-system-tomorrow"] .custom-css-highlight .css-token-comment,
+.section-styling .custom-css-editor[data-theme="xt-system-spooky"] .custom-css-highlight .css-token-comment {
+  color: #7c8a99;
+}
+.section-styling .custom-css-editor[data-theme="xt-dark"] .custom-css-highlight .css-token-string,
+.section-styling .custom-css-editor[data-theme="xt-system-tomorrow"] .custom-css-highlight .css-token-string,
+.section-styling .custom-css-editor[data-theme="xt-system-spooky"] .custom-css-highlight .css-token-string {
+  color: #f08ea3;
+}
+.section-styling .custom-css-editor[data-theme="xt-dark"] .custom-css-highlight .css-token-atrule,
+.section-styling .custom-css-editor[data-theme="xt-system-tomorrow"] .custom-css-highlight .css-token-atrule,
+.section-styling .custom-css-editor[data-theme="xt-system-spooky"] .custom-css-highlight .css-token-atrule {
+  color: #c9a7ff;
+}
+.section-styling .custom-css-editor[data-theme="xt-dark"] .custom-css-highlight .css-token-property,
+.section-styling .custom-css-editor[data-theme="xt-system-tomorrow"] .custom-css-highlight .css-token-property,
+.section-styling .custom-css-editor[data-theme="xt-system-spooky"] .custom-css-highlight .css-token-property {
+  color: #6fb3ff;
+}
+.section-styling .custom-css-editor[data-theme="xt-dark"] .custom-css-highlight .css-token-number,
+.section-styling .custom-css-editor[data-theme="xt-system-tomorrow"] .custom-css-highlight .css-token-number,
+.section-styling .custom-css-editor[data-theme="xt-system-spooky"] .custom-css-highlight .css-token-number {
+  color: #ffb076;
+}
+.section-styling .custom-css-editor[data-theme="xt-dark"] .custom-css-highlight .css-token-color,
+.section-styling .custom-css-editor[data-theme="xt-system-tomorrow"] .custom-css-highlight .css-token-color,
+.section-styling .custom-css-editor[data-theme="xt-system-spooky"] .custom-css-highlight .css-token-color {
+  color: #6dd08f;
+}
+.section-styling .custom-css-editor[data-theme="xt-dark"] .custom-css-highlight .css-token-important,
+.section-styling .custom-css-editor[data-theme="xt-system-tomorrow"] .custom-css-highlight .css-token-important,
+.section-styling .custom-css-editor[data-theme="xt-system-spooky"] .custom-css-highlight .css-token-important {
+  color: #ffb46e;
+}
+.section-styling .custom-css-editor[data-theme="xt-system-yotsuba"] .custom-css-highlight .css-token-comment,
+.section-styling .custom-css-editor[data-theme="xt-system-futaba"] .custom-css-highlight .css-token-comment {
+  color: #8a6d61;
+}
+.section-styling .custom-css-editor[data-theme="xt-system-yotsuba"] .custom-css-highlight .css-token-string,
+.section-styling .custom-css-editor[data-theme="xt-system-futaba"] .custom-css-highlight .css-token-string {
+  color: #9a315d;
+}
+.section-styling .custom-css-editor[data-theme="xt-system-yotsuba"] .custom-css-highlight .css-token-atrule,
+.section-styling .custom-css-editor[data-theme="xt-system-futaba"] .custom-css-highlight .css-token-atrule {
+  color: #6f45bf;
+}
+.section-styling .custom-css-editor[data-theme="xt-system-yotsuba"] .custom-css-highlight .css-token-property,
+.section-styling .custom-css-editor[data-theme="xt-system-futaba"] .custom-css-highlight .css-token-property {
+  color: #1764bc;
+}
+.section-styling .custom-css-editor[data-theme="xt-system-yotsuba"] .custom-css-highlight .css-token-number,
+.section-styling .custom-css-editor[data-theme="xt-system-futaba"] .custom-css-highlight .css-token-number {
+  color: #b2571b;
+}
+.section-styling .custom-css-editor[data-theme="xt-system-yotsuba"] .custom-css-highlight .css-token-color,
+.section-styling .custom-css-editor[data-theme="xt-system-futaba"] .custom-css-highlight .css-token-color {
+  color: #3b8649;
+}
+.section-styling .custom-css-editor[data-theme="xt-system-yotsuba"] .custom-css-highlight .css-token-important,
+.section-styling .custom-css-editor[data-theme="xt-system-futaba"] .custom-css-highlight .css-token-important {
+  color: #b14a00;
+}
+.section-styling .custom-css-editor[data-theme="xt-system-yotsuba-b"] .custom-css-highlight .css-token-comment,
+.section-styling .custom-css-editor[data-theme="xt-system-burichan"] .custom-css-highlight .css-token-comment,
+.section-styling .custom-css-editor[data-theme="xt-system-photon"] .custom-css-highlight .css-token-comment {
+  color: #6d7893;
+}
+.section-styling .custom-css-editor[data-theme="xt-system-yotsuba-b"] .custom-css-highlight .css-token-string,
+.section-styling .custom-css-editor[data-theme="xt-system-burichan"] .custom-css-highlight .css-token-string,
+.section-styling .custom-css-editor[data-theme="xt-system-photon"] .custom-css-highlight .css-token-string {
+  color: #93468a;
+}
+.section-styling .custom-css-editor[data-theme="xt-system-yotsuba-b"] .custom-css-highlight .css-token-atrule,
+.section-styling .custom-css-editor[data-theme="xt-system-burichan"] .custom-css-highlight .css-token-atrule,
+.section-styling .custom-css-editor[data-theme="xt-system-photon"] .custom-css-highlight .css-token-atrule {
+  color: #5f57be;
+}
+.section-styling .custom-css-editor[data-theme="xt-system-yotsuba-b"] .custom-css-highlight .css-token-property,
+.section-styling .custom-css-editor[data-theme="xt-system-burichan"] .custom-css-highlight .css-token-property,
+.section-styling .custom-css-editor[data-theme="xt-system-photon"] .custom-css-highlight .css-token-property {
+  color: #1e60b7;
+}
+.section-styling .custom-css-editor[data-theme="xt-system-yotsuba-b"] .custom-css-highlight .css-token-number,
+.section-styling .custom-css-editor[data-theme="xt-system-burichan"] .custom-css-highlight .css-token-number,
+.section-styling .custom-css-editor[data-theme="xt-system-photon"] .custom-css-highlight .css-token-number {
+  color: #9d521e;
+}
+.section-styling .custom-css-editor[data-theme="xt-system-yotsuba-b"] .custom-css-highlight .css-token-color,
+.section-styling .custom-css-editor[data-theme="xt-system-burichan"] .custom-css-highlight .css-token-color,
+.section-styling .custom-css-editor[data-theme="xt-system-photon"] .custom-css-highlight .css-token-color {
+  color: #2f8654;
+}
+.section-styling .custom-css-editor[data-theme="xt-system-yotsuba-b"] .custom-css-highlight .css-token-important,
+.section-styling .custom-css-editor[data-theme="xt-system-burichan"] .custom-css-highlight .css-token-important,
+.section-styling .custom-css-editor[data-theme="xt-system-photon"] .custom-css-highlight .css-token-important {
+  color: #a04f00;
+}
+.section-styling .custom-css-editor[data-theme="xt-solarized"] .custom-css-highlight .css-token-comment {
+  color: #93a1a1;
+}
+.section-styling .custom-css-editor[data-theme="xt-solarized"] .custom-css-highlight .css-token-string {
+  color: #2aa198;
+}
+.section-styling .custom-css-editor[data-theme="xt-solarized"] .custom-css-highlight .css-token-atrule {
+  color: #6c71c4;
+}
+.section-styling .custom-css-editor[data-theme="xt-solarized"] .custom-css-highlight .css-token-property {
+  color: #268bd2;
+}
+.section-styling .custom-css-editor[data-theme="xt-solarized"] .custom-css-highlight .css-token-number {
+  color: #b58900;
+}
+.section-styling .custom-css-editor[data-theme="xt-solarized"] .custom-css-highlight .css-token-color {
+  color: #859900;
+}
+.section-styling .custom-css-editor[data-theme="xt-solarized"] .custom-css-highlight .css-token-important {
+  color: #cb4b16;
 }
 #sauce-doc-expand:not(:checked) ~ #sauce-doc {
   max-height: 130px;
@@ -3910,15 +5207,55 @@ div[data-checked="false"] > .suboption-list {
 .section-keybinds .field {
   font-family: monospace;
 }
-#fourchanx-settings fieldset {
-  border: 1px solid;
-  border-radius: 3px;
-  padding: 0.35em 0.625em 0.75em;
-  margin: 0px 2px;
+#fourchanx-settings details {
+  border: 1px solid rgba(128, 128, 128, .3);
+  border: 1px solid color-mix(in srgb, currentColor 22%, transparent);
+  border-radius: 4px;
+  padding: 0 0.75em;
+  margin: 4px 2px;
 }
-#fourchanx-settings legend {
+#fourchanx-settings details[open] {
+  padding-bottom: 0.85em;
+}
+#fourchanx-settings summary {
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+  gap: 0.5em;
   font-weight: 700;
   color: inherit;
+  cursor: pointer;
+  padding: 6px 8px;
+  margin: 0 -0.75em;
+  list-style: none;
+  user-select: none;
+}
+#fourchanx-settings details[open] > summary {
+  margin-bottom: 6px;
+  border-bottom: 1px solid rgba(128, 128, 128, .2);
+  border-bottom: 1px solid color-mix(in srgb, currentColor 14%, transparent);
+}
+#fourchanx-settings summary::-webkit-details-marker,
+#fourchanx-settings summary::marker {
+  display: none;
+  content: '';
+}
+#fourchanx-settings summary::after {
+  content: "▾";
+  font-size: 0.85em;
+  line-height: 1;
+  opacity: .55;
+  transition: transform 120ms ease, opacity 120ms ease;
+}
+#fourchanx-settings summary:hover {
+  background: rgba(128, 128, 128, .08);
+  background: color-mix(in srgb, currentColor 8%, transparent);
+}
+#fourchanx-settings summary:hover::after {
+  opacity: 1;
+}
+#fourchanx-settings details:not([open]) > summary::after {
+  transform: rotate(-90deg);
 }
 #fourchanx-settings textarea {
   font-family: monospace;
@@ -4009,6 +5346,20 @@ div[data-checked="false"] > .suboption-list {
   word-wrap: break-word;
   vertical-align: top;
   position: relative;
+}
+.catalog-group-header {
+  display: block;
+  margin: 8px 2px 4px;
+  text-align: left;
+  font-weight: bold;
+}
+.catalog-group-match {
+  display: block;
+  margin-top: 2px;
+  white-space: nowrap;
+  overflow: hidden;
+  text-overflow: ellipsis;
+  opacity: .85;
 }
 /* overrides 4chan CSS on div.thread */
 .catalog-thread.catalog-thread {
@@ -4335,6 +5686,9 @@ textarea.copy-text-element {
   padding-left: 3px;
   white-space: nowrap;
   min-width: 146px;
+  --watcher-thumb-size: 40px;
+  --watcher-max-height: 210px;
+  --watcher-max-width: 250px;
 }
 #watched-threads {
   overflow-x: hidden;
@@ -4344,10 +5698,10 @@ textarea.copy-text-element {
   position: fixed;
 }
 :root.fixed-watcher #watched-threads {
-  max-height: calc(100vh - 75px);
+  max-height: min(var(--watcher-max-height), calc(100vh - 75px));
 }
 :root:not(.fixed-watcher) #watched-threads:not(:hover) {
-  max-height: 210px;
+  max-height: var(--watcher-max-height);
   overflow-y: hidden;
 }
 #thread-watcher > .move {
@@ -4356,14 +5710,53 @@ textarea.copy-text-element {
   align-items: center;
   gap: 3px;
 }
+#thread-watcher > .move > a {
+  display: inline-flex;
+  align-items: center;
+  justify-content: center;
+  width: 18px;
+  height: 18px;
+  flex: 0 0 18px;
+  padding: 0;
+  line-height: 1;
+  vertical-align: middle;
+}
+#thread-watcher > .move > a > .icon {
+  display: block;
+}
 #watched-threads > div {
   padding-left: 3px;
   padding-right: 3px;
+  display: flex;
+  align-items: center;
+  gap: 4px;
+  cursor: move;
+}
+#watched-threads > div.drag {
+  opacity: .6;
+}
+#watched-threads > div.over {
+  outline: 1px dashed currentColor;
 }
 #watched-threads .watcher-link {
-  max-width: 250px;
+  max-width: var(--watcher-max-width);
   display: inline-flex;
   flex-direction: row;
+  align-items: center;
+  min-width: 0;
+}
+#watched-threads .watcher-thumb {
+  width: 40px;
+  height: 40px;
+  width: var(--watcher-thumb-size);
+  height: var(--watcher-thumb-size);
+  flex: 0 0 auto;
+  object-fit: cover;
+  margin-right: 4px;
+}
+#watched-threads .watcher-thumb-missing {
+  display: inline-block;
+  background: rgba(128, 128, 128, 0.28);
 }
 #watched-threads .watcher-page,
 #watched-threads .watcher-unread {
@@ -4386,6 +5779,24 @@ textarea.copy-text-element {
 }
 #thread-watcher .move > .close {
   margin-left: auto;
+}
+#thread-watcher .mark-read.disabled {
+  opacity: .5;
+  pointer-events: none;
+}
+#thread-watcher .watcher-mark-read {
+  margin-left: auto;
+  display: inline-flex;
+  align-items: center;
+  justify-content: center;
+  width: 18px;
+  height: 18px;
+  flex: 0 0 18px;
+  opacity: .85;
+}
+#thread-watcher .watcher-mark-read.disabled {
+  opacity: .4;
+  pointer-events: none;
 }
 .watch-thread-link {
   width: 18px;
@@ -4563,9 +5974,14 @@ textarea.copy-text-element {
   max-height: calc(100vh - 25px);
   max-width: 100vw;
 }
+#tw-ihover {
+  pointer-events: none;
+  max-height: calc(100vh - 16px);
+  max-width: 40vw;
+}
 /* WEBM Metadata */
 .webm-title > a::before {
-  content: "title";
+  content: "webm";
   text-decoration: underline;
 }
 .webm-title.loading > a::after {
@@ -4580,7 +5996,7 @@ textarea.copy-text-element {
   cursor: text;
 }
 .webm-title.not-found > span::before {
-  content: "not found";
+  content: "no title";
 }
 .webm-title:not(:hover):not(:focus) > span,
 .webm-title:hover > span + a,
@@ -4794,6 +6210,127 @@ $site$thread[hidden] + hr {
   flex: 1;
   width: 0;
 }
+select.flagSelector {
+  position: absolute;
+  width: 1px;
+  height: 1px;
+  margin: 0;
+  padding: 0;
+  border: 0;
+  clip: rect(0 0 0 0);
+  clip-path: inset(50%);
+  overflow: hidden;
+  white-space: nowrap;
+}
+.flagSelector-picker {
+  position: relative;
+}
+.flagSelector-toggle {
+  align-items: center;
+  -webkit-appearance: none;
+  appearance: none;
+  cursor: pointer;
+  display: flex;
+  gap: 6px;
+  font: inherit;
+  color: inherit;
+  min-height: 22px;
+  padding: 2px 20px 2px 6px;
+  position: relative;
+  text-align: left;
+  width: 100%;
+}
+.flagSelector-toggle::after {
+  content: '';
+  position: absolute;
+  right: 6px;
+  top: 50%;
+  width: 0;
+  height: 0;
+  border: 4px solid transparent;
+  border-top-color: currentColor;
+  transform: translateY(-25%);
+  opacity: 0.6;
+  pointer-events: none;
+}
+.flagSelector-picker.open .flagSelector-toggle::after {
+  transform: translateY(-75%) rotate(180deg);
+}
+.flagSelector-toggle[disabled] {
+  cursor: default;
+  opacity: 0.6;
+}
+.flagSelector-menu {
+  background-color: var(--xt-background, #fff);
+  border: 1px solid var(--xt-border, #888);
+  border-radius: 2px;
+  box-shadow: 0 2px 4px rgba(0, 0, 0, 0.25);
+  box-sizing: border-box;
+  overflow-y: auto;
+  position: fixed;
+  z-index: 10000;
+}
+.flagSelector-option {
+  align-items: center;
+  background-color: transparent;
+  border: 0;
+  color: inherit;
+  cursor: pointer;
+  display: flex;
+  font: inherit;
+  gap: 6px;
+  padding: 3px 6px;
+  text-align: left;
+  width: 100%;
+}
+.flagSelector-option:hover,
+.flagSelector-option:focus {
+  background-color: rgba(127, 127, 127, 0.25);
+  outline: none;
+}
+.flagSelector-option.selected {
+  font-weight: 600;
+}
+.flagSelector-icon {
+  background-image: url('//s.4cdn.org/image/flags/pol/flags.png?2');
+  background-repeat: no-repeat;
+  background-position: -200px -200px;
+  display: inline-block;
+  flex: none;
+  height: 11px;
+  width: 16px;
+}
+.flagSelector-icon-empty {
+  background-image: none;
+}
+.flagSelector-label {
+  line-height: 1.25;
+}
+.flagSelector-icon.bfl-ac { background-position: 0 0 }
+.flagSelector-icon.bfl-an { background-position: -16px 0 }
+.flagSelector-icon.bfl-bl { background-position: -32px 0 }
+.flagSelector-icon.bfl-cf { background-position: -48px 0 }
+.flagSelector-icon.bfl-cm { background-position: -64px 0 }
+.flagSelector-icon.bfl-ct { background-position: 0 -12px }
+.flagSelector-icon.bfl-dm { background-position: -16px -12px }
+.flagSelector-icon.bfl-eu { background-position: -32px -12px }
+.flagSelector-icon.bfl-fc { background-position: -48px -12px }
+.flagSelector-icon.bfl-gn { background-position: -64px -12px }
+.flagSelector-icon.bfl-gy { background-position: 0 -24px }
+.flagSelector-icon.bfl-jh { background-position: -16px -24px }
+.flagSelector-icon.bfl-kn { background-position: -32px -24px }
+.flagSelector-icon.bfl-mf { background-position: -48px -24px }
+.flagSelector-icon.bfl-mz { background-position: -64px -24px }
+.flagSelector-icon.bfl-nb { background-position: 0 -36px }
+.flagSelector-icon.bfl-nt { background-position: -16px -36px }
+.flagSelector-icon.bfl-nz { background-position: -32px -36px }
+.flagSelector-icon.bfl-pc { background-position: -48px -36px }
+.flagSelector-icon.bfl-pr { background-position: -64px -36px }
+.flagSelector-icon.bfl-re { background-position: 0 -48px }
+.flagSelector-icon.bfl-tm { background-position: -16px -48px }
+.flagSelector-icon.bfl-tr { background-position: -32px -48px }
+.flagSelector-icon.bfl-un { background-position: -48px -48px }
+.flagSelector-icon.bfl-wp { background-position: -64px -48px }
 #qr.forced-anon :is(input[data-name="name"]:not(.force-show), input[data-name="sub"]:not(.force-show)),
 #qr.reply-to-thread input[data-name="sub"]:not(.force-show),
 body:not(.board_f) #qr select[name="filetag"],
@@ -4904,6 +6441,50 @@ input.field.tripped:not(:hover):not(:focus) {
   display: block;
   margin: auto;
 }
+#qr.captcha-t .fourchanx-captcha-load-hint {
+  display: inline-flex;
+  align-items: center;
+  gap: 5px;
+  margin-left: 6px;
+  font-size: 11px;
+  line-height: 18px;
+  opacity: .8;
+  white-space: nowrap;
+}
+#qr.captcha-t .fourchanx-captcha-status-icon {
+  display: inline-flex;
+  align-items: center;
+  justify-content: center;
+  width: 1.2em;
+  height: 1.2em;
+  border: 2px solid currentColor;
+  border-radius: 50%;
+  font-weight: bold;
+  font-size: 9px;
+  line-height: 1;
+  box-sizing: border-box;
+}
+#qr.captcha-t .fourchanx-captcha-status-icon.state-complete {
+  color: #2c9c47;
+}
+#qr.captcha-t .fourchanx-captcha-status-icon.state-failed {
+  color: #cf4a4a;
+}
+#qr.captcha-t .fourchanx-captcha-status-icon.state-expired {
+  color: #c38c2f;
+}
+#qr.captcha-t .fourchanx-captcha-progress {
+  font-size: 11px;
+  line-height: 18px;
+}
+#qr.captcha-t :is(#t-load, #t-next) {
+  background-color: #d8dde3;
+  border: 1px solid #9ea7b3;
+  color: #111 !important;
+}
+#qr.captcha-t :is(#t-load, #t-next):disabled {
+  opacity: .6;
+}
 .goog-bubble-content {
   max-width: 100vw;
   max-height: 100vh;
@@ -5009,8 +6590,7 @@ input#qr-filename {
   visibility: hidden;
 }
 #qr input[type="file"] {
-  visibility: hidden;
-  position: absolute;
+  display: none;
 }
 
 /* Spoiler Checkbox, QR Icons */
@@ -5143,9 +6723,6 @@ input[type="checkbox"]:checked ~ .checkbox-letter {
   color: #e00;
   padding: 1px;
 }
-.qr-preview:only-of-type > .remove {
-  display: none;
-}
 .remove:hover::after {
   content: " Remove";
 }
@@ -5183,6 +6760,8 @@ input[type="checkbox"]:checked ~ .checkbox-letter {
 }
 #file-n-submit .row.space {
   justify-content: space-between;
+  align-items: center;
+  padding: 5px 0;
 }
 #qr-actions {
   align-items: center;
@@ -5515,29 +7094,59 @@ div.post {
   scroll-margin-top: 30px;
 }
 
-/* (you) markers on the scrollbar */
-.post-scroll-marker {
-  border: none;
-  padding: 0;
+/* Scrollbar markers (Own / Quotes You / Ghost / Unread) */
+#scroll-markers {
   position: fixed;
-  right: -5px;
-  background-color: var(
-    --xt-scroll-maker-you, 
-    var(--xt-border-highlight, currentColor)
-  );
-  border-radius: 3px;
-  width: 10px;
-  min-height: 5px;
-  top: calc(var(--top) * 1vh);
-  height: calc(var(--height) * 1vh);
+  top: 0;
+  right: 0;
+  width: 27px;
+  height: 100vh;
+  pointer-events: none;
+  z-index: 2147483646;
 }
-
-.post-scroll-marker.you-scroll-marker {
-  opacity: 50%;
+#scroll-markers[hidden] {
+  display: none;
 }
-
-.scroll-marker-container {
-  display: contents;
+.scroll-marker {
+  position: absolute;
+  width: 9px;
+  min-height: 3px;
+  border-radius: 1px 0 0 1px;
+  box-shadow: 0 0 0 1px rgba(0, 0, 0, .35);
+  pointer-events: auto;
+  cursor: pointer;
+  transition: transform .08s ease-out, filter .08s ease-out;
+  transform-origin: right center;
+}
+.scroll-marker:hover {
+  transform: scaleX(1.6);
+  filter: brightness(1.2);
+}
+.scroll-marker-own {
+  right: 9px;
+  background: var(--xt-scroll-marker-own, var(--xt-border-highlight, #d83030));
+  opacity: var(--xt-scroll-marker-own-opacity, 1);
+}
+.scroll-marker-you {
+  right: 0;
+  background: var(--xt-scroll-marker-you, var(--xt-border-highlight, #ff5050));
+  opacity: var(--xt-scroll-marker-you-opacity, 1);
+}
+.scroll-marker-ghost {
+  right: 18px;
+  background: var(--xt-scroll-marker-ghost, #888888);
+  opacity: var(--xt-scroll-marker-ghost-opacity, 1);
+}
+.scroll-marker-unread {
+  left: 0;
+  right: 0;
+  width: auto;
+  min-height: 2px;
+  border-radius: 0;
+  box-shadow: 0 0 0 1px rgba(0, 0, 0, .45);
+  background: var(--xt-scroll-marker-unread, #ffd400);
+  opacity: var(--xt-scroll-marker-unread-opacity, 1);
+  pointer-events: none;
 }`;
 
   var tomorrow = `:root.tomorrow {
@@ -5612,6 +7221,106 @@ div.post {
   height: auto !important;
   margin: 0 !important;
   font-size: 0;
+}
+
+/* Homepage Theming */
+:root.tomorrow body, :root.tomorrow #bd, :root.tomorrow #ft, :root.tomorrow .box-content {
+  background-color: #1d1f21 !important;
+  background-image: none !important;
+  color: #c5c8c6 !important;
+  border-color: #282a2e !important;
+}
+:root.tomorrow .boxbar, :root.tomorrow #nav-top, :root.tomorrow #header {
+  background-color: #282a2e !important;
+  background-image: none !important;
+  color: #c5c8c6 !important;
+}
+:root.tomorrow a {
+  color: #81a2be !important;
+}
+
+:root.spooky body, :root.spooky #bd, :root.spooky #ft, :root.spooky .box-content {
+  background-color: #2e2e2e !important;
+  background-image: none !important;
+  color: #ccc !important;
+  border-color: #111 !important;
+}
+:root.spooky .boxbar, :root.spooky #nav-top, :root.spooky #header {
+  background-color: #111 !important;
+  background-image: none !important;
+  color: #ccc !important;
+}
+:root.spooky a {
+  color: #f60 !important;
+}
+
+:root.yotsuba body, :root.yotsuba #bd, :root.yotsuba #ft, :root.yotsuba .box-content {
+  background-color: #ffefe5 !important;
+  background-image: none !important;
+  color: #800000 !important;
+  border-color: #d9bfb7 !important;
+}
+:root.yotsuba .boxbar, :root.yotsuba #nav-top, :root.yotsuba #header {
+  background-color: #f0e0d6 !important;
+  background-image: none !important;
+  color: #800000 !important;
+}
+
+:root.yotsuba-b body, :root.yotsuba-b #bd, :root.yotsuba-b #ft, :root.yotsuba-b .box-content {
+  background-color: #d6daf0 !important;
+  background-image: none !important;
+  color: #000 !important;
+  border-color: #b7c5d9 !important;
+}
+:root.yotsuba-b .boxbar, :root.yotsuba-b #nav-top, :root.yotsuba-b #header {
+  background-color: #adc2ff !important;
+  background-image: none !important;
+  color: #000 !important;
+}
+:root.yotsuba-b a {
+  color: #34345c !important;
+}
+
+:root.photon body, :root.photon #bd, :root.photon #ft, :root.photon .box-content {
+  background-color: #dee5f7 !important;
+  background-image: none !important;
+  color: #000 !important;
+  border-color: #b7c5d9 !important;
+}
+:root.photon .boxbar, :root.photon #nav-top, :root.photon #header {
+  background-color: #adc2ff !important;
+  background-image: none !important;
+  color: #000 !important;
+}
+:root.photon a {
+  color: #004a99 !important;
+}
+
+:root.futaba body, :root.futaba #bd, :root.futaba #ft, :root.futaba .box-content {
+  background-color: #f0e0d6 !important;
+  background-image: none !important;
+  color: #800000 !important;
+  border-color: #d9bfb7 !important;
+}
+:root.futaba .boxbar, :root.futaba #nav-top, :root.futaba #header {
+  background-color: #ffefe5 !important;
+  background-image: none !important;
+  color: #800000 !important;
+}
+
+:root.burichan body, :root.burichan #bd, :root.burichan #ft, :root.burichan .box-content {
+  background-color: #eceff6 !important;
+  background-image: none !important;
+  color: #000 !important;
+  border-color: #d9bfb7 !important;
+}
+:root.burichan .boxbar, :root.burichan #nav-top, :root.burichan #header {
+  background-color: #d6daf0 !important;
+  background-image: none !important;
+  color: #000 !important;
+}
+:root.burichan a {
+  color: #34345c !important;
 }`;
 
   var yotsubaB = `:root.yotsuba-b {
@@ -6071,6 +7780,9 @@ svg.icon {
   const XmarkSvg = 'M342.6 150.6c12.5-12.5 12.5-32.8 0-45.3s-32.8-12.5-45.3 0L192 210.7 86.6 105.4c-12.5-12.5-32.8-12.5-45.3 0s-12.5 32.8 0 45.3L146.7 256 41.4 361.4c-12.5 12.5-12.5 32.8 0 45.3s32.8 12.5 45.3 0L192 301.3 297.4 406.6c12.5 12.5 32.8 12.5 45.3 0s12.5-32.8 0-45.3L237.3 256 342.6 150.6z';
   const XmarkW = 384, XmarkH = 512;
 
+  const CheckSvg = 'M438.6 105.4c12.5 12.5 12.5 32.8 0 45.3l-256 256c-12.5 12.5-32.8 12.5-45.3 0l-128-128c-12.5-12.5-12.5-32.8 0-45.3s32.8-12.5 45.3 0L160 338.7 393.4 105.4c12.5-12.5 32.8-12.5 45.3 0z';
+  const CheckW = 448, CheckH = 512;
+
   const ArrowRightLongSvg = 'M502.6 278.6c12.5-12.5 12.5-32.8 0-45.3l-128-128c-12.5-12.5-32.8-12.5-45.3 0s-12.5 32.8 0 45.3L402.7 224 32 224c-17.7 0-32 14.3-32 32s14.3 32 32 32l370.7 0-73.4 73.4c-12.5 12.5-12.5 32.8 0 45.3s32.8 12.5 45.3 0l128-128z';
   const ArrowRightLongW = 512, ArrowRightLongH = 512;
 
@@ -6122,6 +7834,7 @@ svg.icon {
     caretDown: toSvg(CaretDownSvg, CaretDownW, CaretDownH),
     scissors: toSvg(ScissorsSvg, ScissorsW, ScissorsH),
     xmark: toSvg(XmarkSvg, XmarkW, XmarkH),
+    check: toSvg(CheckSvg, CheckW, CheckH),
     arrowRightLong: toSvg(ArrowRightLongSvg, ArrowRightLongW, ArrowRightLongH),
     plus: toSvg(PlusSvg, PlusW, PlusH),
     squarePlus: toSvg(SquarePlusSvg, SquarePlusW, SquarePlusH),
@@ -6459,6 +8172,8 @@ svg.icon {
     }
   };
 
+  const getTCaptcha = () => window.TCaptcha || window.wrappedJSObject?.TCaptcha || (typeof unsafeWindow !== 'undefined' ? unsafeWindow.TCaptcha : undefined);
+
   const CaptchaT = {
     init() {
       if (d.cookie.indexOf('pass_enabled=1') >= 0) { return; }
@@ -6471,8 +8186,7 @@ svg.icon {
       $.after(QR.nodes.com.parentNode, root);
     },
 
-    moreNeeded() {
-    },
+    moreNeeded() {},
 
     getThread() {
       return {
@@ -6483,58 +8197,465 @@ svg.icon {
 
     setup(focus) {
       if (!this.isEnabled) { return; }
+      const TCaptcha = getTCaptcha();
+      if (!TCaptcha?.init) {
+        QR.error('Captcha unavailable. Reload the page and try again.');
+        return;
+      }
+      this.patchFormatter(TCaptcha);
+      this.setStacked(!!Conf['Stacked TCaptcha'], TCaptcha);
 
       if (!this.nodes.container) {
         this.nodes.container = $.el('div', {className: 'captcha-container'});
         $.prepend(this.nodes.root, this.nodes.container);
-        CaptchaT.currentThread = CaptchaT.getThread();
-        CaptchaT.currentThread.autoLoad = Conf['Auto-load captcha'] ? '1' : '0';
-        $.global('setupTCaptcha', CaptchaT.currentThread);
+        this.currentThread = this.getThread();
+        TCaptcha.init(this.nodes.container, this.currentThread.boardID, +this.currentThread.threadID);
+        this.setStacked(!!Conf['Stacked TCaptcha'], TCaptcha);
+        TCaptcha.setErrorCb?.(() => {});
+        if (Conf['Auto-load captcha']) {
+          TCaptcha.load(this.currentThread.boardID, this.currentThread.threadID);
+          this.setState('loading');
+        }
+      } else if (Conf['Auto-load captcha'] && Conf['Stacked TCaptcha']) {
+        $('#t-load', this.nodes.container)?.click();
+        this.setState('loading');
       }
 
-      if (focus) $('#t-resp').focus();
+      this.ensureLoadButtonHook();
+      this.ensureStatusNode();
+      this.ensureProgressNode();
+      if (!this.cachedButtons?.length) {
+        this.setState('idle');
+        this.updateProgress();
+      }
+
+      if (focus) { $('#t-resp')?.focus(); }
     },
 
     destroy() {
       if (!this.isEnabled || !this.nodes.container) { return; }
-      $.global('destroyTCaptcha');
+      getTCaptcha()?.destroy?.();
       $.rm(this.nodes.container);
       delete this.nodes.container;
+      this.cachedButtons = [];
+      this.currentHighlightIndex = -1;
+      this.setState('idle');
     },
 
     updateThread() {
       if (!this.isEnabled) { return; }
-      const {boardID, threadID} = (CaptchaT.currentThread || {});
-      const newThread = CaptchaT.getThread();
-      if ((newThread.boardID !== boardID) || (newThread.threadID !== threadID)) {
-        CaptchaT.destroy();
-        CaptchaT.setup();
+      const {boardID, threadID} = (this.currentThread || {});
+      const next = this.getThread();
+      if ((next.boardID !== boardID) || (next.threadID !== threadID)) {
+        this.destroy();
+        this.setup();
       }
     },
 
     getOne() {
-      let el;
-      let response = {};
+      let response = null;
       if (this.nodes.container) {
-        for (var key of ['t-response', 't-challenge']) {
-          response[key] = $(`[name='${key}']`, this.nodes.container).value;
+        response = {};
+        for (const key of ['t-response', 't-challenge']) {
+          response[key] = $(`[name='${key}']`, this.nodes.container)?.value;
         }
       }
-      if (!response['t-response'] && !((el = $('#t-msg, #t-task')) && /Verification not required/i.test(el.textContent))) {
-        response = null;
+      if (!response?.['t-response']) {
+        const el = $('#t-msg, #t-task', this.nodes.container || d);
+        if (!el || !/Verification not required/i.test(el.textContent)) { return null; }
       }
       return response;
     },
 
     setUsed() {
       if (this.isEnabled && this.nodes.container) {
-        $.global('TCaptchaClearChallenge');
+        getTCaptcha()?.clearChallenge?.();
+        this.setState('idle');
+        this.updateProgress();
       }
     },
 
     occupied() {
       return !!this.nodes.container;
-    }
+    },
+
+    setState(state) {
+      const root = $('#qr');
+      if (!root) { return; }
+      for (const name of ['idle', 'loading', 'ready', 'complete', 'failed', 'expired']) {
+        root.classList.remove(`captcha-t-state-${name}`);
+      }
+      root.classList.add(`captcha-t-state-${state}`);
+      const container = this.nodes?.container;
+      if (!container) { return; }
+      const borderColors = {
+        idle: '#8ca0b5',
+        loading: '#6f93b8',
+        ready: '#8ca0b5',
+        complete: '#2c9c47',
+        failed: '#cf4a4a',
+        expired: '#d0a64d',
+      };
+      container.style.border = `2px solid ${borderColors[state] || borderColors.idle}`;
+      container.style.borderRadius = '4px';
+      container.style.transition = 'border-color .2s ease';
+      this.setStatusMessage({
+        idle: '',
+        loading: '',
+        ready: '',
+        complete: 'Done.',
+        failed: 'Failed.',
+        expired: 'Expired.',
+      }[state] || '', state);
+    },
+
+    ensureLoadButtonHook() {
+      const container = this.nodes?.container;
+      if (!container) { return; }
+      const loadButton = $('#t-load', container);
+      if (!loadButton || loadButton.dataset.fourchanxHooked) { return; }
+      loadButton.addEventListener('click', () => this.setState('loading'));
+      loadButton.dataset.fourchanxHooked = '1';
+    },
+
+    ensureStatusNode() {
+      const container = this.nodes?.container;
+      if (!container) { return; }
+      const ctrl = $('#t-ctrl', container);
+      const loadButton = $('#t-load', container);
+      if (!ctrl || !loadButton || $('.fourchanx-captcha-load-hint', ctrl)) { return; }
+      const hint = $.el('span', {
+        className: 'fourchanx-captcha-load-hint'
+      });
+      loadButton.after(hint);
+    },
+
+    setStatusMessage(text, state = 'idle') {
+      const container = this.nodes?.container;
+      if (!container) { return; }
+      const statusNode = $('.fourchanx-captcha-load-hint', container);
+      if (!statusNode) { return; }
+      for (const name of ['idle', 'loading', 'ready', 'complete', 'failed', 'expired']) {
+        statusNode.classList.remove(`state-${name}`);
+      }
+
+      if (!text) {
+        statusNode.replaceChildren();
+        return;
+      }
+
+      statusNode.classList.add(`state-${state}`);
+      statusNode.replaceChildren();
+
+      const iconByState = {
+        complete: '✓',
+        failed: '✕',
+        expired: '!'
+      };
+      const icon = iconByState[state];
+      if (icon) {
+        statusNode.appendChild($.el('span', {
+          className: `fourchanx-captcha-status-icon state-${state}`,
+          textContent: icon,
+          title: text
+        }));
+      }
+
+      statusNode.appendChild($.el('span', {
+        className: 'fourchanx-captcha-status-text',
+        textContent: text
+      }));
+    },
+
+    messageStateFromText(text) {
+      const plain = `${text || ''}`.toLowerCase();
+      if (/expired/.test(plain)) { return 'expired'; }
+      if (/done|verification not required/.test(plain)) { return 'complete'; }
+      if (/error|failed|couldn\'t|mistyped|malfunctioned/.test(plain)) { return 'failed'; }
+      if (/loading/.test(plain)) { return 'loading'; }
+      return 'idle';
+    },
+
+    formatTaskMessage(text, state) {
+      const icon = {
+        loading: '◔',
+        complete: '✓',
+        failed: '✕',
+        expired: '⏱',
+        idle: '○'
+      }[state] || '○';
+      return `<div id="t-desc" class="tcaptcha-message state-${state}">` +
+        `<span class="tcaptcha-message-icon" aria-hidden="true">${icon}</span>` +
+        `<span class="tcaptcha-message-text">${text || ''}</span>` +
+      `</div>`;
+    },
+
+    ensureProgressNode() {
+      const container = this.nodes?.container;
+      if (!container) { return; }
+      const ctrl = $('#t-ctrl', container);
+      if (!ctrl || $('.fourchanx-captcha-progress', ctrl)) { return; }
+      const progress = $.el('span', {
+        className: 'fourchanx-captcha-progress'
+      });
+      $.add(ctrl, progress);
+    },
+
+    updateProgress(TCaptcha) {
+      const container = this.nodes?.container;
+      if (!container) { return; }
+      const progress = $('.fourchanx-captcha-progress', container);
+      if (!progress) { return; }
+      const tasks = TCaptcha?.tasks;
+      if (!tasks?.length || !isFinite(TCaptcha?.taskId)) {
+        progress.textContent = '';
+        return;
+      }
+      progress.textContent = `${TCaptcha.taskId + 1}/${tasks.length}`;
+    },
+
+    formatDescription(str) {
+      if (!str) { return ''; }
+      return str
+        .replace(/Use the scroll bar below to\s*|,\s*then click next\.?/gi, '')
+        .replace(/(?:^|>)\s*([a-z])/i, m => m.toUpperCase()) + '.';
+    },
+
+    updateHighlight() {
+      this.cachedButtons ||= [];
+      this.cachedButtons.forEach((btn, index) => {
+        const isActive = index === this.currentHighlightIndex;
+        btn.classList.toggle('active', isActive);
+        if (isActive) {
+          btn.scrollIntoView({block: 'nearest'});
+        }
+      });
+    },
+
+    initializeEventHandler(container, TCaptcha) {
+      if (!container || container.dataset.hasFourChanXStackedClick) { return; }
+      container.addEventListener('click', e => {
+        if (!(e.target instanceof Element)) { return; }
+        const button = e.target.closest('.tcaptcha-image');
+        if (!button || !this.cachedButtons?.length) { return; }
+        const index = this.cachedButtons.indexOf(button);
+        if (index !== -1) {
+          this.submitCaptchaAnswer(index, TCaptcha);
+        }
+      });
+      container.dataset.hasFourChanXStackedClick = '1';
+    },
+
+    createImageGrid(TCaptcha) {
+      const container = $('#t-task', this.nodes.container);
+      const task = TCaptcha.getCurrentTask?.();
+      if (!TCaptcha.node || !container || !task) { return; }
+      this.setState('ready');
+      this.updateProgress(TCaptcha);
+
+      TCaptcha.node.style.height = 'auto';
+      TCaptcha.node.style.overflow = 'visible';
+
+      let descriptionHTML = '';
+      if (task.img) {
+        descriptionHTML = `<div id="t-desc"><img src="data:image/png;base64,${task.img}" alt=""></div>`;
+      } else if (task.str) {
+        descriptionHTML = `<div id="t-desc">${this.formatDescription(task.str)}</div>`;
+      } else {
+        descriptionHTML = '<div id="t-desc"></div>';
+      }
+
+      const imageHTMLs = (task.items || []).map(bitmap =>
+        `<button type="button" class="tcaptcha-image">
+        <img src="data:image/png;base64,${bitmap}" alt="">
+      </button>`
+      ).join('');
+
+      container.innerHTML = descriptionHTML + imageHTMLs;
+
+      this.cachedButtons = Array.from(container.querySelectorAll('.tcaptcha-image'));
+      this.currentHighlightIndex = -1;
+      this.initializeEventHandler(container, TCaptcha);
+      TCaptcha.taskNode = container;
+    },
+
+    submitCaptchaAnswer(imageNumber, TCaptcha) {
+      if (!TCaptcha?.respNode || !TCaptcha.tasks || imageNumber < 0) { return; }
+      const totalTasks = TCaptcha.tasks.length - 1;
+      if (totalTasks < 0) { return; }
+
+      TCaptcha.respNode.value += imageNumber;
+      const nextId = TCaptcha.taskId + 1;
+      if (nextId <= totalTasks) {
+        TCaptcha.setTaskId(nextId);
+        this.createImageGrid(TCaptcha);
+      } else {
+        TCaptcha.setTaskNodeContent('Done.');
+        this.setState('complete');
+        this.updateProgress({ taskId: totalTasks, tasks: TCaptcha.tasks });
+        this.cachedButtons = [];
+        this.currentHighlightIndex = -1;
+      }
+    },
+
+    installStackedKeyHandler(TCaptcha) {
+      if (this.keyHandlerInstalled) { return; }
+      this.keyHandlerInstalled = true;
+      window.addEventListener('keydown', e => {
+        if (!TCaptcha.__fourchanXStackedEnabled) { return; }
+        if (!this.nodes?.container || !document.body.contains(this.nodes.container)) { return; }
+
+        if (e.shiftKey && e.code === 'Space') {
+          e.preventDefault();
+          e.stopImmediatePropagation();
+
+          document.querySelector('#notifications .notification.warning a.close')?.closest('.notification')?.remove();
+          this.cachedButtons = (this.cachedButtons || []).filter(btn => document.body.contains(btn));
+
+          if (this.cachedButtons.length > 0) {
+            this.currentHighlightIndex = (this.currentHighlightIndex + 1) % this.cachedButtons.length;
+            this.updateHighlight();
+          } else {
+            TCaptcha.onReloadClick();
+          }
+          return;
+        }
+
+        if (e.key === 'Enter' && this.cachedButtons?.length > 0 && this.currentHighlightIndex >= 0) {
+          e.preventDefault();
+          e.stopImmediatePropagation();
+          this.submitCaptchaAnswer(this.currentHighlightIndex, TCaptcha);
+        }
+      }, true);
+    },
+
+    patchFormatter(TCaptcha) {
+      if (this.formatterPatched) { return; }
+      this.formatterPatched = true;
+
+      const styleID = 'fourchanx-tcaptcha-formatter-style';
+      if (!document.getElementById(styleID)) {
+        const style = document.createElement('style');
+        style.id = styleID;
+        style.textContent = `
+        #qr.fourchanx-stacked-captcha .captcha-container { width: 100% !important; height: auto !important; min-height: 145px; overflow: visible !important; }
+        #qr.fourchanx-stacked-captcha #t-ctrl { flex-wrap: wrap; gap: 4px; align-items: center; }
+        #qr.fourchanx-stacked-captcha .tcaptcha-image { padding: 0; margin: 3px; border: none; background: none; cursor: pointer !important; }
+        #qr.fourchanx-stacked-captcha .tcaptcha-image img { height: 100%; width: 100%; display: block; }
+        #qr.fourchanx-stacked-captcha .tcaptcha-image.active { outline: 3px solid #00c06f; }
+        #qr.fourchanx-stacked-captcha #t-desc { white-space: pre-line; text-align: center; font-size: 14px; user-select: none; width: 100%; }
+        #qr.fourchanx-stacked-captcha #t-desc.tcaptcha-message { padding-bottom: 15px; box-sizing: border-box; display: inline-flex; align-items: center; justify-content: center; gap: 6px; }
+        #qr.fourchanx-stacked-captcha #t-desc.tcaptcha-message .tcaptcha-message-icon { display: inline-flex; align-items: center; justify-content: center; width: 1.2em; height: 1.2em; border: 2px solid currentColor; border-radius: 50%; font-weight: bold; font-size: 11px; line-height: 1; box-sizing: border-box; }
+        #qr.fourchanx-stacked-captcha #t-desc.tcaptcha-message.state-complete .tcaptcha-message-icon { color: #2c9c47; }
+        #qr.fourchanx-stacked-captcha #t-desc.tcaptcha-message.state-failed .tcaptcha-message-icon { color: #cf4a4a; }
+        #qr.fourchanx-stacked-captcha #t-desc.tcaptcha-message.state-expired .tcaptcha-message-icon { color: #c38c2f; }
+        #qr.fourchanx-stacked-captcha #t-desc.tcaptcha-message.state-loading .tcaptcha-message-icon { color: #4f7eaa; }
+        #qr.fourchanx-stacked-captcha #t-desc.tcaptcha-message.state-idle .tcaptcha-message-icon { color: #6f7c8f; }
+        #qr.fourchanx-stacked-captcha #t-desc img { margin: 3px !important; max-width: 100%; height: auto; }
+        #qr.fourchanx-stacked-captcha #t-task { display: flex; flex-wrap: wrap; gap: 3px; width: 100%; justify-content: center; margin: 0 auto; overflow: auto; max-height: 70vh; padding: 0 !important; height: auto !important; white-space: normal !important; align-items: normal !important; scrollbar-gutter: stable; overflow-x: hidden; box-sizing: border-box; }
+        #qr.fourchanx-stacked-captcha #t-load { cursor: pointer !important; min-height: 24px; padding: 0 8px; }
+        #qr.fourchanx-stacked-captcha #t-next { display: none !important; }
+        #qr.fourchanx-stacked-captcha .fourchanx-captcha-progress { margin-left: auto; font-weight: bold; min-width: 3em; text-align: right; }
+        #qr.fourchanx-stacked-captcha #t-slider { display: none !important; }
+      `;
+        document.head.appendChild(style);
+      }
+
+      if (!TCaptcha.__fourchanXOriginal) {
+        TCaptcha.__fourchanXOriginal = {
+          setChallenge: TCaptcha.setChallenge,
+          setTaskId: TCaptcha.setTaskId,
+          setTaskNodeContent: TCaptcha.setTaskNodeContent,
+          buildSliderNode: TCaptcha.buildSliderNode,
+          buildNextNode: TCaptcha.buildNextNode,
+        };
+      }
+    },
+
+    setStacked(enabled, TCaptcha) {
+      const root = $('#qr');
+      if (!root) { return; }
+      root.classList.toggle('fourchanx-stacked-captcha', enabled);
+      if (TCaptcha.node) {
+        if (enabled) {
+          TCaptcha.node.style.height = 'auto';
+          TCaptcha.node.style.overflow = 'visible';
+        } else {
+          TCaptcha.node.style.height = '145px';
+          TCaptcha.node.style.overflow = 'hidden';
+        }
+      }
+      if (TCaptcha.taskNode) {
+        if (enabled) {
+          TCaptcha.taskNode.style.height = 'auto';
+          TCaptcha.taskNode.style.alignItems = 'flex-start';
+        } else {
+          TCaptcha.taskNode.style.height = '80px';
+          TCaptcha.taskNode.style.alignItems = 'center';
+        }
+      }
+        if (!enabled) {
+        if (TCaptcha.__fourchanXOriginal) {
+          const o = TCaptcha.__fourchanXOriginal;
+          TCaptcha.setChallenge = o.setChallenge;
+          TCaptcha.setTaskId = o.setTaskId;
+          TCaptcha.setTaskNodeContent = o.setTaskNodeContent;
+          TCaptcha.buildSliderNode = o.buildSliderNode;
+          TCaptcha.buildNextNode = o.buildNextNode;
+        }
+        TCaptcha.__fourchanXStackedEnabled = false;
+        this.cachedButtons = [];
+        this.currentHighlightIndex = -1;
+        this.updateProgress();
+        return;
+      }
+      if (TCaptcha.__fourchanXStackedEnabled) { return; }
+      TCaptcha.__fourchanXStackedEnabled = true;
+      this.installStackedKeyHandler(TCaptcha);
+
+      const o = TCaptcha.__fourchanXOriginal;
+      TCaptcha.setChallenge = function(challenge) {
+        if (!challenge?.tasks) { return o.setChallenge.call(this, challenge); }
+        this.challengeIdNode.value = challenge.challenge;
+        this.respNode.value = '';
+        this.tasks = challenge.tasks;
+        this.setTaskId(0);
+        CaptchaT.createImageGrid(this);
+      };
+      TCaptcha.setTaskId = function(index) {
+        this.taskId = index;
+        CaptchaT.setState('ready');
+        CaptchaT.updateProgress(this);
+      };
+      TCaptcha.setTaskNodeContent = function(text) {
+        const container = $('#t-task', CaptchaT.nodes.container);
+        const state = CaptchaT.messageStateFromText(text);
+        CaptchaT.setState(state);
+        if (container) { container.innerHTML = ''; }
+        CaptchaT.setStatusMessage(text, state);
+        CaptchaT.cachedButtons = [];
+        CaptchaT.currentHighlightIndex = -1;
+        CaptchaT.updateProgress();
+      };
+      TCaptcha.buildSliderNode = function() {
+        const slider = document.createElement('span');
+        slider.id = 't-slider';
+        slider.hidden = true;
+        return slider;
+      };
+      TCaptcha.buildNextNode = function() {
+        const next = document.createElement('span');
+        next.id = 't-next';
+        return next;
+      };
+
+      if (TCaptcha.tasks?.length) {
+        this.createImageGrid(TCaptcha);
+      } else {
+        this.setState('idle');
+        this.updateProgress();
+      }
+    },
   };
 
   /**
@@ -7768,10 +9889,16 @@ svg.icon {
     },
     cb: {
       toggle(e) {
+        const post = Get.postFromNode(this);
+        if (e.shiftKey && Conf['MD5 Quick Filter in Threads']) {
+          Filter.quickFilterMD5.call(post);
+          e.preventDefault();
+          e.stopImmediatePropagation();
+          return;
+        }
         if ($.modifiedClick(e)) {
           return;
         }
-        const post = Get.postFromNode(this);
         const { file } = post;
         if (file.isExpanded && ImageCommon.onControls(e)) {
           return;
@@ -9255,6 +11382,7 @@ svg.icon {
 
   var ThreadWatcherPage = `<div class="move">
   Thread Watcher <a class="refresh" title="Check threads" href="javascript:;" title="refresh"></a>
+  <a class="mark-read" title="Mark all watched threads as read" href="javascript:;"></a>
   <span id="watcher-status"></span>
   <a class="menu-button" href="javascript:;"></a>
   <a class="close" href="javascript:;">×</a>
@@ -9408,238 +11536,6 @@ svg.icon {
 
       for (var callback of ExpandComment.callbacks) {
         callback.call(post);
-      }
-    }
-  };
-
-  const ScrollMarkers = {
-    init() {
-      ScrollMarkers.container = $.el('div', { classList: 'scroll-marker-container' });
-      doc.insertAdjacentElement('afterbegin', ScrollMarkers.container);
-      $.on(ScrollMarkers.container, 'click', (e) => {
-        const { postId } = e.target.dataset;
-        if (postId)
-          Header.scrollTo(g.posts[postId].nodes.root);
-      });
-      new ResizeObserver(ScrollMarkers.markScroll).observe(doc);
-    },
-    container: undefined,
-    // Keep instead of redoing so renewing doesn't lose keyboard focus
-    markers: undefined,
-    markScroll: debounce(100, () => {
-      if (!Conf['Scroll Markers']) {
-        ScrollMarkers.container.innerText = '';
-        ScrollMarkers.markers = undefined;
-        return;
-      }
-      const newMarkers = new Map();
-      g.posts?.forEach((post) => {
-        const postEl = post.nodes.root;
-        let isReply = false;
-        if ($.hasClass(postEl, 'quotesYou')) {
-          isReply = true;
-        } else if (!$.hasClass(postEl, 'yourPost')) {
-          return;
-        }
-        const postPosition = postEl.getBoundingClientRect();
-        newMarkers.set(`${post.boardID}.${post.ID}`, {
-          classList: `post-scroll-marker ${isReply ? 'reply' : 'you'}-scroll-marker`,
-          ariaLabel: `Jump to ${isReply ? 'reply to ' : ''} my post`,
-          top: (((postPosition.top + window.scrollY) / doc.scrollHeight) * 100).toFixed(1),
-          height: Math.max(1, (postPosition.height / doc.scrollHeight) * 100).toFixed(1),
-        });
-      });
-      let previousEl;
-      for (const [key, marker] of newMarkers) {
-        const existing = ScrollMarkers.markers?.get(key);
-        let el = existing?.el;
-        if (!el) {
-          el = $.el('button', { type: 'button' });
-          if (previousEl) {
-            previousEl.insertAdjacentElement('afterend', el);
-          } else {
-            $.add(ScrollMarkers.container, el);
-          }
-        }
-        el.classList = marker.classList;
-        el.style.setProperty('--top', marker.top);
-        el.style.setProperty('--height', marker.height);
-        el.dataset.postId = key;
-        marker.el = el;
-        previousEl = el;
-        document.createElement('button');
-      }
-      // Remove those that don't exist anymore
-      if (ScrollMarkers.markers) {
-        for (const [key, { el }] of ScrollMarkers.markers) {
-          if (!newMarkers.has(key))
-            el.remove();
-        }
-      }
-      ScrollMarkers.markers = newMarkers;
-    }, false),
-  };
-
-  var QuoteYou = {
-    init() {
-      if (!Conf['Remember Your Posts']) { return; }
-
-      this.db = new DataBoard('yourPosts');
-      $.sync('Remember Your Posts', enabled => Conf['Remember Your Posts'] = enabled);
-      $.on(d, 'QRPostSuccessful', function(e) {
-        const cb = PostRedirect.delay();
-        return $.get('Remember Your Posts', Conf['Remember Your Posts'], function(items) {
-          if (!items['Remember Your Posts']) { return; }
-          const {boardID, threadID, postID} = e.detail;
-          return QuoteYou.db.set({boardID, threadID, postID, val: true}, cb);
-        });
-      });
-
-      if (!['index', 'thread', 'archive'].includes(g.VIEW)) { return; }
-
-      if (Conf['Highlight Own Posts']) {
-        $.addClass(doc, 'highlight-own');
-      }
-
-      if (Conf['Highlight Posts Quoting You']) {
-        $.addClass(doc, 'highlight-you');
-      }
-
-      if (Conf['Comment Expansion']) {
-        ExpandComment.callbacks.push(this.node);
-      }
-
-      // \u00A0 is nbsp
-      this.mark = $.el('span', {
-        textContent: '\u00A0(You)',
-        className:   'qmark-you'
-      }
-      );
-      Callbacks.Post.push({
-        name: 'Mark Quotes of You',
-        cb:   this.node
-      });
-
-      QuoteYou.menu.init();
-    },
-
-    isYou(post) {
-      return !!QuoteYou.db?.get({
-        boardID:  post.boardID,
-        threadID: post.threadID,
-        postID:   post.ID
-      });
-    },
-
-    node() {
-      if (this.isClone) { return; }
-
-      if (QuoteYou.isYou(this)) {
-        $.addClass(this.nodes.root, 'yourPost');
-        ScrollMarkers.markScroll();
-      }
-
-      // Stop there if there's no quotes in that post.
-      if (!this.quotes.length) { return; }
-
-      for (var quotelink of this.nodes.quotelinks) {
-        if (QuoteYou.db.get(Get.postDataFromLink(quotelink))) {
-          if (Conf['Mark Quotes of You']) { $.add(quotelink, QuoteYou.mark.cloneNode(true)); }
-          $.addClass(quotelink, 'you');
-          $.addClass(this.nodes.root, 'quotesYou');
-        }
-      }
-    },
-
-    menu: {
-      init() {
-        const label = $.el('label',
-          {className: 'toggle-you'}
-        ,
-          {innerHTML: '<input type="checkbox"> You'});
-        const input = $('input', label);
-        $.on(input, 'change', QuoteYou.menu.toggle);
-        Menu.menu?.addEntry({
-          el: label,
-          order: 80,
-          open(post) {
-            QuoteYou.menu.post = (post.origin || post);
-            input.checked = QuoteYou.isYou(post);
-            return true;
-          }
-        });
-      },
-
-      toggle() {
-        const {post} = QuoteYou.menu;
-        const data = {boardID: post.board.ID, threadID: post.thread.ID, postID: post.ID, val: true};
-        if (this.checked) {
-          QuoteYou.db.set(data);
-        } else {
-          QuoteYou.db.delete(data);
-        }
-        for (var clone of [post].concat(post.clones)) {
-          clone.nodes.root.classList.toggle('yourPost', this.checked);
-        }
-        for (var quotelink of Get.allQuotelinksLinkingTo(post)) {
-          if (this.checked) {
-            if (Conf['Mark Quotes of You']) { $.add(quotelink, QuoteYou.mark.cloneNode(true)); }
-          } else {
-            $.rm($('.qmark-you', quotelink));
-          }
-          quotelink.classList.toggle('you', this.checked);
-          if ($.hasClass(quotelink, 'quotelink')) {
-            var quoter = Get.postFromNode(quotelink).nodes.root;
-            quoter.classList.toggle('quotesYou', !!$('.quotelink.you', quoter));
-          }
-        }
-        ScrollMarkers.markScroll();
-      }
-    },
-
-    cb: {
-      seek(type) {
-        let highlighted, post;
-        let result;
-        const {highlight} = g.SITE.classes;
-        if (highlighted = $(`.${highlight}`)) { $.rmClass(highlighted, highlight); }
-
-        if (!QuoteYou.lastRead || !doc.contains(QuoteYou.lastRead) || !$.hasClass(QuoteYou.lastRead, 'quotesYou')) {
-          if (!(post = (QuoteYou.lastRead = $('.quotesYou')))) {
-            new Notice('warning', 'No posts are currently quoting you, loser.', 20);
-            return;
-          }
-          if (QuoteYou.cb.scroll(post)) { return; }
-        } else {
-          post = QuoteYou.lastRead;
-        }
-
-        const str = `${type}::div[contains(@class,'quotesYou')]`;
-
-        while (post = (result = $.X(str, post)).snapshotItem(type === 'preceding' ? result.snapshotLength - 1 : 0)) {
-          if (QuoteYou.cb.scroll(post)) { return; }
-        }
-
-        const posts = $$('.quotesYou');
-        return QuoteYou.cb.scroll(posts[type === 'following' ? 0 : posts.length - 1]);
-      },
-
-      scroll(root) {
-        const post = Get.postFromRoot(root);
-        if (!post.nodes.post.getBoundingClientRect().height) {
-          return false;
-        } else {
-          QuoteYou.lastRead = root;
-          location.href = Get.url('post', post);
-          Header.scrollTo(post.nodes.post);
-          if (post.isReply) {
-            const sel = `${g.SITE.selectors.postContainer}${g.SITE.selectors.highlightable.reply}`;
-            let node = post.nodes.root;
-            if (!node.matches(sel)) { node = $(sel, node); }
-            $.addClass(node, g.SITE.classes.highlight);
-          }
-          return true;
-        }
       }
     }
   };
@@ -10077,6 +11973,322 @@ svg.icon {
     })
   };
 
+  const ScrollMarkers = {
+    container: undefined,
+    thread: undefined,
+    flashPost: undefined,
+    flashTimer: 0,
+    init() {
+      if (g.VIEW !== 'thread')
+        return;
+      ScrollMarkers.container = $.el('div', { id: 'scroll-markers' });
+      ScrollMarkers.container.hidden = true;
+      for (const key of [
+        'Scrollbar Markers',
+        'Scrollbar Mark Own Posts',
+        'Scrollbar Mark Quotes You',
+        'Scrollbar Mark Ghost Posts',
+        'Scrollbar Mark Unread Line',
+        'Unread Line',
+      ]) {
+        $.sync(key, (val) => {
+          Conf[key] = val;
+          ScrollMarkers.refreshDeferred();
+        });
+      }
+      Callbacks.Thread.push({
+        name: 'Scroll Markers',
+        cb: ScrollMarkers.node,
+      });
+    },
+    node() {
+      ScrollMarkers.thread = this;
+      if (!ScrollMarkers.container)
+        return;
+      $.add(d.body, ScrollMarkers.container);
+      ScrollMarkers.container.hidden = false;
+      $.on(d, '4chanXInitFinished', ScrollMarkers.refreshDeferred);
+      $.on(d, 'PostsInserted', ScrollMarkers.refreshDeferred);
+      $.on(d, 'ThreadUpdate', ScrollMarkers.refreshDeferred);
+      $.on(d, 'RefreshScrollMarkers', ScrollMarkers.refreshDeferred);
+      $.on(window, 'resize', ScrollMarkers.refreshDeferred);
+      $.on(window, 'load', ScrollMarkers.refreshDeferred);
+      ScrollMarkers.refreshDeferred();
+    },
+    refreshDeferred: debounce(150, () => ScrollMarkers.refresh(), false),
+    refresh() {
+      const container = ScrollMarkers.container;
+      if (!ScrollMarkers.thread || !container?.parentNode)
+        return;
+      if (!Conf['Scrollbar Markers']) {
+        container.textContent = '';
+        container.hidden = true;
+        return;
+      }
+      container.hidden = false;
+      const docHeight = d.documentElement.scrollHeight || d.body.scrollHeight || 0;
+      if (!(docHeight > 0))
+        return;
+      const frag = $.frag();
+      const showOwn = Conf['Scrollbar Mark Own Posts'];
+      const showYou = Conf['Scrollbar Mark Quotes You'];
+      const showGhost = Conf['Scrollbar Mark Ghost Posts'];
+      const showUnread = Conf['Unread Line'] && Conf['Scrollbar Mark Unread Line'];
+      ScrollMarkers.thread.posts.forEach((post) => {
+        if (post.isHidden || post.isClone || post.isFetchedQuote)
+          return;
+        const root = post.nodes.root;
+        if (!root || root.offsetParent == null || !root.getClientRects().length)
+          return;
+        const isOwn = showOwn && root.classList.contains('yourPost');
+        const isYou = showYou && root.classList.contains('quotesYou');
+        const isGhost = showGhost && root.classList.contains('from-archive');
+        if (!isOwn && !isYou && !isGhost)
+          return;
+        const rect = root.getBoundingClientRect();
+        const topInDoc = rect.top + window.scrollY;
+        const topPct = (topInDoc / docHeight) * 100;
+        const heightPct = Math.max((rect.height / docHeight) * 100, 0.15);
+        const make = (cls) => {
+          const marker = $.el('div', {
+            className: `scroll-marker ${cls}`,
+          });
+          marker.style.cssText = `top:${topPct}%;height:${heightPct}%`;
+          ScrollMarkers.bind(marker, post);
+          $.add(frag, marker);
+        };
+        if (isOwn)
+          make('scroll-marker-own');
+        if (isYou)
+          make('scroll-marker-you');
+        if (isGhost)
+          make('scroll-marker-ghost');
+      });
+      if (showUnread && Unread?.hr?.isConnected && !Unread.hr.hidden) {
+        const rect = Unread.hr.getBoundingClientRect();
+        const topInDoc = rect.top + window.scrollY;
+        const topPct = (topInDoc / docHeight) * 100;
+        const marker = $.el('div', {
+          className: 'scroll-marker scroll-marker-unread',
+          title: 'Unread line',
+        });
+        marker.style.cssText = `top:${topPct}%;height:2px`;
+        $.add(frag, marker);
+      }
+      container.textContent = '';
+      $.add(container, frag);
+    },
+    bind(marker, post) {
+      marker.title = `Post No.${post.ID}`;
+      $.on(marker, 'mouseenter', () => ScrollMarkers.highlightPost(post));
+      $.on(marker, 'mouseleave', () => ScrollMarkers.unhighlightPost(post));
+      $.on(marker, 'click', (e) => {
+        e.preventDefault();
+        ScrollMarkers.jumpTo(post);
+      });
+    },
+    highlightPost(post) {
+      const root = post?.nodes?.root;
+      if (!root?.isConnected)
+        return;
+      $.addClass(root, g.SITE.classes.highlight);
+    },
+    unhighlightPost(post) {
+      const root = post?.nodes?.root;
+      if (!root)
+        return;
+      $.rmClass(root, g.SITE.classes.highlight);
+    },
+    jumpTo(post) {
+      const root = post?.nodes?.root;
+      if (!root?.isConnected)
+        return;
+      Header.scrollTo(root);
+      $.addClass(root, g.SITE.classes.highlight);
+      if (ScrollMarkers.flashTimer)
+        clearTimeout(ScrollMarkers.flashTimer);
+      ScrollMarkers.flashPost = post;
+      ScrollMarkers.flashTimer = setTimeout(() => {
+        const r = ScrollMarkers.flashPost?.nodes?.root;
+        if (r)
+          $.rmClass(r, g.SITE.classes.highlight);
+        ScrollMarkers.flashPost = undefined;
+      }, 1500);
+    },
+    // Back-compat: QuoteYou.js calls ScrollMarkers.markScroll().
+    markScroll() {
+      ScrollMarkers.refreshDeferred();
+    },
+  };
+
+  var QuoteYou = {
+    init() {
+      if (!Conf['Remember Your Posts']) { return; }
+
+      this.db = new DataBoard('yourPosts');
+      $.sync('Remember Your Posts', enabled => Conf['Remember Your Posts'] = enabled);
+      $.on(d, 'QRPostSuccessful', function(e) {
+        const cb = PostRedirect.delay();
+        return $.get('Remember Your Posts', Conf['Remember Your Posts'], function(items) {
+          if (!items['Remember Your Posts']) { return; }
+          const {boardID, threadID, postID} = e.detail;
+          return QuoteYou.db.set({boardID, threadID, postID, val: true}, cb);
+        });
+      });
+
+      if (!['index', 'thread', 'archive'].includes(g.VIEW)) { return; }
+
+      if (Conf['Highlight Own Posts']) {
+        $.addClass(doc, 'highlight-own');
+      }
+
+      if (Conf['Highlight Posts Quoting You']) {
+        $.addClass(doc, 'highlight-you');
+      }
+
+      if (Conf['Highlight Ghost Posts']) {
+        $.addClass(doc, 'highlight-ghost');
+      }
+
+      if (Conf['Comment Expansion']) {
+        ExpandComment.callbacks.push(this.node);
+      }
+
+      // \u00A0 is nbsp
+      this.mark = $.el('span', {
+        textContent: '\u00A0(You)',
+        className:   'qmark-you'
+      }
+      );
+      Callbacks.Post.push({
+        name: 'Mark Quotes of You',
+        cb:   this.node
+      });
+
+      QuoteYou.menu.init();
+    },
+
+    isYou(post) {
+      return !!QuoteYou.db?.get({
+        boardID:  post.boardID,
+        threadID: post.threadID,
+        postID:   post.ID
+      });
+    },
+
+    node() {
+      if (this.isClone) { return; }
+
+      if (QuoteYou.isYou(this)) {
+        $.addClass(this.nodes.root, 'yourPost');
+        ScrollMarkers.markScroll();
+      }
+
+      // Stop there if there's no quotes in that post.
+      if (!this.quotes.length) { return; }
+
+      for (var quotelink of this.nodes.quotelinks) {
+        if (QuoteYou.db.get(Get.postDataFromLink(quotelink))) {
+          if (Conf['Mark Quotes of You']) { $.add(quotelink, QuoteYou.mark.cloneNode(true)); }
+          $.addClass(quotelink, 'you');
+          $.addClass(this.nodes.root, 'quotesYou');
+        }
+      }
+    },
+
+    menu: {
+      init() {
+        const label = $.el('label',
+          {className: 'toggle-you'}
+        ,
+          {innerHTML: '<input type="checkbox"> You'});
+        const input = $('input', label);
+        $.on(input, 'change', QuoteYou.menu.toggle);
+        Menu.menu?.addEntry({
+          el: label,
+          order: 80,
+          open(post) {
+            QuoteYou.menu.post = (post.origin || post);
+            input.checked = QuoteYou.isYou(post);
+            return true;
+          }
+        });
+      },
+
+      toggle() {
+        const {post} = QuoteYou.menu;
+        const data = {boardID: post.board.ID, threadID: post.thread.ID, postID: post.ID, val: true};
+        if (this.checked) {
+          QuoteYou.db.set(data);
+        } else {
+          QuoteYou.db.delete(data);
+        }
+        for (var clone of [post].concat(post.clones)) {
+          clone.nodes.root.classList.toggle('yourPost', this.checked);
+        }
+        for (var quotelink of Get.allQuotelinksLinkingTo(post)) {
+          if (this.checked) {
+            if (Conf['Mark Quotes of You']) { $.add(quotelink, QuoteYou.mark.cloneNode(true)); }
+          } else {
+            $.rm($('.qmark-you', quotelink));
+          }
+          quotelink.classList.toggle('you', this.checked);
+          if ($.hasClass(quotelink, 'quotelink')) {
+            var quoter = Get.postFromNode(quotelink).nodes.root;
+            quoter.classList.toggle('quotesYou', !!$('.quotelink.you', quoter));
+          }
+        }
+        ScrollMarkers.markScroll();
+      }
+    },
+
+    cb: {
+      seek(type) {
+        let highlighted, post;
+        let result;
+        const {highlight} = g.SITE.classes;
+        if (highlighted = $(`.${highlight}`)) { $.rmClass(highlighted, highlight); }
+
+        if (!QuoteYou.lastRead || !doc.contains(QuoteYou.lastRead) || !$.hasClass(QuoteYou.lastRead, 'quotesYou')) {
+          if (!(post = (QuoteYou.lastRead = $('.quotesYou')))) {
+            new Notice('warning', 'No posts are currently quoting you, loser.', 20);
+            return;
+          }
+          if (QuoteYou.cb.scroll(post)) { return; }
+        } else {
+          post = QuoteYou.lastRead;
+        }
+
+        const str = `${type}::div[contains(@class,'quotesYou')]`;
+
+        while (post = (result = $.X(str, post)).snapshotItem(type === 'preceding' ? result.snapshotLength - 1 : 0)) {
+          if (QuoteYou.cb.scroll(post)) { return; }
+        }
+
+        const posts = $$('.quotesYou');
+        return QuoteYou.cb.scroll(posts[type === 'following' ? 0 : posts.length - 1]);
+      },
+
+      scroll(root) {
+        const post = Get.postFromRoot(root);
+        if (!post.nodes.post.getBoundingClientRect().height) {
+          return false;
+        } else {
+          QuoteYou.lastRead = root;
+          location.href = Get.url('post', post);
+          Header.scrollTo(post.nodes.post);
+          if (post.isReply) {
+            const sel = `${g.SITE.selectors.postContainer}${g.SITE.selectors.highlightable.reply}`;
+            let node = post.nodes.root;
+            if (!node.matches(sel)) { node = $(sel, node); }
+            $.addClass(node, g.SITE.classes.highlight);
+          }
+          return true;
+        }
+      }
+    }
+  };
+
   var ExpandThread = {
     statuses: dict(),
     init() {
@@ -10373,6 +12585,42 @@ svg.icon {
   };
 
   var ThreadWatcher = {
+    drag: {
+      start(e) {
+        ThreadWatcher.draggingLine = this;
+        this.classList.add('drag');
+        if (e.dataTransfer) {
+          e.dataTransfer.effectAllowed = 'move';
+          e.dataTransfer.setData('text/plain', ThreadWatcher.keyFromLine(this));
+        }
+      },
+      end() {
+        ThreadWatcher.clearDragState();
+      },
+      enter() {
+        if (ThreadWatcher.draggingLine && ThreadWatcher.draggingLine !== this) {
+          this.classList.add('over');
+        }
+      },
+      leave() {
+        this.classList.remove('over');
+      },
+      over(e) {
+        if (ThreadWatcher.draggingLine && ThreadWatcher.draggingLine !== this) {
+          e.preventDefault();
+          e.dataTransfer.dropEffect = 'move';
+        }
+      },
+      drop(e) {
+        if (!ThreadWatcher.draggingLine || ThreadWatcher.draggingLine === this) { return; }
+        e.preventDefault();
+        this.classList.remove('over');
+        const { before } = ThreadWatcher.dropPosition(this, e);
+        ThreadWatcher.reorderInDOM(ThreadWatcher.draggingLine, this, before);
+        ThreadWatcher.clearDragState();
+      }
+    },
+
     init() {
       let sc;
       if (!(this.enabled = Conf['Thread Watcher'])) { return; }
@@ -10390,19 +12638,24 @@ svg.icon {
       this.status = $('#watcher-status', this.dialog);
       this.list   = this.dialog.lastElementChild;
       this.refreshButton = $('.refresh', this.dialog);
+      this.markReadButton = $('.mark-read', this.dialog);
       this.menuButton = $('.menu-button', this.dialog);
       this.closeButton = $('.move > .close', this.dialog);
       this.unreaddb = Unread.db || UnreadIndex.db || new DataBoard('lastReadPosts');
       this.unreadEnabled = Conf['Remember Last Read Post'];
 
       Icon.set(this.refreshButton, 'refresh');
+      Icon.set(this.markReadButton, 'check');
       Icon.set(this.menuButton, 'caretDown');
       Icon.set(this.closeButton, 'xmark');
 
       $.on(d, 'QRPostSuccessful',   this.cb.post);
       $.on(sc, 'click', this.toggleWatcher);
       $.on(this.refreshButton, 'click', this.buttonFetchAll);
+      $.on(this.markReadButton, 'click', this.cb.markAllRead);
       $.on(this.closeButton, 'click', this.toggleWatcher);
+      $.on(window, 'resize scroll', () => ThreadWatcher.positionThumbnailHover(ThreadWatcher.hoveredThumbnail));
+      $.on(this.list, 'scroll', () => ThreadWatcher.positionThumbnailHover(ThreadWatcher.hoveredThumbnail));
 
       this.menu.addHeaderMenuEntry();
       $.onExists(doc, 'body', this.addDialog);
@@ -10518,13 +12771,18 @@ svg.icon {
 
     addDialog() {
       if (!Main.isThisPageLegit()) { return; }
+      ThreadWatcher.applyLayout();
       ThreadWatcher.build();
       return $.prepend(d.body, ThreadWatcher.dialog);
     },
 
     toggleWatcher() {
       $.toggleClass(ThreadWatcher.shortcut, 'disabled');
-      return ThreadWatcher.dialog.hidden = !ThreadWatcher.dialog.hidden;
+      const hidden = (ThreadWatcher.dialog.hidden = !ThreadWatcher.dialog.hidden);
+      if (hidden) {
+        ThreadWatcher.hideThumbnailHover();
+      }
+      return hidden;
     },
 
     cb: {
@@ -10586,6 +12844,49 @@ svg.icon {
           }
         }
         $.event('CloseMenu');
+      },
+      markAllRead() {
+        if ($.hasClass(this, 'disabled') || !ThreadWatcher.unreadEnabled) { return; }
+        for (var {siteID, boardID, threadID, data} of ThreadWatcher.getAll()) {
+          if (data.last != null) {
+            ThreadWatcher.unreaddb.set({siteID, boardID, threadID, val: data.last});
+          }
+          ThreadWatcher.update(siteID, boardID, threadID, {
+            unread: 0,
+            quotingYou: 0,
+            dismiss: data.quotingYou || 0
+          });
+        }
+      },
+      markRead() {
+        if ($.hasClass(this, 'disabled') || !ThreadWatcher.unreadEnabled) { return; }
+        const line = this.parentNode;
+        if (!line) { return; }
+        const {siteID} = line.dataset;
+        const [boardID, threadID] = line.dataset.fullID.split('.');
+        const data = ThreadWatcher.db?.get({siteID, boardID, threadID: +threadID});
+        if (!data) { return; }
+        if (data.last != null) {
+          ThreadWatcher.unreaddb.set({siteID, boardID, threadID: +threadID, val: data.last});
+        }
+        ThreadWatcher.update(siteID, boardID, +threadID, {
+          unread: 0,
+          quotingYou: 0,
+          dismiss: data.quotingYou || 0
+        });
+      },
+      thumbnailHoverIn() {
+        ThreadWatcher.showThumbnailHover(this);
+      },
+      thumbnailHoverMove() {
+        if (ThreadWatcher.hoveredThumbnail === this) {
+          ThreadWatcher.positionThumbnailHover(this);
+        }
+      },
+      thumbnailHoverOut() {
+        if (ThreadWatcher.hoveredThumbnail === this) {
+          ThreadWatcher.hideThumbnailHover();
+        }
       },
       toggle() {
         const {thread} = Get.postFromNode(this);
@@ -10767,6 +13068,7 @@ svg.icon {
         if (!data.isDead && (data.last !== -1)) {
           if (Conf['Show Page'] && (data.page == null)) { force = true; }
           if ((data.modified == null)) { force = (thread.force = true); }
+          if (ThreadWatcher.showThumbnails() && !data.thumbURL) { force = (thread.force = true); }
         }
       }
       const {siteID, boardID} = board[0];
@@ -10828,6 +13130,9 @@ svg.icon {
               ThreadWatcher.fetchStatus(thread);
             }
           }
+          if (ThreadWatcher.showThumbnails() && !data.thumbURL) {
+            ThreadWatcher.fetchStatus(thread);
+          }
         } else {
           ThreadWatcher.fetchStatus(thread);
         }
@@ -10852,12 +13157,13 @@ svg.icon {
         last = this.response.posts[this.response.posts.length-1].no;
         const replies = this.response.posts.length-1;
         isDead = (isArchived = !!(this.response.posts[0].archived || isArchiveURL));
+        const thumbURL = ThreadWatcher.getOPThumbURL({siteID, boardID, postObj: this.response.posts[0]});
         if (isDead && Conf['Auto Prune']) {
           ThreadWatcher.rm(siteID, boardID, threadID);
           return;
         }
 
-        if ((last === data.last) && (isDead === data.isDead) && (isArchived === data.isArchived)) { return; }
+        if ((last === data.last) && (isDead === data.isDead) && (isArchived === data.isArchived) && (!thumbURL || thumbURL === data.thumbURL)) { return; }
 
         const lastReadPost = ThreadWatcher.unreaddb.get({siteID, boardID, threadID, defaultValue: 0});
         let unread = data.unread || 0;
@@ -10897,6 +13203,9 @@ svg.icon {
         }
 
         if (!newData) { newData = {}; }
+        if ((thumbURL != null) && (thumbURL !== data.thumbURL)) {
+          newData.thumbURL = thumbURL;
+        }
         $.extend(newData, {last, replies, isDead, isArchived, unread, quotingYou});
         return ThreadWatcher.update(siteID, boardID, threadID, newData);
 
@@ -10909,6 +13218,21 @@ svg.icon {
         } else {
           return ThreadWatcher.update(siteID, boardID, threadID, {isDead: true});
         }
+      }
+    },
+
+    getOPThumbURL({siteID, boardID, thread, postObj}) {
+      if (thread?.OP?.file?.thumbURL) { return thread.OP.file.thumbURL; }
+      if (!postObj) { return; }
+      const site = g.sites[siteID];
+      if (site?.Build?.parseJSON) {
+        try {
+          const post = site.Build.parseJSON(postObj, {siteID, boardID});
+          if (post?.file?.thumbURL) { return post.file.thumbURL; }
+        } catch (err) {}
+      }
+      if ((postObj.tim != null) && site?.urls?.thumb) {
+        return site.urls.thumb({siteID, boardID}, `${postObj.tim}s.jpg`);
       }
     },
 
@@ -10933,6 +13257,16 @@ svg.icon {
           }
         }
       }
+      if (!groupByBoard) {
+        all.sort((a, b) => {
+          const ao = a.data.order;
+          const bo = b.data.order;
+          if ((ao == null) && (bo == null)) { return 0; }
+          if (ao == null) { return 1; }
+          if (bo == null) { return -1; }
+          return ao - bo;
+        });
+      }
       return all;
     },
 
@@ -10940,7 +13274,8 @@ svg.icon {
       let page;
       const x = $.el('a', {
         textContent: '✕',
-        href: 'javascript:;'
+        href: 'javascript:;',
+        draggable: false
       });
       Icon.set(x, 'xmark');
       $.on(x, 'click', ThreadWatcher.cb.rm);
@@ -10952,8 +13287,28 @@ svg.icon {
       const link = $.el('a', {
         href: g.sites[siteID]?.urls.thread({siteID, boardID, threadID}, isArchived) || '',
         title: excerpt,
-        className: 'watcher-link'
+        className: 'watcher-link',
+        draggable: false
       });
+
+      if (ThreadWatcher.showThumbnails()) {
+        const thumb = data.thumbURL ?
+          $.el('img', {
+            src: data.thumbURL,
+            alt: '',
+            className: 'watcher-thumb'
+          })
+        :
+          $.el('span', {
+            className: 'watcher-thumb watcher-thumb-missing'
+          });
+        if (Conf['Thread Watcher Thumbnail Hover'] && thumb.nodeName === 'IMG') {
+          $.on(thumb, 'mouseover', ThreadWatcher.cb.thumbnailHoverIn);
+          $.on(thumb, 'mousemove', ThreadWatcher.cb.thumbnailHoverMove);
+          $.on(thumb, 'mouseout', ThreadWatcher.cb.thumbnailHoverOut);
+        }
+        $.add(link, thumb);
+      }
 
       if (Conf['Show Page'] && (data.page != null)) {
         page = $.el('span', {
@@ -10977,7 +13332,7 @@ svg.icon {
       });
       $.add(link, title);
 
-      const div = $.el('div');
+      const div = $.el('div', { draggable: true });
       const fullID = `${boardID}.${threadID}`;
       div.dataset.fullID = fullID;
       div.dataset.siteID = siteID;
@@ -10992,8 +13347,95 @@ svg.icon {
         if (data.unread) { $.addClass(div, 'replies-unread'); }
         if ((data.quotingYou || 0) > (data.dismiss || 0)) { $.addClass(div, 'replies-quoting-you'); }
       }
-      $.add(div, [x, $.tn(' '), link]);
+      for (var event of ['start', 'end', 'enter', 'leave', 'over']) {
+        $.on(div, `drag${event}`, ThreadWatcher.drag[event]);
+      }
+      $.on(div, 'drop', ThreadWatcher.drag.drop);
+      const nodes = [x, link];
+      if (Conf['Show Mark Thread Read Icons']) {
+        const markRead = $.el('a', {
+          href: 'javascript:;',
+          className: 'watcher-mark-read',
+          draggable: false,
+          title: ThreadWatcher.unreadEnabled ?
+            'Mark this watched thread as read'
+          :
+            'Mark read is unavailable because Remember Last Read Post is disabled.'
+        });
+        Icon.set(markRead, 'check');
+        if (!ThreadWatcher.unreadEnabled || (!data.unread && !((data.quotingYou || 0) > (data.dismiss || 0)))) {
+          $.addClass(markRead, 'disabled');
+        }
+        $.on(markRead, 'mousedown pointerdown', e => e.stopPropagation());
+        $.on(markRead, 'click', ThreadWatcher.cb.markRead);
+        nodes.push(markRead);
+      }
+      $.add(div, nodes);
       return div;
+    },
+
+    keyFromLine(line) {
+      return `${line.dataset.siteID}/${line.dataset.fullID}`;
+    },
+
+    threadKey({siteID, boardID, threadID}) {
+      return `${siteID}/${boardID}.${threadID}`;
+    },
+
+    dropPosition(line, e) {
+      const rect = line.getBoundingClientRect();
+      return { before: e.clientY < rect.top + (rect.height / 2) };
+    },
+
+    clearDragState() {
+      if (ThreadWatcher.draggingLine) {
+        ThreadWatcher.draggingLine.classList.remove('drag');
+      }
+      ThreadWatcher.draggingLine = null;
+      for (const line of $$('#watched-threads > div', ThreadWatcher.list)) {
+        line.classList.remove('over');
+        delete line.dataset.dropBefore;
+      }
+    },
+
+    reorderInDOM(sourceLine, targetLine, before) {
+      if (!sourceLine || !targetLine || sourceLine === targetLine) { return; }
+      const list = ThreadWatcher.list;
+      if (!list) { return; }
+      if (before) {
+        list.insertBefore(sourceLine, targetLine);
+      } else {
+        list.insertBefore(sourceLine, targetLine.nextSibling);
+      }
+      ThreadWatcher.persistOrderFromDOM();
+      ThreadWatcher.refreshIcon();
+    },
+
+    persistOrder(threads) {
+      if (!threads) {
+        threads = ThreadWatcher.getAll(false, true);
+      }
+      for (let i = 0; i < threads.length; i++) {
+        const thread = threads[i];
+        const order = i + 1;
+        if (thread.data.order === order) { continue; }
+        thread.data.order = order;
+        ThreadWatcher.db.extend({siteID: thread.siteID, boardID: thread.boardID, threadID: +thread.threadID, val: {order}});
+      }
+    },
+
+    persistOrderFromDOM() {
+      const lines = $$('#watched-threads > div', ThreadWatcher.list);
+      for (let i = 0; i < lines.length; i++) {
+        const line = lines[i];
+        const siteID = line.dataset.siteID;
+        const [boardID, threadID] = line.dataset.fullID.split('.');
+        const order = i + 1;
+        const data = ThreadWatcher.db.get({siteID, boardID, threadID});
+        if (!data || data.order === order) { continue; }
+        data.order = order;
+        ThreadWatcher.db.extend({siteID, boardID, threadID: +threadID, val: {order}});
+      }
     },
 
     setPrefixes(threads) {
@@ -11022,6 +13464,8 @@ svg.icon {
     },
 
     build() {
+      ThreadWatcher.applyLayout();
+      ThreadWatcher.hideThumbnailHover();
       const nodes = [];
       const threads = ThreadWatcher.getAll();
       ThreadWatcher.setPrefixes(threads);
@@ -11030,6 +13474,10 @@ svg.icon {
         var thread;
         if ((data.excerpt == null) && (siteID === g.SITE.ID) && (thread = g.threads.get(`${boardID}.${threadID}`)) && thread.OP) {
           ThreadWatcher.db.extend({boardID, threadID, val: {excerpt: Get.threadExcerpt(thread)}});
+        }
+        if ((data.thumbURL == null) && (siteID === g.SITE.ID) && (thread = g.threads.get(`${boardID}.${threadID}`)) && thread.OP?.file?.thumbURL) {
+          ThreadWatcher.db.extend({boardID, threadID, val: {thumbURL: thread.OP.file.thumbURL}});
+          data.thumbURL = thread.OP.file.thumbURL;
         }
         nodes.push(ThreadWatcher.makeLine(siteID, boardID, threadID, data));
       }
@@ -11064,6 +13512,123 @@ svg.icon {
     refreshIcon() {
       for (var className of ['replies-unread', 'replies-quoting-you']) {
         ThreadWatcher.shortcut.classList.toggle(className, !!$(`.${className}`, ThreadWatcher.dialog));
+      }
+      if (ThreadWatcher.markReadButton) {
+        const hasUnread = !!$('.replies-unread, .replies-quoting-you', ThreadWatcher.list);
+        ThreadWatcher.markReadButton.classList.toggle('disabled', !ThreadWatcher.unreadEnabled || !hasUnread);
+        ThreadWatcher.markReadButton.title = !ThreadWatcher.unreadEnabled ?
+          'Mark all read is unavailable because Remember Last Read Post is disabled.'
+        : hasUnread ?
+          'Mark all watched threads as read'
+        :
+          'No unread watched threads';
+      }
+    },
+
+    ensureThumbnailHover() {
+      if (ThreadWatcher.thumbnailHover) { return ThreadWatcher.thumbnailHover; }
+      const hover = $.el('img', {
+        id: 'tw-ihover',
+        alt: ''
+      });
+      hover.hidden = true;
+      $.add(Header.hover, hover);
+      return (ThreadWatcher.thumbnailHover = hover);
+    },
+
+    hideThumbnailHover() {
+      const hover = ThreadWatcher.thumbnailHover;
+      if (!hover) { return; }
+      hover.hidden = true;
+      hover.removeAttribute('src');
+      hover.removeAttribute('style');
+      delete ThreadWatcher.hoveredThumbnail;
+    },
+
+    showThumbnailHover(thumb) {
+      if (!Conf['Thread Watcher Thumbnail Hover'] || !thumb?.src) { return; }
+      if (!doc.contains(thumb)) { return; }
+      const hover = ThreadWatcher.ensureThumbnailHover();
+      hover.hidden = false;
+      hover.src = thumb.src;
+      ThreadWatcher.hoveredThumbnail = thumb;
+      ThreadWatcher.positionThumbnailHover(thumb);
+      if (!hover.complete) {
+        const onLoad = function() {
+          $.off(hover, 'load', onLoad);
+          if (ThreadWatcher.hoveredThumbnail === thumb) {
+            ThreadWatcher.positionThumbnailHover(thumb);
+          }
+        };
+        $.on(hover, 'load', onLoad);
+      }
+    },
+
+    positionThumbnailHover(thumb) {
+      const hover = ThreadWatcher.thumbnailHover;
+      if (!hover || hover.hidden || !thumb || !ThreadWatcher.dialog) { return; }
+      if (!doc.contains(thumb)) {
+        ThreadWatcher.hideThumbnailHover();
+        return;
+      }
+      const dialogRect = ThreadWatcher.dialog.getBoundingClientRect();
+      const thumbRect = thumb.getBoundingClientRect();
+      const gap = 8;
+      const viewportPadding = 8;
+      const availableWidth = dialogRect.left - gap - viewportPadding;
+      if (availableWidth < 80) {
+        ThreadWatcher.hideThumbnailHover();
+        return;
+      }
+      const targetWidth = Math.max(80, Math.floor((availableWidth * ThreadWatcher.thumbnailPreviewSize()) / 99));
+      hover.style.width = `${targetWidth}px`;
+      hover.style.maxWidth = `${targetWidth}px`;
+      hover.style.maxHeight = `${Math.max(120, doc.clientHeight - (viewportPadding * 2))}px`;
+      const width = hover.offsetWidth;
+      const height = hover.offsetHeight;
+      let left = dialogRect.left - gap - width;
+      if (left < viewportPadding) { left = viewportPadding; }
+      let top = thumbRect.top + ((thumbRect.height - height) / 2);
+      top = Math.max(viewportPadding, Math.min(doc.clientHeight - height - viewportPadding, top));
+      hover.style.left = `${left}px`;
+      hover.style.top = `${top}px`;
+    },
+
+    showThumbnails() {
+      return Conf['Show OP Thumbnails'];
+    },
+
+    thumbnailSize() {
+      let size = parseInt(Conf['Thread Watcher Thumbnail Size'], 10);
+      if (isNaN(size)) { size = 40; }
+      return Math.max(16, Math.min(160, size));
+    },
+
+    thumbnailPreviewSize() {
+      let size = parseInt(Conf['Thread Watcher Thumbnail Preview Size'], 10);
+      if (isNaN(size)) { size = 40; }
+      return Math.max(10, Math.min(99, size));
+    },
+
+    maxHeight() {
+      let height = parseInt(Conf['Thread Watcher Max Height'], 10);
+      if (isNaN(height)) { height = 210; }
+      return Math.max(120, Math.min(999, height));
+    },
+
+    maxWidth() {
+      let width = parseInt(Conf['Thread Watcher Max Width'], 10);
+      if (isNaN(width)) { width = 250; }
+      return Math.max(120, Math.min(999, width));
+    },
+
+    applyLayout() {
+      if (!ThreadWatcher.dialog) { return; }
+      ThreadWatcher.dialog.style.setProperty('--watcher-thumb-size', `${ThreadWatcher.thumbnailSize()}px`);
+      ThreadWatcher.dialog.style.setProperty('--watcher-max-height', `${ThreadWatcher.maxHeight()}px`);
+      ThreadWatcher.dialog.style.setProperty('--watcher-max-width', `${ThreadWatcher.maxWidth()}px`);
+      if (ThreadWatcher.markReadButton) {
+        ThreadWatcher.markReadButton.hidden = !Conf['Show Mark All Read Icon'];
       }
     },
 
@@ -11132,11 +13697,15 @@ svg.icon {
         data.isDead = true;
       }
       if (thread.OP) { data.excerpt = Get.threadExcerpt(thread); }
+      if (thread.OP?.file?.thumbURL) { data.thumbURL = thread.OP.file.thumbURL; }
       return ThreadWatcher.addRaw(boardID, threadID, data, cb, manual);
     },
 
     addRaw(boardID, threadID, data, cb, manual) {
       const oldData = ThreadWatcher.db.get({ boardID, threadID, defaultValue: dict() });
+      if (oldData.order == null) {
+        oldData.order = ThreadWatcher.getAll().length;
+      }
       delete oldData.last;
       delete oldData.modified;
       $.extend(oldData, data);
@@ -11247,6 +13816,37 @@ svg.icon {
               return true;
             }
           },
+          {
+            text: 'Max H/W',
+            open() {
+              this.el.innerHTML = `Max H <input type="number" value="${ThreadWatcher.maxHeight()}" min="120" max="999" class="field" style="width:4.2em"> W<input type="number" value="${ThreadWatcher.maxWidth()}" min="120" max="999" class="field" style="width:4.2em">`;
+              const [heightInput, widthInput] = $$('input', this.el);
+              for (const input of [heightInput, widthInput]) {
+                $.on(input, 'click', e => e.stopPropagation());
+                $.on(input, 'mousedown', e => e.stopPropagation());
+                $.on(input, 'pointerdown', e => e.stopPropagation());
+              }
+              $.on(heightInput, 'change', function() {
+                let height = parseInt(this.value, 10);
+                if (isNaN(height)) { height = 210; }
+                height = Math.max(120, Math.min(999, height));
+                this.value = `${height}`;
+                $.set('Thread Watcher Max Height', height);
+                Conf['Thread Watcher Max Height'] = height;
+                ThreadWatcher.applyLayout();
+              });
+              $.on(widthInput, 'change', function() {
+                let width = parseInt(this.value, 10);
+                if (isNaN(width)) { width = 250; }
+                width = Math.max(120, Math.min(999, width));
+                this.value = `${width}`;
+                $.set('Thread Watcher Max Width', width);
+                Conf['Thread Watcher Max Width'] = width;
+                ThreadWatcher.applyLayout();
+              });
+              return true;
+            }
+          },
         ];
 
         for (var {text, title, cb, open} of entries) {
@@ -11264,16 +13864,23 @@ svg.icon {
 
         // Settings checkbox entries:
         for (var name in Config.threadWatcher) {
+          if (['Show OP Thumbnails', 'Thread Watcher Thumbnail Hover'].includes(name)) { continue; }
           var conf = Config.threadWatcher[name];
           this.addCheckbox(name, conf[1]);
         }
 
+        this.addThumbnailControls();
+
       },
 
       addCheckbox(name, desc) {
+        const label = ({
+          'Show Mark All Read Icon': 'Mark All Read Icon',
+          'Show Mark Thread Read Icons': 'Mark Thread Read Icons'
+        })[name] || name;
         const entry = {
           type: 'thread watcher',
-          el: UI.checkbox(name, name.replace(' Thread Watcher', ''))
+          el: UI.checkbox(name, label.replace(' Thread Watcher', ''))
         };
         entry.el.title = desc;
         const input = entry.el.firstElementChild;
@@ -11283,10 +13890,71 @@ svg.icon {
           entry.el.title += '\n[Remember Last Read Post is disabled.]';
         }
         $.on(input, 'change', $.cb.checked);
-        if (['Current Board', 'Show Page', 'Show Unread Count', 'Show Site Prefix'].includes(name))
+        if (['Current Board', 'Show Page', 'Show Unread Count', 'Show Mark All Read Icon', 'Show Site Prefix', 'Show Mark Thread Read Icons'].includes(name))
           $.on(input, 'change', () => ThreadWatcher.refresh());
         if (['Show Page', 'Show Unread Count', 'Auto Update Thread Watcher'].includes(name))
           $.on(input, 'change', ThreadWatcher.fetchAuto);
+        return this.menu.addEntry(entry);
+      },
+
+      addThumbnailControls() {
+        const entry = {
+          type: 'thread watcher',
+          el: $.el('a', {
+            textContent: 'Thumbnails',
+            href: 'javascript:;'
+          }),
+          open() {
+            this.el.innerHTML = `<span style="display:inline-flex;align-items:center;gap:4px;"><label style="display:inline-flex;align-items:center;gap:4px;"><input type="checkbox"${Conf['Show OP Thumbnails'] ? ' checked' : ''}>Thumbnails</label><input type="number" value="${ThreadWatcher.thumbnailSize()}" min="16" max="160" class="field" style="width:3.2em"></span><br><span style="display:inline-flex;align-items:center;gap:4px;"><label style="display:inline-flex;align-items:center;gap:4px;"><input type="checkbox"${Conf['Thread Watcher Thumbnail Hover'] ? ' checked' : ''}>Hover Preview</label><input type="number" value="${ThreadWatcher.thumbnailPreviewSize()}" min="10" max="99" class="field" style="width:3.2em"><span>%</span></span>`;
+            const [thumbToggle, previewToggle] = $$('input[type="checkbox"]', this.el);
+            const [sizeInput, previewSizeInput] = $$('input[type="number"]', this.el);
+            for (const input of [thumbToggle, previewToggle, sizeInput, previewSizeInput]) {
+              $.on(input, 'click', e => e.stopPropagation());
+              $.on(input, 'mousedown', e => e.stopPropagation());
+              $.on(input, 'pointerdown', e => e.stopPropagation());
+            }
+            $.on(thumbToggle, 'change', function() {
+              $.set('Show OP Thumbnails', this.checked);
+              Conf['Show OP Thumbnails'] = this.checked;
+              if (!this.checked) {
+                ThreadWatcher.hideThumbnailHover();
+              }
+              if (this.checked) {
+                ThreadWatcher.fetchAllStatus();
+              }
+              ThreadWatcher.refresh();
+            });
+            $.on(previewToggle, 'change', function() {
+              $.set('Thread Watcher Thumbnail Hover', this.checked);
+              Conf['Thread Watcher Thumbnail Hover'] = this.checked;
+              if (!this.checked) {
+                ThreadWatcher.hideThumbnailHover();
+              }
+              ThreadWatcher.refresh();
+            });
+            $.on(sizeInput, 'change', function() {
+              let size = parseInt(this.value, 10);
+              if (isNaN(size)) { size = 40; }
+              size = Math.max(16, Math.min(160, size));
+              this.value = `${size}`;
+              $.set('Thread Watcher Thumbnail Size', size);
+              Conf['Thread Watcher Thumbnail Size'] = size;
+              ThreadWatcher.applyLayout();
+              ThreadWatcher.refresh();
+            });
+            $.on(previewSizeInput, 'change', function() {
+              let size = parseInt(this.value, 10);
+              if (isNaN(size)) { size = 40; }
+              size = Math.max(10, Math.min(99, size));
+              this.value = `${size}`;
+              $.set('Thread Watcher Thumbnail Preview Size', size);
+              Conf['Thread Watcher Thumbnail Preview Size'] = size;
+              ThreadWatcher.positionThumbnailHover(ThreadWatcher.hoveredThumbnail);
+            });
+            return true;
+          }
+        };
+        entry.open = entry.open.bind(entry);
         return this.menu.addEntry(entry);
       }
     }
@@ -12238,7 +14906,10 @@ svg.icon {
         href: 'javascript:;',
       });
       Icon.set(this.button, 'refresh', 'Refresh');
-      $.on(this.button, 'click', () => Index.update());
+      $.on(this.button, 'click', (e) => {
+        e.preventDefault();
+        Index.update();
+      });
       Header.addShortcut('index-refresh', this.button, 590);
 
       // Header "Index Navigation" submenu
@@ -12499,7 +15170,8 @@ svg.icon {
         if (n) { return $.event('IndexRefresh'); }
       },
 
-      toggleHiddenThreads() {
+      toggleHiddenThreads(e) {
+        e?.preventDefault();
         $('#hidden-toggle a', Index.navLinks).textContent = (Index.showHiddenThreads = !Index.showHiddenThreads) ?
           'Hide'
         :
@@ -12617,7 +15289,8 @@ svg.icon {
         return Index.userPageNav(+a.pathname.split(/\/+/)[2] || 1);
       },
 
-      refreshFront() {
+      refreshFront(e) {
+        e?.preventDefault();
         Index.pushState({page: 1});
         return Index.update();
       },
@@ -12847,14 +15520,23 @@ svg.icon {
       const pagesRoot  = $('.pages', Index.pagelist);
 
       // Previous/Next buttons
-      const prev = pagesRoot.previousElementSibling.firstElementChild;
-      const next = pagesRoot.nextElementSibling.firstElementChild;
+      const prev = pagesRoot.previousElementSibling?.firstElementChild;
+      const next = pagesRoot.nextElementSibling?.firstElementChild;
+      const setNav = function(link, href, disabled) {
+        if (!link) { return; }
+        link.href = href === 1 ? './' : href;
+        const button = link.firstElementChild;
+        if (button) { button.disabled = disabled; }
+        if (disabled) {
+          link.setAttribute('aria-disabled', 'true');
+        } else {
+          link.removeAttribute('aria-disabled');
+        }
+      };
       let href = Math.max(pageNum - 1, 1);
-      prev.href = href === 1 ? './' : href;
-      prev.firstElementChild.disabled = href === pageNum;
+      setNav(prev, href, href === pageNum);
       href = Math.min(pageNum + 1, maxPageNum);
-      next.href = href === 1 ? './' : href;
-      next.firstElementChild.disabled = href === pageNum;
+      setNav(next, href, href === pageNum);
 
       // <strong> current page
       if (strong = $('strong', pagesRoot)) {
@@ -12999,6 +15681,7 @@ svg.icon {
       Index.threadPosition    = dict();
       Index.parsedThreads     = dict();
       Index.replyData         = dict();
+      Index.threadsWithYous   = dict();
       for (let i = 0; i < Index.liveThreadData.length; i++) {
         var obj, results;
         var data = Index.liveThreadData[i];
@@ -13008,6 +15691,9 @@ svg.icon {
         results = Filter.test(obj);
         obj.isOnTop  = results.top;
         obj.isHidden = results.hide || ThreadHiding.isHidden(obj.boardID, obj.threadID);
+        if (obj.isHidden && Conf['Show Threads With Yous']) {
+          Index.threadsWithYous[data.no] = Index.threadHasUnreadYous(data.no);
+        }
         if (data.last_replies) {
           for (var reply of data.last_replies) {
             Index.replyData[`${g.BOARD}.${reply.no}`] = reply;
@@ -13035,6 +15721,65 @@ svg.icon {
 
     isHiddenReply(threadID, replyData) {
       return PostHiding.isHidden(g.BOARD.ID, threadID, replyData.no) || Filter.isHidden(g.SITE.Build.parseJSON(replyData, g.BOARD));
+    },
+
+    threadHasUnreadYous(threadID) {
+      if (!Conf['Show Threads With Yous'] || !QuoteYou.db) { return false; }
+      const cached = Index.threadsWithYous?.[threadID];
+      if (cached != null) { return cached; }
+      const threadData = Index.liveThreadDict?.[threadID];
+      if (!threadData?.last_replies?.length) { return false; }
+
+      if (!Index.lastReadPostsDB) {
+        Index.lastReadPostsDB = new DataBoard('lastReadPosts');
+      }
+
+      const boardID = g.BOARD.ID;
+      const siteID = g.SITE.ID;
+      const lastReadPost = Index.lastReadPostsDB.get({
+        siteID,
+        boardID,
+        threadID,
+        defaultValue: 0
+      });
+      const youOP = !Conf['Require OP Quote Link'] && QuoteYou.db.get({
+        siteID,
+        boardID,
+        threadID,
+        postID: threadID
+      });
+
+      for (var reply of threadData.last_replies) {
+        const postID = reply.no;
+        if (postID <= lastReadPost) { continue; }
+        if (QuoteYou.db.get({siteID, boardID, threadID, postID})) { continue; }
+        if (youOP) { return Index.threadsWithYous[threadID] = true; }
+        if (!reply.com) { continue; }
+
+        const regexp = g.SITE.regexp.quotelinkHTML;
+        regexp.lastIndex = 0;
+        let match;
+        while (match = regexp.exec(reply.com)) {
+          if (QuoteYou.db.get({
+            siteID,
+            boardID:  match[1] ? encodeURIComponent(match[1]) : boardID,
+            threadID: match[2] || threadID,
+            postID:   match[3] || match[2] || threadID
+          })) {
+            return Index.threadsWithYous[threadID] = true;
+          }
+        }
+      }
+
+      return Index.threadsWithYous[threadID] = false;
+    },
+
+    showThreadInCatalog(threadID) {
+      const hidden = Index.isHidden(threadID);
+      if (Index.showHiddenThreads) {
+        return hidden;
+      }
+      return !hidden || Index.threadHasUnreadYous(threadID);
     },
 
     buildThreads(threadIDs, isCatalog, withReplies) {
@@ -13255,7 +16000,7 @@ svg.icon {
           threadIDs = Index.sortedThreadIDs;
           break;
         case 'catalog':
-          threadIDs = Index.sortedThreadIDs.filter(ID => !Index.isHidden(ID) !== Index.showHiddenThreads);
+          threadIDs = Index.sortedThreadIDs.filter(ID => Index.showThreadInCatalog(ID));
           break;
         default:
           threadIDs = Index.threadsOnPage(Index.currentPage);
@@ -13281,6 +16026,7 @@ svg.icon {
 
     buildStructure(threadIDs) {
       const threads = Index.buildThreads(threadIDs, false, Conf['Show Replies']);
+      Index.showHiddenThreadsWithYousInIndex(threads);
       const nodes = [];
       for (var thread of threads) {
         nodes.push(thread.nodes.root, $.el('hr'));
@@ -13290,6 +16036,17 @@ svg.icon {
         $.event('PostsInserted', null, Index.root);
       }
       Index.loaded = true;
+    },
+
+    showHiddenThreadsWithYousInIndex(threads) {
+      if (Conf['Index Mode'] === 'catalog' || !Conf['Show Threads With Yous']) { return; }
+      for (var thread of threads) {
+        if (!thread.isHidden || !Index.threadHasUnreadYous(thread.ID)) { continue; }
+        if (thread.stub && thread.nodes.root.contains(thread.stub)) {
+          $.rm(thread.stub);
+        }
+        thread.nodes.root.hidden = false;
+      }
     },
 
     buildCatalog(threadIDs) {
@@ -13307,10 +16064,123 @@ svg.icon {
           if (Index.root.parentNode) {
             $.event('PostsInserted', null, Index.root);
           }
+          Index.groupHiddenCatalogThreads(threadIDs);
           return Index.loaded = true;
         }
       };
       fn();
+    },
+
+    groupHiddenCatalogThreads(threadIDs) {
+      if (!Conf['Group Hidden Threads By Filter']) { return; }
+      const hiddenThreadIDs = threadIDs.filter(ID => Index.isHidden(ID));
+      if (!hiddenThreadIDs.length) { return; }
+
+      const groupedThreads = new Map();
+      const manualHiddenThreads = [];
+      const hiddenNodes = [];
+
+      for (var threadID of hiddenThreadIDs) {
+        const node = $.id(`t${threadID}`);
+        if (!node || (node.parentNode !== Index.root)) { continue; }
+        hiddenNodes.push(node);
+        Index.clearHiddenFilterValueFromCatalogThread(node);
+
+        if (ThreadHiding.db?.get({boardID: g.BOARD.ID, threadID})) {
+          manualHiddenThreads.push(node);
+          continue;
+        }
+
+        const reason = (Index.parsedThreads[threadID]?.filterResults?.reasons?.[0] || 'Filtered').trim();
+        const parsed = Index.parseHiddenFilterReason(reason);
+        const key = parsed.key;
+        let group = groupedThreads.get(key);
+        if (!group) {
+          group = { label: parsed.label, nodes: [] };
+          groupedThreads.set(key, group);
+        }
+        if (parsed.value) {
+          Index.applyHiddenFilterValueToCatalogThread(node, parsed.label, parsed.value);
+        }
+        group.nodes.push(node);
+      }
+
+      if (!hiddenNodes.length) { return; }
+      for (var hiddenNode of hiddenNodes) {
+        $.rm(hiddenNode);
+      }
+
+      const frag = d.createDocumentFragment();
+      for (const [, group] of groupedThreads) {
+        frag.appendChild($.el('div', {
+          className: 'catalog-group-header',
+          textContent: `${group.label} (${group.nodes.length})`
+        }));
+        frag.append(...group.nodes);
+      }
+      if (manualHiddenThreads.length) {
+        frag.appendChild($.el('div', {
+          className: 'catalog-group-header',
+          textContent: `Manually hidden (${manualHiddenThreads.length})`
+        }));
+        frag.append(...manualHiddenThreads);
+      }
+      Index.root.appendChild(frag);
+    },
+
+    parseHiddenFilterReason(reason) {
+      const match = reason.match(/^Filtered\s+([A-Za-z0-9_]+)\s+(.+)$/);
+      if (!match) {
+        return { key: reason, label: reason, value: null };
+      }
+      const type = match[1];
+      const value = match[2];
+      const highCardinalityTypes = new Set([
+        'MD5',
+        'postID',
+        'uniqueID',
+        'name',
+        'tripcode',
+        'email',
+        'filename',
+        'capcode',
+        'flag',
+        'dimensions',
+        'filesize'
+      ]);
+      if (!highCardinalityTypes.has(type)) {
+        return { key: reason, label: reason, value: null };
+      }
+      return { key: `Filtered ${type}`, label: `Filtered ${type}`, value };
+    },
+
+    applyHiddenFilterValueToCatalogThread(node, label, value) {
+      // keep one tooltip and one compact value row per card
+      const valueLine = label === 'Filtered MD5' ? value : `${label}: ${value}`;
+      const link = $('.catalog-link', node);
+      if (link) {
+        link.title = valueLine;
+        link.dataset.hiddenFilterMatch = valueLine;
+      }
+
+      const old = $('.catalog-group-match', node);
+      if (old) { $.rm(old); }
+      const stats = $('.catalog-stats', node);
+      if (!stats) { return; }
+      $.add(stats, $.el('span', {
+        className: 'catalog-group-match',
+        textContent: valueLine
+      }));
+    },
+
+    clearHiddenFilterValueFromCatalogThread(node) {
+      const old = $('.catalog-group-match', node);
+      if (old) { $.rm(old); }
+      const link = $('.catalog-link', node);
+      if (link?.dataset.hiddenFilterMatch) {
+        delete link.dataset.hiddenFilterMatch;
+        link.removeAttribute('title');
+      }
     },
 
     buildCatalogPart(threadIDs) {
@@ -13319,6 +16189,7 @@ svg.icon {
       Index.sizeCatalogViews(threads);
       const nodes = [];
       for (var thread of threads) {
+        Index.clearHiddenFilterValueFromCatalogThread(thread.catalogView.nodes.root);
         thread.OP.setCatalogOP(true);
         $.add(thread.catalogView.nodes.root, thread.OP.nodes.root);
         nodes.push(thread.catalogView.nodes.root);
@@ -13329,7 +16200,8 @@ svg.icon {
       return nodes;
     },
 
-    clearSearch() {
+    clearSearch(e) {
+      e?.preventDefault();
       Index.searchInput.value = '';
       Index.onSearchInput();
       return Index.searchInput.focus();
@@ -13850,6 +16722,10 @@ svg.icon {
         }
       }
       if (!parts['text']) { parts['text'] = parts['url'].match(/(\w+)\.\w+\//)?.[1] || '?'; }
+      // Normalize legacy default trace.moe label.
+      if ((parts['text'] || '').trim().toLowerCase() === 'wait' && /(?:^|\/\/)trace\.moe\//i.test(parts['url'] || '')) {
+        parts['text'] = 'trace';
+      }
       if ('boards' in parts) {
         parts['boards'] = Filter.parseBoards(parts['boards']);
       }
@@ -14493,9 +17369,13 @@ svg.icon {
 
   var Linkify = {
     init() {
-      if (!['index', 'thread', 'archive'].includes(g.VIEW) || !Conf['Linkify']) { return; }
+      if (!['index', 'thread', 'archive'].includes(g.VIEW)) { return; }
 
-      if (Conf['Comment Expansion']) {
+      const shouldLinkify = Conf['Linkify'];
+      const shouldRewriteX = Conf['Convert X to xcancel'];
+      if (!shouldLinkify && !shouldRewriteX) { return; }
+
+      if (shouldLinkify && Conf['Comment Expansion']) {
         ExpandComment.callbacks.push(this.node);
       }
 
@@ -14504,14 +17384,24 @@ svg.icon {
         cb:   this.node
       });
 
-      return Embedding.init();
+      if (shouldLinkify) {
+        return Embedding.init();
+      }
     },
 
     node() {
       let link;
       if (this.isClone) { return Embedding.events(this); }
-      if (!Linkify.regString.test(this.info.comment)) { return; }
+      if (!Linkify.regString.test(this.info.comment)) {
+        if (Conf['Convert X to xcancel']) {
+          for (link of $$('a', this.nodes.comment)) {
+            Linkify.rewriteXLink(link);
+          }
+        }
+        return;
+      }
       for (link of $$('a', this.nodes.comment)) {
+        Linkify.rewriteXLink(link);
         if (g.SITE.isLinkified?.(link)) {
           $.addClass(link, 'linkify');
           if (ImageHost.useFaster) { ImageHost.fixLinks([link]); }
@@ -14670,7 +17560,7 @@ aero|asia|biz|cat|com|coop|dance|info|int|jobs|mobi|moe|museum|name|net|org|post
         className: 'linkify',
         rel:       'noreferrer noopener',
         target:    '_blank',
-        href:      text
+        href:      Linkify.rewriteXURL(text)
       }
       );
 
@@ -14679,6 +17569,42 @@ aero|asia|biz|cat|com|coop|dance|info|int|jobs|mobi|moe|museum|name|net|org|post
       range.insertNode(a);
 
       return a;
+    },
+
+    rewriteXLink(link) {
+      if (!Conf['Convert X to xcancel']) { return; }
+      const href = Linkify.rewriteXURL(link.href);
+      if (href !== link.href) {
+        link.href = href;
+      }
+    },
+
+    rewriteXURL(urlString) {
+      if (!Conf['Convert X to xcancel']) { return urlString; }
+      try {
+        const base = (typeof location === 'object' && location?.href) ? location.href : undefined;
+        const url = base ? new URL(urlString, base) : new URL(urlString);
+        if (!/^https?:$/.test(url.protocol)) { return urlString; }
+
+        // Direct links.
+        if (/(?:^|\.)twitter\.com$/i.test(url.hostname) || /(?:^|\.)x\.com$/i.test(url.hostname)) {
+          url.hostname = 'xcancel.com';
+          return url.toString();
+        }
+
+        // Wrapped redirect links (e.g. ?url=https://x.com/...).
+        const redirectParams = ['url', 'u', 'to', 'target', 'dest', 'destination', 'redirect', 'redir', 'r'];
+        for (const key of redirectParams) {
+          const value = url.searchParams.get(key);
+          if (!value) { continue; }
+          const rewritten = Linkify.rewriteXURL(value);
+          if (rewritten !== value) {
+            url.searchParams.set(key, rewritten);
+            return url.toString();
+          }
+        }
+      } catch {}
+      return urlString;
     }
   };
 
@@ -14951,6 +17877,9 @@ aero|asia|biz|cat|com|coop|dance|info|int|jobs|mobi|moe|museum|name|net|org|post
       }
       const rendered = await renderFullTweet(tweet);
       el.innerHTML = rendered.innerHTML;
+      for (const link of el.querySelectorAll('a')) {
+        Linkify.rewriteXLink(link);
+      }
       for (const textEl of el.getElementsByClassName('fxt-text')) {
         Linkify.process(textEl);
       }
@@ -16532,7 +19461,7 @@ aero|asia|biz|cat|com|coop|dance|info|int|jobs|mobi|moe|museum|name|net|org|post
         return !(
           this.haveCookie() || this.captchas.length || QR.req || this.submitCB
         ) && (
-            (QR.posts.length > 1) || Conf['Auto-load captcha'] || !QR.posts[0].isOnlyQuotes() || QR.posts[0].file
+            (QR.posts.length > 1) || !QR.posts[0].isOnlyQuotes() || QR.posts[0].file
           );
       },
 
@@ -16764,7 +19693,30 @@ aero|asia|biz|cat|com|coop|dance|info|int|jobs|mobi|moe|museum|name|net|org|post
       },
 
       setupJS() {
-        $.global('setupCaptcha', { recaptchaKey: meta.recaptchaKey });
+        const render = () => {
+          const { classList } = document.documentElement;
+          const container = $('#qr .captcha-container');
+          if (!container) { return; }
+          container.dataset.widgetID = window.grecaptcha.render(container, {
+            sitekey: meta.recaptchaKey,
+            theme: classList.contains('tomorrow') || classList.contains('spooky') || classList.contains('dark-captcha') ? 'dark' : 'light',
+            callback: response => window.dispatchEvent(new CustomEvent('captcha:success', { detail: response }))
+          });
+        };
+        if (window.grecaptcha) {
+          render();
+        } else {
+          const cbNative = window.onRecaptchaLoaded;
+          window.onRecaptchaLoaded = function() {
+            render();
+            cbNative?.();
+          };
+          if (!document.head.querySelector('script[src^="https://www.google.com/recaptcha/api.js"]')) {
+            const script = document.createElement('script');
+            script.src = 'https://www.google.com/recaptcha/api.js?onload=onRecaptchaLoaded&render=explicit';
+            document.head.appendChild(script);
+          }
+        }
       },
 
       afterSetup(mutations) {
@@ -16848,7 +19800,10 @@ aero|asia|biz|cat|com|coop|dance|info|int|jobs|mobi|moe|museum|name|net|org|post
       count() {
         const count = Captcha.cache.getCount();
         const loading = Captcha.cache.submitCB ? '...' : '';
-        this.nodes.counter.textContent = `Captchas: ${count}${loading}`;
+        this.nodes.counter.textContent = count || loading ?
+          `Captchas: ${count}${loading}`
+        :
+          'Get Captcha';
         return this.moreNeeded();
       },
 
@@ -16857,7 +19812,10 @@ aero|asia|biz|cat|com|coop|dance|info|int|jobs|mobi|moe|museum|name|net|org|post
           this.destroy();
           return this.setup(false, true);
         } else {
-          $.global('resetCaptcha');
+          const container = $('#qr .captcha-container');
+          if (window.grecaptcha && container?.dataset.widgetID != null) {
+            window.grecaptcha.reset(container.dataset.widgetID);
+          }
         }
       },
 
@@ -16866,6 +19824,277 @@ aero|asia|biz|cat|com|coop|dance|info|int|jobs|mobi|moe|museum|name|net|org|post
       }
     }
   };
+
+  /**
+   * Lightweight, zero-dependency video container patchers to remove audio tracks and metadata.
+   * Modifies the underlying ArrayBuffer in-place.
+   */
+  class VideoStripper {
+    static async stripAudio(file) {
+      try {
+        const buffer = await file.arrayBuffer();
+        const uint8 = new Uint8Array(buffer);
+        const view = new DataView(buffer);
+        let patched = false;
+        if (file.type === 'video/mp4' || file.name.toLowerCase().endsWith('.mp4')) {
+          patched = this.stripMp4(uint8, view);
+        } else if (file.type === 'video/webm' || file.name.toLowerCase().endsWith('.webm')) {
+          patched = this.stripWebm(uint8);
+        }
+        if (patched) {
+          return new File([buffer], file.name, { type: file.type });
+        }
+      } catch (error) {
+        console.warn('Failed to strip audio from video:', error);
+      }
+      return file;
+    }
+    static async stripMetadata(file) {
+      try {
+        const buffer = await file.arrayBuffer();
+        const uint8 = new Uint8Array(buffer);
+        const view = new DataView(buffer);
+        let patched = false;
+        if (file.type === 'video/mp4' || file.name.toLowerCase().endsWith('.mp4')) {
+          patched = this.stripMp4Metadata(uint8, view);
+        }
+        if (patched) {
+          return new File([buffer], file.name, { type: file.type });
+        }
+      } catch (error) {
+        console.warn('Failed to strip metadata from video:', error);
+      }
+      return file;
+    }
+    static stripMp4(uint8, view) {
+      let offset = 0;
+      let stripped = false;
+      const utf8Decoder = new TextDecoder('utf8');
+      while (offset + 8 <= uint8.length) {
+        let size = view.getUint32(offset, false);
+        let boxOffset = offset;
+        if (size === 1) {
+          if (offset + 16 > uint8.length)
+            break;
+          // 64-bit size; lower 32 bits are enough for the sizes we handle here.
+          size = view.getUint32(offset + 12, false);
+          boxOffset += 8;
+        } else if (size === 0) {
+          size = uint8.length - offset;
+        }
+        if (size < 8)
+          break;
+        const boxEnd = offset + size;
+        if (boxEnd > uint8.length)
+          break;
+        const type = utf8Decoder.decode(uint8.subarray(boxOffset + 4, boxOffset + 8));
+        if (type !== 'moov') {
+          offset = boxEnd;
+          continue;
+        }
+        let moovOffset = boxOffset + 8;
+        const moovEnd = boxEnd;
+        while (moovOffset + 8 <= moovEnd) {
+          let boxSize = view.getUint32(moovOffset, false);
+          if (boxSize === 0) {
+            boxSize = moovEnd - moovOffset;
+          }
+          if (boxSize < 8 || (moovOffset + boxSize > moovEnd))
+            break;
+          const boxType = utf8Decoder.decode(uint8.subarray(moovOffset + 4, moovOffset + 8));
+          if (boxType === 'trak') {
+            let isAudio = false;
+            let trakOffset = moovOffset + 8;
+            const trakEnd = moovOffset + boxSize;
+            while (trakOffset + 8 <= trakEnd) {
+              let tBoxSize = view.getUint32(trakOffset, false);
+              if (tBoxSize === 0) {
+                tBoxSize = trakEnd - trakOffset;
+              }
+              if (tBoxSize < 8 || (trakOffset + tBoxSize > trakEnd))
+                break;
+              const tBoxType = utf8Decoder.decode(uint8.subarray(trakOffset + 4, trakOffset + 8));
+              if (tBoxType === 'mdia') {
+                let mdiaOffset = trakOffset + 8;
+                const mdiaEnd = trakOffset + tBoxSize;
+                while (mdiaOffset + 8 <= mdiaEnd) {
+                  let mBoxSize = view.getUint32(mdiaOffset, false);
+                  if (mBoxSize === 0) {
+                    mBoxSize = mdiaEnd - mdiaOffset;
+                  }
+                  if (mBoxSize < 8 || (mdiaOffset + mBoxSize > mdiaEnd))
+                    break;
+                  const mBoxType = utf8Decoder.decode(uint8.subarray(mdiaOffset + 4, mdiaOffset + 8));
+                  if (mBoxType === 'hdlr' && mdiaOffset + 20 <= mdiaEnd) {
+                    const handlerType = utf8Decoder.decode(uint8.subarray(mdiaOffset + 16, mdiaOffset + 20));
+                    if (handlerType === 'soun') {
+                      isAudio = true;
+                      break;
+                    }
+                  }
+                  mdiaOffset += mBoxSize;
+                }
+              }
+              trakOffset += tBoxSize;
+            }
+            if (isAudio) {
+              // Replace `trak` with `free` to keep box sizes intact while dropping the track from use.
+              uint8[moovOffset + 4] = 0x66; // f
+              uint8[moovOffset + 5] = 0x72; // r
+              uint8[moovOffset + 6] = 0x65; // e
+              uint8[moovOffset + 7] = 0x65; // e
+              stripped = true;
+            }
+          }
+          moovOffset += boxSize;
+        }
+        offset = boxEnd;
+      }
+      return stripped;
+    }
+    static stripWebm(uint8) {
+      let offset = 0;
+      let stripped = false;
+      const readVint = (off) => {
+        if (off >= uint8.length)
+          return { val: 0, length: 1 };
+        const first = uint8[off];
+        let mask = 0x80;
+        let length = 1;
+        while (!(first & mask) && length < 8) {
+          mask >>= 1;
+          length++;
+        }
+        let val = first & ~mask;
+        for (let i = 1; i < length; i++) {
+          if (off + i >= uint8.length)
+            break;
+          val = (val << 8) | uint8[off + i];
+        }
+        return { val, length };
+      };
+      const skipEbmlElement = (from) => {
+        if (from >= uint8.length)
+          return uint8.length;
+        let idLength = 1;
+        while (idLength < 8 && !(uint8[from] & (0x80 >> (idLength - 1)))) {
+          idLength++;
+        }
+        const sizeInfo = readVint(from + idLength);
+        return from + idLength + sizeInfo.length + sizeInfo.val;
+      };
+      while (offset + 4 <= uint8.length) {
+        // EBML header
+        if (uint8[offset] === 0x1A && uint8[offset + 1] === 0x45 && uint8[offset + 2] === 0xDF && uint8[offset + 3] === 0xA3) {
+          const sizeInfo = readVint(offset + 4);
+          offset += 4 + sizeInfo.length + sizeInfo.val;
+          continue;
+        }
+        // Segment
+        if (!(uint8[offset] === 0x18 && uint8[offset + 1] === 0x53 && uint8[offset + 2] === 0x80 && uint8[offset + 3] === 0x67)) {
+          break;
+        }
+        const sizeInfo = readVint(offset + 4);
+        offset += 4 + sizeInfo.length;
+        const segmentEnd = offset + sizeInfo.val;
+        while (offset + 4 <= segmentEnd && offset + 4 <= uint8.length) {
+          // Tracks
+          if (uint8[offset] === 0x16 && uint8[offset + 1] === 0x54 && uint8[offset + 2] === 0xAE && uint8[offset + 3] === 0x6B) {
+            const tracksSizeInfo = readVint(offset + 4);
+            let tracksOffset = offset + 4 + tracksSizeInfo.length;
+            const tracksEnd = tracksOffset + tracksSizeInfo.val;
+            while (tracksOffset < tracksEnd && tracksOffset < uint8.length) {
+              if (uint8[tracksOffset] === 0xAE) {
+                const entryStart = tracksOffset;
+                const entrySizeInfo = readVint(tracksOffset + 1);
+                const entryDataOffset = tracksOffset + 1 + entrySizeInfo.length;
+                const entryEnd = entryDataOffset + entrySizeInfo.val;
+                let isAudio = false;
+                let curr = entryDataOffset;
+                while (curr < entryEnd && curr < uint8.length) {
+                  if (uint8[curr] === 0x83) {
+                    const typeSizeInfo = readVint(curr + 1);
+                    const typeValInfo = readVint(curr + 1 + typeSizeInfo.length);
+                    if (typeValInfo.val === 2) {
+                      isAudio = true;
+                      break;
+                    }
+                    curr += 1 + typeSizeInfo.length + typeSizeInfo.val;
+                  } else {
+                    curr = skipEbmlElement(curr);
+                  }
+                }
+                if (isAudio) {
+                  // Replace TrackEntry with Void.
+                  uint8[entryStart] = 0xEC;
+                  stripped = true;
+                }
+                tracksOffset = entryEnd;
+              } else {
+                tracksOffset = skipEbmlElement(tracksOffset);
+              }
+            }
+            offset = tracksEnd;
+          } else {
+            offset = skipEbmlElement(offset);
+          }
+        }
+      }
+      return stripped;
+    }
+    static stripMp4Metadata(uint8, view) {
+      const utf8Decoder = new TextDecoder('utf8');
+      const removable = new Set(['udta', 'meta', 'ilst']);
+      const containers = new Set([
+        'moov', 'trak', 'mdia', 'minf', 'stbl', 'edts', 'dinf', 'mvex', 'moof', 'traf', 'mfra', 'skip'
+      ]);
+      let stripped = false;
+      const ranges = [{ start: 0, end: uint8.length }];
+      while (ranges.length) {
+        const range = ranges.pop();
+        let offset = range.start;
+        while (offset + 8 <= range.end) {
+          let size = view.getUint32(offset, false);
+          let boxOffset = offset;
+          if (size === 1) {
+            if (offset + 16 > range.end) {
+              break;
+            }
+            // 64-bit size; lower 32 bits are enough for the sizes we handle here.
+            size = view.getUint32(offset + 12, false);
+            boxOffset += 8;
+          } else if (size === 0) {
+            size = range.end - offset;
+          }
+          if (size < 8) {
+            break;
+          }
+          const boxEnd = offset + size;
+          if (boxEnd > range.end) {
+            break;
+          }
+          const type = utf8Decoder.decode(uint8.subarray(boxOffset + 4, boxOffset + 8));
+          if (removable.has(type)) {
+            uint8[boxOffset + 4] = 0x66; // f
+            uint8[boxOffset + 5] = 0x72; // r
+            uint8[boxOffset + 6] = 0x65; // e
+            uint8[boxOffset + 7] = 0x65; // e
+            stripped = true;
+          } else if (containers.has(type)) {
+            let childOffset = boxOffset + 8;
+            if (type === 'meta') {
+              childOffset += 4; // FullBox version/flags
+            }
+            if (childOffset + 8 <= boxEnd) {
+              ranges.push({ start: childOffset, end: boxEnd });
+            }
+          }
+          offset = boxEnd;
+        }
+      }
+      return stripped;
+    }
+  }
 
   var QR = {
     postingIsEnabled: false,
@@ -16878,6 +20107,9 @@ aero|asia|biz|cat|com|coop|dance|info|int|jobs|mobi|moe|museum|name|net|org|post
     max_size: 0,
     max_size_video: 0,
     max_comment: 0,
+    max_name: 100,
+    max_email: 100,
+    max_sub: 100,
     max_width_video: 0,
     max_height_video: 0,
     max_duration_video: 0,
@@ -16889,10 +20121,23 @@ aero|asia|biz|cat|com|coop|dance|info|int|jobs|mobi|moe|museum|name|net|org|post
     nodes: undefined,
     shortcut: undefined,
     hasFocus: false,
+    pendingFiles: [],
+    isProcessingPendingFiles: false,
+    fileBatchSize: 3,
+    heavyBatchFileCount: 8,
+    heavyBatchSize: 64 * 1024 * 1024,
+    metadataStrippedFlag: '__4chanXTMetadataStripped',
     req: undefined,
     selected: undefined,
     mimeTypes: ['image/jpeg', 'image/png', 'image/gif', 'application/pdf', 'application/vnd.adobe.flash.movie', 'application/x-shockwave-flash', 'video/webm', 'video/mp4'],
     validExtension: /\.(jpe?g|png|gif|pdf|swf|webm|mp4)$/i,
+    markMetadataStripped(file) {
+      file[QR.metadataStrippedFlag] = true;
+      return file;
+    },
+    isMetadataStripped(file) {
+      return !!file[QR.metadataStrippedFlag];
+    },
     typeFromExtension: {
       'jpg': 'image/jpeg',
       'jpeg': 'image/jpeg',
@@ -16950,7 +20195,13 @@ aero|asia|biz|cat|com|coop|dance|info|int|jobs|mobi|moe|museum|name|net|org|post
     },
     initReady() {
       let origToggle;
-      const captchaVersion = $('#g-recaptcha, #captcha-forced-noscript') ? 'v2' : 't';
+      const captchaVersion = $('#t-root') ?
+        't'
+        :
+          $('#g-recaptcha, #captcha-forced-noscript') ?
+            'v2'
+            :
+              (g.SITE.software === 'yotsuba' ? 't' : 'v2');
       QR.captcha = Captcha[captchaVersion];
       QR.postingIsEnabled = true;
       const { config } = g.BOARD;
@@ -16961,6 +20212,9 @@ aero|asia|biz|cat|com|coop|dance|info|int|jobs|mobi|moe|museum|name|net|org|post
       QR.max_size = prop('max_filesize', 4194304);
       QR.max_size_video = prop('max_webm_filesize', QR.max_size);
       QR.max_comment = prop('max_comment_chars', 2000);
+      QR.max_name = prop('max_name_chars', 100);
+      QR.max_email = prop('max_email_chars', 100);
+      QR.max_sub = prop('max_subject_chars', 100);
       QR.max_width_video = (QR.max_height_video = 2048);
       QR.max_duration_video = prop('max_webm_duration', 120);
       QR.forcedAnon = !!config.forced_anon;
@@ -17457,33 +20711,80 @@ aero|asia|biz|cat|com|coop|dance|info|int|jobs|mobi|moe|museum|name|net|org|post
     },
     handleFiles(files) {
       if (this !== QR) { // file input
-        files = [...this.files];
+        files = Array.from(this.files);
         this.value = null;
+      } else {
+        files = Array.from(files);
       }
       if (!files.length) {
         return;
       }
       QR.cleanNotifications();
-      for (var file of files) {
-        QR.handleFile(file, files.length);
+      QR.warnHeavyBatch(files);
+      for (const file of files) {
+        QR.queueFile(file, files.length);
       }
+      QR.processPendingFiles();
       $.addClass(QR.nodes.el, 'dump');
       if ((d.activeElement === QR.nodes.fileButton) && $.hasClass(QR.nodes.fileSubmit, 'has-file')) {
         return QR.nodes.filename.focus();
       }
     },
-    handleFile(file, nfiles) {
+    queueFile(file, nfiles) {
+      const post = QR.pickPostForFile(file, nfiles);
+      const isText = /^text\//.test(file.type);
+      if (!post) {
+        return;
+      }
+      if (isText) {
+        post.pasting = true;
+      } else {
+        post.pendingFile = true;
+      }
+      QR.pendingFiles.push({ file, post, isText });
+    },
+    pickPostForFile(file, nfiles) {
       let post;
       const isText = /^text\//.test(file.type);
       if (nfiles === 1) {
         post = QR.selected;
       } else {
         post = QR.posts[QR.posts.length - 1];
-        if (isText ? post.com || post.pasting : post.file) {
+        if (!post) {
+          post = new QR.post();
+        }
+        if (isText ? post.com || post.pasting : post.file || post.pendingFile) {
           post = new QR.post();
         }
       }
-      return post[isText ? 'pasteText' : 'setFile'](file);
+      return post;
+    },
+    async processPendingFiles() {
+      if (QR.isProcessingPendingFiles) {
+        return;
+      }
+      QR.isProcessingPendingFiles = true;
+      try {
+        while (QR.pendingFiles.length) {
+          const batch = QR.pendingFiles.splice(0, QR.fileBatchSize);
+          await Promise.all(batch.map(({ file, post, isText }) => (isText ? Promise.resolve(post.pasteText(file)) : post.setFile(file))));
+        }
+      } finally {
+        QR.isProcessingPendingFiles = false;
+      }
+    },
+    warnHeavyBatch(files) {
+      const fileList = Array.from(files);
+      const mediaFiles = fileList.filter(file => /^(image|video)\//.test(file.type));
+      if (!mediaFiles.length) {
+        return;
+      }
+      const totalSize = mediaFiles.reduce((size, file) => size + file.size, 0);
+      if ((mediaFiles.length < QR.heavyBatchFileCount) && (totalSize < QR.heavyBatchSize)) {
+        return;
+      }
+      const sizeLabel = $.bytesToString(totalSize);
+      new Notice('warning', `Large media batch queued (${mediaFiles.length} files, ${sizeLabel}). Files will be processed in batches of ${QR.fileBatchSize}.`, 8);
     },
     openFileInput() {
       if (QR.nodes.fileButton.disabled) {
@@ -17577,6 +20878,10 @@ aero|asia|biz|cat|com|coop|dance|info|int|jobs|mobi|moe|museum|name|net|org|post
         });
       }
       QR.flagsInput();
+      nodes.name.maxLength = QR.max_name;
+      nodes.email.maxLength = QR.max_email;
+      nodes.sub.maxLength = QR.max_sub;
+      nodes.com.maxLength = QR.max_comment;
       $.on(nodes.autohide, 'change', QR.toggleHide);
       $.on(nodes.close, 'click', QR.close);
       $.on(nodes.status, 'click', QR.submit);
@@ -17664,13 +20969,154 @@ aero|asia|biz|cat|com|coop|dance|info|int|jobs|mobi|moe|museum|name|net|org|post
         name: 'flag',
         className: 'flagSelector'
       });
-      const addFlag = (value, textContent) => $.add(select, $.el('option', { value, textContent }));
-      addFlag('0', (g.BOARD.config.country_flags ? 'Geographic Location' : 'None'));
-      for (var value in g.BOARD.config.board_flags) {
-        var textContent = g.BOARD.config.board_flags[value];
-        addFlag(value, textContent);
+      const picker = $.el('div', { className: 'flagSelector-picker' });
+      const toggle = $.el('button', {
+        type: 'button',
+        className: 'flagSelector-toggle field'
+      });
+      toggle.setAttribute('aria-expanded', 'false');
+      const icon = $.el('span', { className: 'flagSelector-icon flagSelector-icon-empty' });
+      icon.setAttribute('aria-hidden', 'true');
+      const label = $.el('span', { className: 'flagSelector-label' });
+      $.add(toggle, [icon, label]);
+      $.add(picker, toggle);
+      const menu = $.el('div', { className: 'flagSelector-menu', hidden: true });
+      const entries = {};
+      let open = false;
+      const closeMenu = () => {
+        if (!open)
+          return;
+        open = false;
+        picker.classList.remove('open');
+        toggle.setAttribute('aria-expanded', 'false');
+        menu.hidden = true;
+      };
+      const updateMenuPosition = () => {
+        const rect = toggle.getBoundingClientRect();
+        const width = Math.max(rect.width, 180);
+        const pad = 8;
+        const left = Math.min(Math.max(rect.left, pad), Math.max(pad, window.innerWidth - width - pad));
+        const spaceBelow = window.innerHeight - rect.bottom - pad;
+        const spaceAbove = rect.top - pad;
+        const desired = Math.min(menu.scrollHeight || 320, 320);
+        const openUpward = spaceBelow < 150 && spaceAbove > spaceBelow;
+        const maxHeight = Math.max(100, openUpward ? spaceAbove : spaceBelow);
+        const height = Math.min(desired, maxHeight);
+        const top = openUpward ? rect.top - height : rect.bottom;
+        menu.style.left = `${left}px`;
+        menu.style.top = `${Math.max(pad, top)}px`;
+        menu.style.width = `${width}px`;
+        menu.style.maxHeight = `${maxHeight}px`;
+      };
+      const openMenu = () => {
+        if (open)
+          return;
+        open = true;
+        picker.classList.add('open');
+        toggle.setAttribute('aria-expanded', 'true');
+        menu.hidden = false;
+        updateMenuPosition();
+      };
+      const syncSelected = () => {
+        let value = '' + (select.value || '');
+        if (!(value in entries)) {
+          value = '' + (select.options[0]?.value || '0');
+          select.value = value;
+        }
+        const data = entries[value];
+        icon.className = `flagSelector-icon ${data.iconClass}`.trim();
+        if (!data.iconClass)
+          icon.classList.add('flagSelector-icon-empty');
+        label.textContent = data.text;
+        for (const opt of Array.from(menu.querySelectorAll('.flagSelector-option'))) {
+          opt.classList.toggle('selected', opt.dataset.value === value);
+        }
+      };
+      const addFlag = (value, textContent) => {
+        $.add(select, $.el('option', { value, textContent }));
+        const valueStr = '' + value;
+        const code = valueStr.toLowerCase().replace(/[^a-z0-9_-]+/g, '-');
+        const iconClass = valueStr !== '0' ? `bfl bfl-${code}` : '';
+        entries[valueStr] = { text: textContent, iconClass };
+        const option = $.el('button', {
+          type: 'button',
+          className: 'flagSelector-option'
+        });
+        option.dataset.value = valueStr;
+        const optionIcon = $.el('span', { className: `flagSelector-icon ${iconClass}`.trim() });
+        if (!iconClass)
+          optionIcon.classList.add('flagSelector-icon-empty');
+        optionIcon.setAttribute('aria-hidden', 'true');
+        const optionLabel = $.el('span', { className: 'flagSelector-label', textContent });
+        $.add(option, [optionIcon, optionLabel]);
+        $.on(option, 'click', () => {
+          if (select.disabled)
+            return;
+          select.value = valueStr;
+          select.dispatchEvent(new Event('change', { bubbles: true }));
+          closeMenu();
+        });
+        $.add(menu, option);
+      };
+      addFlag('0', g.BOARD.config.country_flags ? 'Geographic Location' : 'None');
+      for (const value in g.BOARD.config.board_flags) {
+        addFlag(value, g.BOARD.config.board_flags[value]);
       }
-      return select;
+      const onToggleClick = (e) => {
+        e.preventDefault();
+        e.stopPropagation();
+        if (select.disabled)
+          return;
+        if (open)
+          closeMenu();
+        else
+          openMenu();
+      };
+      const onOutsideMouseDown = (e) => {
+        if (!open)
+          return;
+        const target = e.target;
+        if (picker.contains(target) || menu.contains(target))
+          return;
+        closeMenu();
+      };
+      const onDocKeydown = (e) => {
+        if (!open)
+          return;
+        if (e.key === 'Escape') {
+          closeMenu();
+          toggle.focus();
+        }
+      };
+      const onViewportChange = () => { if (open)
+        closeMenu(); };
+      $.on(toggle, 'click', onToggleClick);
+      $.on(d, 'mousedown', onOutsideMouseDown);
+      $.on(d, 'keydown', onDocKeydown);
+      $.on(window, 'resize', onViewportChange);
+      $.on(window, 'scroll', onViewportChange);
+      $.on(QR.nodes.form, 'scroll', onViewportChange);
+      $.on(select, 'change', syncSelected);
+      new MutationObserver(() => {
+        toggle.disabled = select.disabled;
+        if (select.disabled)
+          closeMenu();
+      }).observe(select, { attributes: true, attributeFilter: ['disabled'] });
+      select._syncFlagPicker = syncSelected;
+      select._destroyFlagPicker = () => {
+        closeMenu();
+        $.off(toggle, 'click', onToggleClick);
+        $.off(d, 'mousedown', onOutsideMouseDown);
+        $.off(d, 'keydown', onDocKeydown);
+        $.off(window, 'resize', onViewportChange);
+        $.off(window, 'scroll', onViewportChange);
+        $.off(QR.nodes.form, 'scroll', onViewportChange);
+        $.off(select, 'change', syncSelected);
+        $.rm(menu);
+      };
+      $.add(d.body, menu);
+      syncSelected();
+      return { select, picker };
     },
     flagsInput() {
       const { nodes } = QR;
@@ -17678,16 +21124,25 @@ aero|asia|biz|cat|com|coop|dance|info|int|jobs|mobi|moe|museum|name|net|org|post
         return;
       }
       if (nodes.flag) {
+        nodes.flag._destroyFlagPicker?.();
+        const picker = nodes.flag._picker;
+        if (picker)
+          $.rm(picker);
         $.rm(nodes.flag);
         delete nodes.flag;
       }
-      if (g.BOARD.config.board_flags) {
-        const flag = QR.flags();
-        flag.dataset.name = 'flag';
-        flag.dataset.default = '0';
-        nodes.flag = flag;
-        return $.add(nodes.form, flag);
-      }
+      if (!g.BOARD.config.board_flags)
+        return;
+      const { select, picker } = QR.flags();
+      select.dataset.name = 'flag';
+      select.dataset.default = '0';
+      nodes.flag = select;
+      nodes.flag._picker = picker;
+      $.add(nodes.form, select);
+      $.add(nodes.form, picker);
+    },
+    updateFlagSelector() {
+      QR.nodes?.flag?._syncFlagPicker?.();
     },
     submit(e) {
       let captcha, err, filetag;
@@ -17734,6 +21189,19 @@ aero|asia|biz|cat|com|coop|dance|info|int|jobs|mobi|moe|museum|name|net|org|post
         if (!err) {
           err = 'Original comment required.';
         }
+      }
+      const unitLength = str => (str || '').replace(/[\uD800-\uDBFF][\uDC00-\uDFFF]/g, '_').length;
+      if (!err && !QR.forcedAnon && unitLength(post.name) > QR.max_name) {
+        err = `Name is too long (${unitLength(post.name)}/${QR.max_name}).`;
+      }
+      if (!err && unitLength(post.email) > QR.max_email) {
+        err = `Options is too long (${unitLength(post.email)}/${QR.max_email}).`;
+      }
+      if (!err && unitLength(post.sub) > QR.max_sub) {
+        err = `Subject is too long (${unitLength(post.sub)}/${QR.max_sub}).`;
+      }
+      if (!err && unitLength(post.com) > QR.max_comment) {
+        err = `Comment is too long (${unitLength(post.com)}/${QR.max_comment}).`;
       }
       if (QR.captcha.isEnabled && !((QR.captcha === Captcha.v2) && /\b_ct=/.test(d.cookie) && threadID) && !(err && !force)) {
         captcha = QR.captcha.getOne(!!threadID);
@@ -17878,8 +21346,12 @@ aero|asia|biz|cat|com|coop|dance|info|int|jobs|mobi|moe|museum|name|net|org|post
           // Remove the obnoxious 4chan Pass ad.
           if (/mistyped/i.test(err.textContent)) {
             err = 'You mistyped the CAPTCHA, or the CAPTCHA malfunctioned.';
+            QR.captcha.setState?.('failed');
           } else if (/expired/i.test(err.textContent)) {
             err = 'This CAPTCHA is no longer valid because it has expired.';
+            QR.captcha.setState?.('expired');
+          } else {
+            QR.captcha.setState?.('failed');
           }
           // Do not auto post with a wrong captcha.
           QR.cooldown.auto = false;
@@ -18043,7 +21515,7 @@ aero|asia|biz|cat|com|coop|dance|info|int|jobs|mobi|moe|museum|name|net|org|post
         new Notice('warning', "New jpeg file isn't smaller than the old one, so it won't be used.", 3);
         return file;
       }
-      return newFile;
+      return QR.markMetadataStripped(newFile);
     },
     previewUrl: undefined,
     preview() {
@@ -18626,6 +22098,7 @@ aero|asia|biz|cat|com|coop|dance|info|int|jobs|mobi|moe|museum|name|net|org|post
         }
         node.value = this[name] || node.dataset.default || '';
       }
+      QR.updateFlagSelector?.();
       (this.thread !== 'new' ? $.addClass : $.rmClass)(QR.nodes.el, 'reply-to-thread');
       this.showFileData();
       QR.characterCount();
@@ -18754,17 +22227,90 @@ aero|asia|biz|cat|com|coop|dance|info|int|jobs|mobi|moe|museum|name|net|org|post
         }
       }
     }
+    shouldStripMetadata(file) {
+      if (Conf['Strip All Media Metadata']) {
+        return true;
+      }
+      const category = file.type.split('/')[0];
+      switch (category) {
+        case 'image': return !!Conf['Image Metadata'];
+        case 'video': return !!Conf['Video Metadata'];
+        case 'audio': return !!Conf['Audio Metadata'];
+        default: return !!Conf['Other Metadata'];
+      }
+    }
+    async stripImageMetadata(file) {
+      if (QR.isMetadataStripped(file)) {
+        return file;
+      }
+      const type = file.type.toLowerCase();
+      if (!['image/jpeg', 'image/png'].includes(type)) {
+        return file;
+      }
+      const outputType = type === 'image/jpeg' ? 'jpeg' : 'png';
+      const img = await createImageBitmap(file);
+      const width = img.width;
+      const height = img.height;
+      let canvas;
+      let toBlob;
+      if (window.OffscreenCanvas && !Conf['Avoid OffscreenCanvas']) {
+        canvas = new OffscreenCanvas(width, height);
+        toBlob = (mime, quality) => canvas.convertToBlob({ type: mime, quality });
+      } else {
+        canvas = $.el('canvas', { width, height });
+        toBlob = (mime, quality) => new Promise((resolve, reject) => {
+          canvas.toBlob(blob => {
+            if (blob) {
+              resolve(blob);
+            } else {
+              reject(new Error('Failed to strip image metadata.'));
+            }
+          }, mime, quality);
+        });
+      }
+      canvas.getContext('2d').drawImage(img, 0, 0, width, height);
+      const mime = `image/${outputType}`;
+      const stripped = await toBlob(mime, .92);
+      return QR.markMetadataStripped(new File([stripped], file.name, { type: file.type }));
+    }
+    async stripMetadata(file) {
+      if (QR.isMetadataStripped(file)) {
+        return file;
+      }
+      if (!this.shouldStripMetadata(file)) {
+        return file;
+      }
+      if (file.type.startsWith('image/')) {
+        const stripped = await this.stripImageMetadata(file);
+        if (stripped === file && !['image/jpeg', 'image/png'].includes(file.type.toLowerCase())) {
+          new Notice('warning', `Metadata stripping is not supported for ${file.type || 'this image type'}.`, 4);
+        }
+        return stripped;
+      }
+      if (file.type.startsWith('video/')) {
+        let stripped = await VideoStripper.stripMetadata(file);
+        if (stripped !== file) {
+          stripped = QR.markMetadataStripped(stripped);
+        }
+        if (stripped === file && !(/^video\/mp4$/i.test(file.type) || /\.mp4$/i.test(file.name))) {
+          new Notice('warning', `Metadata stripping is not supported for ${file.type || 'this video type'}.`, 4);
+        }
+        return stripped;
+      }
+      new Notice('warning', `Metadata stripping is not supported for ${file.type || 'this file type'}.`, 4);
+      return file;
+    }
     /**
-    * Checks if the mime type and file size are valid. For images, it will convert unsupported files to png, shrinks
-    * files with a resolution that is too big, and converts to jpeg if the file size is too big.
-    * It will not attempt to convert files that aren't images.
+    * Checks if the mime type and file size are valid. If "Auto-process Images" is enabled, it can convert unsupported
+    * image formats to png, shrink oversized images, and convert to jpeg when the file is too large.
     * @param file The old file.
     * @returns A promise with the old file if it was valid, or a new file if it wasn't.
     */
     async validateFile(file) {
+      const autoProcessImages = !!Conf['Auto-process Images'];
       // Do not check on altchans, those might support types 4chan doesn't
       if (location.hostname.endsWith('4chan.org') && !QR.mimeTypes.includes(file.type)) {
-        if (file.type.startsWith('image/')) {
+        if (autoProcessImages && file.type.startsWith('image/')) {
           const msg = `The ${file.type.slice(6)} image was converted to png.`;
           file = await QR.convert(file, 'png');
           new Notice('info', msg, 3);
@@ -18777,21 +22323,28 @@ aero|asia|biz|cat|com|coop|dance|info|int|jobs|mobi|moe|museum|name|net|org|post
         let img = await createImageBitmap(file);
         const { width: originalW, height: originalH } = img;
         let width = originalW, height = originalH;
-        if (width > QR.max_width) {
-          height = Math.round(height * (QR.max_width / width));
-          width = QR.max_width;
-        }
-        if (height > QR.max_height) {
-          width = Math.round(width * (QR.max_height / height));
-          height = QR.max_height;
-        }
-        if (width !== originalW || height !== originalH) {
-          file = await QR.convert(file, file.type === 'image/jpeg' ? 'jpeg' : 'png', { width, height, img });
-          img = undefined; // just in case the file size shrinkage also needs to run using the new file
-          new Notice('warning', `Image was too large got shrunk from ${originalW} * ${originalH} to ${width} * ${height}.` +
-            'It might have lost animation.');
+        if (autoProcessImages) {
+          if (width > QR.max_width) {
+            height = Math.round(height * (QR.max_width / width));
+            width = QR.max_width;
+          }
+          if (height > QR.max_height) {
+            width = Math.round(width * (QR.max_height / height));
+            height = QR.max_height;
+          }
+          if (width !== originalW || height !== originalH) {
+            file = await QR.convert(file, file.type === 'image/jpeg' ? 'jpeg' : 'png', { width, height, img });
+            img = undefined; // just in case the file size shrinkage also needs to run using the new file
+            new Notice('warning', `Image was too large got shrunk from ${originalW} * ${originalH} to ${width} * ${height}.` +
+              'It might have lost animation.');
+          }
+        } else if ((width > QR.max_width) || (height > QR.max_height)) {
+          throw new Error(`Image too large (image: ${originalW}x${originalH}px, max: ${QR.max_width}x${QR.max_height}px).`);
         }
         if (file.size > maxSize) {
+          if (!autoProcessImages) {
+            throw new Error(`File too large (file: ${$.bytesToString(file.size)}, max: ${$.bytesToString(maxSize)}).`);
+          }
           const originalSize = file.size;
           file = await QR.convert(file, 'jpeg', { maxSize, img });
           new Notice('warning', `Image was too large (${$.bytesToString(originalSize)}) and got converted to jpg (` +
@@ -18803,7 +22356,22 @@ aero|asia|biz|cat|com|coop|dance|info|int|jobs|mobi|moe|museum|name|net|org|post
       return file;
     }
     async setFile(file) {
+      this.pendingFile = true;
       try {
+        if (Conf['Strip Video Audio'] &&
+          BoardConfig.noAudio(g.BOARD.ID) &&
+          (/^video\/(webm|mp4)$/.test(file.type) || /\.(webm|mp4)$/i.test(file.name))) {
+          const stripped = await VideoStripper.stripAudio(file);
+          if (stripped !== file) {
+            file = stripped;
+            new Notice('info', 'Removed audio from video for this board.', 4);
+          }
+        }
+        const strippedMetadata = await this.stripMetadata(file);
+        if (strippedMetadata !== file) {
+          file = strippedMetadata;
+          new Notice('info', 'Removed media metadata from file.', 4);
+        }
         // Needs to be set before the validation for some error messages.
         this.file = file;
         this.filename = file.name;
@@ -18837,6 +22405,8 @@ aero|asia|biz|cat|com|coop|dance|info|int|jobs|mobi|moe|museum|name|net|org|post
       } catch (error) {
         console.error(error);
         this.fileError(error?.message || error || 'unknown error when setting a file');
+      } finally {
+        delete this.pendingFile;
       }
       this.preventAutoPost();
     }
@@ -19689,7 +23259,7 @@ aero|asia|biz|cat|com|coop|dance|info|int|jobs|mobi|moe|museum|name|net|org|post
         isArchived: '.archivedIcon'
       },
       file: {
-        text: '.file > :first-child',
+        text: '.fileText',
         link: '.fileText > a',
         thumb: 'a.fileThumb > [data-md5]'
       },
@@ -19857,7 +23427,7 @@ $\
         size: info[1],
         dimensions: info[0].match(/\d+x\d+/)?.[0],
         tag: info[0].match(/,[^,]*, ([a-z]+)\)/i)?.[1],
-        MD5: text.dataset.md5
+        MD5: text.dataset.md5 || text.parentElement?.dataset.md5
       });
       if (thumb) {
         $.extend(file, {
@@ -20665,22 +24235,50 @@ $\
 
   var Settings = {
     dialog: undefined,
+    searchQuery: '',
+    activeSection: null,
+    renderedSection: null,
+    rememberLayout: false,
+    savedWindowLayout: '',
+    detailsState: dict(),
+    pointerDownInsideDialog: false,
+    customCSSEditorThemeObserver: null,
+    stylingPreviewPanel: null,
+    prepareDrag(e) {
+      const settingsWindow = $('#fourchanx-settings', Settings.dialog);
+      const rect = settingsWindow.getBoundingClientRect();
+      settingsWindow.style.left = `${rect.left}px`;
+      settingsWindow.style.top = `${rect.top}px`;
+      settingsWindow.style.right = '';
+      settingsWindow.style.bottom = '';
+      settingsWindow.style.margin = '0';
+      settingsWindow.style.transform = 'none';
+      dragstart.call(this, e);
+    },
     init() {
       // 4chan X settings link
       const link = $.el('a', {
         className: 'settings-link',
         title: `${meta.name} Settings`,
-        href: 'javascript:;'
+        href: '#'
       });
       Icon.set(link, 'wrench', 'Settings');
-      $.on(link, 'click', Settings.open);
+      $.on(link, 'click', e => {
+        e.preventDefault();
+        Settings.open();
+      });
       Header.addShortcut('settings', link, 820);
       const add = this.addSection;
-      add('Main', this.main);
-      add('Filter', this.filter);
-      add('Sauce', this.sauce);
-      add('Advanced', this.advanced);
+      add('All Settings', this.allSettings);
+      add('General', this.general);
+      add('Interface', this.interface);
+      add('Threads & Posts', this.threadsAndPosts);
+      add('Media', this.media);
+      add('Posting', this.posting);
+      add('Filtering', this.filter);
+      add('Styling', this.styling);
       add('Keybinds', this.keybinds);
+      add('Advanced', this.advanced);
       $.on(d, 'AddSettingsSection', Settings.addSection);
       $.on(d, 'OpenSettings', e => Settings.open(e.detail));
       if ((g.SITE.software === 'yotsuba') && Conf['Disable Native Extension']) {
@@ -20692,6 +24290,7 @@ $\
           $.global('disableNativeExtensionNoStorage');
         }
       }
+      Settings.applyStylingVars();
     },
     open(openSection) {
       let dialog, sectionToOpen;
@@ -20700,40 +24299,65 @@ $\
       }
       $.event('CloseMenu');
       Settings.dialog = (dialog = $.el('div', { id: 'overlay' }, settingsHtml));
-      $.on($('.export', dialog), 'click', Settings.export);
-      $.on($('.import', dialog), 'click', Settings.import);
-      $.on($('.reset', dialog), 'click', Settings.reset);
-      $.on($('input', dialog), 'change', Settings.onImport);
+      const settingsWindow = $('#fourchanx-settings', dialog);
+      $.on($('.export', dialog), 'click', e => { e.preventDefault(); Settings.export(); });
+      $.on($('.import', dialog), 'click', e => { e.preventDefault(); Settings.import.call(e.currentTarget); });
+      $.on($('.reset', dialog), 'click', e => { e.preventDefault(); Settings.reset(); });
+      $.on($('input[type=file]', dialog), 'change', Settings.onImport);
+      $.on($('.settings-search input', dialog), 'input', Settings.onSearchInput);
+      $.on($('.expand-all', dialog), 'click', e => { e.preventDefault(); Settings.toggleAllDetails(true); });
+      $.on($('.collapse-all', dialog), 'click', e => { e.preventDefault(); Settings.toggleAllDetails(false); });
+      $.on($('.move', settingsWindow), 'touchstart mousedown', Settings.prepareDrag);
+      $.on($('#settings-remember-layout', dialog), 'change', Settings.onRememberLayoutChange);
+      for (const actionEl of $$('.settings-titlebar-actions > *', settingsWindow)) {
+        $.on(actionEl, 'touchstart mousedown', e => e.stopPropagation());
+      }
       const links = [];
-      for (var section of Settings.sections) {
-        var link = $.el('a', {
+      for (const section of Settings.sections) {
+        const link = $.el('a', {
           className: `tab-${section.hyphenatedTitle}`,
           textContent: section.title,
-          href: 'javascript:;'
+          href: '#'
         });
-        $.on(link, 'click', Settings.openSection.bind(section));
-        links.push(link, $.tn(' | '));
-        if (section.title === openSection) {
+        $.on(link, 'click', e => {
+          e.preventDefault();
+          Settings.openSection.call(section);
+        });
+        links.push(link);
+        if (section.title === openSection
+          || (['Filter', 'Filters', 'Simple Filters'].includes(openSection) && section.title === 'Filtering')
+          || (openSection === 'Main' && section.title === 'General')) {
           sectionToOpen = link;
         }
       }
-      links.pop();
       $.add($('.sections-list', dialog), links);
       if (openSection !== 'none') {
         (sectionToOpen ? sectionToOpen : links[0]).click();
       }
       Icon.set($('.close', dialog), 'xmark');
-      $.on($('.close', dialog), 'click', Settings.close);
+      $.on($('.close', dialog), 'click', e => { e.preventDefault(); Settings.close(); });
       $.on(window, 'beforeunload', Settings.close);
-      $.on(dialog, 'click', () => {
+      $.on(dialog, 'mousedown touchstart', e => {
+        Settings.pointerDownInsideDialog = settingsWindow.contains(e.target);
+      });
+      $.on(dialog, 'click', e => {
+        if (e.target !== dialog) {
+          return;
+        }
+        if (Settings.pointerDownInsideDialog) {
+          Settings.pointerDownInsideDialog = false;
+          return;
+        }
         // Do not close when the mouse ends up outside the modal when selecting text in an input.
         if (d.activeElement?.tagName === 'INPUT' || d.activeElement?.tagName === 'TEXTAREA')
           return;
         Settings.close();
       });
-      $.on(dialog.firstElementChild, 'click', e => e.stopPropagation());
+      $.on(settingsWindow, 'click', e => e.stopPropagation());
       $.add(d.body, dialog);
+      Settings.restoreWindowLayout(settingsWindow);
       links[0].focus();
+      Settings.loadLayoutPrefs();
       $.event('OpenSettings', null, dialog);
     },
     close() {
@@ -20742,29 +24366,364 @@ $\
       }
       // Unfocus current field to trigger change event.
       d.activeElement?.blur();
+      if (Settings.rememberLayout) {
+        Settings.persistCurrentDetailsState();
+        const settingsWindow = $('#fourchanx-settings', Settings.dialog);
+        if (settingsWindow)
+          Settings.saveWindowLayout(settingsWindow);
+      }
+      Settings.closeImpExpPicker();
       $.rm(Settings.dialog);
+      Settings.searchQuery = '';
+      Settings.activeSection = null;
+      Settings.renderedSection = null;
+      Settings.rememberLayout = false;
+      Settings.savedWindowLayout = '';
+      Settings.detailsState = dict();
+      Settings.customCSSEditorThemeObserver?.disconnect();
+      Settings.customCSSEditorThemeObserver = null;
+      Settings.closeStylingPreview();
       delete Settings.dialog;
+    },
+    toggleAllDetails(open) {
+      if (!Settings.dialog)
+        return;
+      const section = $('section', Settings.dialog);
+      if (!section)
+        return;
+      for (const details of $$('details', section)) {
+        details.open = open;
+      }
+      if (Settings.rememberLayout) {
+        Settings.persistCurrentDetailsState();
+        $.set('settings.detailsState', Settings.detailsState);
+      }
+    },
+    loadLayoutPrefs() {
+      if (!Settings.dialog)
+        return;
+      $.get({
+        'settings.rememberLayout': false,
+        'settings.windowLayout': '',
+        'settings.detailsState': dict(),
+      }, prefs => {
+        if (!Settings.dialog)
+          return;
+        Settings.rememberLayout = !!prefs['settings.rememberLayout'];
+        Settings.savedWindowLayout = typeof prefs['settings.windowLayout'] === 'string' ? prefs['settings.windowLayout'] : '';
+        const detailsState = prefs['settings.detailsState'];
+        Settings.detailsState = (detailsState && typeof detailsState === 'object') ? detailsState : dict();
+        const toggle = $('#settings-remember-layout', Settings.dialog);
+        if (toggle)
+          toggle.checked = Settings.rememberLayout;
+        const settingsWindow = $('#fourchanx-settings', Settings.dialog);
+        if (settingsWindow && Settings.rememberLayout) {
+          Settings.restoreWindowLayout(settingsWindow);
+        }
+        if (Settings.renderedSection) {
+          const section = $('section', Settings.dialog);
+          if (section) {
+            Settings.decorateDetailsWithKeys(section, Settings.renderedSection);
+          }
+        }
+      });
+    },
+    onRememberLayoutChange() {
+      const enabled = this.checked;
+      Settings.rememberLayout = enabled;
+      $.set('settings.rememberLayout', enabled);
+      if (!enabled) {
+        Settings.savedWindowLayout = '';
+        Settings.detailsState = dict();
+        $.delete(['settings.windowLayout', 'settings.detailsState']);
+        return;
+      }
+      if (Settings.dialog) {
+        const settingsWindow = $('#fourchanx-settings', Settings.dialog);
+        if (settingsWindow)
+          Settings.saveWindowLayout(settingsWindow);
+        Settings.persistCurrentDetailsState();
+        $.set({
+          'settings.windowLayout': Settings.savedWindowLayout,
+          'settings.detailsState': Settings.detailsState
+        });
+      }
+    },
+    restoreWindowLayout(settingsWindow) {
+      if (Settings.rememberLayout && Settings.savedWindowLayout) {
+        settingsWindow.style.cssText += `;${Settings.savedWindowLayout}`;
+        return;
+      }
+      if (!settingsWindow.style.left && !settingsWindow.style.right && !settingsWindow.style.top && !settingsWindow.style.bottom) {
+        const rect = settingsWindow.getBoundingClientRect();
+        settingsWindow.style.left = `${Math.max(0, (doc.clientWidth - rect.width) / 2)}px`;
+        settingsWindow.style.top = `${Math.max(0, (doc.clientHeight - rect.height) / 2)}px`;
+      }
+    },
+    saveWindowLayout(settingsWindow) {
+      const style = settingsWindow.style;
+      let layout = '';
+      if (style.left)
+        layout += `left:${style.left};`;
+      if (style.right)
+        layout += `right:${style.right};`;
+      if (style.top)
+        layout += `top:${style.top};`;
+      if (style.bottom)
+        layout += `bottom:${style.bottom};`;
+      if (style.width)
+        layout += `width:${style.width};`;
+      if (style.height)
+        layout += `height:${style.height};`;
+      Settings.savedWindowLayout = layout;
+      $.set('settings.windowLayout', layout);
+    },
+    detailStateScope(root, sectionInfo) {
+      let sectionTitle = sectionInfo?.title || '';
+      if (sectionTitle === 'All Settings') {
+        const block = root.closest('.settings-section-block');
+        sectionTitle = $('.settings-section-header', block)?.textContent?.trim() || '';
+      }
+      // Use the same scope key for both "All Settings" and single-section views
+      // so collapse state stays in sync across both places.
+      return `section:${sectionTitle}`;
+    },
+    detailsStateKey(details, sectionInfo) {
+      const root = details.parentElement;
+      if (!root)
+        return '';
+      const scope = Settings.detailStateScope(root, sectionInfo);
+      const summary = details.querySelector('summary')?.textContent?.trim() || '';
+      const peers = $$('details', root)
+        .filter(peer => (peer.querySelector('summary')?.textContent?.trim() || '') === summary);
+      const index = Math.max(0, peers.indexOf(details));
+      return `${scope}|${summary}|${index}`;
+    },
+    decorateDetailsWithKeys(sectionRoot, sectionInfo, applyRememberedState = true) {
+      for (const details of $$('details', sectionRoot)) {
+        const key = Settings.detailsStateKey(details, sectionInfo);
+        if (!key)
+          continue;
+        details.dataset.detailsStateKey = key;
+        if (applyRememberedState && Settings.rememberLayout && Object.prototype.hasOwnProperty.call(Settings.detailsState, key)) {
+          details.open = !!Settings.detailsState[key];
+        }
+        if (details._detailsStateBound)
+          continue;
+        details._detailsStateBound = true;
+        $.on(details, 'toggle', function () {
+          if (!Settings.rememberLayout)
+            return;
+          const stateKey = this.dataset.detailsStateKey;
+          if (!stateKey)
+            return;
+          Settings.detailsState[stateKey] = this.open;
+          $.set('settings.detailsState', Settings.detailsState);
+        });
+      }
+    },
+    persistCurrentDetailsState() {
+      if (!Settings.dialog || !Settings.renderedSection)
+        return;
+      const section = $('section', Settings.dialog);
+      if (!section)
+        return;
+      Settings.decorateDetailsWithKeys(section, Settings.renderedSection, false);
+      for (const details of $$('details', section)) {
+        const key = details.dataset.detailsStateKey;
+        if (!key)
+          continue;
+        Settings.detailsState[key] = details.open;
+      }
+    },
+    getActiveSection() {
+      const selectedTab = $('.tab-selected', Settings.dialog);
+      if (!selectedTab)
+        return null;
+      for (const section of Settings.sections) {
+        if (selectedTab.classList.contains(`tab-${section.hyphenatedTitle}`))
+          return section;
+      }
+      return null;
+    },
+    onSearchInput() {
+      Settings.searchQuery = this.value.toLowerCase().trim();
+      if (Settings.searchQuery) {
+        Settings.ensureAllSettingsRendered();
+      } else {
+        Settings.renderActiveSection();
+      }
+      Settings.applySearch();
+    },
+    applySearch() {
+      if (!Settings.dialog)
+        return;
+      const query = Settings.searchQuery;
+      const win = $('#fourchanx-settings', Settings.dialog);
+      win.classList.toggle('settings-searching', !!query);
+      const section = $('section', Settings.dialog);
+      if (!section)
+        return;
+      for (const el of $$('.settings-search-hidden', section)) {
+        $.rmClass(el, 'settings-search-hidden');
+      }
+      Settings.highlightSettingRow(section, query);
+      if (!query)
+        return;
+      for (const el of $$('div[data-name], tr[data-name], details, .settings-group-heading, table, thead, tbody, summary, h4, .settings-section-block', section)) {
+        $.addClass(el, 'settings-search-hidden');
+      }
+      for (const row of $$('div[data-name], tr[data-name]', section)) {
+        const settingTitle = `${row.dataset.settingTitle || ''}`.toLowerCase();
+        const settingDescription = `${row.dataset.settingDescription || ''}`.toLowerCase();
+        const settingName = `${row.dataset.name || ''}`.toLowerCase();
+        const fullText = `${settingName} ${settingTitle} ${settingDescription} ${row.textContent || ''}`.toLowerCase();
+        if (fullText.indexOf(query) < 0)
+          continue;
+        const rowEl = row;
+        Settings.revealSearchMatch(rowEl, section);
+        // Only reveal descendant rider settings when the setting's title itself
+        // matched, to avoid broad description matches expanding unrelated rows.
+        const titleMatched = settingTitle.indexOf(query) >= 0 || settingName.indexOf(query) >= 0;
+        if (!titleMatched)
+          continue;
+        for (const sublist of $$('.suboption-list', rowEl)) {
+          for (const rider of $$('div[data-name], tr[data-name]', sublist)) {
+            Settings.revealSearchMatch(rider, section);
+          }
+        }
+      }
+      for (const el of $$('summary, th, h4', section)) {
+        if ((el.textContent || '').toLowerCase().indexOf(query) < 0)
+          continue;
+        Settings.revealSearchMatch(el, section);
+      }
+      for (const heading of $$('.settings-section-header', section)) {
+        if (!Settings.matchesSectionTitle(heading.textContent || '', query))
+          continue;
+        const block = heading.closest('.settings-section-block');
+        if (!block)
+          continue;
+        for (const el of $$('.settings-search-hidden', block)) {
+          $.rmClass(el, 'settings-search-hidden');
+        }
+        Settings.revealSearchMatch(block, section);
+      }
+    },
+    matchesSectionTitle(text, query) {
+      const title = (text || '').toLowerCase();
+      if (!title || !query)
+        return false;
+      if (query.includes(' '))
+        return title.indexOf(query) >= 0;
+      const rx = RegExp(`\\b${Settings.escapeRegExp(query)}\\b`, 'i');
+      return rx.test(text);
+    },
+    revealSearchMatch(node, root) {
+      let cur = node;
+      while (cur && cur !== root) {
+        cur.classList.remove('settings-search-hidden');
+        if (cur.tagName === 'DETAILS') {
+          const summary = cur.firstElementChild;
+          if (summary?.tagName === 'SUMMARY') {
+            summary.classList.remove('settings-search-hidden');
+          }
+        } else if (cur.tagName === 'TABLE') {
+          for (const child of cur.children) {
+            if (child.tagName === 'THEAD' || child.tagName === 'TBODY') {
+              child.classList.remove('settings-search-hidden');
+            }
+          }
+        }
+        cur = cur.parentElement;
+      }
+    },
+    highlightSettingRow(root, query) {
+      for (const el of $$('.setting-title, .setting-description, .settings-section-header, summary, th, h4', root)) {
+        const source = el.dataset.rawText ?? el.textContent ?? '';
+        el.dataset.rawText = source;
+        if (query) {
+          const rx = RegExp(`(${Settings.escapeRegExp(query)})`, 'ig');
+          el.innerHTML = source.replace(rx, '<mark>$1</mark>');
+        } else {
+          el.textContent = source;
+        }
+      }
+    },
+    escapeRegExp(s) {
+      return s.replace(/[.*+?^${}()|[\]\\]/g, '\\$&');
     },
     sections: [],
     addSection(title, open) {
       if (typeof title !== 'string') {
         ({ title, open } = title.detail);
       }
-      const hyphenatedTitle = title.toLowerCase().replace(/\s+/g, '-');
+      const hyphenatedTitle = title.toLowerCase().replace(/[^a-z0-9]+/g, '-').replace(/^-|-$/g, '');
       Settings.sections.push({ title, hyphenatedTitle, open });
     },
     openSection() {
+      Settings.activeSection = this;
+      Settings.selectSectionTab(this);
+      if (Settings.searchQuery && this.title !== 'All Settings') {
+        Settings.ensureAllSettingsRendered();
+        Settings.applySearch();
+        return;
+      }
+      Settings.renderSection(this);
+    },
+    selectSectionTab(sectionInfo) {
       let selected;
       if (selected = $('.tab-selected', Settings.dialog)) {
         $.rmClass(selected, 'tab-selected');
       }
-      $.addClass($(`.tab-${this.hyphenatedTitle}`, Settings.dialog), 'tab-selected');
+      $.addClass($(`.tab-${sectionInfo.hyphenatedTitle}`, Settings.dialog), 'tab-selected');
+    },
+    getAllSettingsSection() {
+      return Settings.sections.find(section => section.title === 'All Settings') || null;
+    },
+    ensureAllSettingsRendered() {
+      const allSettingsSection = Settings.getAllSettingsSection();
+      if (!allSettingsSection)
+        return;
+      if (Settings.renderedSection === allSettingsSection)
+        return;
+      Settings.renderSection(allSettingsSection);
+    },
+    renderActiveSection() {
+      const section = Settings.activeSection || Settings.getActiveSection() || Settings.sections[0];
+      if (!section)
+        return;
+      Settings.renderSection(section);
+    },
+    renderSection(sectionInfo) {
       const section = $('section', Settings.dialog);
+      if (!section)
+        return;
       $.rmAll(section);
-      section.className = `section-${this.hyphenatedTitle}`;
-      this.open(section, g);
+      section.className = `section-${sectionInfo.hyphenatedTitle}`;
+      sectionInfo.open(section, g);
+      Settings.decorateDetailsWithKeys(section, sectionInfo);
       section.scrollTop = 0;
+      Settings.renderedSection = sectionInfo;
+      Settings.applySearch();
       $.event('OpenSettings', null, section);
+    },
+    allSettings(section) {
+      for (const sectionInfo of Settings.sections) {
+        if (sectionInfo.title === 'All Settings')
+          continue;
+        const block = $.el('div', {
+          className: `settings-section-block section-${sectionInfo.hyphenatedTitle}`,
+        });
+        const heading = $.el('h3', {
+          className: 'settings-section-header',
+          textContent: sectionInfo.title,
+        });
+        const content = $.el('div', { className: 'settings-section-content' });
+        sectionInfo.open(content, g);
+        $.add(block, [heading, content]);
+        $.add(section, block);
+      }
     },
     warnings: {
       localStorage(cb) {
@@ -20790,64 +24749,132 @@ Enable it on boards.${location.hostname.split('.')[1]}.org in your browser's pri
         }));
       }
     },
-    main(section) {
-      let key;
-      const warnings = $.el('fieldset', { hidden: true }, { innerHTML: '<legend>Warnings</legend><ul></ul>' });
-      const addWarning = function (item) {
-        $.add($('ul', warnings), item);
-        warnings.hidden = false;
-      };
-      for (key in Settings.warnings) {
-        var warning = Settings.warnings[key];
-        warning(addWarning);
+    getMainSettingLookup() {
+      const lookup = dict();
+      for (const keyFS in Config.main) {
+        const obj = Config.main[keyFS];
+        for (const key in obj) {
+          const arr = obj[key];
+          if (Array.isArray(arr))
+            lookup[key] = arr;
+        }
       }
-      $.add(section, warnings);
+      return lookup;
+    },
+    addCheckboxes(root, obj, items, inputs, includeSetting = (_key) => true) {
+      const containers = [root];
+      let count = 0;
+      for (const key in obj) {
+        const arr = obj[key];
+        if (!(arr instanceof Array))
+          continue;
+        if (!includeSetting(key))
+          continue;
+        const description = arr[1] || '';
+        const div = $.el('div', { innerHTML: `<label><input type="checkbox" name="${key}"><span class="setting-title">${key}</span></label><span class="description">: <span class="setting-description">${description}</span></span>` });
+        div.dataset.name = key;
+        div.dataset.settingTitle = key;
+        div.dataset.settingDescription = description;
+        const input = $('input', div);
+        $.on(input, 'change', $.cb.checked);
+        $.on(input, 'change', function () { this.parentNode.parentNode.dataset.checked = this.checked; });
+        items[key] = Conf[key];
+        inputs[key] = input;
+        const level = arr[2] || 0;
+        if (containers.length <= level) {
+          const container = $.el('div', { className: 'suboption-list' });
+          $.add(containers[containers.length - 1].lastElementChild, container);
+          containers[level] = container;
+        } else if (containers.length > (level + 1)) {
+          containers.splice(level + 1, containers.length - (level + 1));
+        }
+        $.add(containers[level], div);
+        count++;
+      }
+      return count;
+    },
+    selectGroup(obj, keys, baseLevel = 0) {
+      const group = dict();
+      for (const key of keys) {
+        const arr = obj[key];
+        if (!arr)
+          continue;
+        const [defaultValue, description, level] = arr;
+        const adjustedLevel = Math.max(0, (level || 0) - baseLevel);
+        group[key] = [defaultValue, description, adjustedLevel];
+      }
+      return group;
+    },
+    renderMainGroups(section, options) {
+      const { categories, includeWarnings, includeJSONIndex, includeHiddenCount, hideLegendFor = [], includeSetting = (_key) => true } = options;
+      if (includeWarnings) {
+        const warnings = $.el('details', { hidden: true, open: true }, { innerHTML: '<summary>Warnings</summary><ul></ul>' });
+        const addWarning = function (item) {
+          $.add($('ul', warnings), item);
+          warnings.hidden = false;
+        };
+        for (const key in Settings.warnings) {
+          Settings.warnings[key](addWarning);
+        }
+        $.add(section, warnings);
+      }
       const items = dict();
       const inputs = dict();
-      const addCheckboxes = function (root, obj) {
-        const containers = [root];
-        const result = [];
-        for (key in obj) {
-          var arr = obj[key];
-          if (arr instanceof Array) {
-            var description = arr[1];
-            var div = $.el('div', { innerHTML: `<label><input type="checkbox" name="${key}">${key}</label><span class="description">: ${description}</span>` });
-            div.dataset.name = key;
-            var input = $('input', div);
-            $.on(input, 'change', $.cb.checked);
-            $.on(input, 'change', function () { this.parentNode.parentNode.dataset.checked = this.checked; });
-            items[key] = Conf[key];
-            inputs[key] = input;
-            var level = arr[2] || 0;
-            if (containers.length <= level) {
-              var container = $.el('div', { className: 'suboption-list' });
-              $.add(containers[containers.length - 1].lastElementChild, container);
-              containers[level] = container;
-            } else if (containers.length > (level + 1)) {
-              containers.splice(level + 1, containers.length - (level + 1));
-            }
-            result.push($.add(containers[level], div));
-          }
+      for (const cat of categories) {
+        let keyFS, subgroups;
+        if (typeof cat === 'string') {
+          keyFS = cat;
+          subgroups = null;
+        } else {
+          keyFS = cat.name;
+          subgroups = cat.subgroups;
         }
-        return result;
-      };
-      for (var keyFS in Config.main) {
-        var obj = Config.main[keyFS];
-        var fs = $.el('fieldset', { innerHTML: `<legend>${keyFS}</legend>` });
-        addCheckboxes(fs, obj);
+        const obj = Config.main[keyFS];
+        if (!obj)
+          continue;
+        if (subgroups) {
+          for (const [legendTitle, keys, baseLevel] of subgroups) {
+            const fs = $.el('details', { open: true }, { innerHTML: `<summary>${legendTitle}</summary>` });
+            const group = Settings.selectGroup(obj, keys, baseLevel || 0);
+            if (!Settings.addCheckboxes(fs, group, items, inputs, includeSetting))
+              continue;
+            if (legendTitle === 'Captcha') {
+              $.add(fs, $.el('p', { innerHTML: `For more info on captcha options and issues, see the <a href="${meta.captchaFAQ}" target="_blank">captcha FAQ</a>.` }));
+            }
+            $.add(section, fs);
+          }
+          continue;
+        }
+        const legendTitle = keyFS === 'Filtering' ? 'Content Controls' : keyFS;
+        let fs;
+        if (hideLegendFor.includes(keyFS)) {
+          fs = $.el('div');
+        } else {
+          fs = $.el('details', { open: true }, { innerHTML: `<summary>${legendTitle}</summary>` });
+        }
+        if (!Settings.addCheckboxes(fs, obj, items, inputs, includeSetting))
+          continue;
         if (keyFS === 'Posting and Captchas') {
-          $.add(fs, $.el('p', { innerHTML: 'For more info on captcha options and issues, see the <a href="' + meta.captchaFAQ + '" target="_blank">captcha FAQ</a>.' }));
+          $.add(fs, $.el('p', { innerHTML: `For more info on captcha options and issues, see the <a href="${meta.captchaFAQ}" target="_blank">captcha FAQ</a>.` }));
         }
         $.add(section, fs);
       }
-      addCheckboxes($('div[data-name="JSON Index"] > .suboption-list', section), Config.Index);
+      if (includeJSONIndex) {
+        const root = $('div[data-name="JSON Index"] > .suboption-list', section);
+        if (root)
+          Settings.addCheckboxes(root, Config.Index, items, inputs);
+      }
       $.get(items, function (items) {
-        for (key in items) {
-          var val = items[key];
+        for (const key in items) {
+          const val = items[key];
+          if (!inputs[key])
+            continue;
           inputs[key].checked = val;
           inputs[key].parentNode.parentNode.dataset.checked = val;
         }
       });
+      if (!includeHiddenCount)
+        return;
       const div = $.el('div', { innerHTML: '<button></button><span class="description">: Clear manually-hidden threads and posts on all boards. Reload the page to apply.' });
       const button = $('button', div);
       $.get({ hiddenThreads: dict(), hiddenPosts: dict() }, function ({ hiddenThreads, hiddenPosts }) {
@@ -20902,69 +24929,1778 @@ Enable it on boards.${location.hostname.split('.')[1]}.org in your browser's pri
           $.delete(['hiddenThreads', 'hiddenPosts']);
         });
       });
-      $('input[name="Stubs"]', section).closest('fieldset').insertAdjacentElement('beforeend', div);
+      const stubs = $('input[name="Stubs"]', section);
+      if (stubs)
+        stubs.closest('details').insertAdjacentElement('beforeend', div);
+      else
+        $.add(section, div);
     },
-    isExportModalOpen: false,
-    async export() {
-      let exportHistory = Conf['Export History'];
-      let cancelled = false;
-      if (Conf['Ask to Export History']) {
-        if (Settings.isExportModalOpen)
-          return;
-        const dialog = UI.dialog('export-dialog', { innerHTML: ExportDialog });
-        const form = $('form', dialog);
-        const { history, ask } = form.elements;
-        history.checked = Conf['Export History'];
-        $.add(d.body, dialog);
-        const exportBtnRect = $('.export', Settings.dialog).getBoundingClientRect();
-        dialog.style.top = `${exportBtnRect.y + exportBtnRect.height}px`;
-        dialog.style.left = `${exportBtnRect.x}px`;
-        Settings.isExportModalOpen = true;
-        await new Promise(resolve => {
-          const close = () => {
-            dialog.remove();
-            resolve();
-            Settings.isExportModalOpen = false;
-          };
-          $.on(form, 'submit', (e) => {
-            e.preventDefault();
-            exportHistory = history.checked;
-            $.set('Export History', exportHistory);
-            $.set('Ask to Export History', ask.checked);
-            close();
-          });
-          $.on($('#cancel-export', dialog), 'click', () => {
-            cancelled = true;
-            close();
-          });
-        });
-        if (cancelled)
-          return;
+    addSelectFieldset(section, title, rows) {
+      const fs = $.el('details', { open: true }, { innerHTML: `<summary>${title}</summary>` });
+      const items = dict();
+      const inputs = dict();
+      for (const row of rows) {
+        const div = $.el('div');
+        div.dataset.name = row.name;
+        const label = $.el('label');
+        const select = $.el('select', { name: row.name });
+        for (const option of row.options) {
+          select.appendChild($.el('option', { value: option[0], textContent: option[1] }));
+        }
+        $.add(label, [
+          $.el('span', { textContent: `${row.label}: ` }),
+          select
+        ]);
+        $.add(div, [
+          label,
+          $.el('span', { className: 'description', textContent: row.description ? `: ${row.description}` : '' })
+        ]);
+        $.on(select, 'change', $.cb.value);
+        items[row.name] = Conf[row.name];
+        inputs[row.name] = select;
+        $.add(fs, div);
       }
+      $.add(section, fs);
+      $.get(items, function (items) {
+        for (const key in items) {
+          inputs[key].value = items[key];
+        }
+      });
+    },
+    general(section) {
+      Settings.renderMainGroups(section, {
+        categories: [{
+            name: 'Miscellaneous',
+            subgroups: [
+              ['System', ['JSON Index', `Use ${meta.name} Catalog`, 'Index Refresh Notifications', 'Open Threads in New Tab', 'External Catalog', '404 Redirect', 'Archive Report', 'Exempt Archives from Encryption', 'Show Updated Notifications']],
+              ['History', ['Export History', 'Ask to Export History']],
+              ['Compatibility', ['Disable Native Extension', 'Enable Native Flash Embedding']]
+            ]
+          }],
+        includeWarnings: true,
+        includeJSONIndex: true
+      });
+    },
+    interface(section) {
+      const items = dict();
+      const inputs = dict();
+      const fsNav = $.el('details', { open: true }, { innerHTML: '<summary>Custom Board Navigation</summary>' });
+      const navContent = $.el('div', {
+        innerHTML: '<div><textarea name="boardnav" class="field boardnav-field" spellcheck="false"></textarea></div>' +
+          '<span class="note">New lines will be converted into spaces.</span><br><br>' +
+          '<details class="boardnav-instructions">' +
+          '<summary>Syntax guide</summary>' +
+          '<div class="note">In the following examples for /g/, <code>g</code> can be changed to a different board ID (<code>a</code>, <code>b</code>, etc...), the current board (<code>current</code>), or the Twitter link (<code>@</code>).</div>' +
+          '<div>Board link: <code>g</code></div>' +
+          '<div>Archive link: <code>g-archive</code></div>' +
+          '<div>Internal archive link: <code>g-expired</code></div>' +
+          '<div>Title link: <code>g-title</code></div>' +
+          '<div>Board link (Replace with title when on that board): <code>g-replace</code></div>' +
+          '<div>Full text link: <code>g-full</code></div>' +
+          '<div>Custom text link: <code>g-text:"Install Gentoo"</code></div>' +
+          '<div>Index-only link: <code>g-index</code></div>' +
+          '<div>Catalog-only link: <code>g-catalog</code></div>' +
+          '<div>Index mode: <code>g-mode:"infinite scrolling"</code></div>' +
+          '<div>Index sort: <code>g-sort:"creation date rev"</code></div>' +
+          '<div>External link: <code>external-text:"Google","http://www.google.com"</code></div>' +
+          '<div>Open in new tab: <code>g-nt</code></div>' +
+          '<div>Combinations are possible: <code>g-index-text:"Technology Index"</code></div>' +
+          '<div>Full board list toggle: <code>toggle-all</code></div>' +
+          '<br>' +
+          '<div class="note">' +
+          '<code>[ toggle-all ] [current-title] [g-title / a-title / jp-title] [x / wsg / h] [t-text:"Piracy"]</code><br>' +
+          'will give you<br>' +
+          '<code>[ + ] [Technology] [Technology / Anime &amp; Manga / Otaku Culture] [x / wsg / h] [Piracy]</code><br>' +
+          'if you are on /g/.' +
+          '</div>' +
+          '<div class="note">' +
+          'For custom styling, you can wrap groups or individual links in <code>{{</code> and <code>}}</code>, to wrap them in a span. You can also add classes in double quotes right after the {{. For example: <br>' +
+          '<code>[g-title] {{"favorites"[a-title / jp-title]}}</code><br>' +
+          'Results in:<br>' +
+          '<code>[&lt;a [...] &gt;Technology&lt;/a&gt;] &lt;span class="favorites"&gt;[&lt;a [...] &gt;Anime &amp;amp; Manga&lt;/a&gt; / &lt;a [...] &gt;Otaku Culture&lt;/a&gt;]&lt;/span&gt;</code>' +
+          '</div>' +
+          '</details>'
+      });
+      const textarea = $('textarea', navContent);
+      $.on(textarea, 'change', $.cb.value);
+      $.on(textarea, 'change', Settings.boardnav);
+      items['boardnav'] = Conf['boardnav'];
+      inputs['boardnav'] = textarea;
+      $.add(fsNav, navContent);
+      $.add(section, fsNav);
+      Settings.renderMainGroups(section, {
+        categories: [
+          {
+            name: 'Miscellaneous',
+            subgroups: [
+              ['UI', ['Announcement Hiding', 'Follow Cursor', 'Catalog Links']],
+              ['Notifications', ['Desktop Notifications', 'Posting Success Notifications']],
+              ['Keyboard and Navigation', ['Keybinds', 'Comment Expansion', 'Thread Expansion', 'Index Navigation', 'Reply Navigation', 'Unique ID and Capcode Navigation', 'Normalize URL', 'Disable Autoplaying Sounds']]
+            ]
+          },
+          'Menu'
+        ]
+      });
+      $.get(items, function (items) {
+        for (const key in items) {
+          const input = inputs[key];
+          if (input.type === 'checkbox') {
+            input.checked = items[key];
+            input.parentNode.parentNode.dataset.checked = items[key];
+          } else {
+            input.value = items[key];
+          }
+        }
+      });
+    },
+    threadsAndPosts(section) {
+      const items = dict();
+      const inputs = dict();
+      const fsFmt = $.el('details', { open: true }, { innerHTML: '<summary>Formatting</summary>' });
+      const lookup = Settings.getMainSettingLookup();
+      const fmtGroup = dict();
+      for (const key of [
+        'Custom Board Titles',
+        'Persistent Custom Board Titles',
+        'Color User IDs',
+        'Count Posts by ID',
+        'Remove Spoilers',
+        'Reveal Spoilers',
+        'Time Formatting',
+        'Relative Post Dates',
+        'Relative Date Title',
+        'File Info Formatting',
+        'Quote Backlinks',
+      ]) {
+        if (lookup[key])
+          fmtGroup[key] = lookup[key];
+      }
+      Settings.addCheckboxes(fsFmt, fmtGroup, items, inputs);
+      $.add(section, fsFmt);
+      const stylingOnlyKeys = new Set([
+        'Scrollbar Markers',
+        'Scrollbar Mark Own Posts',
+        'Scrollbar Mark Quotes You',
+        'Scrollbar Mark Ghost Posts',
+        'Scrollbar Mark Unread Line',
+        'Highlight Posts Quoting You',
+        'Highlight Own Posts',
+        'Highlight Ghost Posts'
+      ]);
+      Settings.renderMainGroups(section, {
+        categories: ['Filtering', 'Monitoring', 'Quote Links'],
+        includeHiddenCount: true,
+        includeSetting: (key) => !stylingOnlyKeys.has(key)
+      });
+      Settings.addThreadWatcherFieldset(section);
+      Settings.addSelectFieldset(section, 'Thread Title', [
+        {
+          name: 'Thread Title',
+          label: 'Title Content',
+          description: 'Choose whether thread tabs use the original thread excerpt or the board title.',
+          options: [
+            ['excerpt', 'Original thread title'],
+            ['board', 'Board title']
+          ]
+        },
+        {
+          name: 'Unread Title Count',
+          label: 'Unread Count',
+          description: 'Controls how unread and quoted-you indicators appear in the tab title.',
+          options: [
+            ['always', 'Always show count'],
+            ['hide-zero', 'Hide zero count'],
+            ['quoted', 'Show quote marker'],
+            ['quoted-hide-zero', 'Quote marker and hide zero']
+          ]
+        }
+      ]);
+      const fsUC = $.el('details', { open: true }, { innerHTML: '<summary>Updater & Cooldown</summary>' });
+      const divInterval = $.el('div', { innerHTML: '<label>Update Interval: <input type="number" name="Interval" class="field" min="1"></label><span class="description">: Seconds between updates.</span>' });
+      divInterval.dataset.name = 'Interval';
+      const intervalInput = $('input', divInterval);
+      $.on(intervalInput, 'change', ThreadUpdater.cb.interval);
+      items['Interval'] = Conf['Interval'];
+      inputs['Interval'] = intervalInput;
+      $.add(fsUC, divInterval);
+      const divCooldown = $.el('div', { innerHTML: '<label>Custom Cooldown: <input type="number" name="customCooldown" class="field" min="0"></label><span class="description">: Seconds to wait after posting.</span>' });
+      divCooldown.dataset.name = 'customCooldown';
+      const cooldownInput = $('input', divCooldown);
+      $.on(cooldownInput, 'change', $.cb.value);
+      items['customCooldown'] = Conf['customCooldown'];
+      inputs['customCooldown'] = cooldownInput;
+      $.add(fsUC, divCooldown);
+      $.add(section, fsUC);
+      $.get(items, function (items) {
+        for (const key in items) {
+          const input = inputs[key];
+          if (input.type === 'checkbox') {
+            input.checked = items[key];
+            input.parentNode.parentNode.dataset.checked = items[key];
+          } else {
+            input.value = items[key];
+          }
+        }
+      });
+    },
+    addThreadWatcherFieldset(section) {
+      const fs = $.el('details', { open: true }, { innerHTML: '<summary>Thread Watcher</summary>' });
+      const items = dict();
+      const inputs = dict();
+      const displayName = (name) => ({
+        'Show Mark All Read Icon': 'Mark All Read Icon',
+        'Show Mark Thread Read Icons': 'Mark Thread Read Icons',
+        'Show OP Thumbnails': 'Thumbnails',
+      }[name] || name);
+      const watcherOrder = [
+        'Current Board',
+        'Auto Update Thread Watcher',
+        'Auto Watch',
+        'Auto Watch Reply',
+        'Auto Prune',
+        'Show Page',
+        'Show Unread Count',
+        'Show Site Prefix',
+        'Show OP Thumbnails',
+        'Show Mark All Read Icon',
+        'Show Mark Thread Read Icons',
+        'Require OP Quote Link',
+      ];
+      const syncThumbSizeToDialog = (size) => {
+        const watcher = $.id('thread-watcher');
+        if (watcher)
+          watcher.style.setProperty('--watcher-thumb-size', `${size}px`);
+      };
+      const syncWatcherHeightToDialog = (height) => {
+        const watcher = $.id('thread-watcher');
+        if (watcher)
+          watcher.style.setProperty('--watcher-max-height', `${height}px`);
+      };
+      const syncWatcherWidthToDialog = (width) => {
+        const watcher = $.id('thread-watcher');
+        if (watcher)
+          watcher.style.setProperty('--watcher-max-width', `${width}px`);
+      };
+      for (const name of watcherOrder) {
+        if (!Config.threadWatcher[name])
+          continue;
+        const arr = Config.threadWatcher[name];
+        const description = arr[1] || '';
+        let div;
+        if (name === 'Show OP Thumbnails') {
+          div = $.el('div', { innerHTML: `<label><input type="checkbox" name="${name}">${displayName(name)}</label><span class="thread-watcher-inline-number">Size <input type="number" name="Thread Watcher Thumbnail Size" min="16" max="160" step="1" class="thread-watcher-size-input"></span><span class="thread-watcher-inline-subsetting"><label><input type="checkbox" name="Thread Watcher Thumbnail Hover">Hover Preview</label><span class="thread-watcher-inline-number">Size <input type="number" name="Thread Watcher Thumbnail Preview Size" min="10" max="99" step="1" class="thread-watcher-preview-size-input">%</span></span><span class="description">: <span class="setting-description">${description}</span></span>` });
+          div.dataset.name = `${name} Thread Watcher Thumbnail Size Thread Watcher Thumbnail Hover Thread Watcher Thumbnail Preview Size`;
+          div.dataset.settingTitle = displayName(name);
+          div.dataset.settingDescription = `${description} Thread Watcher Thumbnail Size Thread Watcher Thumbnail Hover Thread Watcher Thumbnail Preview Size`;
+          const sizeInput = $('input[name="Thread Watcher Thumbnail Size"]', div);
+          const previewToggle = $('input[name="Thread Watcher Thumbnail Hover"]', div);
+          const previewSizeInput = $('input[name="Thread Watcher Thumbnail Preview Size"]', div);
+          $.on(sizeInput, 'change', function () {
+            let size = parseInt(this.value, 10);
+            if (isNaN(size))
+              size = 40;
+            size = Math.max(16, Math.min(160, size));
+            this.value = `${size}`;
+            $.set(this.name, size);
+            Conf[this.name] = size;
+            syncThumbSizeToDialog(size);
+          });
+          $.on(previewToggle, 'change', $.cb.checked);
+          $.on(previewToggle, 'change', function () {
+            if (!this.checked) {
+              const hover = $.id('tw-ihover');
+              if (hover) {
+                hover.hidden = true;
+                hover.removeAttribute('src');
+                hover.removeAttribute('style');
+              }
+            }
+          });
+          $.on(previewSizeInput, 'change', function () {
+            let size = parseInt(this.value, 10);
+            if (isNaN(size))
+              size = 40;
+            size = Math.max(10, Math.min(99, size));
+            this.value = `${size}`;
+            $.set(this.name, size);
+            Conf[this.name] = size;
+          });
+          items['Thread Watcher Thumbnail Size'] = Conf['Thread Watcher Thumbnail Size'];
+          items['Thread Watcher Thumbnail Hover'] = Conf['Thread Watcher Thumbnail Hover'];
+          items['Thread Watcher Thumbnail Preview Size'] = Conf['Thread Watcher Thumbnail Preview Size'];
+          inputs['Thread Watcher Thumbnail Size'] = sizeInput;
+          inputs['Thread Watcher Thumbnail Hover'] = previewToggle;
+          inputs['Thread Watcher Thumbnail Preview Size'] = previewSizeInput;
+        } else {
+          div = $.el('div', { innerHTML: `<label><input type="checkbox" name="${name}">${displayName(name)}</label><span class="description">: <span class="setting-description">${description}</span></span>` });
+          div.dataset.name = name;
+          div.dataset.settingTitle = displayName(name);
+          div.dataset.settingDescription = description;
+        }
+        const level = arr[2] || 0;
+        if (level > 0)
+          div.classList.add('thread-watcher-subsetting');
+        const input = $('input', div);
+        $.on(input, 'change', $.cb.checked);
+        $.on(input, 'change', function () { this.parentNode.parentNode.dataset.checked = this.checked; });
+        items[name] = Conf[name];
+        inputs[name] = input;
+        $.add(fs, div);
+      }
+      const heightDiv = $.el('div', { innerHTML: '<label>TW Max H <input type="number" name="Thread Watcher Max Height" min="120" max="999" step="1" class="thread-watcher-height-input"></label><label class="thread-watcher-inline-number">W <input type="number" name="Thread Watcher Max Width" min="120" max="999" step="1" class="thread-watcher-width-input"></label><span class="description">: <span class="setting-description">Maximum watched-thread list height and width in pixels.</span></span>' });
+      heightDiv.dataset.name = 'Thread Watcher Max Height Thread Watcher Max Width';
+      heightDiv.dataset.settingTitle = 'TW Max H/W';
+      heightDiv.dataset.settingDescription = 'Maximum watched-thread list height and width in pixels.';
+      const heightInput = $('input[name="Thread Watcher Max Height"]', heightDiv);
+      const widthInput = $('input[name="Thread Watcher Max Width"]', heightDiv);
+      $.on(heightInput, 'change', function () {
+        let height = parseInt(this.value, 10);
+        if (isNaN(height))
+          height = 210;
+        height = Math.max(120, Math.min(999, height));
+        this.value = `${height}`;
+        $.set(this.name, height);
+        Conf[this.name] = height;
+        syncWatcherHeightToDialog(height);
+      });
+      $.on(widthInput, 'change', function () {
+        let width = parseInt(this.value, 10);
+        if (isNaN(width))
+          width = 250;
+        width = Math.max(120, Math.min(999, width));
+        this.value = `${width}`;
+        $.set(this.name, width);
+        Conf[this.name] = width;
+        syncWatcherWidthToDialog(width);
+      });
+      items['Thread Watcher Max Height'] = Conf['Thread Watcher Max Height'];
+      items['Thread Watcher Max Width'] = Conf['Thread Watcher Max Width'];
+      inputs['Thread Watcher Max Height'] = heightInput;
+      inputs['Thread Watcher Max Width'] = widthInput;
+      $.add(fs, heightDiv);
+      $.add(section, fs);
+      $.get(items, function (items) {
+        for (const key in items) {
+          const input = inputs[key];
+          if (input.type === 'checkbox') {
+            input.checked = items[key];
+            input.parentNode.parentNode.dataset.checked = items[key];
+          } else {
+            input.value = items[key];
+          }
+        }
+        const thumbSize = parseInt(`${items['Thread Watcher Thumbnail Size']}`, 10);
+        if (Number.isFinite(thumbSize))
+          syncThumbSizeToDialog(Math.max(16, Math.min(160, thumbSize)));
+        const watcherHeight = parseInt(`${items['Thread Watcher Max Height']}`, 10);
+        if (Number.isFinite(watcherHeight))
+          syncWatcherHeightToDialog(Math.max(120, Math.min(999, watcherHeight)));
+        const watcherWidth = parseInt(`${items['Thread Watcher Max Width']}`, 10);
+        if (Number.isFinite(watcherWidth))
+          syncWatcherWidthToDialog(Math.max(120, Math.min(999, watcherWidth)));
+      });
+    },
+    media(section) {
+      const items = dict();
+      const inputs = dict();
+      const lookup = Settings.getMainSettingLookup();
+      const groups = [
+        ['Image Behavior', ['Image Expansion', 'Image Hover', 'Image Hover in Catalog', 'Replace Thumbnails', 'Replace GIF', 'Replace JPG', 'Replace PNG', 'Replace WEBM', 'Restart when Opened']],
+        ['Images', ['Gallery', 'Fullscreen Gallery', 'PDF in Gallery', 'Sauce', 'Reveal Spoiler Thumbnails', 'Image Prefetching', 'Fappe Tyme', 'Werk Tyme']],
+        ['Videos', ['WEBM Metadata', 'Autoplay', 'Show Controls', 'Click Passthrough', 'Allow Sound', 'Mouse Wheel Volume', 'Loop in New Tab', 'Volume in New Tab', 'Enable sound posts']]
+      ];
+      for (const [legendTitle, keys] of groups) {
+        const fs = $.el('details', { open: true }, { innerHTML: `<summary>${legendTitle}</summary>` });
+        const group = dict();
+        for (const key of keys) {
+          if (lookup[key])
+            group[key] = lookup[key];
+        }
+        if (!Settings.addCheckboxes(fs, group, items, inputs))
+          continue;
+        $.add(section, fs);
+      }
+      Settings.renderMainGroups(section, {
+        categories: ['Linkification']
+      });
+      $.get(items, function (items) {
+        for (const key in items) {
+          const input = inputs[key];
+          if (!input)
+            continue;
+          input.checked = items[key];
+          input.parentNode.parentNode.dataset.checked = items[key];
+        }
+      });
+      const sauceFS = $.el('details', { open: true }, { innerHTML: '<summary>Sauce</summary>' });
+      const sauceWrap = $.el('div');
+      Settings.sauce(sauceWrap);
+      $.add(sauceFS, sauceWrap);
+      $.add(section, sauceFS);
+    },
+    posting(section) {
+      Settings.renderMainGroups(section, {
+        categories: ['Posting and Captchas']
+      });
+      const fs = $.el('details', { open: true }, { innerHTML: '<summary>Quick Reply Personas</summary>' });
+      const div = $.el('div', {
+        innerHTML: '<textarea name="QR.personas" class="personafield field" spellcheck="false"></textarea>' +
+          '<p>' +
+          'One item per line.<br>' +
+          'Items will be added in the relevant input\'s auto-completion list.<br>' +
+          'Password items will always be used, since there is no password input.<br>' +
+          'Lines starting with a <code>#</code> will be ignored.' +
+          '</p>' +
+          '<ul>You can use these settings with each item, separate them with semicolons:' +
+          '<li>Possible items are: <code>name</code>, <code>options</code> (or equivalently <code>email</code>), <code>subject</code> and <code>password</code>.</li>' +
+          '<li>Wrap values of items with quotes, like this: <code>options:"sage"</code>.</li>' +
+          '<li>Force values as defaults with the <code>always</code> keyword, for example: <code>options:"sage";always</code>.</li>' +
+          '<li>Select specific boards for an item, separated with commas, for example: <code>options:"sage";boards:jp;always</code>.</li>' +
+          '</ul>'
+      });
+      div.dataset.name = 'QR.personas';
+      const textarea = $('textarea', div);
+      $.on(textarea, 'change', $.cb.value);
+      $.add(fs, div);
+      $.add(section, fs);
+      $.get('QR.personas', Conf['QR.personas'], function (item) {
+        textarea.value = item['QR.personas'];
+        textarea.hidden = false;
+      });
+    },
+    styling(section) {
+      let input, name;
+      $.extend(section, { innerHTML: StylingPage });
+      const inputs = dict();
+      for (input of $$('[name]', section)) {
+        inputs[input.name] = input;
+      }
+      Settings.populateSiteStylePicker(section, inputs['siteStyle']);
+      const setCheckedState = (checkbox) => {
+        const container = checkbox.closest('[data-name]');
+        if (!container)
+          return;
+        const owner = container.firstElementChild?.querySelector?.('input[type="checkbox"]');
+        if (owner !== checkbox)
+          return;
+        container.dataset.checked = checkbox.checked ? 'true' : 'false';
+      };
+      const highlightKeys = [
+        'Highlight Own Posts',
+        'Highlight Posts Quoting You',
+        'Highlight Ghost Posts',
+      ];
+      const markerColorLinkPairs = [
+        ['Scroll Marker Own Color', 'own'],
+        ['Scroll Marker You Color', 'you'],
+        ['Scroll Marker Ghost Color', 'ghost'],
+      ];
+      const highlightTextControlGroups = [
+        {
+          manualGroup: 'own',
+          autoKey: 'Highlight Own Text Auto',
+          colorKey: 'Highlight Own Color',
+          opacityKey: 'Highlight Own Opacity',
+          keys: ['Highlight Own Text Color', 'Highlight Own Link Color', 'Highlight Own Quote Color', 'Highlight Own Dead Link Color'],
+        },
+        {
+          manualGroup: 'you',
+          autoKey: 'Highlight You Text Auto',
+          colorKey: 'Highlight You Color',
+          opacityKey: 'Highlight You Opacity',
+          keys: ['Highlight You Text Color', 'Highlight You Link Color', 'Highlight You Quote Color', 'Highlight You Dead Link Color'],
+        },
+        {
+          manualGroup: 'ghost',
+          autoKey: 'Highlight Ghost Text Auto',
+          colorKey: 'Highlight Ghost Color',
+          opacityKey: 'Highlight Ghost Opacity',
+          keys: ['Highlight Ghost Text Color', 'Highlight Ghost Link Color', 'Highlight Ghost Quote Color', 'Highlight Ghost Dead Link Color'],
+        },
+      ];
+      const textColorKeys = [
+        'Text Color',
+        'Link Text Color',
+        'Quote Text Color',
+        'Dead Link Text Color',
+      ];
+      const markerRefreshKeys = new Set([
+        'Scrollbar Markers',
+        'Scrollbar Mark Own Posts',
+        'Scrollbar Mark Quotes You',
+        'Scrollbar Mark Ghost Posts',
+        'Scrollbar Mark Unread Line',
+        'Scroll Marker Match Highlights',
+        'Highlight Own Posts',
+        'Highlight Posts Quoting You',
+        'Unread Line',
+        'siteStyle',
+        'siteStyleHome',
+      ]);
+      const highlightToggle = $('#styling-enable-highlights', section);
+      const syncHighlightToggle = () => {
+        if (!highlightToggle)
+          return;
+        let enabledCount = 0;
+        for (const key of highlightKeys) {
+          if (inputs[key]?.checked)
+            enabledCount++;
+        }
+        highlightToggle.checked = enabledCount === highlightKeys.length;
+        highlightToggle.indeterminate = enabledCount > 0 && enabledCount < highlightKeys.length;
+        const container = highlightToggle.closest('[data-name]');
+        if (container)
+          container.dataset.checked = enabledCount > 0 ? 'true' : 'false';
+      };
+      const markerColorLinkToggle = inputs['Scroll Marker Match Highlights'];
+      const textColorModeSelect = inputs['textColorMode'];
+      const textColorManualTree = $('#styling-text-color-manual', section);
+      const highlightTextKeys = new Set(highlightTextControlGroups.flatMap(group => Array.from(group.keys)));
+      const baseTextPalette = (baseBackground) => {
+        const textColorMode = Conf['textColorMode'] === 'manual' ? 'manual' : 'auto';
+        const autoTextPalette = Settings.autoTextPalette(baseBackground);
+        return {
+          text: textColorMode === 'auto' ? autoTextPalette.text : (Conf['Text Color'] || autoTextPalette.text),
+          link: textColorMode === 'auto' ? autoTextPalette.link : (Conf['Link Text Color'] || autoTextPalette.link),
+          quote: textColorMode === 'auto' ? autoTextPalette.quote : (Conf['Quote Text Color'] || autoTextPalette.quote),
+          deadLink: textColorMode === 'auto' ? autoTextPalette.deadLink : (Conf['Dead Link Text Color'] || autoTextPalette.deadLink),
+        };
+      };
+      const syncAutoHighlightPreviewInputs = () => {
+        const baseBackground = Settings.getTextBaseBackground();
+        const basePalette = baseTextPalette(baseBackground);
+        for (const group of highlightTextControlGroups) {
+          const autoToggle = inputs[group.autoKey];
+          if (!autoToggle || !autoToggle.checked)
+            continue;
+          const palette = Settings.autoHighlightTextPalette(group.colorKey, group.opacityKey, baseBackground) || basePalette;
+          const nextValues = [palette.text, palette.link, palette.quote, palette.deadLink];
+          for (let i = 0; i < group.keys.length; i++) {
+            const key = group.keys[i];
+            const next = nextValues[i];
+            if (!next)
+              continue;
+            const colorInput = inputs[key];
+            if (!colorInput)
+              continue;
+            colorInput.value = next;
+            delete colorInput.dataset.unset;
+          }
+        }
+      };
+      const seedManualHighlightTextColors = (targetGroup, overwrite = false) => {
+        const baseBackground = Settings.getTextBaseBackground();
+        const basePalette = baseTextPalette(baseBackground);
+        const groups = targetGroup ? [targetGroup] : highlightTextControlGroups;
+        for (const group of groups) {
+          const autoToggle = inputs[group.autoKey];
+          if (!autoToggle || autoToggle.checked)
+            continue;
+          const autoPalette = Settings.autoHighlightTextPalette(group.colorKey, group.opacityKey, baseBackground) || basePalette;
+          const nextValues = [autoPalette.text, autoPalette.link, autoPalette.quote, autoPalette.deadLink];
+          for (let i = 0; i < group.keys.length; i++) {
+            const key = group.keys[i];
+            const next = nextValues[i];
+            if (!next)
+              continue;
+            if (overwrite || !Conf[key]) {
+              Conf[key] = next;
+              $.set(key, next);
+            }
+            const colorInput = inputs[key];
+            if (!colorInput)
+              continue;
+            colorInput.value = Conf[key] || next;
+            delete colorInput.dataset.unset;
+          }
+        }
+      };
+      const refreshStylingPreview = () => Settings.refreshStylingPreviewFromDialog();
+      const syncMarkerColorControls = () => {
+        const linked = !!markerColorLinkToggle?.checked;
+        if (linked) {
+          Settings.syncLinkedMarkerColors(inputs);
+        }
+        for (const [key, markerType] of markerColorLinkPairs) {
+          const colorInput = inputs[key];
+          if (colorInput)
+            colorInput.disabled = linked;
+          const row = $(`[data-marker-color="${markerType}"]`, section);
+          if (row) {
+            row.dataset.colorLinked = linked ? 'true' : 'false';
+            const clearButton = $(`[data-clear="${key}"]`, row);
+            if (clearButton)
+              clearButton.disabled = linked;
+          }
+        }
+      };
+      const syncTextColorControls = () => {
+        const manualMode = (textColorModeSelect?.value || 'auto') === 'manual';
+        if (textColorManualTree)
+          textColorManualTree.hidden = !manualMode;
+        for (const key of textColorKeys) {
+          const colorInput = inputs[key];
+          if (colorInput)
+            colorInput.disabled = !manualMode;
+          const clearButton = $(`[data-clear="${key}"]`, section);
+          if (clearButton)
+            clearButton.disabled = !manualMode;
+        }
+      };
+      const syncHighlightTextControls = () => {
+        for (const group of highlightTextControlGroups) {
+          const autoToggle = inputs[group.autoKey];
+          const auto = autoToggle ? autoToggle.checked : true;
+          const manualRoot = $(`[data-highlight-text-manual="${group.manualGroup}"]`, section);
+          if (manualRoot)
+            manualRoot.hidden = auto;
+          for (const key of group.keys) {
+            const colorInput = inputs[key];
+            if (colorInput)
+              colorInput.disabled = auto;
+            const clearButton = $(`[data-clear="${key}"]`, section);
+            if (clearButton)
+              clearButton.disabled = auto;
+          }
+        }
+      };
+      const refreshUnsetColorInputs = () => {
+        for (const key in inputs) {
+          const inp = inputs[key];
+          if (inp.type !== 'color' || inp.dataset.unset !== '1')
+            continue;
+          if (highlightTextKeys.has(key)) {
+            const group = highlightTextControlGroups.find(item => item.keys.includes(key));
+            const autoToggle = group ? inputs[group.autoKey] : null;
+            if (autoToggle && !autoToggle.checked)
+              continue;
+          }
+          Settings.setColorInputValue(inp, key, '');
+        }
+      };
+      if (highlightToggle) {
+        $.on(highlightToggle, 'change', () => {
+          const enabled = highlightToggle.checked;
+          highlightToggle.indeterminate = false;
+          for (const key of highlightKeys) {
+            const target = inputs[key];
+            if (!target || target.checked === enabled)
+              continue;
+            target.checked = enabled;
+            $.cb.checked.call(target);
+            setCheckedState(target);
+          }
+          syncHighlightToggle();
+          refreshStylingPreview();
+        });
+      }
+      if (markerColorLinkToggle) {
+        $.on(markerColorLinkToggle, 'change', () => {
+          Conf['Scroll Marker Match Highlights'] = !!markerColorLinkToggle.checked;
+          syncMarkerColorControls();
+          Settings.applyStylingVars();
+          refreshStylingPreview();
+        });
+      }
+      if (textColorModeSelect) {
+        $.on(textColorModeSelect, 'change', () => {
+          Conf['textColorMode'] = textColorModeSelect.value;
+          syncTextColorControls();
+          syncAutoHighlightPreviewInputs();
+          Settings.applyStylingVars();
+          refreshStylingPreview();
+        });
+      }
+      for (const group of highlightTextControlGroups) {
+        const autoToggle = inputs[group.autoKey];
+        if (!autoToggle)
+          continue;
+        $.on(autoToggle, 'change', () => {
+          Conf[group.autoKey] = !!autoToggle.checked;
+          if (autoToggle.checked) {
+            syncAutoHighlightPreviewInputs();
+          } else {
+            seedManualHighlightTextColors(group, true);
+          }
+          syncHighlightTextControls();
+          Settings.applyStylingVars();
+          refreshStylingPreview();
+        });
+      }
+      const items = dict();
+      for (name in inputs) {
+        input = inputs[name];
+        if (name === 'Custom CSS')
+          continue; // handled below (special toggle)
+        items[name] = Conf[name];
+        const event = ((input.nodeName === 'SELECT') ||
+          ['checkbox', 'radio', 'color', 'range'].includes(input.type) ||
+          ((input.nodeName === 'TEXTAREA') && !(name in Settings))) ? 'change' : 'input';
+        const persist = $.cb[input.type === 'checkbox' ? 'checked' : 'value'];
+        $.on(input, event, persist);
+        if ((input.type === 'color' || input.type === 'range') && event !== 'input') {
+          $.on(input, 'input', persist);
+        }
+        if (input.type === 'checkbox') {
+          $.on(input, 'change', function () { setCheckedState(this); });
+          if (highlightKeys.includes(name)) {
+            $.on(input, 'change', syncHighlightToggle);
+            $.on(input, 'change', refreshStylingPreview);
+          }
+          if (markerRefreshKeys.has(name)) {
+            $.on(input, 'change', () => $.event('RefreshScrollMarkers'));
+          }
+        }
+        if (name in Settings)
+          $.on(input, event, Settings[name]);
+        if (input.type === 'color') {
+          const applyColor = function () {
+            delete this.dataset.unset;
+            syncAutoHighlightPreviewInputs();
+            Settings.applyStylingVars();
+            refreshStylingPreview();
+          };
+          $.on(input, event, applyColor);
+          if (event !== 'input')
+            $.on(input, 'input', applyColor);
+        } else if (input.type === 'range') {
+          const applyRange = () => {
+            syncAutoHighlightPreviewInputs();
+            Settings.applyStylingVars();
+            refreshStylingPreview();
+          };
+          $.on(input, event, applyRange);
+          if (event !== 'input')
+            $.on(input, 'input', applyRange);
+        }
+      }
+      // Custom CSS toggle + textarea behavior (mirrors Advanced wiring).
+      const customCSS = inputs['Custom CSS'];
+      const applyCSS = $('#apply-css', section);
+      customCSS.checked = Conf['Custom CSS'];
+      inputs['usercss'].disabled = !Conf['Custom CSS'];
+      applyCSS.disabled = !Conf['Custom CSS'];
+      $.on(customCSS, 'change', Settings.togglecss);
+      $.on(applyCSS, 'click', () => CustomCSS.update());
+      Settings.initCustomCSSEditor(section, inputs['usercss']);
+      $.get(items, (loaded) => {
+        for (const key in loaded) {
+          const val = loaded[key];
+          const inp = inputs[key];
+          if (inp.type === 'checkbox') {
+            inp.checked = !!val;
+            setCheckedState(inp);
+          } else if (inp.type === 'color') {
+            Settings.setColorInputValue(inp, key, val);
+          } else if (inp.type === 'range') {
+            inp.value = (val === '' || val == null) ? '1' : String(val);
+          } else if (key === 'siteStyle' && !val) ; else {
+            inp.value = val ?? '';
+          }
+          inp.hidden = false;
+          if (key in Settings)
+            Settings[key].call(inp);
+        }
+        syncHighlightToggle();
+        syncMarkerColorControls();
+        syncTextColorControls();
+        syncHighlightTextControls();
+        seedManualHighlightTextColors();
+        syncAutoHighlightPreviewInputs();
+        Settings.applyStylingVars();
+        refreshUnsetColorInputs();
+        Settings.refreshCustomCSSEditor(section);
+        refreshStylingPreview();
+      });
+      // Clear buttons next to each color input — reset the Conf key to '' so
+      // the theme default takes over again.
+      for (const btn of $$('[data-clear]', section)) {
+        $.on(btn, 'click', () => {
+          const key = btn.dataset.clear;
+          Conf[key] = '';
+          $.set(key, '');
+          Settings.applyStylingVars();
+          const target = inputs[key];
+          if (target) {
+            Settings.setColorInputValue(target, key, '');
+          }
+          syncAutoHighlightPreviewInputs();
+          refreshStylingPreview();
+        });
+      }
+      // Randomize / reset highlight color buttons.
+      const openPreview = $('#styling-open-preview', section);
+      if (openPreview) {
+        $.on(openPreview, 'click', () => {
+          Settings.openStylingPreview(section);
+        });
+      }
+      const randomize = $('#styling-randomize', section);
+      if (randomize) {
+        $.on(randomize, 'click', () => {
+          for (const key of ['Highlight Own Color', 'Highlight You Color', 'Highlight Ghost Color']) {
+            const color = Settings.randomHighlightColor();
+            Conf[key] = color;
+            $.set(key, color);
+            const inp = inputs[key];
+            if (inp)
+              Settings.setColorInputValue(inp, key, color);
+          }
+          syncAutoHighlightPreviewInputs();
+          Settings.applyStylingVars();
+          refreshStylingPreview();
+        });
+      }
+      const resetBtn = $('#styling-reset-highlights', section);
+      if (resetBtn) {
+        $.on(resetBtn, 'click', () => {
+          for (const key of [
+            'Highlight Own Color', 'Highlight You Color', 'Highlight Ghost Color',
+            'Highlight Own Opacity', 'Highlight You Opacity', 'Highlight Ghost Opacity',
+            'Highlight Own Text Color', 'Highlight Own Link Color', 'Highlight Own Quote Color', 'Highlight Own Dead Link Color',
+            'Highlight You Text Color', 'Highlight You Link Color', 'Highlight You Quote Color', 'Highlight You Dead Link Color',
+            'Highlight Ghost Text Color', 'Highlight Ghost Link Color', 'Highlight Ghost Quote Color', 'Highlight Ghost Dead Link Color',
+          ]) {
+            Conf[key] = '';
+            $.set(key, '');
+            const inp = inputs[key];
+            if (inp) {
+              if (inp.type === 'color')
+                delete inp.dataset.unset;
+              else
+                inp.value = '1';
+            }
+          }
+          for (const key of ['Highlight Own Text Auto', 'Highlight You Text Auto', 'Highlight Ghost Text Auto']) {
+            Conf[key] = true;
+            $.set(key, true);
+            const inp = inputs[key];
+            if (inp && inp.type === 'checkbox')
+              inp.checked = true;
+          }
+          syncAutoHighlightPreviewInputs();
+          syncHighlightTextControls();
+          Settings.applyStylingVars();
+          refreshUnsetColorInputs();
+          refreshStylingPreview();
+        });
+      }
+    },
+    stylingPreviewSampleText() {
+      const sample = $('.thread .postMessage, .postContainer .postMessage', d.body);
+      const fallback = 'Sample thread text. Adjust settings above to see post colors update live.';
+      if (!sample)
+        return fallback;
+      const text = (sample.textContent || '').replace(/\s+/g, ' ').trim();
+      if (!text)
+        return fallback;
+      return text.length > 180 ? `${text.slice(0, 177)}...` : text;
+    },
+    stylingPreviewPostHTML({ postID, extraClass = '', author = 'Anonymous', message = '', }) {
+      const safeMessage = E(message || Settings.stylingPreviewSampleText());
+      const classes = `postContainer replyContainer styling-preview-post ${extraClass}`.trim();
+      return `
+   <div class="${classes}" id="pc${postID}" itemprop="comment" itemscope itemtype="https://schema.org/Comment" data-full-i-d="g.${postID}">
+    <div class="sideArrows" id="sa${postID}">&gt;&gt;</div>
+    <div id="p${postID}" class="post reply">
+     <div class="postInfoM mobile" id="pim${postID}">
+      <span class="nameBlock"><span class="name">${E(author)}</span><br></span>
+      <span class="dateTime postNum" data-utc="1780096072"><time datetime="2026-05-29T19:07:52-04:00">05/29/26(Fri)19:07:52</time> <a href="#p${postID}" rel="nofollow" title="Link to this post">No.</a><a href="javascript:quote('${postID}');" rel="nofollow" title="Reply to this post">${postID}</a></span>
+     </div>
+     <div class="postInfo desktop" id="pi${postID}">
+      <span class="nameBlock"><span class="name" itemprop="author" itemscope itemtype="https://schema.org/Person"><span itemprop="name">${E(author)}</span></span> </span>
+      <span class="dateTime" data-utc="1780096072">05/29/26(Fri)19:07:52</span>&nbsp;<span class="postNum desktop"><a href="#p${postID}" rel="nofollow" title="Link to this post">No.</a><a href="javascript:quote('${postID}');" rel="nofollow" title="Reply to this post">${postID}</a></span><a class="menu-button" href="javascript:;"><svg xmlns="http://www.w3.org/2000/svg" class="icon" viewBox="0 0 320 512"><path d="M137.4 374.6c12.5 12.5 32.8 12.5 45.3 0l128-128c9.2-9.2 11.9-22.9 6.9-34.9s-16.6-19.8-29.6-19.8L32 192c-12.9 0-24.6 7.8-29.6 19.8s-2.2 25.7 6.9 34.9l128 128z" fill="currentColor"></path></svg></a><span class="container"></span>
+     </div>
+     <blockquote class="postMessage" id="m${postID}" itemprop="text">${safeMessage}</blockquote>
+    </div>
+   </div>
+  `;
+    },
+    openStylingPreview(section) {
+      if (!Settings.dialog)
+        return;
+      const targetSection = section || $('.section-styling', Settings.dialog);
+      if (!targetSection)
+        return;
+      const trigger = $('#styling-open-preview', targetSection);
+      if (Settings.stylingPreviewPanel && Settings.stylingPreviewPanel.isConnected) {
+        const collapsed = Settings.stylingPreviewPanel.dataset.collapsed === 'true';
+        Settings.stylingPreviewPanel.dataset.collapsed = collapsed ? 'false' : 'true';
+        if (trigger)
+          trigger.textContent = collapsed ? 'Hide preview' : 'Preview states';
+        return;
+      }
+      const panel = $.el('div', { className: 'styling-preview styling-preview-dock dialog' });
+      panel.dataset.collapsed = 'false';
+      panel.innerHTML = `
+   <div class="board styling-preview-thread">
+    <div class="thread" id="t503286550">
+     ${Settings.stylingPreviewPostHTML({ postID: 503286554, message: 'Normal: thread is already discussing this topic.' })}
+     ${Settings.stylingPreviewPostHTML({ postID: 503286555, extraClass: 'yourPost', author: 'You', message: 'This is a post you created.' })}
+     ${Settings.stylingPreviewPostHTML({ postID: 503286556, extraClass: 'quotesYou', message: 'This is a post quoting you.' })}
+     ${Settings.stylingPreviewPostHTML({ postID: 503286557, extraClass: 'from-archive', author: 'Archived', message: 'This is a ghost post (deleted).' })}
+    </div>
+   </div>
+  `;
+      const actions = $('.styling-actions', targetSection);
+      if (actions?.parentElement) {
+        actions.parentElement.insertBefore(panel, actions.nextSibling);
+      } else {
+        $.add(targetSection, panel);
+      }
+      Settings.stylingPreviewPanel = panel;
+      if (trigger)
+        trigger.textContent = 'Hide preview';
+      Settings.refreshStylingPreviewFromDialog();
+    },
+    closeStylingPreview() {
+      if (!Settings.stylingPreviewPanel)
+        return;
+      const trigger = Settings.dialog ? $('#styling-open-preview', Settings.dialog) : null;
+      if (trigger)
+        trigger.textContent = 'Preview states';
+      $.rm(Settings.stylingPreviewPanel);
+      Settings.stylingPreviewPanel = null;
+    },
+    refreshStylingPreviewFromDialog() {
+      const panel = Settings.stylingPreviewPanel;
+      if (!panel)
+        return;
+      if (!panel.isConnected) {
+        Settings.stylingPreviewPanel = null;
+        return;
+      }
+      const readChecked = (name, fallback = false) => {
+        const input = Settings.dialog ? $(`[name="${name}"]`, Settings.dialog) : null;
+        if (input)
+          return !!input.checked;
+        return Conf[name] == null ? fallback : !!Conf[name];
+      };
+      const ownEnabled = readChecked('Highlight Own Posts');
+      const youEnabled = readChecked('Highlight Posts Quoting You');
+      const ghostEnabled = readChecked('Highlight Ghost Posts');
+      panel.dataset.highlightOwn = ownEnabled ? 'true' : 'false';
+      panel.dataset.highlightYou = youEnabled ? 'true' : 'false';
+      panel.dataset.highlightGhost = ghostEnabled ? 'true' : 'false';
+    },
+    initCustomCSSEditor(section, textarea) {
+      if (!textarea)
+        return;
+      // Keep textarea layout deterministic so the text layer stays aligned with
+      // the highlighted overlay regardless of theme or browser defaults.
+      textarea.wrap = 'off';
+      textarea.spellcheck = false;
+      const editor = $('.custom-css-editor', section);
+      const highlight = $('.custom-css-highlight', section);
+      const themeSelect = $('#custom-css-theme', section);
+      const heightSelect = $('#custom-css-expanded-height', section);
+      const expandButton = $('#custom-css-expand', section);
+      if (!editor || !highlight || !themeSelect || !heightSelect || !expandButton)
+        return;
+      const syncScroll = () => {
+        highlight.scrollTop = textarea.scrollTop;
+        highlight.scrollLeft = textarea.scrollLeft;
+      };
+      const updateExpandedState = (expanded, save = false) => {
+        editor.dataset.expanded = expanded ? 'true' : 'false';
+        expandButton.dataset.expanded = editor.dataset.expanded;
+        expandButton.textContent = expanded ? 'Collapse editor' : 'Expand editor';
+        if (expanded) {
+          editor.style.setProperty('--custom-css-expanded-height', `${heightSelect.value || 500}px`);
+        }
+        if (save)
+          $.set('settings.customCSSEditorExpanded', expanded);
+      };
+      const updateExpandedHeight = (save = false) => {
+        editor.style.setProperty('--custom-css-expanded-height', `${heightSelect.value || 500}px`);
+        if (save)
+          $.set('settings.customCSSEditorExpandedHeight', heightSelect.value || '500');
+      };
+      const updateTheme = (save = false) => {
+        const choice = themeSelect.value || 'xt-system';
+        editor.dataset.theme = Settings.resolveCustomCSSEditorTheme(choice);
+        if (save)
+          $.set('settings.customCSSEditorTheme', choice);
+      };
+      $.on(textarea, 'input', () => Settings.renderCustomCSSHighlight(textarea, highlight));
+      $.on(textarea, 'scroll', syncScroll);
+      $.on(textarea, 'change', () => Settings.renderCustomCSSHighlight(textarea, highlight));
+      $.on(themeSelect, 'change', () => updateTheme(true));
+      $.on(heightSelect, 'change', () => updateExpandedHeight(true));
+      $.on(expandButton, 'click', () => updateExpandedState(editor.dataset.expanded !== 'true', true));
+      Settings.customCSSEditorThemeObserver?.disconnect();
+      Settings.customCSSEditorThemeObserver = new MutationObserver(() => {
+        if (themeSelect.value === 'xt-system')
+          updateTheme(false);
+      });
+      Settings.customCSSEditorThemeObserver.observe(doc, {
+        attributes: true,
+        attributeFilter: ['class'],
+      });
+      $.get({
+        'settings.customCSSEditorTheme': 'xt-system',
+        'settings.customCSSEditorExpandedHeight': '500',
+        'settings.customCSSEditorExpanded': false,
+      }, prefs => {
+        const theme = prefs['settings.customCSSEditorTheme'];
+        const height = prefs['settings.customCSSEditorExpandedHeight'];
+        const expanded = !!prefs['settings.customCSSEditorExpanded'];
+        themeSelect.value = ['xt-system', 'xt-light', 'xt-dark', 'xt-solarized'].includes(theme) ? theme : 'xt-system';
+        heightSelect.value = ['400', '500', '700'].includes(String(height)) ? String(height) : '500';
+        updateTheme(false);
+        updateExpandedHeight(false);
+        updateExpandedState(expanded, false);
+        Settings.renderCustomCSSHighlight(textarea, highlight);
+        syncScroll();
+      });
+    },
+    resolveCustomCSSEditorTheme(theme) {
+      if (theme !== 'xt-system')
+        return theme || 'xt-light';
+      const classList = doc.classList;
+      if (classList.contains('tomorrow'))
+        return 'xt-system-tomorrow';
+      if (classList.contains('spooky'))
+        return 'xt-system-spooky';
+      if (classList.contains('yotsuba-b'))
+        return 'xt-system-yotsuba-b';
+      if (classList.contains('burichan'))
+        return 'xt-system-burichan';
+      if (classList.contains('yotsuba'))
+        return 'xt-system-yotsuba';
+      if (classList.contains('futaba'))
+        return 'xt-system-futaba';
+      if (classList.contains('photon'))
+        return 'xt-system-photon';
+      return 'xt-system-default';
+    },
+    refreshCustomCSSEditor(section) {
+      const textarea = $('textarea[name="usercss"]', section);
+      const highlight = $('.custom-css-highlight', section);
+      if (!textarea || !highlight)
+        return;
+      Settings.renderCustomCSSHighlight(textarea, highlight);
+      highlight.scrollTop = textarea.scrollTop;
+      highlight.scrollLeft = textarea.scrollLeft;
+    },
+    renderCustomCSSHighlight(textarea, highlight) {
+      // Keep a trailing newline so the last line remains visible while typing.
+      const source = textarea.value ? `${textarea.value}\n` : '\n';
+      highlight.innerHTML = Settings.highlightCSSSource(source);
+    },
+    highlightCSSSource(source) {
+      const wrapped = dict();
+      let wrappedCount = 0;
+      const encodeTokenID = (index) => {
+        let id = '';
+        let value = index;
+        do {
+          id = String.fromCharCode(97 + (value % 26)) + id;
+          value = Math.floor(value / 26) - 1;
+        } while (value >= 0);
+        return id;
+      };
+      const stash = (text, className) => {
+        const id = encodeTokenID(wrappedCount++);
+        wrapped[id] = `<span class="${className}">${E(text)}</span>`;
+        return `\uE000${id}\uE001`;
+      };
+      let code = source;
+      code = code.replace(/\/\*[\s\S]*?\*\//g, match => stash(match, 'css-token-comment'));
+      code = code.replace(/"(?:\\.|[^"\\])*"|'(?:\\.|[^'\\])*'/g, match => stash(match, 'css-token-string'));
+      code = E(code);
+      code = code.replace(/(^|[\s{;])(@[a-z-]+)/gim, '$1<span class="css-token-atrule">$2</span>');
+      code = code.replace(/(^|[;{]\s*)((?:--)?[-a-z_][\w-]*)(\s*:)/gim, '$1<span class="css-token-property">$2</span>$3');
+      code = code.replace(/#(?:[0-9a-f]{3}|[0-9a-f]{4}|[0-9a-f]{6}|[0-9a-f]{8})\b/gi, '<span class="css-token-color">$&</span>');
+      code = code.replace(/\b-?(?:\d+|\d*\.\d+)(?:px|em|rem|%|vh|vw|vmin|vmax|s|ms|deg|rad|fr|ch|ex)?\b/gi, '<span class="css-token-number">$&</span>');
+      code = code.replace(/\b!important\b/gi, '<span class="css-token-important">$&</span>');
+      code = code.replace(/\uE000([a-z]+)\uE001/g, (_, id) => wrapped[id] || '');
+      return code;
+    },
+    // Write styling Conf values to CSS custom properties on :root so they apply
+    // immediately, both inside the settings dialog and on the page behind it.
+    applyStylingVars() {
+      const root = doc;
+      const setVar = (cssVar, value) => {
+        if (value)
+          root.style.setProperty(cssVar, value);
+        else
+          root.style.removeProperty(cssVar);
+      };
+      Settings.syncLinkedMarkerColors();
+      setVar('--xt-highlight-own', Conf['Highlight Own Color']);
+      setVar('--xt-highlight-you', Conf['Highlight You Color']);
+      setVar('--xt-highlight-ghost', Conf['Highlight Ghost Color']);
+      setVar('--xt-highlight-own-opacity', Conf['Highlight Own Opacity'] === '' ? '' : String(Conf['Highlight Own Opacity']));
+      setVar('--xt-highlight-you-opacity', Conf['Highlight You Opacity'] === '' ? '' : String(Conf['Highlight You Opacity']));
+      setVar('--xt-highlight-ghost-opacity', Conf['Highlight Ghost Opacity'] === '' ? '' : String(Conf['Highlight Ghost Opacity']));
+      const linkMarkerColors = !!Conf['Scroll Marker Match Highlights'];
+      setVar('--xt-scroll-marker-own', linkMarkerColors ? Conf['Highlight Own Color'] : Conf['Scroll Marker Own Color']);
+      setVar('--xt-scroll-marker-you', linkMarkerColors ? Conf['Highlight You Color'] : Conf['Scroll Marker You Color']);
+      setVar('--xt-scroll-marker-ghost', linkMarkerColors ? Conf['Highlight Ghost Color'] : Conf['Scroll Marker Ghost Color']);
+      setVar('--xt-scroll-marker-unread', Conf['Scroll Marker Unread Color']);
+      setVar('--xt-scroll-marker-own-opacity', Conf['Scroll Marker Own Opacity'] === '' ? '' : String(Conf['Scroll Marker Own Opacity']));
+      setVar('--xt-scroll-marker-you-opacity', Conf['Scroll Marker You Opacity'] === '' ? '' : String(Conf['Scroll Marker You Opacity']));
+      setVar('--xt-scroll-marker-ghost-opacity', Conf['Scroll Marker Ghost Opacity'] === '' ? '' : String(Conf['Scroll Marker Ghost Opacity']));
+      setVar('--xt-scroll-marker-unread-opacity', Conf['Scroll Marker Unread Opacity'] === '' ? '' : String(Conf['Scroll Marker Unread Opacity']));
+      const baseBackground = Settings.getTextBaseBackground();
+      const textColorMode = Conf['textColorMode'] === 'manual' ? 'manual' : 'auto';
+      const autoTextPalette = Settings.autoTextPalette(baseBackground);
+      const textColor = textColorMode === 'auto' ? autoTextPalette.text : Conf['Text Color'];
+      const linkColor = textColorMode === 'auto' ? autoTextPalette.link : Conf['Link Text Color'];
+      const quoteColor = textColorMode === 'auto' ? autoTextPalette.quote : Conf['Quote Text Color'];
+      const deadLinkColor = textColorMode === 'auto' ? autoTextPalette.deadLink : Conf['Dead Link Text Color'];
+      const hasAnyTextOverride = !!(textColor || linkColor || quoteColor || deadLinkColor);
+      if (hasAnyTextOverride) {
+        $.addClass(doc, 'xt-custom-text-colors');
+      } else {
+        $.rmClass(doc, 'xt-custom-text-colors');
+      }
+      setVar('--xt-text-color', textColor || '');
+      setVar('--xt-link-text-color', linkColor || '');
+      setVar('--xt-quote-text-color', quoteColor || '');
+      setVar('--xt-dead-link-text-color', deadLinkColor || '');
+      const autoHighlightPalette = (colorKey, opacityKey) => Settings.autoHighlightTextPalette(colorKey, opacityKey, baseBackground);
+      const withManual = (autoPalette, autoKey, textKey, linkKey, quoteKey, deadKey) => {
+        const base = autoPalette || {
+          text: textColor || '',
+          link: linkColor || '',
+          quote: quoteColor || '',
+          deadLink: deadLinkColor || '',
+        };
+        if (Conf[autoKey])
+          return base;
+        return {
+          text: Conf[textKey] || base.text,
+          link: Conf[linkKey] || base.link,
+          quote: Conf[quoteKey] || base.quote,
+          deadLink: Conf[deadKey] || base.deadLink,
+        };
+      };
+      const ownPalette = withManual(autoHighlightPalette('Highlight Own Color', 'Highlight Own Opacity'), 'Highlight Own Text Auto', 'Highlight Own Text Color', 'Highlight Own Link Color', 'Highlight Own Quote Color', 'Highlight Own Dead Link Color');
+      const youPalette = withManual(autoHighlightPalette('Highlight You Color', 'Highlight You Opacity'), 'Highlight You Text Auto', 'Highlight You Text Color', 'Highlight You Link Color', 'Highlight You Quote Color', 'Highlight You Dead Link Color');
+      const ghostPalette = withManual(autoHighlightPalette('Highlight Ghost Color', 'Highlight Ghost Opacity'), 'Highlight Ghost Text Auto', 'Highlight Ghost Text Color', 'Highlight Ghost Link Color', 'Highlight Ghost Quote Color', 'Highlight Ghost Dead Link Color');
+      setVar('--xt-highlight-own-text', ownPalette?.text || '');
+      setVar('--xt-highlight-own-link', ownPalette?.link || '');
+      setVar('--xt-highlight-own-quote', ownPalette?.quote || '');
+      setVar('--xt-highlight-own-dead-link', ownPalette?.deadLink || '');
+      setVar('--xt-highlight-you-text', youPalette?.text || '');
+      setVar('--xt-highlight-you-link', youPalette?.link || '');
+      setVar('--xt-highlight-you-quote', youPalette?.quote || '');
+      setVar('--xt-highlight-you-dead-link', youPalette?.deadLink || '');
+      setVar('--xt-highlight-ghost-text', ghostPalette?.text || '');
+      setVar('--xt-highlight-ghost-link', ghostPalette?.link || '');
+      setVar('--xt-highlight-ghost-quote', ghostPalette?.quote || '');
+      setVar('--xt-highlight-ghost-dead-link', ghostPalette?.deadLink || '');
+      Settings.refreshUnsetStylingColorInputs();
+      Settings.refreshStylingPreviewFromDialog();
+    },
+    autoTextPalette(rgb) {
+      const bg = rgb || Settings.getTextBaseBackground();
+      const lightText = '#f2f2f2';
+      const darkText = '#111111';
+      const lightContrast = Settings.contrastRatio(Settings.hexToRgb(lightText), bg);
+      const darkContrast = Settings.contrastRatio(Settings.hexToRgb(darkText), bg);
+      const useLight = lightContrast >= darkContrast;
+      const text = useLight ? lightText : darkText;
+      const palette = useLight
+        ? {
+          text,
+          link: '#9cc1ff',
+          quote: '#a8dd72',
+          deadLink: '#b8c5ff',
+        }
+        : {
+          text,
+          link: '#0b52d6',
+          quote: '#2f7d1a',
+          deadLink: '#4c63be',
+        };
+      // Keep links/quotes readable; fall back to text color if contrast gets too low.
+      const minRatio = 3;
+      const safe = (hex) => {
+        const c = Settings.hexToRgb(hex);
+        return c && (Settings.contrastRatio(c, bg) >= minRatio) ? hex : text;
+      };
+      return {
+        text,
+        link: safe(palette.link),
+        quote: safe(palette.quote),
+        deadLink: safe(palette.deadLink),
+      };
+    },
+    hexToRgb(value) {
+      const hex = value?.match(/^#([0-9a-f]{3}|[0-9a-f]{6})$/i)?.[1];
+      if (!hex)
+        return null;
+      if (hex.length === 3) {
+        return [
+          parseInt(`${hex[0]}${hex[0]}`, 16),
+          parseInt(`${hex[1]}${hex[1]}`, 16),
+          parseInt(`${hex[2]}${hex[2]}`, 16),
+        ];
+      }
+      return [
+        parseInt(hex.slice(0, 2), 16),
+        parseInt(hex.slice(2, 4), 16),
+        parseInt(hex.slice(4, 6), 16),
+      ];
+    },
+    mixRgb(base, overlay, alpha) {
+      const a = $.minmax(alpha, 0, 1);
+      const out = [0, 1, 2].map(i => Math.round((base[i] * (1 - a)) + (overlay[i] * a)));
+      return [out[0], out[1], out[2]];
+    },
+    contrastRatio(fg, bg) {
+      const l1 = Settings.relativeLuminance(fg);
+      const l2 = Settings.relativeLuminance(bg);
+      const hi = Math.max(l1, l2);
+      const lo = Math.min(l1, l2);
+      return (hi + 0.05) / (lo + 0.05);
+    },
+    relativeLuminance(rgb) {
+      const toLinear = (channel) => {
+        const c = channel / 255;
+        return c <= 0.04045 ? c / 12.92 : Math.pow((c + 0.055) / 1.055, 2.4);
+      };
+      const [r, g, b] = rgb.map(toLinear);
+      return (0.2126 * r) + (0.7152 * g) + (0.0722 * b);
+    },
+    getTextBaseBackground() {
+      const parseColor = (value) => {
+        if (!value)
+          return null;
+        const rgb = value.match(/^rgba?\(([^)]+)\)$/i)?.[1];
+        if (rgb) {
+          const parts = rgb.split(',').map(part => parseFloat(part.trim()));
+          if (parts.length >= 3 && parts.slice(0, 3).every(part => Number.isFinite(part))) {
+            return [parts[0], parts[1], parts[2]];
+          }
+        }
+        return Settings.hexToRgb(value);
+      };
+      let bg = null;
+      if (g.SITE?.bgColoredEl && d.body) {
+        try {
+          const probe = g.SITE.bgColoredEl();
+          probe.style.position = 'absolute';
+          probe.style.visibility = 'hidden';
+          $.add(d.body, probe);
+          bg = parseColor(window.getComputedStyle(probe).backgroundColor);
+          $.rm(probe);
+        } catch (err) {
+          // fall through to body background.
+        }
+      }
+      if (!bg && d.body) {
+        bg = parseColor(window.getComputedStyle(d.body).backgroundColor);
+      }
+      return bg || [255, 255, 255];
+    },
+    autoHighlightTextPalette(colorKey, opacityKey, baseBackground = Settings.getTextBaseBackground()) {
+      const color = Conf[colorKey];
+      const rgb = Settings.hexToRgb(color);
+      if (!rgb)
+        return null;
+      const alpha = (Conf[opacityKey] === '' || Conf[opacityKey] == null) ? 1 : $.minmax(parseFloat(String(Conf[opacityKey])), 0, 1);
+      if (!Number.isFinite(alpha) || alpha <= 0)
+        return null;
+      return Settings.autoTextPalette(Settings.mixRgb(baseBackground, rgb, alpha));
+    },
+    colorExpressionForKey(key) {
+      switch (key) {
+        case 'Highlight Own Color':
+          return 'var(--xt-highlight-own, var(--xt-border-highlight, #d83030))';
+        case 'Highlight You Color':
+          return 'var(--xt-highlight-you, var(--xt-border-highlight, #ff5050))';
+        case 'Highlight Ghost Color':
+          return 'var(--xt-highlight-ghost, #888888)';
+        case 'Scroll Marker Own Color':
+          return 'var(--xt-scroll-marker-own, var(--xt-border-highlight, #d83030))';
+        case 'Scroll Marker You Color':
+          return 'var(--xt-scroll-marker-you, var(--xt-border-highlight, #ff5050))';
+        case 'Scroll Marker Ghost Color':
+          return 'var(--xt-scroll-marker-ghost, #888888)';
+        case 'Scroll Marker Unread Color':
+          return 'var(--xt-scroll-marker-unread, #ffd400)';
+        case 'Text Color':
+          return 'var(--xt-text-color, #111111)';
+        case 'Link Text Color':
+          return 'var(--xt-link-text-color, #0b52d6)';
+        case 'Quote Text Color':
+          return 'var(--xt-quote-text-color, #2f7d1a)';
+        case 'Dead Link Text Color':
+          return 'var(--xt-dead-link-text-color, #4c63be)';
+        case 'Highlight Own Text Color':
+          return 'var(--xt-highlight-own-text, var(--xt-text-color, #111111))';
+        case 'Highlight Own Link Color':
+          return 'var(--xt-highlight-own-link, var(--xt-link-text-color, #0b52d6))';
+        case 'Highlight Own Quote Color':
+          return 'var(--xt-highlight-own-quote, var(--xt-quote-text-color, #2f7d1a))';
+        case 'Highlight Own Dead Link Color':
+          return 'var(--xt-highlight-own-dead-link, var(--xt-dead-link-text-color, #4c63be))';
+        case 'Highlight You Text Color':
+          return 'var(--xt-highlight-you-text, var(--xt-text-color, #111111))';
+        case 'Highlight You Link Color':
+          return 'var(--xt-highlight-you-link, var(--xt-link-text-color, #0b52d6))';
+        case 'Highlight You Quote Color':
+          return 'var(--xt-highlight-you-quote, var(--xt-quote-text-color, #2f7d1a))';
+        case 'Highlight You Dead Link Color':
+          return 'var(--xt-highlight-you-dead-link, var(--xt-dead-link-text-color, #4c63be))';
+        case 'Highlight Ghost Text Color':
+          return 'var(--xt-highlight-ghost-text, var(--xt-text-color, #111111))';
+        case 'Highlight Ghost Link Color':
+          return 'var(--xt-highlight-ghost-link, var(--xt-link-text-color, #0b52d6))';
+        case 'Highlight Ghost Quote Color':
+          return 'var(--xt-highlight-ghost-quote, var(--xt-quote-text-color, #2f7d1a))';
+        case 'Highlight Ghost Dead Link Color':
+          return 'var(--xt-highlight-ghost-dead-link, var(--xt-dead-link-text-color, #4c63be))';
+        default:
+          return '';
+      }
+    },
+    toHexColor(value) {
+      if (!value)
+        return null;
+      const hex = value.trim().toLowerCase();
+      const longHex = hex.match(/^#([0-9a-f]{6})$/i)?.[0];
+      if (longHex)
+        return longHex.toLowerCase();
+      const shortHex = hex.match(/^#([0-9a-f]{3})$/i)?.[1];
+      if (shortHex) {
+        return `#${shortHex[0]}${shortHex[0]}${shortHex[1]}${shortHex[1]}${shortHex[2]}${shortHex[2]}`.toLowerCase();
+      }
+      const rgb = hex.match(/^rgba?\(([^)]+)\)$/i)?.[1];
+      if (!rgb)
+        return null;
+      const parts = rgb.split(',').map(part => parseFloat(part.trim()));
+      if (parts.length < 3 || parts.slice(0, 3).some(part => !Number.isFinite(part)))
+        return null;
+      const to = (n) => Math.round($.minmax(n, 0, 255)).toString(16).padStart(2, '0');
+      return `#${to(parts[0])}${to(parts[1])}${to(parts[2])}`;
+    },
+    resolvedColorForKey(key) {
+      const expression = Settings.colorExpressionForKey(key);
+      if (!expression || !d.body)
+        return null;
+      const probe = $.el('span');
+      probe.style.position = 'absolute';
+      probe.style.visibility = 'hidden';
+      probe.style.pointerEvents = 'none';
+      probe.style.color = expression;
+      $.add(d.body, probe);
+      const color = Settings.toHexColor(window.getComputedStyle(probe).color);
+      $.rm(probe);
+      return color;
+    },
+    setColorInputValue(input, key, rawValue) {
+      const explicit = (typeof rawValue === 'string' && /^#[0-9a-f]{6}$/i.test(rawValue))
+        ? rawValue.toLowerCase()
+        : null;
+      const fallback = Settings.resolvedColorForKey(key) || '#000000';
+      input.value = explicit || fallback;
+      if (explicit) {
+        delete input.dataset.unset;
+      } else {
+        input.dataset.unset = '1';
+      }
+    },
+    refreshUnsetStylingColorInputs() {
+      if (!Settings.dialog)
+        return;
+      for (const input of $$('#fourchanx-settings input[type="color"][name][data-unset="1"]', Settings.dialog)) {
+        Settings.setColorInputValue(input, input.name, '');
+      }
+    },
+    syncLinkedMarkerColors(inputs) {
+      if (!Conf['Scroll Marker Match Highlights'])
+        return;
+      const colorPairs = [
+        ['Highlight Own Color', 'Scroll Marker Own Color'],
+        ['Highlight You Color', 'Scroll Marker You Color'],
+        ['Highlight Ghost Color', 'Scroll Marker Ghost Color'],
+      ];
+      for (const [highlightKey, markerKey] of colorPairs) {
+        const color = Conf[highlightKey] || '';
+        if (Conf[markerKey] !== color) {
+          Conf[markerKey] = color;
+          $.set(markerKey, color);
+        }
+        const markerInput = inputs?.[markerKey]
+          || $(`#fourchanx-settings [name="${markerKey}"]`);
+        if (!markerInput)
+          continue;
+        Settings.setColorInputValue(markerInput, markerKey, color);
+      }
+    },
+    randomHighlightColor() {
+      // HSL with a moderate saturation/lightness keeps colors legible against
+      // most board themes without going eye-burningly saturated.
+      const h = Math.floor(Math.random() * 360);
+      const s = 55 + Math.floor(Math.random() * 25);
+      const l = 40 + Math.floor(Math.random() * 25);
+      const c = (1 - Math.abs(2 * l / 100 - 1)) * (s / 100);
+      const hh = h / 60;
+      const x = c * (1 - Math.abs((hh % 2) - 1));
+      let r = 0, g = 0, b = 0;
+      if (hh < 1) {
+        r = c;
+        g = x;
+      } else if (hh < 2) {
+        r = x;
+        g = c;
+      } else if (hh < 3) {
+        g = c;
+        b = x;
+      } else if (hh < 4) {
+        g = x;
+        b = c;
+      } else if (hh < 5) {
+        r = x;
+        b = c;
+      } else {
+        r = c;
+        b = x;
+      }
+      const m = l / 100 - c / 2;
+      const to = (v) => Math.round((v + m) * 255).toString(16).padStart(2, '0');
+      return `#${to(r)}${to(g)}${to(b)}`;
+    },
+    populateSiteStylePicker(section, select) {
+      if (!select)
+        return;
+      const note = $('#styling-site-style-note', section);
+      const seen = new Set();
+      const addOption = (value, text) => {
+        if (!value || seen.has(value))
+          return;
+        seen.add(value);
+        $.add(select, $.el('option', { value, textContent: text || value }));
+      };
+      const nativeSelector = $.id('styleSelector');
+      if (nativeSelector?.options?.length) {
+        for (const opt of nativeSelector.options) {
+          addOption(opt.value, opt.textContent || opt.value);
+        }
+        if (nativeSelector.value && seen.has(nativeSelector.value)) {
+          select.value = nativeSelector.value;
+        }
+        select.disabled = false;
+        if (note)
+          note.hidden = true;
+        return;
+      }
+      for (const link of $$('link[rel="alternate stylesheet"]', d.head)) {
+        const value = link.title?.trim();
+        if (!value)
+          continue;
+        addOption(value, value);
+      }
+      if (seen.size === 0) {
+        select.disabled = true;
+        if (note) {
+          note.hidden = false;
+          note.textContent = 'Style options are only available on supported board pages.';
+        }
+      } else {
+        select.disabled = false;
+        if (select.options.length && select.selectedIndex < 0) {
+          select.selectedIndex = 0;
+        }
+        if (note)
+          note.hidden = true;
+      }
+    },
+    siteStyle() {
+      const style = this.value;
+      if (!style)
+        return;
+      const nativeSelector = $.id('styleSelector');
+      if (nativeSelector?.options?.length) {
+        const hasStyle = Array.from(nativeSelector.options).some(opt => opt.value === style);
+        if (hasStyle && nativeSelector.value !== style) {
+          nativeSelector.value = style;
+          nativeSelector.dispatchEvent(new Event('change', { bubbles: true }));
+        }
+      }
+      if (Conf['siteStyleHome']) {
+        Settings.setSiteStyleHomeCookie(style);
+      }
+    },
+    siteStyleHome() {
+      if (!this.checked)
+        return;
+      const style = Conf['siteStyle'] || $('#fourchanx-settings [name="siteStyle"]')?.value || '';
+      if (!style)
+        return;
+      if (!Conf['siteStyle']) {
+        Conf['siteStyle'] = style;
+        $.set('siteStyle', style);
+      }
+      Settings.setSiteStyleHomeCookie(style);
+    },
+    setSiteStyleHomeCookie(style) {
+      if (!style)
+        return;
+      const domain = location.hostname.includes('4channel.org') ? '4channel.org' : '4chan.org';
+      const expires = 60 * 60 * 24 * 365; // 1 year
+      const cleanupDomains = [location.hostname, domain, `.${domain}`];
+      const past = 'Thu, 01 Jan 1970 00:00:00 GMT';
+      for (const key of ['ws_style', 'nws_style']) {
+        d.cookie = `${key}=; Expires=${past}; Path=/`;
+        for (const cookieDomain of cleanupDomains) {
+          d.cookie = `${key}=; Expires=${past}; Path=/; Domain=${cookieDomain}`;
+        }
+        d.cookie = `${key}=${style}; Max-Age=${expires}; Path=/; Domain=${domain}`;
+      }
+    },
+    exportOptionOrder: [
+      'General',
+      'Interface',
+      'Threads & Posts',
+      'Watched Threads',
+      'Media',
+      'Posting',
+      'Filters',
+      'Styling',
+      'Custom CSS',
+      'Keybinds',
+      'Advanced'
+    ],
+    exportSectionOrder: [
+      { name: 'General', option: 'General' },
+      { name: 'Interface', option: 'Interface' },
+      { name: 'Threads & Posts', option: 'Threads & Posts', children: ['Watched Threads'] },
+      { name: 'Media', option: 'Media' },
+      { name: 'Posting', option: 'Posting' },
+      { name: 'Filters', option: 'Filters' },
+      { name: 'Styling', option: 'Styling', children: ['Custom CSS'] },
+      { name: 'Keybinds', option: 'Keybinds' },
+      { name: 'Advanced', option: 'Advanced' }
+    ],
+    impExpPicker: null,
+    exportOptionKeys() {
+      const options = dict();
+      const keysIn = (category) => {
+        const obj = Config.main[category] || dict();
+        const keys = [];
+        for (const key in obj) {
+          if (Array.isArray(obj[key]))
+            keys.push(key);
+        }
+        return keys;
+      };
+      const stylingOnlyKeys = [
+        'Scrollbar Markers',
+        'Scrollbar Mark Own Posts',
+        'Scrollbar Mark Quotes You',
+        'Scrollbar Mark Ghost Posts',
+        'Scrollbar Mark Unread Line',
+        'Highlight Posts Quoting You',
+        'Highlight Own Posts',
+        'Highlight Ghost Posts'
+      ];
+      options['General'] = [
+        'JSON Index',
+        `Use ${meta.name} Catalog`,
+        'Index Refresh Notifications',
+        'Open Threads in New Tab',
+        'External Catalog',
+        '404 Redirect',
+        'Archive Report',
+        'Exempt Archives from Encryption',
+        'Show Updated Notifications',
+        'Export History',
+        'Ask to Export History',
+        'Disable Native Extension',
+        'Enable Native Flash Embedding',
+        ...Object.keys(Config.Index)
+      ];
+      options['Interface'] = [
+        'Announcement Hiding',
+        'Follow Cursor',
+        'Catalog Links',
+        'Desktop Notifications',
+        'Posting Success Notifications',
+        'Keybinds',
+        'Comment Expansion',
+        'Thread Expansion',
+        'Index Navigation',
+        'Reply Navigation',
+        'Unique ID and Capcode Navigation',
+        'Normalize URL',
+        'Disable Autoplaying Sounds',
+        'boardnav',
+        ...keysIn('Menu')
+      ];
+      options['Threads & Posts'] = [
+        'Custom Board Titles',
+        'Persistent Custom Board Titles',
+        'Color User IDs',
+        'Count Posts by ID',
+        'Remove Spoilers',
+        'Reveal Spoilers',
+        'Time Formatting',
+        'Relative Post Dates',
+        'Relative Date Title',
+        'File Info Formatting',
+        'Quote Backlinks',
+        ...keysIn('Filtering').filter(key => !stylingOnlyKeys.includes(key)),
+        ...keysIn('Monitoring').filter(key => !stylingOnlyKeys.includes(key)),
+        ...keysIn('Quote Links').filter(key => !stylingOnlyKeys.includes(key)),
+        ...Object.keys(Config.threadWatcher),
+        'Thread Watcher Thumbnail Size',
+        'Thread Watcher Thumbnail Preview Size',
+        'Thread Watcher Max Height',
+        'Thread Watcher Max Width',
+        'Thread Title',
+        'Unread Title Count',
+        'Interval',
+        'customCooldown'
+      ];
+      options['Watched Threads'] = ['watchedThreads', 'watcherBackup'];
+      options['Media'] = [
+        ...keysIn('Images and Videos'),
+        ...keysIn('Linkification'),
+        'sauces',
+        'selectedArchives'
+      ];
+      options['Posting'] = [
+        ...keysIn('Posting and Captchas'),
+        'QR.personas'
+      ];
+      options['Filters'] = Object.keys(Config.filter).concat(['easyFilters']);
+      options['Styling'] = [
+        'customCSSHome',
+        'siteStyle',
+        'siteStyleHome',
+        'textColorMode',
+        'Text Color',
+        'Link Text Color',
+        'Quote Text Color',
+        'Dead Link Text Color',
+        'Scroll Marker Match Highlights',
+        'Highlight Own Color',
+        'Highlight You Color',
+        'Highlight Ghost Color',
+        'Highlight Own Text Auto',
+        'Highlight You Text Auto',
+        'Highlight Ghost Text Auto',
+        'Highlight Own Text Color',
+        'Highlight Own Link Color',
+        'Highlight Own Quote Color',
+        'Highlight Own Dead Link Color',
+        'Highlight You Text Color',
+        'Highlight You Link Color',
+        'Highlight You Quote Color',
+        'Highlight You Dead Link Color',
+        'Highlight Ghost Text Color',
+        'Highlight Ghost Link Color',
+        'Highlight Ghost Quote Color',
+        'Highlight Ghost Dead Link Color',
+        'Highlight Own Opacity',
+        'Highlight You Opacity',
+        'Highlight Ghost Opacity',
+        'Scroll Marker Own Color',
+        'Scroll Marker You Color',
+        'Scroll Marker Ghost Color',
+        'Scroll Marker Unread Color',
+        'Scroll Marker Own Opacity',
+        'Scroll Marker You Opacity',
+        'Scroll Marker Ghost Opacity',
+        'Scroll Marker Unread Opacity',
+        ...stylingOnlyKeys,
+        'settings.customCSSEditorTheme',
+        'settings.customCSSEditorExpandedHeight',
+        'settings.customCSSEditorExpanded'
+      ];
+      options['Custom CSS'] = ['Custom CSS', 'usercss'];
+      options['Keybinds'] = Object.keys(Config.hotkeys);
+      options['Advanced'] = [
+        'archives',
+        'archiveLists',
+        'archiveAutoUpdate',
+        'lastarchivecheck',
+        'externalCatalogURLs',
+        'fourchanImageHost',
+        'captchaLanguage',
+        'time',
+        'timeLocale',
+        'RelativeTime',
+        'backlink',
+        'pastedname',
+        'fileInfo',
+        'jsWhitelist',
+        'XEmbedder',
+        'fxtLang',
+        'fxtUrl',
+        'fxtMaxReplies',
+        'beepVolume',
+        'beepSource'
+      ];
+      return options;
+    },
+    optionForKey(key, keysByOption) {
+      for (const name in keysByOption) {
+        if (keysByOption[name].includes(key))
+          return name;
+      }
+      return 'General';
+    },
+    optionsPresentIn(conf) {
+      const keysByOption = Settings.exportOptionKeys();
+      const present = dict();
+      for (const key in conf) {
+        present[Settings.optionForKey(key, keysByOption)] = true;
+      }
+      return present;
+    },
+    groupFilenameTag(groups) {
+      if (!groups?.length || groups.length === Settings.exportOptionOrder.length)
+        return '';
+      return '-' + groups.map(group => group.toLowerCase().replace(/[^a-z0-9]+/g, '-')).join('-');
+    },
+    export() {
       // Make sure to export the most recent data, but don't overwrite existing `Conf` object.
       const Conf2 = dict();
       $.extend(Conf2, Conf);
-      if (!exportHistory) {
-        delete Conf2.hiddenThreads;
-        delete Conf2.hiddenPosts;
-        delete Conf2.hiddenPosterIds;
-        delete Conf2.lastReadPosts;
-        delete Conf2.yourPosts;
-        delete Conf2.watchedThreads;
-        delete Conf2.cooldowns;
-        delete Conf2['Index Sort'];
-      }
       $.get(Conf2, function (Conf2) {
         // Don't export cached JSON data.
         delete Conf2['boardConfig'];
-        Settings.downloadExport({ version: g.VERSION, date: Date.now(), Conf: Conf2 });
+        const defaultCheckedOptions = dict();
+        for (const name of Settings.exportOptionOrder) {
+          defaultCheckedOptions[name] = true;
+        }
+        defaultCheckedOptions['Watched Threads'] = !!Conf['Export History'];
+        Settings.openImpExpPicker({
+          title: 'Export Settings',
+          action: 'Export',
+          conf: Conf2,
+          defaultCheckedGroups: defaultCheckedOptions,
+          onConfirm: checkedOptions => Settings.doExport(checkedOptions, Conf2)
+        });
       });
+    },
+    doExport(checkedOptions, conf) {
+      const keysByOption = Settings.exportOptionKeys();
+      const out = dict();
+      for (const key in conf) {
+        const option = Settings.optionForKey(key, keysByOption);
+        if (checkedOptions[option])
+          out[key] = conf[key];
+      }
+      const groups = Settings.exportOptionOrder.filter(name => checkedOptions[name]);
+      const exportHistory = !!checkedOptions['Watched Threads'];
+      Conf['Export History'] = exportHistory;
+      $.set('Export History', exportHistory);
+      Settings.downloadExport({ version: g.VERSION, date: Date.now(), groups, Conf: out });
     },
     downloadExport(data) {
       const blob = new Blob([JSON.stringify(data, null, 2)], { type: 'application/json' });
       const url = URL.createObjectURL(blob);
+      const tag = Settings.groupFilenameTag(data.groups);
       const a = $.el('a', {
-        download: `${meta.name} v${g.VERSION}-${data.date}.json`,
+        download: `${meta.name} v${g.VERSION}-${data.date}${tag}.json`,
         href: url
       });
       const p = $('.imp-exp-result', Settings.dialog);
@@ -20976,25 +26712,36 @@ Enable it on boards.${location.hostname.split('.')[1]}.org in your browser's pri
       $('input[type=file]', this.parentNode).click();
     },
     onImport() {
+      if (this.type !== 'file') {
+        return;
+      }
       let file;
       if (!(file = this.files[0])) {
         return;
       }
       this.value = null;
-      const output = $('.imp-exp-result');
-      if (!confirm('Your current settings will be entirely overwritten, are you sure?')) {
-        output.textContent = 'Import aborted.';
-        return;
-      }
+      const output = $('.imp-exp-result', Settings.dialog);
       const reader = new FileReader();
       reader.onload = function (e) {
         try {
-          Settings.loadSettings(dict.json(e.target.result), function (err) {
-            if (err) {
-              output.textContent = 'Import failed due to an error.';
-            } else if (confirm('Import successful. Reload now?')) {
-              window.location.reload();
-            }
+          let data = dict.json(e.target.result);
+          // Accept older/minimal exports that store settings directly at the top level.
+          if (!data?.Conf && (data?.watchedThreads || data?.watcherBackup)) {
+            data = {
+              version: data.version || g.VERSION,
+              date: data.date || Date.now(),
+              Conf: data
+            };
+          }
+          if (!data?.Conf) {
+            output.textContent = 'Import failed: file is not a valid settings export.';
+            return;
+          }
+          Settings.openImpExpPicker({
+            title: 'Import Settings',
+            action: 'Import',
+            conf: data.Conf,
+            onConfirm: checkedOptions => Settings.doImport(data, checkedOptions)
           });
         } catch (error) {
           const err = error;
@@ -21003,6 +26750,214 @@ Enable it on boards.${location.hostname.split('.')[1]}.org in your browser's pri
         }
       };
       reader.readAsText(file);
+    },
+    doImport(data, checkedGroups) {
+      const output = $('.imp-exp-result', Settings.dialog);
+      if (!Object.keys(checkedGroups).length) {
+        output.textContent = 'Import aborted.';
+        return;
+      }
+      const keysByGroup = Settings.exportOptionKeys();
+      const presentGroups = Settings.optionsPresentIn(data.Conf);
+      // Only do full overwrite when the user explicitly includes General.
+      // This prevents section-only imports (e.g. Watched Threads) from wiping unrelated settings.
+      const allSelected = !!checkedGroups['General'] && Object.keys(presentGroups).every(name => checkedGroups[name]);
+      if (allSelected && !confirm('Your current settings will be entirely overwritten, are you sure?')) {
+        output.textContent = 'Import aborted.';
+        return;
+      }
+      const selected = dict();
+      $.extend(selected, data);
+      selected.Conf = dict();
+      for (const key in data.Conf) {
+        const group = Settings.optionForKey(key, keysByGroup);
+        if (checkedGroups[group]) {
+          selected.Conf[key] = data.Conf[key];
+        }
+      }
+      if (selected.version && selected.version !== g.VERSION) {
+        Settings.upgrade(selected.Conf, selected.version);
+        const upgradedAndSelected = dict();
+        for (const key in selected.Conf) {
+          const group = Settings.optionForKey(key, keysByGroup);
+          if (checkedGroups[group])
+            upgradedAndSelected[key] = selected.Conf[key];
+        }
+        selected.Conf = upgradedAndSelected;
+      }
+      if (allSelected) {
+        Settings.loadSettings(selected, function (err) {
+          if (err) {
+            output.textContent = 'Import failed due to an error.';
+          } else if (confirm('Import successful. Reload now?')) {
+            window.location.reload();
+          }
+        });
+        return;
+      }
+      $.set(selected.Conf, function (err) {
+        if (err) {
+          output.textContent = 'Import failed due to an error.';
+        } else if (confirm('Import successful. Reload now?')) {
+          window.location.reload();
+        }
+      });
+    },
+    openImpExpPicker({ title, action, conf, defaultCheckedGroups, onConfirm }) {
+      if (!Settings.dialog)
+        return;
+      Settings.closeImpExpPicker();
+      const presentGroups = Settings.optionsPresentIn(conf);
+      const overlay = $.el('div', { className: 'imp-exp-picker-overlay' });
+      const picker = $.el('div', { className: 'imp-exp-picker dialog' });
+      $.add(overlay, picker);
+      $.add(picker, $.el('h3', {
+        className: 'imp-exp-picker-title',
+        textContent: title
+      }));
+      const list = $.el('div', { className: 'imp-exp-picker-list' });
+      const checkboxes = dict();
+      const syncSectionStates = [];
+      let syncToggle = () => { };
+      let hasAny = false;
+      for (const sectionInfo of Settings.exportSectionOrder) {
+        const hasSectionOption = !!presentGroups[sectionInfo.option];
+        const childOptions = (sectionInfo.children || []).filter(name => presentGroups[name]);
+        const sectionOptions = [
+          ...(hasSectionOption ? [sectionInfo.option] : []),
+          ...childOptions
+        ];
+        if (!sectionOptions.length)
+          continue;
+        hasAny = true;
+        const sectionRow = $.el('div', { className: 'imp-exp-picker-section' });
+        const sectionTitleRow = $.el('div', { className: 'imp-exp-picker-row imp-exp-picker-section-title' });
+        const sectionInput = $.el('input', {
+          type: 'checkbox',
+          checked: sectionOptions.every(name => !defaultCheckedGroups || defaultCheckedGroups[name] !== false),
+          autocomplete: 'off'
+        });
+        const sectionLabel = $.el('label');
+        $.add(sectionLabel, sectionInput);
+        $.add(sectionLabel, $.tn(` ${sectionInfo.name}`));
+        $.add(sectionTitleRow, sectionLabel);
+        $.add(sectionRow, sectionTitleRow);
+        if (hasSectionOption) {
+          checkboxes[sectionInfo.option] = sectionInput;
+        }
+        if (childOptions.length) {
+          const children = $.el('div', { className: 'imp-exp-picker-children' });
+          for (const name of childOptions) {
+            const input = $.el('input', {
+              type: 'checkbox',
+              checked: defaultCheckedGroups ? (defaultCheckedGroups[name] !== false) : true,
+              name: 'fcx-impexp-group',
+              autocomplete: 'off'
+            });
+            const label = $.el('label');
+            $.add(label, input);
+            $.add(label, $.tn(` ${name}`));
+            checkboxes[name] = input;
+            const row = $.el('div', { className: 'imp-exp-picker-row imp-exp-picker-child' });
+            $.add(row, label);
+            $.add(children, row);
+          }
+          $.add(sectionRow, children);
+        }
+        const syncSection = () => {
+          const inputs = sectionOptions.map(name => checkboxes[name]).filter(Boolean);
+          const checked = inputs.filter(input => input.checked).length;
+          sectionInput.checked = checked === inputs.length;
+          sectionInput.indeterminate = checked > 0 && checked < inputs.length;
+        };
+        syncSectionStates.push(syncSection);
+        $.on(sectionInput, 'change', () => {
+          const target = sectionInput.checked;
+          sectionInput.indeterminate = false;
+          for (const name of sectionOptions) {
+            checkboxes[name].checked = target;
+          }
+          syncToggle();
+        });
+        for (const name of sectionOptions) {
+          if (name === sectionInfo.option)
+            continue;
+          $.on(checkboxes[name], 'change', syncSection);
+        }
+        syncSection();
+        $.add(list, sectionRow);
+      }
+      if (hasAny) {
+        const toggleRow = $.el('div', { className: 'imp-exp-picker-row imp-exp-picker-toggle' });
+        const toggleInput = $.el('input', {
+          type: 'checkbox',
+          checked: true,
+          name: 'fcx-impexp-toggle',
+          autocomplete: 'off'
+        });
+        const toggleLabel = $.el('label');
+        $.add(toggleLabel, toggleInput);
+        $.add(toggleLabel, $.tn(' Check all'));
+        $.add(toggleRow, toggleLabel);
+        $.prepend(list, toggleRow);
+        syncToggle = () => {
+          const inputs = Object.values(checkboxes);
+          const checked = inputs.filter(input => input.checked).length;
+          toggleInput.checked = checked === inputs.length;
+          toggleInput.indeterminate = checked > 0 && checked < inputs.length;
+        };
+        $.on(toggleInput, 'change', () => {
+          const target = toggleInput.checked;
+          toggleInput.indeterminate = false;
+          for (const input of Object.values(checkboxes)) {
+            input.checked = target;
+          }
+          for (const syncSection of syncSectionStates)
+            syncSection();
+        });
+        for (const input of Object.values(checkboxes)) {
+          $.on(input, 'change', syncToggle);
+        }
+        syncToggle();
+        $.add(picker, list);
+      } else {
+        $.add(picker, $.el('p', {
+          className: 'imp-exp-picker-empty',
+          textContent: 'No recognizable settings groups found.'
+        }));
+      }
+      const buttons = $.el('div', { className: 'imp-exp-picker-buttons' });
+      const cancelBtn = $.el('button', { type: 'button', textContent: 'Cancel' });
+      const confirmBtn = $.el('button', {
+        type: 'button',
+        textContent: action,
+        disabled: !hasAny
+      });
+      $.add(buttons, [cancelBtn, confirmBtn]);
+      $.add(picker, buttons);
+      const close = () => Settings.closeImpExpPicker();
+      $.on(cancelBtn, 'click', close);
+      $.on(overlay, 'click', e => {
+        if (e.target === overlay)
+          close();
+      });
+      $.on(confirmBtn, 'click', () => {
+        const checked = dict();
+        for (const [name, input] of Object.entries(checkboxes)) {
+          if (input.checked)
+            checked[name] = true;
+        }
+        Settings.closeImpExpPicker();
+        onConfirm(checked);
+      });
+      $.add(Settings.dialog, overlay);
+      Settings.impExpPicker = overlay;
+    },
+    closeImpExpPicker() {
+      if (!Settings.impExpPicker)
+        return;
+      $.rm(Settings.impExpPicker);
+      Settings.impExpPicker = null;
     },
     upgrade(data, version) {
       let corrupted, key, val;
@@ -21056,7 +27011,7 @@ Enable it on boards.${location.hostname.split('.')[1]}.org in your browser's pri
       }
       if (compareString < '00002.00003.00001.00000') {
         if (data['boardnav']) {
-          set('boardnav', data['boardnav'].replace('[external-text:"FAQ","4chan XT"]', `[external-text:"FAQ","${meta.faq}"]`));
+          set('boardnav', data['boardnav'].replace('[external-text:"FAQ","4chan-neXT"]', `[external-text:"FAQ","${meta.faq}"]`));
         }
       }
       if (compareString < '00002.00003.00006.00000') {
@@ -21091,15 +27046,103 @@ Enable it on boards.${location.hostname.split('.')[1]}.org in your browser's pri
         });
       }
     },
+    filtersPreviewState: null,
+    forcedFiltersMode: null,
+    forcedFilterType: null,
     filter(section) {
+      const simplePanel = $.el('div');
+      const advancedPanel = $.el('div');
+      const previewPanel = $.el('div');
+      const previewState = {
+        panel: previewPanel,
+        simpleTbody: null,
+        advancedType: null,
+        advancedTextarea: null,
+      };
+      Settings.filtersPreviewState = previewState;
+      Settings.advancedFilter(advancedPanel, previewState);
+      Settings.easyFilters(simplePanel, previewState);
+      $.add(advancedPanel, previewPanel);
+      const simpleDetails = $.el('details', { open: true }, { innerHTML: '<summary>Simple Rules</summary>' });
+      const advancedDetails = $.el('details', { open: false }, { innerHTML: '<summary>Advanced Rules</summary>' });
+      $.add(simpleDetails, simplePanel);
+      $.add(advancedDetails, advancedPanel);
+      $.add(section, [simpleDetails, advancedDetails]);
+      const detailsByMode = {
+        simple: simpleDetails,
+        advanced: advancedDetails
+      };
+      const applyForcedFilterType = () => {
+        if (!Settings.forcedFilterType)
+          return;
+        const select = $('select[name=filter]', advancedPanel);
+        if (!select)
+          return;
+        const forceType = Settings.forcedFilterType;
+        Settings.forcedFilterType = null;
+        select.value = forceType;
+        Settings.selectFilter.call(select);
+      };
+      const filteringSectionInfo = { title: 'Filtering' };
+      const hasRememberedAccordionState = () => {
+        if (!Settings.rememberLayout)
+          return false;
+        for (const details of Object.values(detailsByMode)) {
+          const key = Settings.detailsStateKey(details, filteringSectionInfo);
+          if (!key)
+            continue;
+          if (Object.prototype.hasOwnProperty.call(Settings.detailsState, key))
+            return true;
+        }
+        return false;
+      };
+      let syncing = false;
+      const openMode = (mode) => {
+        syncing = true;
+        for (const key in detailsByMode) {
+          detailsByMode[key].open = key === mode;
+        }
+        syncing = false;
+        if (mode === 'advanced')
+          applyForcedFilterType();
+        $.set('settings.filtersMode', mode);
+        Settings.refreshCombinedFilterPreview(previewState);
+      };
+      for (const [mode, details] of Object.entries(detailsByMode)) {
+        $.on(details, 'toggle', function () {
+          if (syncing || !this.open)
+            return;
+          openMode(mode);
+        });
+      }
+      $.get('settings.filtersMode', 'simple', (item) => {
+        if (hasRememberedAccordionState()) {
+          if (Settings.forcedFiltersMode && detailsByMode[Settings.forcedFiltersMode]) {
+            openMode(Settings.forcedFiltersMode);
+            Settings.forcedFiltersMode = null;
+          } else {
+            Settings.refreshCombinedFilterPreview(previewState);
+          }
+          return;
+        }
+        let mode = Settings.forcedFiltersMode || item['settings.filtersMode'];
+        Settings.forcedFiltersMode = null;
+        if (!['simple', 'advanced'].includes(mode))
+          mode = 'simple';
+        openMode(mode);
+      });
+    },
+    advancedFilter(section, previewState) {
       $.extend(section, { innerHTML: FilterSelectPage });
       const select = $('select', section);
+      select.filterPreviewState = previewState;
       $.on(select, 'change', Settings.selectFilter);
       Settings.selectFilter.call(select);
     },
     selectFilter() {
       let name;
       const div = this.nextElementSibling;
+      const previewState = this.filterPreviewState;
       if ((name = this.value) !== 'guide') {
         if (!$.hasOwn(Config.filter, name)) {
           return;
@@ -21114,6 +27157,7 @@ Enable it on boards.${location.hostname.split('.')[1]}.org in your browser's pri
         $.get(name, Conf[name], function (item) {
           ta.value = item[name];
           $.add(div, ta);
+          Settings.addFilterStats(name, ta, div, previewState);
         });
         return;
       }
@@ -21123,6 +27167,653 @@ Enable it on boards.${location.hostname.split('.')[1]}.org in your browser's pri
       $.extend(div, { innerHTML: FilterGuidePage });
       $('#filterTypes', div).textContent = `type:\u200B${filterTypes};`;
       $('.warning', div).hidden = Conf['Filter'];
+    },
+    easyFilterTypes: [
+      ['General', 'general'],
+      ['Post Number', 'postID'],
+      ['Name', 'name'],
+      ['Unique ID', 'uniqueID'],
+      ['Tripcode', 'tripcode'],
+      ['Capcode', 'capcode'],
+      ['Pass Date', 'pass'],
+      ['Email', 'email'],
+      ['Subject', 'subject'],
+      ['Comment', 'comment'],
+      ['Flag', 'flag'],
+      ['Filename', 'filename'],
+      ['Dimensions', 'dimensions'],
+      ['Filesize', 'filesize'],
+      ['Image MD5', 'MD5'],
+    ],
+    easyFilters(section, previewState) {
+      $.extend(section, { innerHTML: SimpleFiltersPage });
+      const tbody = $('tbody', section);
+      const addButton = $('.easy-filter-add', section);
+      const saveButton = $('.easy-filter-save', section);
+      const status = $('.easy-filter-status', section);
+      if (previewState)
+        previewState.simpleTbody = tbody;
+      const markDirty = () => {
+        status.textContent = 'Unsaved changes.';
+        Settings.refreshCombinedFilterPreview(previewState);
+      };
+      const save = () => {
+        const rules = Settings.collectEasyFilters(tbody);
+        const serialized = JSON.stringify(rules);
+        $.set('easyFilters', serialized);
+        Conf['easyFilters'] = serialized;
+        status.textContent = `Saved ${rules.length} rule${rules.length === 1 ? '' : 's'}.`;
+        Settings.refreshCombinedFilterPreview(previewState);
+      };
+      const addRow = (rule = {}) => {
+        const row = Settings.easyFilterRow(rule, markDirty);
+        $.add(tbody, row);
+        return row;
+      };
+      const rules = Settings.parseEasyFilters();
+      if (rules.length) {
+        for (const rule of rules)
+          addRow(rule);
+      } else {
+        addRow({ enabled: true, hide: true, type: 'tripcode' });
+      }
+      $.on(addButton, 'click', () => {
+        const row = addRow({ enabled: true, hide: true, type: 'tripcode' });
+        const patternInput = $('.easy-filter-pattern', row);
+        if (patternInput) {
+          patternInput.focus();
+          patternInput.select();
+        }
+        markDirty();
+      });
+      $.on(saveButton, 'click', save);
+      status.textContent = `Loaded ${rules.length} rule${rules.length === 1 ? '' : 's'}.`;
+      Settings.refreshCombinedFilterPreview(previewState);
+    },
+    parseEasyFilters() {
+      const raw = Conf['easyFilters'];
+      let rules = [];
+      if (Array.isArray(raw)) {
+        rules = raw;
+      } else if (typeof raw === 'string' && raw.trim()) {
+        try {
+          rules = JSON.parse(raw);
+        } catch {
+          rules = [];
+        }
+      }
+      if (!Array.isArray(rules))
+        return [];
+      return rules.map((rule) => {
+        if (!rule || typeof rule !== 'object')
+          return {};
+        const type = (rule.type in Config.filter) ? rule.type : {
+          title: 'subject', body: 'comment', name: 'name',
+        }[rule.field] || 'general';
+        const hide = (rule.hide != null)
+          ? !!rule.hide
+          : !['highlight', 'notify'].includes(rule.action);
+        return {
+          enabled: rule.enabled != null ? !!rule.enabled : true,
+          pattern: typeof rule.pattern === 'string' ? rule.pattern
+            : typeof rule.match === 'string' ? rule.match : '',
+          boards: typeof rule.boards === 'string' ? rule.boards : '',
+          type,
+          color: typeof rule.color === 'string' ? rule.color : '',
+          auto: !!rule.auto,
+          hide,
+          override: !!rule.override,
+        };
+      });
+    },
+    easyFilterRow(rule, markDirty) {
+      const tr = $.el('tr', {
+        innerHTML: `
+    <td><input class="easy-filter-enabled" type="checkbox"></td>
+    <td><input class="field easy-filter-pattern" type="text"></td>
+    <td><input class="field easy-filter-boards" type="text" placeholder="all or g,v"></td>
+    <td><select class="easy-filter-type"></select></td>
+    <td><input class="field easy-filter-color" type="text" placeholder="highlight class"></td>
+    <td><input class="easy-filter-auto" type="checkbox" title="Move highlighted OPs to top"></td>
+    <td><input class="easy-filter-hide" type="checkbox"></td>
+    <td><input class="easy-filter-override" type="checkbox" title="Whitelist: matching highlight prevents this thread from being hidden by other rules"></td>
+    <td><button class="easy-filter-remove" type="button" title="Remove">\u00D7</button></td>
+   `,
+      });
+      const typeSelect = $('.easy-filter-type', tr);
+      for (const [label, value] of Settings.easyFilterTypes) {
+        $.add(typeSelect, $.el('option', { textContent: label, value }));
+      }
+      const enabledInput = $('.easy-filter-enabled', tr);
+      const patternInput = $('.easy-filter-pattern', tr);
+      const boardsInput = $('.easy-filter-boards', tr);
+      const colorInput = $('.easy-filter-color', tr);
+      const autoInput = $('.easy-filter-auto', tr);
+      const hideInput = $('.easy-filter-hide', tr);
+      const overrideInput = $('.easy-filter-override', tr);
+      const removeButton = $('.easy-filter-remove', tr);
+      enabledInput.checked = rule.enabled != null ? !!rule.enabled : true;
+      patternInput.value = rule.pattern || '';
+      boardsInput.value = rule.boards || '';
+      typeSelect.value = (rule.type in Config.filter) ? rule.type : 'general';
+      colorInput.value = rule.color || '';
+      autoInput.checked = !!rule.auto;
+      hideInput.checked = rule.hide != null ? !!rule.hide : true;
+      overrideInput.checked = !!rule.override;
+      // Override only applies to highlight rules. Grey it out when this row is set
+      // to hide, since "hide + override" has no meaning.
+      const syncOverrideState = () => {
+        const disabled = hideInput.checked;
+        overrideInput.disabled = disabled;
+        if (disabled)
+          overrideInput.checked = false;
+      };
+      syncOverrideState();
+      $.on(hideInput, 'change', syncOverrideState);
+      for (const input of $$('input, select', tr)) {
+        $.on(input, 'change', markDirty);
+        if (input.type === 'text') {
+          $.on(input, 'input', markDirty);
+        }
+      }
+      $.on(removeButton, 'click', () => {
+        $.rm(tr);
+        markDirty();
+      });
+      return tr;
+    },
+    collectEasyFilters(tbody) {
+      const rules = [];
+      for (const tr of $$('tr', tbody)) {
+        const pattern = $('.easy-filter-pattern', tr).value.trim();
+        if (!pattern)
+          continue;
+        const type = $('.easy-filter-type', tr).value;
+        const hide = $('.easy-filter-hide', tr).checked;
+        rules.push({
+          enabled: $('.easy-filter-enabled', tr).checked,
+          pattern,
+          boards: $('.easy-filter-boards', tr).value.trim(),
+          type: (type in Config.filter) ? type : 'general',
+          color: $('.easy-filter-color', tr).value.trim(),
+          auto: $('.easy-filter-auto', tr).checked,
+          hide,
+          override: !hide && $('.easy-filter-override', tr).checked,
+        });
+      }
+      return rules;
+    },
+    easyFilterRuleFromRow(tr) {
+      const pattern = $('.easy-filter-pattern', tr).value.trim();
+      if (!pattern)
+        return null;
+      const type = $('.easy-filter-type', tr).value;
+      const hide = $('.easy-filter-hide', tr).checked;
+      return {
+        enabled: $('.easy-filter-enabled', tr).checked,
+        pattern,
+        boards: $('.easy-filter-boards', tr).value.trim(),
+        type: (type in Config.filter) ? type : 'general',
+        color: $('.easy-filter-color', tr).value.trim(),
+        auto: $('.easy-filter-auto', tr).checked,
+        hide,
+        override: !hide && $('.easy-filter-override', tr).checked,
+      };
+    },
+    easyFilterRuleToLine(rule) {
+      if (!rule?.enabled)
+        return null;
+      const match = (rule.pattern || '').trim();
+      if (!match)
+        return null;
+      const flags = rule.caseSensitive ? '' : 'i';
+      let line = `/${Filter.escape(match)}/${flags}`;
+      const options = [];
+      if (typeof rule.boards === 'string' && rule.boards.trim()) {
+        options.push(`boards:${rule.boards.trim()}`);
+      }
+      const type = (rule.type in Config.filter) ? rule.type : 'general';
+      options.push(`type:${type === 'general' ? 'subject,name,comment' : type}`);
+      const hide = (rule.hide != null) ? !!rule.hide : !['highlight', 'notify'].includes(rule.action);
+      if (!hide) {
+        const color = (rule.color || '').trim();
+        options.push(color ? `highlight:${color}` : 'highlight');
+        options.push(`top:${rule.auto ? 'yes' : 'no'}`);
+        if (rule.override)
+          options.push('override');
+      }
+      if (rule.action === 'notify')
+        options.push('notify');
+      if (options.length)
+        line += `;${options.join(';')}`;
+      return line;
+    },
+    addFilterStats(type, textarea, container, previewState) {
+      if (previewState) {
+        previewState.advancedType = type;
+        previewState.advancedTextarea = textarea;
+        const refresh = () => Settings.refreshCombinedFilterPreview(previewState);
+        $.on(textarea, 'input', refresh);
+        $.on(textarea, 'change', refresh);
+        refresh();
+        return;
+      }
+    },
+    refreshCombinedFilterPreview(previewState = Settings.filtersPreviewState) {
+      const panel = previewState?.panel;
+      if (!panel)
+        return;
+      $.rmAll(panel);
+      if (!previewState.simpleTbody && !previewState.advancedTextarea) {
+        $.add(panel, $.el('div', {
+          className: 'filter-stats-empty',
+          textContent: 'No filters loaded yet.',
+        }));
+        return;
+      }
+      if (previewState.simpleTbody) {
+        const simpleGroup = $.el('div', { className: 'filter-preview-group' });
+        $.add(simpleGroup, $.el('div', { className: 'filter-preview-heading', textContent: 'Simple Filters' }));
+        const simplePanel = $.el('div', { className: 'filter-stats' });
+        $.add(simpleGroup, simplePanel);
+        Settings.renderEasyFilterPreview(previewState.simpleTbody, simplePanel);
+        $.add(panel, simpleGroup);
+      }
+      if (previewState.advancedTextarea) {
+        const advancedGroup = $.el('div', { className: 'filter-preview-group' });
+        const advancedLabel = previewState.advancedType
+          ? `Advanced Filters (${previewState.advancedType})` : 'Advanced Filters';
+        $.add(advancedGroup, $.el('div', { className: 'filter-preview-heading', textContent: advancedLabel }));
+        const advancedPanel = $.el('div', { className: 'filter-stats' });
+        $.add(advancedGroup, advancedPanel);
+        Settings.renderFilterStats(previewState.advancedType, previewState.advancedTextarea, advancedPanel);
+        $.add(panel, advancedGroup);
+      }
+    },
+    renderEasyFilterPreview(tbody, panel) {
+      $.rmAll(panel);
+      if (!g.BOARD?.threads || !['index', 'thread', 'catalog'].includes(g.VIEW)) {
+        $.add(panel, $.el('div', {
+          className: 'filter-stats-empty',
+          textContent: 'Thread match preview is available on board and catalog pages.',
+        }));
+        return;
+      }
+      const entries = Settings.filterPreviewEntries();
+      if (!entries.length) {
+        $.add(panel, $.el('div', {
+          className: 'filter-stats-empty',
+          textContent: 'No loaded thread data to preview.',
+        }));
+        return;
+      }
+      const stats = [];
+      let totalMatches = 0;
+      let totalHidden = 0;
+      let activeRules = 0;
+      let rowNo = 0;
+      for (const tr of $$('tr', tbody)) {
+        rowNo++;
+        const rule = Settings.easyFilterRuleFromRow(tr);
+        if (!rule)
+          continue;
+        const lineText = Settings.easyFilterRuleToLine(rule);
+        if (!lineText) {
+          stats.push({ rowNo, rule, disabled: true });
+          continue;
+        }
+        activeRules++;
+        const parsed = Settings.parseFilterPreviewLine('general', lineText);
+        if (parsed?.invalid) {
+          stats.push({ rowNo, rule, invalid: parsed.invalid });
+          continue;
+        }
+        if (parsed?.skip)
+          continue;
+        const result = Settings.collectFilterPreviewMatches(parsed, entries);
+        totalMatches += result.matches.length;
+        totalHidden += result.hiddenThreadCount;
+        stats.push({ rowNo, rule, matches: result.matches, hiddenThreadCount: result.hiddenThreadCount });
+      }
+      if (!stats.length) {
+        $.add(panel, $.el('div', {
+          className: 'filter-stats-empty',
+          textContent: 'Add a pattern to preview thread matches.',
+        }));
+        return;
+      }
+      $.add(panel, $.el('div', {
+        className: 'filter-stats-summary',
+        textContent: `${activeRules} active rule${activeRules === 1 ? '' : 's'}, ${totalMatches} matching thread${totalMatches === 1 ? '' : 's'}, ${totalHidden} hidden thread${totalHidden === 1 ? '' : 's'}.`,
+      }));
+      const maxThreads = 50;
+      for (const stat of stats) {
+        const row = $.el('div', { className: 'filter-stat-row' });
+        let ruleText = `${stat.rule.type}: ${stat.rule.pattern}`;
+        if (ruleText.length > 120)
+          ruleText = `${ruleText.slice(0, 117)}...`;
+        if (stat.disabled) {
+          $.add(row, [
+            $.el('span', { className: 'filter-stat-count', textContent: `Rule ${stat.rowNo}: disabled` }),
+            $.tn(' '),
+            $.el('code', { textContent: ruleText }),
+          ]);
+          $.add(panel, row);
+          continue;
+        }
+        if (stat.invalid) {
+          $.add(row, $.el('div', {
+            className: 'filter-stat-invalid',
+            textContent: `Rule ${stat.rowNo}: invalid regex (${stat.invalid})`,
+          }));
+          $.add(panel, row);
+          continue;
+        }
+        const matchCount = stat.matches.length;
+        let summaryText = `Rule ${stat.rowNo}: ${matchCount} matching thread${matchCount === 1 ? '' : 's'}`;
+        if (stat.hiddenThreadCount)
+          summaryText += `, ${stat.hiddenThreadCount} hidden`;
+        if (matchCount) {
+          const details = $.el('details', { className: 'filter-stat' });
+          const summaryEl = $.el('summary');
+          $.add(summaryEl, [
+            $.el('span', { className: 'filter-stat-count', textContent: summaryText }),
+            $.tn(' '),
+            $.el('code', { textContent: ruleText }),
+          ]);
+          $.add(details, summaryEl);
+          const list = $.el('ul', { className: 'filter-stat-threads' });
+          stat.matches.slice(0, maxThreads).forEach((m) => {
+            const { entry, hidesThread } = m;
+            const { href, text } = Settings.filterPreviewThreadLink(entry);
+            const li = $.el('li');
+            $.add(li, $.el('a', { href, textContent: text }));
+            if (hidesThread)
+              $.add(li, $.tn(' (hidden)'));
+            $.add(list, li);
+          });
+          if (stat.matches.length > maxThreads) {
+            $.add(list, $.el('li', {
+              className: 'filter-stat-more',
+              textContent: `...and ${stat.matches.length - maxThreads} more.`,
+            }));
+          }
+          $.add(details, list);
+          $.add(row, details);
+        } else {
+          $.add(row, [
+            $.el('span', { className: 'filter-stat-count', textContent: summaryText }),
+            $.tn(' '),
+            $.el('code', { textContent: ruleText }),
+          ]);
+        }
+        $.add(panel, row);
+      }
+    },
+    renderFilterStats(type, textarea, panel) {
+      $.rmAll(panel);
+      if (!g.BOARD?.threads || !['index', 'thread', 'catalog'].includes(g.VIEW)) {
+        $.add(panel, $.el('div', {
+          className: 'filter-stats-empty',
+          textContent: 'Thread match preview is available on board and catalog pages.',
+        }));
+        return;
+      }
+      const entries = Settings.filterPreviewEntries();
+      if (!entries.length) {
+        $.add(panel, $.el('div', {
+          className: 'filter-stats-empty',
+          textContent: 'No loaded thread data to preview.',
+        }));
+        return;
+      }
+      const lines = textarea.value.split('\n');
+      if (type === 'MD5') {
+        let activeLines = 0;
+        for (const line of lines) {
+          const trimmed = line.trim();
+          if (trimmed && trimmed[0] !== '#')
+            activeLines++;
+        }
+        if (activeLines > 250) {
+          $.add(panel, $.el('div', {
+            className: 'filter-stats-empty',
+            textContent: `Preview disabled for MD5 while ${activeLines} lines are loaded.`,
+          }));
+          return;
+        }
+      }
+      const stats = [];
+      let totalMatches = 0;
+      let totalHidden = 0;
+      lines.forEach((line, i) => {
+        const trimmed = line.trim();
+        if (!trimmed)
+          return;
+        const parsed = Settings.parseFilterPreviewLine(type, line);
+        if (parsed?.skip)
+          return;
+        if (parsed?.invalid) {
+          stats.push({ lineNo: i + 1, line, invalid: parsed.invalid });
+          return;
+        }
+        const result = Settings.collectFilterPreviewMatches(parsed, entries);
+        totalMatches += result.matches.length;
+        totalHidden += result.hiddenThreadCount;
+        stats.push({ lineNo: i + 1, line, matches: result.matches, hiddenThreadCount: result.hiddenThreadCount });
+      });
+      if (!stats.length) {
+        $.add(panel, $.el('div', {
+          className: 'filter-stats-empty',
+          textContent: 'No filter lines to preview.',
+        }));
+        return;
+      }
+      $.add(panel, $.el('div', {
+        className: 'filter-stats-summary',
+        textContent: `${stats.length} line${stats.length === 1 ? '' : 's'}, ${totalMatches} matching thread${totalMatches === 1 ? '' : 's'}, ${totalHidden} hidden thread${totalHidden === 1 ? '' : 's'}.`,
+      }));
+      const maxThreads = 50;
+      for (const stat of stats) {
+        const row = $.el('div', { className: 'filter-stat-row' });
+        if (stat.invalid) {
+          $.add(row, $.el('div', {
+            className: 'filter-stat-invalid',
+            textContent: `Line ${stat.lineNo}: invalid regex (${stat.invalid})`,
+          }));
+          $.add(panel, row);
+          continue;
+        }
+        let lineText = stat.line.trim();
+        if (lineText.length > 120)
+          lineText = `${lineText.slice(0, 117)}...`;
+        const matchCount = stat.matches.length;
+        let summaryText = `Line ${stat.lineNo}: ${matchCount} matching thread${matchCount === 1 ? '' : 's'}`;
+        if (stat.hiddenThreadCount)
+          summaryText += `, ${stat.hiddenThreadCount} hidden`;
+        if (matchCount) {
+          const details = $.el('details', { className: 'filter-stat' });
+          const summaryEl = $.el('summary');
+          $.add(summaryEl, [
+            $.el('span', { className: 'filter-stat-count', textContent: summaryText }),
+            $.tn(' '),
+            $.el('code', { textContent: lineText }),
+          ]);
+          $.add(details, summaryEl);
+          const list = $.el('ul', { className: 'filter-stat-threads' });
+          stat.matches.slice(0, maxThreads).forEach((m) => {
+            const { entry, hidesThread } = m;
+            const { href, text } = Settings.filterPreviewThreadLink(entry);
+            const li = $.el('li');
+            $.add(li, $.el('a', { href, textContent: text }));
+            if (hidesThread)
+              $.add(li, $.tn(' (hidden)'));
+            $.add(list, li);
+          });
+          if (stat.matches.length > maxThreads) {
+            $.add(list, $.el('li', {
+              className: 'filter-stat-more',
+              textContent: `...and ${stat.matches.length - maxThreads} more.`,
+            }));
+          }
+          $.add(details, list);
+          $.add(row, details);
+        } else {
+          $.add(row, [
+            $.el('span', { className: 'filter-stat-count', textContent: summaryText }),
+            $.tn(' '),
+            $.el('code', { textContent: lineText }),
+          ]);
+        }
+        $.add(panel, row);
+      }
+    },
+    parseFilterPreviewLine(key, line) {
+      if (line[0] === '#')
+        return { skip: true };
+      const regexpMatch = line.match(/\/(.*)\/(\w*)/);
+      if (!regexpMatch)
+        return { skip: true };
+      const isstring = key === 'uniqueID' || key === 'MD5';
+      let regexp = regexpMatch[1];
+      if (!isstring) {
+        try {
+          regexp = RegExp(regexpMatch[1], regexpMatch[2]);
+        } catch (err) {
+          return { invalid: err.message };
+        }
+      }
+      const filter = line.replace(regexpMatch[0], '');
+      const boards = Filter.parseBoards(filter.match(/(?:^|;)\s*boards:([^;]+)/)?.[1]);
+      const excludes = Filter.parseBoards(filter.match(/(?:^|;)\s*exclude:([^;]+)/)?.[1]);
+      const op = filter.match(/(?:^|;)\s*op:(no|only)/)?.[1] || '';
+      let mask = { no: 1, only: 2 }[op] || 0;
+      const file = filter.match(/(?:^|;)\s*file:(no|only)/)?.[1] || '';
+      mask = mask | ({ no: 4, only: 8 }[file] || 0);
+      const noti = /(?:^|;)\s*notify/.test(filter);
+      const hl = /(?:^|;)\s*highlight/.test(filter);
+      const hide = !(hl || noti);
+      const keys = (key === 'general')
+        ? (filter.match(/(?:^|;)\s*type:([^;]*)/)?.[1].split(',') || ['subject', 'name', 'filename', 'comment'])
+        : [key];
+      return { regexp, isstring, boards, excludes, mask, hide, keys };
+    },
+    collectFilterPreviewMatches(parsed, entries) {
+      const matches = [];
+      let hiddenThreadCount = 0;
+      for (const entry of entries) {
+        let threadMatched = false;
+        let hidesThread = false;
+        for (const post of entry.posts) {
+          if (!Settings.filterPreviewMatchesPost(parsed, post))
+            continue;
+          threadMatched = true;
+          if (parsed.hide && !post.isReply && !QuoteYou.isYou(post))
+            hidesThread = true;
+        }
+        if (threadMatched) {
+          matches.push({ entry, hidesThread });
+          if (hidesThread)
+            hiddenThreadCount++;
+        }
+      }
+      return { matches, hiddenThreadCount };
+    },
+    filterPreviewMatchesPost(parsed, post) {
+      let mask = post.isReply ? 2 : 1;
+      mask = mask | (post.file ? 4 : 8);
+      const board = `${post.siteID}/${post.boardID}`;
+      const site = `${post.siteID}/*`;
+      if ((parsed.boards && !(parsed.boards[board] || parsed.boards[site])) ||
+        (parsed.excludes && (parsed.excludes[board] || parsed.excludes[site])) ||
+        (parsed.mask & mask))
+        return false;
+      for (const key of parsed.keys) {
+        for (const value of Filter.values(key, post)) {
+          if (parsed.isstring) {
+            if (parsed.regexp === value)
+              return true;
+          } else {
+            parsed.regexp.lastIndex = 0;
+            if (parsed.regexp.test(value))
+              return true;
+          }
+        }
+      }
+      return false;
+    },
+    filterPreviewEntries() {
+      const entries = [];
+      if (g.VIEW === 'index' && Index?.parsedThreads) {
+        for (const threadID in Index.parsedThreads) {
+          const parsed = Index.parsedThreads[threadID];
+          const thread = g.BOARD?.threads?.get?.(+threadID) || g.BOARD?.threads?.get?.(threadID);
+          const posts = [];
+          if (thread?.posts) {
+            thread.posts.forEach((post) => {
+              if (post.isClone || post.isFetchedQuote)
+                return;
+              posts.push(post);
+            });
+          }
+          if (!posts.length)
+            posts.push(parsed);
+          entries.push({ id: +threadID, boardID: parsed.boardID, siteID: parsed.siteID, thread, op: parsed, posts });
+        }
+        return entries;
+      }
+      if (g.VIEW === 'catalog' && Filter?.catalogData) {
+        for (const threadID in Filter.catalogData) {
+          const data = Filter.catalogData[threadID];
+          const parsed = g.SITE.Build.parseJSON(data, g.BOARD);
+          const thread = g.BOARD?.threads?.get?.(+threadID) || g.BOARD?.threads?.get?.(threadID);
+          const posts = [];
+          if (thread?.posts) {
+            thread.posts.forEach((post) => {
+              if (post.isClone || post.isFetchedQuote)
+                return;
+              posts.push(post);
+            });
+          }
+          if (!posts.length)
+            posts.push(parsed);
+          entries.push({ id: +threadID, boardID: parsed.boardID, siteID: parsed.siteID, thread, op: parsed, posts });
+        }
+        return entries;
+      }
+      if (g.BOARD?.threads) {
+        g.BOARD.threads.forEach((thread) => {
+          if (!thread?.OP || thread.OP.isFetchedQuote)
+            return;
+          const posts = [];
+          thread.posts.forEach((post) => {
+            if (post.isClone || post.isFetchedQuote)
+              return;
+            posts.push(post);
+          });
+          if (!posts.length)
+            posts.push(thread.OP);
+          entries.push({ id: thread.ID, boardID: thread.boardID, siteID: thread.siteID, thread, op: thread.OP, posts });
+        });
+      }
+      return entries;
+    },
+    filterPreviewThreadLink(entry) {
+      const { id, boardID, op } = entry;
+      let href = g.SITE.Build.postURL?.(boardID, id, id) || g.SITE.Build.threadURL?.(boardID, id) || '';
+      if (!href)
+        href = `#p${id}`;
+      let title = op.info.subject || op.info.comment || op.info.nameBlock || '';
+      if (!title && op.info.commentHTML?.innerHTML) {
+        title = g.sites[op.siteID]?.Build?.parseComment?.(op.info.commentHTML.innerHTML) || '';
+      }
+      title = title.replace(/\s+/g, ' ').trim();
+      if (title.length > 90)
+        title = `${title.slice(0, 87)}...`;
+      let text = `/${boardID}/${id}`;
+      if (title)
+        text += ` - ${title}`;
+      return { href, text };
     },
     sauce(section) {
       $.extend(section, { innerHTML: SaucePage });
@@ -21175,22 +27866,34 @@ Enable it on boards.${location.hostname.split('.')[1]}.org in your browser's pri
         }
       });
       const listImageHost = $.id('list-fourchanImageHost');
-      for (var textContent of ImageHost.suggestions) {
-        $.add(listImageHost, $.el('option', { textContent }));
+      if (listImageHost) {
+        for (const textContent of ImageHost.suggestions) {
+          $.add(listImageHost, $.el('option', { textContent }));
+        }
       }
       const interval = inputs['Interval'];
       const customCSS = inputs['Custom CSS'];
       const applyCSS = $('#apply-css', section);
       const timeLocale = inputs.timeLocale;
-      interval.value = Conf['Interval'];
-      customCSS.checked = Conf['Custom CSS'];
-      inputs['usercss'].disabled = !Conf['Custom CSS'];
-      applyCSS.disabled = !Conf['Custom CSS'];
-      timeLocale.value = Conf.timeLocale;
-      $.on(interval, 'change', ThreadUpdater.cb.interval);
-      $.on(customCSS, 'change', Settings.togglecss);
-      $.on(applyCSS, 'click', () => CustomCSS.update());
-      $.on(timeLocale, 'change', Settings.setTimeLocale);
+      if (interval) {
+        interval.value = Conf['Interval'];
+        $.on(interval, 'change', ThreadUpdater.cb.interval);
+      }
+      if (customCSS) {
+        customCSS.checked = Conf['Custom CSS'];
+        $.on(customCSS, 'change', Settings.togglecss);
+      }
+      if (inputs['usercss']) {
+        inputs['usercss'].disabled = !Conf['Custom CSS'];
+      }
+      if (applyCSS) {
+        applyCSS.disabled = !Conf['Custom CSS'];
+        $.on(applyCSS, 'click', () => CustomCSS.update());
+      }
+      if (timeLocale) {
+        timeLocale.value = Conf.timeLocale;
+        $.on(timeLocale, 'change', Settings.setTimeLocale);
+      }
       const itemsArchive = dict();
       for (name of ['archives', 'selectedArchives', 'lastarchivecheck']) {
         itemsArchive[name] = Conf[name];
@@ -21203,11 +27906,19 @@ Enable it on boards.${location.hostname.split('.')[1]}.org in your browser's pri
       const boardSelect = $('#archive-board-select', section);
       const table = $('#archive-table', section);
       const updateArchives = $('#update-archives', section);
-      $.on(boardSelect, 'change', function () {
-        $('tbody > :not([hidden])', table).hidden = true;
-        $(`tbody > .${this.value}`, table).hidden = false;
-      });
-      $.on(updateArchives, 'click', () => Redirect.update(() => Settings.addArchiveTable(section)));
+      if (boardSelect && table) {
+        $.on(boardSelect, 'change', function () {
+          const active = $('tbody > :not([hidden])', table);
+          if (active)
+            active.hidden = true;
+          const next = $(`tbody > .${this.value}`, table);
+          if (next)
+            next.hidden = false;
+        });
+      }
+      if (updateArchives) {
+        $.on(updateArchives, 'click', () => Redirect.update(() => Settings.addArchiveTable(section)));
+      }
       $.on(inputs.beepVolume, 'change', () => { ThreadUpdater.playBeep(false); });
       $.on(inputs.beepSource, 'change', () => { ThreadUpdater.playBeep(false); });
     },
@@ -21368,7 +28079,15 @@ Enable it on boards.${location.hostname.split('.')[1]}.org in your browser's pri
       }
     },
     togglecss() {
-      if (($('textarea[name=usercss]', $.x('ancestor::fieldset[1]', this)).disabled = ($.id('apply-css').disabled = !this.checked))) {
+      const details = $.x('ancestor::details[1]', this);
+      const textarea = details ? $('textarea[name=usercss]', details) : null;
+      const applyCSS = details ? $('#apply-css', details) : null;
+      const disabled = !this.checked;
+      if (textarea)
+        textarea.disabled = disabled;
+      if (applyCSS)
+        applyCSS.disabled = disabled;
+      if (disabled) {
         CustomCSS.rmStyle();
       } else {
         CustomCSS.addStyle();
@@ -21393,13 +28112,23 @@ Enable it on boards.${location.hostname.split('.')[1]}.org in your browser's pri
     keybinds(section) {
       let key;
       $.extend(section, { innerHTML: KeybindsPage });
-      $('.warning', section).hidden = Conf['Keybinds'];
-      const tbody = $('tbody', section);
+      const warning = $('.warning', section);
+      if (warning)
+        warning.hidden = Conf['Keybinds'];
+      const details = $.el('details', { open: true }, { innerHTML: '<summary>Keybind Actions</summary>' });
+      const contentNodes = [...section.childNodes];
+      $.rmAll(section);
+      $.add(details, contentNodes);
+      $.add(section, details);
+      const tbody = $('tbody', details);
       const items = dict();
       const inputs = Settings.keyBindInputs;
       for (key in Config.hotkeys) {
         var arr = Config.hotkeys[key];
-        var tr = $.el('tr', { innerHTML: `<td>${arr[1]}</td><td><input class="field"></td>` });
+        var tr = $.el('tr', { innerHTML: `<td class="setting-title">${arr[1]}</td><td><input class="field"></td>` });
+        tr.dataset.name = `${key} ${arr[1]}`;
+        tr.dataset.settingTitle = arr[1];
+        tr.dataset.settingDescription = key;
         var input = $('input', tr);
         input.name = key;
         input.spellcheck = false;
@@ -21414,7 +28143,7 @@ Enable it on boards.${location.hostname.split('.')[1]}.org in your browser's pri
           inputs[key].value = val;
         }
       });
-      $.on($('#reset-keys', section), 'click', Settings.resetKeybinds);
+      $.on($('#reset-keys', details), 'click', Settings.resetKeybinds);
     },
     keybind(e) {
       if (e.keyCode === 9)
@@ -21454,8 +28183,12 @@ Enable it on boards.${location.hostname.split('.')[1]}.org in your browser's pri
       if (!Conf['Filtered Backlinks']) {
         $.addClass(doc, 'hide-backlinks');
       }
+      const easyLines = Filter.easyFilterLines();
       for (var key in Config.filter) {
-        for (var line of Conf[key].split('\n')) {
+        const lines = Conf[key].split('\n');
+        if (key === 'general' && easyLines.length)
+          lines.push(...easyLines);
+        for (var line of lines) {
           let hl;
           let regexp;
           let top;
@@ -21467,6 +28200,7 @@ Enable it on boards.${location.hostname.split('.')[1]}.org in your browser's pri
           let poster = false;
           let replies = false;
           let noti = false;
+          let override = false;
           let stub = Conf.Stubs;
           if (line[0] === '#')
             continue;
@@ -21530,13 +28264,19 @@ Enable it on boards.${location.hostname.split('.')[1]}.org in your browser's pri
               top = (options.match(/(?:^|;)\s*top:(yes|no)/)?.[1] || 'yes') === 'yes';
               hide = /(?:^|;)\s*hide(?:[;:]|$)/.test(options);
             }
+            // Whitelist: a matching highlight with this flag prevents the post from
+            // being hidden by any other rule. Only meaningful on highlight filters.
+            override = !!hl && /(?:^|;)\s*override(?:[;:]|$)/.test(options);
             // Hide the post (default case).
             hide = hide || !(hl || noti);
             reason = options.match(/(?:^|;)\s*reason:([^;$]+)/)?.[1];
             poster = /(?:^|;)\s*poster(?:[;:]|$)/.test(options);
             replies = /(?:^|;)\s*replies(?:[;:]|$)/.test(options);
           }
-          const filterObj = { regexp, boards, excludes, mask, hide, stub, hl, top, noti, reason, poster, replies };
+          const label = (regexp instanceof RegExp)
+            ? `${key}: /${regexp.source}/${regexp.flags}`
+            : `${key}: ${regexp}`;
+          const filterObj = { regexp, boards, excludes, mask, hide, stub, hl, top, noti, reason, poster, replies, override, label };
           // Fields that this filter applies to (for 'general' filters)
           if (key === 'general') {
             const types = options.match(/(?:^|;)\s*type:([^;]*)/)?.[1].split(',')
@@ -21614,6 +28354,7 @@ Enable it on boards.${location.hostname.split('.')[1]}.org in your browser's pri
       let noti = false;
       let poster = false;
       let replies = false;
+      let hlOverride = false;
       let reasons;
       if (QuoteYou.isYou(post)) {
         hideable = false;
@@ -21647,6 +28388,8 @@ Enable it on boards.${location.hostname.split('.')[1]}.org in your browser's pri
             if (filter.hl && !hl?.includes(filter.hl)) {
               (hl || (hl = [])).push(filter.hl);
             }
+            if (filter.override && filter.hl)
+              hlOverride = true;
             if (!top) {
               ({ top } = filter);
             }
@@ -21659,8 +28402,66 @@ Enable it on boards.${location.hostname.split('.')[1]}.org in your browser's pri
           }
         }
       }
+      if (hide && hlOverride) {
+        hide = false;
+        reasons = undefined;
+      }
       post.filterResults = { hide, stub, hl, top, noti, poster, replies, reasons };
       return post.filterResults;
+    },
+    easyFilterLines() {
+      const raw = Conf['easyFilters'];
+      let rules = [];
+      if (Array.isArray(raw)) {
+        rules = raw;
+      } else if (typeof raw === 'string' && raw.trim()) {
+        try {
+          rules = JSON.parse(raw);
+        } catch {
+          rules = [];
+        }
+      }
+      if (!Array.isArray(rules))
+        return [];
+      const lines = [];
+      for (const rule of rules) {
+        if (!rule || typeof rule !== 'object')
+          continue;
+        if (rule.enabled === false)
+          continue;
+        const pattern = typeof rule.pattern === 'string' ? rule.pattern
+          : typeof rule.match === 'string' ? rule.match
+            : '';
+        const match = pattern.trim();
+        if (!match)
+          continue;
+        const flags = rule.caseSensitive ? '' : 'i';
+        let line = `/${Filter.escape(match)}/${flags}`;
+        const options = [];
+        if (typeof rule.boards === 'string' && rule.boards.trim()) {
+          options.push(`boards:${rule.boards.trim()}`);
+        }
+        const type = (rule.type in Config.filter) ? rule.type : {
+          title: 'subject', body: 'comment', name: 'name',
+        }[rule.field] || 'general';
+        options.push(`type:${type === 'general' ? 'subject,name,comment' : type}`);
+        const hide = (rule.hide != null)
+          ? !!rule.hide
+          : !['highlight', 'notify'].includes(rule.action);
+        if (!hide) {
+          const color = typeof rule.color === 'string' ? rule.color.trim() : '';
+          options.push(color ? `highlight:${color}` : 'highlight');
+          options.push(`top:${rule.auto ? 'yes' : 'no'}`);
+          if (rule.override)
+            options.push('override');
+        }
+        if (rule.action === 'notify')
+          options.push('notify');
+        if (options.length)
+          line += `;${options.join(';')}`;
+        lines.push(line);
+      }
+      return lines;
     },
     node() {
       if (this.isClone ||
@@ -21834,13 +28635,14 @@ Enable it on boards.${location.hostname.split('.')[1]}.org in your browser's pri
         return;
       }
       return $.get(type, Conf[type], function (item) {
-        let save = item[type];
-        // Add a new line before the regexp unless the text is empty.
-        save =
-          save ?
-            `${save}\n${re}`
-            :
-              re;
+        const existingLines = (item[type] || '').split('\n');
+        const existingSet = new Set(existingLines.map(line => line.trim()).filter(Boolean));
+        const linesToAdd = re.split('\n').map(line => line.trim()).filter(Boolean)
+          .filter(line => !existingSet.has(line));
+        if (!linesToAdd.length) {
+          return cb?.();
+        }
+        const save = [...existingLines, ...linesToAdd].filter(Boolean).join('\n');
         return $.set(type, save, cb);
       });
     },
@@ -21855,12 +28657,16 @@ Enable it on boards.${location.hostname.split('.')[1]}.org in your browser's pri
     },
     showFilters(type) {
       // Open the settings and display & focus the relevant filter textarea.
-      Settings.open('Filter');
-      const section = $('.section-container');
-      const select = $('select[name=filter]', section);
-      select.value = type;
-      Settings.selectFilter.call(select);
-      return $.onExists(section, 'textarea', function (ta) {
+      Settings.forcedFiltersMode = 'advanced';
+      Settings.forcedFilterType = type;
+      if (Settings.dialog) {
+        const filteringTab = $('.tab-filtering', Settings.dialog);
+        filteringTab?.click();
+      } else {
+        Settings.open('Filter');
+      }
+      const section = Settings.dialog ? $('section', Settings.dialog) : $('.section-container');
+      return $.onExists(section, `textarea[name="${type}"]`, function (ta) {
         const tl = ta.textLength;
         ta.setSelectionRange(tl, tl);
         return ta.focus();
@@ -21872,13 +28678,25 @@ Enable it on boards.${location.hostname.split('.')[1]}.org in your browser's pri
       if (!files.length) {
         return;
       }
+      const md5s = new Set(files.map(f => f.MD5));
       const filter = files.map(f => `/${f.MD5}/`).join('\n');
       Filter.addFilter('MD5', filter);
-      const origin = post.origin || post;
-      if (origin.isReply) {
-        PostHiding.hide(origin, undefined, undefined, files.map(f => `Filtered MD5 ${f.MD5}`).join(' & '));
-      } else if (g.VIEW === 'index') {
-        ThreadHiding.hide(origin.thread);
+      const reason = files.map(f => `Filtered MD5 ${f.MD5}`).join(' & ');
+      const origin = (post.origin || post);
+      const hideMatchingPost = (candidate) => {
+        if (candidate.isHidden || !candidate.files.some(file => file.MD5 && md5s.has(file.MD5)))
+          return;
+        delete candidate.filterResults;
+        if (candidate.isReply) {
+          PostHiding.hide(candidate, undefined, undefined, reason);
+        } else if (g.VIEW === 'index') {
+          ThreadHiding.hide(candidate.thread);
+        }
+      };
+      if (g.VIEW === 'thread') {
+        g.posts.forEach(hideMatchingPost);
+      } else {
+        hideMatchingPost(origin);
       }
       if (!Conf['MD5 Quick Filter Notifications']) {
         // feedback for when nothing gets hidden
@@ -21889,8 +28707,12 @@ Enable it on boards.${location.hostname.split('.')[1]}.org in your browser's pri
       }
       let { notice } = Filter.quickFilterMD5;
       if (notice) {
-        notice.filters.push(filter);
-        notice.posts.push(origin);
+        if (!notice.filters.includes(filter)) {
+          notice.filters.push(filter);
+        }
+        if (!notice.posts.includes(origin)) {
+          notice.posts.push(origin);
+        }
         $('span', notice.el).textContent = `${notice.filters.length} MD5s filtered.`;
         notice.resetTimer();
       } else {
@@ -21905,6 +28727,7 @@ Enable it on boards.${location.hostname.split('.')[1]}.org in your browser's pri
     },
     quickFilterCB: {
       show() {
+        Settings.forcedFiltersMode = 'advanced';
         Filter.showFilters('MD5');
         return this.close();
       },
@@ -22682,7 +29505,7 @@ Enable it on boards.${location.hostname.split('.')[1]}.org in your browser's pri
       return Header.setCustomNav(this.checked);
     },
     editCustomNav() {
-      Settings.open('Advanced');
+      Settings.open('Interface');
       const settings = $.id('fourchanx-settings');
       return $('[name=boardnav]', settings).focus();
     },
@@ -25371,12 +32194,90 @@ Enable it on boards.${location.hostname.split('.')[1]}.org in your browser's pri
     }
   };
 
+  const GhostPosts = {
+    thread: null,
+    fetched: false,
+    init() {
+      if (g.VIEW !== 'thread')
+        return;
+      if (!Conf['Fetch Ghost Posts'])
+        return;
+      if (!Conf['Resurrect Quotes'])
+        return;
+      Callbacks.Thread.push({
+        name: 'Ghost Posts',
+        cb: GhostPosts.node,
+      });
+    },
+    node() {
+      GhostPosts.thread = this;
+      GhostPosts.fetched = false;
+      $.one(d, '4chanXInitFinished', GhostPosts.start);
+      $.on(d, 'ThreadUpdate', GhostPosts.onThreadUpdate);
+    },
+    onThreadUpdate(e) {
+      if (e.detail[404])
+        return;
+      if (!e.detail.deletedPosts?.length)
+        return;
+      GhostPosts.fetched = false;
+      GhostPosts.start();
+    },
+    start() {
+      if (GhostPosts.fetched)
+        return;
+      if (!GhostPosts.thread)
+        return;
+      GhostPosts.fetched = true;
+      const { boardID, ID: threadID } = GhostPosts.thread;
+      const url = Redirect.to('threadJSON', { boardID: String(boardID), threadID });
+      if (!url)
+        return;
+      if (!Redirect.securityCheck(url))
+        return;
+      CrossOrigin.cache(url, function () {
+        GhostPosts.handle(this);
+      });
+    },
+    handle(req) {
+      const { status, response } = req;
+      if (![200, 304].includes(status) || !response)
+        return;
+      if (!GhostPosts.thread)
+        return;
+      const threadID = GhostPosts.thread.ID;
+      const threadObj = response[String(threadID)] ?? response[threadID];
+      if (!threadObj?.posts)
+        return;
+      for (const postIDStr of Object.keys(threadObj.posts)) {
+        const postID = +postIDStr;
+        if (!postID)
+          continue;
+        const raw = threadObj.posts[postIDStr];
+        try {
+          RestoreDeletedFromArchive.insert(raw);
+        } catch (err) {
+          c.error?.('GhostPosts insert failed for', postID, err);
+        }
+      }
+    },
+  };
+
   var Main = {
     init() {
-      // Return if the url is exactly https://www.4chan.org, this is only the home page which has a cloudflare checking
-      // system which breaks this script. Keep it in the includes so it can be found on greasy fork.
-      // __cf is also a cloudflare check page
-      if (location.hostname === 'www.4chan.org' || location.search.includes("__cf")) return;
+      // __cf is a cloudflare check page.
+      if (location.search.includes("__cf")) return;
+      // Keep the full script disabled on boardless home pages, but still apply
+      // home-page styling preferences (site style + optional custom CSS).
+      if (Main.isHomePage()) {
+        Main.initHomePageStyleBridge();
+        return;
+      }
+
+      // Apply native-extension disable as early as possible so 4chan's own
+      // extension does not initialize alongside XT.
+      Main.maybeDisableNativeExtensionEarly();
+
       // XXX dwb userscripts extension reloads scripts run at document-start when replaceState/pushState is called.
       // XXX Firefox reinjects WebExtension content scripts when extension is updated / reloaded.
       try {
@@ -25517,6 +32418,113 @@ Enable it on boards.${location.hostname.split('.')[1]}.org in your browser's pri
       });
     },
 
+    maybeDisableNativeExtensionEarly() {
+      if (!/\.4chan(?:nel)?\.org$/.test(location.hostname)) { return; }
+      const apply = function(disableNativeExtension) {
+        if (!disableNativeExtension) { return; }
+        if ($.hasStorage) {
+          $.global('disableNativeExtension');
+        } else {
+          $.global('disableNativeExtensionNoStorage');
+        }
+      };
+
+      // Prefer sync reads where available so this runs before native scripts init.
+      if ($.getSync) {
+        try {
+          const raw = $.getValue?.(g.NAMESPACE + 'Disable Native Extension');
+          if (raw != null) {
+            apply(dict.json(raw));
+            return;
+          }
+        } catch (err) {}
+      }
+
+      // Fallback for async-only storage APIs.
+      ($.getSync || $.get)({'Disable Native Extension': true}, items => {
+        apply(items['Disable Native Extension']);
+      });
+    },
+
+    isHomePage() {
+      if (!['www.4chan.org', 'www.4channel.org', '4chan.org', '4channel.org'].includes(location.hostname)) {
+        return false;
+      }
+      return /^\/(?:index\.php)?\/?$/.test(location.pathname);
+    },
+
+    normalizeSiteStyle(style) {
+      if (!style) return '';
+      const normalized = String(style)
+        .trim()
+        .toLowerCase()
+        .replace(/\bnew\b/g, '')
+        .trim()
+        .replace(/[_\s]+/g, '-')
+        .replace(/-+/g, '-')
+        .replace(/^-|-$/g, '');
+      return normalized;
+    },
+
+    initHomePageStyleBridge() {
+      const defaults = {
+        siteStyleHome: false,
+        siteStyle: '',
+        customCSSHome: false,
+        'Custom CSS': true,
+        usercss: '',
+      };
+      ($.getSync || $.get)(defaults, (items) => {
+        const normalizedStyle = Main.normalizeSiteStyle(items.siteStyle);
+        if (items.siteStyleHome && normalizedStyle) {
+          // Persist 4chan's own theme cookie so future homepage requests render
+          // server-side with the right stylesheet.
+          Main.setSiteStyleHomeCookie(items.siteStyle);
+          // Tag <html> so 4chan-X / custom CSS rules targeting :root.<theme> match.
+          $.addClass(doc, normalizedStyle);
+          // Switch the active <link rel="stylesheet"> to the alternate matching
+          // the chosen theme, so the homepage repaints immediately.
+          Main.applyHomePageSiteStyle(items.siteStyle);
+        }
+        if (items.customCSSHome && items['Custom CSS'] && items.usercss) {
+          Main.installHomePageCustomCSS(items.usercss);
+        }
+      });
+    },
+
+    applyHomePageSiteStyle(preferred) {
+      const want = Main.normalizeSiteStyle(preferred);
+      if (!want) return;
+
+      $.onExists(doc, 'head', () => {
+        $.rm($.id('fourchanx-homepage-theme-css'));
+        // www.css has :root.<theme> rules that target 4chan's homepage chrome
+        // (body, #bd, #ft, #header, etc.). The theme class is added on <html>
+        // by initHomePageStyleBridge, which activates the matching rules.
+        $.addStyle(www, 'fourchanx-homepage-theme-css');
+      });
+    },
+
+    installHomePageCustomCSS(usercss) {
+      let style = null;
+      const ensure = () => {
+        if (!d.head) return;
+        if (!style || !style.isConnected) {
+          style = $.el('style', { id: 'custom-css-home', textContent: usercss });
+          $.add(d.head, style);
+          return;
+        }
+        if (style.textContent !== usercss) style.textContent = usercss;
+        // Keep our <style> as the last child of <head> so it wins specificity ties.
+        if (d.head.lastElementChild !== style) $.add(d.head, style);
+      };
+      $.onExists(doc, 'head', () => {
+        ensure();
+        new MutationObserver(ensure).observe(d.head, { childList: true });
+      });
+      $.on(window, 'pageshow', ensure);
+    },
+
     upgrade(items) {
       const {previousversion} = items;
       const changes = Settings.upgrade(items, previousversion);
@@ -25621,6 +32629,9 @@ Enable it on boards.${location.hostname.split('.')[1]}.org in your browser's pri
 
     initStyle() {
       if (!Main.isThisPageLegit()) { return; }
+      if (Conf['siteStyleHome'] && Conf['siteStyle']) {
+        Main.setSiteStyleHomeCookie(Conf['siteStyle']);
+      }
 
       // disable the mobile layout
       const mobileLink = $('link[href*=mobile]', d.head);
@@ -25646,12 +32657,42 @@ Enable it on boards.${location.hostname.split('.')[1]}.org in your browser's pri
     setClass() {
       let mainStyleSheet, style, styleSheets;
       const knownStyles = ['yotsuba', 'yotsuba-b', 'futaba', 'burichan', 'photon', 'tomorrow', 'spooky'];
+      let preferredStyleApplied = false;
+      const applyPreferredStyle = function() {
+        if (preferredStyleApplied || g.SITE.software !== 'yotsuba' || !Conf['siteStyle']) { return; }
+        const preferred = Conf['siteStyle'];
+
+        const styleSelector = $.id('styleSelector');
+        if (styleSelector?.options?.length) {
+          const hasPreferred = Array.from(styleSelector.options).some(option => option.value === preferred);
+          if (hasPreferred) {
+            if (styleSelector.value !== preferred) {
+              styleSelector.value = preferred;
+              styleSelector.dispatchEvent(new Event('change', { bubbles: true }));
+            }
+            preferredStyleApplied = true;
+            return;
+          }
+        }
+
+        if (!styleSheets || !mainStyleSheet) { return; }
+        for (var styleSheet of styleSheets) {
+          if (styleSheet.title?.trim() === preferred) {
+            if (mainStyleSheet.href !== styleSheet.href) {
+              mainStyleSheet.href = styleSheet.href;
+            }
+            preferredStyleApplied = true;
+            break;
+          }
+        }
+      };
 
       if ((g.SITE.software === 'yotsuba') && (g.VIEW === 'catalog')) {
         if (mainStyleSheet = $.id('base-css')) {
           style = mainStyleSheet.href.match(/catalog_(\w+)/)?.[1].replace('_new', '').replace(/_+/g, '-');
           if (knownStyles.includes(style)) {
             $.addClass(doc, style);
+            Settings.applyStylingVars();
             return;
           }
         }
@@ -25660,21 +32701,31 @@ Enable it on boards.${location.hostname.split('.')[1]}.org in your browser's pri
       style = (mainStyleSheet = (styleSheets = null));
 
       const setStyle = function() {
+        let activeStyleTitle = null;
         // Use preconfigured CSS for 4chan's default themes.
         if (g.SITE.software === 'yotsuba') {
           $.rmClass(doc, style);
           style = null;
           for (var styleSheet of styleSheets) {
             if (styleSheet.href === mainStyleSheet?.href) {
+              activeStyleTitle = styleSheet.title?.trim() || null;
               style = styleSheet.title.toLowerCase().replace('new', '').trim().replace(/\s+/g, '-');
               if (style === '_special') { style = styleSheet.href.match(/[a-z]*(?=[^/]*$)/)[0]; }
               if (!knownStyles.includes(style)) { style = null; }
               break;
             }
           }
+          if (activeStyleTitle && (Conf['siteStyle'] !== activeStyleTitle)) {
+            Conf['siteStyle'] = activeStyleTitle;
+            $.set('siteStyle', activeStyleTitle);
+            if (Conf['siteStyleHome']) {
+              Main.setSiteStyleHomeCookie(activeStyleTitle);
+            }
+          }
           if (style) {
             $.addClass(doc, style);
             $.rm(Main.bgColorStyle);
+            Settings.applyStylingVars();
             return;
           }
         }
@@ -25704,7 +32755,9 @@ Enable it on boards.${location.hostname.split('.')[1]}.org in your browser's pri
           css += '.watch-thread-link { --xt-watcher: #c8c8c8 }';
         }
         Main.bgColorStyle.textContent = css;
-        return $.after($.id('fourchanx-css'), Main.bgColorStyle);
+        $.after($.id('fourchanx-css'), Main.bgColorStyle);
+        Settings.applyStylingVars();
+        return;
       };
 
       $.onExists(d.head, g.SITE.selectors.styleSheet, function(el) {
@@ -25712,6 +32765,23 @@ Enable it on boards.${location.hostname.split('.')[1]}.org in your browser's pri
         if (g.SITE.software === 'yotsuba') {
           styleSheets = $$('link[rel="alternate stylesheet"]', d.head);
         }
+        applyPreferredStyle();
+        $.onExists(doc, '#styleSelector', function(styleSelector) {
+          const syncSiteStyle = function() {
+            const selected = styleSelector.value;
+            if (!selected) { return; }
+            if (Conf['siteStyle'] !== selected) {
+              Conf['siteStyle'] = selected;
+              $.set('siteStyle', selected);
+            }
+            if (Conf['siteStyleHome']) {
+              Main.setSiteStyleHomeCookie(selected);
+            }
+          };
+          $.on(styleSelector, 'change', syncSiteStyle);
+          syncSiteStyle();
+          applyPreferredStyle();
+        });
         new MutationObserver(setStyle).observe(mainStyleSheet, {
           attributes: true,
           attributeFilter: ['href']
@@ -25724,6 +32794,22 @@ Enable it on boards.${location.hostname.split('.')[1]}.org in your browser's pri
           $.on(styleSheet, 'load', setStyle);
         }
         return setStyle();
+      }
+    },
+
+    setSiteStyleHomeCookie(style) {
+      const domain = location.hostname.includes('4channel.org') ? '4channel.org' : '4chan.org';
+      const expires = 60 * 60 * 24 * 365; // 1 year
+      const cleanupDomains = [location.hostname, domain, `.${domain}`];
+      const past = 'Thu, 01 Jan 1970 00:00:00 GMT';
+      for (const key of ['ws_style', 'nws_style']) {
+        // Remove stale duplicates (host-only and dotted-domain variants) that
+        // can shadow each other in undefined order.
+        d.cookie = `${key}=; Expires=${past}; Path=/`;
+        for (const cookieDomain of cleanupDomains) {
+          d.cookie = `${key}=; Expires=${past}; Path=/; Domain=${cookieDomain}`;
+        }
+        d.cookie = `${key}=${style}; Max-Age=${expires}; Path=/; Domain=${domain}`;
       }
     },
 
@@ -26145,6 +33231,7 @@ User agent: ${navigator.userAgent}\
       ['Linkify',                   Linkify],
       ['Reveal Spoilers',           RemoveSpoilers],
       ['Resurrect Quotes',          Quotify],
+      ['Fetch Ghost Posts',         GhostPosts],
       ['Filter',                    Filter],
       ['Thread Hiding Buttons',     ThreadHiding],
       ['Reply Hiding Buttons',      PostHiding],

@@ -1,0 +1,203 @@
+<details open>
+  <summary>Site Style</summary>
+  <div class="styling-theme-row">
+    <label>Theme:
+      <select name="siteStyle">
+      </select>
+    </label>
+    <label><input type="checkbox" name="siteStyleHome"> Apply on home page</label>
+  </div>
+  <div id="styling-site-style-note" class="note" hidden></div>
+</details>
+
+<details open>
+  <summary>Highlight Colors</summary>
+  <div data-name="Highlight Colors">
+    <label><input type="checkbox" id="styling-enable-highlights"> Enable post highlights</label>
+    <div class="styling-tree">
+      <div class="styling-inline-option">
+        <label><input type="checkbox" name="Highlight Own Posts"> Your post</label>
+        <span class="styling-inline-controls styling-highlight-controls">
+          <input type="color" name="Highlight Own Color" title="Highlight background color">
+          <span class="styling-highlight-manual" data-highlight-text-manual="own">
+            <input type="color" name="Highlight Own Text Color" title="Text color">
+            <input type="color" name="Highlight Own Link Color" title="Link color">
+            <input type="color" name="Highlight Own Quote Color" title="Quote color">
+            <input type="color" name="Highlight Own Dead Link Color" title="Dead link color">
+          </span>
+          <label class="styling-inline-toggle" title="Automatically choose readable text colors for this highlight"><input type="checkbox" name="Highlight Own Text Auto"> Auto text</label>
+          <input type="range" name="Highlight Own Opacity" min="0" max="1" step="0.05" title="Highlight opacity">
+        </span>
+      </div>
+      <div class="styling-inline-option">
+        <label><input type="checkbox" name="Highlight Posts Quoting You"> Quotes you</label>
+        <span class="styling-inline-controls styling-highlight-controls">
+          <input type="color" name="Highlight You Color" title="Highlight background color">
+          <span class="styling-highlight-manual" data-highlight-text-manual="you">
+            <input type="color" name="Highlight You Text Color" title="Text color">
+            <input type="color" name="Highlight You Link Color" title="Link color">
+            <input type="color" name="Highlight You Quote Color" title="Quote color">
+            <input type="color" name="Highlight You Dead Link Color" title="Dead link color">
+          </span>
+          <label class="styling-inline-toggle" title="Automatically choose readable text colors for this highlight"><input type="checkbox" name="Highlight You Text Auto"> Auto text</label>
+          <input type="range" name="Highlight You Opacity" min="0" max="1" step="0.05" title="Highlight opacity">
+        </span>
+      </div>
+      <div class="styling-inline-option">
+        <label><input type="checkbox" name="Highlight Ghost Posts"> Ghost post</label>
+        <span class="styling-inline-controls styling-highlight-controls">
+          <input type="color" name="Highlight Ghost Color" title="Highlight background color">
+          <span class="styling-highlight-manual" data-highlight-text-manual="ghost">
+            <input type="color" name="Highlight Ghost Text Color" title="Text color">
+            <input type="color" name="Highlight Ghost Link Color" title="Link color">
+            <input type="color" name="Highlight Ghost Quote Color" title="Quote color">
+            <input type="color" name="Highlight Ghost Dead Link Color" title="Dead link color">
+          </span>
+          <label class="styling-inline-toggle" title="Automatically choose readable text colors for this highlight"><input type="checkbox" name="Highlight Ghost Text Auto"> Auto text</label>
+          <input type="range" name="Highlight Ghost Opacity" min="0" max="1" step="0.05" title="Highlight opacity">
+        </span>
+      </div>
+    </div>
+  </div>
+  <p>Background colors used for highlighted posts. Opacity is 0-1; 0 disables the background. Use "Reset to defaults" to restore theme defaults.</p>
+  <div class="styling-actions">
+    <button type="button" id="styling-randomize" title="Generate random highlight colors that contrast with the page background">Randomize</button>
+    <button type="button" id="styling-reset-highlights" title="Clear all highlight colors and use theme defaults">Reset to defaults</button>
+    <button type="button" id="styling-open-preview" title="Open a live preview of post highlight states">Preview states</button>
+  </div>
+</details>
+
+<details open>
+  <summary>Scrollbar Markers</summary>
+  <div data-name="Scrollbar Markers">
+    <label><input type="checkbox" name="Scrollbar Markers"> Scrollbar markers</label>
+    <div class="styling-tree">
+      <div class="styling-inline-option styling-marker-link-row">
+        <label>Marker colors</label>
+        <span class="styling-inline-controls">
+          <label class="styling-inline-toggle"><input type="checkbox" name="Scroll Marker Match Highlights"> Match highlights</label>
+        </span>
+      </div>
+      <div class="styling-inline-option" data-marker-color="own">
+        <label><input type="checkbox" name="Scrollbar Mark Own Posts"> Your posts</label>
+        <span class="styling-inline-controls">
+          <input type="color" name="Scroll Marker Own Color">
+          <input type="range" name="Scroll Marker Own Opacity" min="0" max="1" step="0.05">
+        </span>
+      </div>
+      <div class="styling-inline-option" data-marker-color="you">
+        <label><input type="checkbox" name="Scrollbar Mark Quotes You"> Quotes you</label>
+        <span class="styling-inline-controls">
+          <input type="color" name="Scroll Marker You Color">
+          <input type="range" name="Scroll Marker You Opacity" min="0" max="1" step="0.05">
+        </span>
+      </div>
+      <div class="styling-inline-option" data-marker-color="ghost">
+        <label><input type="checkbox" name="Scrollbar Mark Ghost Posts"> Ghost posts</label>
+        <span class="styling-inline-controls">
+          <input type="color" name="Scroll Marker Ghost Color">
+          <input type="range" name="Scroll Marker Ghost Opacity" min="0" max="1" step="0.05">
+        </span>
+      </div>
+      <div class="styling-inline-option" data-marker-color="unread">
+        <label><input type="checkbox" name="Scrollbar Mark Unread Line"> Unread line</label>
+        <span class="styling-inline-controls">
+          <input type="color" name="Scroll Marker Unread Color">
+          <input type="range" name="Scroll Marker Unread Opacity" min="0" max="1" step="0.05">
+        </span>
+      </div>
+    </div>
+  </div>
+</details>
+
+<details open>
+  <summary>Text Colors</summary>
+  <div class="styling-theme-row">
+    <label>Mode:
+      <select name="textColorMode">
+        <option value="auto">Auto</option>
+        <option value="manual">Manual</option>
+      </select>
+    </label>
+  </div>
+  <p>Auto chooses readable text/link colors from the active page background. Switch to Manual to set your own values.</p>
+  <div id="styling-text-color-manual" class="styling-tree">
+    <div class="styling-inline-option">
+      <label>Text</label>
+      <span class="styling-inline-controls">
+        <input type="color" name="Text Color">
+        <button type="button" data-clear="Text Color" title="Clear">✕</button>
+      </span>
+    </div>
+    <div class="styling-inline-option">
+      <label>Links</label>
+      <span class="styling-inline-controls">
+        <input type="color" name="Link Text Color">
+        <button type="button" data-clear="Link Text Color" title="Clear">✕</button>
+      </span>
+    </div>
+    <div class="styling-inline-option">
+      <label>Quotes</label>
+      <span class="styling-inline-controls">
+        <input type="color" name="Quote Text Color">
+        <button type="button" data-clear="Quote Text Color" title="Clear">✕</button>
+      </span>
+    </div>
+    <div class="styling-inline-option">
+      <label>Dead links</label>
+      <span class="styling-inline-controls">
+        <input type="color" name="Dead Link Text Color">
+        <button type="button" data-clear="Dead Link Text Color" title="Clear">✕</button>
+      </span>
+    </div>
+  </div>
+</details>
+
+<details open>
+  <summary>Unread Favicon</summary>
+  <select name="favicon">
+    <option value="ferongr">ferongr</option>
+    <option value="xat-">xat-</option>
+    <option value="4chanJS">4chanJS</option>
+    <option value="Mayhem">Mayhem</option>
+    <option value="Original">Original</option>
+    <option value="Metro">Metro</option>
+  </select>
+  <span class="favicon-preview"></span>
+</details>
+
+<details open>
+  <summary>Custom CSS</summary>
+  <div><label><input type="checkbox" name="Custom CSS"> Enable Custom CSS</label></div>
+  <div><label><input type="checkbox" name="customCSSHome"> Load on home page</label></div>
+  <div>For more information about customizing 4chan X&#039;s CSS, see the <a href="<%= meta.cssGuide %>" target="_blank">styling guide</a>.</div>
+  <button id="apply-css">Apply CSS</button>
+  <div class="custom-css-controls">
+    <label>Syntax theme:
+      <select id="custom-css-theme">
+        <option value="xt-system" selected>System</option>
+        <option value="xt-light">Light</option>
+        <option value="xt-dark">Dark</option>
+        <option value="xt-solarized">Solarized</option>
+      </select>
+    </label>
+    <label>Expanded height:
+      <select id="custom-css-expanded-height">
+        <option value="400">400px</option>
+        <option value="500" selected>500px</option>
+        <option value="700">700px</option>
+      </select>
+    </label>
+    <button type="button" id="custom-css-expand" data-expanded="false">Expand editor</button>
+  </div>
+  <div class="custom-css-editor" data-theme="xt-system-default" data-expanded="false">
+    <pre class="custom-css-highlight" aria-hidden="true"></pre>
+    <textarea hidden name="usercss" class="field custom-css-textarea" spellcheck="false" wrap="off"></textarea>
+  </div>
+</details>
+
+<details open>
+  <summary>Known Banners</summary>
+  <div>List of known banners, used for click-to-change feature.</div>
+  <textarea hidden name="knownBanners" class="field" spellcheck="false"></textarea>
+</details>

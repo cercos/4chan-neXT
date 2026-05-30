@@ -9,3 +9,103 @@
   margin: 0 !important;
   font-size: 0;
 }
+
+/* Homepage Theming */
+:root.tomorrow body, :root.tomorrow #bd, :root.tomorrow #ft, :root.tomorrow .box-content {
+  background-color: #1d1f21 !important;
+  background-image: none !important;
+  color: #c5c8c6 !important;
+  border-color: #282a2e !important;
+}
+:root.tomorrow .boxbar, :root.tomorrow #nav-top, :root.tomorrow #header {
+  background-color: #282a2e !important;
+  background-image: none !important;
+  color: #c5c8c6 !important;
+}
+:root.tomorrow a {
+  color: #81a2be !important;
+}
+
+:root.spooky body, :root.spooky #bd, :root.spooky #ft, :root.spooky .box-content {
+  background-color: #2e2e2e !important;
+  background-image: none !important;
+  color: #ccc !important;
+  border-color: #111 !important;
+}
+:root.spooky .boxbar, :root.spooky #nav-top, :root.spooky #header {
+  background-color: #111 !important;
+  background-image: none !important;
+  color: #ccc !important;
+}
+:root.spooky a {
+  color: #f60 !important;
+}
+
+:root.yotsuba body, :root.yotsuba #bd, :root.yotsuba #ft, :root.yotsuba .box-content {
+  background-color: #ffefe5 !important;
+  background-image: none !important;
+  color: #800000 !important;
+  border-color: #d9bfb7 !important;
+}
+:root.yotsuba .boxbar, :root.yotsuba #nav-top, :root.yotsuba #header {
+  background-color: #f0e0d6 !important;
+  background-image: none !important;
+  color: #800000 !important;
+}
+
+:root.yotsuba-b body, :root.yotsuba-b #bd, :root.yotsuba-b #ft, :root.yotsuba-b .box-content {
+  background-color: #d6daf0 !important;
+  background-image: none !important;
+  color: #000 !important;
+  border-color: #b7c5d9 !important;
+}
+:root.yotsuba-b .boxbar, :root.yotsuba-b #nav-top, :root.yotsuba-b #header {
+  background-color: #adc2ff !important;
+  background-image: none !important;
+  color: #000 !important;
+}
+:root.yotsuba-b a {
+  color: #34345c !important;
+}
+
+:root.photon body, :root.photon #bd, :root.photon #ft, :root.photon .box-content {
+  background-color: #dee5f7 !important;
+  background-image: none !important;
+  color: #000 !important;
+  border-color: #b7c5d9 !important;
+}
+:root.photon .boxbar, :root.photon #nav-top, :root.photon #header {
+  background-color: #adc2ff !important;
+  background-image: none !important;
+  color: #000 !important;
+}
+:root.photon a {
+  color: #004a99 !important;
+}
+
+:root.futaba body, :root.futaba #bd, :root.futaba #ft, :root.futaba .box-content {
+  background-color: #f0e0d6 !important;
+  background-image: none !important;
+  color: #800000 !important;
+  border-color: #d9bfb7 !important;
+}
+:root.futaba .boxbar, :root.futaba #nav-top, :root.futaba #header {
+  background-color: #ffefe5 !important;
+  background-image: none !important;
+  color: #800000 !important;
+}
+
+:root.burichan body, :root.burichan #bd, :root.burichan #ft, :root.burichan .box-content {
+  background-color: #eceff6 !important;
+  background-image: none !important;
+  color: #000 !important;
+  border-color: #d9bfb7 !important;
+}
+:root.burichan .boxbar, :root.burichan #nav-top, :root.burichan #header {
+  background-color: #d6daf0 !important;
+  background-image: none !important;
+  color: #000 !important;
+}
+:root.burichan a {
+  color: #34345c !important;
+}
