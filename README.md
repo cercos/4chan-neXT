@@ -7,6 +7,9 @@ It continues the 4chan XT codebase with ongoing fixes and updates.
 
 - `1.0.1` (2026-05-30): Fix captcha submission flow when the UI reports "Verification not required."
 
+<details>
+<summary>Original README</summary>
+
 ## Install
 
 - Releases: https://github.com/TuxedoTako/4chan-xt/releases
@@ -39,3 +42,5 @@ Useful build flags:
 - Changelog: [CHANGELOG.md](./CHANGELOG.md)
 - Upstream FAQ: https://github.com/ccd0/4chan-x/wiki/Frequently-Asked-Questions
 - This fork FAQ: https://github.com/TuxedoTako/4chan-xt/wiki/Frequently-Asked-Questions
+
+</details>
