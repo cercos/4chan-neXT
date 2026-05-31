@@ -597,6 +597,9 @@ Enable it on boards.${location.hostname.split('.')[1]}.org in your browser's pri
       const input = $('input', div) as HTMLInputElement;
       $.on(input, 'change', $.cb.checked);
       $.on(input, 'change', function() { this.parentNode.parentNode.dataset.checked = this.checked; });
+      if (key === 'Comment Preview') {
+        $.on(input, 'change', () => $.event('QRCommentPreviewChanged'));
+      }
       items[key] = Conf[key];
       inputs[key] = input;
       const level = arr[2] || 0;
@@ -796,6 +799,9 @@ Enable it on boards.${location.hostname.split('.')[1]}.org in your browser's pri
         $.el('span', { className: 'description', textContent: row.description ? `: ${row.description}` : '' })
       ]);
       $.on(select, 'change', $.cb.value);
+      if (row.name === 'Comment Preview Position') {
+        $.on(select, 'change', () => $.event('QRCommentPreviewChanged'));
+      }
       items[row.name] = Conf[row.name];
       inputs[row.name] = select;
       $.add(fs, div);
@@ -1212,6 +1218,19 @@ Enable it on boards.${location.hostname.split('.')[1]}.org in your browser's pri
     Settings.renderMainGroups(section, {
       categories: ['Posting and Captchas']
     });
+    Settings.addSelectFieldset(section, 'Comment Preview', [
+      {
+        name: 'Comment Preview Position',
+        label: 'Preview Position',
+        description: 'Where the live preview appears relative to the comment box (requires Comment Preview enabled).',
+        options: [
+          ['below', 'Below the comment box'],
+          ['right', 'Right of the comment box'],
+          ['left',  'Left of the comment box']
+        ]
+      }
+    ]);
+
   },
 
   styling(section) {
@@ -1791,6 +1810,11 @@ Enable it on boards.${location.hostname.split('.')[1]}.org in your browser's pri
     panel.dataset.highlightOwn = (threadHighlightsEnabled && ownEnabled) ? 'true' : 'false';
     panel.dataset.highlightYou = (threadHighlightsEnabled && youEnabled) ? 'true' : 'false';
     panel.dataset.highlightGhost = (threadHighlightsEnabled && ghostEnabled) ? 'true' : 'false';
+
+    const background = Settings.resolveCanvasBackgroundStyle();
+    for (const previewPane of $$('.styling-preview-thread, .styling-preview-catalog', panel) as HTMLElement[]) {
+      Settings.applyBackgroundStyle(previewPane, background);
+    }
   },
 
   initCustomCSSEditor(section: HTMLElement, textarea: HTMLTextAreaElement | null) {
@@ -2175,36 +2199,92 @@ Enable it on boards.${location.hostname.split('.')[1]}.org in your browser's pri
     return (0.2126 * r) + (0.7152 * g) + (0.0722 * b);
   },
 
-  getTextBaseBackground(): [number, number, number] {
-    const parseColor = (value: string): [number, number, number] | null => {
-      if (!value) return null;
-      const rgb = value.match(/^rgba?\(([^)]+)\)$/i)?.[1];
-      if (rgb) {
-        const parts = rgb.split(',').map(part => parseFloat(part.trim()));
-        if (parts.length >= 3 && parts.slice(0, 3).every(part => Number.isFinite(part))) {
-          return [parts[0], parts[1], parts[2]];
-        }
-      }
-      return Settings.hexToRgb(value);
-    };
+  parseCSSColorRGBA(value: string): [number, number, number, number] | null {
+    if (!value) return null;
+    const input = value.trim().toLowerCase();
+    if (!input) return null;
+    if (input === 'transparent') return [0, 0, 0, 0];
 
-    let bg: [number, number, number] | null = null;
-    if (g.SITE?.bgColoredEl && d.body) {
-      try {
-        const probe = g.SITE.bgColoredEl();
-        probe.style.position = 'absolute';
-        probe.style.visibility = 'hidden';
-        $.add(d.body, probe);
-        bg = parseColor(window.getComputedStyle(probe).backgroundColor);
-        $.rm(probe);
-      } catch (err) {
-        // fall through to body background.
-      }
+    const rgbBody = input.match(/^rgba?\((.+)\)$/i)?.[1];
+    if (rgbBody) {
+      const tokens = rgbBody.match(/[\d.]+%?/g);
+      if (!tokens || tokens.length < 3) return null;
+      const toChannel = (token: string) => {
+        const num = parseFloat(token);
+        if (!Number.isFinite(num)) return NaN;
+        return token.endsWith('%') ? ((num / 100) * 255) : num;
+      };
+      const r = toChannel(tokens[0]);
+      const g = toChannel(tokens[1]);
+      const b = toChannel(tokens[2]);
+      if (![r, g, b].every(Number.isFinite)) return null;
+      const alphaToken = tokens[3];
+      const alpha = alphaToken == null
+        ? 1
+        : (alphaToken.endsWith('%') ? (parseFloat(alphaToken) / 100) : parseFloat(alphaToken));
+      if (!Number.isFinite(alpha)) return null;
+      return [r, g, b, $.minmax(alpha, 0, 1)];
     }
-    if (!bg && d.body) {
-      bg = parseColor(window.getComputedStyle(d.body).backgroundColor);
+
+    const hex = Settings.hexToRgb(input);
+    if (hex) return [hex[0], hex[1], hex[2], 1];
+    return null;
+  },
+
+  isTransparentCSSColor(value: string): boolean {
+    const rgba = Settings.parseCSSColorRGBA(value);
+    return !rgba || rgba[3] <= 0;
+  },
+
+  backgroundStyleFromComputed(style: CSSStyleDeclaration) {
+    return {
+      backgroundColor: style.backgroundColor || 'transparent',
+      backgroundImage: style.backgroundImage || 'none',
+      backgroundRepeat: style.backgroundRepeat || 'repeat',
+      backgroundPosition: style.backgroundPosition || '0% 0%',
+      backgroundSize: style.backgroundSize || 'auto',
+      backgroundAttachment: style.backgroundAttachment || 'scroll',
+    };
+  },
+
+  resolveCanvasBackgroundStyle() {
+    const htmlStyle = Settings.backgroundStyleFromComputed(window.getComputedStyle(d.documentElement));
+    if (!d.body) return htmlStyle;
+    const bodyStyle = Settings.backgroundStyleFromComputed(window.getComputedStyle(d.body));
+    // Mirror CSS canvas rules: body background is used only when html background
+    // is effectively transparent with no image.
+    const htmlDefersToBody = (
+      htmlStyle.backgroundImage === 'none' &&
+      Settings.isTransparentCSSColor(htmlStyle.backgroundColor)
+    );
+    return htmlDefersToBody ? bodyStyle : htmlStyle;
+  },
+
+  applyBackgroundStyle(el: HTMLElement, background: {
+    backgroundColor: string;
+    backgroundImage: string;
+    backgroundRepeat: string;
+    backgroundPosition: string;
+    backgroundSize: string;
+    backgroundAttachment: string;
+  }) {
+    el.style.backgroundColor = background.backgroundColor;
+    el.style.backgroundImage = background.backgroundImage;
+    el.style.backgroundRepeat = background.backgroundRepeat;
+    el.style.backgroundPosition = background.backgroundPosition;
+    el.style.backgroundSize = background.backgroundSize;
+    el.style.backgroundAttachment = background.backgroundAttachment;
+  },
+
+  getTextBaseBackground(): [number, number, number] {
+    const style = Settings.resolveCanvasBackgroundStyle();
+    const rgba = Settings.parseCSSColorRGBA(style.backgroundColor);
+    if (rgba && rgba[3] > 0) {
+      return [rgba[0], rgba[1], rgba[2]];
     }
-    return bg || [255, 255, 255];
+    // Transparent background color with only an image has no reliable average
+    // color; use white as a neutral fallback for contrast calculations.
+    return [255, 255, 255];
   },
 
   autoHighlightTextPalette(
@@ -2999,6 +3079,7 @@ Enable it on boards.${location.hostname.split('.')[1]}.org in your browser's pri
 
     options['Posting'] = [
       ...keysIn('Posting and Captchas'),
+      'Comment Preview Position',
       'QR.personas'
     ];
 
@@ -4626,6 +4707,7 @@ Enable it on boards.${location.hostname.split('.')[1]}.org in your browser's pri
       CustomCSS.addStyle();
     }
     $.cb.checked.call(this);
+    Settings.applyStylingVars();
   },
 
   setTimeLocale(e: InputEvent) {

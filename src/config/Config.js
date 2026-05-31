@@ -663,7 +663,7 @@ const Config = {
       ],
       'Comment Preview': [
         false,
-        'Show a live WYSIWYG preview of your post in the Quick Reply.',
+        'Add a toggle below the Quick Reply comment box to switch between editing and a preview of how the post will render on the current board (greentext, quotes, [spoiler]/[code]/[math]/sjis when supported).',
         1
       ]
     },
@@ -821,7 +821,7 @@ const Config = {
   'Thread Watcher Max Width': 250,
   'Thread Title': 'excerpt',
   'Unread Title Count': 'always',
-  'Comment Preview Position': 'button',
+  'Comment Preview Position': 'below',
 
   threadWatcher: {
     'Current Board': [

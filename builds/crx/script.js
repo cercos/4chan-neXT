@@ -881,7 +881,7 @@ div.boardTitle {
         ],
         'Comment Preview': [
           false,
-          'Show a live WYSIWYG preview of your post in the Quick Reply.',
+          'Add a toggle below the Quick Reply comment box to switch between editing and a preview of how the post will render on the current board (greentext, quotes, [spoiler]/[code]/[math]/sjis when supported).',
           1
         ]
       },
@@ -1039,7 +1039,7 @@ div.boardTitle {
     'Thread Watcher Max Width': 250,
     'Thread Title': 'excerpt',
     'Unread Title Count': 'always',
-    'Comment Preview Position': 'button',
+    'Comment Preview Position': 'below',
 
     threadWatcher: {
       'Current Board': [
@@ -6957,8 +6957,55 @@ body:not(.board_f) #qr select[name="filetag"],
 #qr:not(.has-sjis) #sjis-toggle,
 #qr:not(.has-math) #tex-preview-button,
 #qr.tex-preview .textarea > :not(#tex-preview),
-#qr:not(.tex-preview) #tex-preview {
+#qr:not(.tex-preview) #tex-preview,
+#qr:not(.has-com-preview) #qr-com-preview {
   display: none;
+}
+#qr-com-preview {
+  padding: 2px 4px;
+  overflow: auto;
+  white-space: pre-wrap;
+  word-wrap: break-word;
+  background: var(--reply-background-color, transparent);
+  color: inherit;
+  border: 1px solid rgba(0, 0, 0, .2);
+  font-size: inherit;
+  box-sizing: border-box;
+}
+#qr-com-preview:empty::before {
+  content: "Preview";
+  opacity: .4;
+}
+#qr-com-preview pre.prettyprint {
+  white-space: pre-wrap;
+  margin: 0;
+}
+#qr.has-com-preview.com-preview-below .textarea {
+  flex-direction: column;
+}
+#qr.has-com-preview.com-preview-right .textarea {
+  flex-direction: row;
+}
+#qr.has-com-preview.com-preview-left .textarea {
+  flex-direction: row-reverse;
+}
+#qr.com-preview-below #qr-com-preview {
+  margin-top: 2px;
+  min-height: 6em;
+  max-height: 14.8em;
+  width: 100%;
+}
+#qr.com-preview-right #qr-com-preview,
+#qr.com-preview-left #qr-com-preview {
+  flex: 1 1 0;
+  min-width: 200px;
+  align-self: stretch;
+}
+#qr.com-preview-right #qr-com-preview {
+  margin-left: 2px;
+}
+#qr.com-preview-left #qr-com-preview {
+  margin-right: 2px;
 }
 #sjis-toggle, #qr.sjis-preview textarea.field {
   font-family: "IPAMonaPGothic","Mona","MS PGothic",monospace;
@@ -8566,6 +8613,7 @@ svg.icon {
     <textarea data-name="com" placeholder="Comment" class="field"></textarea>
     <span id="char-count"></span>
     <div id="tex-preview"></div>
+    <div id="qr-com-preview"></div>
   </div>
   <div id="dump-list-container">
     <div id="dump-list"></div>
@@ -21671,6 +21719,47 @@ aero|asia|biz|cat|com|coop|dance|info|int|jobs|mobi|moe|museum|name|net|org|post
     texPreviewHide() {
       return $.rmClass(QR.nodes.el, 'tex-preview');
     },
+    updateComPreview() {
+      if (!QR.nodes?.comPreview)
+        return;
+      QR.nodes.comPreview.innerHTML = QR.renderComPreview(QR.nodes.com.value);
+    },
+    renderComPreview(text) {
+      const config = g.BOARD.config;
+      const tags = [];
+      if (QR.spoiler)
+        tags.push({ name: 'spoiler', wrap: i => `<s>${i}</s>`, format: true });
+      if (config.code_tags)
+        tags.push({ name: 'code', wrap: i => `<pre class="prettyprint">${i}</pre>`, format: false });
+      if (config.math_tags) {
+        tags.push({ name: 'math', wrap: i => `<span class="math">[math]${i}[/math]</span>`, format: false });
+        tags.push({ name: 'eqn', wrap: i => `<span class="math">[eqn]${i}[/eqn]</span>`, format: false });
+      }
+      if (config.sjis_tags)
+        tags.push({ name: 'sjis', wrap: i => `<span class="sjis">${i}</span>`, format: true });
+      if (!tags.length)
+        return QR.formatComPreviewText(text);
+      const tagNames = tags.map(t => t.name).join('|');
+      const tagRe = new RegExp(`\\[(${tagNames})\\]([\\s\\S]*?)\\[\\/\\1\\]`, 'g');
+      let html = '';
+      let last = 0;
+      let m;
+      while ((m = tagRe.exec(text))) {
+        html += QR.formatComPreviewText(text.slice(last, m.index));
+        const tag = tags.find(t => t.name === m[1]);
+        const inner = tag.format ? QR.formatComPreviewText(m[2]) : E(m[2]);
+        html += tag.wrap(inner);
+        last = m.index + m[0].length;
+      }
+      html += QR.formatComPreviewText(text.slice(last));
+      return html;
+    },
+    formatComPreviewText(text) {
+      const escaped = E(text);
+      // Treat >>NNN and >>>/board/NNN as quotelinks (greentext detection skips these).
+      const withQuotes = escaped.replace(/&gt;&gt;(?:&gt;\/[a-z\d]+\/)?\d+/g, m => `<a class="quotelink" href="javascript:;">${m}</a>`);
+      return withQuotes.split('\n').map(line => /^&gt;(?!&gt;)/.test(line) ? `<span class="quote">${line}</span>` : line).join('\n');
+    },
     addPost() {
       const wasOpen = (QR.nodes && !QR.nodes.el.hidden);
       QR.open();
@@ -22214,6 +22303,7 @@ aero|asia|biz|cat|com|coop|dance|info|int|jobs|mobi|moe|museum|name|net|org|post
       setNode('com', '[data-name=com]');
       setNode('charCount', '#char-count');
       setNode('texPreview', '#tex-preview');
+      setNode('comPreview', '#qr-com-preview');
       setNode('dumpList', '#dump-list');
       setNode('addPost', '#add-post');
       setNode('oekaki', '.oekaki');
@@ -22245,6 +22335,10 @@ aero|asia|biz|cat|com|coop|dance|info|int|jobs|mobi|moe|museum|name|net|org|post
       classList.toggle('has-math', !!config.math_tags);
       classList.toggle('sjis-preview', !!config.sjis_tags && Conf['sjisPreview']);
       classList.toggle('show-new-thread-option', Conf['Show New Thread Option in Threads']);
+      classList.toggle('has-com-preview', !!Conf['Comment Preview']);
+      const pos = ['below', 'right', 'left'].includes(Conf['Comment Preview Position']) ? Conf['Comment Preview Position'] : 'below';
+      classList.remove('com-preview-below', 'com-preview-right', 'com-preview-left');
+      classList.add(`com-preview-${pos}`);
       if (parseInt(Conf['customCooldown'], 10) > 0) {
         $.addClass(QR.nodes.fileSubmit, 'custom-cooldown');
         $.get('customCooldownEnabled', Conf['customCooldownEnabled'], function ({ customCooldownEnabled }) {
@@ -22264,6 +22358,10 @@ aero|asia|biz|cat|com|coop|dance|info|int|jobs|mobi|moe|museum|name|net|org|post
       $.on(nodes.sjisToggle, 'click', QR.toggleSJIS);
       $.on(nodes.texButton, 'mousedown', QR.texPreviewShow);
       $.on(nodes.texButton, 'mouseup', QR.texPreviewHide);
+      if (Conf['Comment Preview']) {
+        $.on(nodes.com, 'input', QR.updateComPreview);
+        QR.updateComPreview();
+      }
       $.on(nodes.addPost, 'click', () => new QR.post(true));
       $.on(nodes.drawButton, 'click', QR.oekaki.draw);
       $.on(nodes.fileButton, 'click', QR.openFileInput);
@@ -27102,6 +27200,18 @@ Enable it on boards.${location.hostname.split('.')[1]}.org in your browser's pri
       Settings.renderMainGroups(section, {
         categories: ['Posting and Captchas']
       });
+      Settings.addSelectFieldset(section, 'Comment Preview', [
+        {
+          name: 'Comment Preview Position',
+          label: 'Preview Position',
+          description: 'Where the live preview appears relative to the comment box (requires Comment Preview enabled).',
+          options: [
+            ['below', 'Below the comment box'],
+            ['right', 'Right of the comment box'],
+            ['left', 'Left of the comment box']
+          ]
+        }
+      ]);
     },
     styling(section) {
       let input, name;
@@ -27663,6 +27773,10 @@ Enable it on boards.${location.hostname.split('.')[1]}.org in your browser's pri
       panel.dataset.highlightOwn = (threadHighlightsEnabled && ownEnabled) ? 'true' : 'false';
       panel.dataset.highlightYou = (threadHighlightsEnabled && youEnabled) ? 'true' : 'false';
       panel.dataset.highlightGhost = (threadHighlightsEnabled && ghostEnabled) ? 'true' : 'false';
+      const background = Settings.resolveEffectiveBackgroundStyle();
+      for (const previewPane of $$('.styling-preview-thread, .styling-preview-catalog', panel)) {
+        Settings.applyBackgroundStyle(previewPane, background);
+      }
     },
     initCustomCSSEditor(section, textarea) {
       if (!textarea)
@@ -27968,36 +28082,112 @@ Enable it on boards.${location.hostname.split('.')[1]}.org in your browser's pri
       const [r, g, b] = rgb.map(toLinear);
       return (0.2126 * r) + (0.7152 * g) + (0.0722 * b);
     },
-    getTextBaseBackground() {
-      const parseColor = (value) => {
-        if (!value)
+    parseCSSColorRGBA(value) {
+      if (!value)
+        return null;
+      const input = value.trim().toLowerCase();
+      if (!input)
+        return null;
+      if (input === 'transparent')
+        return [0, 0, 0, 0];
+      const rgbBody = input.match(/^rgba?\((.+)\)$/i)?.[1];
+      if (rgbBody) {
+        const tokens = rgbBody.match(/[\d.]+%?/g);
+        if (!tokens || tokens.length < 3)
           return null;
-        const rgb = value.match(/^rgba?\(([^)]+)\)$/i)?.[1];
-        if (rgb) {
-          const parts = rgb.split(',').map(part => parseFloat(part.trim()));
-          if (parts.length >= 3 && parts.slice(0, 3).every(part => Number.isFinite(part))) {
-            return [parts[0], parts[1], parts[2]];
-          }
-        }
-        return Settings.hexToRgb(value);
+        const toChannel = (token) => {
+          const num = parseFloat(token);
+          if (!Number.isFinite(num))
+            return NaN;
+          return token.endsWith('%') ? ((num / 100) * 255) : num;
+        };
+        const r = toChannel(tokens[0]);
+        const g = toChannel(tokens[1]);
+        const b = toChannel(tokens[2]);
+        if (![r, g, b].every(Number.isFinite))
+          return null;
+        const alphaToken = tokens[3];
+        const alpha = alphaToken == null
+          ? 1
+          : (alphaToken.endsWith('%') ? (parseFloat(alphaToken) / 100) : parseFloat(alphaToken));
+        if (!Number.isFinite(alpha))
+          return null;
+        return [r, g, b, $.minmax(alpha, 0, 1)];
+      }
+      const hex = Settings.hexToRgb(input);
+      if (hex)
+        return [hex[0], hex[1], hex[2], 1];
+      return null;
+    },
+    isTransparentCSSColor(value) {
+      const rgba = Settings.parseCSSColorRGBA(value);
+      return !rgba || rgba[3] <= 0;
+    },
+    backgroundStyleFromComputed(style) {
+      return {
+        backgroundColor: style.backgroundColor || 'transparent',
+        backgroundImage: style.backgroundImage || 'none',
+        backgroundRepeat: style.backgroundRepeat || 'repeat',
+        backgroundPosition: style.backgroundPosition || '0% 0%',
+        backgroundSize: style.backgroundSize || 'auto',
+        backgroundAttachment: style.backgroundAttachment || 'scroll',
       };
-      let bg = null;
+    },
+    backgroundStyleHasVisibleLayer(style) {
+      return (style.backgroundImage !== 'none') || !Settings.isTransparentCSSColor(style.backgroundColor);
+    },
+    resolveCanvasBackgroundStyle() {
+      const htmlStyle = Settings.backgroundStyleFromComputed(window.getComputedStyle(d.documentElement));
+      if (!d.body)
+        return htmlStyle;
+      const bodyStyle = Settings.backgroundStyleFromComputed(window.getComputedStyle(d.body));
+      // Mirror CSS canvas rules: body background is used only when html background
+      // is effectively transparent with no image.
+      const htmlDefersToBody = (htmlStyle.backgroundImage === 'none' &&
+        Settings.isTransparentCSSColor(htmlStyle.backgroundColor));
+      return htmlDefersToBody ? bodyStyle : htmlStyle;
+    },
+    resolveEffectiveBackgroundStyle() {
       if (g.SITE?.bgColoredEl && d.body) {
+        let probe = null;
         try {
-          const probe = g.SITE.bgColoredEl();
+          probe = g.SITE.bgColoredEl();
           probe.style.position = 'absolute';
           probe.style.visibility = 'hidden';
+          probe.style.pointerEvents = 'none';
+          probe.style.left = '-9999px';
+          probe.style.top = '-9999px';
           $.add(d.body, probe);
-          bg = parseColor(window.getComputedStyle(probe).backgroundColor);
-          $.rm(probe);
+          const probeStyle = Settings.backgroundStyleFromComputed(window.getComputedStyle(probe));
+          if (Settings.backgroundStyleHasVisibleLayer(probeStyle)) {
+            return probeStyle;
+          }
         } catch (err) {
-          // fall through to body background.
+          // Fall through to root/body canvas background resolution.
+        } finally {
+          if (probe?.parentNode)
+            $.rm(probe);
         }
       }
-      if (!bg && d.body) {
-        bg = parseColor(window.getComputedStyle(d.body).backgroundColor);
+      return Settings.resolveCanvasBackgroundStyle();
+    },
+    applyBackgroundStyle(el, background) {
+      el.style.backgroundColor = background.backgroundColor;
+      el.style.backgroundImage = background.backgroundImage;
+      el.style.backgroundRepeat = background.backgroundRepeat;
+      el.style.backgroundPosition = background.backgroundPosition;
+      el.style.backgroundSize = background.backgroundSize;
+      el.style.backgroundAttachment = background.backgroundAttachment;
+    },
+    getTextBaseBackground() {
+      const style = Settings.resolveEffectiveBackgroundStyle();
+      const rgba = Settings.parseCSSColorRGBA(style.backgroundColor);
+      if (rgba && rgba[3] > 0) {
+        return [rgba[0], rgba[1], rgba[2]];
       }
-      return bg || [255, 255, 255];
+      // Transparent background color with only an image has no reliable average
+      // color; use white as a neutral fallback for contrast calculations.
+      return [255, 255, 255];
     },
     autoHighlightTextPalette(colorKey, opacityKey, baseBackground = Settings.getTextBaseBackground()) {
       const color = Conf[colorKey];
@@ -28780,6 +28970,7 @@ Enable it on boards.${location.hostname.split('.')[1]}.org in your browser's pri
       ];
       options['Posting'] = [
         ...keysIn('Posting and Captchas'),
+        'Comment Preview Position',
         'QR.personas'
       ];
       options['Filters'] = Object.keys(Config.filter).concat(['easyFilters']);

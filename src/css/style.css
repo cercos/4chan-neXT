@@ -2819,8 +2819,55 @@ body:not(.board_f) #qr select[name="filetag"],
 #qr:not(.has-sjis) #sjis-toggle,
 #qr:not(.has-math) #tex-preview-button,
 #qr.tex-preview .textarea > :not(#tex-preview),
-#qr:not(.tex-preview) #tex-preview {
+#qr:not(.tex-preview) #tex-preview,
+#qr:not(.has-com-preview) #qr-com-preview {
   display: none;
+}
+#qr-com-preview {
+  padding: 2px 4px;
+  overflow: auto;
+  white-space: pre-wrap;
+  word-wrap: break-word;
+  background: var(--reply-background-color, transparent);
+  color: inherit;
+  border: 1px solid rgba(0, 0, 0, .2);
+  font-size: inherit;
+  box-sizing: border-box;
+}
+#qr-com-preview:empty::before {
+  content: "Preview";
+  opacity: .4;
+}
+#qr-com-preview pre.prettyprint {
+  white-space: pre-wrap;
+  margin: 0;
+}
+#qr.has-com-preview.com-preview-below .textarea {
+  flex-direction: column;
+}
+#qr.has-com-preview.com-preview-right .textarea {
+  flex-direction: row;
+}
+#qr.has-com-preview.com-preview-left .textarea {
+  flex-direction: row-reverse;
+}
+#qr.com-preview-below #qr-com-preview {
+  margin-top: 2px;
+  min-height: 6em;
+  max-height: 14.8em;
+  width: 100%;
+}
+#qr.com-preview-right #qr-com-preview,
+#qr.com-preview-left #qr-com-preview {
+  flex: 1 1 0;
+  min-width: 200px;
+  align-self: stretch;
+}
+#qr.com-preview-right #qr-com-preview {
+  margin-left: 2px;
+}
+#qr.com-preview-left #qr-com-preview {
+  margin-right: 2px;
 }
 #sjis-toggle, #qr.sjis-preview textarea.field {
   font-family: "IPAMonaPGothic","Mona","MS PGothic",monospace;

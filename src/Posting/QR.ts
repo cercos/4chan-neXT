@@ -92,6 +92,7 @@ var QR = {
     flag?: HTMLSelectElement,
     preview?: HTMLDivElement;
     splitPost?: HTMLAnchorElement;
+    comPreview: HTMLDivElement,
   },
   shortcut: undefined as HTMLAnchorElement,
   hasFocus: false,
@@ -107,6 +108,7 @@ var QR = {
   heavyBatchFileCount: 8,
   heavyBatchSize: 64 * 1024 * 1024,
   metadataStrippedFlag: '__4chanXTMetadataStripped',
+  commentPreviewInputBound: false,
 
   req: undefined as (XMLHttpRequest & { isUploadFinished: boolean, progress: string }) | undefined,
   selected: undefined as post,
@@ -251,6 +253,15 @@ var QR = {
     $.on(d, 'QRGetFile',          QR.getFile);
     $.on(d, 'QRDrawFile',         QR.drawFile);
     $.on(d, 'QRSetFile',          QR.setFile);
+    $.on(d, 'QRCommentPreviewChanged', QR.applyCommentPreviewSettings);
+    $.sync('Comment Preview', (value: boolean | undefined) => {
+      Conf['Comment Preview'] = !!value;
+      QR.applyCommentPreviewSettings();
+    });
+    $.sync('Comment Preview Position', (value: string | undefined) => {
+      Conf['Comment Preview Position'] = ['below', 'right', 'left'].includes(value || '') ? value! : 'below';
+      QR.applyCommentPreviewSettings();
+    });
 
     $.on(d, 'paste',              QR.paste);
     $.on(d, 'dragover',           QR.dragOver);
@@ -372,6 +383,89 @@ var QR = {
 
   texPreviewHide() {
     return $.rmClass(QR.nodes.el, 'tex-preview');
+  },
+
+  updateComPreview() {
+    if (!QR.nodes?.comPreview) return;
+    QR.nodes.comPreview.innerHTML = QR.renderComPreview(QR.nodes.com.value);
+  },
+
+  applyCommentPreviewSettings() {
+    if (!QR.nodes?.el || !QR.nodes?.com) return;
+    const { classList } = QR.nodes.el;
+    const enabled = !!Conf['Comment Preview'];
+    const pos = ['below', 'right', 'left'].includes(Conf['Comment Preview Position']) ? Conf['Comment Preview Position'] : 'below';
+    classList.toggle('has-com-preview', enabled);
+    classList.remove('com-preview-below', 'com-preview-right', 'com-preview-left');
+    classList.add(`com-preview-${pos}`);
+    if (enabled) {
+      if (!QR.commentPreviewInputBound) {
+        $.on(QR.nodes.com, 'input', QR.updateComPreview);
+        QR.commentPreviewInputBound = true;
+      }
+      QR.updateComPreview();
+    } else if (QR.commentPreviewInputBound) {
+      $.off(QR.nodes.com, 'input', QR.updateComPreview);
+      QR.commentPreviewInputBound = false;
+    }
+  },
+
+  comPreviewTagWraps: {
+    spoiler: { wrap: (i: string) => `<s>${i}</s>`,                                       format: true  },
+    code:    { wrap: (i: string) => `<pre class="prettyprint">${i}</pre>`,               format: false },
+    math:    { wrap: (i: string) => `<span class="math">[math]${i}[/math]</span>`,       format: false },
+    eqn:     { wrap: (i: string) => `<span class="math">[eqn]${i}[/eqn]</span>`,         format: false },
+    sjis:    { wrap: (i: string) => `<span class="sjis">${i}</span>`,                    format: true  },
+    b:       { wrap: (i: string) => `<b>${i}</b>`,                                       format: true  },
+    i:       { wrap: (i: string) => `<span class="mu-i">${i}</span>`,                    format: true  },
+    red:     { wrap: (i: string) => `<span class="mu-r">${i}</span>`,                    format: true  },
+    green:   { wrap: (i: string) => `<span class="mu-g">${i}</span>`,                    format: true  },
+    blue:    { wrap: (i: string) => `<span class="mu-b">${i}</span>`,                    format: true  },
+  } as Record<string, { wrap: (i: string) => string; format: boolean }>,
+
+  // Per-board extra tags that 4chan renders but aren't surfaced via boards.json flags.
+  comPreviewBoardExtras: {
+    mu:  ['b', 'i', 'red', 'green', 'blue'],
+    qst: ['b', 'i', 'red', 'green', 'blue'],
+  } as Record<string, string[]>,
+
+  renderComPreview(text: string): string {
+    const config = g.BOARD.config;
+    const names: string[] = [];
+    if (QR.spoiler)        names.push('spoiler');
+    if (config.code_tags)  names.push('code');
+    if (config.math_tags)  names.push('math', 'eqn');
+    if (config.sjis_tags)  names.push('sjis');
+    const extras = QR.comPreviewBoardExtras[g.BOARD.ID] || [];
+    for (const t of extras) if (!names.includes(t)) names.push(t);
+
+    if (!names.length) return QR.formatComPreviewText(text);
+
+    const tagRe = new RegExp(`\\[(${names.join('|')})\\]([\\s\\S]*?)\\[\\/\\1\\]`, 'g');
+    let html = '';
+    let last = 0;
+    let m: RegExpExecArray | null;
+    while ((m = tagRe.exec(text))) {
+      html += QR.formatComPreviewText(text.slice(last, m.index));
+      const tag = QR.comPreviewTagWraps[m[1]];
+      const inner = tag.format ? QR.formatComPreviewText(m[2]) : E(m[2]);
+      html += tag.wrap(inner);
+      last = m.index + m[0].length;
+    }
+    html += QR.formatComPreviewText(text.slice(last));
+    return html;
+  },
+
+  formatComPreviewText(text: string): string {
+    const escaped = E(text);
+    // Treat >>NNN and >>>/board/NNN as quotelinks (greentext detection skips these).
+    const withQuotes = escaped.replace(
+      /&gt;&gt;(?:&gt;\/[a-z\d]+\/)?\d+/g,
+      m => `<a class="quotelink" href="javascript:;">${m}</a>`
+    );
+    return withQuotes.split('\n').map(line =>
+      /^&gt;(?!&gt;)/.test(line) ? `<span class="quote">${line}</span>` : line
+    ).join('\n');
   },
 
   addPost() {
@@ -927,6 +1021,7 @@ var QR = {
     setNode('com',            '[data-name=com]');
     setNode('charCount',      '#char-count');
     setNode('texPreview',     '#tex-preview');
+    setNode('comPreview',     '#qr-com-preview');
     setNode('dumpList',       '#dump-list');
     setNode('addPost',        '#add-post');
     setNode('oekaki',         '.oekaki');
@@ -959,6 +1054,7 @@ var QR = {
     classList.toggle('has-math',     !!config.math_tags);
     classList.toggle('sjis-preview', !!config.sjis_tags && Conf['sjisPreview']);
     classList.toggle('show-new-thread-option', Conf['Show New Thread Option in Threads']);
+    QR.applyCommentPreviewSettings();
 
     if (parseInt(Conf['customCooldown'], 10) > 0) {
       $.addClass(QR.nodes.fileSubmit, 'custom-cooldown');
