@@ -987,10 +987,34 @@ div[data-checked="false"] > .suboption-list {
   margin: 0;
   padding: 8px;
 }
+.styling-preview-layout {
+  display: grid;
+  grid-template-columns: minmax(520px, 1fr) minmax(350px, 360px);
+  gap: 10px;
+  align-items: start;
+}
 .styling-preview-thread > .thread {
   display: block;
   margin: 0;
   padding: 0;
+  text-align: left;
+}
+.styling-preview-catalog {
+  background: transparent;
+  border: 1px solid rgba(128, 128, 128, .35);
+  margin: 0;
+  padding: 8px;
+  min-width: 350px;
+  text-align: left;
+}
+.styling-preview-catalog > .catalog-thread {
+  margin: 2px;
+  vertical-align: top;
+}
+.styling-preview-catalog::after {
+  content: "";
+  display: block;
+  clear: both;
 }
 .styling-preview-post {
   border: none;
@@ -1008,13 +1032,18 @@ div[data-checked="false"] > .suboption-list {
   margin-bottom: 0;
 }
 .styling-preview-post > .reply {
-  display: inline-block;
-  max-width: min(100%, 880px);
+  display: block;
+  max-width: min(100%, 960px);
 }
 .styling-preview-post .sideArrows {
   display: inline-block;
   float: left;
   margin-right: 4px;
+}
+@media (max-width: 1200px) {
+  .styling-preview-layout {
+    grid-template-columns: 1fr;
+  }
 }
 .styling-preview-post .postInfo,
 .styling-preview-post .postMessage {
@@ -1215,9 +1244,22 @@ div[data-checked="false"] > .suboption-list {
   margin-bottom: 6px;
 }
 .section-styling .styling-add-theme-name {
-  flex: 1 1 160px;
-  min-width: 140px;
+  flex: 1 1 260px;
+  max-width: 380px;
+  min-width: 180px;
   padding: 2px 6px;
+}
+:root .section-styling .styling-add-theme-name.field {
+  background: transparent;
+  border-color: rgba(128, 128, 128, .45);
+  color: inherit;
+}
+.section-styling .styling-add-theme-name.field::placeholder {
+  color: color-mix(in srgb, currentColor 58%, transparent);
+}
+.section-styling .styling-add-theme-name.field:hover,
+.section-styling .styling-add-theme-name.field:focus {
+  border-color: rgba(128, 128, 128, .45);
 }
 .section-styling .styling-add-theme-source {
   align-items: center;
@@ -1265,6 +1307,11 @@ div[data-checked="false"] > .suboption-list {
 .section-styling .styling-inline-option:hover {
   background: color-mix(in srgb, currentColor 8%, transparent);
 }
+.section-styling .styling-inline-option.styling-match-hover-target {
+  background: color-mix(in srgb, currentColor 14%, transparent);
+  outline: 1px solid color-mix(in srgb, currentColor 30%, transparent);
+  outline-offset: -1px;
+}
 .section-styling .styling-group-label {
   font-weight: 600;
   margin: 8px 4px 3px;
@@ -1283,9 +1330,6 @@ div[data-checked="false"] > .suboption-list {
   flex: 1 1 auto;
   margin-left: 8px;
   opacity: .35;
-}
-.section-styling .styling-marker-link-row > label::after {
-  display: none;
 }
 .section-styling .styling-inline-controls {
   align-items: center;
@@ -1694,6 +1738,10 @@ div[data-checked="false"] > .suboption-list {
   font-family: monospace;
   width: 100%;
   resize: vertical;
+}
+#fourchanx-settings textarea:not(.custom-css-textarea):not(:focus) {
+  cursor: default;
+  overflow: hidden;
 }
 #fourchanx-settings code {
   color: #000;

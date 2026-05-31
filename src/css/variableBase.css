@@ -270,17 +270,13 @@
 :root.catalog-mode .catalog-thread > .catalog-container.filter-highlight {
   background: var(--xt-filter-highlight, rgba(221, 0, 0, .5)) !important;
 }
-:root.xt-highlight-catalog-own .catalog-thread.yourPost,
-:root.xt-highlight-catalog-own .catalog-thread > .catalog-container.yourPost {
-  background: color-mix(in srgb, var(--xt-catalog-own-highlight, var(--xt-highlight-own, transparent)) calc(var(--xt-catalog-own-highlight-opacity, 1) * 100%), transparent) !important;
-}
 :root.xt-highlight-catalog-own .catalog-thread.yourPost > .catalog-container,
 :root.xt-highlight-catalog-own .catalog-thread > .catalog-container.yourPost {
   background: color-mix(in srgb, var(--xt-catalog-own-highlight, var(--xt-highlight-own, transparent)) calc(var(--xt-catalog-own-highlight-opacity, 1) * 100%), transparent) !important;
 }
 :root.xt-highlight-catalog-own .catalog-thread.yourPost .post.catalog-post,
 :root.xt-highlight-catalog-own .catalog-thread > .catalog-container.yourPost .post.catalog-post {
-  background: color-mix(in srgb, var(--xt-catalog-own-highlight, var(--xt-highlight-own, transparent)) calc(var(--xt-catalog-own-highlight-opacity, 1) * 100%), transparent) !important;
+  background: transparent !important;
   border-left: 3px dashed color-mix(in srgb, var(--xt-catalog-own-highlight, var(--xt-highlight-own, var(--xt-border-highlight))) calc(var(--xt-catalog-own-highlight-opacity, 1) * 100%), transparent);
   color: var(--xt-catalog-own-text, var(--xt-text-color)) !important;
 }
@@ -302,10 +298,11 @@
 :root.xt-highlight-catalog-own .catalog-thread > .catalog-container.yourPost .post.catalog-post .postMessage {
   background: transparent !important;
 }
-:root.xt-highlight-catalog-watched .catalog-thread.watched:not(:has(.yourPost)),
-:root.xt-highlight-catalog-watched .catalog-thread.watched:not(:has(.yourPost)) > .catalog-container,
-:root.xt-highlight-catalog-watched .catalog-thread.watched:not(:has(.yourPost)) .post.catalog-post {
+:root.xt-highlight-catalog-watched .catalog-thread.watched:not(:has(.yourPost)) > .catalog-container {
   background: color-mix(in srgb, var(--xt-catalog-watched-highlight, var(--xt-watched-border, rgba(255, 0, 0, .75))) calc(var(--xt-catalog-watched-highlight-opacity, 0.2) * 100%), transparent) !important;
+}
+:root.xt-highlight-catalog-watched .catalog-thread.watched:not(:has(.yourPost)) .post.catalog-post {
+  background: transparent !important;
 }
 :root.xt-highlight-catalog-watched .catalog-thread.watched:not(:has(.yourPost)) .catalog-post {
   border: 2px solid color-mix(in srgb, var(--xt-catalog-watched-highlight, var(--xt-watched-border, rgba(255, 0, 0, .75))) calc(var(--xt-catalog-watched-highlight-opacity, 1) * 100%), transparent);

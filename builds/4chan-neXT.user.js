@@ -1,6 +1,6 @@
 // ==UserScript==
 // @name         4chan-neXT
-// @version      1.0.2
+// @version      1.0.3
 // @minGMVer     1.14
 // @minFFVer     78
 // @namespace    4chan-neXT
@@ -70,6 +70,7 @@
 // @grant        GM_addValueChangeListener
 // @grant        GM_openInTab
 // @grant        GM_xmlhttpRequest
+// @grant        GM_addElement
 // @grant        GM.getValue
 // @grant        GM.setValue
 // @grant        GM.deleteValue
@@ -169,7 +170,7 @@
   'use strict';
 
   var version = {
-    "version": "1.0.2",
+    "version": "1.0.3",
     "date": "2026-05-30T00:00:00Z"
   }
   ;
@@ -1289,7 +1290,9 @@ http://eye.swfchan.com/search/?q=%name;types:swf
     'Link Text Color': '',
     'Quote Text Color': '',
     'Dead Link Text Color': '',
-    'Scroll Marker Match Highlights': true,
+    'Scroll Marker Own Match Highlight': true,
+    'Scroll Marker You Match Highlight': true,
+    'Scroll Marker Ghost Match Highlight': true,
 
     // Styling — highlight background colors and per-marker scroll colors.
     // Empty string = use the stylesheet default for the active theme.
@@ -3195,7 +3198,7 @@ current-archive-text:"Archive"]
   <div class="styling-add-theme">
     <div class="styling-group-label">Add custom theme</div>
     <div class="styling-add-theme-row">
-      <input type="text" class="styling-add-theme-name" placeholder="Theme name" maxlength="60">
+      <input type="text" class="field styling-add-theme-name" placeholder="Theme name" maxlength="60">
       <label class="styling-add-theme-source">Source:
         <select class="styling-add-theme-source-select">
           <option value="file">CSS file</option>
@@ -3220,12 +3223,13 @@ current-archive-text:"Archive"]
 
 <details open>
   <summary>Highlight Colors</summary>
+  <p>Choose highlight colors for thread and catalog states.</p>
   <div data-name="Highlight Colors">
     <div class="styling-tree">
       <div data-name="Thread Highlights">
         <label><input type="checkbox" name="Enable Thread Highlights"> Threads</label>
         <div class="styling-tree">
-          <div class="styling-inline-option">
+          <div class="styling-inline-option" data-highlight-row="own">
             <label><input type="checkbox" name="Highlight Own Posts"> Your post</label>
             <span class="styling-inline-controls styling-highlight-controls">
               <input type="color" name="Highlight Own Color" title="Highlight background color">
@@ -3239,7 +3243,7 @@ current-archive-text:"Archive"]
               <input type="range" name="Highlight Own Opacity" min="0" max="1" step="0.05" title="Highlight opacity">
             </span>
           </div>
-          <div class="styling-inline-option">
+          <div class="styling-inline-option" data-highlight-row="you">
             <label><input type="checkbox" name="Highlight Posts Quoting You"> Quotes you</label>
             <span class="styling-inline-controls styling-highlight-controls">
               <input type="color" name="Highlight You Color" title="Highlight background color">
@@ -3253,7 +3257,7 @@ current-archive-text:"Archive"]
               <input type="range" name="Highlight You Opacity" min="0" max="1" step="0.05" title="Highlight opacity">
             </span>
           </div>
-          <div class="styling-inline-option">
+          <div class="styling-inline-option" data-highlight-row="ghost">
             <label><input type="checkbox" name="Highlight Ghost Posts"> Ghost post</label>
             <span class="styling-inline-controls styling-highlight-controls">
               <input type="color" name="Highlight Ghost Color" title="Highlight background color">
@@ -3304,10 +3308,8 @@ current-archive-text:"Archive"]
       </div>
     </div>
   </div>
-  <p>Background colors used for highlighted posts. Opacity is 0-1; 0 disables the background. Use "Reset to defaults" to restore theme defaults.</p>
   <div class="styling-actions">
     <button type="button" id="styling-randomize" title="Generate random highlight colors that contrast with the page background">Randomize</button>
-    <button type="button" id="styling-reset-highlights" title="Clear all highlight colors and use theme defaults">Reset to defaults</button>
     <button type="button" id="styling-open-preview" title="Open a live preview of post highlight states">Preview states</button>
   </div>
 </details>
@@ -3317,15 +3319,10 @@ current-archive-text:"Archive"]
   <div data-name="Scrollbar Markers">
     <label><input type="checkbox" name="Scrollbar Markers"> Scrollbar markers</label>
     <div class="styling-tree">
-      <div class="styling-inline-option styling-marker-link-row">
-        <label>Marker colors</label>
-        <span class="styling-inline-controls">
-          <label class="styling-inline-toggle"><input type="checkbox" name="Scroll Marker Match Highlights"> Match highlights</label>
-        </span>
-      </div>
       <div class="styling-inline-option" data-marker-color="own">
         <label><input type="checkbox" name="Scrollbar Mark Own Posts"> Your posts</label>
         <span class="styling-inline-controls">
+          <label class="styling-inline-toggle" data-match-target="own" title="Match this marker color to the corresponding highlight color."><input type="checkbox" name="Scroll Marker Own Match Highlight">Match</label>
           <input type="color" name="Scroll Marker Own Color">
           <input type="range" name="Scroll Marker Own Opacity" min="0" max="1" step="0.05">
         </span>
@@ -3333,6 +3330,7 @@ current-archive-text:"Archive"]
       <div class="styling-inline-option" data-marker-color="you">
         <label><input type="checkbox" name="Scrollbar Mark Quotes You"> Quotes you</label>
         <span class="styling-inline-controls">
+          <label class="styling-inline-toggle" data-match-target="you" title="Match this marker color to the corresponding highlight color."><input type="checkbox" name="Scroll Marker You Match Highlight">Match</label>
           <input type="color" name="Scroll Marker You Color">
           <input type="range" name="Scroll Marker You Opacity" min="0" max="1" step="0.05">
         </span>
@@ -3340,6 +3338,7 @@ current-archive-text:"Archive"]
       <div class="styling-inline-option" data-marker-color="ghost">
         <label><input type="checkbox" name="Scrollbar Mark Ghost Posts"> Ghost posts</label>
         <span class="styling-inline-controls">
+          <label class="styling-inline-toggle" data-match-target="ghost" title="Match this marker color to the corresponding highlight color."><input type="checkbox" name="Scroll Marker Ghost Match Highlight">Match</label>
           <input type="color" name="Scroll Marker Ghost Color">
           <input type="range" name="Scroll Marker Ghost Opacity" min="0" max="1" step="0.05">
         </span>
@@ -3419,7 +3418,6 @@ current-archive-text:"Archive"]
   </div>
   <div class="custom-css-note note">Custom CSS can override configured highlight colors.</div>
   <div>For more information about customizing 4chan X&#039;s CSS, see the <a href="https://github.com/ccd0/4chan-x/wiki/Styling-Guide" target="_blank">styling guide</a>.</div>
-  <button id="apply-css">Apply CSS</button>
   <div class="custom-css-controls">
     <label>Syntax theme:
       <select id="custom-css-theme">
@@ -3855,17 +3853,13 @@ current-archive-text:"Archive"]
 :root.catalog-mode .catalog-thread > .catalog-container.filter-highlight {
   background: var(--xt-filter-highlight, rgba(221, 0, 0, .5)) !important;
 }
-:root.xt-highlight-catalog-own .catalog-thread.yourPost,
-:root.xt-highlight-catalog-own .catalog-thread > .catalog-container.yourPost {
-  background: color-mix(in srgb, var(--xt-catalog-own-highlight, var(--xt-highlight-own, transparent)) calc(var(--xt-catalog-own-highlight-opacity, 1) * 100%), transparent) !important;
-}
 :root.xt-highlight-catalog-own .catalog-thread.yourPost > .catalog-container,
 :root.xt-highlight-catalog-own .catalog-thread > .catalog-container.yourPost {
   background: color-mix(in srgb, var(--xt-catalog-own-highlight, var(--xt-highlight-own, transparent)) calc(var(--xt-catalog-own-highlight-opacity, 1) * 100%), transparent) !important;
 }
 :root.xt-highlight-catalog-own .catalog-thread.yourPost .post.catalog-post,
 :root.xt-highlight-catalog-own .catalog-thread > .catalog-container.yourPost .post.catalog-post {
-  background: color-mix(in srgb, var(--xt-catalog-own-highlight, var(--xt-highlight-own, transparent)) calc(var(--xt-catalog-own-highlight-opacity, 1) * 100%), transparent) !important;
+  background: transparent !important;
   border-left: 3px dashed color-mix(in srgb, var(--xt-catalog-own-highlight, var(--xt-highlight-own, var(--xt-border-highlight))) calc(var(--xt-catalog-own-highlight-opacity, 1) * 100%), transparent);
   color: var(--xt-catalog-own-text, var(--xt-text-color)) !important;
 }
@@ -3887,10 +3881,11 @@ current-archive-text:"Archive"]
 :root.xt-highlight-catalog-own .catalog-thread > .catalog-container.yourPost .post.catalog-post .postMessage {
   background: transparent !important;
 }
-:root.xt-highlight-catalog-watched .catalog-thread.watched:not(:has(.yourPost)),
-:root.xt-highlight-catalog-watched .catalog-thread.watched:not(:has(.yourPost)) > .catalog-container,
-:root.xt-highlight-catalog-watched .catalog-thread.watched:not(:has(.yourPost)) .post.catalog-post {
+:root.xt-highlight-catalog-watched .catalog-thread.watched:not(:has(.yourPost)) > .catalog-container {
   background: color-mix(in srgb, var(--xt-catalog-watched-highlight, var(--xt-watched-border, rgba(255, 0, 0, .75))) calc(var(--xt-catalog-watched-highlight-opacity, 0.2) * 100%), transparent) !important;
+}
+:root.xt-highlight-catalog-watched .catalog-thread.watched:not(:has(.yourPost)) .post.catalog-post {
+  background: transparent !important;
 }
 :root.xt-highlight-catalog-watched .catalog-thread.watched:not(:has(.yourPost)) .catalog-post {
   border: 2px solid color-mix(in srgb, var(--xt-catalog-watched-highlight, var(--xt-watched-border, rgba(255, 0, 0, .75))) calc(var(--xt-catalog-watched-highlight-opacity, 1) * 100%), transparent);
@@ -5030,10 +5025,34 @@ div[data-checked="false"] > .suboption-list {
   margin: 0;
   padding: 8px;
 }
+.styling-preview-layout {
+  display: grid;
+  grid-template-columns: minmax(520px, 1fr) minmax(350px, 360px);
+  gap: 10px;
+  align-items: start;
+}
 .styling-preview-thread > .thread {
   display: block;
   margin: 0;
   padding: 0;
+  text-align: left;
+}
+.styling-preview-catalog {
+  background: transparent;
+  border: 1px solid rgba(128, 128, 128, .35);
+  margin: 0;
+  padding: 8px;
+  min-width: 350px;
+  text-align: left;
+}
+.styling-preview-catalog > .catalog-thread {
+  margin: 2px;
+  vertical-align: top;
+}
+.styling-preview-catalog::after {
+  content: "";
+  display: block;
+  clear: both;
 }
 .styling-preview-post {
   border: none;
@@ -5051,13 +5070,18 @@ div[data-checked="false"] > .suboption-list {
   margin-bottom: 0;
 }
 .styling-preview-post > .reply {
-  display: inline-block;
-  max-width: min(100%, 880px);
+  display: block;
+  max-width: min(100%, 960px);
 }
 .styling-preview-post .sideArrows {
   display: inline-block;
   float: left;
   margin-right: 4px;
+}
+@media (max-width: 1200px) {
+  .styling-preview-layout {
+    grid-template-columns: 1fr;
+  }
 }
 .styling-preview-post .postInfo,
 .styling-preview-post .postMessage {
@@ -5258,9 +5282,22 @@ div[data-checked="false"] > .suboption-list {
   margin-bottom: 6px;
 }
 .section-styling .styling-add-theme-name {
-  flex: 1 1 160px;
-  min-width: 140px;
+  flex: 1 1 260px;
+  max-width: 380px;
+  min-width: 180px;
   padding: 2px 6px;
+}
+:root .section-styling .styling-add-theme-name.field {
+  background: transparent;
+  border-color: rgba(128, 128, 128, .45);
+  color: inherit;
+}
+.section-styling .styling-add-theme-name.field::placeholder {
+  color: color-mix(in srgb, currentColor 58%, transparent);
+}
+.section-styling .styling-add-theme-name.field:hover,
+.section-styling .styling-add-theme-name.field:focus {
+  border-color: rgba(128, 128, 128, .45);
 }
 .section-styling .styling-add-theme-source {
   align-items: center;
@@ -5308,6 +5345,11 @@ div[data-checked="false"] > .suboption-list {
 .section-styling .styling-inline-option:hover {
   background: color-mix(in srgb, currentColor 8%, transparent);
 }
+.section-styling .styling-inline-option.styling-match-hover-target {
+  background: color-mix(in srgb, currentColor 14%, transparent);
+  outline: 1px solid color-mix(in srgb, currentColor 30%, transparent);
+  outline-offset: -1px;
+}
 .section-styling .styling-group-label {
   font-weight: 600;
   margin: 8px 4px 3px;
@@ -5326,9 +5368,6 @@ div[data-checked="false"] > .suboption-list {
   flex: 1 1 auto;
   margin-left: 8px;
   opacity: .35;
-}
-.section-styling .styling-marker-link-row > label::after {
-  display: none;
 }
 .section-styling .styling-inline-controls {
   align-items: center;
@@ -5737,6 +5776,10 @@ div[data-checked="false"] > .suboption-list {
   font-family: monospace;
   width: 100%;
   resize: vertical;
+}
+#fourchanx-settings textarea:not(.custom-css-textarea):not(:focus) {
+  cursor: default;
+  overflow: hidden;
 }
 #fourchanx-settings code {
   color: #000;
@@ -8455,7 +8498,7 @@ svg.icon {
           <a href="javascript:;" hidden id="paste-area" class="qr-action-button" title="Select to paste images" tabindex="-1" contentEditable="true">📋︎</a>
           <a href="javascript:;" id="custom-cooldown-button" class="qr-action-button" title="Toggle custom cooldown" class="disabled">🕒︎</a>
           <a href="javascript:;" id="split-post" class="qr-action-button" title="Split into multiple posts" hidden>✂️</a>
-          <a href="javascript:;" id="dump-button" class="qr-action-button" title="Dump list">➕︎</a>
+          <a href="javascript:;" id="dump-button" class="qr-action-button" title="Dump list (Shift+Click: Clear list)">➕︎</a>
         </span>
       </span>
       <input class="qr-button" type="submit">
@@ -18459,6 +18502,12 @@ svg.icon {
     init() {
       if (!['index', 'thread', 'archive'].includes(g.VIEW)) { return; }
 
+      // Live-toggle: re-sweep page when the user flips the setting in Settings.
+      $.sync('Convert X to xcancel', enabled => {
+        Conf['Convert X to xcancel'] = enabled;
+        Linkify.refreshXcancel();
+      });
+
       const shouldLinkify = Conf['Linkify'];
       const shouldRewriteX = Conf['Convert X to xcancel'];
       if (!shouldLinkify && !shouldRewriteX) { return; }
@@ -18474,6 +18523,29 @@ svg.icon {
 
       if (shouldLinkify) {
         return Embedding.init();
+      }
+    },
+
+    refreshXcancel() {
+      if (Conf['Convert X to xcancel']) {
+        // Apply rewrite to every <a> in post comments currently on the page.
+        const selector = g.SITE?.selectors?.comment;
+        if (!selector) { return; }
+        for (const comment of $$(selector)) {
+          for (const link of $$('a', comment)) {
+            Linkify.rewriteXLink(link);
+          }
+        }
+      } else {
+        // Revert links we previously rewrote.
+        for (const link of $$('a[data-xcancel-orig-href]')) {
+          link.href = link.dataset.xcancelOrigHref;
+          if (link.dataset.xcancelOrigText != null && link.children.length === 0) {
+            link.textContent = link.dataset.xcancelOrigText;
+          }
+          delete link.dataset.xcancelOrigHref;
+          delete link.dataset.xcancelOrigText;
+        }
       }
     },
 
@@ -18644,11 +18716,12 @@ aero|asia|biz|cat|com|coop|dance|info|int|jobs|mobi|moe|museum|name|net|org|post
         }) + encodedDomain[2];
       }
 
+      const rewrittenHref = Linkify.rewriteXURL(text);
       const a = $.el('a', {
         className: 'linkify',
         rel:       'noreferrer noopener',
         target:    '_blank',
-        href:      Linkify.rewriteXURL(text)
+        href:      rewrittenHref
       }
       );
 
@@ -18656,14 +18729,41 @@ aero|asia|biz|cat|com|coop|dance|info|int|jobs|mobi|moe|museum|name|net|org|post
       $.add(a, range.extractContents());
       range.insertNode(a);
 
+      if (rewrittenHref !== text) {
+        a.dataset.xcancelOrigHref = text;
+        if (a.children.length === 0) { a.dataset.xcancelOrigText = a.textContent; }
+        Linkify.rewriteVisibleText(a);
+      }
+
       return a;
     },
 
     rewriteXLink(link) {
       if (!Conf['Convert X to xcancel']) { return; }
-      const href = Linkify.rewriteXURL(link.href);
-      if (href !== link.href) {
-        link.href = href;
+      const oldHref = link.href;
+      const newHref = Linkify.rewriteXURL(oldHref);
+      if (newHref !== oldHref) {
+        if (!link.dataset.xcancelOrigHref) {
+          link.dataset.xcancelOrigHref = oldHref;
+          if (link.children.length === 0) { link.dataset.xcancelOrigText = link.textContent; }
+        }
+        link.href = newHref;
+        Linkify.rewriteVisibleText(link);
+      }
+    },
+
+    rewriteVisibleText(link) {
+      // Replace twitter.com / x.com hostnames in the link's visible text with xcancel.com.
+      // Only touches text nodes so we don't disturb embed icons or nested markup.
+      const replace = s => s.replace(
+        /\b((?:www\.|mobile\.)?(?:fx|vx)?twitter\.com|(?:www\.|mobile\.)?(?:fixup|fixv)?x\.com|twittpr\.com)\b/gi,
+        'xcancel.com'
+      );
+      const walker = document.createTreeWalker(link, NodeFilter.SHOW_TEXT);
+      let node;
+      while ((node = walker.nextNode())) {
+        const updated = replace(node.data);
+        if (updated !== node.data) { node.data = updated; }
       }
     },
 
@@ -21154,6 +21254,8 @@ aero|asia|biz|cat|com|coop|dance|info|int|jobs|mobi|moe|museum|name|net|org|post
     shortcut: undefined,
     hasFocus: false,
     pendingFiles: [],
+    dropTargetPost: undefined,
+    isDroppingFiles: false,
     isProcessingPendingFiles: false,
     fileBatchSize: 3,
     heavyBatchFileCount: 8,
@@ -21407,6 +21509,34 @@ aero|asia|biz|cat|com|coop|dance|info|int|jobs|mobi|moe|museum|name|net|org|post
         new QR.post(true);
       }
       return QR.nodes.com.focus();
+    },
+    clearDumpList() {
+      if (!QR.posts?.length) {
+        return;
+      }
+      QR.pendingFiles.length = 0;
+      new QR.post(true);
+      for (var post of QR.posts.splice(0, QR.posts.length - 1)) {
+        post.delete();
+      }
+      QR.cleanNotifications();
+      $.rmClass(QR.nodes.el, 'dump');
+      QR.status();
+      QR.captcha.updateThread?.();
+    },
+    toggleDumpList(e) {
+      if (e.shiftKey) {
+        e.preventDefault();
+        QR.clearDumpList();
+        return;
+      }
+      QR.nodes.el.classList.toggle('dump');
+    },
+    blurMouseFocusedAction(e) {
+      // Keep keyboard focus behavior; only blur on pointer click.
+      if (e.detail > 0) {
+        e.currentTarget?.blur?.();
+      }
     },
     setCustomCooldown(enabled) {
       Conf['customCooldownEnabled'] = enabled;
@@ -21672,7 +21802,14 @@ aero|asia|biz|cat|com|coop|dance|info|int|jobs|mobi|moe|museum|name|net|org|post
       }
       e.preventDefault();
       QR.open();
-      return QR.handleFiles(e.dataTransfer.files);
+      QR.dropTargetPost = QR.findPostFromDropTarget(e.target);
+      QR.isDroppingFiles = true;
+      try {
+        return QR.handleFiles(e.dataTransfer.files);
+      } finally {
+        QR.dropTargetPost = undefined;
+        QR.isDroppingFiles = false;
+      }
     },
     paste(e) {
       if (!e.clipboardData.items) {
@@ -21779,7 +21916,20 @@ aero|asia|biz|cat|com|coop|dance|info|int|jobs|mobi|moe|museum|name|net|org|post
       let post;
       const isText = /^text\//.test(file.type);
       if (nfiles === 1) {
-        post = QR.selected;
+        if (QR.isDroppingFiles) {
+          const target = QR.dropTargetPost;
+          if (target && QR.postCanTakeFile(target, isText)) {
+            post = target;
+          } else if (target) {
+            post = new QR.post();
+          } else if (QR.postCanTakeFile(QR.selected, isText)) {
+            post = QR.selected;
+          } else {
+            post = new QR.post();
+          }
+        } else {
+          post = QR.selected;
+        }
       } else {
         post = QR.posts[QR.posts.length - 1];
         if (!post) {
@@ -21790,6 +21940,25 @@ aero|asia|biz|cat|com|coop|dance|info|int|jobs|mobi|moe|museum|name|net|org|post
         }
       }
       return post;
+    },
+    postCanTakeFile(post, isText) {
+      if (!post) {
+        return false;
+      }
+      return isText ?
+        !(post.com || post.pasting)
+        :
+          !(post.file || post.pendingFile);
+    },
+    findPostFromDropTarget(target) {
+      let node = target;
+      while (node?.parentNode && !(node instanceof HTMLAnchorElement && $.hasClass(node, 'qr-preview'))) {
+        node = node.parentNode;
+      }
+      if (!(node instanceof HTMLAnchorElement) || !$.hasClass(node, 'qr-preview')) {
+        return;
+      }
+      return QR.posts.find(post => post.nodes.el === node);
     },
     async processPendingFiles() {
       if (QR.isProcessingPendingFiles) {
@@ -21925,20 +22094,44 @@ aero|asia|biz|cat|com|coop|dance|info|int|jobs|mobi|moe|museum|name|net|org|post
       $.on(nodes.drawButton, 'click', QR.oekaki.draw);
       $.on(nodes.fileButton, 'click', QR.openFileInput);
       $.on(nodes.noFile, 'click', QR.openFileInput);
-      $.on(nodes.randomizeButton, 'click', () => { QR.selected.randomizeName(); });
-      $.on(nodes.compress, 'click', async () => { QR.handleFiles([await QR.convert(QR.selected.file)]); });
+      $.on(nodes.randomizeButton, 'click', e => {
+        QR.selected.randomizeName();
+        QR.blurMouseFocusedAction(e);
+      });
+      $.on(nodes.compress, 'click', async (e) => {
+        try {
+          if (!QR.selected.file) {
+            return;
+          }
+          QR.handleFiles([await QR.convert(QR.selected.file)]);
+        } finally {
+          QR.blurMouseFocusedAction(e);
+        }
+      });
       $.on(nodes.view, 'click', QR.preview);
-      $.on(nodes.restoreNameButton, 'click', () => { QR.selected.restoreName(); });
+      $.on(nodes.restoreNameButton, 'click', e => {
+        QR.selected.restoreName();
+        QR.blurMouseFocusedAction(e);
+      });
       $.on(nodes.filename, 'focus', function () { return $.addClass(this.parentNode, 'focus'); });
       $.on(nodes.filename, 'blur', function () { return $.rmClass(this.parentNode, 'focus'); });
       $.on(nodes.spoiler, 'change', () => QR.selected.nodes.spoiler.click());
-      $.on(nodes.oekakiButton, 'click', QR.oekaki.button);
+      $.on(nodes.oekakiButton, 'click', e => {
+        QR.oekaki.button();
+        QR.blurMouseFocusedAction(e);
+      });
       $.on(nodes.fileRM, 'click', () => QR.selected.rmFile());
       $.on(nodes.urlButton, 'click', () => QR.handleUrl(''));
       $.on(nodes.customCooldown, 'click', QR.toggleCustomCooldown);
-      $.on(nodes.dumpButton, 'click', () => nodes.el.classList.toggle('dump'));
+      $.on(nodes.dumpButton, 'click', QR.toggleDumpList);
       $.on(nodes.fileInput, 'change', QR.handleFiles);
       $.on(nodes.splitPost, 'click', QR.splitPost);
+      $.on(dialog, 'click', e => {
+        const anchor = e.target?.closest?.('a[href^="javascript:"]');
+        if (anchor) {
+          e.preventDefault();
+        }
+      });
       window.addEventListener('focus', QR.focus, true);
       window.addEventListener('blur', QR.focus, true);
       // We don't receive blur events from captcha iframe.
@@ -22824,6 +23017,192 @@ aero|asia|biz|cat|com|coop|dance|info|int|jobs|mobi|moe|museum|name|net|org|post
       }
     },
     oekaki: {
+      loadPromise: null,
+      loadFailed: false,
+      pageWindow() {
+        return window.wrappedJSObject || (typeof unsafeWindow !== 'undefined' ? unsafeWindow : window);
+      },
+      getTegaki() {
+        const page = QR.oekaki.pageWindow();
+        return page?.Tegaki || window.Tegaki || globalThis.Tegaki;
+      },
+      async loadUserscriptTegaki() {
+        if (QR.oekaki.getTegaki()) {
+          return true;
+        }
+        if (QR.oekaki.loadFailed) {
+          return false;
+        }
+        if (QR.oekaki.loadPromise) {
+          return QR.oekaki.loadPromise;
+        }
+        QR.oekaki.loadPromise = (async () => {
+          try {
+            // GM_addElement bypasses the page's CSP (which on 4chan only allows hCaptcha scripts).
+            // Direct script-tag injection or new Function() would be blocked.
+            if (typeof GM_addElement !== 'function') {
+              throw new Error('GM_addElement is unavailable; cannot bypass site CSP to load Tegaki.');
+            }
+            const cacheBust = Date.now();
+            const style = GM_addElement(d.head, 'link', {
+              rel: 'stylesheet',
+              href: `https://s.4cdn.org/css/tegaki.${cacheBust}.css`
+            });
+            const script = GM_addElement(d.head, 'script', {
+              src: `https://s.4cdn.org/js/tegaki.min.${cacheBust}.js`
+            });
+            if (!script) {
+              throw new Error('GM_addElement did not return a script element.');
+            }
+            await new Promise((resolve, reject) => {
+              let pending = style ? 2 : 1;
+              const done = () => { if (--pending === 0)
+                resolve(); };
+              $.on(script, 'load', done);
+              $.on(script, 'error', () => reject(new Error('Failed to load Tegaki script.')));
+              if (style) {
+                $.on(style, 'load', done);
+                // CSS failure shouldn't block the editor from working.
+                $.on(style, 'error', done);
+              }
+            });
+            if (!QR.oekaki.getTegaki()) {
+              throw new Error('Tegaki script loaded but did not expose the Tegaki global.');
+            }
+            return true;
+          } catch (error) {
+            console.error(error);
+            QR.oekaki.loadFailed = true;
+            QR.error('Failed to load Tegaki from userscript context.');
+            return false;
+          } finally {
+            QR.oekaki.loadPromise = null;
+          }
+        })();
+        return QR.oekaki.loadPromise;
+      },
+      setupDirect() {
+        const page = QR.oekaki.pageWindow();
+        if (!page) {
+          return false;
+        }
+        page.FCX || (page.FCX = {});
+        page.FCX.oekakiCB = () => QR.oekaki.getTegaki()?.flatten().toBlob((file) => {
+          const source = `oekaki-${Date.now()}`;
+          page.FCX.oekakiLatest = source;
+          $.event('QRSetFile', {
+            file,
+            name: page.FCX.oekakiName,
+            source
+          });
+        });
+        if (QR.oekaki.getTegaki()) {
+          QR.nodes.oekaki.hidden = false;
+        }
+        return true;
+      },
+      drawDirect() {
+        const page = QR.oekaki.pageWindow();
+        const Tegaki = QR.oekaki.getTegaki();
+        const FCX = page?.FCX;
+        if (!(Tegaki && FCX)) {
+          return false;
+        }
+        if (Tegaki.bg) {
+          Tegaki.destroy();
+        }
+        FCX.oekakiName = 'tegaki.png';
+        Tegaki.open({
+          onDone: FCX.oekakiCB,
+          onCancel() { Tegaki.bgColor = '#ffffff'; },
+          width: +$('#qr [name=oekaki-width]')?.value,
+          height: +$('#qr [name=oekaki-height]')?.value,
+          bgColor: $('#qr [name=oekaki-bg]')?.checked ?
+            $('#qr [name=oekaki-bgcolor]')?.value
+            :
+              'transparent'
+        });
+        return true;
+      },
+      loadDirect() {
+        const page = QR.oekaki.pageWindow();
+        const Tegaki = QR.oekaki.getTegaki();
+        const FCX = page?.FCX;
+        if (!(Tegaki && FCX)) {
+          return false;
+        }
+        const name = QR.nodes.filename.value.replace(/\.\w+$/, '') + '.png';
+        const { source } = QR.nodes.fileSubmit.dataset;
+        const error = content => QR.error(content);
+        const cb = function (e) {
+          if (e) {
+            this.removeEventListener('QRMetadata', cb, false);
+          }
+          const selected = QR.selected?.nodes?.el;
+          if (!selected?.dataset.type)
+            return error('No file to edit.');
+          if (!/^(image|video)\//.test(selected.dataset.type)) {
+            return error('Not an image.');
+          }
+          if (!selected.dataset.height || !selected.dataset.width)
+            return error('Metadata not available.');
+          if (selected.dataset.height === 'loading') {
+            selected.addEventListener('QRMetadata', cb, false);
+            return;
+          }
+          const width = +selected.dataset.width;
+          const height = +selected.dataset.height;
+          if (!(width > 0) || !(height > 0))
+            return error('Metadata not available.');
+          if (Tegaki.bg) {
+            Tegaki.destroy();
+          }
+          FCX.oekakiName = name;
+          Tegaki.open({
+            onDone: FCX.oekakiCB,
+            onCancel() { Tegaki.bgColor = '#ffffff'; },
+            width,
+            height,
+            bgColor: 'transparent'
+          });
+          const canvas = $.el('canvas', {
+            width,
+            height,
+            hidden: true
+          });
+          $.add(d.body, canvas);
+          canvas.addEventListener('QRImageDrawn', function () {
+            this.remove();
+            // Tegaki.onOpenImageLoaded reads this.naturalWidth/naturalHeight,
+            // which only <img> has — passing the canvas directly throws inside
+            // resizeCanvas/createBuffers. Round-trip the pixels through an <img>.
+            canvas.toBlob(blob => {
+              if (!blob) {
+                return error('Could not snapshot image for the editor.');
+              }
+              const img = $.el('img');
+              const url = URL.createObjectURL(blob);
+              $.on(img, 'load', () => {
+                URL.revokeObjectURL(url);
+                Tegaki.onOpenImageLoaded.call(img);
+              });
+              $.on(img, 'error', () => {
+                URL.revokeObjectURL(url);
+                error('Could not load image into the editor.');
+              });
+              img.src = url;
+            });
+          }, false);
+          $.event('QRDrawFile', null, canvas);
+        };
+        if (Tegaki.bg && (Tegaki.onDoneCb === FCX.oekakiCB) && (source === FCX.oekakiLatest)) {
+          FCX.oekakiName = name;
+          Tegaki.resume();
+        } else {
+          cb();
+        }
+        return true;
+      },
       menu: {
         init() {
           if (!['index', 'thread'].includes(g.VIEW) || !Conf['Menu'] || !Conf['Edit Link'] || !Conf['Quick Reply']) {
@@ -22881,28 +23260,56 @@ aero|asia|biz|cat|com|coop|dance|info|int|jobs|mobi|moe|museum|name|net|org|post
         }
       },
       setup() {
+        if (platform === 'userscript' && QR.oekaki.setupDirect()) {
+          return;
+        }
         $.global('setupQR');
       },
       load(cb) {
-        if ($('script[src^="//s.4cdn.org/js/tegaki"]', d.head)) {
+        if (QR.oekaki.getTegaki()) {
           cb();
+        } else if (platform === 'userscript') {
+          QR.oekaki.loadUserscriptTegaki().then(ok => {
+            if (ok && QR.oekaki.getTegaki()) {
+              cb();
+            }
+          });
         } else {
-          const style = $.el('link', {
+          const styleAttrs = {
             rel: 'stylesheet',
             href: `//s.4cdn.org/css/tegaki.${Date.now()}.css`
-          });
-          const script = $.el('script', { src: `//s.4cdn.org/js/tegaki.min.${Date.now()}.js` });
+          };
+          const scriptAttrs = { src: `//s.4cdn.org/js/tegaki.min.${Date.now()}.js` };
+          const add = (tagName, attrs) => {
+            if ((platform === 'userscript') && (typeof GM_addElement === 'function')) {
+              return GM_addElement(d.head, tagName, attrs);
+            }
+            const el = $.el(tagName, attrs);
+            $.add(d.head, el);
+            return el;
+          };
+          const style = add('link', styleAttrs);
+          const script = add('script', scriptAttrs);
           let n = 0;
+          let errored = false;
           const onload = function () {
-            if (++n === 2)
+            if (++n === 2 && !errored)
               cb();
+          };
+          const onerror = function () {
+            errored = true;
+            QR.error('Failed to load Tegaki. This site CSP blocked the script.');
           };
           $.on(style, 'load', onload);
           $.on(script, 'load', onload);
-          $.add(d.head, [style, script]);
+          $.on(style, 'error', onerror);
+          $.on(script, 'error', onerror);
         }
       },
       draw() {
+        if (platform === 'userscript' && QR.oekaki.drawDirect()) {
+          return;
+        }
         return $.global('qrTegakiDraw');
       },
       button() {
@@ -22913,10 +23320,18 @@ aero|asia|biz|cat|com|coop|dance|info|int|jobs|mobi|moe|museum|name|net|org|post
         }
       },
       edit() {
-        QR.oekaki.load(() => $.global('qrTegakiLoad'));
+        QR.oekaki.load(() => {
+          if (platform === 'userscript' && QR.oekaki.loadDirect()) {
+            return;
+          }
+          $.global('qrTegakiLoad');
+        });
       },
       toggle() {
-        QR.oekaki.load(() => QR.nodes.oekaki.hidden = !QR.nodes.oekaki.hidden);
+        QR.nodes.oekaki.hidden = !QR.nodes.oekaki.hidden;
+        if (!QR.nodes.oekaki.hidden && !QR.oekaki.getTegaki()) {
+          QR.oekaki.load(() => { });
+        }
       }
     },
     persona: {
@@ -23662,12 +24077,18 @@ aero|asia|biz|cat|com|coop|dance|info|int|jobs|mobi|moe|museum|name|net|org|post
       e.preventDefault();
       e.dataTransfer.dropEffect = 'move';
     }
-    drop() {
+    drop(e) {
       $.rmClass(this, 'over');
+      if (e.dataTransfer?.files?.length) {
+        return;
+      }
       if (!this.draggable) {
         return;
       }
       const el = $('.drag', this.parentNode);
+      if (!el) {
+        return;
+      }
       const index = el => {
         for (let i = 0; i < el.parentNode.children.length; i++) {
           if (el.parentNode.children[i] === el)
@@ -25641,18 +26062,19 @@ $\
     },
     decorateDetailsWithKeys(sectionRoot, sectionInfo, applyRememberedState = true) {
       for (const details of $$('details', sectionRoot)) {
+        const shouldRememberState = details.dataset.rememberLayout !== 'false';
         const key = Settings.detailsStateKey(details, sectionInfo);
         if (!key)
           continue;
         details.dataset.detailsStateKey = key;
-        if (applyRememberedState && Settings.rememberLayout && Object.prototype.hasOwnProperty.call(Settings.detailsState, key)) {
+        if (applyRememberedState && shouldRememberState && Settings.rememberLayout && Object.prototype.hasOwnProperty.call(Settings.detailsState, key)) {
           details.open = !!Settings.detailsState[key];
         }
         if (details._detailsStateBound)
           continue;
         details._detailsStateBound = true;
         $.on(details, 'toggle', function () {
-          if (!Settings.rememberLayout)
+          if (!Settings.rememberLayout || !shouldRememberState)
             return;
           const stateKey = this.dataset.detailsStateKey;
           if (!stateKey)
@@ -25670,6 +26092,8 @@ $\
         return;
       Settings.decorateDetailsWithKeys(section, Settings.renderedSection, false);
       for (const details of $$('details', section)) {
+        if (details.dataset.rememberLayout === 'false')
+          continue;
         const key = details.dataset.detailsStateKey;
         if (!key)
           continue;
@@ -26128,7 +26552,7 @@ Enable it on boards.${location.hostname.split('.')[1]}.org in your browser's pri
       const navContent = $.el('div', {
         innerHTML: '<div><textarea name="boardnav" class="field boardnav-field" spellcheck="false"></textarea></div>' +
           '<span class="note">New lines will be converted into spaces.</span><br><br>' +
-          '<details class="boardnav-instructions">' +
+          '<details class="boardnav-instructions" data-remember-layout="false">' +
           '<summary>Syntax guide</summary>' +
           '<div class="note">In the following examples for /g/, <code>g</code> can be changed to a different board ID (<code>a</code>, <code>b</code>, etc...), the current board (<code>current</code>), or the Twitter link (<code>@</code>).</div>' +
           '<div>Board link: <code>g</code></div>' +
@@ -26326,12 +26750,13 @@ Enable it on boards.${location.hostname.split('.')[1]}.org in your browser's pri
           continue;
         const arr = Config.threadWatcher[name];
         const description = arr[1] || '';
+        const hoverDescription = Config.threadWatcher['Thread Watcher Thumbnail Hover']?.[1] || '';
         let div;
         if (name === 'Show OP Thumbnails') {
-          div = $.el('div', { innerHTML: `<label><input type="checkbox" name="${name}">${displayName(name)}</label><span class="thread-watcher-inline-number">Size <input type="number" name="Thread Watcher Thumbnail Size" min="16" max="160" step="1" class="thread-watcher-size-input"></span><span class="thread-watcher-inline-subsetting"><label><input type="checkbox" name="Thread Watcher Thumbnail Hover">Hover Preview</label><span class="thread-watcher-inline-number">Size <input type="number" name="Thread Watcher Thumbnail Preview Size" min="10" max="99" step="1" class="thread-watcher-preview-size-input">%</span></span><span class="description">: <span class="setting-description">${description}</span></span>` });
+          div = $.el('div', { innerHTML: `<label><input type="checkbox" name="${name}">${displayName(name)}</label><span class="thread-watcher-inline-number"><input type="number" name="Thread Watcher Thumbnail Size" min="16" max="160" step="1" class="thread-watcher-size-input" title="Thumbnail size in pixels"></span><span class="description">: <span class="setting-description">${description}</span></span><span class="thread-watcher-inline-subsetting"><label><input type="checkbox" name="Thread Watcher Thumbnail Hover">Hover Preview</label><span class="thread-watcher-inline-number"><input type="number" name="Thread Watcher Thumbnail Preview Size" min="10" max="99" step="1" class="thread-watcher-preview-size-input" title="Hover preview size as a percentage">%</span><span class="description">: <span class="setting-description">${hoverDescription}</span></span></span>` });
           div.dataset.name = `${name} Thread Watcher Thumbnail Size Thread Watcher Thumbnail Hover Thread Watcher Thumbnail Preview Size`;
           div.dataset.settingTitle = displayName(name);
-          div.dataset.settingDescription = `${description} Thread Watcher Thumbnail Size Thread Watcher Thumbnail Hover Thread Watcher Thumbnail Preview Size`;
+          div.dataset.settingDescription = `${description} ${hoverDescription} Thread Watcher Thumbnail Size Thread Watcher Thumbnail Hover Thread Watcher Thumbnail Preview Size`;
           const sizeInput = $('input[name="Thread Watcher Thumbnail Size"]', div);
           const previewToggle = $('input[name="Thread Watcher Thumbnail Hover"]', div);
           const previewSizeInput = $('input[name="Thread Watcher Thumbnail Preview Size"]', div);
@@ -26502,20 +26927,16 @@ Enable it on boards.${location.hostname.split('.')[1]}.org in your browser's pri
           return;
         container.dataset.checked = checkbox.checked ? 'true' : 'false';
       };
-      const threadHighlightKeys = [
-        'Highlight Own Posts',
-        'Highlight Posts Quoting You',
-        'Highlight Ghost Posts',
-      ];
       const catalogHighlightKeys = [
         'Catalog Highlight Own Posts',
         'Catalog Highlight Watched Threads',
       ];
       const markerColorLinkPairs = [
-        ['Scroll Marker Own Color', 'own'],
-        ['Scroll Marker You Color', 'you'],
-        ['Scroll Marker Ghost Color', 'ghost'],
+        ['Scroll Marker Own Color', 'own', 'Scroll Marker Own Match Highlight'],
+        ['Scroll Marker You Color', 'you', 'Scroll Marker You Match Highlight'],
+        ['Scroll Marker Ghost Color', 'ghost', 'Scroll Marker Ghost Match Highlight'],
       ];
+      const markerMatchKeys = new Set(markerColorLinkPairs.map(([, , matchKey]) => matchKey));
       const highlightTextControlGroups = [
         {
           manualGroup: 'own',
@@ -26565,7 +26986,9 @@ Enable it on boards.${location.hostname.split('.')[1]}.org in your browser's pri
         'Scrollbar Mark Quotes You',
         'Scrollbar Mark Ghost Posts',
         'Scrollbar Mark Unread Line',
-        'Scroll Marker Match Highlights',
+        'Scroll Marker Own Match Highlight',
+        'Scroll Marker You Match Highlight',
+        'Scroll Marker Ghost Match Highlight',
         'Enable Thread Highlights',
         'Enable Catalog Highlights',
         'Catalog Highlight Own Posts',
@@ -26576,7 +26999,6 @@ Enable it on boards.${location.hostname.split('.')[1]}.org in your browser's pri
         'siteStyle',
         'siteStyleHome',
       ]);
-      const markerColorLinkToggle = inputs['Scroll Marker Match Highlights'];
       const textColorModeSelect = inputs['textColorMode'];
       const textColorManualTree = $('#styling-text-color-manual', section);
       const highlightTextKeys = new Set(highlightTextControlGroups.flatMap(group => Array.from(group.keys)));
@@ -26661,11 +27083,9 @@ Enable it on boards.${location.hostname.split('.')[1]}.org in your browser's pri
         }
       };
       const syncMarkerColorControls = () => {
-        const linked = !!markerColorLinkToggle?.checked;
-        if (linked) {
-          Settings.syncLinkedMarkerColors(inputs);
-        }
-        for (const [key, markerType] of markerColorLinkPairs) {
+        Settings.syncLinkedMarkerColors(inputs);
+        for (const [key, markerType, matchKey] of markerColorLinkPairs) {
+          const linked = !!inputs[matchKey]?.checked;
           const colorInput = inputs[key];
           if (colorInput)
             colorInput.disabled = linked;
@@ -26708,6 +27128,21 @@ Enable it on boards.${location.hostname.split('.')[1]}.org in your browser's pri
           }
         }
       };
+      const setMatchTargetHighlight = (role, on) => {
+        if (!role)
+          return;
+        const target = $(`[data-highlight-row="${role}"]`, section);
+        if (!target)
+          return;
+        target.classList.toggle('styling-match-hover-target', on);
+      };
+      for (const matchLabel of $$('[data-match-target]', section)) {
+        const role = matchLabel.dataset.matchTarget || '';
+        $.on(matchLabel, 'mouseenter', () => setMatchTargetHighlight(role, true));
+        $.on(matchLabel, 'mouseleave', () => setMatchTargetHighlight(role, false));
+        $.on(matchLabel, 'focusin', () => setMatchTargetHighlight(role, true));
+        $.on(matchLabel, 'focusout', () => setMatchTargetHighlight(role, false));
+      }
       const refreshUnsetColorInputs = () => {
         for (const key in inputs) {
           const inp = inputs[key];
@@ -26722,14 +27157,6 @@ Enable it on boards.${location.hostname.split('.')[1]}.org in your browser's pri
           Settings.setColorInputValue(inp, key, '');
         }
       };
-      if (markerColorLinkToggle) {
-        $.on(markerColorLinkToggle, 'change', () => {
-          Conf['Scroll Marker Match Highlights'] = !!markerColorLinkToggle.checked;
-          syncMarkerColorControls();
-          Settings.applyStylingVars();
-          refreshStylingPreview();
-        });
-      }
       if (textColorModeSelect) {
         $.on(textColorModeSelect, 'change', () => {
           Conf['textColorMode'] = textColorModeSelect.value;
@@ -26771,11 +27198,16 @@ Enable it on boards.${location.hostname.split('.')[1]}.org in your browser's pri
         }
         if (input.type === 'checkbox') {
           $.on(input, 'change', function () { setCheckedState(this); });
-          if (threadHighlightKeys.includes(name)) {
-            $.on(input, 'change', refreshStylingPreview);
-          }
+          $.on(input, 'change', () => {
+            syncAutoHighlightPreviewInputs();
+            Settings.applyStylingVars();
+            refreshStylingPreview();
+          });
           if (catalogHighlightKeys.includes(name)) {
             $.on(input, 'change', syncCatalogHighlightControls);
+          }
+          if (markerMatchKeys.has(name)) {
+            $.on(input, 'change', syncMarkerColorControls);
           }
           if (name === 'Enable Catalog Highlights') {
             $.on(input, 'change', syncCatalogHighlightControls);
@@ -26809,12 +27241,9 @@ Enable it on boards.${location.hostname.split('.')[1]}.org in your browser's pri
       }
       // Custom CSS toggle + textarea behavior (mirrors Advanced wiring).
       const customCSS = inputs['Custom CSS'];
-      const applyCSS = $('#apply-css', section);
       customCSS.checked = Conf['Custom CSS'];
       inputs['usercss'].disabled = !Conf['Custom CSS'];
-      applyCSS.disabled = !Conf['Custom CSS'];
       $.on(customCSS, 'change', Settings.togglecss);
-      $.on(applyCSS, 'click', () => CustomCSS.update());
       Settings.initCustomCSSEditor(section, inputs['usercss']);
       $.get(items, (loaded) => {
         for (const key in loaded) {
@@ -26890,57 +27319,6 @@ Enable it on boards.${location.hostname.split('.')[1]}.org in your browser's pri
           refreshStylingPreview();
         });
       }
-      const resetBtn = $('#styling-reset-highlights', section);
-      if (resetBtn) {
-        $.on(resetBtn, 'click', () => {
-          for (const key of [
-            'Highlight Own Color', 'Highlight You Color', 'Highlight Ghost Color',
-            'Highlight Own Opacity', 'Highlight You Opacity', 'Highlight Ghost Opacity',
-            'Enable Thread Highlights', 'Enable Catalog Highlights',
-            'Catalog Highlight Own Posts', 'Catalog Highlight Watched Threads',
-            'Catalog Highlight Own Color', 'Catalog Highlight Watched Color',
-            'Catalog Highlight Own Opacity', 'Catalog Highlight Watched Opacity',
-            'Catalog Highlight Own Text Color', 'Catalog Highlight Own Link Color', 'Catalog Highlight Own Quote Color', 'Catalog Highlight Own Dead Link Color',
-            'Catalog Highlight Watched Text Color', 'Catalog Highlight Watched Link Color', 'Catalog Highlight Watched Quote Color', 'Catalog Highlight Watched Dead Link Color',
-            'Highlight Own Text Color', 'Highlight Own Link Color', 'Highlight Own Quote Color', 'Highlight Own Dead Link Color',
-            'Highlight You Text Color', 'Highlight You Link Color', 'Highlight You Quote Color', 'Highlight You Dead Link Color',
-            'Highlight Ghost Text Color', 'Highlight Ghost Link Color', 'Highlight Ghost Quote Color', 'Highlight Ghost Dead Link Color',
-          ]) {
-            Conf[key] = '';
-            $.set(key, '');
-            const inp = inputs[key];
-            if (inp) {
-              if (inp.type === 'color')
-                delete inp.dataset.unset;
-              else
-                inp.value = '1';
-            }
-          }
-          for (const key of [
-            'Highlight Own Text Auto', 'Highlight You Text Auto', 'Highlight Ghost Text Auto',
-            'Catalog Highlight Own Text Auto', 'Catalog Highlight Watched Text Auto',
-          ]) {
-            Conf[key] = true;
-            $.set(key, true);
-            const inp = inputs[key];
-            if (inp && inp.type === 'checkbox')
-              inp.checked = true;
-          }
-          for (const key of ['Enable Thread Highlights', 'Enable Catalog Highlights', 'Catalog Highlight Own Posts', 'Catalog Highlight Watched Threads']) {
-            Conf[key] = true;
-            $.set(key, true);
-            const inp = inputs[key];
-            if (inp && inp.type === 'checkbox')
-              inp.checked = true;
-          }
-          syncAutoHighlightPreviewInputs();
-          syncCatalogHighlightControls();
-          syncHighlightTextControls();
-          Settings.applyStylingVars();
-          refreshUnsetColorInputs();
-          refreshStylingPreview();
-        });
-      }
     },
     stylingPreviewSampleText() {
       const sample = $('.thread .postMessage, .postContainer .postMessage', d.body);
@@ -26972,6 +27350,36 @@ Enable it on boards.${location.hostname.split('.')[1]}.org in your browser's pri
    </div>
   `;
     },
+    stylingPreviewCatalogThreadHTML({ threadID, postID, extraThreadClass = '', extraContainerClass = '', message = '', summary = '', excerpt = '', }) {
+      const threadClasses = `thread catalog-thread ${extraThreadClass}`.trim();
+      const containerClasses = `postContainer catalog-container ${extraContainerClass}`.trim();
+      const safeMessage = E(message || Settings.stylingPreviewSampleText());
+      const safeSummary = E(summary || '4 posts and 2 image replies');
+      const safeExcerpt = E(excerpt || 'recent reply preview');
+      return `
+   <div class="${threadClasses}" id="t${threadID}" style="--tn-w: 250; --tn-h: 196;">
+    <div class="${containerClasses}" id="pc${threadID}" data-full-i-d="g.${threadID}">
+     <div id="p${postID}" class="post catalog-post">
+      <a class="catalog-link" href="/g/thread/${threadID}">
+       <img src="//i.4cdn.org/g/1745612650141704s.jpg" class="catalog-thumb" data-width="250" data-height="196" style="width: 150px; height: 117.6px;">
+      </a>
+      <div class="catalog-stats">
+       <span title="Posts / Files / Page"><span class="post-count">12</span> / <span class="file-count">8</span> / <span class="page-count">1</span></span>
+      </div>
+      <blockquote class="postMessage" id="m${postID}">${safeMessage}</blockquote>
+      <span class="summary preview-summary">${safeSummary}</span>
+      <div class="catalog-replies">
+       <div class="catalog-reply">
+        <span><time data-utc="1780096072000" data-abbrev="1">1m</time>: </span>
+        <a class="catalog-reply-excerpt" href="/g/thread/${threadID}#p${postID}">${safeExcerpt}</a>
+        <a class="catalog-reply-preview" href="/g/thread/${threadID}#p${postID}">...</a>
+       </div>
+      </div>
+     </div>
+    </div>
+   </div>
+  `;
+    },
     openStylingPreview(section) {
       if (!Settings.dialog)
         return;
@@ -26989,12 +27397,33 @@ Enable it on boards.${location.hostname.split('.')[1]}.org in your browser's pri
       const panel = $.el('div', { className: 'styling-preview styling-preview-dock dialog' });
       panel.dataset.collapsed = 'false';
       panel.innerHTML = `
-   <div class="board styling-preview-thread">
-    <div class="thread" id="t503286550">
-     ${Settings.stylingPreviewPostHTML({ postID: 503286554, message: 'Normal: thread is already discussing this topic.' })}
-     ${Settings.stylingPreviewPostHTML({ postID: 503286555, extraClass: 'yourPost', author: 'You', message: 'This is a post you created.' })}
-     ${Settings.stylingPreviewPostHTML({ postID: 503286556, extraClass: 'quotesYou', message: 'This is a post quoting you.' })}
-     ${Settings.stylingPreviewPostHTML({ postID: 503286557, extraClass: 'from-archive', author: 'Archived', message: 'This is a ghost post (deleted).' })}
+   <div class="styling-preview-layout">
+    <div class="board styling-preview-thread">
+     <div class="thread" id="t503286550">
+      ${Settings.stylingPreviewPostHTML({ postID: 503286554, message: 'Normal: thread is already discussing this topic.' })}
+      ${Settings.stylingPreviewPostHTML({ postID: 503286555, extraClass: 'yourPost', author: 'You', message: 'This is a post you created.' })}
+      ${Settings.stylingPreviewPostHTML({ postID: 503286556, extraClass: 'quotesYou', message: 'This is a post quoting you.' })}
+      ${Settings.stylingPreviewPostHTML({ postID: 503286557, extraClass: 'from-archive', author: 'Archived', message: 'This is a ghost post (deleted).' })}
+     </div>
+    </div>
+    <div class="board styling-preview-catalog catalog-small">
+     ${Settings.stylingPreviewCatalogThreadHTML({
+      threadID: 503286580,
+      postID: 503286580,
+      extraThreadClass: 'yourPost',
+      extraContainerClass: 'yourPost',
+      message: 'Catalog own-post state preview.',
+      summary: '5 posts and 3 image replies',
+      excerpt: 'your post reply sample',
+    })}
+     ${Settings.stylingPreviewCatalogThreadHTML({
+      threadID: 503286590,
+      postID: 503286590,
+      extraThreadClass: 'watched',
+      message: 'Catalog watched-thread state preview.',
+      summary: '10 posts and 4 image replies',
+      excerpt: 'watched thread reply sample',
+    })}
     </div>
    </div>
   `;
@@ -27073,7 +27502,11 @@ Enable it on boards.${location.hostname.split('.')[1]}.org in your browser's pri
       };
       $.on(textarea, 'input', () => Settings.renderCustomCSSHighlight(textarea, highlight));
       $.on(textarea, 'scroll', syncScroll);
-      $.on(textarea, 'change', () => Settings.renderCustomCSSHighlight(textarea, highlight));
+      $.on(textarea, 'change', () => {
+        Settings.renderCustomCSSHighlight(textarea, highlight);
+        if (Conf['Custom CSS'])
+          CustomCSS.update();
+      });
       $.on(themeSelect, 'change', () => updateTheme(true));
       $.on(expandButton, 'click', () => updateExpandedState(editor.dataset.expanded !== 'true', true));
       Settings.customCSSEditorThemeObserver?.disconnect();
@@ -27196,10 +27629,12 @@ Enable it on boards.${location.hostname.split('.')[1]}.org in your browser's pri
       setVar('--xt-catalog-own-highlight-opacity', (catalogOwnEnabled && Conf['Catalog Highlight Own Opacity'] !== '') ? String(Conf['Catalog Highlight Own Opacity']) : '');
       setVar('--xt-catalog-watched-highlight', catalogWatchedEnabled ? Conf['Catalog Highlight Watched Color'] : '');
       setVar('--xt-catalog-watched-highlight-opacity', (catalogWatchedEnabled && Conf['Catalog Highlight Watched Opacity'] !== '') ? String(Conf['Catalog Highlight Watched Opacity']) : '');
-      const linkMarkerColors = !!Conf['Scroll Marker Match Highlights'];
-      setVar('--xt-scroll-marker-own', linkMarkerColors ? Conf['Highlight Own Color'] : Conf['Scroll Marker Own Color']);
-      setVar('--xt-scroll-marker-you', linkMarkerColors ? Conf['Highlight You Color'] : Conf['Scroll Marker You Color']);
-      setVar('--xt-scroll-marker-ghost', linkMarkerColors ? Conf['Highlight Ghost Color'] : Conf['Scroll Marker Ghost Color']);
+      const ownMarkerLinked = !!Conf['Scroll Marker Own Match Highlight'];
+      const youMarkerLinked = !!Conf['Scroll Marker You Match Highlight'];
+      const ghostMarkerLinked = !!Conf['Scroll Marker Ghost Match Highlight'];
+      setVar('--xt-scroll-marker-own', ownMarkerLinked ? Conf['Highlight Own Color'] : Conf['Scroll Marker Own Color']);
+      setVar('--xt-scroll-marker-you', youMarkerLinked ? Conf['Highlight You Color'] : Conf['Scroll Marker You Color']);
+      setVar('--xt-scroll-marker-ghost', ghostMarkerLinked ? Conf['Highlight Ghost Color'] : Conf['Scroll Marker Ghost Color']);
       setVar('--xt-scroll-marker-unread', Conf['Scroll Marker Unread Color']);
       setVar('--xt-scroll-marker-own-opacity', Conf['Scroll Marker Own Opacity'] === '' ? '' : String(Conf['Scroll Marker Own Opacity']));
       setVar('--xt-scroll-marker-you-opacity', Conf['Scroll Marker You Opacity'] === '' ? '' : String(Conf['Scroll Marker You Opacity']));
@@ -27505,16 +27940,15 @@ Enable it on boards.${location.hostname.split('.')[1]}.org in your browser's pri
       }
     },
     syncLinkedMarkerColors(inputs) {
-      if (!Conf['Scroll Marker Match Highlights'])
-        return;
       const colorPairs = [
-        ['Highlight Own Color', 'Scroll Marker Own Color'],
-        ['Highlight You Color', 'Scroll Marker You Color'],
-        ['Highlight Ghost Color', 'Scroll Marker Ghost Color'],
+        ['Highlight Own Color', 'Scroll Marker Own Color', 'Scroll Marker Own Match Highlight'],
+        ['Highlight You Color', 'Scroll Marker You Color', 'Scroll Marker You Match Highlight'],
+        ['Highlight Ghost Color', 'Scroll Marker Ghost Color', 'Scroll Marker Ghost Match Highlight'],
       ];
-      for (const [highlightKey, markerKey] of colorPairs) {
-        const color = Conf[highlightKey] || '';
-        if (Conf[markerKey] !== color) {
+      for (const [highlightKey, markerKey, matchKey] of colorPairs) {
+        const linked = !!Conf[matchKey];
+        const color = linked ? (Conf[highlightKey] || '') : (Conf[markerKey] || '');
+        if (linked && (Conf[markerKey] !== color)) {
           Conf[markerKey] = color;
           $.set(markerKey, color);
         }
@@ -28166,7 +28600,9 @@ Enable it on boards.${location.hostname.split('.')[1]}.org in your browser's pri
         'Link Text Color',
         'Quote Text Color',
         'Dead Link Text Color',
-        'Scroll Marker Match Highlights',
+        'Scroll Marker Own Match Highlight',
+        'Scroll Marker You Match Highlight',
+        'Scroll Marker Ghost Match Highlight',
         'Catalog Highlight Own Posts',
         'Catalog Highlight Watched Threads',
         'Highlight Own Color',
@@ -29467,7 +29903,6 @@ Enable it on boards.${location.hostname.split('.')[1]}.org in your browser's pri
       }
       const interval = inputs['Interval'];
       const customCSS = inputs['Custom CSS'];
-      const applyCSS = $('#apply-css', section);
       const timeLocale = inputs.timeLocale;
       if (interval) {
         interval.value = Conf['Interval'];
@@ -29479,10 +29914,6 @@ Enable it on boards.${location.hostname.split('.')[1]}.org in your browser's pri
       }
       if (inputs['usercss']) {
         inputs['usercss'].disabled = !Conf['Custom CSS'];
-      }
-      if (applyCSS) {
-        applyCSS.disabled = !Conf['Custom CSS'];
-        $.on(applyCSS, 'click', () => CustomCSS.update());
       }
       if (timeLocale) {
         timeLocale.value = Conf.timeLocale;
@@ -29675,12 +30106,9 @@ Enable it on boards.${location.hostname.split('.')[1]}.org in your browser's pri
     togglecss() {
       const details = $.x('ancestor::details[1]', this);
       const textarea = details ? $('textarea[name=usercss]', details) : null;
-      const applyCSS = details ? $('#apply-css', details) : null;
       const disabled = !this.checked;
       if (textarea)
         textarea.disabled = disabled;
-      if (applyCSS)
-        applyCSS.disabled = disabled;
       if (disabled) {
         CustomCSS.rmStyle();
       } else {

@@ -3,6 +3,24 @@
 4chan-neXT uses a different user script namespace than 4chan X, so to migrate you need to export settings from 4chan X,
 and import them in 4chan-neXT.
 
+### 1.0.3 (2026-05-31)
+
+- Fixed QR dump list.
+- Fixed QR action button behavior.
+- Fixed Tegaki buttons.
+
+### 1.0.2 (2026-05-31)
+
+- Bug fixes.
+- Added "Download all media" support.
+- Added new QR settings for thumbnails and layout.
+- Added discernible classes on roots for targeted styling.
+
+### 1.0.1 (2026-05-30)
+
+- Fixed captcha bug.
+- Rebuilt and repackaged release assets.
+
 ### 1.0.0 (2026-05-29)
 
 - Fork renamed from 4chan XT to 4chan-neXT.

@@ -15,7 +15,7 @@ import UI from '../General/UI';
 import BoardConfig from '../General/BoardConfig';
 import Get from '../General/Get';
 import { VideoStripper } from './VideoStripper';
-import { DAY, dict, SECOND } from '../platform/helpers';
+import { DAY, dict, platform, SECOND } from '../platform/helpers';
 import Icon from '../Icons/icon';
 
 interface ConvertOptions {
@@ -100,6 +100,8 @@ var QR = {
     post: post,
     isText: boolean,
   }[],
+  dropTargetPost: undefined as post | undefined,
+  isDroppingFiles: false,
   isProcessingPendingFiles: false,
   fileBatchSize: 3,
   heavyBatchFileCount: 8,
@@ -382,6 +384,35 @@ var QR = {
     return QR.nodes.com.focus();
   },
 
+  clearDumpList() {
+    if (!QR.posts?.length) { return; }
+    QR.pendingFiles.length = 0;
+    new QR.post(true);
+    for (var post of QR.posts.splice(0, QR.posts.length - 1)) {
+      post.delete();
+    }
+    QR.cleanNotifications();
+    $.rmClass(QR.nodes.el, 'dump');
+    QR.status();
+    QR.captcha.updateThread?.();
+  },
+
+  toggleDumpList(e: MouseEvent) {
+    if (e.shiftKey) {
+      e.preventDefault();
+      QR.clearDumpList();
+      return;
+    }
+    QR.nodes.el.classList.toggle('dump');
+  },
+
+  blurMouseFocusedAction(e: MouseEvent) {
+    // Keep keyboard focus behavior; only blur on pointer click.
+    if (e.detail > 0) {
+      (e.currentTarget as HTMLElement)?.blur?.();
+    }
+  },
+
   setCustomCooldown(enabled) {
     Conf['customCooldownEnabled'] = enabled;
     QR.cooldown.customCooldown = enabled;
@@ -657,7 +688,14 @@ var QR = {
     if (!e.dataTransfer.files.length) { return; }
     e.preventDefault();
     QR.open();
-    return QR.handleFiles(e.dataTransfer.files);
+    QR.dropTargetPost = QR.findPostFromDropTarget(e.target);
+    QR.isDroppingFiles = true;
+    try {
+      return QR.handleFiles(e.dataTransfer.files);
+    } finally {
+      QR.dropTargetPost = undefined;
+      QR.isDroppingFiles = false;
+    }
   },
 
   paste(e) {
@@ -761,7 +799,20 @@ var QR = {
     let post;
     const isText = /^text\//.test(file.type);
     if (nfiles === 1) {
-      post = QR.selected;
+      if (QR.isDroppingFiles) {
+        const target = QR.dropTargetPost;
+        if (target && QR.postCanTakeFile(target, isText)) {
+          post = target;
+        } else if (target) {
+          post = new QR.post();
+        } else if (QR.postCanTakeFile(QR.selected, isText)) {
+          post = QR.selected;
+        } else {
+          post = new QR.post();
+        }
+      } else {
+        post = QR.selected;
+      }
     } else {
       post = QR.posts[QR.posts.length - 1];
       if (!post) { post = new QR.post(); }
@@ -770,6 +821,23 @@ var QR = {
       }
     }
     return post;
+  },
+
+  postCanTakeFile(post: post, isText: boolean) {
+    if (!post) { return false; }
+    return isText ?
+      !(post.com || post.pasting)
+    :
+      !(post.file || post.pendingFile);
+  },
+
+  findPostFromDropTarget(target: EventTarget | null) {
+    let node = target as Node;
+    while (node?.parentNode && !(node instanceof HTMLAnchorElement && $.hasClass(node, 'qr-preview'))) {
+      node = node.parentNode;
+    }
+    if (!(node instanceof HTMLAnchorElement) || !$.hasClass(node, 'qr-preview')) { return; }
+    return QR.posts.find(post => post.nodes.el === node);
   },
 
   async processPendingFiles() {
@@ -912,20 +980,40 @@ var QR = {
     $.on(nodes.drawButton,     'click',     QR.oekaki.draw);
     $.on(nodes.fileButton,     'click',     QR.openFileInput);
     $.on(nodes.noFile,         'click',     QR.openFileInput);
-    $.on(nodes.randomizeButton,'click',     () => { QR.selected.randomizeName(); });
-    $.on(nodes.compress,       'click',     async () => { QR.handleFiles([await QR.convert(QR.selected.file)]); });
+    $.on(nodes.randomizeButton,'click',     e => {
+      QR.selected.randomizeName();
+      QR.blurMouseFocusedAction(e);
+    });
+    $.on(nodes.compress,       'click',     async e => {
+      try {
+        if (!QR.selected.file) { return; }
+        QR.handleFiles([await QR.convert(QR.selected.file)]);
+      } finally {
+        QR.blurMouseFocusedAction(e);
+      }
+    });
     $.on(nodes.view,           'click',     QR.preview);
-    $.on(nodes.restoreNameButton,'click',   () => { QR.selected.restoreName(); });
+    $.on(nodes.restoreNameButton,'click',   e => {
+      QR.selected.restoreName();
+      QR.blurMouseFocusedAction(e);
+    });
     $.on(nodes.filename,       'focus',     function() { return $.addClass(this.parentNode, 'focus'); });
     $.on(nodes.filename,       'blur',      function() { return $.rmClass(this.parentNode, 'focus'); });
     $.on(nodes.spoiler,        'change',    () => QR.selected.nodes.spoiler.click());
-    $.on(nodes.oekakiButton,   'click',     QR.oekaki.button);
+    $.on(nodes.oekakiButton,   'click',     e => {
+      QR.oekaki.button();
+      QR.blurMouseFocusedAction(e);
+    });
     $.on(nodes.fileRM,         'click',     () => QR.selected.rmFile());
     $.on(nodes.urlButton,      'click',     () => QR.handleUrl(''));
     $.on(nodes.customCooldown, 'click',     QR.toggleCustomCooldown);
-    $.on(nodes.dumpButton,     'click',     () => nodes.el.classList.toggle('dump'));
+    $.on(nodes.dumpButton,     'click',     QR.toggleDumpList);
     $.on(nodes.fileInput,      'change',    QR.handleFiles);
     $.on(nodes.splitPost,      'click',     QR.splitPost);
+    $.on(dialog, 'click', e => {
+      const anchor = (e.target as HTMLElement)?.closest?.('a[href^="javascript:"]');
+      if (anchor) { e.preventDefault(); }
+    });
 
     window.addEventListener('focus', QR.focus, true);
     window.addEventListener('blur',  QR.focus, true);
@@ -1864,6 +1952,174 @@ var QR = {
   },
 
   oekaki: {
+    loadPromise: null as Promise<boolean> | null,
+    loadFailed: false,
+
+    pageWindow() {
+      return window.wrappedJSObject || (typeof unsafeWindow !== 'undefined' ? unsafeWindow : window);
+    },
+
+    getTegaki() {
+      const page = QR.oekaki.pageWindow() as any;
+      return page?.Tegaki || (window as any).Tegaki || (globalThis as any).Tegaki;
+    },
+
+    async loadUserscriptTegaki() {
+      if (QR.oekaki.getTegaki()) { return true; }
+      if (QR.oekaki.loadFailed) { return false; }
+      if (QR.oekaki.loadPromise) { return QR.oekaki.loadPromise; }
+      QR.oekaki.loadPromise = (async () => {
+        try {
+          // GM_addElement bypasses the page's CSP (which on 4chan only allows hCaptcha scripts).
+          // Direct script-tag injection or new Function() would be blocked.
+          if (typeof GM_addElement !== 'function') {
+            throw new Error('GM_addElement is unavailable; cannot bypass site CSP to load Tegaki.');
+          }
+          const cacheBust = Date.now();
+          const style = GM_addElement(d.head, 'link', {
+            rel: 'stylesheet',
+            href: `https://s.4cdn.org/css/tegaki.${cacheBust}.css`
+          }) as HTMLLinkElement;
+          const script = GM_addElement(d.head, 'script', {
+            src: `https://s.4cdn.org/js/tegaki.min.${cacheBust}.js`
+          }) as HTMLScriptElement;
+          if (!script) {
+            throw new Error('GM_addElement did not return a script element.');
+          }
+          await new Promise<void>((resolve, reject) => {
+            let pending = style ? 2 : 1;
+            const done = () => { if (--pending === 0) resolve(); };
+            $.on(script, 'load', done);
+            $.on(script, 'error', () => reject(new Error('Failed to load Tegaki script.')));
+            if (style) {
+              $.on(style, 'load', done);
+              // CSS failure shouldn't block the editor from working.
+              $.on(style, 'error', done);
+            }
+          });
+          if (!QR.oekaki.getTegaki()) {
+            throw new Error('Tegaki script loaded but did not expose the Tegaki global.');
+          }
+          return true;
+        } catch (error) {
+          console.error(error);
+          QR.oekaki.loadFailed = true;
+          QR.error('Failed to load Tegaki from userscript context.');
+          return false;
+        } finally {
+          QR.oekaki.loadPromise = null;
+        }
+      })();
+      return QR.oekaki.loadPromise;
+    },
+
+    setupDirect() {
+      const page = QR.oekaki.pageWindow();
+      if (!page) { return false; }
+      page.FCX ||= {};
+      page.FCX.oekakiCB = () => QR.oekaki.getTegaki()?.flatten().toBlob((file) => {
+        const source = `oekaki-${Date.now()}`;
+        page.FCX.oekakiLatest = source;
+        $.event('QRSetFile', {
+          file,
+          name: page.FCX.oekakiName,
+          source
+        });
+      });
+      if (QR.oekaki.getTegaki()) {
+        QR.nodes.oekaki.hidden = false;
+      }
+      return true;
+    },
+
+    drawDirect() {
+      const page = QR.oekaki.pageWindow();
+      const Tegaki = QR.oekaki.getTegaki();
+      const FCX = page?.FCX;
+      if (!(Tegaki && FCX)) { return false; }
+      if (Tegaki.bg) { Tegaki.destroy(); }
+      FCX.oekakiName = 'tegaki.png';
+      Tegaki.open({
+        onDone: FCX.oekakiCB,
+        onCancel() { Tegaki.bgColor = '#ffffff'; },
+        width: +$('#qr [name=oekaki-width]')?.value,
+        height: +$('#qr [name=oekaki-height]')?.value,
+        bgColor:
+          $('#qr [name=oekaki-bg]')?.checked ?
+            $('#qr [name=oekaki-bgcolor]')?.value
+          :
+            'transparent'
+      });
+      return true;
+    },
+
+    loadDirect() {
+      const page = QR.oekaki.pageWindow();
+      const Tegaki = QR.oekaki.getTegaki();
+      const FCX = page?.FCX;
+      if (!(Tegaki && FCX)) { return false; }
+      const name = QR.nodes.filename.value.replace(/\.\w+$/, '') + '.png';
+      const { source } = QR.nodes.fileSubmit.dataset;
+      const error = content => QR.error(content);
+      const cb = function(e?) {
+        if (e) { this.removeEventListener('QRMetadata', cb, false); }
+        const selected = QR.selected?.nodes?.el;
+        if (!selected?.dataset.type) return error('No file to edit.');
+        if (!/^(image|video)\//.test(selected.dataset.type)) { return error('Not an image.'); }
+        if (!selected.dataset.height || !selected.dataset.width) return error('Metadata not available.');
+        if (selected.dataset.height === 'loading') {
+          selected.addEventListener('QRMetadata', cb, false);
+          return;
+        }
+        const width = +selected.dataset.width;
+        const height = +selected.dataset.height;
+        if (!(width > 0) || !(height > 0)) return error('Metadata not available.');
+        if (Tegaki.bg) { Tegaki.destroy(); }
+        FCX.oekakiName = name;
+        Tegaki.open({
+          onDone: FCX.oekakiCB,
+          onCancel() { Tegaki.bgColor = '#ffffff'; },
+          width,
+          height,
+          bgColor: 'transparent'
+        });
+        const canvas = $.el('canvas', {
+          width,
+          height,
+          hidden: true
+        }) as HTMLCanvasElement;
+        $.add(d.body, canvas);
+        canvas.addEventListener('QRImageDrawn', function() {
+          this.remove();
+          // Tegaki.onOpenImageLoaded reads this.naturalWidth/naturalHeight,
+          // which only <img> has — passing the canvas directly throws inside
+          // resizeCanvas/createBuffers. Round-trip the pixels through an <img>.
+          canvas.toBlob(blob => {
+            if (!blob) { return error('Could not snapshot image for the editor.'); }
+            const img = $.el('img') as HTMLImageElement;
+            const url = URL.createObjectURL(blob);
+            $.on(img, 'load', () => {
+              URL.revokeObjectURL(url);
+              Tegaki.onOpenImageLoaded.call(img);
+            });
+            $.on(img, 'error', () => {
+              URL.revokeObjectURL(url);
+              error('Could not load image into the editor.');
+            });
+            img.src = url;
+          });
+        }, false);
+        $.event('QRDrawFile', null, canvas);
+      };
+      if (Tegaki.bg && (Tegaki.onDoneCb === FCX.oekakiCB) && (source === FCX.oekakiLatest)) {
+        FCX.oekakiName = name;
+        Tegaki.resume();
+      } else {
+        cb();
+      }
+      return true;
+    },
+
     menu: {
       init() {
         if (!['index', 'thread'].includes(g.VIEW) || !Conf['Menu'] || !Conf['Edit Link'] || !Conf['Quick Reply']) { return; }
@@ -1924,31 +2180,51 @@ var QR = {
     },
 
     setup() {
+      if (platform === 'userscript' && QR.oekaki.setupDirect()) { return; }
       $.global('setupQR');
     },
 
     load(cb) {
-      if ($('script[src^="//s.4cdn.org/js/tegaki"]', d.head)) {
+      if (QR.oekaki.getTegaki()) {
         cb();
+      } else if (platform === 'userscript') {
+        QR.oekaki.loadUserscriptTegaki().then(ok => {
+          if (ok && QR.oekaki.getTegaki()) { cb(); }
+        });
       } else {
-        const style = $.el('link', {
+        const styleAttrs = {
           rel: 'stylesheet',
           href: `//s.4cdn.org/css/tegaki.${Date.now()}.css`
-        }
-        );
-        const script = $.el('script',
-          { src: `//s.4cdn.org/js/tegaki.min.${Date.now()}.js` });
+        };
+        const scriptAttrs = { src: `//s.4cdn.org/js/tegaki.min.${Date.now()}.js` };
+        const add = (tagName, attrs) => {
+          if ((platform === 'userscript') && (typeof GM_addElement === 'function')) {
+            return GM_addElement(d.head, tagName, attrs);
+          }
+          const el = $.el(tagName, attrs);
+          $.add(d.head, el);
+          return el;
+        };
+        const style = add('link', styleAttrs) as HTMLLinkElement;
+        const script = add('script', scriptAttrs) as HTMLScriptElement;
         let n = 0;
+        let errored = false;
         const onload = function () {
-          if (++n === 2) cb();
+          if (++n === 2 && !errored) cb();
+        };
+        const onerror = function () {
+          errored = true;
+          QR.error('Failed to load Tegaki. This site CSP blocked the script.');
         };
         $.on(style, 'load', onload);
         $.on(script, 'load', onload);
-        $.add(d.head, [style, script]);
+        $.on(style, 'error', onerror);
+        $.on(script, 'error', onerror);
       }
     },
 
     draw() {
+      if (platform === 'userscript' && QR.oekaki.drawDirect()) { return; }
       return $.global('qrTegakiDraw');
     },
 
@@ -1961,11 +2237,17 @@ var QR = {
     },
 
     edit() {
-      QR.oekaki.load(() => $.global('qrTegakiLoad'));
+      QR.oekaki.load(() => {
+        if (platform === 'userscript' && QR.oekaki.loadDirect()) { return; }
+        $.global('qrTegakiLoad');
+      });
     },
 
     toggle() {
-      QR.oekaki.load(() => QR.nodes.oekaki.hidden = !QR.nodes.oekaki.hidden);
+      QR.nodes.oekaki.hidden = !QR.nodes.oekaki.hidden;
+      if (!QR.nodes.oekaki.hidden && !QR.oekaki.getTegaki()) {
+        QR.oekaki.load(() => {});
+      }
     }
   },
 
@@ -2763,10 +3045,12 @@ class post {
     e.dataTransfer.dropEffect = 'move';
   }
 
-  drop() {
+  drop(e) {
     $.rmClass(this, 'over');
+    if (e.dataTransfer?.files?.length) { return; }
     if (!this.draggable) { return; }
     const el = $('.drag', this.parentNode);
+    if (!el) { return; }
     const index = el => {
       for (let i = 0; i < el.parentNode.children.length; i++) {
         if (el.parentNode.children[i] === el) return i;

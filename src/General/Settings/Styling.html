@@ -17,7 +17,7 @@
   <div class="styling-add-theme">
     <div class="styling-group-label">Add custom theme</div>
     <div class="styling-add-theme-row">
-      <input type="text" class="styling-add-theme-name" placeholder="Theme name" maxlength="60">
+      <input type="text" class="field styling-add-theme-name" placeholder="Theme name" maxlength="60">
       <label class="styling-add-theme-source">Source:
         <select class="styling-add-theme-source-select">
           <option value="file">CSS file</option>
@@ -42,12 +42,13 @@
 
 <details open>
   <summary>Highlight Colors</summary>
+  <p>Choose highlight colors for thread and catalog states.</p>
   <div data-name="Highlight Colors">
     <div class="styling-tree">
       <div data-name="Thread Highlights">
         <label><input type="checkbox" name="Enable Thread Highlights"> Threads</label>
         <div class="styling-tree">
-          <div class="styling-inline-option">
+          <div class="styling-inline-option" data-highlight-row="own">
             <label><input type="checkbox" name="Highlight Own Posts"> Your post</label>
             <span class="styling-inline-controls styling-highlight-controls">
               <input type="color" name="Highlight Own Color" title="Highlight background color">
@@ -61,7 +62,7 @@
               <input type="range" name="Highlight Own Opacity" min="0" max="1" step="0.05" title="Highlight opacity">
             </span>
           </div>
-          <div class="styling-inline-option">
+          <div class="styling-inline-option" data-highlight-row="you">
             <label><input type="checkbox" name="Highlight Posts Quoting You"> Quotes you</label>
             <span class="styling-inline-controls styling-highlight-controls">
               <input type="color" name="Highlight You Color" title="Highlight background color">
@@ -75,7 +76,7 @@
               <input type="range" name="Highlight You Opacity" min="0" max="1" step="0.05" title="Highlight opacity">
             </span>
           </div>
-          <div class="styling-inline-option">
+          <div class="styling-inline-option" data-highlight-row="ghost">
             <label><input type="checkbox" name="Highlight Ghost Posts"> Ghost post</label>
             <span class="styling-inline-controls styling-highlight-controls">
               <input type="color" name="Highlight Ghost Color" title="Highlight background color">
@@ -126,10 +127,8 @@
       </div>
     </div>
   </div>
-  <p>Background colors used for highlighted posts. Opacity is 0-1; 0 disables the background. Use "Reset to defaults" to restore theme defaults.</p>
   <div class="styling-actions">
     <button type="button" id="styling-randomize" title="Generate random highlight colors that contrast with the page background">Randomize</button>
-    <button type="button" id="styling-reset-highlights" title="Clear all highlight colors and use theme defaults">Reset to defaults</button>
     <button type="button" id="styling-open-preview" title="Open a live preview of post highlight states">Preview states</button>
   </div>
 </details>
@@ -139,15 +138,10 @@
   <div data-name="Scrollbar Markers">
     <label><input type="checkbox" name="Scrollbar Markers"> Scrollbar markers</label>
     <div class="styling-tree">
-      <div class="styling-inline-option styling-marker-link-row">
-        <label>Marker colors</label>
-        <span class="styling-inline-controls">
-          <label class="styling-inline-toggle"><input type="checkbox" name="Scroll Marker Match Highlights"> Match highlights</label>
-        </span>
-      </div>
       <div class="styling-inline-option" data-marker-color="own">
         <label><input type="checkbox" name="Scrollbar Mark Own Posts"> Your posts</label>
         <span class="styling-inline-controls">
+          <label class="styling-inline-toggle" data-match-target="own" title="Match this marker color to the corresponding highlight color."><input type="checkbox" name="Scroll Marker Own Match Highlight">Match</label>
           <input type="color" name="Scroll Marker Own Color">
           <input type="range" name="Scroll Marker Own Opacity" min="0" max="1" step="0.05">
         </span>
@@ -155,6 +149,7 @@
       <div class="styling-inline-option" data-marker-color="you">
         <label><input type="checkbox" name="Scrollbar Mark Quotes You"> Quotes you</label>
         <span class="styling-inline-controls">
+          <label class="styling-inline-toggle" data-match-target="you" title="Match this marker color to the corresponding highlight color."><input type="checkbox" name="Scroll Marker You Match Highlight">Match</label>
           <input type="color" name="Scroll Marker You Color">
           <input type="range" name="Scroll Marker You Opacity" min="0" max="1" step="0.05">
         </span>
@@ -162,6 +157,7 @@
       <div class="styling-inline-option" data-marker-color="ghost">
         <label><input type="checkbox" name="Scrollbar Mark Ghost Posts"> Ghost posts</label>
         <span class="styling-inline-controls">
+          <label class="styling-inline-toggle" data-match-target="ghost" title="Match this marker color to the corresponding highlight color."><input type="checkbox" name="Scroll Marker Ghost Match Highlight">Match</label>
           <input type="color" name="Scroll Marker Ghost Color">
           <input type="range" name="Scroll Marker Ghost Opacity" min="0" max="1" step="0.05">
         </span>
@@ -241,7 +237,6 @@
   </div>
   <div class="custom-css-note note">Custom CSS can override configured highlight colors.</div>
   <div>For more information about customizing 4chan X&#039;s CSS, see the <a href="<%= meta.cssGuide %>" target="_blank">styling guide</a>.</div>
-  <button id="apply-css">Apply CSS</button>
   <div class="custom-css-controls">
     <label>Syntax theme:
       <select id="custom-css-theme">

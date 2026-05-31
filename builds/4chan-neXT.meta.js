@@ -1,6 +1,6 @@
 // ==UserScript==
 // @name         4chan-neXT
-// @version      1.0.2
+// @version      1.0.3
 // @minGMVer     1.14
 // @minFFVer     78
 // @namespace    4chan-neXT
@@ -70,6 +70,7 @@
 // @grant        GM_addValueChangeListener
 // @grant        GM_openInTab
 // @grant        GM_xmlhttpRequest
+// @grant        GM_addElement
 // @grant        GM.getValue
 // @grant        GM.setValue
 // @grant        GM.deleteValue

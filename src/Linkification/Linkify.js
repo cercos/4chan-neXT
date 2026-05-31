@@ -18,6 +18,12 @@ var Linkify = {
   init() {
     if (!['index', 'thread', 'archive'].includes(g.VIEW)) { return; }
 
+    // Live-toggle: re-sweep page when the user flips the setting in Settings.
+    $.sync('Convert X to xcancel', enabled => {
+      Conf['Convert X to xcancel'] = enabled;
+      Linkify.refreshXcancel();
+    });
+
     const shouldLinkify = Conf['Linkify'];
     const shouldRewriteX = Conf['Convert X to xcancel'];
     if (!shouldLinkify && !shouldRewriteX) { return; }
@@ -33,6 +39,29 @@ var Linkify = {
 
     if (shouldLinkify) {
       return Embedding.init();
+    }
+  },
+
+  refreshXcancel() {
+    if (Conf['Convert X to xcancel']) {
+      // Apply rewrite to every <a> in post comments currently on the page.
+      const selector = g.SITE?.selectors?.comment;
+      if (!selector) { return; }
+      for (const comment of $$(selector)) {
+        for (const link of $$('a', comment)) {
+          Linkify.rewriteXLink(link);
+        }
+      }
+    } else {
+      // Revert links we previously rewrote.
+      for (const link of $$('a[data-xcancel-orig-href]')) {
+        link.href = link.dataset.xcancelOrigHref;
+        if (link.dataset.xcancelOrigText != null && link.children.length === 0) {
+          link.textContent = link.dataset.xcancelOrigText;
+        }
+        delete link.dataset.xcancelOrigHref;
+        delete link.dataset.xcancelOrigText;
+      }
     }
   },
 
@@ -208,11 +237,12 @@ aero|asia|biz|cat|com|coop|dance|info|int|jobs|mobi|moe|museum|name|net|org|post
       }) + encodedDomain[2];
     }
 
+    const rewrittenHref = Linkify.rewriteXURL(text);
     const a = $.el('a', {
       className: 'linkify',
       rel:       'noreferrer noopener',
       target:    '_blank',
-      href:      Linkify.rewriteXURL(text)
+      href:      rewrittenHref
     }
     );
 
@@ -220,14 +250,41 @@ aero|asia|biz|cat|com|coop|dance|info|int|jobs|mobi|moe|museum|name|net|org|post
     $.add(a, range.extractContents());
     range.insertNode(a);
 
+    if (rewrittenHref !== text) {
+      a.dataset.xcancelOrigHref = text;
+      if (a.children.length === 0) { a.dataset.xcancelOrigText = a.textContent; }
+      Linkify.rewriteVisibleText(a);
+    }
+
     return a;
   },
 
   rewriteXLink(link) {
     if (!Conf['Convert X to xcancel']) { return; }
-    const href = Linkify.rewriteXURL(link.href);
-    if (href !== link.href) {
-      link.href = href;
+    const oldHref = link.href;
+    const newHref = Linkify.rewriteXURL(oldHref);
+    if (newHref !== oldHref) {
+      if (!link.dataset.xcancelOrigHref) {
+        link.dataset.xcancelOrigHref = oldHref;
+        if (link.children.length === 0) { link.dataset.xcancelOrigText = link.textContent; }
+      }
+      link.href = newHref;
+      Linkify.rewriteVisibleText(link);
+    }
+  },
+
+  rewriteVisibleText(link) {
+    // Replace twitter.com / x.com hostnames in the link's visible text with xcancel.com.
+    // Only touches text nodes so we don't disturb embed icons or nested markup.
+    const replace = s => s.replace(
+      /\b((?:www\.|mobile\.)?(?:fx|vx)?twitter\.com|(?:www\.|mobile\.)?(?:fixup|fixv)?x\.com|twittpr\.com)\b/gi,
+      'xcancel.com'
+    );
+    const walker = document.createTreeWalker(link, NodeFilter.SHOW_TEXT);
+    let node;
+    while ((node = walker.nextNode())) {
+      const updated = replace(node.data);
+      if (updated !== node.data) { node.data = updated; }
     }
   },
 

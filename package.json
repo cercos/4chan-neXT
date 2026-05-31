@@ -75,6 +75,7 @@
       "GM_addValueChangeListener",
       "GM_openInTab",
       "GM_xmlhttpRequest",
+      "GM_addElement",
       "GM.getValue",
       "GM.setValue",
       "GM.deleteValue",

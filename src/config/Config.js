@@ -987,7 +987,9 @@ http://eye.swfchan.com/search/?q=%name;types:swf
   'Link Text Color': '',
   'Quote Text Color': '',
   'Dead Link Text Color': '',
-  'Scroll Marker Match Highlights': true,
+  'Scroll Marker Own Match Highlight': true,
+  'Scroll Marker You Match Highlight': true,
+  'Scroll Marker Ghost Match Highlight': true,
 
   // Styling — highlight background colors and per-marker scroll colors.
   // Empty string = use the stylesheet default for the active theme.

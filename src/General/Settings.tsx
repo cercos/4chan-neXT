@@ -313,16 +313,17 @@ var Settings = {
 
   decorateDetailsWithKeys(sectionRoot, sectionInfo, applyRememberedState = true) {
     for (const details of $$('details', sectionRoot)) {
+      const shouldRememberState = (details as HTMLElement).dataset.rememberLayout !== 'false';
       const key = Settings.detailsStateKey(details as HTMLDetailsElement, sectionInfo);
       if (!key) continue;
       (details as HTMLElement).dataset.detailsStateKey = key;
-      if (applyRememberedState && Settings.rememberLayout && Object.prototype.hasOwnProperty.call(Settings.detailsState, key)) {
+      if (applyRememberedState && shouldRememberState && Settings.rememberLayout && Object.prototype.hasOwnProperty.call(Settings.detailsState, key)) {
         (details as HTMLDetailsElement).open = !!Settings.detailsState[key];
       }
       if ((details as any)._detailsStateBound) continue;
       (details as any)._detailsStateBound = true;
       $.on(details, 'toggle', function() {
-        if (!Settings.rememberLayout) return;
+        if (!Settings.rememberLayout || !shouldRememberState) return;
         const stateKey = (this as HTMLElement).dataset.detailsStateKey;
         if (!stateKey) return;
         Settings.detailsState[stateKey] = (this as HTMLDetailsElement).open;
@@ -337,6 +338,7 @@ var Settings = {
     if (!section) return;
     Settings.decorateDetailsWithKeys(section, Settings.renderedSection, false);
     for (const details of $$('details', section)) {
+      if ((details as HTMLElement).dataset.rememberLayout === 'false') continue;
       const key = (details as HTMLElement).dataset.detailsStateKey;
       if (!key) continue;
       Settings.detailsState[key] = (details as HTMLDetailsElement).open;
@@ -832,7 +834,7 @@ Enable it on boards.${location.hostname.split('.')[1]}.org in your browser's pri
       innerHTML:
         '<div><textarea name="boardnav" class="field boardnav-field" spellcheck="false"></textarea></div>' +
         '<span class="note">New lines will be converted into spaces.</span><br><br>' +
-        '<details class="boardnav-instructions">' +
+        '<details class="boardnav-instructions" data-remember-layout="false">' +
           '<summary>Syntax guide</summary>' +
           '<div class="note">In the following examples for /g/, <code>g</code> can be changed to a different board ID (<code>a</code>, <code>b</code>, etc...), the current board (<code>current</code>), or the Twitter link (<code>@</code>).</div>' +
           '<div>Board link: <code>g</code></div>' +
@@ -1048,14 +1050,15 @@ Enable it on boards.${location.hostname.split('.')[1]}.org in your browser's pri
       if (!Config.threadWatcher[name]) continue;
       const arr = Config.threadWatcher[name];
       const description = arr[1] || '';
+      const hoverDescription = Config.threadWatcher['Thread Watcher Thumbnail Hover']?.[1] || '';
       let div: HTMLDivElement;
 
       if (name === 'Show OP Thumbnails') {
         div = $.el('div',
-          { innerHTML: `<label><input type="checkbox" name="${name}">${displayName(name)}</label><span class="thread-watcher-inline-number">Size <input type="number" name="Thread Watcher Thumbnail Size" min="16" max="160" step="1" class="thread-watcher-size-input"></span><span class="thread-watcher-inline-subsetting"><label><input type="checkbox" name="Thread Watcher Thumbnail Hover">Hover Preview</label><span class="thread-watcher-inline-number">Size <input type="number" name="Thread Watcher Thumbnail Preview Size" min="10" max="99" step="1" class="thread-watcher-preview-size-input">%</span></span><span class="description">: <span class="setting-description">${description}</span></span>` });
+          { innerHTML: `<label><input type="checkbox" name="${name}">${displayName(name)}</label><span class="thread-watcher-inline-number"><input type="number" name="Thread Watcher Thumbnail Size" min="16" max="160" step="1" class="thread-watcher-size-input" title="Thumbnail size in pixels"></span><span class="description">: <span class="setting-description">${description}</span></span><span class="thread-watcher-inline-subsetting"><label><input type="checkbox" name="Thread Watcher Thumbnail Hover">Hover Preview</label><span class="thread-watcher-inline-number"><input type="number" name="Thread Watcher Thumbnail Preview Size" min="10" max="99" step="1" class="thread-watcher-preview-size-input" title="Hover preview size as a percentage">%</span><span class="description">: <span class="setting-description">${hoverDescription}</span></span></span>` });
         div.dataset.name = `${name} Thread Watcher Thumbnail Size Thread Watcher Thumbnail Hover Thread Watcher Thumbnail Preview Size`;
         div.dataset.settingTitle = displayName(name);
-        div.dataset.settingDescription = `${description} Thread Watcher Thumbnail Size Thread Watcher Thumbnail Hover Thread Watcher Thumbnail Preview Size`;
+        div.dataset.settingDescription = `${description} ${hoverDescription} Thread Watcher Thumbnail Size Thread Watcher Thumbnail Hover Thread Watcher Thumbnail Preview Size`;
 
         const sizeInput = $('input[name="Thread Watcher Thumbnail Size"]', div) as HTMLInputElement;
         const previewToggle = $('input[name="Thread Watcher Thumbnail Hover"]', div) as HTMLInputElement;
@@ -1231,20 +1234,16 @@ Enable it on boards.${location.hostname.split('.')[1]}.org in your browser's pri
       container.dataset.checked = checkbox.checked ? 'true' : 'false';
     };
 
-    const threadHighlightKeys = [
-      'Highlight Own Posts',
-      'Highlight Posts Quoting You',
-      'Highlight Ghost Posts',
-    ] as const;
     const catalogHighlightKeys = [
       'Catalog Highlight Own Posts',
       'Catalog Highlight Watched Threads',
     ] as const;
     const markerColorLinkPairs = [
-      ['Scroll Marker Own Color', 'own'],
-      ['Scroll Marker You Color', 'you'],
-      ['Scroll Marker Ghost Color', 'ghost'],
+      ['Scroll Marker Own Color', 'own', 'Scroll Marker Own Match Highlight'],
+      ['Scroll Marker You Color', 'you', 'Scroll Marker You Match Highlight'],
+      ['Scroll Marker Ghost Color', 'ghost', 'Scroll Marker Ghost Match Highlight'],
     ] as const;
+    const markerMatchKeys = new Set(markerColorLinkPairs.map(([, , matchKey]) => matchKey));
     const highlightTextControlGroups = [
       {
         manualGroup: 'own',
@@ -1294,7 +1293,9 @@ Enable it on boards.${location.hostname.split('.')[1]}.org in your browser's pri
       'Scrollbar Mark Quotes You',
       'Scrollbar Mark Ghost Posts',
       'Scrollbar Mark Unread Line',
-      'Scroll Marker Match Highlights',
+      'Scroll Marker Own Match Highlight',
+      'Scroll Marker You Match Highlight',
+      'Scroll Marker Ghost Match Highlight',
       'Enable Thread Highlights',
       'Enable Catalog Highlights',
       'Catalog Highlight Own Posts',
@@ -1305,7 +1306,6 @@ Enable it on boards.${location.hostname.split('.')[1]}.org in your browser's pri
       'siteStyle',
       'siteStyleHome',
     ]);
-    const markerColorLinkToggle = inputs['Scroll Marker Match Highlights'];
     const textColorModeSelect = inputs['textColorMode'] as HTMLSelectElement | null;
     const textColorManualTree = $('#styling-text-color-manual', section) as HTMLElement | null;
     const highlightTextKeys = new Set(
@@ -1388,11 +1388,9 @@ Enable it on boards.${location.hostname.split('.')[1]}.org in your browser's pri
       }
     };
     const syncMarkerColorControls = () => {
-      const linked = !!markerColorLinkToggle?.checked;
-      if (linked) {
-        Settings.syncLinkedMarkerColors(inputs);
-      }
-      for (const [key, markerType] of markerColorLinkPairs) {
+      Settings.syncLinkedMarkerColors(inputs);
+      for (const [key, markerType, matchKey] of markerColorLinkPairs) {
+        const linked = !!inputs[matchKey]?.checked;
         const colorInput = inputs[key];
         if (colorInput) colorInput.disabled = linked;
         const row = $(`[data-marker-color="${markerType}"]`, section) as HTMLElement | null;
@@ -1427,6 +1425,19 @@ Enable it on boards.${location.hostname.split('.')[1]}.org in your browser's pri
         }
       }
     };
+    const setMatchTargetHighlight = (role: string, on: boolean) => {
+      if (!role) return;
+      const target = $(`[data-highlight-row="${role}"]`, section) as HTMLElement | null;
+      if (!target) return;
+      target.classList.toggle('styling-match-hover-target', on);
+    };
+    for (const matchLabel of $$('[data-match-target]', section) as HTMLElement[]) {
+      const role = matchLabel.dataset.matchTarget || '';
+      $.on(matchLabel, 'mouseenter', () => setMatchTargetHighlight(role, true));
+      $.on(matchLabel, 'mouseleave', () => setMatchTargetHighlight(role, false));
+      $.on(matchLabel, 'focusin', () => setMatchTargetHighlight(role, true));
+      $.on(matchLabel, 'focusout', () => setMatchTargetHighlight(role, false));
+    }
     const refreshUnsetColorInputs = () => {
       for (const key in inputs) {
         const inp = inputs[key];
@@ -1440,14 +1451,6 @@ Enable it on boards.${location.hostname.split('.')[1]}.org in your browser's pri
       }
     };
 
-    if (markerColorLinkToggle) {
-      $.on(markerColorLinkToggle, 'change', () => {
-        Conf['Scroll Marker Match Highlights'] = !!markerColorLinkToggle.checked;
-        syncMarkerColorControls();
-        Settings.applyStylingVars();
-        refreshStylingPreview();
-      });
-    }
     if (textColorModeSelect) {
       $.on(textColorModeSelect, 'change', () => {
         Conf['textColorMode'] = textColorModeSelect.value;
@@ -1490,11 +1493,16 @@ Enable it on boards.${location.hostname.split('.')[1]}.org in your browser's pri
       }
       if (input.type === 'checkbox') {
         $.on(input, 'change', function() { setCheckedState(this as HTMLInputElement); });
-        if (threadHighlightKeys.includes(name as typeof threadHighlightKeys[number])) {
-          $.on(input, 'change', refreshStylingPreview);
-        }
+        $.on(input, 'change', () => {
+          syncAutoHighlightPreviewInputs();
+          Settings.applyStylingVars();
+          refreshStylingPreview();
+        });
         if (catalogHighlightKeys.includes(name as typeof catalogHighlightKeys[number])) {
           $.on(input, 'change', syncCatalogHighlightControls);
+        }
+        if (markerMatchKeys.has(name as typeof markerColorLinkPairs[number][2])) {
+          $.on(input, 'change', syncMarkerColorControls);
         }
         if (name === 'Enable Catalog Highlights') {
           $.on(input, 'change', syncCatalogHighlightControls);
@@ -1526,12 +1534,9 @@ Enable it on boards.${location.hostname.split('.')[1]}.org in your browser's pri
 
     // Custom CSS toggle + textarea behavior (mirrors Advanced wiring).
     const customCSS: HTMLInputElement  = inputs['Custom CSS'];
-    const applyCSS:  HTMLButtonElement = $('#apply-css', section);
     customCSS.checked          =  Conf['Custom CSS'];
     inputs['usercss'].disabled = !Conf['Custom CSS'];
-    applyCSS.disabled          = !Conf['Custom CSS'];
     $.on(customCSS, 'change', Settings.togglecss);
-    $.on(applyCSS, 'click', () => CustomCSS.update());
     Settings.initCustomCSSEditor(section, inputs['usercss'] as unknown as HTMLTextAreaElement);
 
     $.get(items, (loaded: Record<string, any>) => {
@@ -1611,53 +1616,6 @@ Enable it on boards.${location.hostname.split('.')[1]}.org in your browser's pri
         refreshStylingPreview();
       });
     }
-    const resetBtn = $('#styling-reset-highlights', section);
-    if (resetBtn) {
-      $.on(resetBtn, 'click', () => {
-        for (const key of [
-          'Highlight Own Color', 'Highlight You Color', 'Highlight Ghost Color',
-          'Highlight Own Opacity', 'Highlight You Opacity', 'Highlight Ghost Opacity',
-          'Enable Thread Highlights', 'Enable Catalog Highlights',
-          'Catalog Highlight Own Posts', 'Catalog Highlight Watched Threads',
-          'Catalog Highlight Own Color', 'Catalog Highlight Watched Color',
-          'Catalog Highlight Own Opacity', 'Catalog Highlight Watched Opacity',
-          'Catalog Highlight Own Text Color', 'Catalog Highlight Own Link Color', 'Catalog Highlight Own Quote Color', 'Catalog Highlight Own Dead Link Color',
-          'Catalog Highlight Watched Text Color', 'Catalog Highlight Watched Link Color', 'Catalog Highlight Watched Quote Color', 'Catalog Highlight Watched Dead Link Color',
-          'Highlight Own Text Color', 'Highlight Own Link Color', 'Highlight Own Quote Color', 'Highlight Own Dead Link Color',
-          'Highlight You Text Color', 'Highlight You Link Color', 'Highlight You Quote Color', 'Highlight You Dead Link Color',
-          'Highlight Ghost Text Color', 'Highlight Ghost Link Color', 'Highlight Ghost Quote Color', 'Highlight Ghost Dead Link Color',
-        ] as const) {
-          Conf[key] = '';
-          $.set(key, '');
-          const inp = inputs[key];
-          if (inp) {
-            if (inp.type === 'color') delete inp.dataset.unset;
-            else inp.value = '1';
-          }
-        }
-        for (const key of [
-          'Highlight Own Text Auto', 'Highlight You Text Auto', 'Highlight Ghost Text Auto',
-          'Catalog Highlight Own Text Auto', 'Catalog Highlight Watched Text Auto',
-        ] as const) {
-          Conf[key] = true;
-          $.set(key, true);
-          const inp = inputs[key];
-          if (inp && inp.type === 'checkbox') inp.checked = true;
-        }
-        for (const key of ['Enable Thread Highlights', 'Enable Catalog Highlights', 'Catalog Highlight Own Posts', 'Catalog Highlight Watched Threads'] as const) {
-          Conf[key] = true;
-          $.set(key, true);
-          const inp = inputs[key];
-          if (inp && inp.type === 'checkbox') inp.checked = true;
-        }
-        syncAutoHighlightPreviewInputs();
-        syncCatalogHighlightControls();
-        syncHighlightTextControls();
-        Settings.applyStylingVars();
-        refreshUnsetColorInputs();
-        refreshStylingPreview();
-      });
-    }
   },
 
   stylingPreviewSampleText() {
@@ -1700,6 +1658,53 @@ Enable it on boards.${location.hostname.split('.')[1]}.org in your browser's pri
     `;
   },
 
+  stylingPreviewCatalogThreadHTML({
+    threadID,
+    postID,
+    extraThreadClass = '',
+    extraContainerClass = '',
+    message = '',
+    summary = '',
+    excerpt = '',
+  }: {
+    threadID: number;
+    postID: number;
+    extraThreadClass?: string;
+    extraContainerClass?: string;
+    message?: string;
+    summary?: string;
+    excerpt?: string;
+  }) {
+    const threadClasses = `thread catalog-thread ${extraThreadClass}`.trim();
+    const containerClasses = `postContainer catalog-container ${extraContainerClass}`.trim();
+    const safeMessage = E(message || Settings.stylingPreviewSampleText());
+    const safeSummary = E(summary || '4 posts and 2 image replies');
+    const safeExcerpt = E(excerpt || 'recent reply preview');
+    return `
+      <div class="${threadClasses}" id="t${threadID}" style="--tn-w: 250; --tn-h: 196;">
+        <div class="${containerClasses}" id="pc${threadID}" data-full-i-d="g.${threadID}">
+          <div id="p${postID}" class="post catalog-post">
+            <a class="catalog-link" href="/g/thread/${threadID}">
+              <img src="//i.4cdn.org/g/1745612650141704s.jpg" class="catalog-thumb" data-width="250" data-height="196" style="width: 150px; height: 117.6px;">
+            </a>
+            <div class="catalog-stats">
+              <span title="Posts / Files / Page"><span class="post-count">12</span> / <span class="file-count">8</span> / <span class="page-count">1</span></span>
+            </div>
+            <blockquote class="postMessage" id="m${postID}">${safeMessage}</blockquote>
+            <span class="summary preview-summary">${safeSummary}</span>
+            <div class="catalog-replies">
+              <div class="catalog-reply">
+                <span><time data-utc="1780096072000" data-abbrev="1">1m</time>: </span>
+                <a class="catalog-reply-excerpt" href="/g/thread/${threadID}#p${postID}">${safeExcerpt}</a>
+                <a class="catalog-reply-preview" href="/g/thread/${threadID}#p${postID}">...</a>
+              </div>
+            </div>
+          </div>
+        </div>
+      </div>
+    `;
+  },
+
   openStylingPreview(section?: HTMLElement) {
     if (!Settings.dialog) return;
     const targetSection = section || ($('.section-styling', Settings.dialog) as HTMLElement | null);
@@ -1716,12 +1721,33 @@ Enable it on boards.${location.hostname.split('.')[1]}.org in your browser's pri
     const panel = $.el('div', { className: 'styling-preview styling-preview-dock dialog' }) as HTMLDivElement;
     panel.dataset.collapsed = 'false';
     panel.innerHTML = `
-      <div class="board styling-preview-thread">
-        <div class="thread" id="t503286550">
-          ${Settings.stylingPreviewPostHTML({ postID: 503286554, message: 'Normal: thread is already discussing this topic.' })}
-          ${Settings.stylingPreviewPostHTML({ postID: 503286555, extraClass: 'yourPost', author: 'You', message: 'This is a post you created.' })}
-          ${Settings.stylingPreviewPostHTML({ postID: 503286556, extraClass: 'quotesYou', message: 'This is a post quoting you.' })}
-          ${Settings.stylingPreviewPostHTML({ postID: 503286557, extraClass: 'from-archive', author: 'Archived', message: 'This is a ghost post (deleted).' })}
+      <div class="styling-preview-layout">
+        <div class="board styling-preview-thread">
+          <div class="thread" id="t503286550">
+            ${Settings.stylingPreviewPostHTML({ postID: 503286554, message: 'Normal: thread is already discussing this topic.' })}
+            ${Settings.stylingPreviewPostHTML({ postID: 503286555, extraClass: 'yourPost', author: 'You', message: 'This is a post you created.' })}
+            ${Settings.stylingPreviewPostHTML({ postID: 503286556, extraClass: 'quotesYou', message: 'This is a post quoting you.' })}
+            ${Settings.stylingPreviewPostHTML({ postID: 503286557, extraClass: 'from-archive', author: 'Archived', message: 'This is a ghost post (deleted).' })}
+          </div>
+        </div>
+        <div class="board styling-preview-catalog catalog-small">
+          ${Settings.stylingPreviewCatalogThreadHTML({
+            threadID: 503286580,
+            postID: 503286580,
+            extraThreadClass: 'yourPost',
+            extraContainerClass: 'yourPost',
+            message: 'Catalog own-post state preview.',
+            summary: '5 posts and 3 image replies',
+            excerpt: 'your post reply sample',
+          })}
+          ${Settings.stylingPreviewCatalogThreadHTML({
+            threadID: 503286590,
+            postID: 503286590,
+            extraThreadClass: 'watched',
+            message: 'Catalog watched-thread state preview.',
+            summary: '10 posts and 4 image replies',
+            excerpt: 'watched thread reply sample',
+          })}
         </div>
       </div>
     `;
@@ -1800,7 +1826,10 @@ Enable it on boards.${location.hostname.split('.')[1]}.org in your browser's pri
 
     $.on(textarea, 'input', () => Settings.renderCustomCSSHighlight(textarea, highlight));
     $.on(textarea, 'scroll', syncScroll);
-    $.on(textarea, 'change', () => Settings.renderCustomCSSHighlight(textarea, highlight));
+    $.on(textarea, 'change', () => {
+      Settings.renderCustomCSSHighlight(textarea, highlight);
+      if (Conf['Custom CSS']) CustomCSS.update();
+    });
     $.on(themeSelect, 'change', () => updateTheme(true));
     $.on(expandButton, 'click', () => updateExpandedState(editor.dataset.expanded !== 'true', true));
     Settings.customCSSEditorThemeObserver?.disconnect();
@@ -1930,13 +1959,15 @@ Enable it on boards.${location.hostname.split('.')[1]}.org in your browser's pri
     setVar('--xt-catalog-watched-highlight', catalogWatchedEnabled ? Conf['Catalog Highlight Watched Color'] : '');
     setVar('--xt-catalog-watched-highlight-opacity',
       (catalogWatchedEnabled && Conf['Catalog Highlight Watched Opacity'] !== '') ? String(Conf['Catalog Highlight Watched Opacity']) : '');
-    const linkMarkerColors = !!Conf['Scroll Marker Match Highlights'];
+    const ownMarkerLinked = !!Conf['Scroll Marker Own Match Highlight'];
+    const youMarkerLinked = !!Conf['Scroll Marker You Match Highlight'];
+    const ghostMarkerLinked = !!Conf['Scroll Marker Ghost Match Highlight'];
     setVar('--xt-scroll-marker-own',
-      linkMarkerColors ? Conf['Highlight Own Color'] : Conf['Scroll Marker Own Color']);
+      ownMarkerLinked ? Conf['Highlight Own Color'] : Conf['Scroll Marker Own Color']);
     setVar('--xt-scroll-marker-you',
-      linkMarkerColors ? Conf['Highlight You Color'] : Conf['Scroll Marker You Color']);
+      youMarkerLinked ? Conf['Highlight You Color'] : Conf['Scroll Marker You Color']);
     setVar('--xt-scroll-marker-ghost',
-      linkMarkerColors ? Conf['Highlight Ghost Color'] : Conf['Scroll Marker Ghost Color']);
+      ghostMarkerLinked ? Conf['Highlight Ghost Color'] : Conf['Scroll Marker Ghost Color']);
     setVar('--xt-scroll-marker-unread', Conf['Scroll Marker Unread Color']);
     setVar('--xt-scroll-marker-own-opacity',
       Conf['Scroll Marker Own Opacity'] === '' ? '' : String(Conf['Scroll Marker Own Opacity']));
@@ -2323,15 +2354,15 @@ Enable it on boards.${location.hostname.split('.')[1]}.org in your browser's pri
   },
 
   syncLinkedMarkerColors(inputs?: Record<string, HTMLInputElement>) {
-    if (!Conf['Scroll Marker Match Highlights']) return;
     const colorPairs = [
-      ['Highlight Own Color', 'Scroll Marker Own Color'],
-      ['Highlight You Color', 'Scroll Marker You Color'],
-      ['Highlight Ghost Color', 'Scroll Marker Ghost Color'],
+      ['Highlight Own Color', 'Scroll Marker Own Color', 'Scroll Marker Own Match Highlight'],
+      ['Highlight You Color', 'Scroll Marker You Color', 'Scroll Marker You Match Highlight'],
+      ['Highlight Ghost Color', 'Scroll Marker Ghost Color', 'Scroll Marker Ghost Match Highlight'],
     ] as const;
-    for (const [highlightKey, markerKey] of colorPairs) {
-      const color = Conf[highlightKey] || '';
-      if (Conf[markerKey] !== color) {
+    for (const [highlightKey, markerKey, matchKey] of colorPairs) {
+      const linked = !!Conf[matchKey];
+      const color = linked ? (Conf[highlightKey] || '') : (Conf[markerKey] || '');
+      if (linked && (Conf[markerKey] !== color)) {
         Conf[markerKey] = color;
         $.set(markerKey, color);
       }
@@ -2985,7 +3016,9 @@ Enable it on boards.${location.hostname.split('.')[1]}.org in your browser's pri
       'Link Text Color',
       'Quote Text Color',
       'Dead Link Text Color',
-      'Scroll Marker Match Highlights',
+      'Scroll Marker Own Match Highlight',
+      'Scroll Marker You Match Highlight',
+      'Scroll Marker Ghost Match Highlight',
       'Catalog Highlight Own Posts',
       'Catalog Highlight Watched Threads',
       'Highlight Own Color',
@@ -4364,7 +4397,6 @@ Enable it on boards.${location.hostname.split('.')[1]}.org in your browser's pri
 
     const interval  : HTMLInputElement  = inputs['Interval'];
     const customCSS : HTMLInputElement  = inputs['Custom CSS'];
-    const applyCSS  : HTMLButtonElement = $('#apply-css', section);
     const timeLocale: HTMLInputElement  = inputs.timeLocale;
 
     if (interval) {
@@ -4377,10 +4409,6 @@ Enable it on boards.${location.hostname.split('.')[1]}.org in your browser's pri
     }
     if (inputs['usercss']) {
       inputs['usercss'].disabled = !Conf['Custom CSS'];
-    }
-    if (applyCSS) {
-      applyCSS.disabled = !Conf['Custom CSS'];
-      $.on(applyCSS, 'click', () => CustomCSS.update());
     }
     if (timeLocale) {
       timeLocale.value = Conf.timeLocale;
@@ -4590,10 +4618,8 @@ Enable it on boards.${location.hostname.split('.')[1]}.org in your browser's pri
   togglecss() {
     const details = $.x('ancestor::details[1]', this) as HTMLElement | null;
     const textarea = details ? ($('textarea[name=usercss]', details) as HTMLTextAreaElement | null) : null;
-    const applyCSS = details ? ($('#apply-css', details) as HTMLButtonElement | null) : null;
     const disabled = !this.checked;
     if (textarea) textarea.disabled = disabled;
-    if (applyCSS) applyCSS.disabled = disabled;
     if (disabled) {
       CustomCSS.rmStyle();
     } else {

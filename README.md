@@ -5,11 +5,10 @@ It continues the 4chan XT codebase with ongoing fixes and updates.
 
 ## Latest Release
 
-- `1.0.2` (2026-05-31):
-  - Bug fixes.
-  - Added "Download all media" support.
-  - Added new QR settings for thumbnails and layout.
-  - Added discernible classes on roots for targeted styling.
+- `1.0.3` (2026-05-31):
+  - Fixed QR dump list.
+  - Fixed QR action button behavior.
+  - Fixed Tegaki buttons.
 
 <details>
 <summary>Original README</summary>
