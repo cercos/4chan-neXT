@@ -3,6 +3,11 @@
 4chan-neXT is an actively maintained userscript fork of 4chan X for anonymous imageboards.
 It continues the 4chan XT codebase with ongoing fixes and updates.
 
+## Migration from 4chan X
+
+4chan-neXT uses a different user script namespace than 4chan X.
+To migrate your settings, export them from 4chan X and then import them in 4chan-neXT.
+
 ## Latest Release
 
 - `1.0.3` (2026-05-31):

@@ -1,8 +1,5 @@
 ## 4chan-neXT changelog
 
-4chan-neXT uses a different user script namespace than 4chan X, so to migrate you need to export settings from 4chan X,
-and import them in 4chan-neXT.
-
 ### Unreleased
 
 - Added scrollbar hover thumbnail preview.
@@ -30,6 +27,7 @@ and import them in 4chan-neXT.
 - Fork renamed from 4chan XT to 4chan-neXT.
 - Versioning restarted for this fork line at `1.0.0`.
 - Project docs updated for the new name and release baseline.
+- Migration requires exporting settings from 4chan X and importing them in 4chan-neXT due to the namespace change.
 
 ### 2.24.2 (2025-12-23 🎅🏻)
 
