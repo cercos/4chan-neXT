@@ -5,7 +5,11 @@ It continues the 4chan XT codebase with ongoing fixes and updates.
 
 ## Latest Release
 
-- `1.0.1` (2026-05-30): Fix captcha submission flow when the UI reports "Verification not required."
+- `1.0.2` (2026-05-31):
+  - Bug fixes.
+  - Added "Download all media" support.
+  - Added new QR settings for thumbnails and layout.
+  - Added discernible classes on roots for targeted styling.
 
 <details>
 <summary>Original README</summary>
