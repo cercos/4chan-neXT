@@ -40,6 +40,8 @@ var Settings = {
   pointerDownInsideDialog: false,
   customCSSEditorThemeObserver: null as MutationObserver | null,
   stylingPreviewPanel: null as HTMLDivElement | null,
+  activeSiteStylePicker: null as HTMLElement | null,
+  siteStylePickerOutsideHandler: null as ((e: Event) => void) | null,
   prepareDrag(e) {
     const settingsWindow = $('#fourchanx-settings', Settings.dialog) as HTMLDivElement;
     const rect = settingsWindow.getBoundingClientRect();
@@ -71,12 +73,12 @@ var Settings = {
 
     add('All Settings',    this.allSettings);
     add('General',         this.general);
+    add('Styling',         this.styling);
     add('Interface',       this.interface);
     add('Threads & Posts', this.threadsAndPosts);
     add('Media',           this.media);
     add('Posting',         this.posting);
     add('Filtering',       this.filter);
-    add('Styling',         this.styling);
     add('Keybinds',        this.keybinds);
     add('Advanced',        this.advanced);
 
@@ -187,6 +189,11 @@ var Settings = {
     Settings.customCSSEditorThemeObserver?.disconnect();
     Settings.customCSSEditorThemeObserver = null;
     Settings.closeStylingPreview();
+    if (Settings.siteStylePickerOutsideHandler) {
+      d.removeEventListener('mousedown', Settings.siteStylePickerOutsideHandler, true);
+      Settings.siteStylePickerOutsideHandler = null;
+    }
+    Settings.activeSiteStylePicker = null;
     delete Settings.dialog;
   },
 
@@ -255,6 +262,7 @@ var Settings = {
       });
     }
   },
+
 
   restoreWindowLayout(settingsWindow: HTMLDivElement) {
     if (Settings.rememberLayout && Settings.savedWindowLayout) {
@@ -1201,35 +1209,6 @@ Enable it on boards.${location.hostname.split('.')[1]}.org in your browser's pri
     Settings.renderMainGroups(section, {
       categories: ['Posting and Captchas']
     });
-
-    const fs = $.el('details',
-      { open: true },
-      { innerHTML: '<summary>Quick Reply Personas</summary>' });
-    const div = $.el('div', {
-      innerHTML:
-        '<textarea name="QR.personas" class="personafield field" spellcheck="false"></textarea>' +
-        '<p>' +
-          'One item per line.<br>' +
-          'Items will be added in the relevant input\'s auto-completion list.<br>' +
-          'Password items will always be used, since there is no password input.<br>' +
-          'Lines starting with a <code>#</code> will be ignored.' +
-        '</p>' +
-        '<ul>You can use these settings with each item, separate them with semicolons:' +
-          '<li>Possible items are: <code>name</code>, <code>options</code> (or equivalently <code>email</code>), <code>subject</code> and <code>password</code>.</li>' +
-          '<li>Wrap values of items with quotes, like this: <code>options:"sage"</code>.</li>' +
-          '<li>Force values as defaults with the <code>always</code> keyword, for example: <code>options:"sage";always</code>.</li>' +
-          '<li>Select specific boards for an item, separated with commas, for example: <code>options:"sage";boards:jp;always</code>.</li>' +
-        '</ul>'
-    });
-    div.dataset.name = 'QR.personas';
-    const textarea = $('textarea', div) as HTMLTextAreaElement;
-    $.on(textarea, 'change', $.cb.value);
-    $.add(fs, div);
-    $.add(section, fs);
-    $.get('QR.personas', Conf['QR.personas'], function(item) {
-      textarea.value = item['QR.personas'];
-      textarea.hidden = false;
-    });
   },
 
   styling(section) {
@@ -1241,6 +1220,8 @@ Enable it on boards.${location.hostname.split('.')[1]}.org in your browser's pri
       inputs[input.name] = input;
     }
     Settings.populateSiteStylePicker(section, inputs['siteStyle'] as HTMLSelectElement);
+    Settings.bindSiteStylePicker(section);
+    Settings.bindAddCustomTheme(section);
 
     const setCheckedState = (checkbox: HTMLInputElement) => {
       const container = checkbox.closest('[data-name]') as HTMLElement | null;
@@ -1795,9 +1776,8 @@ Enable it on boards.${location.hostname.split('.')[1]}.org in your browser's pri
     const editor = $('.custom-css-editor', section) as HTMLDivElement | null;
     const highlight = $('.custom-css-highlight', section) as HTMLPreElement | null;
     const themeSelect = $('#custom-css-theme', section) as HTMLSelectElement | null;
-    const heightSelect = $('#custom-css-expanded-height', section) as HTMLSelectElement | null;
     const expandButton = $('#custom-css-expand', section) as HTMLButtonElement | null;
-    if (!editor || !highlight || !themeSelect || !heightSelect || !expandButton) return;
+    if (!editor || !highlight || !themeSelect || !expandButton) return;
 
     const syncScroll = () => {
       highlight.scrollTop = textarea.scrollTop;
@@ -1806,17 +1786,10 @@ Enable it on boards.${location.hostname.split('.')[1]}.org in your browser's pri
 
     const updateExpandedState = (expanded: boolean, save = false) => {
       editor.dataset.expanded = expanded ? 'true' : 'false';
+      editor.style.height = expanded ? '500px' : '180px';
       expandButton.dataset.expanded = editor.dataset.expanded;
       expandButton.textContent = expanded ? 'Collapse editor' : 'Expand editor';
-      if (expanded) {
-        editor.style.setProperty('--custom-css-expanded-height', `${heightSelect.value || 500}px`);
-      }
       if (save) $.set('settings.customCSSEditorExpanded', expanded);
-    };
-
-    const updateExpandedHeight = (save = false) => {
-      editor.style.setProperty('--custom-css-expanded-height', `${heightSelect.value || 500}px`);
-      if (save) $.set('settings.customCSSEditorExpandedHeight', heightSelect.value || '500');
     };
 
     const updateTheme = (save = false) => {
@@ -1829,7 +1802,6 @@ Enable it on boards.${location.hostname.split('.')[1]}.org in your browser's pri
     $.on(textarea, 'scroll', syncScroll);
     $.on(textarea, 'change', () => Settings.renderCustomCSSHighlight(textarea, highlight));
     $.on(themeSelect, 'change', () => updateTheme(true));
-    $.on(heightSelect, 'change', () => updateExpandedHeight(true));
     $.on(expandButton, 'click', () => updateExpandedState(editor.dataset.expanded !== 'true', true));
     Settings.customCSSEditorThemeObserver?.disconnect();
     Settings.customCSSEditorThemeObserver = new MutationObserver(() => {
@@ -1842,18 +1814,14 @@ Enable it on boards.${location.hostname.split('.')[1]}.org in your browser's pri
 
     $.get({
       'settings.customCSSEditorTheme': 'xt-system',
-      'settings.customCSSEditorExpandedHeight': '500',
       'settings.customCSSEditorExpanded': false,
     }, prefs => {
       const theme = prefs['settings.customCSSEditorTheme'];
-      const height = prefs['settings.customCSSEditorExpandedHeight'];
       const expanded = !!prefs['settings.customCSSEditorExpanded'];
 
       themeSelect.value = ['xt-system', 'xt-light', 'xt-dark', 'xt-solarized'].includes(theme) ? theme : 'xt-system';
-      heightSelect.value = ['400', '500', '700'].includes(String(height)) ? String(height) : '500';
 
       updateTheme(false);
-      updateExpandedHeight(false);
       updateExpandedState(expanded, false);
       Settings.renderCustomCSSHighlight(textarea, highlight);
       syncScroll();
@@ -1937,6 +1905,14 @@ Enable it on boards.${location.hostname.split('.')[1]}.org in your browser's pri
     doc.classList.toggle('highlight-own', threadHighlightsEnabled && !!Conf['Highlight Own Posts']);
     doc.classList.toggle('highlight-you', threadHighlightsEnabled && !!Conf['Highlight Posts Quoting You']);
     doc.classList.toggle('highlight-ghost', threadHighlightsEnabled && !!Conf['Highlight Ghost Posts']);
+    // Mark which highlights have an explicit color set so the !important
+    // override rules in variableBase.css can win over user site themes.
+    doc.classList.toggle('xt-set-own-highlight',
+      threadHighlightsEnabled && !!Conf['Highlight Own Posts'] && !!Conf['Highlight Own Color']);
+    doc.classList.toggle('xt-set-you-highlight',
+      threadHighlightsEnabled && !!Conf['Highlight Posts Quoting You'] && !!Conf['Highlight You Color']);
+    doc.classList.toggle('xt-set-ghost-highlight',
+      threadHighlightsEnabled && !!Conf['Highlight Ghost Posts'] && !!Conf['Highlight Ghost Color']);
     doc.classList.toggle('xt-highlight-catalog-own', catalogOwnEnabled);
     doc.classList.toggle('xt-highlight-catalog-watched', catalogWatchedEnabled);
     setVar('--xt-highlight-own',   Conf['Highlight Own Color']);
@@ -2387,53 +2363,294 @@ Enable it on boards.${location.hostname.split('.')[1]}.org in your browser's pri
     return `#${to(r)}${to(g)}${to(b)}`;
   },
 
+  CUSTOM_SITE_THEME_PREFIX: 'custom:' as const,
+
+  isCustomSiteThemeValue(value: string) {
+    return typeof value === 'string' && value.startsWith(Settings.CUSTOM_SITE_THEME_PREFIX);
+  },
+
+  customSiteThemeName(value: string) {
+    return Settings.isCustomSiteThemeValue(value)
+      ? value.slice(Settings.CUSTOM_SITE_THEME_PREFIX.length)
+      : '';
+  },
+
+  customSiteThemeList(): { name: string; css: string }[] {
+    const raw = Conf['customSiteThemes'];
+    if (!Array.isArray(raw)) return [];
+    const out: { name: string; css: string }[] = [];
+    for (const item of raw) {
+      if (!item || typeof item !== 'object') continue;
+      const name = String((item as any).name || '').trim();
+      const css = String((item as any).css || '');
+      if (!name) continue;
+      out.push({ name, css });
+    }
+    return out;
+  },
+
+  findCustomSiteTheme(name: string) {
+    return Settings.customSiteThemeList().find(t => t.name === name) || null;
+  },
+
+  nativeSiteThemes(): string[] {
+    const themes: string[] = [];
+    const seen = new Set<string>();
+    const add = (value?: string | null) => {
+      const v = value?.trim();
+      if (!v || seen.has(v)) return;
+      seen.add(v);
+      themes.push(v);
+    };
+    const nativeSelector = $.id('styleSelector') as HTMLSelectElement | null;
+    if (nativeSelector?.options?.length) {
+      for (const opt of nativeSelector.options) add(opt.value || opt.textContent || '');
+      return themes;
+    }
+    for (const link of $$('link[rel="alternate stylesheet"]', d.head) as HTMLLinkElement[]) {
+      add(link.title);
+    }
+    return themes;
+  },
+
+  nativeSiteThemeLabel(name: string) {
+    const trimmed = (name || '').trim();
+    const withoutNew = trimmed.replace(/\s+new$/i, '');
+    return withoutNew || trimmed;
+  },
+
   populateSiteStylePicker(section: HTMLElement, select: HTMLSelectElement) {
     if (!select) return;
+    const picker = $('.styling-theme-picker', section) as HTMLElement | null;
+    const toggleBtn = picker ? ($('.styling-theme-toggle', picker) as HTMLButtonElement | null) : null;
+    const currentLabel = picker ? ($('.styling-theme-current', picker) as HTMLElement | null) : null;
+    const menu = picker ? ($('.styling-theme-menu', picker) as HTMLElement | null) : null;
     const note = $('#styling-site-style-note', section) as HTMLElement | null;
+
+    const nativeThemes = Settings.nativeSiteThemes();
+    const customThemes = Settings.customSiteThemeList();
+
+    // Rebuild the hidden <select> as the source of truth for value/change events.
+    while (select.firstChild) select.removeChild(select.firstChild);
     const seen = new Set<string>();
     const addOption = (value: string, text: string) => {
       if (!value || seen.has(value)) return;
       seen.add(value);
       $.add(select, $.el('option', { value, textContent: text || value }));
     };
+    for (const name of nativeThemes) addOption(name, Settings.nativeSiteThemeLabel(name));
+    for (const t of customThemes) addOption(`${Settings.CUSTOM_SITE_THEME_PREFIX}${t.name}`, `Custom: ${t.name}`);
 
-    const nativeSelector = $.id('styleSelector') as HTMLSelectElement | null;
-    if (nativeSelector?.options?.length) {
-      for (const opt of nativeSelector.options) {
-        addOption(opt.value, opt.textContent || opt.value);
+    const noOptions = seen.size === 0;
+    select.disabled = noOptions;
+    if (toggleBtn) toggleBtn.disabled = noOptions;
+    if (note) {
+      if (noOptions) {
+        note.hidden = false;
+        note.textContent = 'Style options are only available on supported board pages. You can still add custom themes below.';
+      } else {
+        note.hidden = true;
       }
-      if (nativeSelector.value && seen.has(nativeSelector.value)) {
-        select.value = nativeSelector.value;
+    }
+
+    const desired = Conf['siteStyle'];
+    if (desired && seen.has(desired)) {
+      select.value = desired;
+    } else if (!noOptions && select.selectedIndex < 0) {
+      select.selectedIndex = 0;
+    }
+
+    if (picker && menu && currentLabel) {
+      Settings.renderSiteStyleMenu(picker, menu, select, currentLabel, customThemes, nativeThemes);
+    }
+  },
+
+  renderSiteStyleMenu(
+    picker: HTMLElement,
+    menu: HTMLElement,
+    select: HTMLSelectElement,
+    currentLabel: HTMLElement,
+    customThemes: { name: string; css: string }[],
+    nativeThemes: string[],
+  ) {
+    while (menu.firstChild) menu.removeChild(menu.firstChild);
+    const buildItem = (value: string, label: string, removable: boolean) => {
+      const item = $.el('div', { className: 'styling-theme-item' }) as HTMLDivElement;
+      item.setAttribute('role', 'option');
+      item.dataset.value = value;
+      const labelEl = $.el('span', { className: 'styling-theme-item-label', textContent: label });
+      $.add(item, labelEl);
+      if (removable) {
+        const removeBtn = $.el('button', {
+          type: 'button',
+          className: 'styling-theme-item-remove',
+          title: 'Remove custom theme',
+          textContent: '✕',
+        }) as HTMLButtonElement;
+        removeBtn.setAttribute('aria-label', `Remove ${label}`);
+        $.on(removeBtn, 'click', (e: Event) => {
+          e.stopPropagation();
+          Settings.removeCustomSiteTheme(Settings.customSiteThemeName(value));
+        });
+        $.add(item, removeBtn);
       }
-      select.disabled = false;
-      if (note) note.hidden = true;
+      $.on(item, 'click', () => {
+        Settings.selectSiteStyleValue(select, value);
+        Settings.closeSiteStyleMenu(picker);
+      });
+      return item;
+    };
+    for (const name of nativeThemes) {
+      $.add(menu, buildItem(name, Settings.nativeSiteThemeLabel(name), false));
+    }
+    if (customThemes.length && nativeThemes.length) {
+      $.add(menu, $.el('div', { className: 'styling-theme-divider' }));
+    }
+    for (const t of customThemes) {
+      $.add(menu, buildItem(`${Settings.CUSTOM_SITE_THEME_PREFIX}${t.name}`, `Custom: ${t.name}`, true));
+    }
+    Settings.refreshSiteStyleCurrentLabel(currentLabel, select);
+  },
+
+  refreshSiteStyleCurrentLabel(label: HTMLElement, select: HTMLSelectElement) {
+    if (!label) return;
+    const value = select.value;
+    if (!value) {
+      label.textContent = '—';
       return;
     }
-
-    for (const link of $$('link[rel="alternate stylesheet"]', d.head) as HTMLLinkElement[]) {
-      const value = link.title?.trim();
-      if (!value) continue;
-      addOption(value, value);
-    }
-
-    if (seen.size === 0) {
-      select.disabled = true;
-      if (note) {
-        note.hidden = false;
-        note.textContent = 'Style options are only available on supported board pages.';
-      }
+    if (Settings.isCustomSiteThemeValue(value)) {
+      label.textContent = `Custom: ${Settings.customSiteThemeName(value)}`;
     } else {
-      select.disabled = false;
-      if (select.options.length && select.selectedIndex < 0) {
-        select.selectedIndex = 0;
-      }
-      if (note) note.hidden = true;
+      label.textContent = Settings.nativeSiteThemeLabel(value);
     }
+  },
+
+  selectSiteStyleValue(select: HTMLSelectElement, value: string) {
+    if (!value || select.value === value) {
+      // Even if same, still re-apply (helps re-select after a remove).
+    }
+    select.value = value;
+    select.dispatchEvent(new Event('change', { bubbles: true }));
+  },
+
+  openSiteStyleMenu(picker: HTMLElement) {
+    const menu = $('.styling-theme-menu', picker) as HTMLElement | null;
+    const toggle = $('.styling-theme-toggle', picker) as HTMLButtonElement | null;
+    if (!menu || !toggle) return;
+    picker.dataset.open = 'true';
+    menu.hidden = false;
+    toggle.setAttribute('aria-expanded', 'true');
+    Settings.activeSiteStylePicker = picker;
+    if (!Settings.siteStylePickerOutsideHandler) {
+      Settings.siteStylePickerOutsideHandler = (e: Event) => {
+        const target = e.target as Node | null;
+        const active = Settings.activeSiteStylePicker;
+        if (active && target && !active.contains(target)) {
+          Settings.closeSiteStyleMenu(active);
+        }
+      };
+      d.addEventListener('mousedown', Settings.siteStylePickerOutsideHandler, true);
+    }
+  },
+
+  closeSiteStyleMenu(picker: HTMLElement) {
+    const menu = $('.styling-theme-menu', picker) as HTMLElement | null;
+    const toggle = $('.styling-theme-toggle', picker) as HTMLButtonElement | null;
+    if (!menu || !toggle) return;
+    picker.dataset.open = 'false';
+    menu.hidden = true;
+    toggle.setAttribute('aria-expanded', 'false');
+    if (Settings.activeSiteStylePicker === picker) Settings.activeSiteStylePicker = null;
+  },
+
+  refreshSiteStylePickers() {
+    if (!Settings.dialog) return;
+    const section = $('.section-styling', Settings.dialog) as HTMLElement | null;
+    if (!section) return;
+    const select = $('[name="siteStyle"]', section) as HTMLSelectElement | null;
+    if (!select) return;
+    Settings.populateSiteStylePicker(section, select);
+    // Refresh the merge-mode "currently selected" label.
+    const mergeLabel = $('.styling-add-theme-merge-current', section) as HTMLElement | null;
+    if (mergeLabel) {
+      const value = select.value || Conf['siteStyle'] || '';
+      mergeLabel.textContent = !value
+        ? '—'
+        : (Settings.isCustomSiteThemeValue(value)
+          ? `Custom: ${Settings.customSiteThemeName(value)}`
+          : Settings.nativeSiteThemeLabel(value));
+    }
+  },
+
+  addCustomSiteTheme(name: string, css: string): { ok: boolean; error?: string } {
+    const trimmedName = (name || '').trim();
+    if (!trimmedName) return { ok: false, error: 'Theme name is required.' };
+    if (!css || !css.trim()) return { ok: false, error: 'Theme CSS is empty.' };
+    const list = Settings.customSiteThemeList();
+    if (list.some(t => t.name === trimmedName)) {
+      return { ok: false, error: `A custom theme named "${trimmedName}" already exists.` };
+    }
+    if (Settings.nativeSiteThemes().includes(trimmedName)) {
+      return { ok: false, error: `"${trimmedName}" conflicts with a built-in theme name.` };
+    }
+    list.push({ name: trimmedName, css });
+    Conf['customSiteThemes'] = list;
+    $.set('customSiteThemes', list);
+    Settings.refreshSiteStylePickers();
+    return { ok: true };
+  },
+
+  removeCustomSiteTheme(name: string) {
+    if (!name) return;
+    const list = Settings.customSiteThemeList().filter(t => t.name !== name);
+    Conf['customSiteThemes'] = list;
+    $.set('customSiteThemes', list);
+    const activeValue = `${Settings.CUSTOM_SITE_THEME_PREFIX}${name}`;
+    if (Conf['siteStyle'] === activeValue) {
+      // Fall back to the first available native theme (or empty).
+      const fallback = Settings.nativeSiteThemes()[0] || '';
+      Conf['siteStyle'] = fallback;
+      $.set('siteStyle', fallback);
+      if (Settings.dialog) {
+        const select = $('#fourchanx-settings [name="siteStyle"]') as HTMLSelectElement | null;
+        if (select) {
+          // Refresh first so the new option set is in the select before we dispatch.
+          Settings.refreshSiteStylePickers();
+          select.value = fallback;
+          select.dispatchEvent(new Event('change', { bubbles: true }));
+          return;
+        }
+      }
+      $.event('CustomSiteThemeChanged');
+    }
+    Settings.refreshSiteStylePickers();
+    $.event('CustomSiteThemeChanged');
   },
 
   siteStyle(this: HTMLSelectElement) {
     const style = this.value;
-    if (!style) return;
+    if (Settings.dialog) {
+      const picker = $('.styling-theme-picker', Settings.dialog) as HTMLElement | null;
+      if (picker) {
+        const label = $('.styling-theme-current', picker) as HTMLElement | null;
+        if (label) Settings.refreshSiteStyleCurrentLabel(label, this);
+      }
+    }
+    if (!style) {
+      $.event('CustomSiteThemeChanged');
+      return;
+    }
+
+    if (Settings.isCustomSiteThemeValue(style)) {
+      // Custom themes are applied by Main.setClass()/applyCustomSiteTheme().
+      $.event('CustomSiteThemeChanged');
+      if (Conf['siteStyleHome']) {
+        // Custom themes can't be applied to the home page via cookie.
+        Settings.setSiteStyleHomeCookie('');
+      }
+      return;
+    }
 
     const nativeSelector = $.id('styleSelector') as HTMLSelectElement | null;
     if (nativeSelector?.options?.length) {
@@ -2443,10 +2660,165 @@ Enable it on boards.${location.hostname.split('.')[1]}.org in your browser's pri
         nativeSelector.dispatchEvent(new Event('change', { bubbles: true }));
       }
     }
+    $.event('CustomSiteThemeChanged');
 
     if (Conf['siteStyleHome']) {
       Settings.setSiteStyleHomeCookie(style);
     }
+  },
+
+  bindSiteStylePicker(section: HTMLElement) {
+    const picker = $('.styling-theme-picker', section) as HTMLElement | null;
+    if (!picker) return;
+    const toggle = $('.styling-theme-toggle', picker) as HTMLButtonElement | null;
+    if (toggle) {
+      $.on(toggle, 'click', (e: Event) => {
+        e.preventDefault();
+        if (toggle.disabled) return;
+        if (picker.dataset.open === 'true') Settings.closeSiteStyleMenu(picker);
+        else Settings.openSiteStyleMenu(picker);
+      });
+    }
+  },
+
+  bindAddCustomTheme(section: HTMLElement) {
+    const container = $('.styling-add-theme', section) as HTMLElement | null;
+    if (!container) return;
+    const nameInput = $('.styling-add-theme-name', container) as HTMLInputElement | null;
+    const sourceSelect = $('.styling-add-theme-source-select', container) as HTMLSelectElement | null;
+    const fileInput = $('.styling-add-theme-file', container) as HTMLInputElement | null;
+    const pasteInput = $('.styling-add-theme-paste', container) as HTMLTextAreaElement | null;
+    const mergeCurrentLabel = $('.styling-add-theme-merge-current', container) as HTMLElement | null;
+    const addBtn = $('.styling-add-theme-button', container) as HTMLButtonElement | null;
+    const status = $('.styling-add-theme-status', container) as HTMLElement | null;
+    if (!nameInput || !sourceSelect || !fileInput || !pasteInput || !addBtn) return;
+    const siteStyleSelect = $('[name="siteStyle"]', section) as HTMLSelectElement | null;
+    const refreshMergeCurrent = () => {
+      if (!mergeCurrentLabel) return;
+      const value = siteStyleSelect?.value || Conf['siteStyle'] || '';
+      mergeCurrentLabel.textContent = !value
+        ? '—'
+        : (Settings.isCustomSiteThemeValue(value)
+          ? `Custom: ${Settings.customSiteThemeName(value)}`
+          : Settings.nativeSiteThemeLabel(value));
+    };
+    if (siteStyleSelect) $.on(siteStyleSelect, 'change', refreshMergeCurrent);
+    refreshMergeCurrent();
+
+    const showStatus = (msg: string, ok: boolean) => {
+      if (!status) return;
+      status.textContent = msg;
+      status.dataset.kind = ok ? 'ok' : 'error';
+      status.hidden = !msg;
+    };
+
+    const setMode = (mode: string) => {
+      for (const input of $$('.styling-add-theme-input', container) as HTMLElement[]) {
+        input.hidden = input.dataset.mode !== mode;
+      }
+    };
+
+    $.on(sourceSelect, 'change', () => {
+      setMode(sourceSelect.value);
+      showStatus('', true);
+    });
+    setMode(sourceSelect.value);
+
+    const readFileAsText = (file: File): Promise<string> =>
+      new Promise((resolve, reject) => {
+        const reader = new FileReader();
+        reader.onload = () => resolve(String(reader.result || ''));
+        reader.onerror = () => reject(reader.error || new Error('Read failed'));
+        reader.readAsText(file);
+      });
+
+    const finalize = (result: { ok: boolean; error?: string }, themeName: string) => {
+      if (!result.ok) {
+        showStatus(result.error || 'Could not add theme.', false);
+        return;
+      }
+      showStatus(`Added "${themeName}".`, true);
+      nameInput.value = '';
+      fileInput.value = '';
+      pasteInput.value = '';
+    };
+
+    $.on(addBtn, 'click', async () => {
+      const themeName = nameInput.value.trim();
+      if (!themeName) {
+        showStatus('Theme name is required.', false);
+        return;
+      }
+      const mode = sourceSelect.value;
+      try {
+        if (mode === 'file') {
+          const file = fileInput.files?.[0];
+          if (!file) {
+            showStatus('Choose a CSS file first.', false);
+            return;
+          }
+          const css = await readFileAsText(file);
+          finalize(Settings.addCustomSiteTheme(themeName, css), themeName);
+        } else if (mode === 'paste') {
+          const css = pasteInput.value;
+          if (!css.trim()) {
+            showStatus('Paste some CSS first.', false);
+            return;
+          }
+          finalize(Settings.addCustomSiteTheme(themeName, css), themeName);
+        } else if (mode === 'merge') {
+          const base = siteStyleSelect?.value || Conf['siteStyle'] || '';
+          if (!base) {
+            showStatus('Select a base theme in the Theme dropdown above first.', false);
+            return;
+          }
+          const userCSS = String(Conf['usercss'] || '');
+          if (!userCSS.trim()) {
+            showStatus('Custom CSS is empty — add CSS in the Custom CSS section below first.', false);
+            return;
+          }
+          const baseLabel = Settings.isCustomSiteThemeValue(base)
+            ? `Custom: ${Settings.customSiteThemeName(base)}`
+            : Settings.nativeSiteThemeLabel(base);
+          showStatus(`Fetching "${baseLabel}" stylesheet…`, true);
+          try {
+            const baseCSS = await Settings.fetchBaseThemeCSS(base);
+            const combined = `/* === Base theme: ${baseLabel} === */\n${baseCSS}\n\n/* === Custom CSS overrides === */\n${userCSS}\n`;
+            finalize(Settings.addCustomSiteTheme(themeName, combined), themeName);
+          } catch (err) {
+            showStatus(`Could not fetch "${baseLabel}": ${(err as Error)?.message || err}`, false);
+          }
+        }
+      } catch (err) {
+        showStatus(`Failed: ${(err as Error)?.message || err}`, false);
+      }
+    });
+  },
+
+  async fetchBaseThemeCSS(value: string): Promise<string> {
+    if (Settings.isCustomSiteThemeValue(value)) {
+      const theme = Settings.findCustomSiteTheme(Settings.customSiteThemeName(value));
+      if (!theme) throw new Error('custom theme not found in storage');
+      return String(theme.css || '');
+    }
+    // Find the <link> for the requested native theme name and read its CSS via fetch.
+    const links = $$('link[rel="alternate stylesheet"], link[rel="stylesheet"]', d.head) as HTMLLinkElement[];
+    let href: string | null = null;
+    for (const link of links) {
+      if ((link.title || '').trim() === value) { href = link.href; break; }
+    }
+    if (!href) {
+      // Fallback: native style selector may point at a script-managed sheet.
+      const selector = $.id('styleSelector') as HTMLSelectElement | null;
+      if (selector && selector.value === value) {
+        const active = $(g.SITE.selectors.styleSheet) as HTMLLinkElement | null;
+        if (active?.href) href = active.href;
+      }
+    }
+    if (!href) throw new Error('stylesheet URL not found');
+    const res = await fetch(href, { credentials: 'omit' });
+    if (!res.ok) throw new Error(`HTTP ${res.status}`);
+    return await res.text();
   },
 
   siteStyleHome(this: HTMLInputElement) {
@@ -2605,6 +2977,7 @@ Enable it on boards.${location.hostname.split('.')[1]}.org in your browser's pri
       'customCSSHome',
       'siteStyle',
       'siteStyleHome',
+      'customSiteThemes',
       'Enable Thread Highlights',
       'Enable Catalog Highlights',
       'textColorMode',
@@ -2660,7 +3033,6 @@ Enable it on boards.${location.hostname.split('.')[1]}.org in your browser's pri
       'Scroll Marker Unread Opacity',
       ...stylingOnlyKeys,
       'settings.customCSSEditorTheme',
-      'settings.customCSSEditorExpandedHeight',
       'settings.customCSSEditorExpanded'
     ];
 
@@ -3163,22 +3535,22 @@ Enable it on boards.${location.hostname.split('.')[1]}.org in your browser's pri
     Settings.advancedFilter(advancedPanel, previewState);
     Settings.easyFilters(simplePanel, previewState);
     $.add(advancedPanel, previewPanel);
-
-    const simpleDetails = $.el('details',
+    const details = $.el('details',
       { open: true },
-      { innerHTML: '<summary>Simple Rules</summary>' }) as HTMLDetailsElement;
-    const advancedDetails = $.el('details',
-      { open: false },
-      { innerHTML: '<summary>Advanced Rules</summary>' }) as HTMLDetailsElement;
-    $.add(simpleDetails, simplePanel);
-    $.add(advancedDetails, advancedPanel);
+      { innerHTML: '<summary>Filtering Rules</summary>' }) as HTMLDetailsElement;
+    const subnav = $.el('div', { className: 'settings-subnav' }) as HTMLDivElement;
+    const simpleModePanel = $.el('div', { className: 'filter-mode-panel filter-mode-simple' }) as HTMLDivElement;
+    const advancedModePanel = $.el('div', { className: 'filter-mode-panel filter-mode-advanced', hidden: true }) as HTMLDivElement;
+    $.add(simpleModePanel, simplePanel);
+    $.add(advancedModePanel, advancedPanel);
+    $.add(details, [subnav, simpleModePanel, advancedModePanel]);
+    $.add(section, details);
 
-    $.add(section, [simpleDetails, advancedDetails]);
-
-    const detailsByMode = {
-      simple: simpleDetails,
-      advanced: advancedDetails
-    } as Record<string, HTMLDetailsElement>;
+    const panelByMode = {
+      simple: simpleModePanel,
+      advanced: advancedModePanel,
+    } as Record<string, HTMLDivElement>;
+    const tabByMode = {} as Record<string, HTMLButtonElement>;
     const applyForcedFilterType = () => {
       if (!Settings.forcedFilterType) return;
       const select = $('select[name=filter]', advancedPanel) as (HTMLSelectElement & { filterPreviewState?: any }) | null;
@@ -3188,49 +3560,38 @@ Enable it on boards.${location.hostname.split('.')[1]}.org in your browser's pri
       select.value = forceType;
       Settings.selectFilter.call(select);
     };
-    const filteringSectionInfo = { title: 'Filtering' } as any;
-    const hasRememberedAccordionState = () => {
-      if (!Settings.rememberLayout) return false;
-      for (const details of Object.values(detailsByMode)) {
-        const key = Settings.detailsStateKey(details, filteringSectionInfo);
-        if (!key) continue;
-        if (Object.prototype.hasOwnProperty.call(Settings.detailsState, key)) return true;
+    const setMode = (mode: string) => {
+      if (!panelByMode[mode]) mode = 'simple';
+      for (const key in panelByMode) {
+        panelByMode[key].hidden = key !== mode;
+        if (tabByMode[key]) {
+          tabByMode[key].classList.toggle('settings-subnav-tab-selected', key === mode);
+          tabByMode[key].setAttribute('aria-pressed', key === mode ? 'true' : 'false');
+        }
       }
-      return false;
-    };
-    let syncing = false;
-    const openMode = (mode: string) => {
-      syncing = true;
-      for (const key in detailsByMode) {
-        detailsByMode[key].open = key === mode;
-      }
-      syncing = false;
       if (mode === 'advanced') applyForcedFilterType();
       $.set('settings.filtersMode', mode);
       Settings.refreshCombinedFilterPreview(previewState);
     };
-
-    for (const [mode, details] of Object.entries(detailsByMode)) {
-      $.on(details, 'toggle', function() {
-        if (syncing || !this.open) return;
-        openMode(mode);
-      });
-    }
+    const addModeTab = (mode: string, label: string) => {
+      const tab = $.el('button', {
+        type: 'button',
+        className: 'settings-subnav-tab',
+        textContent: label,
+      }) as HTMLButtonElement;
+      tabByMode[mode] = tab;
+      $.on(tab, 'click', () => setMode(mode));
+      $.add(subnav, tab);
+    };
+    addModeTab('simple', 'Simple');
+    addModeTab('advanced', 'Advanced');
 
     $.get('settings.filtersMode', 'simple', (item) => {
-      if (hasRememberedAccordionState()) {
-        if (Settings.forcedFiltersMode && detailsByMode[Settings.forcedFiltersMode]) {
-          openMode(Settings.forcedFiltersMode);
-          Settings.forcedFiltersMode = null;
-        } else {
-          Settings.refreshCombinedFilterPreview(previewState);
-        }
-        return;
-      }
       let mode = Settings.forcedFiltersMode || item['settings.filtersMode'];
       Settings.forcedFiltersMode = null;
       if (!['simple', 'advanced'].includes(mode)) mode = 'simple';
-      openMode(mode);
+      if (mode === 'advanced') details.open = true;
+      setMode(mode);
     });
   },
 
@@ -4304,6 +4665,18 @@ Enable it on boards.${location.hostname.split('.')[1]}.org in your browser's pri
     e.preventDefault();
     e.stopPropagation();
     const key = Keybinds.keyCode(e);
+    if (this.name === 'Watch (catalog click)') {
+      if (key === '') { // backspace clears
+        this.value = '';
+        $.cb.value.call(this);
+        return;
+      }
+      const mods = Keybinds.modifierString(e);
+      if (!mods) return; // ignore unmodified keys for this modifier-only field
+      this.value = mods;
+      $.cb.value.call(this);
+      return;
+    }
     if (key == null) return; // empty string is backspace
     this.value = key;
     $.cb.value.call(this);

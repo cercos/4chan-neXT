@@ -232,6 +232,23 @@
   border-left: 3px dotted var(--xt-highlight-ghost, #888);
   background-color: color-mix(in srgb, var(--xt-highlight-ghost, transparent) calc(var(--xt-highlight-ghost-opacity, 1) * 100%), transparent);
 }
+/* When a highlight color is explicitly configured, force it with !important so
+   custom site themes that use `!important` on `.reply` can't suppress it. */
+:root.xt-set-you-highlight.highlight-you .quotesYou$site$highlightable$op,
+:root.xt-set-you-highlight.highlight-you .quotesYou$site$highlightable$reply {
+  border-left: 3px solid var(--xt-highlight-you) !important;
+  background-color: color-mix(in srgb, var(--xt-highlight-you) calc(var(--xt-highlight-you-opacity, 1) * 100%), transparent) !important;
+}
+:root.xt-set-own-highlight.highlight-own .yourPost$site$highlightable$op,
+:root.xt-set-own-highlight.highlight-own .yourPost$site$highlightable$reply {
+  border-left: 3px dashed var(--xt-highlight-own) !important;
+  background-color: color-mix(in srgb, var(--xt-highlight-own) calc(var(--xt-highlight-own-opacity, 1) * 100%), transparent) !important;
+}
+:root.xt-set-ghost-highlight.highlight-ghost .from-archive$site$highlightable$op,
+:root.xt-set-ghost-highlight.highlight-ghost .from-archive$site$highlightable$reply {
+  border-left: 3px dotted var(--xt-highlight-ghost) !important;
+  background-color: color-mix(in srgb, var(--xt-highlight-ghost) calc(var(--xt-highlight-ghost-opacity, 1) * 100%), transparent) !important;
+}
 .filter-highlight$site$highlightable$op,
 .filter-highlight$site$highlightable$reply {
   box-shadow: inset 5px 0 var(--xt-filter-highlight, rgba(221, 0, 0, .5));
@@ -285,28 +302,26 @@
 :root.xt-highlight-catalog-own .catalog-thread > .catalog-container.yourPost .post.catalog-post .postMessage {
   background: transparent !important;
 }
-:root.xt-highlight-catalog-watched .catalog-thread.watched {
-  background: color-mix(in srgb, var(--xt-catalog-watched-highlight, transparent) calc(var(--xt-catalog-watched-highlight-opacity, 1) * 100%), transparent) !important;
+:root.xt-highlight-catalog-watched .catalog-thread.watched:not(:has(.yourPost)),
+:root.xt-highlight-catalog-watched .catalog-thread.watched:not(:has(.yourPost)) > .catalog-container,
+:root.xt-highlight-catalog-watched .catalog-thread.watched:not(:has(.yourPost)) .post.catalog-post {
+  background: color-mix(in srgb, var(--xt-catalog-watched-highlight, var(--xt-watched-border, rgba(255, 0, 0, .75))) calc(var(--xt-catalog-watched-highlight-opacity, 0.2) * 100%), transparent) !important;
 }
-:root.xt-highlight-catalog-watched .catalog-thread.watched > .catalog-container,
-:root.xt-highlight-catalog-watched .catalog-thread.watched .post.catalog-post {
-  background: color-mix(in srgb, var(--xt-catalog-watched-highlight, transparent) calc(var(--xt-catalog-watched-highlight-opacity, 1) * 100%), transparent) !important;
-}
-:root.xt-highlight-catalog-watched .catalog-thread.watched .catalog-post {
+:root.xt-highlight-catalog-watched .catalog-thread.watched:not(:has(.yourPost)) .catalog-post {
   border: 2px solid color-mix(in srgb, var(--xt-catalog-watched-highlight, var(--xt-watched-border, rgba(255, 0, 0, .75))) calc(var(--xt-catalog-watched-highlight-opacity, 1) * 100%), transparent);
   color: var(--xt-catalog-watched-text, var(--xt-text-color)) !important;
 }
-:root.xt-highlight-catalog-watched .catalog-thread.watched .post.catalog-post a {
+:root.xt-highlight-catalog-watched .catalog-thread.watched:not(:has(.yourPost)) .post.catalog-post a {
   color: var(--xt-catalog-watched-link, var(--xt-link-text-color)) !important;
 }
-:root.xt-highlight-catalog-watched .catalog-thread.watched .post.catalog-post .quote {
+:root.xt-highlight-catalog-watched .catalog-thread.watched:not(:has(.yourPost)) .post.catalog-post .quote {
   color: var(--xt-catalog-watched-quote, var(--xt-quote-text-color)) !important;
 }
-:root.xt-highlight-catalog-watched .catalog-thread.watched .post.catalog-post .deadlink {
+:root.xt-highlight-catalog-watched .catalog-thread.watched:not(:has(.yourPost)) .post.catalog-post .deadlink {
   color: var(--xt-catalog-watched-dead-link, var(--xt-dead-link-text-color, var(--xt-dead-link))) !important;
 }
-:root.xt-highlight-catalog-watched .catalog-thread.watched .post.catalog-post > *,
-:root.xt-highlight-catalog-watched .catalog-thread.watched .post.catalog-post .postMessage {
+:root.xt-highlight-catalog-watched .catalog-thread.watched:not(:has(.yourPost)) .post.catalog-post > *,
+:root.xt-highlight-catalog-watched .catalog-thread.watched:not(:has(.yourPost)) .post.catalog-post .postMessage {
   background: transparent !important;
 }
 

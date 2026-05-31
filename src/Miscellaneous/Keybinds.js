@@ -8,6 +8,7 @@ import Header from "../General/Header";
 import Index from "../General/Index";
 import Settings from "../General/Settings";
 import { Conf, d, g } from "../globals/globals";
+import DownloadAll from "../Images/DownloadAll";
 import FappeTyme from "../Images/FappeTyme";
 import Gallery from "../Images/Gallery";
 import ImageExpand from "../Images/ImageExpand";
@@ -196,6 +197,10 @@ var Keybinds = {
       Gallery.cb.toggle();
       hasAction = true;
     }
+    if (key === Conf['Download all media'] && Conf['Download All Media'] && ['thread', 'index', 'catalog'].includes(g.VIEW)) {
+      DownloadAll.cb.open();
+      hasAction = true;
+    }
     if (key === Conf['fappeTyme'] && FappeTyme.nodes?.fappe) {
       FappeTyme.toggle('fappe');
       hasAction = true;
@@ -368,6 +373,15 @@ var Keybinds = {
       if (e.shiftKey) { key = 'Shift+' + key; }
     }
     return key;
+  },
+
+  modifierString(e) {
+    const parts = [];
+    if (e.altKey)   { parts.push('Alt'); }
+    if (e.ctrlKey)  { parts.push('Ctrl'); }
+    if (e.metaKey)  { parts.push('Meta'); }
+    if (e.shiftKey) { parts.push('Shift'); }
+    return parts.join('+');
   },
 
   post(thread) {

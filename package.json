@@ -103,7 +103,8 @@
     "rollup": "^4.27.3",
     "rollup-plugin-cleanup": "^3.2.1",
     "tslib": "^2.8.1",
-    "typescript": "^5.6.3"
+    "typescript": "^5.6.3",
+    "http-server": "^14.1.1"
   },
   "repository": {
     "type": "git",
@@ -133,6 +134,7 @@
     "build:userscript:min": "node ./tools/rollup -min -platform=userscript",
     "build:crx:min": "node ./tools/rollup -min -platform=crx",
     "build:crxp": "npm run build:crx && bash ./tools/pack-crx.sh",
-    "build:all": "node ./tools/rollup -min -platform=userscript && node ./tools/rollup -platform=userscript && node ./tools/rollup -platform=crx"
+    "build:all": "node ./tools/rollup -min -platform=userscript && node ./tools/rollup -platform=userscript && node ./tools/rollup -platform=crx",
+    "serve:8123": "http-server . -p 8123 -c-1"
   }
 }

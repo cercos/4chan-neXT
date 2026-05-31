@@ -1,5 +1,5 @@
 /**
- * Lightweight, zero-dependency video container patchers to remove audio tracks and metadata.
+ * Lightweight, zero-dependency video container patchers to remove audio tracks.
  * Modifies the underlying ArrayBuffer in-place.
  */
 export class VideoStripper {
@@ -21,26 +21,6 @@ export class VideoStripper {
       }
     } catch (error) {
       console.warn('Failed to strip audio from video:', error);
-    }
-    return file;
-  }
-
-  static async stripMetadata(file: File): Promise<File> {
-    try {
-      const buffer = await file.arrayBuffer();
-      const uint8 = new Uint8Array(buffer);
-      const view = new DataView(buffer);
-
-      let patched = false;
-      if (file.type === 'video/mp4' || file.name.toLowerCase().endsWith('.mp4')) {
-        patched = this.stripMp4Metadata(uint8, view);
-      }
-
-      if (patched) {
-        return new File([buffer], file.name, { type: file.type });
-      }
-    } catch (error) {
-      console.warn('Failed to strip metadata from video:', error);
     }
     return file;
   }
@@ -238,57 +218,4 @@ export class VideoStripper {
     return stripped;
   }
 
-  private static stripMp4Metadata(uint8: Uint8Array, view: DataView): boolean {
-    const utf8Decoder = new TextDecoder('utf8');
-    const removable = new Set(['udta', 'meta', 'ilst']);
-    const containers = new Set([
-      'moov', 'trak', 'mdia', 'minf', 'stbl', 'edts', 'dinf', 'mvex', 'moof', 'traf', 'mfra', 'skip'
-    ]);
-
-    let stripped = false;
-    const ranges = [{ start: 0, end: uint8.length }];
-
-    while (ranges.length) {
-      const range = ranges.pop();
-      let offset = range.start;
-      while (offset + 8 <= range.end) {
-        let size = view.getUint32(offset, false);
-        let boxOffset = offset;
-
-        if (size === 1) {
-          if (offset + 16 > range.end) { break; }
-          // 64-bit size; lower 32 bits are enough for the sizes we handle here.
-          size = view.getUint32(offset + 12, false);
-          boxOffset += 8;
-        } else if (size === 0) {
-          size = range.end - offset;
-        }
-
-        if (size < 8) { break; }
-        const boxEnd = offset + size;
-        if (boxEnd > range.end) { break; }
-
-        const type = utf8Decoder.decode(uint8.subarray(boxOffset + 4, boxOffset + 8));
-        if (removable.has(type)) {
-          uint8[boxOffset + 4] = 0x66; // f
-          uint8[boxOffset + 5] = 0x72; // r
-          uint8[boxOffset + 6] = 0x65; // e
-          uint8[boxOffset + 7] = 0x65; // e
-          stripped = true;
-        } else if (containers.has(type)) {
-          let childOffset = boxOffset + 8;
-          if (type === 'meta') {
-            childOffset += 4; // FullBox version/flags
-          }
-          if (childOffset + 8 <= boxEnd) {
-            ranges.push({ start: childOffset, end: boxEnd });
-          }
-        }
-
-        offset = boxEnd;
-      }
-    }
-
-    return stripped;
-  }
 }

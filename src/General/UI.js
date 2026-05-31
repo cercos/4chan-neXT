@@ -102,7 +102,9 @@ var Menu = (function() {
       $.on(d, 'click CloseMenu', this.close);
       $.on(d, 'scroll', this.setPosition);
       $.on(window, 'resize', this.setPosition);
-      $.after(button, menu);
+      // Append to body so the menu escapes any ancestor stacking context
+      // (e.g. #thread-watcher's position:fixed/z-index:5).
+      $.add(d.body, menu);
 
       this.setPosition();
 

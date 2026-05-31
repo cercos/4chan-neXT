@@ -279,6 +279,20 @@ const Config = {
         true,
         'Adds a simple and cute image gallery. Has more options in the gallery menu.'
       ],
+      'Download All Media': [
+        true,
+        'Adds a header shortcut and menu entry to download all images/videos in the current thread/index.'
+      ],
+      'Download All as ZIP': [
+        true,
+        'Bundle "Download all media" downloads into a single ZIP archive instead of saving each file individually.',
+        1
+      ],
+      'Persistent Download Media': [
+        false,
+        'Keep the "Download all media" dialog open across page loads.',
+        1
+      ],
       'Fullscreen Gallery': [
         false,
         'Open gallery in fullscreen mode.',
@@ -575,6 +589,11 @@ const Config = {
         'Remember the spoiler state, instead of resetting after posting.',
         1
       ],
+      'QR Thumbnail Remove File First': [
+        true,
+        'In Quick Reply thumbnails, first click on Remove clears the file, second click removes the post. Disable for single-click post removal.',
+        1
+      ],
       'Randomize Filename': [
         false,
         'Set the filename to a random timestamp within the past year. Disabled on /f/.',
@@ -637,31 +656,6 @@ const Config = {
         true,
         'Remove audio from MP4 and WebM uploads in Quick Reply on boards that do not allow audio.',
         1
-      ],
-      'Strip All Media Metadata': [
-        false,
-        'Strip metadata from all uploaded media in Quick Reply, regardless of type.',
-        1
-      ],
-      'Image Metadata': [
-        true,
-        'Strip metadata from image uploads in Quick Reply when "Strip All Media Metadata" is disabled.',
-        2
-      ],
-      'Video Metadata': [
-        true,
-        'Strip metadata from video uploads in Quick Reply when "Strip All Media Metadata" is disabled.',
-        2
-      ],
-      'Audio Metadata': [
-        false,
-        'Strip metadata from audio uploads in Quick Reply when "Strip All Media Metadata" is disabled.',
-        2
-      ],
-      'Other Metadata': [
-        false,
-        'Strip metadata from non-image/video/audio uploads in Quick Reply when "Strip All Media Metadata" is disabled and supported in-browser.',
-        2
       ],
       'Comment Preview': [
         false,
@@ -987,6 +981,7 @@ http://eye.swfchan.com/search/?q=%name;types:swf
   customCSSHome: false,
   siteStyle: '',
   siteStyleHome: false,
+  customSiteThemes: [],
   textColorMode: 'auto',
   'Text Color': '',
   'Link Text Color': '',
@@ -1183,6 +1178,10 @@ current-archive-text:"Archive"]
       'w',
       'Watch thread.'
     ],
+    'Watch (catalog click)': [
+      'Ctrl+Shift',
+      'Modifier keys to hold while clicking a catalog thread to watch/unwatch it. Leave empty to disable.'
+    ],
     'Update': [
       'r',
       'Update the thread / refresh the index.'
@@ -1247,6 +1246,10 @@ current-archive-text:"Archive"]
     'Download Gallery Image': [
       'Shift+j',
       'Download current image in gallery.'
+    ],
+    'Download all media': [
+      'Shift+d',
+      'Download all media in the current thread/index.'
     ],
     'fappeTyme': [
       'f',
@@ -1397,7 +1400,8 @@ current-archive-text:"Archive"]
     'thread-stats.position':   'bottom: 0px; right: 0px;',
     'updater.position':        'bottom: 0px; left: 0px;',
     'thread-watcher.position': 'top: 50px; left: 0px;',
-    'qr.position':             'top: 50px; right: 0px;'
+    'qr.position':             'top: 50px; right: 0px;',
+    'download-all-picker.position': 'top: 100px; right: 60px;'
   },
 
   fourchanImageHost: 'i.4cdn.org',

@@ -2,12 +2,42 @@
   <summary>Site Style</summary>
   <div class="styling-theme-row">
     <label>Theme:
-      <select name="siteStyle">
-      </select>
+      <span class="styling-theme-picker" data-open="false">
+        <button type="button" class="styling-theme-toggle" aria-haspopup="listbox" aria-expanded="false">
+          <span class="styling-theme-current">&mdash;</span>
+          <span class="styling-theme-caret" aria-hidden="true">&#9662;</span>
+        </button>
+        <div class="styling-theme-menu" role="listbox" hidden></div>
+        <select name="siteStyle" hidden></select>
+      </span>
     </label>
     <label><input type="checkbox" name="siteStyleHome"> Apply on home page</label>
   </div>
   <div id="styling-site-style-note" class="note" hidden></div>
+  <div class="styling-add-theme">
+    <div class="styling-group-label">Add custom theme</div>
+    <div class="styling-add-theme-row">
+      <input type="text" class="styling-add-theme-name" placeholder="Theme name" maxlength="60">
+      <label class="styling-add-theme-source">Source:
+        <select class="styling-add-theme-source-select">
+          <option value="file">CSS file</option>
+          <option value="paste">Paste CSS</option>
+          <option value="merge">Merge Custom CSS + base theme</option>
+        </select>
+      </label>
+      <button type="button" class="styling-add-theme-button">Add</button>
+    </div>
+    <div class="styling-add-theme-input" data-mode="file">
+      <input type="file" class="styling-add-theme-file" accept=".css,text/css">
+    </div>
+    <div class="styling-add-theme-input" data-mode="paste" hidden>
+      <textarea class="styling-add-theme-paste" rows="4" spellcheck="false" wrap="off" placeholder="Paste CSS here"></textarea>
+    </div>
+    <div class="styling-add-theme-input" data-mode="merge" hidden>
+      <p class="note">Combines the current Custom CSS with the currently selected theme (<span class="styling-add-theme-merge-current">—</span>) into a new entry.</p>
+    </div>
+    <div class="styling-add-theme-status" hidden></div>
+  </div>
 </details>
 
 <details open>
@@ -205,8 +235,11 @@
 
 <details open>
   <summary>Custom CSS</summary>
-  <div><label><input type="checkbox" name="Custom CSS"> Enable Custom CSS</label></div>
-  <div><label><input type="checkbox" name="customCSSHome"> Load on home page</label></div>
+  <div class="custom-css-toggle-row">
+    <label><input type="checkbox" name="Custom CSS"> Enable Custom CSS</label>
+    <label><input type="checkbox" name="customCSSHome"> Load on home page</label>
+  </div>
+  <div class="custom-css-note note">Custom CSS can override configured highlight colors.</div>
   <div>For more information about customizing 4chan X&#039;s CSS, see the <a href="<%= meta.cssGuide %>" target="_blank">styling guide</a>.</div>
   <button id="apply-css">Apply CSS</button>
   <div class="custom-css-controls">
@@ -216,13 +249,6 @@
         <option value="xt-light">Light</option>
         <option value="xt-dark">Dark</option>
         <option value="xt-solarized">Solarized</option>
-      </select>
-    </label>
-    <label>Expanded height:
-      <select id="custom-css-expanded-height">
-        <option value="400">400px</option>
-        <option value="500" selected>500px</option>
-        <option value="700">700px</option>
       </select>
     </label>
     <button type="button" id="custom-css-expand" data-expanded="false">Expand editor</button>

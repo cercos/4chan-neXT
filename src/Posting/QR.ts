@@ -2105,7 +2105,15 @@ class post {
     };
 
     $.on(el, 'click', this.select);
-    $.on(this.nodes.rm, 'click', e => { e.stopPropagation(); this.rm(); });
+    $.on(this.nodes.rm, 'click', e => {
+      e.stopPropagation();
+      if (!QR.posts.includes(this)) { return; }
+      if (Conf['QR Thumbnail Remove File First'] && this.file) {
+        this.rmFile();
+      } else {
+        this.rm();
+      }
+    });
     $.on(this.nodes.spoiler, 'change', e => {
       this.spoiler = e.target.checked;
       if (this === QR.selected) { QR.nodes.spoiler.checked = this.spoiler; }

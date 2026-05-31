@@ -15,6 +15,7 @@ import Recursive from "../Filtering/Recursive";
 import ThreadHiding from "../Filtering/ThreadHiding";
 import Index from "../General/Index";
 import Settings from "../General/Settings";
+import DownloadAll from "../Images/DownloadAll";
 import FappeTyme from "../Images/FappeTyme";
 import Gallery from "../Images/Gallery";
 import ImageExpand from "../Images/ImageExpand";
@@ -319,6 +320,10 @@ var Main = {
       usercss: '',
     };
     ($.getSync || $.get)(defaults, (items) => {
+      // Custom themes don't apply to the home page via 4chan's style cookie.
+      if (typeof items.siteStyle === 'string' && items.siteStyle.startsWith('custom:')) {
+        items.siteStyle = '';
+      }
       const normalizedStyle = Main.normalizeSiteStyle(items.siteStyle);
       if (items.siteStyleHome && normalizedStyle) {
         // Persist 4chan's own theme cookie so future homepage requests render
@@ -503,10 +508,59 @@ var Main = {
   setClass() {
     let mainStyleSheet, style, styleSheets;
     const knownStyles = ['yotsuba', 'yotsuba-b', 'futaba', 'burichan', 'photon', 'tomorrow', 'spooky'];
+    const customPrefix = 'custom:';
+    const isCustomSiteStyle = (v) => typeof v === 'string' && v.startsWith(customPrefix);
+    const findCustomTheme = (value) => {
+      if (!isCustomSiteStyle(value)) return null;
+      const name = value.slice(customPrefix.length);
+      const list = Array.isArray(Conf['customSiteThemes']) ? Conf['customSiteThemes'] : [];
+      return list.find(t => t && t.name === name) || null;
+    };
+    const applyCustomTheme = (theme) => {
+      if (!theme) {
+        if (Main.customSiteThemeStyle) {
+          $.rm(Main.customSiteThemeStyle);
+          delete Main.customSiteThemeStyle;
+        }
+        if (mainStyleSheet && mainStyleSheet.disabled) {
+          mainStyleSheet.disabled = false;
+        }
+        $.rmClass(doc, 'xt-custom-site-theme');
+        return false;
+      }
+      // Strip any built-in theme class so the custom CSS owns the look.
+      for (const cls of knownStyles) $.rmClass(doc, cls);
+      style = null;
+      if (mainStyleSheet) mainStyleSheet.disabled = true;
+      if (!Main.customSiteThemeStyle) {
+        Main.customSiteThemeStyle = $.el('style', { id: 'xt-custom-site-theme-css' });
+      }
+      Main.customSiteThemeStyle.textContent = String(theme.css || '');
+      // Insert before fourchanx-css so 4chan-X rules (highlights, etc.) win,
+      // mirroring how native themes (<link> in head) sit before fourchanx-css.
+      const anchor = $.id('fourchanx-css');
+      if (anchor && anchor.parentNode) {
+        anchor.parentNode.insertBefore(Main.customSiteThemeStyle, anchor);
+      } else if (d.head) {
+        $.add(d.head, Main.customSiteThemeStyle);
+      }
+      $.addClass(doc, 'xt-custom-site-theme');
+      Settings.applyStylingVars();
+      return true;
+    };
     let preferredStyleApplied = false;
     const applyPreferredStyle = function() {
       if (preferredStyleApplied || g.SITE.software !== 'yotsuba' || !Conf['siteStyle']) { return; }
       const preferred = Conf['siteStyle'];
+
+      if (isCustomSiteStyle(preferred)) {
+        const theme = findCustomTheme(preferred);
+        if (theme) {
+          applyCustomTheme(theme);
+          preferredStyleApplied = true;
+        }
+        return;
+      }
 
       const styleSelector = $.id('styleSelector');
       if (styleSelector?.options?.length) {
@@ -548,8 +602,23 @@ var Main = {
 
     const setStyle = function() {
       let activeStyleTitle = null;
+      let customThemeApplied = false;
+      // Custom themes win: disable the native sheet and inject the user CSS.
+      if (g.SITE.software === 'yotsuba' && isCustomSiteStyle(Conf['siteStyle'])) {
+        const theme = findCustomTheme(Conf['siteStyle']);
+        if (theme) {
+          $.rmClass(doc, style);
+          if (applyCustomTheme(theme)) {
+            preferredStyleApplied = true;
+            customThemeApplied = true;
+          }
+        }
+      } else {
+        // Re-enable native sheet and tear down any leftover custom theme.
+        applyCustomTheme(null);
+      }
       // Use preconfigured CSS for 4chan's default themes.
-      if (g.SITE.software === 'yotsuba') {
+      if (g.SITE.software === 'yotsuba' && !customThemeApplied) {
         $.rmClass(doc, style);
         style = null;
         for (var styleSheet of styleSheets) {
@@ -561,7 +630,7 @@ var Main = {
             break;
           }
         }
-        if (activeStyleTitle && (Conf['siteStyle'] !== activeStyleTitle)) {
+        if (activeStyleTitle && !isCustomSiteStyle(Conf['siteStyle']) && (Conf['siteStyle'] !== activeStyleTitle)) {
           Conf['siteStyle'] = activeStyleTitle;
           $.set('siteStyle', activeStyleTitle);
           if (Conf['siteStyleHome']) {
@@ -616,6 +685,8 @@ var Main = {
         const syncSiteStyle = function() {
           const selected = styleSelector.value;
           if (!selected) { return; }
+          // Don't clobber a custom theme selection with the native dropdown's value.
+          if (isCustomSiteStyle(Conf['siteStyle'])) { return; }
           if (Conf['siteStyle'] !== selected) {
             Conf['siteStyle'] = selected;
             $.set('siteStyle', selected);
@@ -633,6 +704,11 @@ var Main = {
         attributeFilter: ['href']
       });
       $.on(mainStyleSheet, 'load', setStyle);
+      // Re-run setStyle when the user adds, removes, or switches a custom theme.
+      $.on(d, 'CustomSiteThemeChanged', () => {
+        preferredStyleApplied = false;
+        setStyle();
+      });
       return setStyle();
     });
     if (!mainStyleSheet) {
@@ -1112,6 +1188,8 @@ User agent: ${navigator.userAgent}\
     ['Fappe Tyme',                FappeTyme],
     ['Gallery',                   Gallery],
     ['Gallery (menu)',            Gallery.menu],
+    ['Download All Media',        DownloadAll],
+    ['Download All Media (menu)', DownloadAll.menu],
     ['Sauce',                     Sauce],
     ['Image Expansion',           ImageExpand],
     ['Image Expansion (Menu)',    ImageExpand.menu],

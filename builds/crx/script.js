@@ -497,6 +497,20 @@ div.boardTitle {
           true,
           'Adds a simple and cute image gallery. Has more options in the gallery menu.'
         ],
+        'Download All Media': [
+          true,
+          'Adds a header shortcut and menu entry to download all images/videos in the current thread/index.'
+        ],
+        'Download All as ZIP': [
+          true,
+          'Bundle "Download all media" downloads into a single ZIP archive instead of saving each file individually.',
+          1
+        ],
+        'Persistent Download Media': [
+          false,
+          'Keep the "Download all media" dialog open across page loads.',
+          1
+        ],
         'Fullscreen Gallery': [
           false,
           'Open gallery in fullscreen mode.',
@@ -793,6 +807,11 @@ div.boardTitle {
           'Remember the spoiler state, instead of resetting after posting.',
           1
         ],
+        'QR Thumbnail Remove File First': [
+          true,
+          'In Quick Reply thumbnails, first click on Remove clears the file, second click removes the post. Disable for single-click post removal.',
+          1
+        ],
         'Randomize Filename': [
           false,
           'Set the filename to a random timestamp within the past year. Disabled on /f/.',
@@ -855,31 +874,6 @@ div.boardTitle {
           true,
           'Remove audio from MP4 and WebM uploads in Quick Reply on boards that do not allow audio.',
           1
-        ],
-        'Strip All Media Metadata': [
-          false,
-          'Strip metadata from all uploaded media in Quick Reply, regardless of type.',
-          1
-        ],
-        'Image Metadata': [
-          true,
-          'Strip metadata from image uploads in Quick Reply when "Strip All Media Metadata" is disabled.',
-          2
-        ],
-        'Video Metadata': [
-          true,
-          'Strip metadata from video uploads in Quick Reply when "Strip All Media Metadata" is disabled.',
-          2
-        ],
-        'Audio Metadata': [
-          false,
-          'Strip metadata from audio uploads in Quick Reply when "Strip All Media Metadata" is disabled.',
-          2
-        ],
-        'Other Metadata': [
-          false,
-          'Strip metadata from non-image/video/audio uploads in Quick Reply when "Strip All Media Metadata" is disabled and supported in-browser.',
-          2
         ],
         'Comment Preview': [
           false,
@@ -1205,6 +1199,7 @@ http://eye.swfchan.com/search/?q=%name;types:swf
     customCSSHome: false,
     siteStyle: '',
     siteStyleHome: false,
+    customSiteThemes: [],
     textColorMode: 'auto',
     'Text Color': '',
     'Link Text Color': '',
@@ -1401,6 +1396,10 @@ current-archive-text:"Archive"]
         'w',
         'Watch thread.'
       ],
+      'Watch (catalog click)': [
+        'Ctrl+Shift',
+        'Modifier keys to hold while clicking a catalog thread to watch/unwatch it. Leave empty to disable.'
+      ],
       'Update': [
         'r',
         'Update the thread / refresh the index.'
@@ -1465,6 +1464,10 @@ current-archive-text:"Archive"]
       'Download Gallery Image': [
         'Shift+j',
         'Download current image in gallery.'
+      ],
+      'Download all media': [
+        'Shift+d',
+        'Download all media in the current thread/index.'
       ],
       'fappeTyme': [
         'f',
@@ -1615,7 +1618,8 @@ current-archive-text:"Archive"]
       'thread-stats.position':   'bottom: 0px; right: 0px;',
       'updater.position':        'bottom: 0px; left: 0px;',
       'thread-watcher.position': 'top: 50px; left: 0px;',
-      'qr.position':             'top: 50px; right: 0px;'
+      'qr.position':             'top: 50px; right: 0px;',
+      'download-all-picker.position': 'top: 100px; right: 60px;'
     },
 
     fourchanImageHost: 'i.4cdn.org',
@@ -3026,12 +3030,42 @@ current-archive-text:"Archive"]
   <summary>Site Style</summary>
   <div class="styling-theme-row">
     <label>Theme:
-      <select name="siteStyle">
-      </select>
+      <span class="styling-theme-picker" data-open="false">
+        <button type="button" class="styling-theme-toggle" aria-haspopup="listbox" aria-expanded="false">
+          <span class="styling-theme-current">&mdash;</span>
+          <span class="styling-theme-caret" aria-hidden="true">&#9662;</span>
+        </button>
+        <div class="styling-theme-menu" role="listbox" hidden></div>
+        <select name="siteStyle" hidden></select>
+      </span>
     </label>
     <label><input type="checkbox" name="siteStyleHome"> Apply on home page</label>
   </div>
   <div id="styling-site-style-note" class="note" hidden></div>
+  <div class="styling-add-theme">
+    <div class="styling-group-label">Add custom theme</div>
+    <div class="styling-add-theme-row">
+      <input type="text" class="styling-add-theme-name" placeholder="Theme name" maxlength="60">
+      <label class="styling-add-theme-source">Source:
+        <select class="styling-add-theme-source-select">
+          <option value="file">CSS file</option>
+          <option value="paste">Paste CSS</option>
+          <option value="merge">Merge Custom CSS + base theme</option>
+        </select>
+      </label>
+      <button type="button" class="styling-add-theme-button">Add</button>
+    </div>
+    <div class="styling-add-theme-input" data-mode="file">
+      <input type="file" class="styling-add-theme-file" accept=".css,text/css">
+    </div>
+    <div class="styling-add-theme-input" data-mode="paste" hidden>
+      <textarea class="styling-add-theme-paste" rows="4" spellcheck="false" wrap="off" placeholder="Paste CSS here"></textarea>
+    </div>
+    <div class="styling-add-theme-input" data-mode="merge" hidden>
+      <p class="note">Combines the current Custom CSS with the currently selected theme (<span class="styling-add-theme-merge-current">—</span>) into a new entry.</p>
+    </div>
+    <div class="styling-add-theme-status" hidden></div>
+  </div>
 </details>
 
 <details open>
@@ -3229,8 +3263,11 @@ current-archive-text:"Archive"]
 
 <details open>
   <summary>Custom CSS</summary>
-  <div><label><input type="checkbox" name="Custom CSS"> Enable Custom CSS</label></div>
-  <div><label><input type="checkbox" name="customCSSHome"> Load on home page</label></div>
+  <div class="custom-css-toggle-row">
+    <label><input type="checkbox" name="Custom CSS"> Enable Custom CSS</label>
+    <label><input type="checkbox" name="customCSSHome"> Load on home page</label>
+  </div>
+  <div class="custom-css-note note">Custom CSS can override configured highlight colors.</div>
   <div>For more information about customizing 4chan X&#039;s CSS, see the <a href="https://github.com/ccd0/4chan-x/wiki/Styling-Guide" target="_blank">styling guide</a>.</div>
   <button id="apply-css">Apply CSS</button>
   <div class="custom-css-controls">
@@ -3240,13 +3277,6 @@ current-archive-text:"Archive"]
         <option value="xt-light">Light</option>
         <option value="xt-dark">Dark</option>
         <option value="xt-solarized">Solarized</option>
-      </select>
-    </label>
-    <label>Expanded height:
-      <select id="custom-css-expanded-height">
-        <option value="400">400px</option>
-        <option value="500" selected>500px</option>
-        <option value="700">700px</option>
       </select>
     </label>
     <button type="button" id="custom-css-expand" data-expanded="false">Expand editor</button>
@@ -3637,6 +3667,23 @@ current-archive-text:"Archive"]
   border-left: 3px dotted var(--xt-highlight-ghost, #888);
   background-color: color-mix(in srgb, var(--xt-highlight-ghost, transparent) calc(var(--xt-highlight-ghost-opacity, 1) * 100%), transparent);
 }
+/* When a highlight color is explicitly configured, force it with !important so
+   custom site themes that use \`!important\` on \`.reply\` can't suppress it. */
+:root.xt-set-you-highlight.highlight-you .quotesYou$site$highlightable$op,
+:root.xt-set-you-highlight.highlight-you .quotesYou$site$highlightable$reply {
+  border-left: 3px solid var(--xt-highlight-you) !important;
+  background-color: color-mix(in srgb, var(--xt-highlight-you) calc(var(--xt-highlight-you-opacity, 1) * 100%), transparent) !important;
+}
+:root.xt-set-own-highlight.highlight-own .yourPost$site$highlightable$op,
+:root.xt-set-own-highlight.highlight-own .yourPost$site$highlightable$reply {
+  border-left: 3px dashed var(--xt-highlight-own) !important;
+  background-color: color-mix(in srgb, var(--xt-highlight-own) calc(var(--xt-highlight-own-opacity, 1) * 100%), transparent) !important;
+}
+:root.xt-set-ghost-highlight.highlight-ghost .from-archive$site$highlightable$op,
+:root.xt-set-ghost-highlight.highlight-ghost .from-archive$site$highlightable$reply {
+  border-left: 3px dotted var(--xt-highlight-ghost) !important;
+  background-color: color-mix(in srgb, var(--xt-highlight-ghost) calc(var(--xt-highlight-ghost-opacity, 1) * 100%), transparent) !important;
+}
 .filter-highlight$site$highlightable$op,
 .filter-highlight$site$highlightable$reply {
   box-shadow: inset 5px 0 var(--xt-filter-highlight, rgba(221, 0, 0, .5));
@@ -3690,28 +3737,26 @@ current-archive-text:"Archive"]
 :root.xt-highlight-catalog-own .catalog-thread > .catalog-container.yourPost .post.catalog-post .postMessage {
   background: transparent !important;
 }
-:root.xt-highlight-catalog-watched .catalog-thread.watched {
-  background: color-mix(in srgb, var(--xt-catalog-watched-highlight, transparent) calc(var(--xt-catalog-watched-highlight-opacity, 1) * 100%), transparent) !important;
+:root.xt-highlight-catalog-watched .catalog-thread.watched:not(:has(.yourPost)),
+:root.xt-highlight-catalog-watched .catalog-thread.watched:not(:has(.yourPost)) > .catalog-container,
+:root.xt-highlight-catalog-watched .catalog-thread.watched:not(:has(.yourPost)) .post.catalog-post {
+  background: color-mix(in srgb, var(--xt-catalog-watched-highlight, var(--xt-watched-border, rgba(255, 0, 0, .75))) calc(var(--xt-catalog-watched-highlight-opacity, 0.2) * 100%), transparent) !important;
 }
-:root.xt-highlight-catalog-watched .catalog-thread.watched > .catalog-container,
-:root.xt-highlight-catalog-watched .catalog-thread.watched .post.catalog-post {
-  background: color-mix(in srgb, var(--xt-catalog-watched-highlight, transparent) calc(var(--xt-catalog-watched-highlight-opacity, 1) * 100%), transparent) !important;
-}
-:root.xt-highlight-catalog-watched .catalog-thread.watched .catalog-post {
+:root.xt-highlight-catalog-watched .catalog-thread.watched:not(:has(.yourPost)) .catalog-post {
   border: 2px solid color-mix(in srgb, var(--xt-catalog-watched-highlight, var(--xt-watched-border, rgba(255, 0, 0, .75))) calc(var(--xt-catalog-watched-highlight-opacity, 1) * 100%), transparent);
   color: var(--xt-catalog-watched-text, var(--xt-text-color)) !important;
 }
-:root.xt-highlight-catalog-watched .catalog-thread.watched .post.catalog-post a {
+:root.xt-highlight-catalog-watched .catalog-thread.watched:not(:has(.yourPost)) .post.catalog-post a {
   color: var(--xt-catalog-watched-link, var(--xt-link-text-color)) !important;
 }
-:root.xt-highlight-catalog-watched .catalog-thread.watched .post.catalog-post .quote {
+:root.xt-highlight-catalog-watched .catalog-thread.watched:not(:has(.yourPost)) .post.catalog-post .quote {
   color: var(--xt-catalog-watched-quote, var(--xt-quote-text-color)) !important;
 }
-:root.xt-highlight-catalog-watched .catalog-thread.watched .post.catalog-post .deadlink {
+:root.xt-highlight-catalog-watched .catalog-thread.watched:not(:has(.yourPost)) .post.catalog-post .deadlink {
   color: var(--xt-catalog-watched-dead-link, var(--xt-dead-link-text-color, var(--xt-dead-link))) !important;
 }
-:root.xt-highlight-catalog-watched .catalog-thread.watched .post.catalog-post > *,
-:root.xt-highlight-catalog-watched .catalog-thread.watched .post.catalog-post .postMessage {
+:root.xt-highlight-catalog-watched .catalog-thread.watched:not(:has(.yourPost)) .post.catalog-post > *,
+:root.xt-highlight-catalog-watched .catalog-thread.watched:not(:has(.yourPost)) .post.catalog-post .postMessage {
   background: transparent !important;
 }
 
@@ -4669,8 +4714,13 @@ div[data-checked="false"] > .suboption-list {
   margin: 0 0 8px;
 }
 .section-filtering .settings-subnav-tab {
+  background: transparent;
   border: 1px solid;
   border-radius: 3px;
+  color: inherit;
+  cursor: pointer;
+  font: inherit;
+  line-height: 1.2;
   padding: 2px 6px;
   text-decoration: none;
 }
@@ -4873,17 +4923,25 @@ div[data-checked="false"] > .suboption-list {
 .styling-preview-post .quotelink.deadlink {
   color: var(--xt-dead-link-text-color, var(--xt-dead-link)) !important;
 }
+.styling-preview-post.yourPost > .reply,
+.styling-preview-post.quotesYou > .reply,
+.styling-preview-post.from-archive > .reply {
+  /* Reset any site theme that forces a reply background via !important so the
+     preview faithfully shows the configured highlight colors. */
+  background-color: transparent !important;
+  border-left: 3px solid transparent !important;
+}
 .styling-preview[data-highlight-own="true"] .styling-preview-post.yourPost > .reply {
-  border-left: 3px dashed var(--xt-highlight-own, var(--xt-border-highlight));
-  background-color: color-mix(in srgb, var(--xt-highlight-own, transparent) calc(var(--xt-highlight-own-opacity, 1) * 100%), transparent);
+  border-left: 3px dashed var(--xt-highlight-own, var(--xt-border-highlight)) !important;
+  background-color: color-mix(in srgb, var(--xt-highlight-own, transparent) calc(var(--xt-highlight-own-opacity, 1) * 100%), transparent) !important;
 }
 .styling-preview[data-highlight-you="true"] .styling-preview-post.quotesYou > .reply {
-  border-left: 3px solid var(--xt-highlight-you, var(--xt-border-highlight));
-  background-color: color-mix(in srgb, var(--xt-highlight-you, transparent) calc(var(--xt-highlight-you-opacity, 1) * 100%), transparent);
+  border-left: 3px solid var(--xt-highlight-you, var(--xt-border-highlight)) !important;
+  background-color: color-mix(in srgb, var(--xt-highlight-you, transparent) calc(var(--xt-highlight-you-opacity, 1) * 100%), transparent) !important;
 }
 .styling-preview[data-highlight-ghost="true"] .styling-preview-post.from-archive > .reply {
-  border-left: 3px dotted var(--xt-highlight-ghost, #888);
-  background-color: color-mix(in srgb, var(--xt-highlight-ghost, transparent) calc(var(--xt-highlight-ghost-opacity, 1) * 100%), transparent);
+  border-left: 3px dotted var(--xt-highlight-ghost, #888) !important;
+  background-color: color-mix(in srgb, var(--xt-highlight-ghost, transparent) calc(var(--xt-highlight-ghost-opacity, 1) * 100%), transparent) !important;
 }
 .styling-preview[data-highlight-own="false"] .styling-preview-post.yourPost > .reply,
 .styling-preview[data-highlight-you="false"] .styling-preview-post.quotesYou > .reply,
@@ -4946,10 +5004,145 @@ div[data-checked="false"] > .suboption-list {
 .section-styling .styling-theme-row select {
   min-width: 180px;
 }
+.section-styling .styling-theme-picker {
+  position: relative;
+  display: inline-block;
+  min-width: 200px;
+}
+.section-styling .styling-theme-picker > select[name="siteStyle"] {
+  display: none !important;
+}
+.section-styling .styling-theme-toggle {
+  align-items: center;
+  background: transparent;
+  border: 1px solid rgba(128, 128, 128, .45);
+  border-radius: 3px;
+  color: inherit;
+  cursor: pointer;
+  display: inline-flex;
+  gap: 8px;
+  justify-content: space-between;
+  min-width: 200px;
+  padding: 3px 8px;
+  text-align: left;
+  width: 100%;
+}
+.section-styling .styling-theme-toggle:disabled {
+  cursor: default;
+  opacity: .5;
+}
+.section-styling .styling-theme-current {
+  flex: 1 1 auto;
+  overflow: hidden;
+  text-overflow: ellipsis;
+  white-space: nowrap;
+}
+.section-styling .styling-theme-caret {
+  flex: 0 0 auto;
+  opacity: .65;
+}
+.section-styling .styling-theme-picker[data-open="true"] .styling-theme-caret {
+  transform: rotate(180deg);
+}
+.section-styling .styling-theme-menu {
+  background: var(--xt-dialog-bg, var(--background, Canvas));
+  border: 1px solid rgba(128, 128, 128, .45);
+  border-radius: 3px;
+  box-shadow: 0 4px 12px rgba(0, 0, 0, .18);
+  left: 0;
+  max-height: 260px;
+  min-width: 100%;
+  overflow-y: auto;
+  padding: 2px 0;
+  position: absolute;
+  top: calc(100% + 2px);
+  z-index: 200;
+}
+.section-styling .styling-theme-item {
+  align-items: center;
+  cursor: pointer;
+  display: flex;
+  gap: 6px;
+  justify-content: space-between;
+  padding: 4px 8px;
+}
+.section-styling .styling-theme-item:hover {
+  background: color-mix(in srgb, currentColor 12%, transparent);
+}
+.section-styling .styling-theme-item-label {
+  flex: 1 1 auto;
+  overflow: hidden;
+  text-overflow: ellipsis;
+  white-space: nowrap;
+}
+.section-styling .styling-theme-item-remove {
+  background: transparent;
+  border: 0;
+  color: inherit;
+  cursor: pointer;
+  flex: 0 0 auto;
+  font-size: 12px;
+  line-height: 1;
+  opacity: .55;
+  padding: 2px 4px;
+}
+.section-styling .styling-theme-item-remove:hover {
+  background: color-mix(in srgb, currentColor 20%, transparent);
+  border-radius: 2px;
+  opacity: 1;
+}
+.section-styling .styling-theme-divider {
+  border-top: 1px solid rgba(128, 128, 128, .35);
+  margin: 4px 0;
+}
+.section-styling .styling-add-theme {
+  border-top: 1px dashed color-mix(in srgb, currentColor 25%, transparent);
+  margin-top: 10px;
+  padding-top: 8px;
+}
+.section-styling .styling-add-theme-row {
+  align-items: center;
+  display: flex;
+  flex-wrap: wrap;
+  gap: 6px 8px;
+  margin-bottom: 6px;
+}
+.section-styling .styling-add-theme-name {
+  flex: 1 1 160px;
+  min-width: 140px;
+  padding: 2px 6px;
+}
+.section-styling .styling-add-theme-source {
+  align-items: center;
+  display: inline-flex;
+  gap: 4px;
+}
+.section-styling .styling-add-theme-input {
+  margin: 4px 0;
+}
+.section-styling .styling-add-theme-paste {
+  font: 12px/1.42 ui-monospace, SFMono-Regular, Menlo, Monaco, Consolas, "Liberation Mono", "Courier New", monospace;
+  width: 100%;
+}
+.section-styling .styling-add-theme-status {
+  font-size: .9em;
+  margin-top: 4px;
+}
+.section-styling .styling-add-theme-status[data-kind="error"] {
+  color: #c0392b;
+}
+.section-styling .styling-add-theme-status[data-kind="ok"] {
+  opacity: .8;
+}
 .section-styling [data-name] > .styling-tree {
   border-left: 1px solid color-mix(in srgb, currentColor 25%, transparent);
   margin: 6px 0 0 10px;
   padding-left: 8px;
+}
+.section-styling [data-name="Highlight Colors"] > .styling-tree {
+  border-left: 0;
+  margin-left: 0;
+  padding-left: 0;
 }
 .section-styling div[data-checked="false"] > .styling-tree {
   display: none;
@@ -5030,6 +5223,22 @@ div[data-checked="false"] > .suboption-list {
   gap: 8px;
   margin: 8px 0;
 }
+.section-styling .custom-css-toggle-row {
+  align-items: center;
+  display: flex;
+  flex-wrap: wrap;
+  gap: 8px 14px;
+  padding: 6px 0;
+}
+.section-styling .custom-css-toggle-row > label {
+  align-items: center;
+  display: inline-flex;
+  gap: 4px;
+}
+.section-styling .custom-css-note {
+  margin: 0 0 8px;
+  opacity: .85;
+}
 .section-styling .custom-css-controls > label {
   align-items: center;
   display: inline-flex;
@@ -5039,20 +5248,22 @@ div[data-checked="false"] > .suboption-list {
   margin-left: auto;
 }
 .section-styling .custom-css-editor {
-  --custom-css-expanded-height: 500px;
   --custom-css-bg: #fbfbfb;
   --custom-css-text: #1f2731;
   --custom-css-caret: #1f2731;
   --custom-css-border: rgba(128, 128, 128, .35);
   --custom-css-font: 12px/1.42 ui-monospace, SFMono-Regular, Menlo, Monaco, Consolas, "Liberation Mono", "Courier New", monospace;
+  background: var(--custom-css-bg);
   border: 1px solid var(--custom-css-border);
   border-radius: 4px;
-  height: 220px;
+  height: 180px;
+  min-height: 180px;
   overflow: hidden;
   position: relative;
+  resize: vertical;
 }
 .section-styling .custom-css-editor[data-expanded="true"] {
-  height: var(--custom-css-expanded-height);
+  height: 500px;
 }
 .section-styling .custom-css-editor[data-theme="xt-dark"],
 .section-styling .custom-css-editor[data-theme="xt-system-tomorrow"],
@@ -5101,7 +5312,7 @@ div[data-checked="false"] > .suboption-list {
   font: var(--custom-css-font);
   font-kerning: none;
   font-variant-ligatures: none;
-  inset: 0;
+  inset: 0 0 12px 0;
   letter-spacing: 0;
   margin: 0;
   overflow: auto;
@@ -5115,6 +5326,7 @@ div[data-checked="false"] > .suboption-list {
 }
 .section-styling .custom-css-highlight {
   color: var(--custom-css-text);
+  overflow: hidden;
   pointer-events: none;
 }
 .section-styling .custom-css-textarea {
@@ -5371,7 +5583,7 @@ div[data-checked="false"] > .suboption-list {
 #fourchanx-settings details:not([open]) > summary::after {
   transform: rotate(-90deg);
 }
-#fourchanx-settings textarea {
+#fourchanx-settings textarea:not(.custom-css-textarea) {
   font-family: monospace;
   width: 100%;
   resize: vertical;
@@ -6626,6 +6838,11 @@ input.field.tripped:not(:hover):not(:focus) {
   align-items: stretch;
   margin-top: 1px;
 }
+#qr-file {
+  display: flex;
+  flex: 1 1 auto;
+  min-width: 0;
+}
 #qr-file-button, #qr-draw-button {
   width: 15%;
 }
@@ -6719,6 +6936,12 @@ input#qr-filename {
 #file-n-submit:not(.has-image):not(.has-video) #qr-view,
 #file-n-submit.has-file :is(#paste-area, #url-button),
 #file-n-submit:not(.custom-cooldown) #custom-cooldown-button {
+  display: none;
+}
+#file-n-submit.has-file:not(:hover):not(:focus-within) #qr-actions {
+  display: none;
+}
+#qr-filename:focus ~ #qr-actions {
   display: none;
 }
 #qr-filename-container > label {
@@ -6832,12 +7055,24 @@ input[type="checkbox"]:checked ~ .checkbox-letter {
 .qr-preview > span {
   color: #fff;
 }
-.remove {
-  background: none;
-  color: #e00;
-  padding: 1px;
+.qr-preview > .remove {
+  background: rgba(0, 0, 0, 0.5);
+  border-radius: 2px;
+  color: #ff3b30 !important;
+  left: 3px;
+  line-height: 1;
+  padding: 1px 3px;
+  position: absolute;
+  text-shadow: 0 0 2px #000, 0 0 8px #000;
+  top: 3px;
+  z-index: 2;
 }
-.remove:hover::after {
+.qr-preview > .remove:hover,
+.qr-preview > .remove:focus {
+  background: rgba(0, 0, 0, 0.75);
+  color: #ff6e66 !important;
+}
+.qr-preview > .remove:hover::after {
   content: " Remove";
 }
 .qr-preview:not(.has-file) label,
@@ -6864,23 +7099,17 @@ input[type="checkbox"]:checked ~ .checkbox-letter {
   right: 10px;
   transform: translateY(calc(-50% - .75em));
 }
-#file-n-submit {
-  display: flex;
-  flex-direction: column;
-}
 #file-n-submit .row {
   display: flex;
   flex-direction: row;
 }
-#file-n-submit .row.space {
-  justify-content: space-between;
-  align-items: center;
-  padding: 5px 0;
-}
 #qr-actions {
+  display: flex;
+  flex: none;
   align-items: center;
   gap: 6px;
   padding: 0 3px;
+  white-space: nowrap;
 }
 #qr-actions .qr-action-button {
   display: inline-flex;
@@ -7261,6 +7490,36 @@ div.post {
   background: var(--xt-scroll-marker-unread, #ffd400);
   opacity: var(--xt-scroll-marker-unread-opacity, 1);
   pointer-events: none;
+}
+#download-all-picker {
+  position: fixed;
+  z-index: 20;
+  padding: 0;
+  min-width: 240px;
+}
+#download-all-picker .move {
+  padding: 4px 8px;
+  font-weight: bold;
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+  gap: 8px;
+}
+#download-all-picker .da-body {
+  padding: 8px 10px 10px;
+}
+#download-all-picker .da-buttons {
+  display: flex;
+  gap: 6px;
+  margin-bottom: 8px;
+}
+#download-all-picker .da-buttons button {
+  flex: 1;
+  padding: 4px 8px;
+  cursor: pointer;
+}
+.da-progress-cancel {
+  margin-left: 6px;
 }`;
 
   var tomorrow = `:root.tomorrow {
@@ -8023,21 +8282,19 @@ svg.icon {
           <input type="checkbox" id="qr-file-spoiler" title="Spoiler image">
           <a class="checkbox-letter">S</a>
         </label>
-      </span>
-    </span>
-    <span id="qr-actions-container" class="row space">
-      <span id="qr-actions" class="row">
-        <a href="javascript:;" id="qr-oekaki-button" class="qr-action-button" title="Edit in Tegaki">✎︎</a>
-        <a href="javascript:;" id="qr-jpg" class="qr-action-button" title="Compress to jpg">C</a>
-        <a href="javascript:;" id="qr-view" class="qr-action-button" title="Preview">V</a>
-        <a href="javascript:;" id="qr-randomize" class="qr-action-button" title="Randomize filename">R</a>
-        <a href="javascript:;" id="qr-restore-name" class="qr-action-button" title="Reset filename">U</a>
-        <a href="javascript:;" id="qr-filerm" class="qr-action-button" title="Remove file">✕</a>
-        <a href="javascript:;" id="url-button" class="qr-action-button" title="Post from URL">🔗︎</a>
-        <a href="javascript:;" hidden id="paste-area" class="qr-action-button" title="Select to paste images" tabindex="-1" contentEditable="true">📋︎</a>
-        <a href="javascript:;" id="custom-cooldown-button" class="qr-action-button" title="Toggle custom cooldown" class="disabled">🕒︎</a>
-        <a href="javascript:;" id="split-post" class="qr-action-button" title="Split into multiple posts" hidden>✂️</a>
-        <a href="javascript:;" id="dump-button" class="qr-action-button" title="Dump list">➕︎</a>
+        <span id="qr-actions" class="row">
+          <a href="javascript:;" id="qr-oekaki-button" class="qr-action-button" title="Edit in Tegaki">✎︎</a>
+          <a href="javascript:;" id="qr-jpg" class="qr-action-button" title="Compress to jpg">C</a>
+          <a href="javascript:;" id="qr-view" class="qr-action-button" title="Preview">V</a>
+          <a href="javascript:;" id="qr-randomize" class="qr-action-button" title="Randomize filename">R</a>
+          <a href="javascript:;" id="qr-restore-name" class="qr-action-button" title="Reset filename">U</a>
+          <a href="javascript:;" id="qr-filerm" class="qr-action-button" title="Remove file">✕</a>
+          <a href="javascript:;" id="url-button" class="qr-action-button" title="Post from URL">🔗︎</a>
+          <a href="javascript:;" hidden id="paste-area" class="qr-action-button" title="Select to paste images" tabindex="-1" contentEditable="true">📋︎</a>
+          <a href="javascript:;" id="custom-cooldown-button" class="qr-action-button" title="Toggle custom cooldown" class="disabled">🕒︎</a>
+          <a href="javascript:;" id="split-post" class="qr-action-button" title="Split into multiple posts" hidden>✂️</a>
+          <a href="javascript:;" id="dump-button" class="qr-action-button" title="Dump list">➕︎</a>
+        </span>
       </span>
       <input class="qr-button" type="submit">
     </span>
@@ -9342,7 +9599,9 @@ svg.icon {
         $.on(d, 'click CloseMenu', this.close);
         $.on(d, 'scroll', this.setPosition);
         $.on(window, 'resize', this.setPosition);
-        $.after(button, menu);
+        // Append to body so the menu escapes any ancestor stacking context
+        // (e.g. #thread-watcher's position:fixed/z-index:5).
+        $.add(d.body, menu);
 
         this.setPosition();
 
@@ -12830,7 +13089,7 @@ svg.icon {
             href:      'javascript:;',
             className: 'has-shortcut-text'
           }
-          , {innerHTML: '<span></span><span class="shortcut-text">Alt+click</span>'}),
+          , {innerHTML: '<span></span><span class="shortcut-text"></span>'}),
           order: 6,
           open({thread}) {
             if (Conf['Index Mode'] !== 'catalog') { return false; }
@@ -12838,6 +13097,8 @@ svg.icon {
               'Unwatch'
             :
               'Watch';
+            const mods = Conf['Watch (catalog click)'];
+            this.el.lastElementChild.textContent = mods ? `${mods}+click` : '';
             if (this.cb) { $.off(this.el, 'click', this.cb); }
             this.cb = function() {
               $.event('CloseMenu');
@@ -12904,7 +13165,15 @@ svg.icon {
     catalogNode() {
       if (ThreadWatcher.isWatched(this.thread)) { $.addClass(this.nodes.root, 'watched'); }
       return $.on(this.nodes.root, 'mousedown click', e => {
-        if ((e.button !== 0) || !e.altKey) return;
+        if (e.button !== 0) return;
+        const wanted = Conf['Watch (catalog click)'];
+        if (!wanted) return;
+        const got = [];
+        if (e.altKey)   { got.push('Alt'); }
+        if (e.ctrlKey)  { got.push('Ctrl'); }
+        if (e.metaKey)  { got.push('Meta'); }
+        if (e.shiftKey) { got.push('Shift'); }
+        if (got.join('+') !== wanted) return;
         if (e.type === 'click') ThreadWatcher.toggle(this.thread, true);
         return e.preventDefault();
       });
@@ -16719,6 +16988,447 @@ svg.icon {
     }
   };
 
+  const DownloadAll = {
+    busy: false,
+    dialog: null,
+    catalogItems: null,
+    catalogFetching: false,
+    init() {
+      if (!(Conf['Download All Media'] && ['thread', 'index', 'catalog'].includes(g.VIEW)))
+        return;
+      const el = $.el('a', {
+        href: 'javascript:;',
+        title: 'Download all media',
+      });
+      Icon.set(el, 'download', 'Download all media');
+      $.on(el, 'click', DownloadAll.cb.open);
+      Header.addShortcut('download-all', el, 525);
+      const onPostsReady = () => {
+        if (DownloadAll.dialog && !DownloadAll.dialog.hidden)
+          DownloadAll.refreshDialog();
+      };
+      $.on(d, '4chanXInitFinished PostsInserted ThreadUpdate IndexRefresh', onPostsReady);
+      if (Conf['Persistent Download Media'])
+        DownloadAll.show();
+    },
+    menu: {
+      init() {
+        if (!(Conf['Download All Media'] && ['thread', 'index', 'catalog'].includes(g.VIEW)))
+          return;
+        const el = $.el('span', {
+          textContent: 'Download Media',
+          className: 'download-all-link',
+        });
+        Header.menu.addEntry({
+          el,
+          order: 106,
+          subEntries: DownloadAll.menu.createSubEntries(),
+        });
+      },
+      createSubEntries() {
+        const all = $.el('a', { href: 'javascript:;', textContent: 'Download all media' });
+        $.on(all, 'click', () => DownloadAll.start('all'));
+        const images = $.el('a', { href: 'javascript:;', textContent: 'Download images only' });
+        $.on(images, 'click', () => DownloadAll.start('image'));
+        const videos = $.el('a', { href: 'javascript:;', textContent: 'Download videos only' });
+        $.on(videos, 'click', () => DownloadAll.start('video'));
+        const zipLabel = UI.checkbox('Download All as ZIP', 'Bundle as ZIP');
+        const zipInput = zipLabel.firstElementChild;
+        $.on(zipInput, 'change', $.cb.checked);
+        return [
+          { el: all },
+          { el: images },
+          { el: videos },
+          { el: zipLabel },
+        ];
+      },
+    },
+    cb: {
+      open(e) {
+        if (e)
+          e.preventDefault();
+        DownloadAll.toggle();
+      },
+    },
+    toggle() {
+      if (DownloadAll.dialog && !DownloadAll.dialog.hidden) {
+        DownloadAll.hide();
+      } else {
+        DownloadAll.show();
+      }
+    },
+    hide() {
+      if (DownloadAll.dialog)
+        DownloadAll.dialog.hidden = true;
+    },
+    show() {
+      if (!DownloadAll.dialog)
+        DownloadAll.buildDialog();
+      DownloadAll.dialog.hidden = false;
+      DownloadAll.refreshDialog();
+      if (g.VIEW === 'catalog' && !DownloadAll.catalogItems) {
+        DownloadAll.fetchCatalog(() => DownloadAll.refreshDialog());
+      }
+    },
+    buildDialog() {
+      const dialog = $.el('div', { id: 'download-all-picker', className: 'dialog' });
+      dialog.style.cssText = Conf['download-all-picker.position'] || '';
+      dialog.innerHTML =
+        '<div class="move">' +
+          '<label title="Keep open across page loads">' +
+          '<input type="checkbox" name="Persistent Download Media"> Download media' +
+          '</label>' +
+          '<a href="javascript:;" class="jump close" title="Hide">' + Icon.get('xmark') + '</a>' +
+          '</div>' +
+          '<div class="da-body">' +
+          '<div class="da-buttons">' +
+          '<button type="button" data-filter="all">All (0)</button>' +
+          '<button type="button" data-filter="image">Images (0)</button>' +
+          '<button type="button" data-filter="video">Videos (0)</button>' +
+          '</div>' +
+          '<label><input type="checkbox" name="Download All as ZIP"> Bundle as a single ZIP archive</label>' +
+          '</div>';
+      const zipBox = $('input[name="Download All as ZIP"]', dialog);
+      zipBox.checked = !!Conf['Download All as ZIP'];
+      $.on(zipBox, 'change', $.cb.checked);
+      const persistBox = $('input[name="Persistent Download Media"]', dialog);
+      persistBox.checked = !!Conf['Persistent Download Media'];
+      $.on(persistBox, 'change', $.cb.checked);
+      // Don't drag the dialog when toggling the persist checkbox.
+      $.on(persistBox, 'mousedown touchstart', (e) => e.stopPropagation());
+      const closeBtn = $('.close', dialog);
+      $.on(closeBtn, 'click', () => DownloadAll.hide());
+      // Don't trigger drag when grabbing the close icon.
+      $.on(closeBtn, 'mousedown touchstart', (e) => e.stopPropagation());
+      const moveHandle = $('.move', dialog);
+      $.on(moveHandle, 'mousedown touchstart', dragstart);
+      for (const btn of $$('button[data-filter]', dialog)) {
+        $.on(btn, 'click', () => {
+          const filter = btn.dataset.filter;
+          DownloadAll.start(filter);
+        });
+      }
+      $.add(d.body, dialog);
+      DownloadAll.dialog = dialog;
+    },
+    refreshDialog() {
+      if (!DownloadAll.dialog)
+        return;
+      const items = DownloadAll.collect('all');
+      const images = items.filter(i => i.isImage).length;
+      const videos = items.filter(i => i.isVideo).length;
+      const counts = { all: items.length, image: images, video: videos };
+      for (const btn of $$('button[data-filter]', DownloadAll.dialog)) {
+        const k = btn.dataset.filter;
+        const n = counts[k];
+        const label = k === 'all' ? 'All' : k === 'image' ? 'Images' : 'Videos';
+        btn.textContent = `${label} (${n})`;
+        btn.disabled = n === 0;
+      }
+    },
+    start(filter) {
+      if (DownloadAll.busy) {
+        new Notice('warning', 'A download is already in progress.', 5);
+        return;
+      }
+      if (g.VIEW === 'catalog' && !DownloadAll.catalogItems) {
+        DownloadAll.fetchCatalog(() => {
+          DownloadAll.refreshDialog();
+          DownloadAll.start(filter);
+        });
+        return;
+      }
+      const items = DownloadAll.collect(filter);
+      if (!items.length) {
+        new Notice('warning', `No matching media found.`, 5);
+        return;
+      }
+      DownloadAll.busy = true;
+      const progress = DownloadAll.makeProgress(items.length);
+      const done = () => { DownloadAll.busy = false; progress.close(); };
+      if (Conf['Download All as ZIP']) {
+        DownloadAll.runZip(items, progress, done);
+      } else {
+        DownloadAll.runIndividual(items, progress, done);
+      }
+    },
+    fetchCatalog(cb) {
+      if (DownloadAll.catalogFetching)
+        return;
+      const url = g.SITE.urls.catalogJSON?.(g.BOARD);
+      if (!url) {
+        DownloadAll.catalogItems = [];
+        cb();
+        return;
+      }
+      DownloadAll.catalogFetching = true;
+      $.ajax(url, {
+        onloadend() {
+          DownloadAll.catalogFetching = false;
+          const items = [];
+          if (this.status === 200 && Array.isArray(this.response)) {
+            const seen = dict();
+            const usedNames = dict();
+            for (const page of this.response) {
+              for (const data of (page.threads || [])) {
+                if (!data || !data.ext)
+                  continue;
+                let file;
+                try {
+                  file = g.SITE.Build.parseJSONFile(data, { siteID: g.SITE.ID, boardID: g.BOARD.ID });
+                } catch (e) {
+                  continue;
+                }
+                if (!file?.url || seen[file.url])
+                  continue;
+                seen[file.url] = true;
+                const isImage = $.isImage(file.url);
+                const isVideo = $.isVideo(file.url);
+                if (!isImage && !isVideo)
+                  continue;
+                items.push({ url: file.url, name: makeName(file.name || file.url, usedNames), isImage, isVideo });
+              }
+            }
+          } else {
+            new Notice('warning', 'Failed to fetch catalog data.', 5);
+          }
+          DownloadAll.catalogItems = items;
+          cb();
+        },
+      });
+    },
+    collect(filter) {
+      if (g.VIEW === 'catalog') {
+        const items = DownloadAll.catalogItems || [];
+        return items.filter(i => filter === 'image' ? i.isImage :
+          filter === 'video' ? i.isVideo :
+            (i.isImage || i.isVideo));
+      }
+      const seen = dict();
+      const out = [];
+      const usedNames = dict();
+      for (const key of g.posts.keys) {
+        const post = g.posts[key];
+        if (!post || post.isHidden)
+          continue;
+        for (const file of (post.files || [])) {
+          if (!file || file.isDead || !file.url)
+            continue;
+          if (filter === 'image' && !file.isImage)
+            continue;
+          if (filter === 'video' && !file.isVideo)
+            continue;
+          if (filter === 'all' && !file.isImage && !file.isVideo)
+            continue;
+          if (seen[file.url])
+            continue;
+          seen[file.url] = true;
+          out.push({
+            url: file.url,
+            name: makeName(file.name || file.url.split('/').pop() || 'file', usedNames),
+            isImage: !!file.isImage,
+            isVideo: !!file.isVideo,
+          });
+        }
+      }
+      return out;
+    },
+    makeProgress(total) {
+      const wrap = $.el('div', { className: 'da-progress' });
+      wrap.innerHTML = `<span class="da-progress-label">Downloading 0 / ${total}…</span> ` +
+        `<a href="javascript:;" class="da-progress-cancel">cancel</a>`;
+      const notice = new Notice('info', wrap, 0);
+      let cancelled = false;
+      $.on($('.da-progress-cancel', wrap), 'click', () => { cancelled = true; notice.close(); });
+      return {
+        update(done, failed) {
+          const label = $('.da-progress-label', wrap);
+          if (label) {
+            label.textContent = failed
+              ? `Downloading ${done} / ${total} (${failed} failed)…`
+              : `Downloading ${done} / ${total}…`;
+          }
+        },
+        isCancelled: () => cancelled,
+        close: () => notice.close(),
+      };
+    },
+    runIndividual(items, progress, done) {
+      let i = 0, failed = 0;
+      const step = () => {
+        if (progress.isCancelled() || i >= items.length) {
+          done();
+          if (!progress.isCancelled()) {
+            new Notice('success', `Saved ${i - failed} file(s)${failed ? `, ${failed} failed` : ''}.`, 5);
+          }
+          return;
+        }
+        const item = items[i++];
+        CrossOrigin.binary(item.url, (data) => {
+          if (!data) {
+            failed++;
+          } else {
+            const blob = new Blob([data]);
+            const a = $.el('a', { href: URL.createObjectURL(blob), download: item.name, hidden: true });
+            $.add(d.body, a);
+            a.click();
+            $.rm(a);
+            setTimeout(() => URL.revokeObjectURL(a.href), 30 * SECOND);
+          }
+          progress.update(i, failed);
+          // Small gap to avoid the browser collapsing/blocking rapid downloads.
+          setTimeout(step, 250);
+        });
+      };
+      step();
+    },
+    runZip(items, progress, done) {
+      const entries = [];
+      let i = 0, failed = 0;
+      const finish = () => {
+        done();
+        if (progress.isCancelled())
+          return;
+        if (!entries.length) {
+          new Notice('error', 'No files could be downloaded.', 10);
+          return;
+        }
+        const blob = buildZip(entries);
+        const url = URL.createObjectURL(blob);
+        const a = $.el('a', { href: url, download: zipFileName(), hidden: true });
+        $.add(d.body, a);
+        a.click();
+        $.rm(a);
+        setTimeout(() => URL.revokeObjectURL(url), 60 * SECOND);
+        new Notice('success', `Saved ZIP with ${entries.length} file(s)${failed ? `, ${failed} failed` : ''}.`, 5);
+      };
+      const step = () => {
+        if (progress.isCancelled() || i >= items.length) {
+          finish();
+          return;
+        }
+        const item = items[i++];
+        CrossOrigin.binary(item.url, (data) => {
+          if (!data) {
+            failed++;
+          } else {
+            entries.push({ name: item.name, data });
+          }
+          progress.update(i, failed);
+          step();
+        });
+      };
+      step();
+    },
+  };
+  function makeName(raw, usedNames) {
+    let name = raw.replace(/[\\/:*?"<>|\r\n]/g, '_');
+    if (usedNames[name] != null) {
+      const dot = name.lastIndexOf('.');
+      const stem = dot > 0 ? name.slice(0, dot) : name;
+      const ext = dot > 0 ? name.slice(dot) : '';
+      name = `${stem}_${++usedNames[name]}${ext}`;
+    }
+    usedNames[name] = usedNames[name] || 0;
+    return name;
+  }
+  function zipFileName() {
+    const parts = ['media', g.BOARD?.ID || 'thread'];
+    if (g.THREADID)
+      parts.push(String(g.THREADID));
+    return parts.join('-') + '.zip';
+  }
+  // --- Minimal store-mode ZIP encoder (no compression).
+  // Images/videos are already compressed; store mode is appropriate and tiny.
+  const CRC_TABLE = (() => {
+    const t = new Uint32Array(256);
+    for (let n = 0; n < 256; n++) {
+      let c = n;
+      for (let k = 0; k < 8; k++)
+        c = (c & 1) ? (0xEDB88320 ^ (c >>> 1)) : (c >>> 1);
+      t[n] = c >>> 0;
+    }
+    return t;
+  })();
+  function crc32(buf) {
+    let c = 0xFFFFFFFF;
+    for (let i = 0; i < buf.length; i++)
+      c = CRC_TABLE[(c ^ buf[i]) & 0xFF] ^ (c >>> 8);
+    return (c ^ 0xFFFFFFFF) >>> 0;
+  }
+  function utf8(s) {
+    return new TextEncoder().encode(s);
+  }
+  function dosDateTime(d) {
+    const time = ((d.getHours() & 0x1F) << 11) | ((d.getMinutes() & 0x3F) << 5) | ((d.getSeconds() / 2) & 0x1F);
+    const date = (((d.getFullYear() - 1980) & 0x7F) << 9) | (((d.getMonth() + 1) & 0x0F) << 5) | (d.getDate() & 0x1F);
+    return { date, time };
+  }
+  function buildZip(files) {
+    const parts = [];
+    const central = [];
+    let offset = 0;
+    const { date, time } = dosDateTime(new Date());
+    for (const f of files) {
+      const nameBytes = utf8(f.name);
+      const crc = crc32(f.data);
+      const size = f.data.length;
+      // Local file header: 30 bytes + name
+      const lfh = new Uint8Array(30 + nameBytes.length);
+      const dvLfh = new DataView(lfh.buffer);
+      dvLfh.setUint32(0, 0x04034b50, true);
+      dvLfh.setUint16(4, 20, true); // version needed
+      dvLfh.setUint16(6, 0x0800, true); // general purpose (bit 11 = UTF-8 filename)
+      dvLfh.setUint16(8, 0, true); // method = store
+      dvLfh.setUint16(10, time, true);
+      dvLfh.setUint16(12, date, true);
+      dvLfh.setUint32(14, crc, true);
+      dvLfh.setUint32(18, size, true); // compressed size
+      dvLfh.setUint32(22, size, true); // uncompressed size
+      dvLfh.setUint16(26, nameBytes.length, true);
+      dvLfh.setUint16(28, 0, true); // extra field length
+      lfh.set(nameBytes, 30);
+      parts.push(lfh, f.data);
+      // Central directory record: 46 bytes + name
+      const cdr = new Uint8Array(46 + nameBytes.length);
+      const dvCdr = new DataView(cdr.buffer);
+      dvCdr.setUint32(0, 0x02014b50, true);
+      dvCdr.setUint16(4, 20, true); // version made by
+      dvCdr.setUint16(6, 20, true); // version needed
+      dvCdr.setUint16(8, 0x0800, true);
+      dvCdr.setUint16(10, 0, true);
+      dvCdr.setUint16(12, time, true);
+      dvCdr.setUint16(14, date, true);
+      dvCdr.setUint32(16, crc, true);
+      dvCdr.setUint32(20, size, true);
+      dvCdr.setUint32(24, size, true);
+      dvCdr.setUint16(28, nameBytes.length, true);
+      dvCdr.setUint16(30, 0, true); // extra field length
+      dvCdr.setUint16(32, 0, true); // comment length
+      dvCdr.setUint16(34, 0, true); // disk number
+      dvCdr.setUint16(36, 0, true); // internal attrs
+      dvCdr.setUint32(38, 0, true); // external attrs
+      dvCdr.setUint32(42, offset, true); // local header offset
+      cdr.set(nameBytes, 46);
+      central.push(cdr);
+      offset += lfh.length + f.data.length;
+    }
+    const cdSize = central.reduce((n, c) => n + c.length, 0);
+    const cdOffset = offset;
+    // End of central directory: 22 bytes
+    const eocd = new Uint8Array(22);
+    const dvEocd = new DataView(eocd.buffer);
+    dvEocd.setUint32(0, 0x06054b50, true);
+    dvEocd.setUint16(4, 0, true);
+    dvEocd.setUint16(6, 0, true);
+    dvEocd.setUint16(8, files.length, true);
+    dvEocd.setUint16(10, files.length, true);
+    dvEocd.setUint32(12, cdSize, true);
+    dvEocd.setUint32(16, cdOffset, true);
+    dvEocd.setUint16(20, 0, true);
+    return new Blob([...parts, ...central, eocd], { type: 'application/zip' });
+  }
+
   var FappeTyme = {
     init() {
       if ((!Conf['Fappe Tyme'] && !Conf['Werk Tyme']) || !['index', 'thread', 'archive'].includes(g.VIEW)) { return; }
@@ -19302,6 +20012,10 @@ aero|asia|biz|cat|com|coop|dance|info|int|jobs|mobi|moe|museum|name|net|org|post
         Gallery.cb.toggle();
         hasAction = true;
       }
+      if (key === Conf['Download all media'] && Conf['Download All Media'] && ['thread', 'index', 'catalog'].includes(g.VIEW)) {
+        DownloadAll.cb.open();
+        hasAction = true;
+      }
       if (key === Conf['fappeTyme'] && FappeTyme.nodes?.fappe) {
         FappeTyme.toggle('fappe');
         hasAction = true;
@@ -19474,6 +20188,15 @@ aero|asia|biz|cat|com|coop|dance|info|int|jobs|mobi|moe|museum|name|net|org|post
         if (e.shiftKey) { key = 'Shift+' + key; }
       }
       return key;
+    },
+
+    modifierString(e) {
+      const parts = [];
+      if (e.altKey)   { parts.push('Alt'); }
+      if (e.ctrlKey)  { parts.push('Ctrl'); }
+      if (e.metaKey)  { parts.push('Meta'); }
+      if (e.shiftKey) { parts.push('Shift'); }
+      return parts.join('+');
     },
 
     post(thread) {
@@ -19967,7 +20690,7 @@ aero|asia|biz|cat|com|coop|dance|info|int|jobs|mobi|moe|museum|name|net|org|post
   };
 
   /**
-   * Lightweight, zero-dependency video container patchers to remove audio tracks and metadata.
+   * Lightweight, zero-dependency video container patchers to remove audio tracks.
    * Modifies the underlying ArrayBuffer in-place.
    */
   class VideoStripper {
@@ -19987,23 +20710,6 @@ aero|asia|biz|cat|com|coop|dance|info|int|jobs|mobi|moe|museum|name|net|org|post
         }
       } catch (error) {
         console.warn('Failed to strip audio from video:', error);
-      }
-      return file;
-    }
-    static async stripMetadata(file) {
-      try {
-        const buffer = await file.arrayBuffer();
-        const uint8 = new Uint8Array(buffer);
-        const view = new DataView(buffer);
-        let patched = false;
-        if (file.type === 'video/mp4' || file.name.toLowerCase().endsWith('.mp4')) {
-          patched = this.stripMp4Metadata(uint8, view);
-        }
-        if (patched) {
-          return new File([buffer], file.name, { type: file.type });
-        }
-      } catch (error) {
-        console.warn('Failed to strip metadata from video:', error);
       }
       return file;
     }
@@ -20179,58 +20885,6 @@ aero|asia|biz|cat|com|coop|dance|info|int|jobs|mobi|moe|museum|name|net|org|post
           } else {
             offset = skipEbmlElement(offset);
           }
-        }
-      }
-      return stripped;
-    }
-    static stripMp4Metadata(uint8, view) {
-      const utf8Decoder = new TextDecoder('utf8');
-      const removable = new Set(['udta', 'meta', 'ilst']);
-      const containers = new Set([
-        'moov', 'trak', 'mdia', 'minf', 'stbl', 'edts', 'dinf', 'mvex', 'moof', 'traf', 'mfra', 'skip'
-      ]);
-      let stripped = false;
-      const ranges = [{ start: 0, end: uint8.length }];
-      while (ranges.length) {
-        const range = ranges.pop();
-        let offset = range.start;
-        while (offset + 8 <= range.end) {
-          let size = view.getUint32(offset, false);
-          let boxOffset = offset;
-          if (size === 1) {
-            if (offset + 16 > range.end) {
-              break;
-            }
-            // 64-bit size; lower 32 bits are enough for the sizes we handle here.
-            size = view.getUint32(offset + 12, false);
-            boxOffset += 8;
-          } else if (size === 0) {
-            size = range.end - offset;
-          }
-          if (size < 8) {
-            break;
-          }
-          const boxEnd = offset + size;
-          if (boxEnd > range.end) {
-            break;
-          }
-          const type = utf8Decoder.decode(uint8.subarray(boxOffset + 4, boxOffset + 8));
-          if (removable.has(type)) {
-            uint8[boxOffset + 4] = 0x66; // f
-            uint8[boxOffset + 5] = 0x72; // r
-            uint8[boxOffset + 6] = 0x65; // e
-            uint8[boxOffset + 7] = 0x65; // e
-            stripped = true;
-          } else if (containers.has(type)) {
-            let childOffset = boxOffset + 8;
-            if (type === 'meta') {
-              childOffset += 4; // FullBox version/flags
-            }
-            if (childOffset + 8 <= boxEnd) {
-              ranges.push({ start: childOffset, end: boxEnd });
-            }
-          }
-          offset = boxEnd;
         }
       }
       return stripped;
@@ -22132,7 +22786,17 @@ aero|asia|biz|cat|com|coop|dance|info|int|jobs|mobi|moe|museum|name|net|org|post
         spanFileName,
       };
       $.on(el, 'click', this.select);
-      $.on(this.nodes.rm, 'click', e => { e.stopPropagation(); this.rm(); });
+      $.on(this.nodes.rm, 'click', e => {
+        e.stopPropagation();
+        if (!QR.posts.includes(this)) {
+          return;
+        }
+        if (Conf['QR Thumbnail Remove File First'] && this.file) {
+          this.rmFile();
+        } else {
+          this.rm();
+        }
+      });
       $.on(this.nodes.spoiler, 'change', e => {
         this.spoiler = e.target.checked;
         if (this === QR.selected) {
@@ -24395,6 +25059,8 @@ $\
     pointerDownInsideDialog: false,
     customCSSEditorThemeObserver: null,
     stylingPreviewPanel: null,
+    activeSiteStylePicker: null,
+    siteStylePickerOutsideHandler: null,
     prepareDrag(e) {
       const settingsWindow = $('#fourchanx-settings', Settings.dialog);
       const rect = settingsWindow.getBoundingClientRect();
@@ -24422,12 +25088,12 @@ $\
       const add = this.addSection;
       add('All Settings', this.allSettings);
       add('General', this.general);
+      add('Styling', this.styling);
       add('Interface', this.interface);
       add('Threads & Posts', this.threadsAndPosts);
       add('Media', this.media);
       add('Posting', this.posting);
       add('Filtering', this.filter);
-      add('Styling', this.styling);
       add('Keybinds', this.keybinds);
       add('Advanced', this.advanced);
       $.on(d, 'AddSettingsSection', Settings.addSection);
@@ -24534,6 +25200,11 @@ $\
       Settings.customCSSEditorThemeObserver?.disconnect();
       Settings.customCSSEditorThemeObserver = null;
       Settings.closeStylingPreview();
+      if (Settings.siteStylePickerOutsideHandler) {
+        d.removeEventListener('mousedown', Settings.siteStylePickerOutsideHandler, true);
+        Settings.siteStylePickerOutsideHandler = null;
+      }
+      Settings.activeSiteStylePicker = null;
       delete Settings.dialog;
     },
     toggleAllDetails(open) {
@@ -25493,31 +26164,6 @@ Enable it on boards.${location.hostname.split('.')[1]}.org in your browser's pri
       Settings.renderMainGroups(section, {
         categories: ['Posting and Captchas']
       });
-      const fs = $.el('details', { open: true }, { innerHTML: '<summary>Quick Reply Personas</summary>' });
-      const div = $.el('div', {
-        innerHTML: '<textarea name="QR.personas" class="personafield field" spellcheck="false"></textarea>' +
-          '<p>' +
-          'One item per line.<br>' +
-          'Items will be added in the relevant input\'s auto-completion list.<br>' +
-          'Password items will always be used, since there is no password input.<br>' +
-          'Lines starting with a <code>#</code> will be ignored.' +
-          '</p>' +
-          '<ul>You can use these settings with each item, separate them with semicolons:' +
-          '<li>Possible items are: <code>name</code>, <code>options</code> (or equivalently <code>email</code>), <code>subject</code> and <code>password</code>.</li>' +
-          '<li>Wrap values of items with quotes, like this: <code>options:"sage"</code>.</li>' +
-          '<li>Force values as defaults with the <code>always</code> keyword, for example: <code>options:"sage";always</code>.</li>' +
-          '<li>Select specific boards for an item, separated with commas, for example: <code>options:"sage";boards:jp;always</code>.</li>' +
-          '</ul>'
-      });
-      div.dataset.name = 'QR.personas';
-      const textarea = $('textarea', div);
-      $.on(textarea, 'change', $.cb.value);
-      $.add(fs, div);
-      $.add(section, fs);
-      $.get('QR.personas', Conf['QR.personas'], function (item) {
-        textarea.value = item['QR.personas'];
-        textarea.hidden = false;
-      });
     },
     styling(section) {
       let input, name;
@@ -25527,6 +26173,8 @@ Enable it on boards.${location.hostname.split('.')[1]}.org in your browser's pri
         inputs[input.name] = input;
       }
       Settings.populateSiteStylePicker(section, inputs['siteStyle']);
+      Settings.bindSiteStylePicker(section);
+      Settings.bindAddCustomTheme(section);
       const setCheckedState = (checkbox) => {
         const container = checkbox.closest('[data-name]');
         if (!container)
@@ -26084,9 +26732,8 @@ Enable it on boards.${location.hostname.split('.')[1]}.org in your browser's pri
       const editor = $('.custom-css-editor', section);
       const highlight = $('.custom-css-highlight', section);
       const themeSelect = $('#custom-css-theme', section);
-      const heightSelect = $('#custom-css-expanded-height', section);
       const expandButton = $('#custom-css-expand', section);
-      if (!editor || !highlight || !themeSelect || !heightSelect || !expandButton)
+      if (!editor || !highlight || !themeSelect || !expandButton)
         return;
       const syncScroll = () => {
         highlight.scrollTop = textarea.scrollTop;
@@ -26094,18 +26741,11 @@ Enable it on boards.${location.hostname.split('.')[1]}.org in your browser's pri
       };
       const updateExpandedState = (expanded, save = false) => {
         editor.dataset.expanded = expanded ? 'true' : 'false';
+        editor.style.height = expanded ? '500px' : '180px';
         expandButton.dataset.expanded = editor.dataset.expanded;
         expandButton.textContent = expanded ? 'Collapse editor' : 'Expand editor';
-        if (expanded) {
-          editor.style.setProperty('--custom-css-expanded-height', `${heightSelect.value || 500}px`);
-        }
         if (save)
           $.set('settings.customCSSEditorExpanded', expanded);
-      };
-      const updateExpandedHeight = (save = false) => {
-        editor.style.setProperty('--custom-css-expanded-height', `${heightSelect.value || 500}px`);
-        if (save)
-          $.set('settings.customCSSEditorExpandedHeight', heightSelect.value || '500');
       };
       const updateTheme = (save = false) => {
         const choice = themeSelect.value || 'xt-system';
@@ -26117,7 +26757,6 @@ Enable it on boards.${location.hostname.split('.')[1]}.org in your browser's pri
       $.on(textarea, 'scroll', syncScroll);
       $.on(textarea, 'change', () => Settings.renderCustomCSSHighlight(textarea, highlight));
       $.on(themeSelect, 'change', () => updateTheme(true));
-      $.on(heightSelect, 'change', () => updateExpandedHeight(true));
       $.on(expandButton, 'click', () => updateExpandedState(editor.dataset.expanded !== 'true', true));
       Settings.customCSSEditorThemeObserver?.disconnect();
       Settings.customCSSEditorThemeObserver = new MutationObserver(() => {
@@ -26130,16 +26769,12 @@ Enable it on boards.${location.hostname.split('.')[1]}.org in your browser's pri
       });
       $.get({
         'settings.customCSSEditorTheme': 'xt-system',
-        'settings.customCSSEditorExpandedHeight': '500',
         'settings.customCSSEditorExpanded': false,
       }, prefs => {
         const theme = prefs['settings.customCSSEditorTheme'];
-        const height = prefs['settings.customCSSEditorExpandedHeight'];
         const expanded = !!prefs['settings.customCSSEditorExpanded'];
         themeSelect.value = ['xt-system', 'xt-light', 'xt-dark', 'xt-solarized'].includes(theme) ? theme : 'xt-system';
-        heightSelect.value = ['400', '500', '700'].includes(String(height)) ? String(height) : '500';
         updateTheme(false);
-        updateExpandedHeight(false);
         updateExpandedState(expanded, false);
         Settings.renderCustomCSSHighlight(textarea, highlight);
         syncScroll();
@@ -26226,6 +26861,11 @@ Enable it on boards.${location.hostname.split('.')[1]}.org in your browser's pri
       doc.classList.toggle('highlight-own', threadHighlightsEnabled && !!Conf['Highlight Own Posts']);
       doc.classList.toggle('highlight-you', threadHighlightsEnabled && !!Conf['Highlight Posts Quoting You']);
       doc.classList.toggle('highlight-ghost', threadHighlightsEnabled && !!Conf['Highlight Ghost Posts']);
+      // Mark which highlights have an explicit color set so the !important
+      // override rules in variableBase.css can win over user site themes.
+      doc.classList.toggle('xt-set-own-highlight', threadHighlightsEnabled && !!Conf['Highlight Own Posts'] && !!Conf['Highlight Own Color']);
+      doc.classList.toggle('xt-set-you-highlight', threadHighlightsEnabled && !!Conf['Highlight Posts Quoting You'] && !!Conf['Highlight You Color']);
+      doc.classList.toggle('xt-set-ghost-highlight', threadHighlightsEnabled && !!Conf['Highlight Ghost Posts'] && !!Conf['Highlight Ghost Color']);
       doc.classList.toggle('xt-highlight-catalog-own', catalogOwnEnabled);
       doc.classList.toggle('xt-highlight-catalog-watched', catalogWatchedEnabled);
       setVar('--xt-highlight-own', Conf['Highlight Own Color']);
@@ -26600,10 +27240,73 @@ Enable it on boards.${location.hostname.split('.')[1]}.org in your browser's pri
       const to = (v) => Math.round((v + m) * 255).toString(16).padStart(2, '0');
       return `#${to(r)}${to(g)}${to(b)}`;
     },
+    CUSTOM_SITE_THEME_PREFIX: 'custom:',
+    isCustomSiteThemeValue(value) {
+      return typeof value === 'string' && value.startsWith(Settings.CUSTOM_SITE_THEME_PREFIX);
+    },
+    customSiteThemeName(value) {
+      return Settings.isCustomSiteThemeValue(value)
+        ? value.slice(Settings.CUSTOM_SITE_THEME_PREFIX.length)
+        : '';
+    },
+    customSiteThemeList() {
+      const raw = Conf['customSiteThemes'];
+      if (!Array.isArray(raw))
+        return [];
+      const out = [];
+      for (const item of raw) {
+        if (!item || typeof item !== 'object')
+          continue;
+        const name = String(item.name || '').trim();
+        const css = String(item.css || '');
+        if (!name)
+          continue;
+        out.push({ name, css });
+      }
+      return out;
+    },
+    findCustomSiteTheme(name) {
+      return Settings.customSiteThemeList().find(t => t.name === name) || null;
+    },
+    nativeSiteThemes() {
+      const themes = [];
+      const seen = new Set();
+      const add = (value) => {
+        const v = value?.trim();
+        if (!v || seen.has(v))
+          return;
+        seen.add(v);
+        themes.push(v);
+      };
+      const nativeSelector = $.id('styleSelector');
+      if (nativeSelector?.options?.length) {
+        for (const opt of nativeSelector.options)
+          add(opt.value || opt.textContent || '');
+        return themes;
+      }
+      for (const link of $$('link[rel="alternate stylesheet"]', d.head)) {
+        add(link.title);
+      }
+      return themes;
+    },
+    nativeSiteThemeLabel(name) {
+      const trimmed = (name || '').trim();
+      const withoutNew = trimmed.replace(/\s+new$/i, '');
+      return withoutNew || trimmed;
+    },
     populateSiteStylePicker(section, select) {
       if (!select)
         return;
+      const picker = $('.styling-theme-picker', section);
+      const toggleBtn = picker ? $('.styling-theme-toggle', picker) : null;
+      const currentLabel = picker ? $('.styling-theme-current', picker) : null;
+      const menu = picker ? $('.styling-theme-menu', picker) : null;
       const note = $('#styling-site-style-note', section);
+      const nativeThemes = Settings.nativeSiteThemes();
+      const customThemes = Settings.customSiteThemeList();
+      // Rebuild the hidden <select> as the source of truth for value/change events.
+      while (select.firstChild)
+        select.removeChild(select.firstChild);
       const seen = new Set();
       const addOption = (value, text) => {
         if (!value || seen.has(value))
@@ -26611,44 +27314,212 @@ Enable it on boards.${location.hostname.split('.')[1]}.org in your browser's pri
         seen.add(value);
         $.add(select, $.el('option', { value, textContent: text || value }));
       };
-      const nativeSelector = $.id('styleSelector');
-      if (nativeSelector?.options?.length) {
-        for (const opt of nativeSelector.options) {
-          addOption(opt.value, opt.textContent || opt.value);
-        }
-        if (nativeSelector.value && seen.has(nativeSelector.value)) {
-          select.value = nativeSelector.value;
-        }
-        select.disabled = false;
-        if (note)
+      for (const name of nativeThemes)
+        addOption(name, Settings.nativeSiteThemeLabel(name));
+      for (const t of customThemes)
+        addOption(`${Settings.CUSTOM_SITE_THEME_PREFIX}${t.name}`, `Custom: ${t.name}`);
+      const noOptions = seen.size === 0;
+      select.disabled = noOptions;
+      if (toggleBtn)
+        toggleBtn.disabled = noOptions;
+      if (note) {
+        if (noOptions) {
+          note.hidden = false;
+          note.textContent = 'Style options are only available on supported board pages. You can still add custom themes below.';
+        } else {
           note.hidden = true;
+        }
+      }
+      const desired = Conf['siteStyle'];
+      if (desired && seen.has(desired)) {
+        select.value = desired;
+      } else if (!noOptions && select.selectedIndex < 0) {
+        select.selectedIndex = 0;
+      }
+      if (picker && menu && currentLabel) {
+        Settings.renderSiteStyleMenu(picker, menu, select, currentLabel, customThemes, nativeThemes);
+      }
+    },
+    renderSiteStyleMenu(picker, menu, select, currentLabel, customThemes, nativeThemes) {
+      while (menu.firstChild)
+        menu.removeChild(menu.firstChild);
+      const buildItem = (value, label, removable) => {
+        const item = $.el('div', { className: 'styling-theme-item' });
+        item.setAttribute('role', 'option');
+        item.dataset.value = value;
+        const labelEl = $.el('span', { className: 'styling-theme-item-label', textContent: label });
+        $.add(item, labelEl);
+        if (removable) {
+          const removeBtn = $.el('button', {
+            type: 'button',
+            className: 'styling-theme-item-remove',
+            title: 'Remove custom theme',
+            textContent: '✕',
+          });
+          removeBtn.setAttribute('aria-label', `Remove ${label}`);
+          $.on(removeBtn, 'click', (e) => {
+            e.stopPropagation();
+            Settings.removeCustomSiteTheme(Settings.customSiteThemeName(value));
+          });
+          $.add(item, removeBtn);
+        }
+        $.on(item, 'click', () => {
+          Settings.selectSiteStyleValue(select, value);
+          Settings.closeSiteStyleMenu(picker);
+        });
+        return item;
+      };
+      for (const name of nativeThemes) {
+        $.add(menu, buildItem(name, Settings.nativeSiteThemeLabel(name), false));
+      }
+      if (customThemes.length && nativeThemes.length) {
+        $.add(menu, $.el('div', { className: 'styling-theme-divider' }));
+      }
+      for (const t of customThemes) {
+        $.add(menu, buildItem(`${Settings.CUSTOM_SITE_THEME_PREFIX}${t.name}`, `Custom: ${t.name}`, true));
+      }
+      Settings.refreshSiteStyleCurrentLabel(currentLabel, select);
+    },
+    refreshSiteStyleCurrentLabel(label, select) {
+      if (!label)
+        return;
+      const value = select.value;
+      if (!value) {
+        label.textContent = '—';
         return;
       }
-      for (const link of $$('link[rel="alternate stylesheet"]', d.head)) {
-        const value = link.title?.trim();
-        if (!value)
-          continue;
-        addOption(value, value);
-      }
-      if (seen.size === 0) {
-        select.disabled = true;
-        if (note) {
-          note.hidden = false;
-          note.textContent = 'Style options are only available on supported board pages.';
-        }
+      if (Settings.isCustomSiteThemeValue(value)) {
+        label.textContent = `Custom: ${Settings.customSiteThemeName(value)}`;
       } else {
-        select.disabled = false;
-        if (select.options.length && select.selectedIndex < 0) {
-          select.selectedIndex = 0;
-        }
-        if (note)
-          note.hidden = true;
+        label.textContent = Settings.nativeSiteThemeLabel(value);
       }
+    },
+    selectSiteStyleValue(select, value) {
+      if (!value || select.value === value) ;
+      select.value = value;
+      select.dispatchEvent(new Event('change', { bubbles: true }));
+    },
+    openSiteStyleMenu(picker) {
+      const menu = $('.styling-theme-menu', picker);
+      const toggle = $('.styling-theme-toggle', picker);
+      if (!menu || !toggle)
+        return;
+      picker.dataset.open = 'true';
+      menu.hidden = false;
+      toggle.setAttribute('aria-expanded', 'true');
+      Settings.activeSiteStylePicker = picker;
+      if (!Settings.siteStylePickerOutsideHandler) {
+        Settings.siteStylePickerOutsideHandler = (e) => {
+          const target = e.target;
+          const active = Settings.activeSiteStylePicker;
+          if (active && target && !active.contains(target)) {
+            Settings.closeSiteStyleMenu(active);
+          }
+        };
+        d.addEventListener('mousedown', Settings.siteStylePickerOutsideHandler, true);
+      }
+    },
+    closeSiteStyleMenu(picker) {
+      const menu = $('.styling-theme-menu', picker);
+      const toggle = $('.styling-theme-toggle', picker);
+      if (!menu || !toggle)
+        return;
+      picker.dataset.open = 'false';
+      menu.hidden = true;
+      toggle.setAttribute('aria-expanded', 'false');
+      if (Settings.activeSiteStylePicker === picker)
+        Settings.activeSiteStylePicker = null;
+    },
+    refreshSiteStylePickers() {
+      if (!Settings.dialog)
+        return;
+      const section = $('.section-styling', Settings.dialog);
+      if (!section)
+        return;
+      const select = $('[name="siteStyle"]', section);
+      if (!select)
+        return;
+      Settings.populateSiteStylePicker(section, select);
+      // Refresh the merge-mode "currently selected" label.
+      const mergeLabel = $('.styling-add-theme-merge-current', section);
+      if (mergeLabel) {
+        const value = select.value || Conf['siteStyle'] || '';
+        mergeLabel.textContent = !value
+          ? '—'
+          : (Settings.isCustomSiteThemeValue(value)
+            ? `Custom: ${Settings.customSiteThemeName(value)}`
+            : Settings.nativeSiteThemeLabel(value));
+      }
+    },
+    addCustomSiteTheme(name, css) {
+      const trimmedName = (name || '').trim();
+      if (!trimmedName)
+        return { ok: false, error: 'Theme name is required.' };
+      if (!css || !css.trim())
+        return { ok: false, error: 'Theme CSS is empty.' };
+      const list = Settings.customSiteThemeList();
+      if (list.some(t => t.name === trimmedName)) {
+        return { ok: false, error: `A custom theme named "${trimmedName}" already exists.` };
+      }
+      if (Settings.nativeSiteThemes().includes(trimmedName)) {
+        return { ok: false, error: `"${trimmedName}" conflicts with a built-in theme name.` };
+      }
+      list.push({ name: trimmedName, css });
+      Conf['customSiteThemes'] = list;
+      $.set('customSiteThemes', list);
+      Settings.refreshSiteStylePickers();
+      return { ok: true };
+    },
+    removeCustomSiteTheme(name) {
+      if (!name)
+        return;
+      const list = Settings.customSiteThemeList().filter(t => t.name !== name);
+      Conf['customSiteThemes'] = list;
+      $.set('customSiteThemes', list);
+      const activeValue = `${Settings.CUSTOM_SITE_THEME_PREFIX}${name}`;
+      if (Conf['siteStyle'] === activeValue) {
+        // Fall back to the first available native theme (or empty).
+        const fallback = Settings.nativeSiteThemes()[0] || '';
+        Conf['siteStyle'] = fallback;
+        $.set('siteStyle', fallback);
+        if (Settings.dialog) {
+          const select = $('#fourchanx-settings [name="siteStyle"]');
+          if (select) {
+            // Refresh first so the new option set is in the select before we dispatch.
+            Settings.refreshSiteStylePickers();
+            select.value = fallback;
+            select.dispatchEvent(new Event('change', { bubbles: true }));
+            return;
+          }
+        }
+        $.event('CustomSiteThemeChanged');
+      }
+      Settings.refreshSiteStylePickers();
+      $.event('CustomSiteThemeChanged');
     },
     siteStyle() {
       const style = this.value;
-      if (!style)
+      if (Settings.dialog) {
+        const picker = $('.styling-theme-picker', Settings.dialog);
+        if (picker) {
+          const label = $('.styling-theme-current', picker);
+          if (label)
+            Settings.refreshSiteStyleCurrentLabel(label, this);
+        }
+      }
+      if (!style) {
+        $.event('CustomSiteThemeChanged');
         return;
+      }
+      if (Settings.isCustomSiteThemeValue(style)) {
+        // Custom themes are applied by Main.setClass()/applyCustomSiteTheme().
+        $.event('CustomSiteThemeChanged');
+        if (Conf['siteStyleHome']) {
+          // Custom themes can't be applied to the home page via cookie.
+          Settings.setSiteStyleHomeCookie('');
+        }
+        return;
+      }
       const nativeSelector = $.id('styleSelector');
       if (nativeSelector?.options?.length) {
         const hasStyle = Array.from(nativeSelector.options).some(opt => opt.value === style);
@@ -26657,9 +27528,170 @@ Enable it on boards.${location.hostname.split('.')[1]}.org in your browser's pri
           nativeSelector.dispatchEvent(new Event('change', { bubbles: true }));
         }
       }
+      $.event('CustomSiteThemeChanged');
       if (Conf['siteStyleHome']) {
         Settings.setSiteStyleHomeCookie(style);
       }
+    },
+    bindSiteStylePicker(section) {
+      const picker = $('.styling-theme-picker', section);
+      if (!picker)
+        return;
+      const toggle = $('.styling-theme-toggle', picker);
+      if (toggle) {
+        $.on(toggle, 'click', (e) => {
+          e.preventDefault();
+          if (toggle.disabled)
+            return;
+          if (picker.dataset.open === 'true')
+            Settings.closeSiteStyleMenu(picker);
+          else
+            Settings.openSiteStyleMenu(picker);
+        });
+      }
+    },
+    bindAddCustomTheme(section) {
+      const container = $('.styling-add-theme', section);
+      if (!container)
+        return;
+      const nameInput = $('.styling-add-theme-name', container);
+      const sourceSelect = $('.styling-add-theme-source-select', container);
+      const fileInput = $('.styling-add-theme-file', container);
+      const pasteInput = $('.styling-add-theme-paste', container);
+      const mergeCurrentLabel = $('.styling-add-theme-merge-current', container);
+      const addBtn = $('.styling-add-theme-button', container);
+      const status = $('.styling-add-theme-status', container);
+      if (!nameInput || !sourceSelect || !fileInput || !pasteInput || !addBtn)
+        return;
+      const siteStyleSelect = $('[name="siteStyle"]', section);
+      const refreshMergeCurrent = () => {
+        if (!mergeCurrentLabel)
+          return;
+        const value = siteStyleSelect?.value || Conf['siteStyle'] || '';
+        mergeCurrentLabel.textContent = !value
+          ? '—'
+          : (Settings.isCustomSiteThemeValue(value)
+            ? `Custom: ${Settings.customSiteThemeName(value)}`
+            : Settings.nativeSiteThemeLabel(value));
+      };
+      if (siteStyleSelect)
+        $.on(siteStyleSelect, 'change', refreshMergeCurrent);
+      refreshMergeCurrent();
+      const showStatus = (msg, ok) => {
+        if (!status)
+          return;
+        status.textContent = msg;
+        status.dataset.kind = ok ? 'ok' : 'error';
+        status.hidden = !msg;
+      };
+      const setMode = (mode) => {
+        for (const input of $$('.styling-add-theme-input', container)) {
+          input.hidden = input.dataset.mode !== mode;
+        }
+      };
+      $.on(sourceSelect, 'change', () => {
+        setMode(sourceSelect.value);
+        showStatus('', true);
+      });
+      setMode(sourceSelect.value);
+      const readFileAsText = (file) => new Promise((resolve, reject) => {
+        const reader = new FileReader();
+        reader.onload = () => resolve(String(reader.result || ''));
+        reader.onerror = () => reject(reader.error || new Error('Read failed'));
+        reader.readAsText(file);
+      });
+      const finalize = (result, themeName) => {
+        if (!result.ok) {
+          showStatus(result.error || 'Could not add theme.', false);
+          return;
+        }
+        showStatus(`Added "${themeName}".`, true);
+        nameInput.value = '';
+        fileInput.value = '';
+        pasteInput.value = '';
+      };
+      $.on(addBtn, 'click', async () => {
+        const themeName = nameInput.value.trim();
+        if (!themeName) {
+          showStatus('Theme name is required.', false);
+          return;
+        }
+        const mode = sourceSelect.value;
+        try {
+          if (mode === 'file') {
+            const file = fileInput.files?.[0];
+            if (!file) {
+              showStatus('Choose a CSS file first.', false);
+              return;
+            }
+            const css = await readFileAsText(file);
+            finalize(Settings.addCustomSiteTheme(themeName, css), themeName);
+          } else if (mode === 'paste') {
+            const css = pasteInput.value;
+            if (!css.trim()) {
+              showStatus('Paste some CSS first.', false);
+              return;
+            }
+            finalize(Settings.addCustomSiteTheme(themeName, css), themeName);
+          } else if (mode === 'merge') {
+            const base = siteStyleSelect?.value || Conf['siteStyle'] || '';
+            if (!base) {
+              showStatus('Select a base theme in the Theme dropdown above first.', false);
+              return;
+            }
+            const userCSS = String(Conf['usercss'] || '');
+            if (!userCSS.trim()) {
+              showStatus('Custom CSS is empty — add CSS in the Custom CSS section below first.', false);
+              return;
+            }
+            const baseLabel = Settings.isCustomSiteThemeValue(base)
+              ? `Custom: ${Settings.customSiteThemeName(base)}`
+              : Settings.nativeSiteThemeLabel(base);
+            showStatus(`Fetching "${baseLabel}" stylesheet…`, true);
+            try {
+              const baseCSS = await Settings.fetchBaseThemeCSS(base);
+              const combined = `/* === Base theme: ${baseLabel} === */\n${baseCSS}\n\n/* === Custom CSS overrides === */\n${userCSS}\n`;
+              finalize(Settings.addCustomSiteTheme(themeName, combined), themeName);
+            } catch (err) {
+              showStatus(`Could not fetch "${baseLabel}": ${err?.message || err}`, false);
+            }
+          }
+        } catch (err) {
+          showStatus(`Failed: ${err?.message || err}`, false);
+        }
+      });
+    },
+    async fetchBaseThemeCSS(value) {
+      if (Settings.isCustomSiteThemeValue(value)) {
+        const theme = Settings.findCustomSiteTheme(Settings.customSiteThemeName(value));
+        if (!theme)
+          throw new Error('custom theme not found in storage');
+        return String(theme.css || '');
+      }
+      // Find the <link> for the requested native theme name and read its CSS via fetch.
+      const links = $$('link[rel="alternate stylesheet"], link[rel="stylesheet"]', d.head);
+      let href = null;
+      for (const link of links) {
+        if ((link.title || '').trim() === value) {
+          href = link.href;
+          break;
+        }
+      }
+      if (!href) {
+        // Fallback: native style selector may point at a script-managed sheet.
+        const selector = $.id('styleSelector');
+        if (selector && selector.value === value) {
+          const active = $(g.SITE.selectors.styleSheet);
+          if (active?.href)
+            href = active.href;
+        }
+      }
+      if (!href)
+        throw new Error('stylesheet URL not found');
+      const res = await fetch(href, { credentials: 'omit' });
+      if (!res.ok)
+        throw new Error(`HTTP ${res.status}`);
+      return await res.text();
     },
     siteStyleHome() {
       if (!this.checked)
@@ -26808,6 +27840,7 @@ Enable it on boards.${location.hostname.split('.')[1]}.org in your browser's pri
         'customCSSHome',
         'siteStyle',
         'siteStyleHome',
+        'customSiteThemes',
         'Enable Thread Highlights',
         'Enable Catalog Highlights',
         'textColorMode',
@@ -26863,7 +27896,6 @@ Enable it on boards.${location.hostname.split('.')[1]}.org in your browser's pri
         'Scroll Marker Unread Opacity',
         ...stylingOnlyKeys,
         'settings.customCSSEditorTheme',
-        'settings.customCSSEditorExpandedHeight',
         'settings.customCSSEditorExpanded'
       ];
       options['Custom CSS'] = ['Custom CSS', 'usercss'];
@@ -27315,15 +28347,19 @@ Enable it on boards.${location.hostname.split('.')[1]}.org in your browser's pri
       Settings.advancedFilter(advancedPanel, previewState);
       Settings.easyFilters(simplePanel, previewState);
       $.add(advancedPanel, previewPanel);
-      const simpleDetails = $.el('details', { open: true }, { innerHTML: '<summary>Simple Rules</summary>' });
-      const advancedDetails = $.el('details', { open: false }, { innerHTML: '<summary>Advanced Rules</summary>' });
-      $.add(simpleDetails, simplePanel);
-      $.add(advancedDetails, advancedPanel);
-      $.add(section, [simpleDetails, advancedDetails]);
-      const detailsByMode = {
-        simple: simpleDetails,
-        advanced: advancedDetails
+      const details = $.el('details', { open: true }, { innerHTML: '<summary>Filtering Rules</summary>' });
+      const subnav = $.el('div', { className: 'settings-subnav' });
+      const simpleModePanel = $.el('div', { className: 'filter-mode-panel filter-mode-simple' });
+      const advancedModePanel = $.el('div', { className: 'filter-mode-panel filter-mode-advanced', hidden: true });
+      $.add(simpleModePanel, simplePanel);
+      $.add(advancedModePanel, advancedPanel);
+      $.add(details, [subnav, simpleModePanel, advancedModePanel]);
+      $.add(section, details);
+      const panelByMode = {
+        simple: simpleModePanel,
+        advanced: advancedModePanel,
       };
+      const tabByMode = {};
       const applyForcedFilterType = () => {
         if (!Settings.forcedFilterType)
           return;
@@ -27335,53 +28371,41 @@ Enable it on boards.${location.hostname.split('.')[1]}.org in your browser's pri
         select.value = forceType;
         Settings.selectFilter.call(select);
       };
-      const filteringSectionInfo = { title: 'Filtering' };
-      const hasRememberedAccordionState = () => {
-        if (!Settings.rememberLayout)
-          return false;
-        for (const details of Object.values(detailsByMode)) {
-          const key = Settings.detailsStateKey(details, filteringSectionInfo);
-          if (!key)
-            continue;
-          if (Object.prototype.hasOwnProperty.call(Settings.detailsState, key))
-            return true;
+      const setMode = (mode) => {
+        if (!panelByMode[mode])
+          mode = 'simple';
+        for (const key in panelByMode) {
+          panelByMode[key].hidden = key !== mode;
+          if (tabByMode[key]) {
+            tabByMode[key].classList.toggle('settings-subnav-tab-selected', key === mode);
+            tabByMode[key].setAttribute('aria-pressed', key === mode ? 'true' : 'false');
+          }
         }
-        return false;
-      };
-      let syncing = false;
-      const openMode = (mode) => {
-        syncing = true;
-        for (const key in detailsByMode) {
-          detailsByMode[key].open = key === mode;
-        }
-        syncing = false;
         if (mode === 'advanced')
           applyForcedFilterType();
         $.set('settings.filtersMode', mode);
         Settings.refreshCombinedFilterPreview(previewState);
       };
-      for (const [mode, details] of Object.entries(detailsByMode)) {
-        $.on(details, 'toggle', function () {
-          if (syncing || !this.open)
-            return;
-          openMode(mode);
+      const addModeTab = (mode, label) => {
+        const tab = $.el('button', {
+          type: 'button',
+          className: 'settings-subnav-tab',
+          textContent: label,
         });
-      }
+        tabByMode[mode] = tab;
+        $.on(tab, 'click', () => setMode(mode));
+        $.add(subnav, tab);
+      };
+      addModeTab('simple', 'Simple');
+      addModeTab('advanced', 'Advanced');
       $.get('settings.filtersMode', 'simple', (item) => {
-        if (hasRememberedAccordionState()) {
-          if (Settings.forcedFiltersMode && detailsByMode[Settings.forcedFiltersMode]) {
-            openMode(Settings.forcedFiltersMode);
-            Settings.forcedFiltersMode = null;
-          } else {
-            Settings.refreshCombinedFilterPreview(previewState);
-          }
-          return;
-        }
         let mode = Settings.forcedFiltersMode || item['settings.filtersMode'];
         Settings.forcedFiltersMode = null;
         if (!['simple', 'advanced'].includes(mode))
           mode = 'simple';
-        openMode(mode);
+        if (mode === 'advanced')
+          details.open = true;
+        setMode(mode);
       });
     },
     advancedFilter(section, previewState) {
@@ -28403,6 +29427,19 @@ Enable it on boards.${location.hostname.split('.')[1]}.org in your browser's pri
       e.preventDefault();
       e.stopPropagation();
       const key = Keybinds.keyCode(e);
+      if (this.name === 'Watch (catalog click)') {
+        if (key === '') { // backspace clears
+          this.value = '';
+          $.cb.value.call(this);
+          return;
+        }
+        const mods = Keybinds.modifierString(e);
+        if (!mods)
+          return; // ignore unmodified keys for this modifier-only field
+        this.value = mods;
+        $.cb.value.call(this);
+        return;
+      }
       if (key == null)
         return; // empty string is backspace
       this.value = key;
@@ -32727,6 +33764,10 @@ Enable it on boards.${location.hostname.split('.')[1]}.org in your browser's pri
         usercss: '',
       };
       ($.getSync || $.get)(defaults, (items) => {
+        // Custom themes don't apply to the home page via 4chan's style cookie.
+        if (typeof items.siteStyle === 'string' && items.siteStyle.startsWith('custom:')) {
+          items.siteStyle = '';
+        }
         const normalizedStyle = Main.normalizeSiteStyle(items.siteStyle);
         if (items.siteStyleHome && normalizedStyle) {
           // Persist 4chan's own theme cookie so future homepage requests render
@@ -32909,10 +33950,59 @@ Enable it on boards.${location.hostname.split('.')[1]}.org in your browser's pri
     setClass() {
       let mainStyleSheet, style, styleSheets;
       const knownStyles = ['yotsuba', 'yotsuba-b', 'futaba', 'burichan', 'photon', 'tomorrow', 'spooky'];
+      const customPrefix = 'custom:';
+      const isCustomSiteStyle = (v) => typeof v === 'string' && v.startsWith(customPrefix);
+      const findCustomTheme = (value) => {
+        if (!isCustomSiteStyle(value)) return null;
+        const name = value.slice(customPrefix.length);
+        const list = Array.isArray(Conf['customSiteThemes']) ? Conf['customSiteThemes'] : [];
+        return list.find(t => t && t.name === name) || null;
+      };
+      const applyCustomTheme = (theme) => {
+        if (!theme) {
+          if (Main.customSiteThemeStyle) {
+            $.rm(Main.customSiteThemeStyle);
+            delete Main.customSiteThemeStyle;
+          }
+          if (mainStyleSheet && mainStyleSheet.disabled) {
+            mainStyleSheet.disabled = false;
+          }
+          $.rmClass(doc, 'xt-custom-site-theme');
+          return false;
+        }
+        // Strip any built-in theme class so the custom CSS owns the look.
+        for (const cls of knownStyles) $.rmClass(doc, cls);
+        style = null;
+        if (mainStyleSheet) mainStyleSheet.disabled = true;
+        if (!Main.customSiteThemeStyle) {
+          Main.customSiteThemeStyle = $.el('style', { id: 'xt-custom-site-theme-css' });
+        }
+        Main.customSiteThemeStyle.textContent = String(theme.css || '');
+        // Insert before fourchanx-css so 4chan-X rules (highlights, etc.) win,
+        // mirroring how native themes (<link> in head) sit before fourchanx-css.
+        const anchor = $.id('fourchanx-css');
+        if (anchor && anchor.parentNode) {
+          anchor.parentNode.insertBefore(Main.customSiteThemeStyle, anchor);
+        } else if (d.head) {
+          $.add(d.head, Main.customSiteThemeStyle);
+        }
+        $.addClass(doc, 'xt-custom-site-theme');
+        Settings.applyStylingVars();
+        return true;
+      };
       let preferredStyleApplied = false;
       const applyPreferredStyle = function() {
         if (preferredStyleApplied || g.SITE.software !== 'yotsuba' || !Conf['siteStyle']) { return; }
         const preferred = Conf['siteStyle'];
+
+        if (isCustomSiteStyle(preferred)) {
+          const theme = findCustomTheme(preferred);
+          if (theme) {
+            applyCustomTheme(theme);
+            preferredStyleApplied = true;
+          }
+          return;
+        }
 
         const styleSelector = $.id('styleSelector');
         if (styleSelector?.options?.length) {
@@ -32954,8 +34044,23 @@ Enable it on boards.${location.hostname.split('.')[1]}.org in your browser's pri
 
       const setStyle = function() {
         let activeStyleTitle = null;
+        let customThemeApplied = false;
+        // Custom themes win: disable the native sheet and inject the user CSS.
+        if (g.SITE.software === 'yotsuba' && isCustomSiteStyle(Conf['siteStyle'])) {
+          const theme = findCustomTheme(Conf['siteStyle']);
+          if (theme) {
+            $.rmClass(doc, style);
+            if (applyCustomTheme(theme)) {
+              preferredStyleApplied = true;
+              customThemeApplied = true;
+            }
+          }
+        } else {
+          // Re-enable native sheet and tear down any leftover custom theme.
+          applyCustomTheme(null);
+        }
         // Use preconfigured CSS for 4chan's default themes.
-        if (g.SITE.software === 'yotsuba') {
+        if (g.SITE.software === 'yotsuba' && !customThemeApplied) {
           $.rmClass(doc, style);
           style = null;
           for (var styleSheet of styleSheets) {
@@ -32967,7 +34072,7 @@ Enable it on boards.${location.hostname.split('.')[1]}.org in your browser's pri
               break;
             }
           }
-          if (activeStyleTitle && (Conf['siteStyle'] !== activeStyleTitle)) {
+          if (activeStyleTitle && !isCustomSiteStyle(Conf['siteStyle']) && (Conf['siteStyle'] !== activeStyleTitle)) {
             Conf['siteStyle'] = activeStyleTitle;
             $.set('siteStyle', activeStyleTitle);
             if (Conf['siteStyleHome']) {
@@ -33022,6 +34127,8 @@ Enable it on boards.${location.hostname.split('.')[1]}.org in your browser's pri
           const syncSiteStyle = function() {
             const selected = styleSelector.value;
             if (!selected) { return; }
+            // Don't clobber a custom theme selection with the native dropdown's value.
+            if (isCustomSiteStyle(Conf['siteStyle'])) { return; }
             if (Conf['siteStyle'] !== selected) {
               Conf['siteStyle'] = selected;
               $.set('siteStyle', selected);
@@ -33039,6 +34146,11 @@ Enable it on boards.${location.hostname.split('.')[1]}.org in your browser's pri
           attributeFilter: ['href']
         });
         $.on(mainStyleSheet, 'load', setStyle);
+        // Re-run setStyle when the user adds, removes, or switches a custom theme.
+        $.on(d, 'CustomSiteThemeChanged', () => {
+          preferredStyleApplied = false;
+          setStyle();
+        });
         return setStyle();
       });
       if (!mainStyleSheet) {
@@ -33518,6 +34630,8 @@ User agent: ${navigator.userAgent}\
       ['Fappe Tyme',                FappeTyme],
       ['Gallery',                   Gallery],
       ['Gallery (menu)',            Gallery.menu],
+      ['Download All Media',        DownloadAll],
+      ['Download All Media (menu)', DownloadAll.menu],
       ['Sauce',                     Sauce],
       ['Image Expansion',           ImageExpand],
       ['Image Expansion (Menu)',    ImageExpand.menu],

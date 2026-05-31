@@ -135,7 +135,7 @@ var ThreadWatcher = {
           href:      'javascript:;',
           className: 'has-shortcut-text'
         }
-        , {innerHTML: '<span></span><span class="shortcut-text">Alt+click</span>'}),
+        , {innerHTML: '<span></span><span class="shortcut-text"></span>'}),
         order: 6,
         open({thread}) {
           if (Conf['Index Mode'] !== 'catalog') { return false; }
@@ -143,6 +143,8 @@ var ThreadWatcher = {
             'Unwatch'
           :
             'Watch';
+          const mods = Conf['Watch (catalog click)'];
+          this.el.lastElementChild.textContent = mods ? `${mods}+click` : '';
           if (this.cb) { $.off(this.el, 'click', this.cb); }
           this.cb = function() {
             $.event('CloseMenu');
@@ -209,7 +211,15 @@ var ThreadWatcher = {
   catalogNode() {
     if (ThreadWatcher.isWatched(this.thread)) { $.addClass(this.nodes.root, 'watched'); }
     return $.on(this.nodes.root, 'mousedown click', e => {
-      if ((e.button !== 0) || !e.altKey) return;
+      if (e.button !== 0) return;
+      const wanted = Conf['Watch (catalog click)'];
+      if (!wanted) return;
+      const got = [];
+      if (e.altKey)   { got.push('Alt'); }
+      if (e.ctrlKey)  { got.push('Ctrl'); }
+      if (e.metaKey)  { got.push('Meta'); }
+      if (e.shiftKey) { got.push('Shift'); }
+      if (got.join('+') !== wanted) return;
       if (e.type === 'click') ThreadWatcher.toggle(this.thread, true);
       return e.preventDefault();
     });
