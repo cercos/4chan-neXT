@@ -408,8 +408,13 @@ var QR = {
 
   blurMouseFocusedAction(e: MouseEvent) {
     // Keep keyboard focus behavior; only blur on pointer click.
-    if (e.detail > 0) {
-      (e.currentTarget as HTMLElement)?.blur?.();
+    QR.blurPointerFocusedElement(e.currentTarget as HTMLElement | null, e.detail);
+  },
+
+  blurPointerFocusedElement(el: HTMLElement | null, detail: number) {
+    // Keep keyboard focus behavior; only blur on pointer click.
+    if (detail > 0) {
+      el?.blur?.();
     }
   },
 
@@ -985,12 +990,11 @@ var QR = {
       QR.blurMouseFocusedAction(e);
     });
     $.on(nodes.compress,       'click',     async e => {
-      try {
-        if (!QR.selected.file) { return; }
-        QR.handleFiles([await QR.convert(QR.selected.file)]);
-      } finally {
-        QR.blurMouseFocusedAction(e);
-      }
+      // `currentTarget` is not stable after `await`, so capture and blur now.
+      const action = e.currentTarget as HTMLElement | null;
+      QR.blurPointerFocusedElement(action, e.detail);
+      if (!QR.selected.file) { return; }
+      QR.handleFiles([await QR.convert(QR.selected.file)]);
     });
     $.on(nodes.view,           'click',     QR.preview);
     $.on(nodes.restoreNameButton,'click',   e => {

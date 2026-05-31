@@ -21383,8 +21383,12 @@ aero|asia|biz|cat|com|coop|dance|info|int|jobs|mobi|moe|museum|name|net|org|post
     },
     blurMouseFocusedAction(e) {
       // Keep keyboard focus behavior; only blur on pointer click.
-      if (e.detail > 0) {
-        e.currentTarget?.blur?.();
+      QR.blurPointerFocusedElement(e.currentTarget, e.detail);
+    },
+    blurPointerFocusedElement(el, detail) {
+      // Keep keyboard focus behavior; only blur on pointer click.
+      if (detail > 0) {
+        el?.blur?.();
       }
     },
     setCustomCooldown(enabled) {
@@ -21948,14 +21952,13 @@ aero|asia|biz|cat|com|coop|dance|info|int|jobs|mobi|moe|museum|name|net|org|post
         QR.blurMouseFocusedAction(e);
       });
       $.on(nodes.compress, 'click', async (e) => {
-        try {
-          if (!QR.selected.file) {
-            return;
-          }
-          QR.handleFiles([await QR.convert(QR.selected.file)]);
-        } finally {
-          QR.blurMouseFocusedAction(e);
+        // `currentTarget` is not stable after `await`, so capture and blur now.
+        const action = e.currentTarget;
+        QR.blurPointerFocusedElement(action, e.detail);
+        if (!QR.selected.file) {
+          return;
         }
+        QR.handleFiles([await QR.convert(QR.selected.file)]);
       });
       $.on(nodes.view, 'click', QR.preview);
       $.on(nodes.restoreNameButton, 'click', e => {
