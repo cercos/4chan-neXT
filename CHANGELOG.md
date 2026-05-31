@@ -3,6 +3,10 @@
 4chan-neXT uses a different user script namespace than 4chan X, so to migrate you need to export settings from 4chan X,
 and import them in 4chan-neXT.
 
+### Unreleased
+
+- Added scrollbar hover thumbnail preview.
+
 ### 1.0.3 (2026-05-31)
 
 - Fixed QR dump list.

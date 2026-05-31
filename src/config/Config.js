@@ -537,6 +537,10 @@ const Config = {
         true,
         'Show colored markers along the right edge of the page for tracked posts. Uses the highlight colors from the Style settings.'
       ],
+      'Scrollbar Marker Hover Preview': [
+        true,
+        'Show a floating post preview when hovering scrollbar markers.'
+      ],
       'Scrollbar Mark Own Posts': [
         true,
         'Mark your own posts in the scrollbar.',

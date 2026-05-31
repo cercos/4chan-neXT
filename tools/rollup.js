@@ -5,7 +5,7 @@ import faFix from './rollup-plugin-fa.js';
 import { dirname, resolve } from 'path';
 import { fileURLToPath } from 'url';
 import generateMetadata from '../src/meta/metadata.js';
-import { copyFile, readFile, writeFile } from 'fs/promises';
+import { copyFile, mkdir, readFile, writeFile } from 'fs/promises';
 import importBase64 from './rollup-plugin-base64.js';
 import generateManifestJson from '../src/meta/manifestJson.js';
 import terser from '@rollup/plugin-terser';
@@ -18,7 +18,8 @@ import removeTestCode from './rollup-plugin-remove-test-code.js';
 
 const __dirname = dirname(fileURLToPath(import.meta.url));
 
-const buildDir = resolve(__dirname, '../builds/');
+const buildDirArg = process.argv.find(arg => arg.startsWith('-build-dir='))?.slice(11);
+const buildDir = buildDirArg ? resolve(__dirname, '..', buildDirArg) : resolve(__dirname, '../builds/');
 
 const minify = process.argv.includes('-min');
 const noFormat = process.argv.includes('-no-format');
@@ -166,6 +167,7 @@ const tsPlugin = typescript({
 
   // user script
   if (platform !== 'crx') {
+    await mkdir(buildDir, { recursive: true });
     await bundle.write({
       ...sharedBundleOpts,
       banner: (metaNoDownload + license).replace(/\r\n/g, '\n'),
@@ -186,6 +188,7 @@ const tsPlugin = typescript({
   // chrome extension
   if (platform !== 'userscript') {
     const crxDir = resolve(buildDir, 'crx');
+    await mkdir(crxDir, { recursive: true });
     await bundle.write({
       ...sharedBundleOpts,
       banner: license.replace(/\r\n/g, '\n'),

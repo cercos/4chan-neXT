@@ -12,6 +12,7 @@ const ScrollMarkers = {
   thread: undefined as Thread | undefined,
   flashPost: undefined as Post | undefined,
   flashTimer: 0 as ReturnType<typeof setTimeout> | 0,
+  preview: undefined as { el: HTMLElement; post: Post; marker: HTMLElement } | undefined,
 
   init() {
     if (g.VIEW !== 'thread') return;
@@ -21,6 +22,7 @@ const ScrollMarkers = {
 
     for (const key of [
       'Scrollbar Markers',
+      'Scrollbar Marker Hover Preview',
       'Scrollbar Mark Own Posts',
       'Scrollbar Mark Quotes You',
       'Scrollbar Mark Ghost Posts',
@@ -61,10 +63,12 @@ const ScrollMarkers = {
     const container = ScrollMarkers.container;
     if (!ScrollMarkers.thread || !container?.parentNode) return;
     if (!Conf['Scrollbar Markers']) {
+      ScrollMarkers.hidePreview();
       container.textContent = '';
       container.hidden = true;
       return;
     }
+    ScrollMarkers.hidePreview();
     container.hidden = false;
 
     const docHeight =
@@ -124,12 +128,84 @@ const ScrollMarkers = {
 
   bind(marker: HTMLElement, post: Post) {
     marker.title = `Post No.${post.ID}`;
-    $.on(marker, 'mouseenter', () => ScrollMarkers.highlightPost(post));
-    $.on(marker, 'mouseleave', () => ScrollMarkers.unhighlightPost(post));
+    $.on(marker, 'mouseenter', (e: MouseEvent) => {
+      ScrollMarkers.highlightPost(post);
+      if (Conf['Scrollbar Marker Hover Preview']) {
+        ScrollMarkers.showPreview(marker, post, e);
+      }
+    });
+    $.on(marker, 'mousemove', (e: MouseEvent) => ScrollMarkers.movePreview(marker, e));
+    $.on(marker, 'mouseleave', () => {
+      ScrollMarkers.unhighlightPost(post);
+      ScrollMarkers.hidePreview();
+    });
     $.on(marker, 'click', (e: MouseEvent) => {
       e.preventDefault();
+      ScrollMarkers.hidePreview();
       ScrollMarkers.jumpTo(post);
     });
+  },
+
+  showPreview(marker: HTMLElement, post: Post, e: MouseEvent) {
+    if (!post?.nodes?.root?.isConnected) return;
+    ScrollMarkers.hidePreview();
+
+    const preview = $.el('div', {
+      id: 'qp',
+      className: 'dialog',
+    });
+    const clone = post.addClone(post.context, true);
+    // Match quote preview presentation: keep only the post body,
+    // not side arrows / stubs / other container chrome.
+    $.rmAll(clone.nodes.root);
+    $.add(clone.nodes.root, clone.nodes.post);
+    $.add(preview, clone.nodes.root);
+    $.add(Header.hover, preview);
+    ScrollMarkers.preview = { el: preview, post, marker };
+    ScrollMarkers.positionPreview(e);
+  },
+
+  movePreview(marker: HTMLElement, e: MouseEvent) {
+    if (ScrollMarkers.preview?.marker !== marker) return;
+    ScrollMarkers.positionPreview(e);
+  },
+
+  positionPreview(e: MouseEvent) {
+    const preview = ScrollMarkers.preview?.el;
+    if (!preview) return;
+
+    const rect = preview.getBoundingClientRect();
+    const viewportWidth = d.documentElement.clientWidth;
+    const viewportHeight = d.documentElement.clientHeight;
+    const gap = 16;
+    const edge = 8;
+
+    let left = e.clientX + gap;
+    if (left + rect.width > viewportWidth - edge) {
+      left = Math.max(edge, e.clientX - rect.width - gap);
+    }
+
+    let top = e.clientY - Math.min(120, rect.height / 2);
+    top = Math.max(edge, Math.min(top, viewportHeight - rect.height - edge));
+
+    preview.style.left = `${left}px`;
+    preview.style.top = `${top}px`;
+    preview.style.right = '';
+    preview.style.bottom = '';
+  },
+
+  hidePreview() {
+    const preview = ScrollMarkers.preview;
+    if (!preview) return;
+    ScrollMarkers.preview = undefined;
+    $.event('PostsRemoved', null, Header.hover);
+
+    const cloneRoot = preview.el.firstElementChild as HTMLElement | null;
+    const cloneIndex = cloneRoot?.dataset?.clone;
+    if (cloneIndex != null) {
+      preview.post.rmClone(+cloneIndex);
+    }
+    $.rm(preview.el);
   },
 
   highlightPost(post: Post) {
