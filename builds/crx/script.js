@@ -33671,7 +33671,7 @@ Enable it on boards.${location.hostname.split('.')[1]}.org in your browser's pri
       // Detect multiple copies of 4chan X
       if (doc && $.hasClass(doc, 'fourchan-x')) { return; }
       $.asap(docSet, function() {
-        $.addClass(doc, 'fourchan-xt', 'fourchan-x', 'seaweedchan');
+        $.addClass(doc, 'fourchan-next', 'fourchan-xt', 'fourchan-x', 'seaweedchan');
         if ($.engine) $.addClass(doc, `ua-${$.engine}`);
         BoardConfig.ready(() => {
           if (g.BOARD?.config.ws_board != null) $.addClass(doc, g.BOARD.config.ws_board ? 'ws' : 'nws');
