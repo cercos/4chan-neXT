@@ -155,12 +155,65 @@
 
 <details open>
   <summary>Thread updater sound</summary>
-  <label>
-    Sound volume, between 0 and 1:
-    <input name="beepVolume" type="number" min=".01" max="1" step=".01" class="field" />
-  </label><br />
-  <label>
-    Sound url. Can be a base64 one starting with <code>data:</code>. Leave empty for the default beep.
-    <input type="string" name="beepSource" class="field wide" />
-  </label>
+
+  <div class="sound-row sound-row--field">
+    <label for="beepVolume">Sound volume</label>
+    <input id="beepVolume" name="beepVolume" type="number" min=".01" max="1" step=".01" class="field" />
+    <span class="sound-row__hint">0 – 1</span>
+  </div>
+
+  <div class="sound-section">
+    <div class="sound-section__head">
+      <div class="sound-section__title-wrap">
+        <h4 class="sound-section__title">Sound library</h4>
+        <span class="sound-section__hint">Radio marks the default sound</span>
+      </div>
+      <div class="sound-section__actions">
+        <input type="file" id="sound-upload" accept="audio/*" hidden multiple>
+        <input type="file" id="sound-import" accept="application/json,.json" hidden>
+        <button type="button" id="sound-upload-btn" class="sound-btn sound-btn--primary">+ Add from file</button>
+        <button type="button" id="sound-url-btn" class="sound-btn">+ From URL</button>
+        <button type="button" id="sound-export-btn" class="sound-btn" title="Export sound library and overrides as JSON">Export</button>
+        <button type="button" id="sound-import-btn" class="sound-btn" title="Import a sound export (merges with current library)">Import</button>
+      </div>
+    </div>
+    <div id="sound-library-list" class="sound-list"></div>
+    <div id="sound-url-row" class="sound-compose" hidden>
+      <input type="text" id="sound-url-input" placeholder="https://… or data:audio/…;base64,…" class="field sound-compose__sound" />
+      <button type="button" id="sound-url-add" class="sound-btn">Fetch &amp; add</button>
+      <button type="button" id="sound-url-cancel" class="sound-btn">Cancel</button>
+    </div>
+    <div id="sound-status" class="sound-status" hidden></div>
+  </div>
+
+  <div class="sound-section">
+    <div class="sound-section__head">
+      <h4 class="sound-section__title">Board overrides</h4>
+    </div>
+    <div id="board-sounds-list" class="sound-list"></div>
+    <div class="sound-compose">
+      <input
+        type="text"
+        id="board-sounds-board"
+        placeholder="board (type or pick)"
+        class="field sound-compose__board"
+        list="board-sounds-datalist"
+        autocomplete="off"
+      />
+      <datalist id="board-sounds-datalist"></datalist>
+      <select id="board-sounds-sound" class="sound-compose__sound"></select>
+      <button type="button" id="board-sounds-add" class="sound-btn">Add</button>
+    </div>
+  </div>
+
+  <div class="sound-section">
+    <div class="sound-section__head">
+      <div class="sound-section__title-wrap">
+        <h4 class="sound-section__title">Post overrides</h4>
+        <span class="sound-section__hint">Auto-removed when threads 404</span>
+      </div>
+    </div>
+    <div id="post-sounds-list" class="sound-list"></div>
+  </div>
+
 </details>

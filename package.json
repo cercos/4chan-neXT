@@ -136,6 +136,8 @@
     "build:crx:min": "node ./tools/rollup -min -platform=crx",
     "build:crxp": "npm run build:crx && bash ./tools/pack-crx.sh",
     "build:all": "node ./tools/build-all.js",
+    "removebuild": "node ./tools/remove-build-changes.js",
+    "removebuild:all": "node ./tools/remove-build-changes.js --all",
     "testbuild": "node ./tools/rollup -build-dir=testbuilds",
     "serve:8123": "http-server . -p 8123 -c-1"
   }

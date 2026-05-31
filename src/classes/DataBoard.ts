@@ -41,6 +41,7 @@ export default class DataBoard {
     'watchedThreads',
     'watcherLastModified',
     'customTitles',
+    'sounds',
   ] as const;
 
   declare data: DataBoardData;

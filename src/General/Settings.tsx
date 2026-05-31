@@ -15,6 +15,7 @@ import Keybinds from '../Miscellaneous/Keybinds';
 import Time from '../Miscellaneous/Time';
 import Favicon from '../Monitoring/Favicon';
 import ThreadUpdater from '../Monitoring/ThreadUpdater';
+import SoundManager from '../Monitoring/SoundManager';
 import Unread from '../Monitoring/Unread';
 import $$ from '../platform/$$';
 import $ from '../platform/$';
@@ -3172,7 +3173,10 @@ Enable it on boards.${location.hostname.split('.')[1]}.org in your browser's pri
       'fxtUrl',
       'fxtMaxReplies',
       'beepVolume',
-      'beepSource'
+      'soundLibrary',
+      'boardSounds',
+      'defaultSoundId',
+      'sounds'
     ];
 
     return options;
@@ -4521,8 +4525,385 @@ Enable it on boards.${location.hostname.split('.')[1]}.org in your browser's pri
       $.on(updateArchives, 'click', () => Redirect.update(() => Settings.addArchiveTable(section)));
     }
 
-    $.on(inputs.beepVolume, 'change', () => { ThreadUpdater.playBeep(false); });
-    $.on(inputs.beepSource, 'change', () => { ThreadUpdater.playBeep(false); });
+    if (inputs.beepVolume) {
+      $.on(inputs.beepVolume, 'change', () => { ThreadUpdater.playBeep(false); });
+    }
+
+    Settings.addSoundLibrary(section);
+    Settings.addBoardSoundOverrides(section);
+    Settings.addPostSoundOverrides(section);
+  },
+
+  addSoundLibrary(section) {
+    SoundManager.init();
+    const fileInput = $('#sound-upload', section) as HTMLInputElement;
+    const uploadBtn = $('#sound-upload-btn', section);
+    const list = $('#sound-library-list', section);
+
+    const render = () => {
+      $.rmAll(list);
+      const entries = SoundManager.library();
+      if (!entries.length) {
+        const empty = $.el('div', { className: 'sound-list__empty', textContent: 'No sounds yet — add one above.' });
+        $.add(list, empty);
+      }
+      for (const lib of entries) {
+        const isDefault = SoundManager.isDefault(lib.id);
+        const row = $.el('div', {
+          className: 'sound-list__row'
+            + (lib.builtin ? ' sound-list__row--builtin' : '')
+            + (isDefault ? ' sound-list__row--default' : ''),
+        });
+
+        const radioWrap = $.el('label', { className: 'sound-list__default', title: 'Use as default sound' });
+        const radio = $.el('input', { type: 'radio', name: 'sound-default' }) as HTMLInputElement;
+        radio.checked = isDefault;
+        $.on(radio, 'change', () => {
+          SoundManager.setDefaultSoundId(lib.id, render);
+        });
+        $.add(radioWrap, radio);
+
+        const nameCell = $.el('div', { className: 'sound-list__name' });
+        if (lib.builtin) {
+          const label = $.el('span', { className: 'sound-list__name-label', textContent: lib.name });
+          const badge = $.el('span', { className: 'sound-list__badge', textContent: 'built-in' });
+          $.add(nameCell, [label, badge]);
+        } else {
+          const nameInput = $.el('input', { type: 'text', value: lib.name, className: 'field sound-list__name-input' });
+          $.on(nameInput, 'change', () => SoundManager.renameLibraryEntry(lib.id, nameInput.value));
+          $.add(nameCell, nameInput);
+        }
+
+        const actions = $.el('div', { className: 'sound-list__actions' });
+        const playBtn = $.el('button', { type: 'button', className: 'sound-btn sound-btn--icon', title: 'Preview', textContent: '▶' });
+        $.on(playBtn, 'click', () => ThreadUpdater.playSound(lib.data, false));
+        $.add(actions, playBtn);
+
+        if (!lib.builtin) {
+          const del = $.el('button', { type: 'button', className: 'sound-btn sound-btn--icon sound-btn--danger', title: 'Delete', textContent: '✕' });
+          $.on(del, 'click', () => SoundManager.removeFromLibrary(lib.id, render));
+          $.add(actions, del);
+        }
+
+        $.add(row, [radioWrap, nameCell, actions]);
+        $.add(list, row);
+      }
+      Settings.refreshBoardSoundsSelect(section);
+    };
+
+    $.on(uploadBtn, 'click', () => fileInput.click());
+    $.on(fileInput, 'change', () => {
+      const files = Array.from(fileInput.files || []);
+      if (!files.length) return;
+      let remaining = files.length;
+      const finish = () => { if (--remaining === 0) { fileInput.value = ''; render(); } };
+      for (const file of files) {
+        const reader = new FileReader();
+        reader.onload = () => {
+          const data = reader.result as string;
+          const name = file.name.replace(/\.[^.]+$/, '');
+          SoundManager.addToLibrary(name, data, finish);
+        };
+        reader.onerror = finish;
+        reader.readAsDataURL(file);
+      }
+    });
+
+    Settings.wireSoundUrlAdd(section, render);
+    Settings.wireSoundExportImport(section, render);
+
+    render();
+  },
+
+  wireSoundUrlAdd(section, render: () => void) {
+    const urlBtn = $('#sound-url-btn', section);
+    const urlRow = $('#sound-url-row', section);
+    const urlInput = $('#sound-url-input', section) as HTMLInputElement;
+    const urlAdd = $('#sound-url-add', section);
+    const urlCancel = $('#sound-url-cancel', section);
+    const status = $('#sound-status', section);
+
+    const setStatus = (msg: string, ok = false) => {
+      status.textContent = msg;
+      status.hidden = !msg;
+      status.dataset.kind = ok ? 'ok' : 'error';
+    };
+
+    const showRow = (visible: boolean) => {
+      urlRow.hidden = !visible;
+      if (visible) { urlInput.focus(); setStatus(''); }
+    };
+
+    $.on(urlBtn, 'click', () => showRow(urlRow.hidden));
+    $.on(urlCancel, 'click', () => { urlInput.value = ''; showRow(false); });
+
+    $.on(urlAdd, 'click', () => {
+      const url = urlInput.value.trim();
+      if (!url) return;
+      setStatus('Fetching…', true);
+      fetch(url)
+        .then(r => {
+          if (!r.ok) throw new Error(`HTTP ${r.status}`);
+          return r.blob();
+        })
+        .then(blob => new Promise<string>((resolve, reject) => {
+          const fr = new FileReader();
+          fr.onload = () => resolve(fr.result as string);
+          fr.onerror = () => reject(fr.error);
+          fr.readAsDataURL(blob);
+        }))
+        .then(dataUri => {
+          const name = url.split('/').pop()?.replace(/\.[^.]+$/, '') || 'sound';
+          SoundManager.addToLibrary(name, dataUri, () => {
+            urlInput.value = '';
+            showRow(false);
+            setStatus('');
+            render();
+          });
+        })
+        .catch(err => {
+          setStatus(`Could not fetch: ${err.message || err}. The host may block cross-origin requests.`);
+        });
+    });
+  },
+
+  wireSoundExportImport(section, render: () => void) {
+    const exportBtn = $('#sound-export-btn', section);
+    const importBtn = $('#sound-import-btn', section);
+    const importInput = $('#sound-import', section) as HTMLInputElement;
+    const status = $('#sound-status', section);
+
+    const setStatus = (msg: string, ok = false) => {
+      status.textContent = msg;
+      status.hidden = !msg;
+      status.dataset.kind = ok ? 'ok' : 'error';
+    };
+
+    $.on(exportBtn, 'click', () => {
+      const payload = {
+        kind: '4chan-neXT sound export',
+        version: 1,
+        date: Date.now(),
+        soundLibrary: Conf.soundLibrary || [],
+        boardSounds: Conf.boardSounds || {},
+        defaultSoundId: Conf.defaultSoundId || '',
+        sounds: Conf['sounds'] || {},
+      };
+      const blob = new Blob([JSON.stringify(payload, null, 2)], { type: 'application/json' });
+      const url = URL.createObjectURL(blob);
+      const a = $.el('a', {
+        href: url,
+        download: `4chan-neXT-sounds-${new Date().toISOString().slice(0, 10)}.json`,
+      });
+      $.add(d.body, a);
+      a.click();
+      $.rm(a);
+      setTimeout(() => URL.revokeObjectURL(url), 0);
+    });
+
+    $.on(importBtn, 'click', () => importInput.click());
+    $.on(importInput, 'change', () => {
+      const file = importInput.files?.[0];
+      if (!file) return;
+      const reader = new FileReader();
+      reader.onload = () => {
+        try {
+          const data = JSON.parse(reader.result as string);
+          if (data.kind !== '4chan-neXT sound export') {
+            setStatus('Not a recognized sound export.');
+            return;
+          }
+          Settings.mergeSoundImport(data, () => {
+            importInput.value = '';
+            render();
+            setStatus(`Imported.`, true);
+          });
+        } catch (err) {
+          setStatus(`Import failed: ${err.message || err}`);
+        }
+      };
+      reader.readAsText(file);
+    });
+  },
+
+  mergeSoundImport(data: any, cb: () => void) {
+    // Merge library: keep existing entries; add imported ones that don't collide on id.
+    const existing: any[] = Array.isArray(Conf.soundLibrary) ? Conf.soundLibrary : [];
+    const seen = new Set(existing.map((e: any) => e.id));
+    const merged = [...existing];
+    for (const entry of (data.soundLibrary || [])) {
+      if (entry?.id && !seen.has(entry.id)) {
+        merged.push(entry);
+        seen.add(entry.id);
+      }
+    }
+    Conf.soundLibrary = merged;
+
+    // Merge board overrides: imported wins per key.
+    Conf.boardSounds = { ...(Conf.boardSounds || {}), ...(data.boardSounds || {}) };
+
+    // Default: only adopt if the imported id resolves in the merged library.
+    if (data.defaultSoundId && seen.has(data.defaultSoundId)) {
+      Conf.defaultSoundId = data.defaultSoundId;
+    }
+
+    // Merge DataBoard 'sounds' (post overrides) — deep-merge per site/board/thread.
+    const cur = (Conf['sounds'] && typeof Conf['sounds'] === 'object') ? Conf['sounds'] : dict();
+    const next = JSON.parse(JSON.stringify(cur));
+    const inSounds = data.sounds || {};
+    for (const siteID in inSounds) {
+      const site = inSounds[siteID];
+      if (!site?.boards) continue;
+      if (!next[siteID]) next[siteID] = { boards: dict() };
+      for (const boardID in site.boards) {
+        const board = site.boards[boardID];
+        if (!next[siteID].boards[boardID]) next[siteID].boards[boardID] = dict();
+        for (const threadID in board) {
+          const wrapper = board[threadID];
+          if (!wrapper) continue;
+          const cur = next[siteID].boards[boardID][threadID] || {};
+          const curPosts = { ...(cur.posts || {}) };
+          const inPosts = wrapper.posts || {};
+          for (const postID in inPosts) {
+            if (!(postID in curPosts)) curPosts[postID] = inPosts[postID];
+          }
+          if (Object.keys(curPosts).length) {
+            next[siteID].boards[boardID][threadID] = { ...cur, posts: curPosts };
+          }
+        }
+      }
+    }
+    Conf['sounds'] = next;
+
+    $.set({
+      soundLibrary: Conf.soundLibrary,
+      boardSounds: Conf.boardSounds,
+      defaultSoundId: Conf.defaultSoundId,
+      sounds: Conf['sounds'],
+    }, cb);
+  },
+
+  addBoardSoundOverrides(section) {
+    const list = $('#board-sounds-list', section);
+    const boardInput = $('#board-sounds-board', section) as HTMLInputElement;
+    const soundSelect = $('#board-sounds-sound', section) as HTMLSelectElement;
+    const addBtn = $('#board-sounds-add', section);
+    Settings.populateBoardDatalist(section);
+
+    const render = () => {
+      $.rmAll(list);
+      const all = SoundManager.allBoardOverrides();
+      if (!all.length) {
+        const empty = $.el('div', { className: 'sound-list__empty', textContent: 'No board overrides yet.' });
+        $.add(list, empty);
+        return;
+      }
+      for (const { siteID, boardID, soundId } of all) {
+        const lib = SoundManager.getEntry(soundId);
+        const row = $.el('div', { className: 'sound-list__row' });
+        const nameCell = $.el('div', { className: 'sound-list__name' });
+        const board = $.el('span', { className: 'sound-list__board', textContent: `${siteID}/${boardID}` });
+        const arrow = $.el('span', { className: 'sound-list__sep', textContent: '→' });
+        const sound = $.el('span', {
+          className: 'sound-list__sound' + (lib ? '' : ' sound-list__sound--missing'),
+          textContent: lib?.name || `(missing: ${soundId})`,
+        });
+        $.add(nameCell, [board, arrow, sound]);
+
+        const actions = $.el('div', { className: 'sound-list__actions' });
+        const del = $.el('button', { type: 'button', className: 'sound-btn sound-btn--icon sound-btn--danger', title: 'Remove', textContent: '✕' });
+        $.on(del, 'click', () => {
+          const map = { ...(Conf.boardSounds || {}) };
+          delete map[`${siteID}/${boardID}`];
+          Conf.boardSounds = map;
+          $.set('boardSounds', map, render);
+        });
+        $.add(actions, del);
+
+        $.add(row, [nameCell, actions]);
+        $.add(list, row);
+      }
+    };
+
+    $.on(addBtn, 'click', () => {
+      const boardID = boardInput.value.trim();
+      const soundId = soundSelect.value;
+      if (!boardID || !soundId) return;
+      SoundManager.setBoardOverride(boardID, soundId, render);
+      boardInput.value = '';
+    });
+
+    Settings.refreshBoardSoundsSelect(section);
+    render();
+  },
+
+  refreshBoardSoundsSelect(section) {
+    const sel = $('#board-sounds-sound', section) as HTMLSelectElement;
+    if (!sel) return;
+    $.rmAll(sel);
+    for (const lib of SoundManager.library()) {
+      const opt = $.el('option', { value: lib.id, textContent: lib.name });
+      $.add(sel, opt);
+    }
+  },
+
+  populateBoardDatalist(section) {
+    const datalist = $('#board-sounds-datalist', section);
+    if (!datalist) return;
+    $.rmAll(datalist);
+    const boards = (Conf['boardConfig']?.boards) || {};
+    const seen = new Set<string>();
+    for (const id in boards) {
+      if (seen.has(id)) continue;
+      seen.add(id);
+      const data = boards[id] || {};
+      const title = data.title ? `/${id}/ - ${data.title}` : `/${id}/`;
+      $.add(datalist, $.el('option', { value: id, textContent: title }));
+    }
+    // Also include any boards the user already has overrides for, in case BoardConfig isn't loaded.
+    for (const { boardID } of SoundManager.allBoardOverrides()) {
+      if (seen.has(boardID)) continue;
+      seen.add(boardID);
+      $.add(datalist, $.el('option', { value: boardID }));
+    }
+  },
+
+  addPostSoundOverrides(section) {
+    const list = $('#post-sounds-list', section);
+
+    const render = () => {
+      $.rmAll(list);
+      const all = SoundManager.allPostOverrides();
+      if (!all.length) {
+        const empty = $.el('div', { className: 'sound-list__empty', textContent: 'No post overrides yet.' });
+        $.add(list, empty);
+        return;
+      }
+      for (const { siteID, boardID, threadID, postID, soundId } of all) {
+        const lib = SoundManager.getEntry(soundId);
+        const row = $.el('div', { className: 'sound-list__row' });
+        const nameCell = $.el('div', { className: 'sound-list__name' });
+        const ref = $.el('span', { className: 'sound-list__board', textContent: `${siteID}/${boardID}/${threadID}#${postID}` });
+        const arrow = $.el('span', { className: 'sound-list__sep', textContent: '→' });
+        const sound = $.el('span', {
+          className: 'sound-list__sound' + (lib ? '' : ' sound-list__sound--missing'),
+          textContent: lib?.name || `(missing: ${soundId})`,
+        });
+        $.add(nameCell, [ref, arrow, sound]);
+
+        const actions = $.el('div', { className: 'sound-list__actions' });
+        const del = $.el('button', { type: 'button', className: 'sound-btn sound-btn--icon sound-btn--danger', title: 'Remove', textContent: '✕' });
+        $.on(del, 'click', () => {
+          SoundManager.setPostOverride({ siteID, boardID, threadID, postID }, null, render);
+        });
+        $.add(actions, del);
+
+        $.add(row, [nameCell, actions]);
+        $.add(list, row);
+      }
+    };
+
+    render();
   },
 
   addArchiveTable(section) {

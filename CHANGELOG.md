@@ -3,6 +3,9 @@
 ### Unreleased
 
 - Added scrollbar hover thumbnail preview.
+- Added comment previewing.
+- Fixed highlight colors previewer.
+- Added more options for thead updater sound
 
 ### 1.0.3 (2026-05-31)
 

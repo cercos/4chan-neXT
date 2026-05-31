@@ -32,6 +32,7 @@ import CopyTextLink from "../Menu/CopyTextLink";
 import DeleteLink from "../Menu/DeleteLink";
 import DownloadLink from "../Menu/DownloadLink";
 import ReportLink from "../Menu/ReportLink";
+import SoundLink from "../Menu/SoundLink";
 import AntiAutoplay from "../Miscellaneous/AntiAutoplay";
 import Banner from "../Miscellaneous/Banner";
 import CatalogLinks from "../Miscellaneous/CatalogLinks";
@@ -1175,6 +1176,7 @@ User agent: ${navigator.userAgent}\
     ['Edit Link',                 QR.oekaki.menu],
     ['Download Link',             DownloadLink],
     ['Archive Link',              ArchiveLink],
+    ['Sound Link',                SoundLink],
     ['Quote Inlining',            QuoteInline],
     ['Quote Previewing',          QuotePreview],
     ['Quote Backlinks',           QuoteBacklink],

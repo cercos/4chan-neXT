@@ -1748,6 +1748,229 @@ div[data-checked="false"] > .suboption-list {
   background-color: #FFF;
   padding: 0 2px;
 }
+
+/* Sound settings */
+.sound-row {
+  display: flex;
+  align-items: center;
+  gap: 0.6em;
+  padding: 6px 2px;
+}
+.sound-row--stack {
+  flex-direction: column;
+  align-items: flex-start;
+  gap: 0.3em;
+}
+.sound-row__hint {
+  opacity: 0.55;
+  font-size: 0.85em;
+}
+.sound-section {
+  margin: 12px 0;
+  border: 1px solid rgba(0, 0, 0, .15);
+  border-radius: 6px;
+  overflow: hidden;
+  background: rgba(0, 0, 0, .05);
+}
+.sound-section__head {
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+  gap: 0.5em;
+  padding: 8px 12px;
+  border-bottom: 1px solid rgba(0, 0, 0, .12);
+  background: rgba(0, 0, 0, .07);
+}
+@media (prefers-color-scheme: dark) {
+  .sound-section {
+    border-color: rgba(255, 255, 255, .14);
+    background: rgba(255, 255, 255, .04);
+  }
+  .sound-section__head {
+    border-bottom-color: rgba(255, 255, 255, .12);
+    background: rgba(255, 255, 255, .06);
+  }
+}
+.sound-section__title {
+  margin: 0;
+  font-size: 0.85em;
+  font-weight: 700;
+  letter-spacing: 0.04em;
+  text-transform: uppercase;
+  opacity: 0.75;
+}
+.sound-section__title-wrap {
+  display: flex;
+  align-items: baseline;
+  gap: 0.6em;
+}
+.sound-section__hint {
+  font-size: 0.78em;
+  opacity: 0.55;
+  font-style: italic;
+}
+.sound-section__actions {
+  display: flex;
+  gap: 0.4em;
+}
+.sound-list {
+  display: flex;
+  flex-direction: column;
+}
+.sound-list__row {
+  display: flex;
+  align-items: center;
+  gap: 0.5em;
+  padding: 7px 12px;
+  border-bottom: 1px solid rgba(0, 0, 0, .08);
+  transition: background-color 100ms ease;
+}
+.sound-list__row:last-child {
+  border-bottom: none;
+}
+.sound-list__row:hover {
+  background: rgba(0, 0, 0, .06);
+}
+.sound-list__row--builtin {
+  opacity: 0.92;
+}
+.sound-list__row--default {
+  background: rgba(0, 0, 0, .05);
+}
+@media (prefers-color-scheme: dark) {
+  .sound-list__row {
+    border-bottom-color: rgba(255, 255, 255, .08);
+  }
+  .sound-list__row:hover {
+    background: rgba(255, 255, 255, .06);
+  }
+  .sound-list__row--default {
+    background: rgba(255, 255, 255, .05);
+  }
+}
+.sound-list__row--default .sound-list__name-label,
+.sound-list__row--default .sound-list__name-input {
+  font-weight: 600;
+}
+.sound-list__default {
+  flex: 0 0 auto;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  cursor: pointer;
+  padding: 0 2px;
+}
+.sound-list__default input[type="radio"] {
+  margin: 0;
+  cursor: pointer;
+}
+.sound-list__empty {
+  padding: 14px 12px;
+  text-align: center;
+  font-style: italic;
+  opacity: 0.55;
+}
+.sound-list__name {
+  flex: 1 1 auto;
+  display: flex;
+  align-items: center;
+  gap: 0.5em;
+  min-width: 0;
+  overflow: hidden;
+}
+.sound-list__name-label {
+  font-weight: 500;
+}
+.sound-list__name-input {
+  flex: 1 1 auto;
+  width: 100%;
+  min-width: 0;
+}
+.sound-list__badge {
+  font-size: 0.7em;
+  letter-spacing: 0.04em;
+  text-transform: uppercase;
+  padding: 1px 6px;
+  border-radius: 999px;
+  background: rgba(128, 128, 128, .2);
+  opacity: 0.75;
+}
+.sound-list__board {
+  font-family: monospace;
+  font-size: 0.95em;
+}
+.sound-list__sep {
+  opacity: 0.45;
+}
+.sound-list__sound--missing {
+  opacity: 0.55;
+  font-style: italic;
+}
+.sound-list__actions {
+  display: flex;
+  gap: 0.25em;
+  flex-shrink: 0;
+}
+.sound-btn {
+  cursor: pointer;
+  border: 1px solid rgba(128, 128, 128, .3);
+  background: rgba(128, 128, 128, .08);
+  color: inherit;
+  padding: 4px 10px;
+  border-radius: 4px;
+  font: inherit;
+  font-size: 0.9em;
+  transition: background-color 100ms ease, border-color 100ms ease;
+}
+.sound-btn:hover {
+  background: rgba(128, 128, 128, .18);
+  border-color: rgba(128, 128, 128, .45);
+}
+.sound-btn--primary {
+  font-weight: 600;
+}
+.sound-btn--icon {
+  padding: 2px 8px;
+  min-width: 26px;
+  line-height: 1.2;
+}
+.sound-btn--danger:hover {
+  background: color-mix(in srgb, #d33 22%, transparent);
+  border-color: color-mix(in srgb, #d33 50%, transparent);
+}
+.sound-compose {
+  display: flex;
+  gap: 0.5em;
+  padding: 8px 12px;
+  border-top: 1px solid rgba(0, 0, 0, .12);
+  background: rgba(0, 0, 0, .06);
+}
+@media (prefers-color-scheme: dark) {
+  .sound-compose {
+    border-top-color: rgba(255, 255, 255, .12);
+    background: rgba(255, 255, 255, .06);
+  }
+}
+.sound-compose__board {
+  flex: 0 0 12em;
+}
+.sound-compose__sound {
+  flex: 1 1 auto;
+  min-width: 0;
+}
+.sound-advanced {
+  margin-top: 12px;
+}
+.sound-status {
+  padding: 6px 12px;
+  font-size: 0.85em;
+  border-top: 1px solid rgba(128, 128, 128, .15);
+  color: #c0392b;
+}
+.sound-status[data-kind="ok"] {
+  color: inherit;
+  opacity: 0.7;
+}
 #fourchanx-settings th {
   text-align: center;
   font-weight: bold;

@@ -1427,5 +1427,8 @@ current-archive-text:"Archive"]
 
   beepSource: '',
   beepVolume: 1,
+  soundLibrary: [[]],
+  boardSounds: [{}],
+  defaultSoundId: '',
 };
 export default Config;

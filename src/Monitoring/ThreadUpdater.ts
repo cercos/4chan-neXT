@@ -13,6 +13,9 @@ import { g, Conf, d, doc } from '../globals/globals';
 import UI from '../General/UI';
 import { MINUTE, SECOND } from '../platform/helpers';
 import type Thread from '../classes/Thread';
+import SoundManager from './SoundManager';
+import QuoteYou from '../Quotelinks/QuoteYou';
+import Get from '../General/Get';
 
 /*
  * decaffeinate suggestions:
@@ -134,15 +137,35 @@ var ThreadUpdater = {
   beep: `data:audio/wav;base64,${Beep}`,
 
   playBeep(repeatIfPlaying = true) {
+    const lib = SoundManager.getEntry(SoundManager.getDefaultSoundId());
+    ThreadUpdater.playSound(lib?.data || ThreadUpdater.beep, repeatIfPlaying);
+  },
+
+  playSound(source: string, repeatIfPlaying = true) {
     const { audio } = ThreadUpdater as { audio: HTMLAudioElement };
-    const source = Conf.beepSource || ThreadUpdater.beep
+    if (!source) source = ThreadUpdater.beep;
     if (audio.src !== source) audio.src = source;
     audio.volume = Math.max(.01, Math.min(+Conf.beepVolume, 1));
     if (audio.paused) {
       audio.play();
     } else if (repeatIfPlaying) {
-      $.one(audio, 'ended', ThreadUpdater.playBeep);
+      $.one(audio, 'ended', () => ThreadUpdater.playSound(source, false));
     }
+  },
+
+  /** Find the first new post that quotes a You-post; returns {boardID, threadID, postID} of the quoted You-post. */
+  findFirstQuotedYouPost(posts: Post[]): { boardID: string; threadID: string | number; postID: string | number } | null {
+    if (!QuoteYou.db) return null;
+    for (const post of posts) {
+      if (!post.nodes?.quotelinks) continue;
+      for (const ql of post.nodes.quotelinks) {
+        const data = Get.postDataFromLink(ql);
+        if (QuoteYou.db.get(data)) {
+          return { boardID: data.boardID, threadID: data.threadID, postID: data.postID };
+        }
+      }
+    }
+    return null;
   },
 
   cb: {
@@ -419,11 +442,14 @@ var ThreadUpdater = {
       Main.callbackNodes('Post', posts);
 
       if (d.hidden || !d.hasFocus()) {
-        if (Conf['Beep Quoting You'] && (Unread.postsQuotingYou?.size > unreadQYCount)) {
-          ThreadUpdater.playBeep();
-          if (Conf['Beep']) { ThreadUpdater.playBeep(); }
+        const quotedYou = Conf['Beep Quoting You'] && (Unread.postsQuotingYou?.size > unreadQYCount)
+          ? ThreadUpdater.findFirstQuotedYouPost(posts)
+          : null;
+        const context = { boardID: thread.board.ID as string, threadID: thread.ID as string | number };
+        if (quotedYou) {
+          ThreadUpdater.playSound(SoundManager.resolveSource({ quotedYouPost: quotedYou, context }));
         } else if (Conf['Beep'] && (Unread.posts?.size > 0) && (unreadCount === 0)) {
-          ThreadUpdater.playBeep();
+          ThreadUpdater.playSound(SoundManager.resolveSource({ context }));
         }
       }
 
