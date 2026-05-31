@@ -1,6 +1,6 @@
 // ==UserScript==
 // @name         4chan-neXT
-// @version      1.0.1
+// @version      1.0.2
 // @minGMVer     1.14
 // @minFFVer     78
 // @namespace    4chan-neXT
@@ -169,7 +169,7 @@
   'use strict';
 
   var version = {
-    "version": "1.0.1",
+    "version": "1.0.2",
     "date": "2026-05-30T00:00:00Z"
   }
   ;
@@ -7667,6 +7667,18 @@ div.post {
   flex: 1;
   padding: 4px 8px;
   cursor: pointer;
+  display: flex;
+  flex-direction: column;
+  align-items: flex-start;
+  gap: 2px;
+  line-height: 1.2;
+}
+#download-all-picker .da-buttons .da-btn-title {
+  font-weight: bold;
+}
+#download-all-picker .da-buttons .da-btn-count,
+#download-all-picker .da-buttons .da-btn-size {
+  font-size: 11px;
 }
 .da-progress-cancel {
   margin-left: 6px;
@@ -17232,9 +17244,9 @@ svg.icon {
           '</div>' +
           '<div class="da-body">' +
           '<div class="da-buttons">' +
-          '<button type="button" data-filter="all">All (0)</button>' +
-          '<button type="button" data-filter="image">Images (0)</button>' +
-          '<button type="button" data-filter="video">Videos (0)</button>' +
+          '<button type="button" data-filter="all"><span class="da-btn-title">All</span><span class="da-btn-count">0 files</span><span class="da-btn-size">0 B</span></button>' +
+          '<button type="button" data-filter="image"><span class="da-btn-title">Images</span><span class="da-btn-count">0 files</span><span class="da-btn-size">0 B</span></button>' +
+          '<button type="button" data-filter="video"><span class="da-btn-title">Videos</span><span class="da-btn-count">0 files</span><span class="da-btn-size">0 B</span></button>' +
           '</div>' +
           '<label><input type="checkbox" name="Download All as ZIP"> Bundle as a single ZIP archive</label>' +
           '</div>';
@@ -17265,15 +17277,38 @@ svg.icon {
       if (!DownloadAll.dialog)
         return;
       const items = DownloadAll.collect('all');
-      const images = items.filter(i => i.isImage).length;
-      const videos = items.filter(i => i.isVideo).length;
-      const counts = { all: items.length, image: images, video: videos };
+      const stats = {
+        all: { count: 0, sizeInBytes: 0, unknownSizeCount: 0 },
+        image: { count: 0, sizeInBytes: 0, unknownSizeCount: 0 },
+        video: { count: 0, sizeInBytes: 0, unknownSizeCount: 0 },
+      };
+      for (const item of items) {
+        const hasKnownSize = Number.isFinite(item.sizeInBytes);
+        const add = (kind) => {
+          const stat = stats[kind];
+          stat.count++;
+          if (hasKnownSize) {
+            stat.sizeInBytes += item.sizeInBytes;
+          } else {
+            stat.unknownSizeCount++;
+          }
+        };
+        if (item.isImage)
+          add('image');
+        if (item.isVideo)
+          add('video');
+        if (item.isImage || item.isVideo)
+          add('all');
+      }
       for (const btn of $$('button[data-filter]', DownloadAll.dialog)) {
         const k = btn.dataset.filter;
-        const n = counts[k];
+        const { count, sizeInBytes, unknownSizeCount } = stats[k];
         const label = k === 'all' ? 'All' : k === 'image' ? 'Images' : 'Videos';
-        btn.textContent = `${label} (${n})`;
-        btn.disabled = n === 0;
+        btn.innerHTML =
+          `<span class="da-btn-title">${label}</span>` +
+            `<span class="da-btn-count">${count} ${count === 1 ? 'file' : 'files'}</span>` +
+            `<span class="da-btn-size">${formatAggregateSize(sizeInBytes, unknownSizeCount)}</span>`;
+        btn.disabled = count === 0;
       }
     },
     start(filter) {
@@ -17336,7 +17371,13 @@ svg.icon {
                 const isVideo = $.isVideo(file.url);
                 if (!isImage && !isVideo)
                   continue;
-                items.push({ url: file.url, name: makeName(file.name || file.url, usedNames), isImage, isVideo });
+                items.push({
+                  url: file.url,
+                  name: makeName(file.name || file.url, usedNames),
+                  isImage,
+                  isVideo,
+                  sizeInBytes: getSizeInBytes(file, data.fsize),
+                });
               }
             }
           } else {
@@ -17378,6 +17419,7 @@ svg.icon {
             name: makeName(file.name || file.url.split('/').pop() || 'file', usedNames),
             isImage: !!file.isImage,
             isVideo: !!file.isVideo,
+            sizeInBytes: getSizeInBytes(file, file.sizeInBytes),
           });
         }
       }
@@ -17487,6 +17529,51 @@ svg.icon {
     if (g.THREADID)
       parts.push(String(g.THREADID));
     return parts.join('-') + '.zip';
+  }
+  function formatAggregateSize(sizeInBytes, unknownSizeCount) {
+    const sizeLabel = formatDialogSize(sizeInBytes);
+    if (unknownSizeCount <= 0)
+      return sizeLabel;
+    if (sizeInBytes > 0)
+      return `${sizeLabel} + unknown`;
+    return 'unknown';
+  }
+  function formatDialogSize(sizeInBytes) {
+    let unit = 0;
+    let size = sizeInBytes;
+    while (size >= 1024 && unit < 3) {
+      size /= 1024;
+      unit++;
+    }
+    const rounded = size >= 100 ? Math.round(size) :
+      unit > 1 ? Math.round(size * 100) / 100 :
+        Math.round(size);
+    return `${rounded} ${['B', 'KB', 'MB', 'GB'][unit]}`;
+  }
+  function getSizeInBytes(file, preferred) {
+    return normalizeSizeInBytes(preferred) ??
+      normalizeSizeInBytes(file.sizeInBytes) ??
+      normalizeSizeInBytes(file.size);
+  }
+  function normalizeSizeInBytes(raw) {
+    if (typeof raw === 'number' && Number.isFinite(raw) && raw >= 0)
+      return raw;
+    if (typeof raw !== 'string')
+      return null;
+    return parseSizeString(raw);
+  }
+  function parseSizeString(sizeText) {
+    const match = sizeText.trim().match(/^([\d.,]+)\s*([KMG]?B)$/i);
+    if (!match)
+      return null;
+    const amount = parseFloat(match[1].replace(/,/g, ''));
+    if (!Number.isFinite(amount) || amount < 0)
+      return null;
+    const unit = match[2].toUpperCase();
+    const power = ['B', 'KB', 'MB', 'GB'].indexOf(unit);
+    if (power < 0)
+      return null;
+    return amount * (1024 ** power);
   }
   // --- Minimal store-mode ZIP encoder (no compression).
   // Images/videos are already compressed; store mode is appropriate and tiny.

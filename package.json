@@ -134,7 +134,7 @@
     "build:userscript:min": "node ./tools/rollup -min -platform=userscript",
     "build:crx:min": "node ./tools/rollup -min -platform=crx",
     "build:crxp": "npm run build:crx && bash ./tools/pack-crx.sh",
-    "build:all": "node ./tools/rollup -min -platform=userscript && node ./tools/rollup -platform=userscript && node ./tools/rollup -platform=crx",
+    "build:all": "node ./tools/build-all.js",
     "serve:8123": "http-server . -p 8123 -c-1"
   }
 }

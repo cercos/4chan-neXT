@@ -3624,6 +3624,18 @@ div.post {
   flex: 1;
   padding: 4px 8px;
   cursor: pointer;
+  display: flex;
+  flex-direction: column;
+  align-items: flex-start;
+  gap: 2px;
+  line-height: 1.2;
+}
+#download-all-picker .da-buttons .da-btn-title {
+  font-weight: bold;
+}
+#download-all-picker .da-buttons .da-btn-count,
+#download-all-picker .da-buttons .da-btn-size {
+  font-size: 11px;
 }
 .da-progress-cancel {
   margin-left: 6px;
