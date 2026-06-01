@@ -10,10 +10,18 @@ To migrate your settings, export them from 4chan X and then import them in 4chan
 
 ## Latest Release
 
-- `1.0.3` (2026-05-31):
-  - Fixed QR dump list.
-  - Fixed QR action button behavior.
-  - Fixed Tegaki buttons.
+- `1.0.4` (2026-06-01):
+  - Added scrollbar hover thumbnail preview.
+  - Added comment previewing.
+  - Fixed highlight colors previewer.
+  - Added more options for thread updater sound.
+  - Added built-in site theme styles.
+  - Added StyleChan compatibility.
+
+## Styling
+
+4chan-neXT includes built-in site styling.
+For the best styling experience, install StyleChan: https://github.com/3nly/StyleChan
 
 <details>
 <summary>Original README</summary>

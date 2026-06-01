@@ -85,8 +85,8 @@
   'use strict';
 
   var version = {
-    "version": "1.0.3",
-    "date": "2026-05-30T00:00:00Z"
+    "version": "1.0.4",
+    "date": "2026-06-01T00:00:00Z"
   }
   ;
 
@@ -358,6 +358,10 @@ div.boardTitle {
         'Enable Native Flash Embedding': [
           true,
           'Activate the native extension\'s Flash embedding if the native extension is disabled.'
+        ],
+        'Defer Styling to StyleChan': [
+          true,
+          'When the StyleChan userscript is installed, hide visual styling controls (themes, colors, etc.) in favor of StyleChan\'s settings. Custom CSS remains available. Has no effect without StyleChan.'
         ],
         'Export History': [
           true,
@@ -2250,36 +2254,7 @@ current-archive-text:"Archive"]
     }
     return root.dispatchEvent(new CustomEvent(event, { bubbles: true, cancelable: true, detail }));
   };
-  if (platform === 'userscript') {
-    // XXX Make $.event work in Pale Moon with GM 3.x (no cloneInto function).
-    (function () {
-      if (!/PaleMoon\//.test(navigator.userAgent) || (+GM_info?.version?.split('.')[0] < 2) || (typeof cloneInto !== 'undefined')) {
-        return;
-      }
-      try {
-        return new CustomEvent('x', { detail: {} });
-      } catch (err) {
-        const unsafeConstructors = {
-          Object: unsafeWindow.Object,
-          Array: unsafeWindow.Array
-        };
-        var clone = function (obj) {
-          let constructor;
-          if ((obj != null) && (typeof obj === 'object') && (constructor = unsafeConstructors[obj.constructor.name])) {
-            const obj2 = new constructor();
-            for (var key in obj) {
-              var val = obj[key];
-              obj2[key] = clone(val);
-            }
-            return obj2;
-          } else {
-            return obj;
-          }
-        };
-        return $.event = (event, detail, root = d) => root.dispatchEvent(new CustomEvent(event, { bubbles: true, cancelable: true, detail: clone(detail) }));
-      }
-    })();
-  }
+
   $.modifiedClick = e => e.shiftKey || e.altKey || e.ctrlKey || e.metaKey || (e.button !== 0);
   if (!globalThis.chrome?.extension) {
     $.open =
@@ -2326,7 +2301,7 @@ current-archive-text:"Archive"]
       Promise.resolve().then(execTask);
     };
   })();
-  if (platform === 'crx') {
+
     const callbacks = new Map();
     chrome.runtime.onMessage.addListener(({ id, data }) => {
       callbacks.get(id)(data);
@@ -2335,7 +2310,7 @@ current-archive-text:"Archive"]
     $.eventPageRequest = (params) => new Promise(resolve => {
       chrome.runtime.sendMessage(params, id => { callbacks.set(id, resolve); });
     });
-  }
+
   /**
    * Runs a function on the page instead of the user script or extension context.
    * @param fn The name of the function in pageContext.ts. It must be defined there to run in a manifest V3 context.
@@ -2444,7 +2419,7 @@ current-archive-text:"Archive"]
       return delete data['Redirect to HTTPS'];
     }
   };
-  if (platform === 'crx') {
+
     // https://developer.chrome.com/extensions/storage.html
     $.oldValue = {
       local: dict(),
@@ -2615,224 +2590,6 @@ current-archive-text:"Archive"]
         return chrome.storage.sync.clear(done);
       };
     })();
-  } else {
-    // http://wiki.greasespot.net/Main_Page
-    // https://tampermonkey.net/documentation.php
-    if ((GM?.deleteValue != null) && window.BroadcastChannel && (typeof GM_addValueChangeListener === 'undefined' || GM_addValueChangeListener === null)) {
-      $.syncChannel = new BroadcastChannel(g.NAMESPACE + 'sync');
-      $.on($.syncChannel, 'message', e => (() => {
-        const result = [];
-        for (var key in e.data) {
-          var cb;
-          var val = e.data[key];
-          if (cb = $.syncing[key]) {
-            result.push(cb(dict.json(JSON.stringify(val)), key));
-          }
-        }
-        return result;
-      })());
-      $.sync = (key, cb) => $.syncing[key] = cb;
-      $.forceSync = function () { };
-      $.delete = function (keys, cb) {
-        let key;
-        if (!(keys instanceof Array)) {
-          keys = [keys];
-        }
-        Promise.all(keys.map(key => GM.deleteValue(g.NAMESPACE + key))).then(function () {
-          const items = dict();
-          for (key of keys)
-            items[key] = undefined;
-          $.syncChannel.postMessage(items);
-          cb?.();
-        });
-      };
-      $.get = $.oneItemSugar(function (items, cb) {
-        const keys = Object.keys(items);
-        return Promise.all(keys.map((key) => GM.getValue(g.NAMESPACE + key))).then(function (values) {
-          for (let i = 0; i < values.length; i++) {
-            var val = values[i];
-            if (val) {
-              items[keys[i]] = dict.json(val);
-            }
-          }
-          return cb(items);
-        });
-      });
-      $.set = $.oneItemSugar(function (items, cb) {
-        $.securityCheck(items);
-        return Promise.all((() => {
-          const result = [];
-          for (var key in items) {
-            var val = items[key];
-            result.push(GM.setValue(g.NAMESPACE + key, JSON.stringify(val)));
-          }
-          return result;
-        })()).then(function () {
-          $.syncChannel.postMessage(items);
-          return cb?.();
-        });
-      });
-      $.clear = cb => GM.listValues().then(keys => $.delete(keys.map(key => key.replace(g.NAMESPACE, '')), cb)).catch(() => $.delete(Object.keys(Conf).concat(['previousversion', 'QR Size', 'QR.persona']), cb));
-    } else {
-      if (typeof GM_deleteValue !== 'undefined' && GM_deleteValue !== null) {
-        $.getValue = GM_getValue;
-        $.listValues = () => GM_listValues(); // error when called if missing
-      } else if ($.hasStorage) {
-        $.getValue = key => localStorage.getItem(key);
-        $.listValues = () => (() => {
-          const result = [];
-          for (var key in localStorage) {
-            if (key.slice(0, g.NAMESPACE.length) === g.NAMESPACE) {
-              result.push(key);
-            }
-          }
-          return result;
-        })();
-      } else {
-        $.getValue = function () { };
-        $.listValues = () => [];
-      }
-      if (typeof GM_addValueChangeListener !== 'undefined' && GM_addValueChangeListener !== null) {
-        $.setValue = GM_setValue;
-        $.deleteValue = GM_deleteValue;
-      } else if (typeof GM_deleteValue !== 'undefined' && GM_deleteValue !== null) {
-        $.oldValue = dict();
-        $.setValue = function (key, val) {
-          GM_setValue(key, val);
-          if (key in $.syncing) {
-            $.oldValue[key] = val;
-            if ($.hasStorage) {
-              return localStorage.setItem(key, val);
-            } // for `storage` events
-          }
-        };
-        $.deleteValue = function (key) {
-          GM_deleteValue(key);
-          if (key in $.syncing) {
-            delete $.oldValue[key];
-            if ($.hasStorage) {
-              return localStorage.removeItem(key);
-            } // for `storage` events
-          }
-        };
-        if (!$.hasStorage) {
-          $.cantSync = true;
-        }
-      } else if ($.hasStorage) {
-        $.oldValue = dict();
-        $.setValue = function (key, val) {
-          if (key in $.syncing) {
-            $.oldValue[key] = val;
-          }
-          return localStorage.setItem(key, val);
-        };
-        $.deleteValue = function (key) {
-          if (key in $.syncing) {
-            delete $.oldValue[key];
-          }
-          return localStorage.removeItem(key);
-        };
-      } else {
-        $.setValue = function () { };
-        $.deleteValue = function () { };
-        $.cantSync = ($.cantSet = true);
-      }
-      if (typeof GM_addValueChangeListener !== 'undefined' && GM_addValueChangeListener !== null) {
-        $.sync = (key, cb) => $.syncing[key] = GM_addValueChangeListener(g.NAMESPACE + key, function (key2, oldValue, newValue, remote) {
-          if (remote) {
-            if (newValue !== undefined) {
-              newValue = dict.json(newValue);
-            }
-            return cb(newValue, key);
-          }
-        });
-        $.forceSync = function () { };
-      } else if ((typeof GM_deleteValue !== 'undefined' && GM_deleteValue !== null) || $.hasStorage) {
-        $.sync = function (key, cb) {
-          key = g.NAMESPACE + key;
-          $.syncing[key] = cb;
-          return $.oldValue[key] = $.getValue(key);
-        };
-        (function () {
-          const onChange = function ({ key, newValue }) {
-            let cb;
-            if (!(cb = $.syncing[key])) {
-              return;
-            }
-            if (newValue != null) {
-              if (newValue === $.oldValue[key]) {
-                return;
-              }
-              $.oldValue[key] = newValue;
-              return cb(dict.json(newValue), key.slice(g.NAMESPACE.length));
-            } else {
-              if ($.oldValue[key] == null) {
-                return;
-              }
-              delete $.oldValue[key];
-              return cb(undefined, key.slice(g.NAMESPACE.length));
-            }
-          };
-          $.on(window, 'storage', onChange);
-          return $.forceSync = function (key) {
-            // Storage events don't work across origins
-            // e.g. http://boards.4chan.org and https://boards.4chan.org
-            // so force a check for changes to avoid lost data.
-            key = g.NAMESPACE + key;
-            return onChange({ key, newValue: $.getValue(key) });
-          };
-        })();
-      } else {
-        $.sync = function () { };
-        $.forceSync = function () { };
-      }
-      $.delete = function (keys) {
-        if (!(keys instanceof Array)) {
-          keys = [keys];
-        }
-        for (var key of keys) {
-          $.deleteValue(g.NAMESPACE + key);
-        }
-      };
-      $.get = $.oneItemSugar((items, cb) => $.queueTask($.getSync, items, cb));
-      $.getSync = function (items, cb) {
-        for (var key in items) {
-          var val2;
-          if (val2 = $.getValue(g.NAMESPACE + key)) {
-            try {
-              items[key] = dict.json(val2);
-            } catch (err) {
-              // XXX https://github.com/ccd0/4chan-x/issues/2218
-              if (!/^(?:undefined)*$/.test(val2)) {
-                throw err;
-              }
-            }
-          }
-        }
-        return cb(items);
-      };
-      $.set = $.oneItemSugar(function (items, cb) {
-        $.securityCheck(items);
-        return $.queueTask(function () {
-          for (var key in items) {
-            var value = items[key];
-            $.setValue(g.NAMESPACE + key, JSON.stringify(value));
-          }
-          return cb?.();
-        });
-      });
-      $.clear = function (cb) {
-        // XXX https://github.com/greasemonkey/greasemonkey/issues/2033
-        // Also support case where GM_listValues is not defined.
-        $.delete(Object.keys(Conf));
-        $.delete(['previousversion', 'QR Size', 'QR.persona']);
-        try {
-          $.delete($.listValues().map(key => key.replace(g.NAMESPACE, '')));
-        } catch (error) { }
-        return cb?.();
-      };
-    }
-  }
 
   var Get = {
     url(type, IDs, ...args) {
@@ -3387,7 +3144,7 @@ current-archive-text:"Archive"]
   <span class="easy-filter-status"></span>
 </div>`;
 
-  var StylingPage = `<details open>
+  var StylingPage = `<details open class="styling-site-style">
   <summary>Site Style</summary>
   <div class="styling-variant-bar">
     <label class="styling-variant-mode">SFW / NSFW mode:
@@ -3576,7 +3333,7 @@ current-archive-text:"Archive"]
   </div>
 </details>
 
-<details open>
+<details open class="styling-text-colors">
   <summary>Text Colors</summary>
   <div class="styling-theme-row">
     <label>Mode:
@@ -3619,7 +3376,7 @@ current-archive-text:"Archive"]
   </div>
 </details>
 
-<details open>
+<details open class="styling-custom-css">
   <summary>Custom CSS</summary>
   <div class="custom-css-toggle-row">
     <label><input type="checkbox" name="Custom CSS"> Enable Custom CSS</label>
@@ -4452,6 +4209,7 @@ audio.controls-added {
 
 /* fixed, z-index */
 #overlay,
+#xt-settings-overlay,
 #qp, #ihover, #tw-ihover,
 #navlinks, .fixed #header-bar,
 :root.float #updater,
@@ -4460,7 +4218,8 @@ audio.controls-added {
 #export-dialog {
   position: fixed;
 }
-#overlay {
+#overlay,
+#xt-settings-overlay {
   z-index: 999;
 }
 #qp, #ihover, #tw-ihover {
@@ -4701,7 +4460,8 @@ audio.controls-added {
 :root.fourchan-x body {
   box-sizing: border-box;
 }
-#overlay {
+#overlay,
+#xt-settings-overlay {
   background-color: rgba(0, 0, 0, .5);
   display: flex;
   top: 0;
@@ -5418,6 +5178,52 @@ div[data-checked="false"] > .suboption-list {
 .section-styling .styling-variant-hint:empty {
   display: none;
 }
+/* When the user forces SFW or NSFW everywhere, the variant tabs and the
+   "active variant" hint are redundant — only the mode selector matters. */
+.section-styling .styling-variant-bar[data-mode="sfw"] .styling-variant-tabs,
+.section-styling .styling-variant-bar[data-mode="nsfw"] .styling-variant-tabs,
+.section-styling .styling-variant-bar[data-mode="sfw"] .styling-variant-hint,
+.section-styling .styling-variant-bar[data-mode="nsfw"] .styling-variant-hint {
+  display: none;
+}
+
+/* StyleChan deferral: hide the Site Style section (the SFW/NSFW switcher
+   + theme picker — the only parts that genuinely conflict with StyleChan).
+   Highlight Colors, Scrollbar Markers, Text Colors and Custom CSS keep
+   working alongside StyleChan. */
+.styling-deferred > .styling-site-style,
+.styling-deferred > .styling-text-colors {
+  display: none;
+}
+/* StyleChan injects \`<div id="overlay">\` (same id as ours used to be — we
+   renamed ours to \`xt-settings-overlay\`). Their overlay needs to stack
+   above ours when opened on top from the deferral banner. The QR media
+   preview also uses #overlay but is excluded by its \`.media-preview\` class.
+   \`!important\` is required because StyleChan's own CSS pins their overlay
+   at \`z-index: 99 !important\`. */
+body > #overlay:not(.media-preview) {
+  z-index: 1003 !important;
+}
+.styling-defer-banner {
+  align-items: center;
+  border: 1px solid rgba(128, 128, 128, .35);
+  border-radius: 4px;
+  display: flex;
+  flex-wrap: wrap;
+  gap: 10px 14px;
+  margin: 0 0 12px;
+  padding: 10px 12px;
+}
+.styling-defer-banner-text {
+  flex: 1 1 240px;
+  font-size: 12px;
+  line-height: 1.4;
+}
+.styling-defer-open {
+  cursor: pointer;
+  flex: 0 0 auto;
+  padding: 6px 12px;
+}
 /* Tag the whole settings dialog with a small badge so the user always
    sees which variant they're editing, even when scrolled away from the
    Site Style section. */
@@ -5829,17 +5635,22 @@ div[data-checked="false"] > .suboption-list {
   white-space: pre;
   word-break: normal;
 }
+/* StyleChan applies broad \`textarea\`/\`pre\` color and background overrides
+   with \`!important\`, which kills the transparent-textarea-over-pre trick
+   the syntax highlighter relies on. Pin our own colors with \`!important\`
+   so the highlight layer stays visible and the textarea stays transparent. */
 .section-styling .custom-css-highlight {
-  color: var(--custom-css-text);
+  background: var(--custom-css-bg) !important;
+  color: var(--custom-css-text) !important;
   overflow: hidden;
   pointer-events: none;
 }
 .section-styling .custom-css-textarea {
-  background: transparent;
+  background: transparent !important;
   border: 0;
-  color: var(--custom-css-caret);
+  color: var(--custom-css-caret) !important;
   caret-color: var(--custom-css-caret);
-  -webkit-text-fill-color: transparent;
+  -webkit-text-fill-color: transparent !important;
   resize: none;
 }
 .section-styling .custom-css-textarea:focus {
@@ -25108,66 +24919,14 @@ aero|asia|biz|cat|com|coop|dance|info|int|jobs|mobi|moe|museum|name|net|org|post
     binary(url, cb, headers = dict()) {
       // XXX https://forums.lanik.us/viewtopic.php?f=64&t=24173&p=78310
       url = url.replace(/^((?:https?:)?\/\/(?:\w+\.)?(?:4chan|4channel|4cdn)\.org)\/adv\//, '$1//adv/');
-      if (platform === 'crx') {
+
         $.eventPageRequest({ type: 'ajax', url, headers, responseType: 'arraybuffer' })
           .then(({ response, responseHeaderString }) => {
           if (response)
             response = new Uint8Array(response);
           cb(response, responseHeaderString);
         });
-      } else {
-        const fallback = function () {
-          return $.ajax(url, {
-            headers,
-            responseType: 'arraybuffer',
-            onloadend() {
-              if (this.status && this.response) {
-                return cb(new Uint8Array(this.response), this.getAllResponseHeaders());
-              } else {
-                return cb(null);
-              }
-            }
-          });
-        };
-        if ((typeof window.GM_xmlhttpRequest === 'undefined' || window.GM_xmlhttpRequest === null)) {
-          fallback();
-          return;
-        }
-        const gmOptions = {
-          method: "GET",
-          anonymous: true,
-          url,
-          headers,
-          responseType: 'arraybuffer',
-          overrideMimeType: 'text/plain; charset=x-user-defined',
-          onload(xhr) {
-            let data;
-            if (xhr.response instanceof ArrayBuffer) {
-              data = new Uint8Array(xhr.response);
-            } else {
-              const r = xhr.responseText;
-              data = new Uint8Array(r.length);
-              let i = 0;
-              while (i < r.length) {
-                data[i] = r.charCodeAt(i);
-                i++;
-              }
-            }
-            return cb(data, xhr.responseHeaders);
-          },
-          onerror() {
-            return cb(null);
-          },
-          onabort() {
-            return cb(null);
-          }
-        };
-        try {
-          return (GM?.xmlHttpRequest || GM_xmlhttpRequest)(gmOptions);
-        } catch (error) {
-          return fallback();
-        }
-      }
+
     },
     file(url, cb) {
       return CrossOrigin.binary(url, function (data, headers) {
@@ -25232,69 +24991,20 @@ aero|asia|biz|cat|com|coop|dance|info|int|jobs|mobi|moe|museum|name|net|org|post
     //   `abort` - function for aborting the request (silently fails on some platforms)
     //   `getResponseHeader` - function for reading response headers
     ajax(url, options = {}) {
-      let gmReq;
       let { onloadend, timeout, responseType, headers } = options;
       if (responseType == null) {
         responseType = 'json';
       }
       const req = new CrossOrigin.Request();
       req.onloadend = onloadend;
-      if (platform === 'userscript') {
-        if (window.GM?.xmlHttpRequest == null && window.GM_xmlhttpRequest == null) {
-          return $.ajax(url, options);
-        }
-        const gmOptions = {
-          method: 'GET',
-          anonymous: true,
-          url,
-          headers,
-          timeout,
-          onload(xhr) {
-            try {
-              let response = xhr.responseText;
-              if (responseType === 'json') {
-                try {
-                  response = JSON.parse(xhr.responseText);
-                } catch (error) {
-                  console.error(error);
-                  console.error(xhr);
-                }
-              }
-              $.extend(req, {
-                url,
-                headers,
-                response,
-                status: xhr.status,
-                statusText: xhr.statusText,
-                responseHeaderString: xhr.responseHeaders
-              });
-            } catch (error) { }
-            return req.onloadend();
-          },
-          onerror() { return req.onloadend(); },
-          onabort() { return req.onloadend(); },
-          ontimeout() { return req.onloadend(); }
-        };
-        try {
-          gmReq = (GM?.xmlHttpRequest || GM_xmlhttpRequest)(gmOptions);
-        } catch (error) {
-          return $.ajax(url, options);
-        }
-        if (gmReq && (typeof gmReq.abort === 'function')) {
-          req.abort = function () {
-            try {
-              return gmReq.abort();
-            } catch (error1) { }
-          };
-        }
-      } else {
+
         $.eventPageRequest({ type: 'ajax', url, responseType, headers, timeout }).then((result) => {
           if (result.status) {
             $.extend(req, result);
           }
           return req.onloadend();
         });
-      }
+
       return req;
     },
     ajaxPromise(url, options = {}) {
@@ -25309,7 +25019,7 @@ aero|asia|biz|cat|com|coop|dance|info|int|jobs|mobi|moe|museum|name|net|org|post
       });
     },
     permission(cb, cbFail, origins) {
-      if (platform === 'crx') {
+
         return $.eventPageRequest({ type: 'permission', origins }).then((result) => {
           if (result) {
             return cb();
@@ -25317,8 +25027,6 @@ aero|asia|biz|cat|com|coop|dance|info|int|jobs|mobi|moe|museum|name|net|org|post
             return cbFail();
           }
         });
-      }
-      return cb();
     },
   };
 
@@ -26901,13 +26609,39 @@ $\
       }
       Settings.applyStylingVars();
     },
+    // StyleChan injects `<style id="ch4SS">` into <head> and a header shortcut
+    // anchor `#StyleChanLink`. Either is sufficient as a "present" signal; the
+    // style tag goes in earlier so it's the more reliable check.
+    isStylechanInstalled() {
+      return !!(d.getElementById('ch4SS') || d.getElementById('StyleChanLink'));
+    },
+    // Open StyleChan's settings without closing ours. StyleChan appends its
+    // own `<div id="overlay">` + `#oneechan-options` dialog to <body>. Our
+    // overlay uses `id="xt-settings-overlay"` to avoid an id collision (their
+    // show()/close() did `document.getElementById('overlay')` and would tear
+    // ours out of the DOM). Their overlay sits above ours in stacking order
+    // and intercepts clicks, so clicking the dim backdrop closes StyleChan
+    // first (via their own outside-click handler) and a second click closes us.
+    openStylechanSettings() {
+      const link = d.getElementById('StyleChanLink');
+      if (!link)
+        return false;
+      link.click();
+      return true;
+    },
+    shouldDeferStylingToStylechan() {
+      return !!Conf['Defer Styling to StyleChan'] && Settings.isStylechanInstalled();
+    },
     open(openSection) {
       let dialog, sectionToOpen;
       if (Settings.dialog) {
         return;
       }
       $.event('CloseMenu');
-      Settings.dialog = (dialog = $.el('div', { id: 'overlay' }, settingsHtml));
+      // id `xt-settings-overlay` avoids a collision with StyleChan, which also
+      // injects an `<div id="overlay">` and would otherwise tear our dialog out
+      // of the DOM when its show()/close() called `document.getElementById`.
+      Settings.dialog = (dialog = $.el('div', { id: 'xt-settings-overlay' }, settingsHtml));
       const settingsWindow = $('#fourchanx-settings', dialog);
       $.on($('.export', dialog), 'click', e => { e.preventDefault(); Settings.export(); });
       $.on($('.import', dialog), 'click', e => { e.preventDefault(); Settings.import.call(e.currentTarget); });
@@ -27604,7 +27338,7 @@ Enable it on boards.${location.hostname.split('.')[1]}.org in your browser's pri
             subgroups: [
               ['System', ['JSON Index', `Use ${meta.name} Catalog`, 'Index Refresh Notifications', 'Open Threads in New Tab', 'External Catalog', '404 Redirect', 'Archive Report', 'Exempt Archives from Encryption', 'Show Updated Notifications']],
               ['History', ['Export History', 'Ask to Export History']],
-              ['Compatibility', ['Disable Native Extension', 'Enable Native Flash Embedding']]
+              ['Compatibility', ['Disable Native Extension', 'Enable Native Flash Embedding', 'Defer Styling to StyleChan']]
             ]
           }],
         includeWarnings: true,
@@ -27989,6 +27723,32 @@ Enable it on boards.${location.hostname.split('.')[1]}.org in your browser's pri
     styling(section) {
       let input, name;
       $.extend(section, { innerHTML: StylingPage });
+      // When StyleChan is present and the user wants to defer to it, replace
+      // every styling sub-section *except* Custom CSS with a banner that opens
+      // StyleChan's dialog on top of ours. CSS does the hiding via the
+      // `styling-deferred` class on the section root.
+      if (Settings.shouldDeferStylingToStylechan()) {
+        section.classList.add('styling-deferred');
+        const banner = $.el('div', { className: 'styling-defer-banner' });
+        const text = $.el('div', {
+          className: 'styling-defer-banner-text',
+          innerHTML: '<b>StyleChan is managing site themes.</b> '
+            + 'The theme picker has been disabled; '
+            + 'highlight colors, scroll markers, and Custom CSS below still work. '
+            + 'To restore the full Styling section, uncheck <i>Defer Styling to StyleChan</i> in <i>General → Compatibility</i>.'
+        });
+        const button = $.el('button', {
+          type: 'button',
+          className: 'styling-defer-open',
+          textContent: 'Open StyleChan Settings',
+        });
+        $.on(button, 'click', e => {
+          e.preventDefault();
+          Settings.openStylechanSettings();
+        });
+        $.add(banner, [text, button]);
+        section.insertBefore(banner, section.firstChild);
+      }
       const inputs = dict();
       for (input of $$('[name]', section)) {
         inputs[input.name] = input;
@@ -28496,6 +28256,11 @@ Enable it on boards.${location.hostname.split('.')[1]}.org in your browser's pri
       // owns that class for the CSS selectors to match either way.
       const stylingHost = section.closest('.section-styling') || section;
       const updateVariantDecoration = (variant) => {
+        // When deferring to StyleChan, the SFW/NSFW UI is hidden, so the
+        // orange NSFW accent and corner badge would just be noise on the
+        // sections that remain (Highlight Colors, Scrollbar Markers, etc.).
+        if (section.classList.contains('styling-deferred'))
+          return;
         const label = `Editing ${variant.toUpperCase()}`;
         if (variantBar)
           variantBar.dataset.editingVariant = variant;
@@ -28536,9 +28301,20 @@ Enable it on boards.${location.hostname.split('.')[1]}.org in your browser's pri
         tab.setAttribute('role', 'tab');
         $.on(tab, 'click', () => switchEditingVariant(variant));
       }
+      const applyModeVisibility = () => {
+        if (variantBar)
+          variantBar.dataset.mode = Conf['sfwNsfwMode'] || 'auto';
+      };
       const modeSelect = inputs['sfwNsfwMode'];
       if (modeSelect) {
         $.on(modeSelect, 'change', () => {
+          const mode = Conf['sfwNsfwMode'];
+          // When the user forces a variant, pin the editing slot to it so the
+          // inputs they see match the slot that's actually applied.
+          if ((mode === 'sfw' || mode === 'nsfw') && Settings.stylingEditingVariant !== mode) {
+            switchEditingVariant(mode);
+          }
+          applyModeVisibility();
           updateVariantHint();
           // Re-apply runtime styling in case the mode change shifts which
           // variant is active outside the dialog.
@@ -28552,9 +28328,14 @@ Enable it on boards.${location.hostname.split('.')[1]}.org in your browser's pri
           $.event('RefreshScrollMarkers');
         });
       }
+      const initialMode = Conf['sfwNsfwMode'];
+      if ((initialMode === 'sfw' || initialMode === 'nsfw') && Settings.stylingEditingVariant !== initialMode) {
+        Settings.stylingEditingVariant = initialMode;
+      }
       updateVariantTabsSelected();
       updateVariantHint();
       updateVariantDecoration(Settings.stylingEditingVariant || 'sfw');
+      applyModeVisibility();
       // Apply the editing variant to the dialog so the page behind the
       // dialog stays on its variant but the preview/colors inside show what
       // we're editing.
@@ -36169,7 +35950,7 @@ Enable it on boards.${location.hostname.split('.')[1]}.org in your browser's pri
       // XXX Firefox reinjects WebExtension content scripts when extension is updated / reloaded.
       try {
         let w = window;
-        if (platform === 'crx') { w = (w.wrappedJSObject || w); }
+         w = (w.wrappedJSObject || w);
         if (`${meta.name} antidup` in w) { return; }
         w[`${meta.name} antidup`] = true;
       } catch (error) {}
@@ -36363,6 +36144,7 @@ Enable it on boards.${location.hostname.split('.')[1]}.org in your browser's pri
         'Custom CSS': true,
         'usercss SFW': '',
         'usercss NSFW': '',
+        'Defer Styling to StyleChan': true,
       };
       ($.getSync || $.get)(defaults, (items) => {
         // The home page has no board context, so 'auto' falls back to SFW.
@@ -36374,7 +36156,20 @@ Enable it on boards.${location.hostname.split('.')[1]}.org in your browser's pri
           siteStyle = '';
         }
         const normalizedStyle = Main.normalizeSiteStyle(siteStyle);
-        if (items.siteStyleHome && normalizedStyle) {
+        // When StyleChan is running on the home page and deferral is on, skip
+        // applying our site style — StyleChan owns the theme there and our
+        // class/cookie/stylesheet overrides leave the home page looking scuffed.
+        // Custom CSS on home page still applies; it's user-authored and owned.
+        const styleChanPresent = !!(d.getElementById('ch4SS') || d.getElementById('StyleChanLink'));
+        const deferToStyleChan = items['Defer Styling to StyleChan'] && styleChanPresent;
+        // Persistently uncheck `siteStyleHome` when deferring — both so the
+        // setting reflects reality and so future page loads skip the work
+        // even before StyleChan has injected its detection marker.
+        if (deferToStyleChan && items.siteStyleHome) {
+          items.siteStyleHome = false;
+          $.set('siteStyleHome', false);
+        }
+        if (items.siteStyleHome && normalizedStyle && !deferToStyleChan) {
           // Persist 4chan's own theme cookie so future homepage requests render
           // server-side with the right stylesheet.
           Main.setSiteStyleHomeCookie(siteStyle);
@@ -36528,6 +36323,13 @@ Enable it on boards.${location.hostname.split('.')[1]}.org in your browser's pri
     initStyle() {
       if (!Main.isThisPageLegit()) { return; }
       const homeSiteStyle = Settings.styleConf('siteStyle');
+      // When deferring to StyleChan, the home-page styling preference is
+      // meaningless (StyleChan owns the home page theme), so persistently
+      // uncheck `siteStyleHome` and skip writing our theme cookie.
+      if (Settings.shouldDeferStylingToStylechan() && Conf['siteStyleHome']) {
+        Conf['siteStyleHome'] = false;
+        $.set('siteStyleHome', false);
+      }
       if (Conf['siteStyleHome'] && homeSiteStyle) {
         Main.setSiteStyleHomeCookie(homeSiteStyle);
       }
@@ -36689,7 +36491,7 @@ Enable it on boards.${location.hostname.split('.')[1]}.org in your browser's pri
             const siteStyleKey = Settings.variantKey('siteStyle');
             Conf[siteStyleKey] = activeStyleTitle;
             $.set(siteStyleKey, activeStyleTitle);
-            if (Conf['siteStyleHome']) {
+            if (Conf['siteStyleHome'] && !Settings.shouldDeferStylingToStylechan()) {
               Main.setSiteStyleHomeCookie(activeStyleTitle);
             }
           }
@@ -36749,7 +36551,7 @@ Enable it on boards.${location.hostname.split('.')[1]}.org in your browser's pri
               Conf[siteStyleKey] = selected;
               $.set(siteStyleKey, selected);
             }
-            if (Conf['siteStyleHome']) {
+            if (Conf['siteStyleHome'] && !Settings.shouldDeferStylingToStylechan()) {
               Main.setSiteStyleHomeCookie(selected);
             }
           };

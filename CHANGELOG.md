@@ -2,10 +2,12 @@
 
 ### Unreleased
 
+### 1.0.4 (2026-06-01)
+
 - Added scrollbar hover thumbnail preview.
 - Added comment previewing.
 - Fixed highlight colors previewer.
-- Added more options for thead updater sound
+- Added more options for thread updater sound.
 - Added built-in site theme styles.
 - Added StyleChan compatibility.
 
