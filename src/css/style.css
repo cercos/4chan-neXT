@@ -3395,10 +3395,15 @@ input.field.tripped:not(:hover):not(:focus) {
   font-size: 11px;
   line-height: 18px;
 }
+/* Base fallback; JS computes final captcha text color from live background contrast. */
+#qr.captcha-t .captcha-container,
+#qr.captcha-t :is(#t-ctrl, #t-msg, #t-desc, #t-task, #t-load, #t-next, .fourchanx-captcha-load-hint, .fourchanx-captcha-status-text, .fourchanx-captcha-progress) {
+  color: inherit !important;
+  -webkit-text-fill-color: currentColor !important;
+}
 #qr.captcha-t :is(#t-load, #t-next) {
   background-color: #d8dde3;
   border: 1px solid #9ea7b3;
-  color: #111 !important;
 }
 #qr.captcha-t :is(#t-load, #t-next):disabled {
   opacity: .6;

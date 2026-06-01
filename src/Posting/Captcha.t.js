@@ -58,6 +58,8 @@ const CaptchaT = {
       this.setState('idle');
       this.updateProgress();
     }
+    this.startThemeObservers();
+    this.applyAdaptiveTextColors();
 
     if (focus) { $('#t-resp')?.focus(); }
   },
@@ -69,6 +71,7 @@ const CaptchaT = {
     delete this.nodes.container;
     this.cachedButtons = [];
     this.currentHighlightIndex = -1;
+    this.stopThemeObservers();
     this.setState('idle');
   },
 
@@ -79,6 +82,132 @@ const CaptchaT = {
     if ((next.boardID !== boardID) || (next.threadID !== threadID)) {
       this.destroy();
       this.setup();
+    }
+  },
+
+  parseCssColor(value) {
+    const match = /rgba?\(([^)]+)\)/i.exec(value || '');
+    if (!match) { return null; }
+    const parts = match[1].split(',').map(part => part.trim());
+    if (parts.length < 3) { return null; }
+    const r = Number(parts[0]);
+    const g = Number(parts[1]);
+    const b = Number(parts[2]);
+    const a = parts[3] == null ? 1 : Number(parts[3]);
+    if ([r, g, b, a].some(Number.isNaN)) { return null; }
+    return { r, g, b, a };
+  },
+
+  getBackgroundColor(node) {
+    for (let el = node; el; el = el.parentElement) {
+      const color = this.parseCssColor(getComputedStyle(el).backgroundColor);
+      if (color && color.a > 0) { return color; }
+    }
+    return { r: 255, g: 255, b: 255, a: 1 };
+  },
+
+  luminance({ r, g, b }) {
+    const toLinear = channel => {
+      const c = channel / 255;
+      return c <= 0.03928 ? c / 12.92 : ((c + 0.055) / 1.055) ** 2.4;
+    };
+    return 0.2126 * toLinear(r) + 0.7152 * toLinear(g) + 0.0722 * toLinear(b);
+  },
+
+  contrast(a, b) {
+    const la = this.luminance(a);
+    const lb = this.luminance(b);
+    const [max, min] = la > lb ? [la, lb] : [lb, la];
+    return (max + 0.05) / (min + 0.05);
+  },
+
+  pickReadableTextColor(node) {
+    const bg = this.getBackgroundColor(node);
+    const light = { r: 245, g: 245, b: 245 };
+    const dark = { r: 17, g: 17, b: 17 };
+    return this.contrast(light, bg) >= this.contrast(dark, bg) ? 'rgb(245, 245, 245)' : 'rgb(17, 17, 17)';
+  },
+
+  applyAdaptiveTextColors() {
+    const container = this.nodes?.container;
+    if (!container) { return; }
+
+    for (const el of container.querySelectorAll('#t-load, #t-next')) {
+      const color = this.pickReadableTextColor(el);
+      el.style.setProperty('color', color, 'important');
+      el.style.setProperty('-webkit-text-fill-color', color, 'important');
+    }
+
+    for (const el of container.querySelectorAll('#t-msg, #t-desc, #t-task, .fourchanx-captcha-load-hint, .fourchanx-captcha-status-text, .fourchanx-captcha-progress')) {
+      const color = this.pickReadableTextColor(el);
+      el.style.setProperty('color', color, 'important');
+      el.style.setProperty('-webkit-text-fill-color', color, 'important');
+    }
+  },
+
+  scheduleAdaptiveTextColors() {
+    if (this.adaptiveColorRaf) { return; }
+    this.adaptiveColorRaf = requestAnimationFrame(() => {
+      this.adaptiveColorRaf = 0;
+      this.applyAdaptiveTextColors();
+    });
+    // Theme scripts often update classes first, then apply final CSS a tick later.
+    // Run a short settle burst so contrast is correct on the first click.
+    this.themeSettleTimers ||= [];
+    for (const delay of [0, 40, 120]) {
+      this.themeSettleTimers.push(setTimeout(() => this.applyAdaptiveTextColors(), delay));
+    }
+  },
+
+  startThemeObservers() {
+    if (this.themeObserver) { return; }
+    const onChange = () => this.scheduleAdaptiveTextColors();
+
+    this.themeObserver = new MutationObserver(onChange);
+    this.themeObserver.observe(document.documentElement, {
+      attributes: true,
+      attributeFilter: ['class', 'style']
+    });
+    if (document.body) {
+      this.themeObserver.observe(document.body, {
+        attributes: true,
+        attributeFilter: ['class', 'style']
+      });
+    }
+
+    this.headObserver = new MutationObserver(onChange);
+    this.headObserver.observe(document.head, {
+      childList: true,
+      subtree: true,
+      characterData: true
+    });
+
+    this.prefersDarkQuery = window.matchMedia?.('(prefers-color-scheme: dark)');
+    if (this.prefersDarkQuery?.addEventListener) {
+      this.prefersDarkListener = onChange;
+      this.prefersDarkQuery.addEventListener('change', this.prefersDarkListener);
+    }
+  },
+
+  stopThemeObservers() {
+    this.themeObserver?.disconnect();
+    this.themeObserver = null;
+    this.headObserver?.disconnect();
+    this.headObserver = null;
+    if (this.prefersDarkQuery?.removeEventListener && this.prefersDarkListener) {
+      this.prefersDarkQuery.removeEventListener('change', this.prefersDarkListener);
+    }
+    this.prefersDarkListener = null;
+    this.prefersDarkQuery = null;
+    if (this.adaptiveColorRaf) {
+      cancelAnimationFrame(this.adaptiveColorRaf);
+      this.adaptiveColorRaf = 0;
+    }
+    if (this.themeSettleTimers?.length) {
+      for (const timer of this.themeSettleTimers) {
+        clearTimeout(timer);
+      }
+      this.themeSettleTimers = [];
     }
   },
 
@@ -164,6 +293,7 @@ const CaptchaT = {
       failed: 'Failed.',
       expired: 'Expired.',
     }[state] || '', state);
+    this.applyAdaptiveTextColors();
   },
 
   ensureLoadButtonHook() {
@@ -222,6 +352,7 @@ const CaptchaT = {
       className: 'fourchanx-captcha-status-text',
       textContent: text
     }));
+    this.applyAdaptiveTextColors();
   },
 
   messageStateFromText(text) {
@@ -334,6 +465,7 @@ const CaptchaT = {
     this.currentHighlightIndex = -1;
     this.initializeEventHandler(container, TCaptcha);
     TCaptcha.taskNode = container;
+    this.applyAdaptiveTextColors();
   },
 
   submitCaptchaAnswer(imageNumber, TCaptcha) {
@@ -511,6 +643,7 @@ const CaptchaT = {
     } else {
       this.setState('idle');
       this.updateProgress();
+      this.applyAdaptiveTextColors();
     }
   },
 };
