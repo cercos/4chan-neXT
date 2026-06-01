@@ -315,29 +315,50 @@ var Main = {
   initHomePageStyleBridge() {
     const defaults = {
       siteStyleHome: false,
-      siteStyle: '',
+      sfwNsfwMode: 'auto',
+      'siteStyle SFW': '',
+      'siteStyle NSFW': '',
       customCSSHome: false,
       'Custom CSS': true,
-      usercss: '',
+      'usercss SFW': '',
+      'usercss NSFW': '',
+      'Defer Styling to StyleChan': true,
     };
     ($.getSync || $.get)(defaults, (items) => {
+      // The home page has no board context, so 'auto' falls back to SFW.
+      const variant = items.sfwNsfwMode === 'nsfw' ? 'NSFW' : 'SFW';
+      let siteStyle = items[`siteStyle ${variant}`] || '';
+      const usercss = items[`usercss ${variant}`] || '';
       // Custom themes don't apply to the home page via 4chan's style cookie.
-      if (typeof items.siteStyle === 'string' && items.siteStyle.startsWith('custom:')) {
-        items.siteStyle = '';
+      if (typeof siteStyle === 'string' && siteStyle.startsWith('custom:')) {
+        siteStyle = '';
       }
-      const normalizedStyle = Main.normalizeSiteStyle(items.siteStyle);
-      if (items.siteStyleHome && normalizedStyle) {
+      const normalizedStyle = Main.normalizeSiteStyle(siteStyle);
+      // When StyleChan is running on the home page and deferral is on, skip
+      // applying our site style — StyleChan owns the theme there and our
+      // class/cookie/stylesheet overrides leave the home page looking scuffed.
+      // Custom CSS on home page still applies; it's user-authored and owned.
+      const styleChanPresent = !!(d.getElementById('ch4SS') || d.getElementById('StyleChanLink'));
+      const deferToStyleChan = items['Defer Styling to StyleChan'] && styleChanPresent;
+      // Persistently uncheck `siteStyleHome` when deferring — both so the
+      // setting reflects reality and so future page loads skip the work
+      // even before StyleChan has injected its detection marker.
+      if (deferToStyleChan && items.siteStyleHome) {
+        items.siteStyleHome = false;
+        $.set('siteStyleHome', false);
+      }
+      if (items.siteStyleHome && normalizedStyle && !deferToStyleChan) {
         // Persist 4chan's own theme cookie so future homepage requests render
         // server-side with the right stylesheet.
-        Main.setSiteStyleHomeCookie(items.siteStyle);
+        Main.setSiteStyleHomeCookie(siteStyle);
         // Tag <html> so 4chan-X / custom CSS rules targeting :root.<theme> match.
         $.addClass(doc, normalizedStyle);
         // Switch the active <link rel="stylesheet"> to the alternate matching
         // the chosen theme, so the homepage repaints immediately.
-        Main.applyHomePageSiteStyle(items.siteStyle);
+        Main.applyHomePageSiteStyle(siteStyle);
       }
-      if (items.customCSSHome && items['Custom CSS'] && items.usercss) {
-        Main.installHomePageCustomCSS(items.usercss);
+      if (items.customCSSHome && items['Custom CSS'] && usercss) {
+        Main.installHomePageCustomCSS(usercss);
       }
     });
   },
@@ -481,8 +502,16 @@ var Main = {
 
   initStyle() {
     if (!Main.isThisPageLegit()) { return; }
-    if (Conf['siteStyleHome'] && Conf['siteStyle']) {
-      Main.setSiteStyleHomeCookie(Conf['siteStyle']);
+    const homeSiteStyle = Settings.styleConf('siteStyle');
+    // When deferring to StyleChan, the home-page styling preference is
+    // meaningless (StyleChan owns the home page theme), so persistently
+    // uncheck `siteStyleHome` and skip writing our theme cookie.
+    if (Settings.shouldDeferStylingToStylechan() && Conf['siteStyleHome']) {
+      Conf['siteStyleHome'] = false;
+      $.set('siteStyleHome', false);
+    }
+    if (Conf['siteStyleHome'] && homeSiteStyle) {
+      Main.setSiteStyleHomeCookie(homeSiteStyle);
     }
 
     // disable the mobile layout
@@ -551,8 +580,9 @@ var Main = {
     };
     let preferredStyleApplied = false;
     const applyPreferredStyle = function() {
-      if (preferredStyleApplied || g.SITE.software !== 'yotsuba' || !Conf['siteStyle']) { return; }
-      const preferred = Conf['siteStyle'];
+      const activeSiteStyle = Settings.styleConf('siteStyle');
+      if (preferredStyleApplied || g.SITE.software !== 'yotsuba' || !activeSiteStyle) { return; }
+      const preferred = activeSiteStyle;
 
       if (isCustomSiteStyle(preferred)) {
         const theme = findCustomTheme(preferred);
@@ -604,9 +634,10 @@ var Main = {
     const setStyle = function() {
       let activeStyleTitle = null;
       let customThemeApplied = false;
+      const currentSiteStyle = Settings.styleConf('siteStyle');
       // Custom themes win: disable the native sheet and inject the user CSS.
-      if (g.SITE.software === 'yotsuba' && isCustomSiteStyle(Conf['siteStyle'])) {
-        const theme = findCustomTheme(Conf['siteStyle']);
+      if (g.SITE.software === 'yotsuba' && isCustomSiteStyle(currentSiteStyle)) {
+        const theme = findCustomTheme(currentSiteStyle);
         if (theme) {
           $.rmClass(doc, style);
           if (applyCustomTheme(theme)) {
@@ -631,10 +662,16 @@ var Main = {
             break;
           }
         }
-        if (activeStyleTitle && !isCustomSiteStyle(Conf['siteStyle']) && (Conf['siteStyle'] !== activeStyleTitle)) {
-          Conf['siteStyle'] = activeStyleTitle;
-          $.set('siteStyle', activeStyleTitle);
-          if (Conf['siteStyleHome']) {
+        // Only auto-capture the currently-rendered native theme into the
+        // active variant slot if that slot is empty. Without this guard,
+        // events like a SFW/NSFW mode change (which re-runs setStyle for
+        // the new variant) would clobber the user's stored preference for
+        // the new variant with whatever theme happens to be on screen.
+        if (activeStyleTitle && !isCustomSiteStyle(currentSiteStyle) && !currentSiteStyle) {
+          const siteStyleKey = Settings.variantKey('siteStyle');
+          Conf[siteStyleKey] = activeStyleTitle;
+          $.set(siteStyleKey, activeStyleTitle);
+          if (Conf['siteStyleHome'] && !Settings.shouldDeferStylingToStylechan()) {
             Main.setSiteStyleHomeCookie(activeStyleTitle);
           }
         }
@@ -686,13 +723,15 @@ var Main = {
         const syncSiteStyle = function() {
           const selected = styleSelector.value;
           if (!selected) { return; }
+          const activeSiteStyle = Settings.styleConf('siteStyle');
           // Don't clobber a custom theme selection with the native dropdown's value.
-          if (isCustomSiteStyle(Conf['siteStyle'])) { return; }
-          if (Conf['siteStyle'] !== selected) {
-            Conf['siteStyle'] = selected;
-            $.set('siteStyle', selected);
+          if (isCustomSiteStyle(activeSiteStyle)) { return; }
+          if (activeSiteStyle !== selected) {
+            const siteStyleKey = Settings.variantKey('siteStyle');
+            Conf[siteStyleKey] = selected;
+            $.set(siteStyleKey, selected);
           }
-          if (Conf['siteStyleHome']) {
+          if (Conf['siteStyleHome'] && !Settings.shouldDeferStylingToStylechan()) {
             Main.setSiteStyleHomeCookie(selected);
           }
         };
@@ -705,9 +744,13 @@ var Main = {
         attributeFilter: ['href']
       });
       $.on(mainStyleSheet, 'load', setStyle);
-      // Re-run setStyle when the user adds, removes, or switches a custom theme.
+      // Re-run setStyle when the user adds, removes, or switches a custom
+      // theme, or flips SFW/NSFW mode. applyPreferredStyle is needed to
+      // actively swap to the new variant's chosen native theme (setStyle
+      // alone only reads the currently-rendered sheet).
       $.on(d, 'CustomSiteThemeChanged', () => {
         preferredStyleApplied = false;
+        applyPreferredStyle();
         setStyle();
       });
       return setStyle();

@@ -1,5 +1,19 @@
-<details open>
+<details open class="styling-site-style">
   <summary>Site Style</summary>
+  <div class="styling-variant-bar">
+    <label class="styling-variant-mode">SFW / NSFW mode:
+      <select name="sfwNsfwMode">
+        <option value="auto">Auto (per board)</option>
+        <option value="sfw">Force SFW everywhere</option>
+        <option value="nsfw">Force NSFW everywhere</option>
+      </select>
+    </label>
+    <span class="settings-subnav styling-variant-tabs" role="tablist" aria-label="Edit variant">
+      <button type="button" class="settings-subnav-tab" data-styling-variant="sfw" role="tab">SFW</button>
+      <button type="button" class="settings-subnav-tab" data-styling-variant="nsfw" role="tab">NSFW</button>
+    </span>
+    <span class="styling-variant-hint note" aria-live="polite"></span>
+  </div>
   <div class="styling-theme-row">
     <label>Theme:
       <span class="styling-theme-picker" data-open="false">
@@ -14,8 +28,8 @@
     <label><input type="checkbox" name="siteStyleHome"> Apply on home page</label>
   </div>
   <div id="styling-site-style-note" class="note" hidden></div>
-  <div class="styling-add-theme">
-    <div class="styling-group-label">Add custom theme</div>
+  <details class="styling-add-theme" data-remember-layout="false">
+    <summary class="styling-add-theme-summary">Add custom theme</summary>
     <div class="styling-add-theme-row">
       <input type="text" class="field styling-add-theme-name" placeholder="Theme name" maxlength="60">
       <label class="styling-add-theme-source">Source:
@@ -37,7 +51,7 @@
       <p class="note">Combines the current Custom CSS with the currently selected theme (<span class="styling-add-theme-merge-current">—</span>) into a new entry.</p>
     </div>
     <div class="styling-add-theme-status" hidden></div>
-  </div>
+  </details>
 </details>
 
 <details open>
@@ -173,7 +187,7 @@
   </div>
 </details>
 
-<details open>
+<details open class="styling-text-colors">
   <summary>Text Colors</summary>
   <div class="styling-theme-row">
     <label>Mode:
@@ -216,20 +230,7 @@
   </div>
 </details>
 
-<details open>
-  <summary>Unread Favicon</summary>
-  <select name="favicon">
-    <option value="ferongr">ferongr</option>
-    <option value="xat-">xat-</option>
-    <option value="4chanJS">4chanJS</option>
-    <option value="Mayhem">Mayhem</option>
-    <option value="Original">Original</option>
-    <option value="Metro">Metro</option>
-  </select>
-  <span class="favicon-preview"></span>
-</details>
-
-<details open>
+<details open class="styling-custom-css">
   <summary>Custom CSS</summary>
   <div class="custom-css-toggle-row">
     <label><input type="checkbox" name="Custom CSS"> Enable Custom CSS</label>
@@ -254,8 +255,3 @@
   </div>
 </details>
 
-<details open>
-  <summary>Known Banners</summary>
-  <div>List of known banners, used for click-to-change feature.</div>
-  <textarea hidden name="knownBanners" class="field" spellcheck="false"></textarea>
-</details>

@@ -145,11 +145,44 @@ var ThreadUpdater = {
     const { audio } = ThreadUpdater as { audio: HTMLAudioElement };
     if (!source) source = ThreadUpdater.beep;
     if (audio.src !== source) audio.src = source;
-    audio.volume = Math.max(.01, Math.min(+Conf.beepVolume, 1));
+    const configuredVolume = Number(Conf.beepVolume);
+    audio.volume = Number.isFinite(configuredVolume) ?
+      Math.max(.01, Math.min(configuredVolume, 1))
+    :
+      1;
     if (audio.paused) {
-      audio.play();
+      const playPromise = audio.play();
+      if (playPromise && typeof playPromise.catch === 'function') {
+        playPromise.catch((err: any) => {
+          if (err?.name === 'NotAllowedError') {
+            ThreadUpdater.armAudioUnlock(source);
+          }
+        });
+      }
     } else if (repeatIfPlaying) {
       $.one(audio, 'ended', () => ThreadUpdater.playSound(source, false));
+    }
+  },
+
+  armAudioUnlock(source: string) {
+    ThreadUpdater.pendingAudioSource = source;
+    if (ThreadUpdater.audioUnlockArmed) { return; }
+    ThreadUpdater.audioUnlockArmed = true;
+
+    const unlock = () => {
+      $.off(d, 'pointerdown keydown', unlock);
+      ThreadUpdater.audioUnlockArmed = false;
+      const pendingSource = ThreadUpdater.pendingAudioSource || source;
+      delete ThreadUpdater.pendingAudioSource;
+      ThreadUpdater.playSound(pendingSource, false);
+    };
+
+    $.on(d, 'pointerdown keydown', unlock);
+
+    const now = Date.now();
+    if (!ThreadUpdater.lastAudioBlockNoticeAt || (now - ThreadUpdater.lastAudioBlockNoticeAt > 10000)) {
+      ThreadUpdater.lastAudioBlockNoticeAt = now;
+      new Notice('warning', 'Sound was blocked by browser autoplay in this tab. Click or press a key in this tab to enable it.', 8);
     }
   },
 

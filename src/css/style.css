@@ -211,6 +211,7 @@ audio.controls-added {
 
 /* fixed, z-index */
 #overlay,
+#xt-settings-overlay,
 #qp, #ihover, #tw-ihover,
 #navlinks, .fixed #header-bar,
 :root.float #updater,
@@ -219,7 +220,8 @@ audio.controls-added {
 #export-dialog {
   position: fixed;
 }
-#overlay {
+#overlay,
+#xt-settings-overlay {
   z-index: 999;
 }
 #qp, #ihover, #tw-ihover {
@@ -460,7 +462,8 @@ audio.controls-added {
 :root.fourchan-x body {
   box-sizing: border-box;
 }
-#overlay {
+#overlay,
+#xt-settings-overlay {
   background-color: rgba(0, 0, 0, .5);
   display: flex;
   top: 0;
@@ -1126,6 +1129,146 @@ div[data-checked="false"] > .suboption-list {
 .styling-preview .styling-preview-post.from-archive .quotelink.deadlink {
   color: var(--xt-highlight-ghost-dead-link, var(--xt-dead-link-text-color, var(--xt-dead-link))) !important;
 }
+.section-styling .styling-variant-bar {
+  align-items: center;
+  border-bottom: 1px solid rgba(128, 128, 128, .25);
+  display: flex;
+  flex-wrap: wrap;
+  gap: 10px 14px;
+  margin: 0 0 10px;
+  padding: 6px 8px 8px;
+  position: relative;
+  border-left: 4px solid var(--xt-variant-accent, rgba(128, 128, 128, .4));
+}
+/* SFW is treated as the default/regular style — no accent. Only NSFW
+   gets the colored treatment so the user gets a visual warning when
+   editing the NSFW variant. */
+.section-styling .styling-variant-bar[data-editing-variant="nsfw"] {
+  --xt-variant-accent: #c64a3a;
+  background: rgba(198, 74, 58, .07);
+}
+.section-styling .styling-variant-mode {
+  align-items: center;
+  display: inline-flex;
+  gap: 6px;
+}
+.section-styling .styling-variant-tabs {
+  display: inline-flex;
+  gap: 4px;
+}
+.section-styling .styling-variant-tabs .settings-subnav-tab {
+  background: transparent;
+  border: 1px solid;
+  border-radius: 3px;
+  color: inherit;
+  cursor: pointer;
+  font: inherit;
+  line-height: 1.2;
+  padding: 2px 10px;
+}
+.section-styling .styling-variant-tabs .settings-subnav-tab-selected {
+  background: var(--xt-variant-accent, rgba(128, 128, 128, .25));
+  border-color: var(--xt-variant-accent, currentColor);
+  color: #fff;
+  font-weight: 700;
+}
+.section-styling .styling-variant-hint {
+  flex: 1 1 100%;
+  font-size: 11px;
+  opacity: .85;
+}
+.section-styling .styling-variant-hint:empty {
+  display: none;
+}
+/* When the user forces SFW or NSFW everywhere, the variant tabs and the
+   "active variant" hint are redundant — only the mode selector matters. */
+.section-styling .styling-variant-bar[data-mode="sfw"] .styling-variant-tabs,
+.section-styling .styling-variant-bar[data-mode="nsfw"] .styling-variant-tabs,
+.section-styling .styling-variant-bar[data-mode="sfw"] .styling-variant-hint,
+.section-styling .styling-variant-bar[data-mode="nsfw"] .styling-variant-hint {
+  display: none;
+}
+
+/* StyleChan deferral: hide the Site Style section (the SFW/NSFW switcher
+   + theme picker — the only parts that genuinely conflict with StyleChan).
+   Highlight Colors, Scrollbar Markers, Text Colors and Custom CSS keep
+   working alongside StyleChan. */
+.styling-deferred > .styling-site-style,
+.styling-deferred > .styling-text-colors {
+  display: none;
+}
+/* StyleChan injects `<div id="overlay">` (same id as ours used to be — we
+   renamed ours to `xt-settings-overlay`). Their overlay needs to stack
+   above ours when opened on top from the deferral banner. The QR media
+   preview also uses #overlay but is excluded by its `.media-preview` class.
+   `!important` is required because StyleChan's own CSS pins their overlay
+   at `z-index: 99 !important`. */
+body > #overlay:not(.media-preview) {
+  z-index: 1003 !important;
+}
+.styling-defer-banner {
+  align-items: center;
+  border: 1px solid rgba(128, 128, 128, .35);
+  border-radius: 4px;
+  display: flex;
+  flex-wrap: wrap;
+  gap: 10px 14px;
+  margin: 0 0 12px;
+  padding: 10px 12px;
+}
+.styling-defer-banner-text {
+  flex: 1 1 240px;
+  font-size: 12px;
+  line-height: 1.4;
+}
+.styling-defer-open {
+  cursor: pointer;
+  flex: 0 0 auto;
+  padding: 6px 12px;
+}
+/* Tag the whole settings dialog with a small badge so the user always
+   sees which variant they're editing, even when scrolled away from the
+   Site Style section. */
+#fourchanx-settings .section-styling[data-editing-variant-label]::before {
+  background: var(--xt-variant-accent, rgba(128, 128, 128, .35));
+  border-radius: 0 0 0 4px;
+  color: #fff;
+  content: attr(data-editing-variant-label);
+  font-size: 10px;
+  font-weight: 700;
+  letter-spacing: .04em;
+  padding: 2px 8px;
+  position: absolute;
+  right: 0;
+  text-transform: uppercase;
+  top: 0;
+  z-index: 1;
+}
+#fourchanx-settings .section-styling {
+  position: relative;
+}
+#fourchanx-settings .section-styling[data-editing-variant="nsfw"] {
+  --xt-variant-accent: #c64a3a;
+}
+
+/* Mark each <details> section that contains variant-aware controls
+   (Site Style, Highlight Colors, Scrollbar Markers, Text Colors, Custom
+   CSS) with the active variant's accent so it's clear which whole
+   sections switch between SFW and NSFW. The accent color flips when the
+   active tab changes. The #fourchanx-settings prefix is required so
+   these rules beat the generic `#fourchanx-settings details { border: ... }`
+   baseline below. */
+#fourchanx-settings .section-styling details[data-variant-aware="true"] {
+  border: 1px solid var(--xt-variant-accent, rgba(128, 128, 128, .3));
+  transition: border-color .15s ease;
+}
+#fourchanx-settings .section-styling details[data-variant-aware="true"][open] > summary {
+  border-bottom-color: var(--xt-variant-accent, rgba(128, 128, 128, .2));
+  transition: border-color .15s ease;
+}
+.section-styling .styling-theme-picker > select[name^="siteStyle"] {
+  display: none !important;
+}
 .section-styling .styling-theme-row {
   align-items: center;
   display: flex;
@@ -1144,9 +1287,6 @@ div[data-checked="false"] > .suboption-list {
   position: relative;
   display: inline-block;
   min-width: 200px;
-}
-.section-styling .styling-theme-picker > select[name="siteStyle"] {
-  display: none !important;
 }
 .section-styling .styling-theme-toggle {
   align-items: center;
@@ -1231,10 +1371,32 @@ div[data-checked="false"] > .suboption-list {
   border-top: 1px solid rgba(128, 128, 128, .35);
   margin: 4px 0;
 }
-.section-styling .styling-add-theme {
+#fourchanx-settings .section-styling .styling-add-theme {
+  border: none;
   border-top: 1px dashed color-mix(in srgb, currentColor 25%, transparent);
-  margin-top: 10px;
-  padding-top: 8px;
+  border-radius: 0;
+  margin: 10px 0 0;
+  padding: 4px 0 0;
+}
+#fourchanx-settings .section-styling .styling-add-theme > .styling-add-theme-summary {
+  font-weight: 600;
+  margin: 0;
+  padding: 4px 0;
+  opacity: .85;
+}
+#fourchanx-settings .section-styling .styling-add-theme > .styling-add-theme-summary::before {
+  content: '▸';
+  display: inline-block;
+  font-size: 11px;
+  margin-right: 6px;
+  transition: transform .12s ease;
+}
+#fourchanx-settings .section-styling .styling-add-theme[open] > .styling-add-theme-summary::before {
+  transform: rotate(90deg);
+}
+#fourchanx-settings .section-styling .styling-add-theme[open] > .styling-add-theme-summary {
+  border-bottom: none;
+  margin-bottom: 4px;
 }
 .section-styling .styling-add-theme-row {
   align-items: center;
@@ -1475,17 +1637,22 @@ div[data-checked="false"] > .suboption-list {
   white-space: pre;
   word-break: normal;
 }
+/* StyleChan applies broad `textarea`/`pre` color and background overrides
+   with `!important`, which kills the transparent-textarea-over-pre trick
+   the syntax highlighter relies on. Pin our own colors with `!important`
+   so the highlight layer stays visible and the textarea stays transparent. */
 .section-styling .custom-css-highlight {
-  color: var(--custom-css-text);
+  background: var(--custom-css-bg) !important;
+  color: var(--custom-css-text) !important;
   overflow: hidden;
   pointer-events: none;
 }
 .section-styling .custom-css-textarea {
-  background: transparent;
+  background: transparent !important;
   border: 0;
-  color: var(--custom-css-caret);
+  color: var(--custom-css-caret) !important;
   caret-color: var(--custom-css-caret);
-  -webkit-text-fill-color: transparent;
+  -webkit-text-fill-color: transparent !important;
   resize: none;
 }
 .section-styling .custom-css-textarea:focus {

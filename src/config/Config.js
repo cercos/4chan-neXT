@@ -141,6 +141,10 @@ const Config = {
         true,
         'Activate the native extension\'s Flash embedding if the native extension is disabled.'
       ],
+      'Defer Styling to StyleChan': [
+        true,
+        'When the StyleChan userscript is installed, hide visual styling controls (themes, colors, etc.) in favor of StyleChan\'s settings. Custom CSS remains available. Has no effect without StyleChan.'
+      ],
       'Export History': [
         true,
         'Export last read, your posts, etc. when exporting the setting'
@@ -986,6 +990,9 @@ http://eye.swfchan.com/search/?q=%name;types:swf
   siteStyle: '',
   siteStyleHome: false,
   customSiteThemes: [],
+  // 'auto' applies the SFW or NSFW variant based on the active board's
+  // ws_board flag; 'sfw'/'nsfw' force a single variant everywhere.
+  sfwNsfwMode: 'auto',
   textColorMode: 'auto',
   'Text Color': '',
   'Link Text Color': '',
@@ -1431,4 +1438,35 @@ current-archive-text:"Archive"]
   boardSounds: [{}],
   defaultSoundId: '',
 };
+
+// Visual styling settings get separate SFW and NSFW values so the user can
+// keep two color/theme palettes and have the right one applied based on the
+// active board's worksafe flag (or a forced override).
+export const styleVariantKeys = [
+  'siteStyle',
+  'usercss',
+  'textColorMode',
+  'Text Color', 'Link Text Color', 'Quote Text Color', 'Dead Link Text Color',
+  'Highlight Own Color', 'Highlight You Color', 'Highlight Ghost Color',
+  'Highlight Own Opacity', 'Highlight You Opacity', 'Highlight Ghost Opacity',
+  'Highlight Own Text Auto', 'Highlight You Text Auto', 'Highlight Ghost Text Auto',
+  'Highlight Own Text Color', 'Highlight Own Link Color', 'Highlight Own Quote Color', 'Highlight Own Dead Link Color',
+  'Highlight You Text Color', 'Highlight You Link Color', 'Highlight You Quote Color', 'Highlight You Dead Link Color',
+  'Highlight Ghost Text Color', 'Highlight Ghost Link Color', 'Highlight Ghost Quote Color', 'Highlight Ghost Dead Link Color',
+  'Catalog Highlight Own Color', 'Catalog Highlight Own Opacity',
+  'Catalog Highlight Watched Color', 'Catalog Highlight Watched Opacity',
+  'Catalog Highlight Own Text Auto',
+  'Catalog Highlight Own Text Color', 'Catalog Highlight Own Link Color', 'Catalog Highlight Own Quote Color', 'Catalog Highlight Own Dead Link Color',
+  'Catalog Highlight Watched Text Auto',
+  'Catalog Highlight Watched Text Color', 'Catalog Highlight Watched Link Color', 'Catalog Highlight Watched Quote Color', 'Catalog Highlight Watched Dead Link Color',
+  'Scroll Marker Own Color', 'Scroll Marker You Color', 'Scroll Marker Ghost Color', 'Scroll Marker Unread Color',
+  'Scroll Marker Own Opacity', 'Scroll Marker You Opacity', 'Scroll Marker Ghost Opacity', 'Scroll Marker Unread Opacity',
+  'Scroll Marker Own Match Highlight', 'Scroll Marker You Match Highlight', 'Scroll Marker Ghost Match Highlight',
+];
+
+for (const k of styleVariantKeys) {
+  Config[`${k} SFW`] = Config[k];
+  Config[`${k} NSFW`] = Config[k];
+}
+
 export default Config;

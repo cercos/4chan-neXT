@@ -6,6 +6,8 @@
 - Added comment previewing.
 - Fixed highlight colors previewer.
 - Added more options for thead updater sound
+- Added built-in site theme styles.
+- Added StyleChan compatibility.
 
 ### 1.0.3 (2026-05-31)
 

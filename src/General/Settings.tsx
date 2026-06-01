@@ -7,7 +7,7 @@ import FilterSelectPage from './Settings/Filter-select.html';
 import SimpleFiltersPage from './Settings/SimpleFilters.html';
 import StylingPage from './Settings/Styling.html';
 import Redirect from '../Archive/Redirect';
-import Config from '../config/Config';
+import Config, { styleVariantKeys } from '../config/Config';
 import ImageHost from '../Images/ImageHost';
 import CustomCSS from '../Miscellaneous/CustomCSS';
 import FileInfo from '../Miscellaneous/FileInfo';
@@ -29,6 +29,9 @@ import { dragstart } from './UI';
 import Filter from '../Filtering/Filter';
 import QuoteYou from '../Quotelinks/QuoteYou';
 import Index from './Index';
+import BoardConfig from './BoardConfig';
+
+export type StyleVariant = 'sfw' | 'nsfw';
 
 var Settings = {
   dialog: undefined as HTMLDivElement | undefined,
@@ -43,6 +46,44 @@ var Settings = {
   stylingPreviewPanel: null as HTMLDivElement | null,
   activeSiteStylePicker: null as HTMLElement | null,
   siteStylePickerOutsideHandler: null as ((e: Event) => void) | null,
+  stylingEditingVariant: null as StyleVariant | null,
+  styleVariantKeySet: new Set<string>(styleVariantKeys),
+
+  // What's currently applied to the page. Always derived from the board
+  // (or the forced mode); the Styling settings page does NOT override this,
+  // so opening the dialog or clicking SFW/NSFW tabs never changes the
+  // currently-rendered board styling.
+  getActiveVariant(): StyleVariant {
+    return Settings.getBoardVariant();
+  },
+
+  // The variant that *would* apply on this page if the settings dialog were
+  // closed. Used by the hint label so the user can see why a particular
+  // variant is being applied.
+  getBoardVariant(): StyleVariant {
+    const mode = Conf['sfwNsfwMode'];
+    if (mode === 'sfw') return 'sfw';
+    if (mode === 'nsfw') return 'nsfw';
+    if (!g.boardID) return 'sfw';
+    // BoardConfig.isSFW returns false for unknown boards too, so check the
+    // boards map explicitly to keep the SFW fallback for missing data.
+    const boards = (BoardConfig as any).boards || Conf['boardConfig']?.boards;
+    const board = boards?.[g.boardID];
+    if (!board) return 'sfw';
+    return board.ws_board ? 'sfw' : 'nsfw';
+  },
+
+  variantKey(key: string, variant: StyleVariant = Settings.getActiveVariant()): string {
+    return `${key} ${variant.toUpperCase()}`;
+  },
+
+  styleConf<T = any>(key: string, variant?: StyleVariant): T {
+    return Conf[Settings.variantKey(key, variant)];
+  },
+
+  styleKeyBase(key: string): string {
+    return key.replace(/ (SFW|NSFW)$/, '');
+  },
   prepareDrag(e) {
     const settingsWindow = $('#fourchanx-settings', Settings.dialog) as HTMLDivElement;
     const rect = settingsWindow.getBoundingClientRect();
@@ -99,13 +140,41 @@ var Settings = {
     Settings.applyStylingVars();
   },
 
+  // StyleChan injects `<style id="ch4SS">` into <head> and a header shortcut
+  // anchor `#StyleChanLink`. Either is sufficient as a "present" signal; the
+  // style tag goes in earlier so it's the more reliable check.
+  isStylechanInstalled(): boolean {
+    return !!(d.getElementById('ch4SS') || d.getElementById('StyleChanLink'));
+  },
+
+  // Open StyleChan's settings without closing ours. StyleChan appends its
+  // own `<div id="overlay">` + `#oneechan-options` dialog to <body>. Our
+  // overlay uses `id="xt-settings-overlay"` to avoid an id collision (their
+  // show()/close() did `document.getElementById('overlay')` and would tear
+  // ours out of the DOM). Their overlay sits above ours in stacking order
+  // and intercepts clicks, so clicking the dim backdrop closes StyleChan
+  // first (via their own outside-click handler) and a second click closes us.
+  openStylechanSettings(): boolean {
+    const link = d.getElementById('StyleChanLink') as HTMLAnchorElement | null;
+    if (!link) return false;
+    link.click();
+    return true;
+  },
+
+  shouldDeferStylingToStylechan(): boolean {
+    return !!Conf['Defer Styling to StyleChan'] && Settings.isStylechanInstalled();
+  },
+
   open(openSection) {
     let dialog, sectionToOpen;
     if (Settings.dialog) { return; }
     $.event('CloseMenu');
 
+    // id `xt-settings-overlay` avoids a collision with StyleChan, which also
+    // injects an `<div id="overlay">` and would otherwise tear our dialog out
+    // of the DOM when its show()/close() called `document.getElementById`.
     Settings.dialog = (dialog = $.el('div',
-      { id: 'overlay' }
+      { id: 'xt-settings-overlay' }
       , SettingsPage));
     const settingsWindow = $('#fourchanx-settings', dialog) as HTMLDivElement;
 
@@ -196,6 +265,8 @@ var Settings = {
     }
     Settings.activeSiteStylePicker = null;
     delete Settings.dialog;
+    // The editing variant is dialog-only UI state; clear it on close.
+    Settings.stylingEditingVariant = null;
   },
 
   toggleAllDetails(open) {
@@ -515,6 +586,9 @@ var Settings = {
   renderSection(sectionInfo) {
     const section = $('section', Settings.dialog);
     if (!section) return;
+    const leavingStyling = Settings.renderedSection
+      && Settings.renderedSection.hyphenatedTitle === 'styling'
+      && sectionInfo.hyphenatedTitle !== 'styling';
     $.rmAll(section);
     section.className = `section-${sectionInfo.hyphenatedTitle}`;
     sectionInfo.open(section, g);
@@ -523,6 +597,7 @@ var Settings = {
     Settings.renderedSection = sectionInfo;
     Settings.applySearch();
     $.event('OpenSettings', null, section);
+    if (leavingStyling) Settings.stylingEditingVariant = null;
   },
 
   allSettings(section) {
@@ -536,9 +611,9 @@ var Settings = {
         textContent: sectionInfo.title,
       });
       const content = $.el('div', { className: 'settings-section-content' });
-      sectionInfo.open(content, g);
       $.add(block, [heading, content]);
       $.add(section, block);
+      sectionInfo.open(content, g);
     }
   },
 
@@ -822,7 +897,7 @@ Enable it on boards.${location.hostname.split('.')[1]}.org in your browser's pri
         subgroups: [
           ['System', ['JSON Index', `Use ${meta.name} Catalog`, 'Index Refresh Notifications', 'Open Threads in New Tab', 'External Catalog', '404 Redirect', 'Archive Report', 'Exempt Archives from Encryption', 'Show Updated Notifications']],
           ['History', ['Export History', 'Ask to Export History']],
-          ['Compatibility', ['Disable Native Extension', 'Enable Native Flash Embedding']]
+          ['Compatibility', ['Disable Native Extension', 'Enable Native Flash Embedding', 'Defer Styling to StyleChan']]
         ]
       }],
       includeWarnings: true,
@@ -1238,10 +1313,64 @@ Enable it on boards.${location.hostname.split('.')[1]}.org in your browser's pri
     let input: HTMLInputElement, name: string;
     $.extend(section, { innerHTML: StylingPage });
 
+    // When StyleChan is present and the user wants to defer to it, replace
+    // every styling sub-section *except* Custom CSS with a banner that opens
+    // StyleChan's dialog on top of ours. CSS does the hiding via the
+    // `styling-deferred` class on the section root.
+    if (Settings.shouldDeferStylingToStylechan()) {
+      section.classList.add('styling-deferred');
+      const banner = $.el('div', { className: 'styling-defer-banner' });
+      const text = $.el('div', {
+        className: 'styling-defer-banner-text',
+        innerHTML:
+          '<b>StyleChan is managing site themes.</b> '
+          + 'The theme picker has been disabled; '
+          + 'highlight colors, scroll markers, and Custom CSS below still work. '
+          + 'To restore the full Styling section, uncheck <i>Defer Styling to StyleChan</i> in <i>General → Compatibility</i>.'
+      });
+      const button = $.el('button', {
+        type: 'button',
+        className: 'styling-defer-open',
+        textContent: 'Open StyleChan Settings',
+      }) as HTMLButtonElement;
+      $.on(button, 'click', e => {
+        e.preventDefault();
+        Settings.openStylechanSettings();
+      });
+      $.add(banner, [text, button]);
+      section.insertBefore(banner, section.firstChild);
+    }
+
     const inputs: Record<string, HTMLInputElement> = dict();
     for (input of $$('[name]', section)) {
       inputs[input.name] = input;
     }
+
+    // Mark the enclosing <details> for every variant-aware input so CSS
+    // can outline the whole section (Highlight Colors, Scrollbar Markers,
+    // Text Colors, Custom CSS, etc.) — much less visual noise than
+    // outlining each input individually.
+    for (const key of styleVariantKeys) {
+      const inp = inputs[key];
+      if (!inp) continue;
+      const detail = inp.closest('details') as HTMLElement | null;
+      if (detail) detail.dataset.variantAware = 'true';
+    }
+
+    // While the Styling page is open the editing variant overrides the
+    // runtime variant so live preview + applyStylingVars reflect the values
+    // the user is touching. Initialize from the variant the board would use.
+    Settings.stylingEditingVariant = Settings.getBoardVariant();
+    // Rename variant-aware inputs to point at the storage key for the
+    // currently-edited variant so the form save path writes to the right slot.
+    const renameVariantInputs = (variant: StyleVariant) => {
+      for (const key of styleVariantKeys) {
+        const inp = inputs[key];
+        if (inp) inp.name = Settings.variantKey(key, variant);
+      }
+    };
+    renameVariantInputs(Settings.stylingEditingVariant);
+
     Settings.populateSiteStylePicker(section, inputs['siteStyle'] as HTMLSelectElement);
     Settings.bindSiteStylePicker(section);
     Settings.bindAddCustomTheme(section);
@@ -1331,23 +1460,37 @@ Enable it on boards.${location.hostname.split('.')[1]}.org in your browser's pri
     const highlightTextKeys = new Set(
       highlightTextControlGroups.flatMap(group => Array.from(group.keys))
     );
+    // Inside the styling page, reads/writes target the *editing* variant
+    // (which slot the user is currently looking at) rather than the runtime
+    // board variant. Without this, switching tabs would either show the
+    // wrong starting values or silently overwrite the other variant.
+    const editVariant = () => Settings.stylingEditingVariant || Settings.getBoardVariant();
+    const editConf = <T = any>(baseKey: string): T => Settings.styleConf<T>(baseKey, editVariant());
+    const writeEditConf = (baseKey: string, value: any) => {
+      const storageKey = Settings.styleVariantKeySet.has(baseKey)
+        ? Settings.variantKey(baseKey, editVariant())
+        : baseKey;
+      Conf[storageKey] = value;
+      $.set(storageKey, value);
+    };
     const baseTextPalette = (baseBackground: [number, number, number]) => {
-      const textColorMode = Conf['textColorMode'] === 'manual' ? 'manual' : 'auto';
+      const textColorMode = editConf<string>('textColorMode') === 'manual' ? 'manual' : 'auto';
       const autoTextPalette = Settings.autoTextPalette(baseBackground);
       return {
-        text: textColorMode === 'auto' ? autoTextPalette.text : (Conf['Text Color'] || autoTextPalette.text),
-        link: textColorMode === 'auto' ? autoTextPalette.link : (Conf['Link Text Color'] || autoTextPalette.link),
-        quote: textColorMode === 'auto' ? autoTextPalette.quote : (Conf['Quote Text Color'] || autoTextPalette.quote),
-        deadLink: textColorMode === 'auto' ? autoTextPalette.deadLink : (Conf['Dead Link Text Color'] || autoTextPalette.deadLink),
+        text: textColorMode === 'auto' ? autoTextPalette.text : (editConf<string>('Text Color') || autoTextPalette.text),
+        link: textColorMode === 'auto' ? autoTextPalette.link : (editConf<string>('Link Text Color') || autoTextPalette.link),
+        quote: textColorMode === 'auto' ? autoTextPalette.quote : (editConf<string>('Quote Text Color') || autoTextPalette.quote),
+        deadLink: textColorMode === 'auto' ? autoTextPalette.deadLink : (editConf<string>('Dead Link Text Color') || autoTextPalette.deadLink),
       };
     };
     const syncAutoHighlightPreviewInputs = () => {
       const baseBackground = Settings.getTextBaseBackground();
       const basePalette = baseTextPalette(baseBackground);
+      const v = editVariant();
       for (const group of highlightTextControlGroups) {
         const autoToggle = inputs[group.autoKey] as HTMLInputElement | null;
         if (!autoToggle || !autoToggle.checked) continue;
-        const palette = Settings.autoHighlightTextPalette(group.colorKey, group.opacityKey, baseBackground) || basePalette;
+        const palette = Settings.autoHighlightTextPalette(group.colorKey, group.opacityKey, baseBackground, v) || basePalette;
         const nextValues = [palette.text, palette.link, palette.quote, palette.deadLink] as const;
         for (let i = 0; i < group.keys.length; i++) {
           const key = group.keys[i];
@@ -1367,22 +1510,22 @@ Enable it on boards.${location.hostname.split('.')[1]}.org in your browser's pri
       const baseBackground = Settings.getTextBaseBackground();
       const basePalette = baseTextPalette(baseBackground);
       const groups = targetGroup ? [targetGroup] : highlightTextControlGroups;
+      const v = editVariant();
       for (const group of groups) {
         const autoToggle = inputs[group.autoKey] as HTMLInputElement | null;
         if (!autoToggle || autoToggle.checked) continue;
-        const autoPalette = Settings.autoHighlightTextPalette(group.colorKey, group.opacityKey, baseBackground) || basePalette;
+        const autoPalette = Settings.autoHighlightTextPalette(group.colorKey, group.opacityKey, baseBackground, v) || basePalette;
         const nextValues = [autoPalette.text, autoPalette.link, autoPalette.quote, autoPalette.deadLink] as const;
         for (let i = 0; i < group.keys.length; i++) {
           const key = group.keys[i];
           const next = nextValues[i];
           if (!next) continue;
-          if (overwrite || !Conf[key]) {
-            Conf[key] = next;
-            $.set(key, next);
+          if (overwrite || !editConf<string>(key)) {
+            writeEditConf(key, next);
           }
           const colorInput = inputs[key];
           if (!colorInput) continue;
-          colorInput.value = Conf[key] || next;
+          colorInput.value = editConf<string>(key) || next;
           delete colorInput.dataset.unset;
         }
       }
@@ -1408,7 +1551,7 @@ Enable it on boards.${location.hostname.split('.')[1]}.org in your browser's pri
       }
     };
     const syncMarkerColorControls = () => {
-      Settings.syncLinkedMarkerColors(inputs);
+      Settings.syncLinkedMarkerColors(inputs, editVariant());
       for (const [key, markerType, matchKey] of markerColorLinkPairs) {
         const linked = !!inputs[matchKey]?.checked;
         const colorInput = inputs[key];
@@ -1473,7 +1616,10 @@ Enable it on boards.${location.hostname.split('.')[1]}.org in your browser's pri
 
     if (textColorModeSelect) {
       $.on(textColorModeSelect, 'change', () => {
-        Conf['textColorMode'] = textColorModeSelect.value;
+        // $.cb.value (bound later) persists to the variant-suffixed
+        // storage key; keep the local Conf entry in sync for the helpers
+        // we call before it fires.
+        writeEditConf('textColorMode', textColorModeSelect.value);
         syncTextColorControls();
         syncAutoHighlightPreviewInputs();
         Settings.applyStylingVars();
@@ -1484,7 +1630,7 @@ Enable it on boards.${location.hostname.split('.')[1]}.org in your browser's pri
       const autoToggle = inputs[group.autoKey] as HTMLInputElement | null;
       if (!autoToggle) continue;
       $.on(autoToggle, 'change', () => {
-        Conf[group.autoKey] = !!autoToggle.checked;
+        writeEditConf(group.autoKey, !!autoToggle.checked);
         if (autoToggle.checked) {
           syncAutoHighlightPreviewInputs();
         } else {
@@ -1500,7 +1646,9 @@ Enable it on boards.${location.hostname.split('.')[1]}.org in your browser's pri
     for (name in inputs) {
       input = inputs[name];
       if (name === 'Custom CSS') continue; // handled below (special toggle)
-      items[name] = Conf[name];
+      // input.name is the storage key (possibly variant-suffixed); items has
+      // to be keyed by storage key so $.get fetches from the right slot.
+      items[input.name] = Conf[input.name];
       const event = (
         (input.nodeName === 'SELECT') ||
         ['checkbox', 'radio', 'color', 'range'].includes(input.type) ||
@@ -1559,25 +1707,27 @@ Enable it on boards.${location.hostname.split('.')[1]}.org in your browser's pri
     $.on(customCSS, 'change', Settings.togglecss);
     Settings.initCustomCSSEditor(section, inputs['usercss'] as unknown as HTMLTextAreaElement);
 
-    $.get(items, (loaded: Record<string, any>) => {
-      for (const key in loaded) {
-        const val = loaded[key];
-        const inp = inputs[key];
+    const populateInputsFromLoaded = (loaded: Record<string, any>) => {
+      for (const storageKey in loaded) {
+        const val = loaded[storageKey];
+        const baseName = Settings.styleKeyBase(storageKey);
+        const inp = inputs[baseName];
+        if (!inp) continue;
         if (inp.type === 'checkbox') {
           inp.checked = !!val;
           setCheckedState(inp);
         } else if (inp.type === 'color') {
-          Settings.setColorInputValue(inp, key, val);
+          Settings.setColorInputValue(inp, baseName, val);
         } else if (inp.type === 'range') {
           inp.value = (val === '' || val == null) ? '1' : String(val);
-        } else if (key === 'siteStyle' && !val) {
+        } else if (baseName === 'siteStyle' && !val) {
           // Keep whichever style is currently active selected in the picker
           // when no explicit site style preference has been saved yet.
         } else {
           inp.value = val ?? '';
         }
         inp.hidden = false;
-        if (key in Settings) Settings[key].call(inp);
+        if (baseName in Settings) Settings[baseName].call(inp);
       }
       syncMarkerColorControls();
       syncCatalogHighlightControls();
@@ -1589,19 +1739,25 @@ Enable it on boards.${location.hostname.split('.')[1]}.org in your browser's pri
       refreshUnsetColorInputs();
       Settings.refreshCustomCSSEditor(section);
       refreshStylingPreview();
-    });
+    };
+
+    $.get(items, populateInputsFromLoaded);
 
     // Clear buttons next to each color input — reset the Conf key to '' so
-    // the theme default takes over again.
+    // the theme default takes over again. data-clear holds the base key;
+    // route the write through the storage key for the active variant.
     for (const btn of $$('[data-clear]', section) as HTMLButtonElement[]) {
       $.on(btn, 'click', () => {
-        const key = btn.dataset.clear!;
-        Conf[key] = '';
-        $.set(key, '');
+        const baseKey = btn.dataset.clear!;
+        const storageKey = Settings.styleVariantKeySet.has(baseKey)
+          ? Settings.variantKey(baseKey)
+          : baseKey;
+        Conf[storageKey] = '';
+        $.set(storageKey, '');
         Settings.applyStylingVars();
-        const target = inputs[key];
+        const target = inputs[baseKey];
         if (target) {
-          Settings.setColorInputValue(target, key, '');
+          Settings.setColorInputValue(target, baseKey, '');
         }
         syncAutoHighlightPreviewInputs();
         refreshStylingPreview();
@@ -1618,7 +1774,7 @@ Enable it on boards.${location.hostname.split('.')[1]}.org in your browser's pri
     const randomize = $('#styling-randomize', section);
     if (randomize) {
       $.on(randomize, 'click', () => {
-        for (const key of [
+        for (const baseKey of [
           'Highlight Own Color',
           'Highlight You Color',
           'Highlight Ghost Color',
@@ -1626,16 +1782,134 @@ Enable it on boards.${location.hostname.split('.')[1]}.org in your browser's pri
           'Catalog Highlight Watched Color',
         ] as const) {
           const color = Settings.randomHighlightColor();
-          Conf[key] = color;
-          $.set(key, color);
-          const inp = inputs[key];
-          if (inp) Settings.setColorInputValue(inp, key, color);
+          const storageKey = Settings.variantKey(baseKey);
+          Conf[storageKey] = color;
+          $.set(storageKey, color);
+          const inp = inputs[baseKey];
+          if (inp) Settings.setColorInputValue(inp, baseKey, color);
         }
         syncAutoHighlightPreviewInputs();
         Settings.applyStylingVars();
         refreshStylingPreview();
       });
     }
+
+    // SFW / NSFW tab switcher.
+    const variantBar = $('.styling-variant-bar', section) as HTMLElement | null;
+    const variantHint = $('.styling-variant-hint', section) as HTMLElement | null;
+    const tabsByVariant: Record<StyleVariant, HTMLButtonElement | null> = {
+      sfw: $('.styling-variant-tabs [data-styling-variant="sfw"]', section) as HTMLButtonElement | null,
+      nsfw: $('.styling-variant-tabs [data-styling-variant="nsfw"]', section) as HTMLButtonElement | null,
+    };
+    const updateVariantHint = () => {
+      if (!variantHint) return;
+      const board = Settings.getBoardVariant();
+      const mode = Conf['sfwNsfwMode'];
+      const editing = Settings.stylingEditingVariant || board;
+      let reason: string;
+      if (mode === 'sfw') reason = 'SFW (forced everywhere)';
+      else if (mode === 'nsfw') reason = 'NSFW (forced everywhere)';
+      else if (!g.boardID) reason = 'SFW (no board context)';
+      else reason = `${board.toUpperCase()} (board ${g.boardID} is ${board === 'sfw' ? 'worksafe' : 'NSFW'})`;
+      const editingNote = editing === board
+        ? ''
+        : ` — you are editing the ${editing.toUpperCase()} variant, which is not currently applied`;
+      variantHint.textContent = `Active variant: ${reason}${editingNote}.`;
+    };
+    const updateVariantTabsSelected = () => {
+      const v = Settings.stylingEditingVariant || 'sfw';
+      for (const variant of ['sfw', 'nsfw'] as const) {
+        const tab = tabsByVariant[variant];
+        if (!tab) continue;
+        const selected = variant === v;
+        tab.classList.toggle('settings-subnav-tab-selected', selected);
+        tab.setAttribute('aria-selected', selected ? 'true' : 'false');
+      }
+    };
+    // In the dedicated Styling view, `section` itself has class
+    // `section-styling`. In the All Settings view, `section` is the inner
+    // `.settings-section-content` and its parent block carries the
+    // `section-styling` class — so route attributes to whichever ancestor
+    // owns that class for the CSS selectors to match either way.
+    const stylingHost = (section.closest('.section-styling') as HTMLElement | null) || section;
+    const updateVariantDecoration = (variant: StyleVariant) => {
+      // When deferring to StyleChan, the SFW/NSFW UI is hidden, so the
+      // orange NSFW accent and corner badge would just be noise on the
+      // sections that remain (Highlight Colors, Scrollbar Markers, etc.).
+      if (section.classList.contains('styling-deferred')) return;
+      const label = `Editing ${variant.toUpperCase()}`;
+      if (variantBar) variantBar.dataset.editingVariant = variant;
+      stylingHost.dataset.editingVariant = variant;
+      stylingHost.dataset.editingVariantLabel = label;
+    };
+    const switchEditingVariant = (variant: StyleVariant) => {
+      if (Settings.stylingEditingVariant === variant) return;
+      Settings.stylingEditingVariant = variant;
+      renameVariantInputs(variant);
+      updateVariantDecoration(variant);
+      // Re-fetch all variant-aware values so the inputs reflect the slot
+      // we just switched to. We deliberately do NOT call Settings.siteStyle,
+      // CustomCSS.update, or dispatch any CustomSiteThemeChanged /
+      // RefreshScrollMarkers events here — the tab switcher only changes
+      // which slot is being edited; it must not alter the board's
+      // currently-applied styling. applyStylingVars (called via
+      // populateInputsFromLoaded) will repaint the *dialog* with the new
+      // editing variant; :root stays on the board variant.
+      const refetch: Record<string, any> = dict();
+      for (const baseKey of styleVariantKeys) {
+        const inp = inputs[baseKey];
+        if (!inp) continue;
+        refetch[inp.name] = Conf[inp.name];
+      }
+      $.get(refetch, (loaded: Record<string, any>) => {
+        populateInputsFromLoaded(loaded);
+        updateVariantTabsSelected();
+        updateVariantHint();
+      });
+    };
+    for (const variant of ['sfw', 'nsfw'] as const) {
+      const tab = tabsByVariant[variant];
+      if (!tab) continue;
+      tab.setAttribute('role', 'tab');
+      $.on(tab, 'click', () => switchEditingVariant(variant));
+    }
+    const applyModeVisibility = () => {
+      if (variantBar) variantBar.dataset.mode = Conf['sfwNsfwMode'] || 'auto';
+    };
+    const modeSelect = inputs['sfwNsfwMode'] as HTMLSelectElement | undefined;
+    if (modeSelect) {
+      $.on(modeSelect, 'change', () => {
+        const mode = Conf['sfwNsfwMode'];
+        // When the user forces a variant, pin the editing slot to it so the
+        // inputs they see match the slot that's actually applied.
+        if ((mode === 'sfw' || mode === 'nsfw') && Settings.stylingEditingVariant !== mode) {
+          switchEditingVariant(mode);
+        }
+        applyModeVisibility();
+        updateVariantHint();
+        // Re-apply runtime styling in case the mode change shifts which
+        // variant is active outside the dialog.
+        Settings.applyStylingVars();
+        // Re-inject the active variant's custom CSS (Custom CSS reads the
+        // active variant's `usercss` slot, but the <style> tag only updates
+        // when we tell it to).
+        if (Conf['Custom CSS']) CustomCSS.update();
+        $.event('CustomSiteThemeChanged');
+        $.event('RefreshScrollMarkers');
+      });
+    }
+    const initialMode = Conf['sfwNsfwMode'];
+    if ((initialMode === 'sfw' || initialMode === 'nsfw') && Settings.stylingEditingVariant !== initialMode) {
+      Settings.stylingEditingVariant = initialMode;
+    }
+    updateVariantTabsSelected();
+    updateVariantHint();
+    updateVariantDecoration(Settings.stylingEditingVariant || 'sfw');
+    applyModeVisibility();
+    // Apply the editing variant to the dialog so the page behind the
+    // dialog stays on its variant but the preview/colors inside show what
+    // we're editing.
+    Settings.applyStylingVars();
   },
 
   stylingPreviewSampleText() {
@@ -1896,7 +2170,7 @@ Enable it on boards.${location.hostname.split('.')[1]}.org in your browser's pri
   },
 
   refreshCustomCSSEditor(section: HTMLElement) {
-    const textarea = $('textarea[name="usercss"]', section) as HTMLTextAreaElement | null;
+    const textarea = $('textarea[name^="usercss"]', section) as HTMLTextAreaElement | null;
     const highlight = $('.custom-css-highlight', section) as HTMLPreElement | null;
     if (!textarea || !highlight) return;
     Settings.renderCustomCSSHighlight(textarea, highlight);
@@ -1943,78 +2217,124 @@ Enable it on boards.${location.hostname.split('.')[1]}.org in your browser's pri
     return code;
   },
 
-  // Write styling Conf values to CSS custom properties on :root so they apply
-  // immediately, both inside the settings dialog and on the page behind it.
+  // Write styling Conf values to CSS custom properties so they apply
+  // immediately. Called with no args, this writes the runtime (board)
+  // variant onto :root and, if the settings dialog is open with an editing
+  // variant, layers that variant's vars onto the dialog element so the
+  // dialog + preview visually reflect what's being edited even while the
+  // board behind it stays on its own variant.
   applyStylingVars() {
-    const root = doc as HTMLElement;
+    Settings.writeStyleVarsTo(doc as HTMLElement, Settings.getBoardVariant(), true);
+    Settings.syncLinkedMarkerColors(undefined, Settings.getBoardVariant());
+    if (Settings.dialog && Settings.stylingEditingVariant
+        && Settings.stylingEditingVariant !== Settings.getBoardVariant()) {
+      Settings.writeStyleVarsTo(Settings.dialog, Settings.stylingEditingVariant, false);
+    } else if (Settings.dialog) {
+      // Same variant — clear any leftover dialog-scoped overrides so the
+      // dialog inherits from :root.
+      Settings.clearStyleVarsOn(Settings.dialog);
+    }
+    Settings.refreshUnsetStylingColorInputs();
+    Settings.refreshStylingPreviewFromDialog();
+  },
+
+  // The list of CSS variables we write, kept here so clearStyleVarsOn can
+  // strip them off the dialog when the editing variant matches the board.
+  STYLE_VAR_NAMES: [
+    '--xt-highlight-own', '--xt-highlight-you', '--xt-highlight-ghost',
+    '--xt-highlight-own-opacity', '--xt-highlight-you-opacity', '--xt-highlight-ghost-opacity',
+    '--xt-catalog-own-highlight', '--xt-catalog-own-highlight-opacity',
+    '--xt-catalog-watched-highlight', '--xt-catalog-watched-highlight-opacity',
+    '--xt-scroll-marker-own', '--xt-scroll-marker-you', '--xt-scroll-marker-ghost', '--xt-scroll-marker-unread',
+    '--xt-scroll-marker-own-opacity', '--xt-scroll-marker-you-opacity',
+    '--xt-scroll-marker-ghost-opacity', '--xt-scroll-marker-unread-opacity',
+    '--xt-text-color', '--xt-link-text-color', '--xt-quote-text-color', '--xt-dead-link-text-color',
+    '--xt-highlight-own-text', '--xt-highlight-own-link', '--xt-highlight-own-quote', '--xt-highlight-own-dead-link',
+    '--xt-highlight-you-text', '--xt-highlight-you-link', '--xt-highlight-you-quote', '--xt-highlight-you-dead-link',
+    '--xt-highlight-ghost-text', '--xt-highlight-ghost-link', '--xt-highlight-ghost-quote', '--xt-highlight-ghost-dead-link',
+    '--xt-catalog-own-text', '--xt-catalog-own-link', '--xt-catalog-own-quote', '--xt-catalog-own-dead-link',
+    '--xt-catalog-watched-text', '--xt-catalog-watched-link', '--xt-catalog-watched-quote', '--xt-catalog-watched-dead-link',
+  ] as const,
+
+  clearStyleVarsOn(target: HTMLElement) {
+    for (const name of Settings.STYLE_VAR_NAMES) target.style.removeProperty(name);
+  },
+
+  // Write all variant-aware CSS variables for `variant` onto `target`.
+  // `updateRootClasses` toggles the shared highlight classes on the root
+  // element (only true when called with target=doc; the dialog overlay
+  // doesn't need them because the cascade already inherits the doc's classes).
+  writeStyleVarsTo(target: HTMLElement, variant: StyleVariant, updateRootClasses: boolean) {
     const setVar = (cssVar: string, value: string) => {
-      if (value) root.style.setProperty(cssVar, value);
-      else root.style.removeProperty(cssVar);
+      if (value) target.style.setProperty(cssVar, value);
+      else target.style.removeProperty(cssVar);
     };
-    Settings.syncLinkedMarkerColors();
+    const cv = (key: string) => Settings.styleConf(key, variant);
     const threadHighlightsEnabled = Conf['Enable Thread Highlights'] !== false;
     const catalogHighlightsEnabled = Conf['Enable Catalog Highlights'] !== false;
     const catalogOwnEnabled = catalogHighlightsEnabled && Conf['Catalog Highlight Own Posts'] !== false;
     const catalogWatchedEnabled = catalogHighlightsEnabled && Conf['Catalog Highlight Watched Threads'] !== false;
-    doc.classList.toggle('highlight-own', threadHighlightsEnabled && !!Conf['Highlight Own Posts']);
-    doc.classList.toggle('highlight-you', threadHighlightsEnabled && !!Conf['Highlight Posts Quoting You']);
-    doc.classList.toggle('highlight-ghost', threadHighlightsEnabled && !!Conf['Highlight Ghost Posts']);
-    // Mark which highlights have an explicit color set so the !important
-    // override rules in variableBase.css can win over user site themes.
-    doc.classList.toggle('xt-set-own-highlight',
-      threadHighlightsEnabled && !!Conf['Highlight Own Posts'] && !!Conf['Highlight Own Color']);
-    doc.classList.toggle('xt-set-you-highlight',
-      threadHighlightsEnabled && !!Conf['Highlight Posts Quoting You'] && !!Conf['Highlight You Color']);
-    doc.classList.toggle('xt-set-ghost-highlight',
-      threadHighlightsEnabled && !!Conf['Highlight Ghost Posts'] && !!Conf['Highlight Ghost Color']);
-    doc.classList.toggle('xt-highlight-catalog-own', catalogOwnEnabled);
-    doc.classList.toggle('xt-highlight-catalog-watched', catalogWatchedEnabled);
-    setVar('--xt-highlight-own',   Conf['Highlight Own Color']);
-    setVar('--xt-highlight-you',   Conf['Highlight You Color']);
-    setVar('--xt-highlight-ghost', Conf['Highlight Ghost Color']);
+    if (updateRootClasses) {
+      doc.classList.toggle('highlight-own', threadHighlightsEnabled && !!Conf['Highlight Own Posts']);
+      doc.classList.toggle('highlight-you', threadHighlightsEnabled && !!Conf['Highlight Posts Quoting You']);
+      doc.classList.toggle('highlight-ghost', threadHighlightsEnabled && !!Conf['Highlight Ghost Posts']);
+      doc.classList.toggle('xt-set-own-highlight',
+        threadHighlightsEnabled && !!Conf['Highlight Own Posts'] && !!cv('Highlight Own Color'));
+      doc.classList.toggle('xt-set-you-highlight',
+        threadHighlightsEnabled && !!Conf['Highlight Posts Quoting You'] && !!cv('Highlight You Color'));
+      doc.classList.toggle('xt-set-ghost-highlight',
+        threadHighlightsEnabled && !!Conf['Highlight Ghost Posts'] && !!cv('Highlight Ghost Color'));
+      doc.classList.toggle('xt-highlight-catalog-own', catalogOwnEnabled);
+      doc.classList.toggle('xt-highlight-catalog-watched', catalogWatchedEnabled);
+    }
+    setVar('--xt-highlight-own',   cv('Highlight Own Color'));
+    setVar('--xt-highlight-you',   cv('Highlight You Color'));
+    setVar('--xt-highlight-ghost', cv('Highlight Ghost Color'));
     setVar('--xt-highlight-own-opacity',
-      Conf['Highlight Own Opacity'] === '' ? '' : String(Conf['Highlight Own Opacity']));
+      cv('Highlight Own Opacity') === '' ? '' : String(cv('Highlight Own Opacity')));
     setVar('--xt-highlight-you-opacity',
-      Conf['Highlight You Opacity'] === '' ? '' : String(Conf['Highlight You Opacity']));
+      cv('Highlight You Opacity') === '' ? '' : String(cv('Highlight You Opacity')));
     setVar('--xt-highlight-ghost-opacity',
-      Conf['Highlight Ghost Opacity'] === '' ? '' : String(Conf['Highlight Ghost Opacity']));
-    setVar('--xt-catalog-own-highlight', catalogOwnEnabled ? Conf['Catalog Highlight Own Color'] : '');
+      cv('Highlight Ghost Opacity') === '' ? '' : String(cv('Highlight Ghost Opacity')));
+    setVar('--xt-catalog-own-highlight', catalogOwnEnabled ? cv('Catalog Highlight Own Color') : '');
     setVar('--xt-catalog-own-highlight-opacity',
-      (catalogOwnEnabled && Conf['Catalog Highlight Own Opacity'] !== '') ? String(Conf['Catalog Highlight Own Opacity']) : '');
-    setVar('--xt-catalog-watched-highlight', catalogWatchedEnabled ? Conf['Catalog Highlight Watched Color'] : '');
+      (catalogOwnEnabled && cv('Catalog Highlight Own Opacity') !== '') ? String(cv('Catalog Highlight Own Opacity')) : '');
+    setVar('--xt-catalog-watched-highlight', catalogWatchedEnabled ? cv('Catalog Highlight Watched Color') : '');
     setVar('--xt-catalog-watched-highlight-opacity',
-      (catalogWatchedEnabled && Conf['Catalog Highlight Watched Opacity'] !== '') ? String(Conf['Catalog Highlight Watched Opacity']) : '');
-    const ownMarkerLinked = !!Conf['Scroll Marker Own Match Highlight'];
-    const youMarkerLinked = !!Conf['Scroll Marker You Match Highlight'];
-    const ghostMarkerLinked = !!Conf['Scroll Marker Ghost Match Highlight'];
+      (catalogWatchedEnabled && cv('Catalog Highlight Watched Opacity') !== '') ? String(cv('Catalog Highlight Watched Opacity')) : '');
+    const ownMarkerLinked = !!cv('Scroll Marker Own Match Highlight');
+    const youMarkerLinked = !!cv('Scroll Marker You Match Highlight');
+    const ghostMarkerLinked = !!cv('Scroll Marker Ghost Match Highlight');
     setVar('--xt-scroll-marker-own',
-      ownMarkerLinked ? Conf['Highlight Own Color'] : Conf['Scroll Marker Own Color']);
+      ownMarkerLinked ? cv('Highlight Own Color') : cv('Scroll Marker Own Color'));
     setVar('--xt-scroll-marker-you',
-      youMarkerLinked ? Conf['Highlight You Color'] : Conf['Scroll Marker You Color']);
+      youMarkerLinked ? cv('Highlight You Color') : cv('Scroll Marker You Color'));
     setVar('--xt-scroll-marker-ghost',
-      ghostMarkerLinked ? Conf['Highlight Ghost Color'] : Conf['Scroll Marker Ghost Color']);
-    setVar('--xt-scroll-marker-unread', Conf['Scroll Marker Unread Color']);
+      ghostMarkerLinked ? cv('Highlight Ghost Color') : cv('Scroll Marker Ghost Color'));
+    setVar('--xt-scroll-marker-unread', cv('Scroll Marker Unread Color'));
     setVar('--xt-scroll-marker-own-opacity',
-      Conf['Scroll Marker Own Opacity'] === '' ? '' : String(Conf['Scroll Marker Own Opacity']));
+      cv('Scroll Marker Own Opacity') === '' ? '' : String(cv('Scroll Marker Own Opacity')));
     setVar('--xt-scroll-marker-you-opacity',
-      Conf['Scroll Marker You Opacity'] === '' ? '' : String(Conf['Scroll Marker You Opacity']));
+      cv('Scroll Marker You Opacity') === '' ? '' : String(cv('Scroll Marker You Opacity')));
     setVar('--xt-scroll-marker-ghost-opacity',
-      Conf['Scroll Marker Ghost Opacity'] === '' ? '' : String(Conf['Scroll Marker Ghost Opacity']));
+      cv('Scroll Marker Ghost Opacity') === '' ? '' : String(cv('Scroll Marker Ghost Opacity')));
     setVar('--xt-scroll-marker-unread-opacity',
-      Conf['Scroll Marker Unread Opacity'] === '' ? '' : String(Conf['Scroll Marker Unread Opacity']));
+      cv('Scroll Marker Unread Opacity') === '' ? '' : String(cv('Scroll Marker Unread Opacity')));
 
     const baseBackground = Settings.getTextBaseBackground();
-    const textColorMode = Conf['textColorMode'] === 'manual' ? 'manual' : 'auto';
+    const textColorMode = cv('textColorMode') === 'manual' ? 'manual' : 'auto';
     const autoTextPalette = Settings.autoTextPalette(baseBackground);
-    const textColor = textColorMode === 'auto' ? autoTextPalette.text : Conf['Text Color'];
-    const linkColor = textColorMode === 'auto' ? autoTextPalette.link : Conf['Link Text Color'];
-    const quoteColor = textColorMode === 'auto' ? autoTextPalette.quote : Conf['Quote Text Color'];
-    const deadLinkColor = textColorMode === 'auto' ? autoTextPalette.deadLink : Conf['Dead Link Text Color'];
+    const textColor = textColorMode === 'auto' ? autoTextPalette.text : cv('Text Color');
+    const linkColor = textColorMode === 'auto' ? autoTextPalette.link : cv('Link Text Color');
+    const quoteColor = textColorMode === 'auto' ? autoTextPalette.quote : cv('Quote Text Color');
+    const deadLinkColor = textColorMode === 'auto' ? autoTextPalette.deadLink : cv('Dead Link Text Color');
     const hasAnyTextOverride = !!(textColor || linkColor || quoteColor || deadLinkColor);
-    if (hasAnyTextOverride) {
-      $.addClass(doc, 'xt-custom-text-colors');
-    } else {
-      $.rmClass(doc, 'xt-custom-text-colors');
+    if (updateRootClasses) {
+      if (hasAnyTextOverride) {
+        $.addClass(doc, 'xt-custom-text-colors');
+      } else {
+        $.rmClass(doc, 'xt-custom-text-colors');
+      }
     }
     setVar('--xt-text-color', textColor || '');
     setVar('--xt-link-text-color', linkColor || '');
@@ -2028,7 +2348,7 @@ Enable it on boards.${location.hostname.split('.')[1]}.org in your browser's pri
       opacityKey:
         | 'Highlight Own Opacity' | 'Highlight You Opacity' | 'Highlight Ghost Opacity'
         | 'Catalog Highlight Own Opacity' | 'Catalog Highlight Watched Opacity',
-    ) => Settings.autoHighlightTextPalette(colorKey, opacityKey, baseBackground);
+    ) => Settings.autoHighlightTextPalette(colorKey, opacityKey, baseBackground, variant);
     const withManual = (
       autoPalette: ReturnType<typeof Settings.autoTextPalette> | null,
       autoKey:
@@ -2053,12 +2373,12 @@ Enable it on boards.${location.hostname.split('.')[1]}.org in your browser's pri
         quote: quoteColor || '',
         deadLink: deadLinkColor || '',
       };
-      if (Conf[autoKey]) return base;
+      if (cv(autoKey)) return base;
       return {
-        text: Conf[textKey] || base.text,
-        link: Conf[linkKey] || base.link,
-        quote: Conf[quoteKey] || base.quote,
-        deadLink: Conf[deadKey] || base.deadLink,
+        text: cv(textKey) || base.text,
+        link: cv(linkKey) || base.link,
+        quote: cv(quoteKey) || base.quote,
+        deadLink: cv(deadKey) || base.deadLink,
       };
     };
     const ownPalette = withManual(
@@ -2121,8 +2441,6 @@ Enable it on boards.${location.hostname.split('.')[1]}.org in your browser's pri
     setVar('--xt-catalog-watched-link', catalogWatchedPalette?.link || '');
     setVar('--xt-catalog-watched-quote', catalogWatchedPalette?.quote || '');
     setVar('--xt-catalog-watched-dead-link', catalogWatchedPalette?.deadLink || '');
-    Settings.refreshUnsetStylingColorInputs();
-    Settings.refreshStylingPreviewFromDialog();
   },
 
   autoTextPalette(rgb?: [number, number, number]) {
@@ -2296,19 +2614,21 @@ Enable it on boards.${location.hostname.split('.')[1]}.org in your browser's pri
       | 'Highlight Own Opacity' | 'Highlight You Opacity' | 'Highlight Ghost Opacity'
       | 'Catalog Highlight Own Opacity' | 'Catalog Highlight Watched Opacity',
     baseBackground = Settings.getTextBaseBackground(),
+    variant?: StyleVariant,
   ) {
-    const color = Conf[colorKey];
+    const color = Settings.styleConf<string>(colorKey, variant);
     const rgb = Settings.hexToRgb(color);
     if (!rgb) return null;
+    const opacity = Settings.styleConf<string | number>(opacityKey, variant);
     const alpha = (
-      Conf[opacityKey] === '' || Conf[opacityKey] == null
-    ) ? 1 : $.minmax(parseFloat(String(Conf[opacityKey])), 0, 1);
+      opacity === '' || opacity == null
+    ) ? 1 : $.minmax(parseFloat(String(opacity)), 0, 1);
     if (!Number.isFinite(alpha) || alpha <= 0) return null;
     return Settings.autoTextPalette(Settings.mixRgb(baseBackground, rgb, alpha));
   },
 
   colorExpressionForKey(key: string): string {
-    switch (key) {
+    switch (Settings.styleKeyBase(key)) {
       case 'Highlight Own Color':
         return 'var(--xt-highlight-own, var(--xt-border-highlight, #d83030))';
       case 'Highlight You Color':
@@ -2434,21 +2754,24 @@ Enable it on boards.${location.hostname.split('.')[1]}.org in your browser's pri
     }
   },
 
-  syncLinkedMarkerColors(inputs?: Record<string, HTMLInputElement>) {
+  syncLinkedMarkerColors(inputs?: Record<string, HTMLInputElement>, variant?: StyleVariant) {
     const colorPairs = [
       ['Highlight Own Color', 'Scroll Marker Own Color', 'Scroll Marker Own Match Highlight'],
       ['Highlight You Color', 'Scroll Marker You Color', 'Scroll Marker You Match Highlight'],
       ['Highlight Ghost Color', 'Scroll Marker Ghost Color', 'Scroll Marker Ghost Match Highlight'],
     ] as const;
     for (const [highlightKey, markerKey, matchKey] of colorPairs) {
-      const linked = !!Conf[matchKey];
-      const color = linked ? (Conf[highlightKey] || '') : (Conf[markerKey] || '');
-      if (linked && (Conf[markerKey] !== color)) {
-        Conf[markerKey] = color;
-        $.set(markerKey, color);
+      const linked = !!Settings.styleConf(matchKey, variant);
+      const color = linked
+        ? (Settings.styleConf<string>(highlightKey, variant) || '')
+        : (Settings.styleConf<string>(markerKey, variant) || '');
+      const markerStorageKey = Settings.variantKey(markerKey, variant);
+      if (linked && (Conf[markerStorageKey] !== color)) {
+        Conf[markerStorageKey] = color;
+        $.set(markerStorageKey, color);
       }
       const markerInput = inputs?.[markerKey]
-        || ($(`#fourchanx-settings [name="${markerKey}"]`) as HTMLInputElement | null);
+        || ($(`#fourchanx-settings [name="${markerStorageKey}"]`) as HTMLInputElement | null);
       if (!markerInput) continue;
       Settings.setColorInputValue(markerInput, markerKey, color);
     }
@@ -2565,7 +2888,7 @@ Enable it on boards.${location.hostname.split('.')[1]}.org in your browser's pri
       }
     }
 
-    const desired = Conf['siteStyle'];
+    const desired = Settings.styleConf<string>('siteStyle');
     if (desired && seen.has(desired)) {
       select.value = desired;
     } else if (!noOptions && select.selectedIndex < 0) {
@@ -2680,13 +3003,13 @@ Enable it on boards.${location.hostname.split('.')[1]}.org in your browser's pri
     if (!Settings.dialog) return;
     const section = $('.section-styling', Settings.dialog) as HTMLElement | null;
     if (!section) return;
-    const select = $('[name="siteStyle"]', section) as HTMLSelectElement | null;
+    const select = $('[name^="siteStyle"]', section) as HTMLSelectElement | null;
     if (!select) return;
     Settings.populateSiteStylePicker(section, select);
     // Refresh the merge-mode "currently selected" label.
     const mergeLabel = $('.styling-add-theme-merge-current', section) as HTMLElement | null;
     if (mergeLabel) {
-      const value = select.value || Conf['siteStyle'] || '';
+      const value = select.value || Settings.styleConf<string>('siteStyle') || '';
       mergeLabel.textContent = !value
         ? '—'
         : (Settings.isCustomSiteThemeValue(value)
@@ -2719,13 +3042,23 @@ Enable it on boards.${location.hostname.split('.')[1]}.org in your browser's pri
     Conf['customSiteThemes'] = list;
     $.set('customSiteThemes', list);
     const activeValue = `${Settings.CUSTOM_SITE_THEME_PREFIX}${name}`;
-    if (Conf['siteStyle'] === activeValue) {
-      // Fall back to the first available native theme (or empty).
-      const fallback = Settings.nativeSiteThemes()[0] || '';
-      Conf['siteStyle'] = fallback;
-      $.set('siteStyle', fallback);
+    // Clear the removed theme out of every variant slot so we don't leave a
+    // dangling reference behind.
+    const variants: StyleVariant[] = ['sfw', 'nsfw'];
+    let activeRemoved = false;
+    for (const variant of variants) {
+      const key = Settings.variantKey('siteStyle', variant);
+      if (Conf[key] === activeValue) {
+        const fallback = Settings.nativeSiteThemes()[0] || '';
+        Conf[key] = fallback;
+        $.set(key, fallback);
+        if (variant === Settings.getActiveVariant()) activeRemoved = true;
+      }
+    }
+    if (activeRemoved) {
+      const fallback = Settings.styleConf<string>('siteStyle') || '';
       if (Settings.dialog) {
-        const select = $('#fourchanx-settings [name="siteStyle"]') as HTMLSelectElement | null;
+        const select = $('#fourchanx-settings [name^="siteStyle"]') as HTMLSelectElement | null;
         if (select) {
           // Refresh first so the new option set is in the select before we dispatch.
           Settings.refreshSiteStylePickers();
@@ -2748,6 +3081,13 @@ Enable it on boards.${location.hostname.split('.')[1]}.org in your browser's pri
         const label = $('.styling-theme-current', picker) as HTMLElement | null;
         if (label) Settings.refreshSiteStyleCurrentLabel(label, this);
       }
+    }
+    // If the user is editing a variant slot that isn't currently applied to
+    // this board, only update the picker label — don't switch the native
+    // theme or change cookies, because the choice doesn't apply here yet.
+    const editingVariant = Settings.stylingEditingVariant;
+    if (editingVariant && editingVariant !== Settings.getBoardVariant()) {
+      return;
     }
     if (!style) {
       $.event('CustomSiteThemeChanged');
@@ -2804,10 +3144,10 @@ Enable it on boards.${location.hostname.split('.')[1]}.org in your browser's pri
     const addBtn = $('.styling-add-theme-button', container) as HTMLButtonElement | null;
     const status = $('.styling-add-theme-status', container) as HTMLElement | null;
     if (!nameInput || !sourceSelect || !fileInput || !pasteInput || !addBtn) return;
-    const siteStyleSelect = $('[name="siteStyle"]', section) as HTMLSelectElement | null;
+    const siteStyleSelect = $('[name^="siteStyle"]', section) as HTMLSelectElement | null;
     const refreshMergeCurrent = () => {
       if (!mergeCurrentLabel) return;
-      const value = siteStyleSelect?.value || Conf['siteStyle'] || '';
+      const value = siteStyleSelect?.value || Settings.styleConf<string>('siteStyle') || '';
       mergeCurrentLabel.textContent = !value
         ? '—'
         : (Settings.isCustomSiteThemeValue(value)
@@ -2879,12 +3219,12 @@ Enable it on boards.${location.hostname.split('.')[1]}.org in your browser's pri
           }
           finalize(Settings.addCustomSiteTheme(themeName, css), themeName);
         } else if (mode === 'merge') {
-          const base = siteStyleSelect?.value || Conf['siteStyle'] || '';
+          const base = siteStyleSelect?.value || Settings.styleConf<string>('siteStyle') || '';
           if (!base) {
             showStatus('Select a base theme in the Theme dropdown above first.', false);
             return;
           }
-          const userCSS = String(Conf['usercss'] || '');
+          const userCSS = String(Settings.styleConf<string>('usercss') || '');
           if (!userCSS.trim()) {
             showStatus('Custom CSS is empty — add CSS in the Custom CSS section below first.', false);
             return;
@@ -2935,11 +3275,13 @@ Enable it on boards.${location.hostname.split('.')[1]}.org in your browser's pri
 
   siteStyleHome(this: HTMLInputElement) {
     if (!this.checked) return;
-    const style = Conf['siteStyle'] || ($('#fourchanx-settings [name="siteStyle"]') as HTMLSelectElement | null)?.value || '';
+    const activeStyle = Settings.styleConf<string>('siteStyle');
+    const style = activeStyle || ($('#fourchanx-settings [name^="siteStyle"]') as HTMLSelectElement | null)?.value || '';
     if (!style) return;
-    if (!Conf['siteStyle']) {
-      Conf['siteStyle'] = style;
-      $.set('siteStyle', style);
+    if (!activeStyle) {
+      const key = Settings.variantKey('siteStyle');
+      Conf[key] = style;
+      $.set(key, style);
     }
     Settings.setSiteStyleHomeCookie(style);
   },
@@ -3604,6 +3946,14 @@ Enable it on boards.${location.hostname.split('.')[1]}.org in your browser's pri
       set('XEmbedder', data['Embed Tweets inline with fxTwitter'] ? 'fxt' : 'tf');
       set('fxtMaxReplies', data['Resolve Tweet Replies'] ? (data['Resolve all Tweet Replies'] ? 100 : 1) : 0);
       set('fxtLang', data['Translate non-English Tweets to English'] ? 'en' : '');
+    }
+    // Seed SFW/NSFW siblings from each legacy styling value, once. Idempotent:
+    // skipped per-key as soon as a sibling already exists.
+    for (const k of styleVariantKeys) {
+      const legacy = data[k];
+      if (legacy === undefined) continue;
+      if (data[`${k} SFW`] === undefined) set(`${k} SFW`, legacy);
+      if (data[`${k} NSFW`] === undefined) set(`${k} NSFW`, legacy);
     }
     return changes;
   },
@@ -5079,7 +5429,7 @@ Enable it on boards.${location.hostname.split('.')[1]}.org in your browser's pri
 
   togglecss() {
     const details = $.x('ancestor::details[1]', this) as HTMLElement | null;
-    const textarea = details ? ($('textarea[name=usercss]', details) as HTMLTextAreaElement | null) : null;
+    const textarea = details ? ($('textarea[name^=usercss]', details) as HTMLTextAreaElement | null) : null;
     const disabled = !this.checked;
     if (textarea) textarea.disabled = disabled;
     if (disabled) {

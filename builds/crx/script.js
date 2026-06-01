@@ -1204,6 +1204,9 @@ http://eye.swfchan.com/search/?q=%name;types:swf
     siteStyle: '',
     siteStyleHome: false,
     customSiteThemes: [],
+    // 'auto' applies the SFW or NSFW variant based on the active board's
+    // ws_board flag; 'sfw'/'nsfw' force a single variant everywhere.
+    sfwNsfwMode: 'auto',
     textColorMode: 'auto',
     'Text Color': '',
     'Link Text Color': '',
@@ -1645,7 +1648,40 @@ current-archive-text:"Archive"]
 
     beepSource: '',
     beepVolume: 1,
+    soundLibrary: [[]],
+    boardSounds: [{}],
+    defaultSoundId: '',
   };
+
+  // Visual styling settings get separate SFW and NSFW values so the user can
+  // keep two color/theme palettes and have the right one applied based on the
+  // active board's worksafe flag (or a forced override).
+  const styleVariantKeys = [
+    'siteStyle',
+    'usercss',
+    'textColorMode',
+    'Text Color', 'Link Text Color', 'Quote Text Color', 'Dead Link Text Color',
+    'Highlight Own Color', 'Highlight You Color', 'Highlight Ghost Color',
+    'Highlight Own Opacity', 'Highlight You Opacity', 'Highlight Ghost Opacity',
+    'Highlight Own Text Auto', 'Highlight You Text Auto', 'Highlight Ghost Text Auto',
+    'Highlight Own Text Color', 'Highlight Own Link Color', 'Highlight Own Quote Color', 'Highlight Own Dead Link Color',
+    'Highlight You Text Color', 'Highlight You Link Color', 'Highlight You Quote Color', 'Highlight You Dead Link Color',
+    'Highlight Ghost Text Color', 'Highlight Ghost Link Color', 'Highlight Ghost Quote Color', 'Highlight Ghost Dead Link Color',
+    'Catalog Highlight Own Color', 'Catalog Highlight Own Opacity',
+    'Catalog Highlight Watched Color', 'Catalog Highlight Watched Opacity',
+    'Catalog Highlight Own Text Auto',
+    'Catalog Highlight Own Text Color', 'Catalog Highlight Own Link Color', 'Catalog Highlight Own Quote Color', 'Catalog Highlight Own Dead Link Color',
+    'Catalog Highlight Watched Text Auto',
+    'Catalog Highlight Watched Text Color', 'Catalog Highlight Watched Link Color', 'Catalog Highlight Watched Quote Color', 'Catalog Highlight Watched Dead Link Color',
+    'Scroll Marker Own Color', 'Scroll Marker You Color', 'Scroll Marker Ghost Color', 'Scroll Marker Unread Color',
+    'Scroll Marker Own Opacity', 'Scroll Marker You Opacity', 'Scroll Marker Ghost Opacity', 'Scroll Marker Unread Opacity',
+    'Scroll Marker Own Match Highlight', 'Scroll Marker You Match Highlight', 'Scroll Marker Ghost Match Highlight',
+  ];
+
+  for (const k of styleVariantKeys) {
+    Config[`${k} SFW`] = Config[k];
+    Config[`${k} NSFW`] = Config[k];
+  }
 
   // This file was created because these functions on $ were sometimes not initialized yet because of circular
   // dependencies, so try to keep this file without dependencies, so these functions don't have to wait for something else
@@ -3189,6 +3225,25 @@ current-archive-text:"Archive"]
 </details>
 
 <details open>
+  <summary>Unread Favicon</summary>
+  <select name="favicon">
+    <option value="ferongr">ferongr</option>
+    <option value="xat-">xat-</option>
+    <option value="4chanJS">4chanJS</option>
+    <option value="Mayhem">Mayhem</option>
+    <option value="Original">Original</option>
+    <option value="Metro">Metro</option>
+  </select>
+  <span class="favicon-preview"></span>
+</details>
+
+<details open>
+  <summary>Known Banners</summary>
+  <div>List of known banners, used for click-to-change feature.</div>
+  <textarea hidden name="knownBanners" class="field" spellcheck="false"></textarea>
+</details>
+
+<details open>
   <summary>Javascript Whitelist</summary>
   <div>
     Sources from which Javascript is allowed to be loaded by <a href="http://content-security-policy.com/#source_list" target="_blank">Content Security Policy</a>.<br>
@@ -3219,14 +3274,67 @@ current-archive-text:"Archive"]
 
 <details open>
   <summary>Thread updater sound</summary>
-  <label>
-    Sound volume, between 0 and 1:
-    <input name="beepVolume" type="number" min=".01" max="1" step=".01" class="field" />
-  </label><br />
-  <label>
-    Sound url. Can be a base64 one starting with <code>data:</code>. Leave empty for the default beep.
-    <input type="string" name="beepSource" class="field wide" />
-  </label>
+
+  <div class="sound-row sound-row--field">
+    <label for="beepVolume">Sound volume</label>
+    <input id="beepVolume" name="beepVolume" type="number" min=".01" max="1" step=".01" class="field" />
+    <span class="sound-row__hint">0 – 1</span>
+  </div>
+
+  <div class="sound-section">
+    <div class="sound-section__head">
+      <div class="sound-section__title-wrap">
+        <h4 class="sound-section__title">Sound library</h4>
+        <span class="sound-section__hint">Radio marks the default sound</span>
+      </div>
+      <div class="sound-section__actions">
+        <input type="file" id="sound-upload" accept="audio/*" hidden multiple>
+        <input type="file" id="sound-import" accept="application/json,.json" hidden>
+        <button type="button" id="sound-upload-btn" class="sound-btn sound-btn--primary">+ Add from file</button>
+        <button type="button" id="sound-url-btn" class="sound-btn">+ From URL</button>
+        <button type="button" id="sound-export-btn" class="sound-btn" title="Export sound library and overrides as JSON">Export</button>
+        <button type="button" id="sound-import-btn" class="sound-btn" title="Import a sound export (merges with current library)">Import</button>
+      </div>
+    </div>
+    <div id="sound-library-list" class="sound-list"></div>
+    <div id="sound-url-row" class="sound-compose" hidden>
+      <input type="text" id="sound-url-input" placeholder="https://… or data:audio/…;base64,…" class="field sound-compose__sound" />
+      <button type="button" id="sound-url-add" class="sound-btn">Fetch &amp; add</button>
+      <button type="button" id="sound-url-cancel" class="sound-btn">Cancel</button>
+    </div>
+    <div id="sound-status" class="sound-status" hidden></div>
+  </div>
+
+  <div class="sound-section">
+    <div class="sound-section__head">
+      <h4 class="sound-section__title">Board overrides</h4>
+    </div>
+    <div id="board-sounds-list" class="sound-list"></div>
+    <div class="sound-compose">
+      <input
+        type="text"
+        id="board-sounds-board"
+        placeholder="board (type or pick)"
+        class="field sound-compose__board"
+        list="board-sounds-datalist"
+        autocomplete="off"
+      />
+      <datalist id="board-sounds-datalist"></datalist>
+      <select id="board-sounds-sound" class="sound-compose__sound"></select>
+      <button type="button" id="board-sounds-add" class="sound-btn">Add</button>
+    </div>
+  </div>
+
+  <div class="sound-section">
+    <div class="sound-section__head">
+      <div class="sound-section__title-wrap">
+        <h4 class="sound-section__title">Post overrides</h4>
+        <span class="sound-section__hint">Auto-removed when threads 404</span>
+      </div>
+    </div>
+    <div id="post-sounds-list" class="sound-list"></div>
+  </div>
+
 </details>`;
 
   var KeybindsPage = `<div class="warning"><code>Keybinds</code> are disabled.</div>
@@ -3281,6 +3389,20 @@ current-archive-text:"Archive"]
 
   var StylingPage = `<details open>
   <summary>Site Style</summary>
+  <div class="styling-variant-bar">
+    <label class="styling-variant-mode">SFW / NSFW mode:
+      <select name="sfwNsfwMode">
+        <option value="auto">Auto (per board)</option>
+        <option value="sfw">Force SFW everywhere</option>
+        <option value="nsfw">Force NSFW everywhere</option>
+      </select>
+    </label>
+    <span class="settings-subnav styling-variant-tabs" role="tablist" aria-label="Edit variant">
+      <button type="button" class="settings-subnav-tab" data-styling-variant="sfw" role="tab">SFW</button>
+      <button type="button" class="settings-subnav-tab" data-styling-variant="nsfw" role="tab">NSFW</button>
+    </span>
+    <span class="styling-variant-hint note" aria-live="polite"></span>
+  </div>
   <div class="styling-theme-row">
     <label>Theme:
       <span class="styling-theme-picker" data-open="false">
@@ -3295,8 +3417,8 @@ current-archive-text:"Archive"]
     <label><input type="checkbox" name="siteStyleHome"> Apply on home page</label>
   </div>
   <div id="styling-site-style-note" class="note" hidden></div>
-  <div class="styling-add-theme">
-    <div class="styling-group-label">Add custom theme</div>
+  <details class="styling-add-theme" data-remember-layout="false">
+    <summary class="styling-add-theme-summary">Add custom theme</summary>
     <div class="styling-add-theme-row">
       <input type="text" class="field styling-add-theme-name" placeholder="Theme name" maxlength="60">
       <label class="styling-add-theme-source">Source:
@@ -3318,7 +3440,7 @@ current-archive-text:"Archive"]
       <p class="note">Combines the current Custom CSS with the currently selected theme (<span class="styling-add-theme-merge-current">—</span>) into a new entry.</p>
     </div>
     <div class="styling-add-theme-status" hidden></div>
-  </div>
+  </details>
 </details>
 
 <details open>
@@ -3498,19 +3620,6 @@ current-archive-text:"Archive"]
 </details>
 
 <details open>
-  <summary>Unread Favicon</summary>
-  <select name="favicon">
-    <option value="ferongr">ferongr</option>
-    <option value="xat-">xat-</option>
-    <option value="4chanJS">4chanJS</option>
-    <option value="Mayhem">Mayhem</option>
-    <option value="Original">Original</option>
-    <option value="Metro">Metro</option>
-  </select>
-  <span class="favicon-preview"></span>
-</details>
-
-<details open>
   <summary>Custom CSS</summary>
   <div class="custom-css-toggle-row">
     <label><input type="checkbox" name="Custom CSS"> Enable Custom CSS</label>
@@ -3533,12 +3642,6 @@ current-archive-text:"Archive"]
     <pre class="custom-css-highlight" aria-hidden="true"></pre>
     <textarea hidden name="usercss" class="field custom-css-textarea" spellcheck="false" wrap="off"></textarea>
   </div>
-</details>
-
-<details open>
-  <summary>Known Banners</summary>
-  <div>List of known banners, used for click-to-change feature.</div>
-  <textarea hidden name="knownBanners" class="field" spellcheck="false"></textarea>
 </details>`;
 
   const $$ = (selector, root = d.body) => Array.from(root.querySelectorAll(selector));
@@ -5264,6 +5367,100 @@ div[data-checked="false"] > .suboption-list {
 .styling-preview .styling-preview-post.from-archive .quotelink.deadlink {
   color: var(--xt-highlight-ghost-dead-link, var(--xt-dead-link-text-color, var(--xt-dead-link))) !important;
 }
+.section-styling .styling-variant-bar {
+  align-items: center;
+  border-bottom: 1px solid rgba(128, 128, 128, .25);
+  display: flex;
+  flex-wrap: wrap;
+  gap: 10px 14px;
+  margin: 0 0 10px;
+  padding: 6px 8px 8px;
+  position: relative;
+  border-left: 4px solid var(--xt-variant-accent, rgba(128, 128, 128, .4));
+}
+/* SFW is treated as the default/regular style — no accent. Only NSFW
+   gets the colored treatment so the user gets a visual warning when
+   editing the NSFW variant. */
+.section-styling .styling-variant-bar[data-editing-variant="nsfw"] {
+  --xt-variant-accent: #c64a3a;
+  background: rgba(198, 74, 58, .07);
+}
+.section-styling .styling-variant-mode {
+  align-items: center;
+  display: inline-flex;
+  gap: 6px;
+}
+.section-styling .styling-variant-tabs {
+  display: inline-flex;
+  gap: 4px;
+}
+.section-styling .styling-variant-tabs .settings-subnav-tab {
+  background: transparent;
+  border: 1px solid;
+  border-radius: 3px;
+  color: inherit;
+  cursor: pointer;
+  font: inherit;
+  line-height: 1.2;
+  padding: 2px 10px;
+}
+.section-styling .styling-variant-tabs .settings-subnav-tab-selected {
+  background: var(--xt-variant-accent, rgba(128, 128, 128, .25));
+  border-color: var(--xt-variant-accent, currentColor);
+  color: #fff;
+  font-weight: 700;
+}
+.section-styling .styling-variant-hint {
+  flex: 1 1 100%;
+  font-size: 11px;
+  opacity: .85;
+}
+.section-styling .styling-variant-hint:empty {
+  display: none;
+}
+/* Tag the whole settings dialog with a small badge so the user always
+   sees which variant they're editing, even when scrolled away from the
+   Site Style section. */
+#fourchanx-settings .section-styling[data-editing-variant-label]::before {
+  background: var(--xt-variant-accent, rgba(128, 128, 128, .35));
+  border-radius: 0 0 0 4px;
+  color: #fff;
+  content: attr(data-editing-variant-label);
+  font-size: 10px;
+  font-weight: 700;
+  letter-spacing: .04em;
+  padding: 2px 8px;
+  position: absolute;
+  right: 0;
+  text-transform: uppercase;
+  top: 0;
+  z-index: 1;
+}
+#fourchanx-settings .section-styling {
+  position: relative;
+}
+#fourchanx-settings .section-styling[data-editing-variant="nsfw"] {
+  --xt-variant-accent: #c64a3a;
+}
+
+/* Mark each <details> section that contains variant-aware controls
+   (Site Style, Highlight Colors, Scrollbar Markers, Text Colors, Custom
+   CSS) with the active variant's accent so it's clear which whole
+   sections switch between SFW and NSFW. The accent color flips when the
+   active tab changes. The #fourchanx-settings prefix is required so
+   these rules beat the generic \`#fourchanx-settings details { border: ... }\`
+   baseline below. */
+#fourchanx-settings .section-styling details[data-variant-aware="true"] {
+  border: 1px solid var(--xt-variant-accent, rgba(128, 128, 128, .3));
+  transition: border-color .15s ease;
+}
+#fourchanx-settings .section-styling details[data-variant-aware="true"][open] > summary {
+  border-bottom-color: var(--xt-variant-accent, rgba(128, 128, 128, .2));
+  transition: border-color .15s ease;
+}
+.section-styling .styling-theme-picker > select[name^="siteStyle"] {
+  display: none !important;
+}
 .section-styling .styling-theme-row {
   align-items: center;
   display: flex;
@@ -5282,9 +5479,6 @@ div[data-checked="false"] > .suboption-list {
   position: relative;
   display: inline-block;
   min-width: 200px;
-}
-.section-styling .styling-theme-picker > select[name="siteStyle"] {
-  display: none !important;
 }
 .section-styling .styling-theme-toggle {
   align-items: center;
@@ -5369,10 +5563,32 @@ div[data-checked="false"] > .suboption-list {
   border-top: 1px solid rgba(128, 128, 128, .35);
   margin: 4px 0;
 }
-.section-styling .styling-add-theme {
+#fourchanx-settings .section-styling .styling-add-theme {
+  border: none;
   border-top: 1px dashed color-mix(in srgb, currentColor 25%, transparent);
-  margin-top: 10px;
-  padding-top: 8px;
+  border-radius: 0;
+  margin: 10px 0 0;
+  padding: 4px 0 0;
+}
+#fourchanx-settings .section-styling .styling-add-theme > .styling-add-theme-summary {
+  font-weight: 600;
+  margin: 0;
+  padding: 4px 0;
+  opacity: .85;
+}
+#fourchanx-settings .section-styling .styling-add-theme > .styling-add-theme-summary::before {
+  content: '▸';
+  display: inline-block;
+  font-size: 11px;
+  margin-right: 6px;
+  transition: transform .12s ease;
+}
+#fourchanx-settings .section-styling .styling-add-theme[open] > .styling-add-theme-summary::before {
+  transform: rotate(90deg);
+}
+#fourchanx-settings .section-styling .styling-add-theme[open] > .styling-add-theme-summary {
+  border-bottom: none;
+  margin-bottom: 4px;
 }
 .section-styling .styling-add-theme-row {
   align-items: center;
@@ -5885,6 +6101,229 @@ div[data-checked="false"] > .suboption-list {
   color: #000;
   background-color: #FFF;
   padding: 0 2px;
+}
+
+/* Sound settings */
+.sound-row {
+  display: flex;
+  align-items: center;
+  gap: 0.6em;
+  padding: 6px 2px;
+}
+.sound-row--stack {
+  flex-direction: column;
+  align-items: flex-start;
+  gap: 0.3em;
+}
+.sound-row__hint {
+  opacity: 0.55;
+  font-size: 0.85em;
+}
+.sound-section {
+  margin: 12px 0;
+  border: 1px solid rgba(0, 0, 0, .15);
+  border-radius: 6px;
+  overflow: hidden;
+  background: rgba(0, 0, 0, .05);
+}
+.sound-section__head {
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+  gap: 0.5em;
+  padding: 8px 12px;
+  border-bottom: 1px solid rgba(0, 0, 0, .12);
+  background: rgba(0, 0, 0, .07);
+}
+@media (prefers-color-scheme: dark) {
+  .sound-section {
+    border-color: rgba(255, 255, 255, .14);
+    background: rgba(255, 255, 255, .04);
+  }
+  .sound-section__head {
+    border-bottom-color: rgba(255, 255, 255, .12);
+    background: rgba(255, 255, 255, .06);
+  }
+}
+.sound-section__title {
+  margin: 0;
+  font-size: 0.85em;
+  font-weight: 700;
+  letter-spacing: 0.04em;
+  text-transform: uppercase;
+  opacity: 0.75;
+}
+.sound-section__title-wrap {
+  display: flex;
+  align-items: baseline;
+  gap: 0.6em;
+}
+.sound-section__hint {
+  font-size: 0.78em;
+  opacity: 0.55;
+  font-style: italic;
+}
+.sound-section__actions {
+  display: flex;
+  gap: 0.4em;
+}
+.sound-list {
+  display: flex;
+  flex-direction: column;
+}
+.sound-list__row {
+  display: flex;
+  align-items: center;
+  gap: 0.5em;
+  padding: 7px 12px;
+  border-bottom: 1px solid rgba(0, 0, 0, .08);
+  transition: background-color 100ms ease;
+}
+.sound-list__row:last-child {
+  border-bottom: none;
+}
+.sound-list__row:hover {
+  background: rgba(0, 0, 0, .06);
+}
+.sound-list__row--builtin {
+  opacity: 0.92;
+}
+.sound-list__row--default {
+  background: rgba(0, 0, 0, .05);
+}
+@media (prefers-color-scheme: dark) {
+  .sound-list__row {
+    border-bottom-color: rgba(255, 255, 255, .08);
+  }
+  .sound-list__row:hover {
+    background: rgba(255, 255, 255, .06);
+  }
+  .sound-list__row--default {
+    background: rgba(255, 255, 255, .05);
+  }
+}
+.sound-list__row--default .sound-list__name-label,
+.sound-list__row--default .sound-list__name-input {
+  font-weight: 600;
+}
+.sound-list__default {
+  flex: 0 0 auto;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  cursor: pointer;
+  padding: 0 2px;
+}
+.sound-list__default input[type="radio"] {
+  margin: 0;
+  cursor: pointer;
+}
+.sound-list__empty {
+  padding: 14px 12px;
+  text-align: center;
+  font-style: italic;
+  opacity: 0.55;
+}
+.sound-list__name {
+  flex: 1 1 auto;
+  display: flex;
+  align-items: center;
+  gap: 0.5em;
+  min-width: 0;
+  overflow: hidden;
+}
+.sound-list__name-label {
+  font-weight: 500;
+}
+.sound-list__name-input {
+  flex: 1 1 auto;
+  width: 100%;
+  min-width: 0;
+}
+.sound-list__badge {
+  font-size: 0.7em;
+  letter-spacing: 0.04em;
+  text-transform: uppercase;
+  padding: 1px 6px;
+  border-radius: 999px;
+  background: rgba(128, 128, 128, .2);
+  opacity: 0.75;
+}
+.sound-list__board {
+  font-family: monospace;
+  font-size: 0.95em;
+}
+.sound-list__sep {
+  opacity: 0.45;
+}
+.sound-list__sound--missing {
+  opacity: 0.55;
+  font-style: italic;
+}
+.sound-list__actions {
+  display: flex;
+  gap: 0.25em;
+  flex-shrink: 0;
+}
+.sound-btn {
+  cursor: pointer;
+  border: 1px solid rgba(128, 128, 128, .3);
+  background: rgba(128, 128, 128, .08);
+  color: inherit;
+  padding: 4px 10px;
+  border-radius: 4px;
+  font: inherit;
+  font-size: 0.9em;
+  transition: background-color 100ms ease, border-color 100ms ease;
+}
+.sound-btn:hover {
+  background: rgba(128, 128, 128, .18);
+  border-color: rgba(128, 128, 128, .45);
+}
+.sound-btn--primary {
+  font-weight: 600;
+}
+.sound-btn--icon {
+  padding: 2px 8px;
+  min-width: 26px;
+  line-height: 1.2;
+}
+.sound-btn--danger:hover {
+  background: color-mix(in srgb, #d33 22%, transparent);
+  border-color: color-mix(in srgb, #d33 50%, transparent);
+}
+.sound-compose {
+  display: flex;
+  gap: 0.5em;
+  padding: 8px 12px;
+  border-top: 1px solid rgba(0, 0, 0, .12);
+  background: rgba(0, 0, 0, .06);
+}
+@media (prefers-color-scheme: dark) {
+  .sound-compose {
+    border-top-color: rgba(255, 255, 255, .12);
+    background: rgba(255, 255, 255, .06);
+  }
+}
+.sound-compose__board {
+  flex: 0 0 12em;
+}
+.sound-compose__sound {
+  flex: 1 1 auto;
+  min-width: 0;
+}
+.sound-advanced {
+  margin-top: 12px;
+}
+.sound-status {
+  padding: 6px 12px;
+  font-size: 0.85em;
+  border-top: 1px solid rgba(128, 128, 128, .15);
+  color: #c0392b;
+}
+.sound-status[data-kind="ok"] {
+  color: inherit;
+  opacity: 0.7;
 }
 #fourchanx-settings th {
   text-align: center;
@@ -8420,8 +8859,12 @@ svg.icon {
       return this.addStyle();
     },
 
+    currentCSS() {
+      return Settings.styleConf('usercss') || '';
+    },
+
     addStyle() {
-      return this.style = $.addStyle(CSS.sub(Conf['usercss']), 'custom-css', '#fourchanx-css');
+      return this.style = $.addStyle(CSS.sub(this.currentCSS()), 'custom-css', '#fourchanx-css');
     },
 
     rmStyle() {
@@ -8435,7 +8878,7 @@ svg.icon {
       if (!this.style) {
         return this.addStyle();
       }
-      return this.style.textContent = CSS.sub(Conf['usercss']);
+      return this.style.textContent = CSS.sub(this.currentCSS());
     }
   };
 
@@ -9663,6 +10106,7 @@ svg.icon {
     'watchedThreads',
     'watcherLastModified',
     'customTitles',
+    'sounds',
   ];
 
   class SimpleDict {
@@ -19989,6 +20433,191 @@ aero|asia|biz|cat|com|coop|dance|info|int|jobs|mobi|moe|museum|name|net|org|post
 
   var Beep = 'UklGRjQDAABXQVZFZm10IBAAAAABAAEAgD4AAIA+AAABAAgAc21wbDwAAABBAAADAAAAAAAAAAA8AAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAABkYXRhzAIAAGMms8em0tleMV4zIpLVo8nhfSlcPR102Ki+5JspVEkdVtKzs+K1NEhUIT7DwKrcy0g6WygsrM2k1NpiLl0zIY/WpMrjgCdbPhxw2Kq+5Z4qUkkdU9K1s+K5NkVTITzBwqnczko3WikrqM+l1NxlLF0zIIvXpsnjgydZPhxs2ay95aIrUEkdUdC3suK8N0NUIjq+xKrcz002WioppdGm091pK1w0IIjYp8jkhydXPxxq2K295aUrTkoeTs65suK+OUFUIzi7xqrb0VA0WSoootKm0t5tKlo1H4TYqMfkiydWQBxm16+85actTEseS8y7seHAPD9TIza5yKra01QyWSson9On0d5wKVk2H4DYqcfkjidUQB1j1rG75KsvSkseScu8seDCPz1TJDW2yara1FYxWSwnm9Sn0N9zKVg2H33ZqsXkkihSQR1g1bK65K0wSEsfR8i+seDEQTxUJTOzy6rY1VowWC0mmNWoz993KVc3H3rYq8TklSlRQh1d1LS647AyR0wgRMbAsN/GRDpTJTKwzKrX1l4vVy4lldWpzt97KVY4IXbUr8LZljVPRCxhw7W3z6ZISkw1VK+4sMWvXEhSPk6buay9sm5JVkZNiLWqtrJ+TldNTnquqbCwilZXU1BwpKirrpNgWFhTaZmnpquZbFlbVmWOpaOonHZcXlljhaGhpZ1+YWBdYn2cn6GdhmdhYGN3lp2enIttY2Jjco+bnJuOdGZlZXCImJqakHpoZ2Zug5WYmZJ/bGlobX6RlpeSg3BqaW16jZSVkoZ0bGtteImSk5KIeG5tbnaFkJKRinxxbm91gY2QkIt/c3BwdH6Kj4+LgnZxcXR8iI2OjIR5c3J0e4WLjYuFe3VzdHmCioyLhn52dHR5gIiKioeAeHV1eH+GiYqHgXp2dnh9hIiJh4J8eHd4fIKHiIeDfXl4eHyBhoeHhH96eHmA';
 
+  const BUILTIN_DEFAULT_ID = 'builtin:default';
+  const SoundManager = {
+    db: undefined,
+    init() {
+      if (this.db)
+        return;
+      this.db = new DataBoard('sounds');
+      this.migrateBeepSource();
+    },
+    /** One-time: if a legacy `beepSource` URL/data URI exists, fold it into the library. */
+    migrateBeepSource() {
+      const src = Conf.beepSource;
+      if (!src)
+        return;
+      const lib = Array.isArray(Conf.soundLibrary) ? Conf.soundLibrary : [];
+      const alreadyIn = lib.some((e) => e.data === src);
+      if (!alreadyIn) {
+        const id = this.addToLibrary('Imported default', src);
+        if (!Conf.defaultSoundId)
+          this.setDefaultSoundId(id);
+      }
+      Conf.beepSource = '';
+      $.set('beepSource', '');
+    },
+    builtins() {
+      return [
+        { id: BUILTIN_DEFAULT_ID, name: 'Beep', data: `data:audio/wav;base64,${Beep}`, builtin: true },
+      ];
+    },
+    library() {
+      const user = Array.isArray(Conf.soundLibrary) ? Conf.soundLibrary : [];
+      return [...this.builtins(), ...user];
+    },
+    getEntry(id) {
+      if (!id)
+        return undefined;
+      return this.library().find(e => e.id === id);
+    },
+    addToLibrary(name, data, cb) {
+      const id = `user:${Date.now().toString(36)}${Math.random().toString(36).slice(2, 6)}`;
+      const next = [...(Array.isArray(Conf.soundLibrary) ? Conf.soundLibrary : []), { id, name, data }];
+      Conf.soundLibrary = next;
+      $.set('soundLibrary', next, cb);
+      return id;
+    },
+    renameLibraryEntry(id, name, cb) {
+      const list = Array.isArray(Conf.soundLibrary) ? Conf.soundLibrary : [];
+      const next = list.map((e) => e.id === id ? { ...e, name } : e);
+      Conf.soundLibrary = next;
+      $.set('soundLibrary', next, cb);
+    },
+    removeFromLibrary(id, cb) {
+      const list = Array.isArray(Conf.soundLibrary) ? Conf.soundLibrary : [];
+      const next = list.filter((e) => e.id !== id);
+      Conf.soundLibrary = next;
+      if (Conf.defaultSoundId === id) {
+        Conf.defaultSoundId = '';
+        $.set('defaultSoundId', '');
+      }
+      $.set('soundLibrary', next, cb);
+    },
+    getDefaultSoundId() {
+      return Conf.defaultSoundId || '';
+    },
+    setDefaultSoundId(id, cb) {
+      Conf.defaultSoundId = id || '';
+      $.set('defaultSoundId', Conf.defaultSoundId, cb);
+    },
+    isDefault(id) {
+      const cur = Conf.defaultSoundId || '';
+      if (cur)
+        return cur === id;
+      return id === BUILTIN_DEFAULT_ID;
+    },
+    boardKey(boardID, siteID = g.SITE.ID) {
+      return `${siteID}/${boardID}`;
+    },
+    getBoardOverride(boardID, siteID = g.SITE.ID) {
+      const map = Conf.boardSounds || {};
+      return map[this.boardKey(boardID, siteID)];
+    },
+    setBoardOverride(boardID, soundId, cb) {
+      const map = { ...(Conf.boardSounds || {}) };
+      const key = this.boardKey(boardID);
+      if (soundId) {
+        map[key] = soundId;
+      } else {
+        delete map[key];
+      }
+      Conf.boardSounds = map;
+      $.set('boardSounds', map, cb);
+    },
+    allBoardOverrides() {
+      const map = Conf.boardSounds || {};
+      const out = [];
+      for (const key in map) {
+        const [siteID, boardID] = key.split('/');
+        if (boardID)
+          out.push({ siteID, boardID, soundId: map[key] });
+      }
+      return out;
+    },
+    getPostOverride({ siteID, boardID, threadID, postID }) {
+      if (postID == null)
+        return undefined;
+      const entry = this.db?.get({ siteID, boardID, threadID });
+      return entry?.posts?.[postID];
+    },
+    setPostOverride({ siteID, boardID, threadID, postID }, soundId, cb) {
+      if (!this.db || postID == null)
+        return;
+      const existing = this.db.get({ siteID, boardID, threadID }) || dict();
+      const posts = { ...(existing.posts || {}) };
+      if (soundId) {
+        posts[postID] = soundId;
+      } else {
+        delete posts[postID];
+      }
+      const next = { ...existing };
+      if (Object.keys(posts).length) {
+        next.posts = posts;
+      } else {
+        delete next.posts;
+      }
+      if (next.posts && Object.keys(next.posts).length) {
+        this.db.set({ siteID, boardID, threadID, val: next }, cb);
+      } else {
+        this.db.delete({ siteID, boardID, threadID }, cb);
+      }
+    },
+    /** Walk the DataBoard and list every post-level override across sites/boards/threads. */
+    allPostOverrides() {
+      const out = [];
+      const data = this.db?.data;
+      if (!data)
+        return out;
+      for (const siteID in data) {
+        const boards = data[siteID]?.boards;
+        if (!boards)
+          continue;
+        for (const boardID in boards) {
+          const threads = boards[boardID];
+          if (!threads || typeof threads !== 'object')
+            continue;
+          for (const threadID in threads) {
+            const wrapper = threads[threadID];
+            if (!wrapper?.posts)
+              continue;
+            for (const postID in wrapper.posts) {
+              const soundId = wrapper.posts[postID];
+              if (soundId)
+                out.push({ siteID, boardID, threadID, postID, soundId });
+            }
+          }
+        }
+      }
+      return out;
+    },
+    /**
+    * Resolve a sound source URL by walking the override hierarchy.
+    * `quotedYouPost` (optional) - info for a You-post being quoted; checked first.
+    * `context` - board/thread for fallback when no You-post override hits.
+    * Returns a playable source URL (data: URI or http).
+    */
+    resolveSource({ quotedYouPost, context, }) {
+      const tryId = (id) => {
+        if (!id)
+          return null;
+        return this.getEntry(id)?.data || null;
+      };
+      if (quotedYouPost) {
+        const src = tryId(this.getPostOverride(quotedYouPost));
+        if (src)
+          return src;
+      }
+      const boardSrc = tryId(this.getBoardOverride(context.boardID));
+      if (boardSrc)
+        return boardSrc;
+      const defaultSrc = tryId(this.getDefaultSoundId());
+      if (defaultSrc)
+        return defaultSrc;
+      return this.getEntry(BUILTIN_DEFAULT_ID).data;
+    },
+  };
+
   var ThreadUpdater = {
     init() {
       let sc;
@@ -20083,16 +20712,68 @@ aero|asia|biz|cat|com|coop|dance|info|int|jobs|mobi|moe|museum|name|net|org|post
     */
     beep: `data:audio/wav;base64,${Beep}`,
     playBeep(repeatIfPlaying = true) {
+      const lib = SoundManager.getEntry(SoundManager.getDefaultSoundId());
+      ThreadUpdater.playSound(lib?.data || ThreadUpdater.beep, repeatIfPlaying);
+    },
+    playSound(source, repeatIfPlaying = true) {
       const { audio } = ThreadUpdater;
-      const source = Conf.beepSource || ThreadUpdater.beep;
+      if (!source)
+        source = ThreadUpdater.beep;
       if (audio.src !== source)
         audio.src = source;
-      audio.volume = Math.max(.01, Math.min(+Conf.beepVolume, 1));
+      const configuredVolume = Number(Conf.beepVolume);
+      audio.volume = Number.isFinite(configuredVolume) ?
+        Math.max(.01, Math.min(configuredVolume, 1))
+        :
+          1;
       if (audio.paused) {
-        audio.play();
+        const playPromise = audio.play();
+        if (playPromise && typeof playPromise.catch === 'function') {
+          playPromise.catch((err) => {
+            if (err?.name === 'NotAllowedError') {
+              ThreadUpdater.armAudioUnlock(source);
+            }
+          });
+        }
       } else if (repeatIfPlaying) {
-        $.one(audio, 'ended', ThreadUpdater.playBeep);
+        $.one(audio, 'ended', () => ThreadUpdater.playSound(source, false));
       }
+    },
+    armAudioUnlock(source) {
+      ThreadUpdater.pendingAudioSource = source;
+      if (ThreadUpdater.audioUnlockArmed) {
+        return;
+      }
+      ThreadUpdater.audioUnlockArmed = true;
+      const unlock = () => {
+        $.off(d, 'pointerdown keydown', unlock);
+        ThreadUpdater.audioUnlockArmed = false;
+        const pendingSource = ThreadUpdater.pendingAudioSource || source;
+        delete ThreadUpdater.pendingAudioSource;
+        ThreadUpdater.playSound(pendingSource, false);
+      };
+      $.on(d, 'pointerdown keydown', unlock);
+      const now = Date.now();
+      if (!ThreadUpdater.lastAudioBlockNoticeAt || (now - ThreadUpdater.lastAudioBlockNoticeAt > 10000)) {
+        ThreadUpdater.lastAudioBlockNoticeAt = now;
+        new Notice('warning', 'Sound was blocked by browser autoplay in this tab. Click or press a key in this tab to enable it.', 8);
+      }
+    },
+    /** Find the first new post that quotes a You-post; returns {boardID, threadID, postID} of the quoted You-post. */
+    findFirstQuotedYouPost(posts) {
+      if (!QuoteYou.db)
+        return null;
+      for (const post of posts) {
+        if (!post.nodes?.quotelinks)
+          continue;
+        for (const ql of post.nodes.quotelinks) {
+          const data = Get.postDataFromLink(ql);
+          if (QuoteYou.db.get(data)) {
+            return { boardID: data.boardID, threadID: data.threadID, postID: data.postID };
+          }
+        }
+      }
+      return null;
     },
     cb: {
       checkpost(e) {
@@ -20352,13 +21033,14 @@ aero|asia|biz|cat|com|coop|dance|info|int|jobs|mobi|moe|museum|name|net|org|post
         const unreadQYCount = Unread.postsQuotingYou?.size;
         Main.callbackNodes('Post', posts);
         if (d.hidden || !d.hasFocus()) {
-          if (Conf['Beep Quoting You'] && (Unread.postsQuotingYou?.size > unreadQYCount)) {
-            ThreadUpdater.playBeep();
-            if (Conf['Beep']) {
-              ThreadUpdater.playBeep();
-            }
+          const quotedYou = Conf['Beep Quoting You'] && (Unread.postsQuotingYou?.size > unreadQYCount)
+            ? ThreadUpdater.findFirstQuotedYouPost(posts)
+            : null;
+          const context = { boardID: thread.board.ID, threadID: thread.ID };
+          if (quotedYou) {
+            ThreadUpdater.playSound(SoundManager.resolveSource({ quotedYouPost: quotedYou, context }));
           } else if (Conf['Beep'] && (Unread.posts?.size > 0) && (unreadCount === 0)) {
-            ThreadUpdater.playBeep();
+            ThreadUpdater.playSound(SoundManager.resolveSource({ context }));
           }
         }
         const scroll = Conf['Auto Scroll'] && ThreadUpdater.scrollBG() &&
@@ -21479,6 +22161,7 @@ aero|asia|biz|cat|com|coop|dance|info|int|jobs|mobi|moe|museum|name|net|org|post
     heavyBatchFileCount: 8,
     heavyBatchSize: 64 * 1024 * 1024,
     metadataStrippedFlag: '__4chanXTMetadataStripped',
+    commentPreviewInputBound: false,
     req: undefined,
     selected: undefined,
     mimeTypes: ['image/jpeg', 'image/png', 'image/gif', 'application/pdf', 'application/vnd.adobe.flash.movie', 'application/x-shockwave-flash', 'video/webm', 'video/mp4'],
@@ -21599,6 +22282,15 @@ aero|asia|biz|cat|com|coop|dance|info|int|jobs|mobi|moe|museum|name|net|org|post
       $.on(d, 'QRGetFile', QR.getFile);
       $.on(d, 'QRDrawFile', QR.drawFile);
       $.on(d, 'QRSetFile', QR.setFile);
+      $.on(d, 'QRCommentPreviewChanged', QR.applyCommentPreviewSettings);
+      $.sync('Comment Preview', (value) => {
+        Conf['Comment Preview'] = !!value;
+        QR.applyCommentPreviewSettings();
+      });
+      $.sync('Comment Preview Position', (value) => {
+        Conf['Comment Preview Position'] = ['below', 'right', 'left'].includes(value || '') ? value : 'below';
+        QR.applyCommentPreviewSettings();
+      });
       $.on(d, 'paste', QR.paste);
       $.on(d, 'dragover', QR.dragOver);
       $.on(d, 'drop', QR.dropFile);
@@ -21724,29 +22416,67 @@ aero|asia|biz|cat|com|coop|dance|info|int|jobs|mobi|moe|museum|name|net|org|post
         return;
       QR.nodes.comPreview.innerHTML = QR.renderComPreview(QR.nodes.com.value);
     },
+    applyCommentPreviewSettings() {
+      if (!QR.nodes?.el || !QR.nodes?.com)
+        return;
+      const { classList } = QR.nodes.el;
+      const enabled = !!Conf['Comment Preview'];
+      const pos = ['below', 'right', 'left'].includes(Conf['Comment Preview Position']) ? Conf['Comment Preview Position'] : 'below';
+      classList.toggle('has-com-preview', enabled);
+      classList.remove('com-preview-below', 'com-preview-right', 'com-preview-left');
+      classList.add(`com-preview-${pos}`);
+      if (enabled) {
+        if (!QR.commentPreviewInputBound) {
+          $.on(QR.nodes.com, 'input', QR.updateComPreview);
+          QR.commentPreviewInputBound = true;
+        }
+        QR.updateComPreview();
+      } else if (QR.commentPreviewInputBound) {
+        $.off(QR.nodes.com, 'input', QR.updateComPreview);
+        QR.commentPreviewInputBound = false;
+      }
+    },
+    comPreviewTagWraps: {
+      spoiler: { wrap: (i) => `<s>${i}</s>`, format: true },
+      code: { wrap: (i) => `<pre class="prettyprint">${i}</pre>`, format: false },
+      math: { wrap: (i) => `<span class="math">[math]${i}[/math]</span>`, format: false },
+      eqn: { wrap: (i) => `<span class="math">[eqn]${i}[/eqn]</span>`, format: false },
+      sjis: { wrap: (i) => `<span class="sjis">${i}</span>`, format: true },
+      b: { wrap: (i) => `<b>${i}</b>`, format: true },
+      i: { wrap: (i) => `<span class="mu-i">${i}</span>`, format: true },
+      red: { wrap: (i) => `<span class="mu-r">${i}</span>`, format: true },
+      green: { wrap: (i) => `<span class="mu-g">${i}</span>`, format: true },
+      blue: { wrap: (i) => `<span class="mu-b">${i}</span>`, format: true },
+    },
+    // Per-board extra tags that 4chan renders but aren't surfaced via boards.json flags.
+    comPreviewBoardExtras: {
+      mu: ['b', 'i', 'red', 'green', 'blue'],
+      qst: ['b', 'i', 'red', 'green', 'blue'],
+    },
     renderComPreview(text) {
       const config = g.BOARD.config;
-      const tags = [];
+      const names = [];
       if (QR.spoiler)
-        tags.push({ name: 'spoiler', wrap: i => `<s>${i}</s>`, format: true });
+        names.push('spoiler');
       if (config.code_tags)
-        tags.push({ name: 'code', wrap: i => `<pre class="prettyprint">${i}</pre>`, format: false });
-      if (config.math_tags) {
-        tags.push({ name: 'math', wrap: i => `<span class="math">[math]${i}[/math]</span>`, format: false });
-        tags.push({ name: 'eqn', wrap: i => `<span class="math">[eqn]${i}[/eqn]</span>`, format: false });
-      }
+        names.push('code');
+      if (config.math_tags)
+        names.push('math', 'eqn');
       if (config.sjis_tags)
-        tags.push({ name: 'sjis', wrap: i => `<span class="sjis">${i}</span>`, format: true });
-      if (!tags.length)
+        names.push('sjis');
+      const extras = QR.comPreviewBoardExtras[g.BOARD.ID] || [];
+      for (const t of extras)
+        if (!names.includes(t))
+          names.push(t);
+      if (!names.length)
         return QR.formatComPreviewText(text);
-      const tagNames = tags.map(t => t.name).join('|');
-      const tagRe = new RegExp(`\\[(${tagNames})\\]([\\s\\S]*?)\\[\\/\\1\\]`, 'g');
+      const tagRe = new RegExp(`\\[(${names.join('|')})\\]([\\s\\S]*?)\\[\\/\\1\\]`, 'g');
       let html = '';
       let last = 0;
       let m;
       while ((m = tagRe.exec(text))) {
         html += QR.formatComPreviewText(text.slice(last, m.index));
-        const tag = tags.find(t => t.name === m[1]);
+        const tag = QR.comPreviewTagWraps[m[1]];
         const inner = tag.format ? QR.formatComPreviewText(m[2]) : E(m[2]);
         html += tag.wrap(inner);
         last = m.index + m[0].length;
@@ -22335,10 +23065,7 @@ aero|asia|biz|cat|com|coop|dance|info|int|jobs|mobi|moe|museum|name|net|org|post
       classList.toggle('has-math', !!config.math_tags);
       classList.toggle('sjis-preview', !!config.sjis_tags && Conf['sjisPreview']);
       classList.toggle('show-new-thread-option', Conf['Show New Thread Option in Threads']);
-      classList.toggle('has-com-preview', !!Conf['Comment Preview']);
-      const pos = ['below', 'right', 'left'].includes(Conf['Comment Preview Position']) ? Conf['Comment Preview Position'] : 'below';
-      classList.remove('com-preview-below', 'com-preview-right', 'com-preview-left');
-      classList.add(`com-preview-${pos}`);
+      QR.applyCommentPreviewSettings();
       if (parseInt(Conf['customCooldown'], 10) > 0) {
         $.addClass(QR.nodes.fileSubmit, 'custom-cooldown');
         $.get('customCooldownEnabled', Conf['customCooldownEnabled'], function ({ customCooldownEnabled }) {
@@ -22358,10 +23085,6 @@ aero|asia|biz|cat|com|coop|dance|info|int|jobs|mobi|moe|museum|name|net|org|post
       $.on(nodes.sjisToggle, 'click', QR.toggleSJIS);
       $.on(nodes.texButton, 'mousedown', QR.texPreviewShow);
       $.on(nodes.texButton, 'mouseup', QR.texPreviewHide);
-      if (Conf['Comment Preview']) {
-        $.on(nodes.com, 'input', QR.updateComPreview);
-        QR.updateComPreview();
-      }
       $.on(nodes.addPost, 'click', () => new QR.post(true));
       $.on(nodes.drawButton, 'click', QR.oekaki.draw);
       $.on(nodes.fileButton, 'click', QR.openFileInput);
@@ -26093,6 +26816,43 @@ $\
     stylingPreviewPanel: null,
     activeSiteStylePicker: null,
     siteStylePickerOutsideHandler: null,
+    stylingEditingVariant: null,
+    styleVariantKeySet: new Set(styleVariantKeys),
+    // What's currently applied to the page. Always derived from the board
+    // (or the forced mode); the Styling settings page does NOT override this,
+    // so opening the dialog or clicking SFW/NSFW tabs never changes the
+    // currently-rendered board styling.
+    getActiveVariant() {
+      return Settings.getBoardVariant();
+    },
+    // The variant that *would* apply on this page if the settings dialog were
+    // closed. Used by the hint label so the user can see why a particular
+    // variant is being applied.
+    getBoardVariant() {
+      const mode = Conf['sfwNsfwMode'];
+      if (mode === 'sfw')
+        return 'sfw';
+      if (mode === 'nsfw')
+        return 'nsfw';
+      if (!g.boardID)
+        return 'sfw';
+      // BoardConfig.isSFW returns false for unknown boards too, so check the
+      // boards map explicitly to keep the SFW fallback for missing data.
+      const boards = BoardConfig.boards || Conf['boardConfig']?.boards;
+      const board = boards?.[g.boardID];
+      if (!board)
+        return 'sfw';
+      return board.ws_board ? 'sfw' : 'nsfw';
+    },
+    variantKey(key, variant = Settings.getActiveVariant()) {
+      return `${key} ${variant.toUpperCase()}`;
+    },
+    styleConf(key, variant) {
+      return Conf[Settings.variantKey(key, variant)];
+    },
+    styleKeyBase(key) {
+      return key.replace(/ (SFW|NSFW)$/, '');
+    },
     prepareDrag(e) {
       const settingsWindow = $('#fourchanx-settings', Settings.dialog);
       const rect = settingsWindow.getBoundingClientRect();
@@ -26238,6 +26998,8 @@ $\
       }
       Settings.activeSiteStylePicker = null;
       delete Settings.dialog;
+      // The editing variant is dialog-only UI state; clear it on close.
+      Settings.stylingEditingVariant = null;
     },
     toggleAllDetails(open) {
       if (!Settings.dialog)
@@ -26556,6 +27318,9 @@ $\
       const section = $('section', Settings.dialog);
       if (!section)
         return;
+      const leavingStyling = Settings.renderedSection
+        && Settings.renderedSection.hyphenatedTitle === 'styling'
+        && sectionInfo.hyphenatedTitle !== 'styling';
       $.rmAll(section);
       section.className = `section-${sectionInfo.hyphenatedTitle}`;
       sectionInfo.open(section, g);
@@ -26564,6 +27329,8 @@ $\
       Settings.renderedSection = sectionInfo;
       Settings.applySearch();
       $.event('OpenSettings', null, section);
+      if (leavingStyling)
+        Settings.stylingEditingVariant = null;
     },
     allSettings(section) {
       for (const sectionInfo of Settings.sections) {
@@ -26577,9 +27344,9 @@ $\
           textContent: sectionInfo.title,
         });
         const content = $.el('div', { className: 'settings-section-content' });
-        sectionInfo.open(content, g);
         $.add(block, [heading, content]);
         $.add(section, block);
+        sectionInfo.open(content, g);
       }
     },
     warnings: {
@@ -26635,6 +27402,9 @@ Enable it on boards.${location.hostname.split('.')[1]}.org in your browser's pri
         const input = $('input', div);
         $.on(input, 'change', $.cb.checked);
         $.on(input, 'change', function () { this.parentNode.parentNode.dataset.checked = this.checked; });
+        if (key === 'Comment Preview') {
+          $.on(input, 'change', () => $.event('QRCommentPreviewChanged'));
+        }
         items[key] = Conf[key];
         inputs[key] = input;
         const level = arr[2] || 0;
@@ -26813,6 +27583,9 @@ Enable it on boards.${location.hostname.split('.')[1]}.org in your browser's pri
           $.el('span', { className: 'description', textContent: row.description ? `: ${row.description}` : '' })
         ]);
         $.on(select, 'change', $.cb.value);
+        if (row.name === 'Comment Preview Position') {
+          $.on(select, 'change', () => $.event('QRCommentPreviewChanged'));
+        }
         items[row.name] = Conf[row.name];
         inputs[row.name] = select;
         $.add(fs, div);
@@ -27220,6 +27993,32 @@ Enable it on boards.${location.hostname.split('.')[1]}.org in your browser's pri
       for (input of $$('[name]', section)) {
         inputs[input.name] = input;
       }
+      // Mark the enclosing <details> for every variant-aware input so CSS
+      // can outline the whole section (Highlight Colors, Scrollbar Markers,
+      // Text Colors, Custom CSS, etc.) — much less visual noise than
+      // outlining each input individually.
+      for (const key of styleVariantKeys) {
+        const inp = inputs[key];
+        if (!inp)
+          continue;
+        const detail = inp.closest('details');
+        if (detail)
+          detail.dataset.variantAware = 'true';
+      }
+      // While the Styling page is open the editing variant overrides the
+      // runtime variant so live preview + applyStylingVars reflect the values
+      // the user is touching. Initialize from the variant the board would use.
+      Settings.stylingEditingVariant = Settings.getBoardVariant();
+      // Rename variant-aware inputs to point at the storage key for the
+      // currently-edited variant so the form save path writes to the right slot.
+      const renameVariantInputs = (variant) => {
+        for (const key of styleVariantKeys) {
+          const inp = inputs[key];
+          if (inp)
+            inp.name = Settings.variantKey(key, variant);
+        }
+      };
+      renameVariantInputs(Settings.stylingEditingVariant);
       Settings.populateSiteStylePicker(section, inputs['siteStyle']);
       Settings.bindSiteStylePicker(section);
       Settings.bindAddCustomTheme(section);
@@ -27307,24 +28106,38 @@ Enable it on boards.${location.hostname.split('.')[1]}.org in your browser's pri
       const textColorModeSelect = inputs['textColorMode'];
       const textColorManualTree = $('#styling-text-color-manual', section);
       const highlightTextKeys = new Set(highlightTextControlGroups.flatMap(group => Array.from(group.keys)));
+      // Inside the styling page, reads/writes target the *editing* variant
+      // (which slot the user is currently looking at) rather than the runtime
+      // board variant. Without this, switching tabs would either show the
+      // wrong starting values or silently overwrite the other variant.
+      const editVariant = () => Settings.stylingEditingVariant || Settings.getBoardVariant();
+      const editConf = (baseKey) => Settings.styleConf(baseKey, editVariant());
+      const writeEditConf = (baseKey, value) => {
+        const storageKey = Settings.styleVariantKeySet.has(baseKey)
+          ? Settings.variantKey(baseKey, editVariant())
+          : baseKey;
+        Conf[storageKey] = value;
+        $.set(storageKey, value);
+      };
       const baseTextPalette = (baseBackground) => {
-        const textColorMode = Conf['textColorMode'] === 'manual' ? 'manual' : 'auto';
+        const textColorMode = editConf('textColorMode') === 'manual' ? 'manual' : 'auto';
         const autoTextPalette = Settings.autoTextPalette(baseBackground);
         return {
-          text: textColorMode === 'auto' ? autoTextPalette.text : (Conf['Text Color'] || autoTextPalette.text),
-          link: textColorMode === 'auto' ? autoTextPalette.link : (Conf['Link Text Color'] || autoTextPalette.link),
-          quote: textColorMode === 'auto' ? autoTextPalette.quote : (Conf['Quote Text Color'] || autoTextPalette.quote),
-          deadLink: textColorMode === 'auto' ? autoTextPalette.deadLink : (Conf['Dead Link Text Color'] || autoTextPalette.deadLink),
+          text: textColorMode === 'auto' ? autoTextPalette.text : (editConf('Text Color') || autoTextPalette.text),
+          link: textColorMode === 'auto' ? autoTextPalette.link : (editConf('Link Text Color') || autoTextPalette.link),
+          quote: textColorMode === 'auto' ? autoTextPalette.quote : (editConf('Quote Text Color') || autoTextPalette.quote),
+          deadLink: textColorMode === 'auto' ? autoTextPalette.deadLink : (editConf('Dead Link Text Color') || autoTextPalette.deadLink),
         };
       };
       const syncAutoHighlightPreviewInputs = () => {
         const baseBackground = Settings.getTextBaseBackground();
         const basePalette = baseTextPalette(baseBackground);
+        const v = editVariant();
         for (const group of highlightTextControlGroups) {
           const autoToggle = inputs[group.autoKey];
           if (!autoToggle || !autoToggle.checked)
             continue;
-          const palette = Settings.autoHighlightTextPalette(group.colorKey, group.opacityKey, baseBackground) || basePalette;
+          const palette = Settings.autoHighlightTextPalette(group.colorKey, group.opacityKey, baseBackground, v) || basePalette;
           const nextValues = [palette.text, palette.link, palette.quote, palette.deadLink];
           for (let i = 0; i < group.keys.length; i++) {
             const key = group.keys[i];
@@ -27343,25 +28156,25 @@ Enable it on boards.${location.hostname.split('.')[1]}.org in your browser's pri
         const baseBackground = Settings.getTextBaseBackground();
         const basePalette = baseTextPalette(baseBackground);
         const groups = targetGroup ? [targetGroup] : highlightTextControlGroups;
+        const v = editVariant();
         for (const group of groups) {
           const autoToggle = inputs[group.autoKey];
           if (!autoToggle || autoToggle.checked)
             continue;
-          const autoPalette = Settings.autoHighlightTextPalette(group.colorKey, group.opacityKey, baseBackground) || basePalette;
+          const autoPalette = Settings.autoHighlightTextPalette(group.colorKey, group.opacityKey, baseBackground, v) || basePalette;
           const nextValues = [autoPalette.text, autoPalette.link, autoPalette.quote, autoPalette.deadLink];
           for (let i = 0; i < group.keys.length; i++) {
             const key = group.keys[i];
             const next = nextValues[i];
             if (!next)
               continue;
-            if (overwrite || !Conf[key]) {
-              Conf[key] = next;
-              $.set(key, next);
+            if (overwrite || !editConf(key)) {
+              writeEditConf(key, next);
             }
             const colorInput = inputs[key];
             if (!colorInput)
               continue;
-            colorInput.value = Conf[key] || next;
+            colorInput.value = editConf(key) || next;
             delete colorInput.dataset.unset;
           }
         }
@@ -27388,7 +28201,7 @@ Enable it on boards.${location.hostname.split('.')[1]}.org in your browser's pri
         }
       };
       const syncMarkerColorControls = () => {
-        Settings.syncLinkedMarkerColors(inputs);
+        Settings.syncLinkedMarkerColors(inputs, editVariant());
         for (const [key, markerType, matchKey] of markerColorLinkPairs) {
           const linked = !!inputs[matchKey]?.checked;
           const colorInput = inputs[key];
@@ -27464,7 +28277,10 @@ Enable it on boards.${location.hostname.split('.')[1]}.org in your browser's pri
       };
       if (textColorModeSelect) {
         $.on(textColorModeSelect, 'change', () => {
-          Conf['textColorMode'] = textColorModeSelect.value;
+          // $.cb.value (bound later) persists to the variant-suffixed
+          // storage key; keep the local Conf entry in sync for the helpers
+          // we call before it fires.
+          writeEditConf('textColorMode', textColorModeSelect.value);
           syncTextColorControls();
           syncAutoHighlightPreviewInputs();
           Settings.applyStylingVars();
@@ -27476,7 +28292,7 @@ Enable it on boards.${location.hostname.split('.')[1]}.org in your browser's pri
         if (!autoToggle)
           continue;
         $.on(autoToggle, 'change', () => {
-          Conf[group.autoKey] = !!autoToggle.checked;
+          writeEditConf(group.autoKey, !!autoToggle.checked);
           if (autoToggle.checked) {
             syncAutoHighlightPreviewInputs();
           } else {
@@ -27492,7 +28308,9 @@ Enable it on boards.${location.hostname.split('.')[1]}.org in your browser's pri
         input = inputs[name];
         if (name === 'Custom CSS')
           continue; // handled below (special toggle)
-        items[name] = Conf[name];
+        // input.name is the storage key (possibly variant-suffixed); items has
+        // to be keyed by storage key so $.get fetches from the right slot.
+        items[input.name] = Conf[input.name];
         const event = ((input.nodeName === 'SELECT') ||
           ['checkbox', 'radio', 'color', 'range'].includes(input.type) ||
           ((input.nodeName === 'TEXTAREA') && !(name in Settings))) ? 'change' : 'input';
@@ -27550,23 +28368,26 @@ Enable it on boards.${location.hostname.split('.')[1]}.org in your browser's pri
       inputs['usercss'].disabled = !Conf['Custom CSS'];
       $.on(customCSS, 'change', Settings.togglecss);
       Settings.initCustomCSSEditor(section, inputs['usercss']);
-      $.get(items, (loaded) => {
-        for (const key in loaded) {
-          const val = loaded[key];
-          const inp = inputs[key];
+      const populateInputsFromLoaded = (loaded) => {
+        for (const storageKey in loaded) {
+          const val = loaded[storageKey];
+          const baseName = Settings.styleKeyBase(storageKey);
+          const inp = inputs[baseName];
+          if (!inp)
+            continue;
           if (inp.type === 'checkbox') {
             inp.checked = !!val;
             setCheckedState(inp);
           } else if (inp.type === 'color') {
-            Settings.setColorInputValue(inp, key, val);
+            Settings.setColorInputValue(inp, baseName, val);
           } else if (inp.type === 'range') {
             inp.value = (val === '' || val == null) ? '1' : String(val);
-          } else if (key === 'siteStyle' && !val) ; else {
+          } else if (baseName === 'siteStyle' && !val) ; else {
             inp.value = val ?? '';
           }
           inp.hidden = false;
-          if (key in Settings)
-            Settings[key].call(inp);
+          if (baseName in Settings)
+            Settings[baseName].call(inp);
         }
         syncMarkerColorControls();
         syncCatalogHighlightControls();
@@ -27578,18 +28399,23 @@ Enable it on boards.${location.hostname.split('.')[1]}.org in your browser's pri
         refreshUnsetColorInputs();
         Settings.refreshCustomCSSEditor(section);
         refreshStylingPreview();
-      });
+      };
+      $.get(items, populateInputsFromLoaded);
       // Clear buttons next to each color input — reset the Conf key to '' so
-      // the theme default takes over again.
+      // the theme default takes over again. data-clear holds the base key;
+      // route the write through the storage key for the active variant.
       for (const btn of $$('[data-clear]', section)) {
         $.on(btn, 'click', () => {
-          const key = btn.dataset.clear;
-          Conf[key] = '';
-          $.set(key, '');
+          const baseKey = btn.dataset.clear;
+          const storageKey = Settings.styleVariantKeySet.has(baseKey)
+            ? Settings.variantKey(baseKey)
+            : baseKey;
+          Conf[storageKey] = '';
+          $.set(storageKey, '');
           Settings.applyStylingVars();
-          const target = inputs[key];
+          const target = inputs[baseKey];
           if (target) {
-            Settings.setColorInputValue(target, key, '');
+            Settings.setColorInputValue(target, baseKey, '');
           }
           syncAutoHighlightPreviewInputs();
           refreshStylingPreview();
@@ -27605,7 +28431,7 @@ Enable it on boards.${location.hostname.split('.')[1]}.org in your browser's pri
       const randomize = $('#styling-randomize', section);
       if (randomize) {
         $.on(randomize, 'click', () => {
-          for (const key of [
+          for (const baseKey of [
             'Highlight Own Color',
             'Highlight You Color',
             'Highlight Ghost Color',
@@ -27613,17 +28439,126 @@ Enable it on boards.${location.hostname.split('.')[1]}.org in your browser's pri
             'Catalog Highlight Watched Color',
           ]) {
             const color = Settings.randomHighlightColor();
-            Conf[key] = color;
-            $.set(key, color);
-            const inp = inputs[key];
+            const storageKey = Settings.variantKey(baseKey);
+            Conf[storageKey] = color;
+            $.set(storageKey, color);
+            const inp = inputs[baseKey];
             if (inp)
-              Settings.setColorInputValue(inp, key, color);
+              Settings.setColorInputValue(inp, baseKey, color);
           }
           syncAutoHighlightPreviewInputs();
           Settings.applyStylingVars();
           refreshStylingPreview();
         });
       }
+      // SFW / NSFW tab switcher.
+      const variantBar = $('.styling-variant-bar', section);
+      const variantHint = $('.styling-variant-hint', section);
+      const tabsByVariant = {
+        sfw: $('.styling-variant-tabs [data-styling-variant="sfw"]', section),
+        nsfw: $('.styling-variant-tabs [data-styling-variant="nsfw"]', section),
+      };
+      const updateVariantHint = () => {
+        if (!variantHint)
+          return;
+        const board = Settings.getBoardVariant();
+        const mode = Conf['sfwNsfwMode'];
+        const editing = Settings.stylingEditingVariant || board;
+        let reason;
+        if (mode === 'sfw')
+          reason = 'SFW (forced everywhere)';
+        else if (mode === 'nsfw')
+          reason = 'NSFW (forced everywhere)';
+        else if (!g.boardID)
+          reason = 'SFW (no board context)';
+        else
+          reason = `${board.toUpperCase()} (board ${g.boardID} is ${board === 'sfw' ? 'worksafe' : 'NSFW'})`;
+        const editingNote = editing === board
+          ? ''
+          : ` — you are editing the ${editing.toUpperCase()} variant, which is not currently applied`;
+        variantHint.textContent = `Active variant: ${reason}${editingNote}.`;
+      };
+      const updateVariantTabsSelected = () => {
+        const v = Settings.stylingEditingVariant || 'sfw';
+        for (const variant of ['sfw', 'nsfw']) {
+          const tab = tabsByVariant[variant];
+          if (!tab)
+            continue;
+          const selected = variant === v;
+          tab.classList.toggle('settings-subnav-tab-selected', selected);
+          tab.setAttribute('aria-selected', selected ? 'true' : 'false');
+        }
+      };
+      // In the dedicated Styling view, `section` itself has class
+      // `section-styling`. In the All Settings view, `section` is the inner
+      // `.settings-section-content` and its parent block carries the
+      // `section-styling` class — so route attributes to whichever ancestor
+      // owns that class for the CSS selectors to match either way.
+      const stylingHost = section.closest('.section-styling') || section;
+      const updateVariantDecoration = (variant) => {
+        const label = `Editing ${variant.toUpperCase()}`;
+        if (variantBar)
+          variantBar.dataset.editingVariant = variant;
+        stylingHost.dataset.editingVariant = variant;
+        stylingHost.dataset.editingVariantLabel = label;
+      };
+      const switchEditingVariant = (variant) => {
+        if (Settings.stylingEditingVariant === variant)
+          return;
+        Settings.stylingEditingVariant = variant;
+        renameVariantInputs(variant);
+        updateVariantDecoration(variant);
+        // Re-fetch all variant-aware values so the inputs reflect the slot
+        // we just switched to. We deliberately do NOT call Settings.siteStyle,
+        // CustomCSS.update, or dispatch any CustomSiteThemeChanged /
+        // RefreshScrollMarkers events here — the tab switcher only changes
+        // which slot is being edited; it must not alter the board's
+        // currently-applied styling. applyStylingVars (called via
+        // populateInputsFromLoaded) will repaint the *dialog* with the new
+        // editing variant; :root stays on the board variant.
+        const refetch = dict();
+        for (const baseKey of styleVariantKeys) {
+          const inp = inputs[baseKey];
+          if (!inp)
+            continue;
+          refetch[inp.name] = Conf[inp.name];
+        }
+        $.get(refetch, (loaded) => {
+          populateInputsFromLoaded(loaded);
+          updateVariantTabsSelected();
+          updateVariantHint();
+        });
+      };
+      for (const variant of ['sfw', 'nsfw']) {
+        const tab = tabsByVariant[variant];
+        if (!tab)
+          continue;
+        tab.setAttribute('role', 'tab');
+        $.on(tab, 'click', () => switchEditingVariant(variant));
+      }
+      const modeSelect = inputs['sfwNsfwMode'];
+      if (modeSelect) {
+        $.on(modeSelect, 'change', () => {
+          updateVariantHint();
+          // Re-apply runtime styling in case the mode change shifts which
+          // variant is active outside the dialog.
+          Settings.applyStylingVars();
+          // Re-inject the active variant's custom CSS (Custom CSS reads the
+          // active variant's `usercss` slot, but the <style> tag only updates
+          // when we tell it to).
+          if (Conf['Custom CSS'])
+            CustomCSS.update();
+          $.event('CustomSiteThemeChanged');
+          $.event('RefreshScrollMarkers');
+        });
+      }
+      updateVariantTabsSelected();
+      updateVariantHint();
+      updateVariantDecoration(Settings.stylingEditingVariant || 'sfw');
+      // Apply the editing variant to the dialog so the page behind the
+      // dialog stays on its variant but the preview/colors inside show what
+      // we're editing.
+      Settings.applyStylingVars();
     },
     stylingPreviewSampleText() {
       const sample = $('.thread .postMessage, .postContainer .postMessage', d.body);
@@ -27773,7 +28708,7 @@ Enable it on boards.${location.hostname.split('.')[1]}.org in your browser's pri
       panel.dataset.highlightOwn = (threadHighlightsEnabled && ownEnabled) ? 'true' : 'false';
       panel.dataset.highlightYou = (threadHighlightsEnabled && youEnabled) ? 'true' : 'false';
       panel.dataset.highlightGhost = (threadHighlightsEnabled && ghostEnabled) ? 'true' : 'false';
-      const background = Settings.resolveEffectiveBackgroundStyle();
+      const background = Settings.resolveCanvasBackgroundStyle();
       for (const previewPane of $$('.styling-preview-thread, .styling-preview-catalog', panel)) {
         Settings.applyBackgroundStyle(previewPane, background);
       }
@@ -27861,7 +28796,7 @@ Enable it on boards.${location.hostname.split('.')[1]}.org in your browser's pri
       return 'xt-system-default';
     },
     refreshCustomCSSEditor(section) {
-      const textarea = $('textarea[name="usercss"]', section);
+      const textarea = $('textarea[name^="usercss"]', section);
       const highlight = $('.custom-css-highlight', section);
       if (!textarea || !highlight)
         return;
@@ -27903,70 +28838,114 @@ Enable it on boards.${location.hostname.split('.')[1]}.org in your browser's pri
       code = code.replace(/\uE000([a-z]+)\uE001/g, (_, id) => wrapped[id] || '');
       return code;
     },
-    // Write styling Conf values to CSS custom properties on :root so they apply
-    // immediately, both inside the settings dialog and on the page behind it.
+    // Write styling Conf values to CSS custom properties so they apply
+    // immediately. Called with no args, this writes the runtime (board)
+    // variant onto :root and, if the settings dialog is open with an editing
+    // variant, layers that variant's vars onto the dialog element so the
+    // dialog + preview visually reflect what's being edited even while the
+    // board behind it stays on its own variant.
     applyStylingVars() {
-      const root = doc;
+      Settings.writeStyleVarsTo(doc, Settings.getBoardVariant(), true);
+      Settings.syncLinkedMarkerColors(undefined, Settings.getBoardVariant());
+      if (Settings.dialog && Settings.stylingEditingVariant
+        && Settings.stylingEditingVariant !== Settings.getBoardVariant()) {
+        Settings.writeStyleVarsTo(Settings.dialog, Settings.stylingEditingVariant, false);
+      } else if (Settings.dialog) {
+        // Same variant — clear any leftover dialog-scoped overrides so the
+        // dialog inherits from :root.
+        Settings.clearStyleVarsOn(Settings.dialog);
+      }
+      Settings.refreshUnsetStylingColorInputs();
+      Settings.refreshStylingPreviewFromDialog();
+    },
+    // The list of CSS variables we write, kept here so clearStyleVarsOn can
+    // strip them off the dialog when the editing variant matches the board.
+    STYLE_VAR_NAMES: [
+      '--xt-highlight-own', '--xt-highlight-you', '--xt-highlight-ghost',
+      '--xt-highlight-own-opacity', '--xt-highlight-you-opacity', '--xt-highlight-ghost-opacity',
+      '--xt-catalog-own-highlight', '--xt-catalog-own-highlight-opacity',
+      '--xt-catalog-watched-highlight', '--xt-catalog-watched-highlight-opacity',
+      '--xt-scroll-marker-own', '--xt-scroll-marker-you', '--xt-scroll-marker-ghost', '--xt-scroll-marker-unread',
+      '--xt-scroll-marker-own-opacity', '--xt-scroll-marker-you-opacity',
+      '--xt-scroll-marker-ghost-opacity', '--xt-scroll-marker-unread-opacity',
+      '--xt-text-color', '--xt-link-text-color', '--xt-quote-text-color', '--xt-dead-link-text-color',
+      '--xt-highlight-own-text', '--xt-highlight-own-link', '--xt-highlight-own-quote', '--xt-highlight-own-dead-link',
+      '--xt-highlight-you-text', '--xt-highlight-you-link', '--xt-highlight-you-quote', '--xt-highlight-you-dead-link',
+      '--xt-highlight-ghost-text', '--xt-highlight-ghost-link', '--xt-highlight-ghost-quote', '--xt-highlight-ghost-dead-link',
+      '--xt-catalog-own-text', '--xt-catalog-own-link', '--xt-catalog-own-quote', '--xt-catalog-own-dead-link',
+      '--xt-catalog-watched-text', '--xt-catalog-watched-link', '--xt-catalog-watched-quote', '--xt-catalog-watched-dead-link',
+    ],
+    clearStyleVarsOn(target) {
+      for (const name of Settings.STYLE_VAR_NAMES)
+        target.style.removeProperty(name);
+    },
+    // Write all variant-aware CSS variables for `variant` onto `target`.
+    // `updateRootClasses` toggles the shared highlight classes on the root
+    // element (only true when called with target=doc; the dialog overlay
+    // doesn't need them because the cascade already inherits the doc's classes).
+    writeStyleVarsTo(target, variant, updateRootClasses) {
       const setVar = (cssVar, value) => {
         if (value)
-          root.style.setProperty(cssVar, value);
+          target.style.setProperty(cssVar, value);
         else
-          root.style.removeProperty(cssVar);
+          target.style.removeProperty(cssVar);
       };
-      Settings.syncLinkedMarkerColors();
+      const cv = (key) => Settings.styleConf(key, variant);
       const threadHighlightsEnabled = Conf['Enable Thread Highlights'] !== false;
       const catalogHighlightsEnabled = Conf['Enable Catalog Highlights'] !== false;
       const catalogOwnEnabled = catalogHighlightsEnabled && Conf['Catalog Highlight Own Posts'] !== false;
       const catalogWatchedEnabled = catalogHighlightsEnabled && Conf['Catalog Highlight Watched Threads'] !== false;
-      doc.classList.toggle('highlight-own', threadHighlightsEnabled && !!Conf['Highlight Own Posts']);
-      doc.classList.toggle('highlight-you', threadHighlightsEnabled && !!Conf['Highlight Posts Quoting You']);
-      doc.classList.toggle('highlight-ghost', threadHighlightsEnabled && !!Conf['Highlight Ghost Posts']);
-      // Mark which highlights have an explicit color set so the !important
-      // override rules in variableBase.css can win over user site themes.
-      doc.classList.toggle('xt-set-own-highlight', threadHighlightsEnabled && !!Conf['Highlight Own Posts'] && !!Conf['Highlight Own Color']);
-      doc.classList.toggle('xt-set-you-highlight', threadHighlightsEnabled && !!Conf['Highlight Posts Quoting You'] && !!Conf['Highlight You Color']);
-      doc.classList.toggle('xt-set-ghost-highlight', threadHighlightsEnabled && !!Conf['Highlight Ghost Posts'] && !!Conf['Highlight Ghost Color']);
-      doc.classList.toggle('xt-highlight-catalog-own', catalogOwnEnabled);
-      doc.classList.toggle('xt-highlight-catalog-watched', catalogWatchedEnabled);
-      setVar('--xt-highlight-own', Conf['Highlight Own Color']);
-      setVar('--xt-highlight-you', Conf['Highlight You Color']);
-      setVar('--xt-highlight-ghost', Conf['Highlight Ghost Color']);
-      setVar('--xt-highlight-own-opacity', Conf['Highlight Own Opacity'] === '' ? '' : String(Conf['Highlight Own Opacity']));
-      setVar('--xt-highlight-you-opacity', Conf['Highlight You Opacity'] === '' ? '' : String(Conf['Highlight You Opacity']));
-      setVar('--xt-highlight-ghost-opacity', Conf['Highlight Ghost Opacity'] === '' ? '' : String(Conf['Highlight Ghost Opacity']));
-      setVar('--xt-catalog-own-highlight', catalogOwnEnabled ? Conf['Catalog Highlight Own Color'] : '');
-      setVar('--xt-catalog-own-highlight-opacity', (catalogOwnEnabled && Conf['Catalog Highlight Own Opacity'] !== '') ? String(Conf['Catalog Highlight Own Opacity']) : '');
-      setVar('--xt-catalog-watched-highlight', catalogWatchedEnabled ? Conf['Catalog Highlight Watched Color'] : '');
-      setVar('--xt-catalog-watched-highlight-opacity', (catalogWatchedEnabled && Conf['Catalog Highlight Watched Opacity'] !== '') ? String(Conf['Catalog Highlight Watched Opacity']) : '');
-      const ownMarkerLinked = !!Conf['Scroll Marker Own Match Highlight'];
-      const youMarkerLinked = !!Conf['Scroll Marker You Match Highlight'];
-      const ghostMarkerLinked = !!Conf['Scroll Marker Ghost Match Highlight'];
-      setVar('--xt-scroll-marker-own', ownMarkerLinked ? Conf['Highlight Own Color'] : Conf['Scroll Marker Own Color']);
-      setVar('--xt-scroll-marker-you', youMarkerLinked ? Conf['Highlight You Color'] : Conf['Scroll Marker You Color']);
-      setVar('--xt-scroll-marker-ghost', ghostMarkerLinked ? Conf['Highlight Ghost Color'] : Conf['Scroll Marker Ghost Color']);
-      setVar('--xt-scroll-marker-unread', Conf['Scroll Marker Unread Color']);
-      setVar('--xt-scroll-marker-own-opacity', Conf['Scroll Marker Own Opacity'] === '' ? '' : String(Conf['Scroll Marker Own Opacity']));
-      setVar('--xt-scroll-marker-you-opacity', Conf['Scroll Marker You Opacity'] === '' ? '' : String(Conf['Scroll Marker You Opacity']));
-      setVar('--xt-scroll-marker-ghost-opacity', Conf['Scroll Marker Ghost Opacity'] === '' ? '' : String(Conf['Scroll Marker Ghost Opacity']));
-      setVar('--xt-scroll-marker-unread-opacity', Conf['Scroll Marker Unread Opacity'] === '' ? '' : String(Conf['Scroll Marker Unread Opacity']));
+      if (updateRootClasses) {
+        doc.classList.toggle('highlight-own', threadHighlightsEnabled && !!Conf['Highlight Own Posts']);
+        doc.classList.toggle('highlight-you', threadHighlightsEnabled && !!Conf['Highlight Posts Quoting You']);
+        doc.classList.toggle('highlight-ghost', threadHighlightsEnabled && !!Conf['Highlight Ghost Posts']);
+        doc.classList.toggle('xt-set-own-highlight', threadHighlightsEnabled && !!Conf['Highlight Own Posts'] && !!cv('Highlight Own Color'));
+        doc.classList.toggle('xt-set-you-highlight', threadHighlightsEnabled && !!Conf['Highlight Posts Quoting You'] && !!cv('Highlight You Color'));
+        doc.classList.toggle('xt-set-ghost-highlight', threadHighlightsEnabled && !!Conf['Highlight Ghost Posts'] && !!cv('Highlight Ghost Color'));
+        doc.classList.toggle('xt-highlight-catalog-own', catalogOwnEnabled);
+        doc.classList.toggle('xt-highlight-catalog-watched', catalogWatchedEnabled);
+      }
+      setVar('--xt-highlight-own', cv('Highlight Own Color'));
+      setVar('--xt-highlight-you', cv('Highlight You Color'));
+      setVar('--xt-highlight-ghost', cv('Highlight Ghost Color'));
+      setVar('--xt-highlight-own-opacity', cv('Highlight Own Opacity') === '' ? '' : String(cv('Highlight Own Opacity')));
+      setVar('--xt-highlight-you-opacity', cv('Highlight You Opacity') === '' ? '' : String(cv('Highlight You Opacity')));
+      setVar('--xt-highlight-ghost-opacity', cv('Highlight Ghost Opacity') === '' ? '' : String(cv('Highlight Ghost Opacity')));
+      setVar('--xt-catalog-own-highlight', catalogOwnEnabled ? cv('Catalog Highlight Own Color') : '');
+      setVar('--xt-catalog-own-highlight-opacity', (catalogOwnEnabled && cv('Catalog Highlight Own Opacity') !== '') ? String(cv('Catalog Highlight Own Opacity')) : '');
+      setVar('--xt-catalog-watched-highlight', catalogWatchedEnabled ? cv('Catalog Highlight Watched Color') : '');
+      setVar('--xt-catalog-watched-highlight-opacity', (catalogWatchedEnabled && cv('Catalog Highlight Watched Opacity') !== '') ? String(cv('Catalog Highlight Watched Opacity')) : '');
+      const ownMarkerLinked = !!cv('Scroll Marker Own Match Highlight');
+      const youMarkerLinked = !!cv('Scroll Marker You Match Highlight');
+      const ghostMarkerLinked = !!cv('Scroll Marker Ghost Match Highlight');
+      setVar('--xt-scroll-marker-own', ownMarkerLinked ? cv('Highlight Own Color') : cv('Scroll Marker Own Color'));
+      setVar('--xt-scroll-marker-you', youMarkerLinked ? cv('Highlight You Color') : cv('Scroll Marker You Color'));
+      setVar('--xt-scroll-marker-ghost', ghostMarkerLinked ? cv('Highlight Ghost Color') : cv('Scroll Marker Ghost Color'));
+      setVar('--xt-scroll-marker-unread', cv('Scroll Marker Unread Color'));
+      setVar('--xt-scroll-marker-own-opacity', cv('Scroll Marker Own Opacity') === '' ? '' : String(cv('Scroll Marker Own Opacity')));
+      setVar('--xt-scroll-marker-you-opacity', cv('Scroll Marker You Opacity') === '' ? '' : String(cv('Scroll Marker You Opacity')));
+      setVar('--xt-scroll-marker-ghost-opacity', cv('Scroll Marker Ghost Opacity') === '' ? '' : String(cv('Scroll Marker Ghost Opacity')));
+      setVar('--xt-scroll-marker-unread-opacity', cv('Scroll Marker Unread Opacity') === '' ? '' : String(cv('Scroll Marker Unread Opacity')));
       const baseBackground = Settings.getTextBaseBackground();
-      const textColorMode = Conf['textColorMode'] === 'manual' ? 'manual' : 'auto';
+      const textColorMode = cv('textColorMode') === 'manual' ? 'manual' : 'auto';
       const autoTextPalette = Settings.autoTextPalette(baseBackground);
-      const textColor = textColorMode === 'auto' ? autoTextPalette.text : Conf['Text Color'];
-      const linkColor = textColorMode === 'auto' ? autoTextPalette.link : Conf['Link Text Color'];
-      const quoteColor = textColorMode === 'auto' ? autoTextPalette.quote : Conf['Quote Text Color'];
-      const deadLinkColor = textColorMode === 'auto' ? autoTextPalette.deadLink : Conf['Dead Link Text Color'];
+      const textColor = textColorMode === 'auto' ? autoTextPalette.text : cv('Text Color');
+      const linkColor = textColorMode === 'auto' ? autoTextPalette.link : cv('Link Text Color');
+      const quoteColor = textColorMode === 'auto' ? autoTextPalette.quote : cv('Quote Text Color');
+      const deadLinkColor = textColorMode === 'auto' ? autoTextPalette.deadLink : cv('Dead Link Text Color');
       const hasAnyTextOverride = !!(textColor || linkColor || quoteColor || deadLinkColor);
-      if (hasAnyTextOverride) {
-        $.addClass(doc, 'xt-custom-text-colors');
-      } else {
-        $.rmClass(doc, 'xt-custom-text-colors');
+      if (updateRootClasses) {
+        if (hasAnyTextOverride) {
+          $.addClass(doc, 'xt-custom-text-colors');
+        } else {
+          $.rmClass(doc, 'xt-custom-text-colors');
+        }
       }
       setVar('--xt-text-color', textColor || '');
       setVar('--xt-link-text-color', linkColor || '');
       setVar('--xt-quote-text-color', quoteColor || '');
       setVar('--xt-dead-link-text-color', deadLinkColor || '');
-      const autoHighlightPalette = (colorKey, opacityKey) => Settings.autoHighlightTextPalette(colorKey, opacityKey, baseBackground);
+      const autoHighlightPalette = (colorKey, opacityKey) => Settings.autoHighlightTextPalette(colorKey, opacityKey, baseBackground, variant);
       const withManual = (autoPalette, autoKey, textKey, linkKey, quoteKey, deadKey) => {
         const base = autoPalette || {
           text: textColor || '',
@@ -27974,13 +28953,13 @@ Enable it on boards.${location.hostname.split('.')[1]}.org in your browser's pri
           quote: quoteColor || '',
           deadLink: deadLinkColor || '',
         };
-        if (Conf[autoKey])
+        if (cv(autoKey))
           return base;
         return {
-          text: Conf[textKey] || base.text,
-          link: Conf[linkKey] || base.link,
-          quote: Conf[quoteKey] || base.quote,
-          deadLink: Conf[deadKey] || base.deadLink,
+          text: cv(textKey) || base.text,
+          link: cv(linkKey) || base.link,
+          quote: cv(quoteKey) || base.quote,
+          deadLink: cv(deadKey) || base.deadLink,
         };
       };
       const ownPalette = withManual(autoHighlightPalette('Highlight Own Color', 'Highlight Own Opacity'), 'Highlight Own Text Auto', 'Highlight Own Text Color', 'Highlight Own Link Color', 'Highlight Own Quote Color', 'Highlight Own Dead Link Color');
@@ -28008,8 +28987,6 @@ Enable it on boards.${location.hostname.split('.')[1]}.org in your browser's pri
       setVar('--xt-catalog-watched-link', catalogWatchedPalette?.link || '');
       setVar('--xt-catalog-watched-quote', catalogWatchedPalette?.quote || '');
       setVar('--xt-catalog-watched-dead-link', catalogWatchedPalette?.deadLink || '');
-      Settings.refreshUnsetStylingColorInputs();
-      Settings.refreshStylingPreviewFromDialog();
     },
     autoTextPalette(rgb) {
       const bg = rgb || Settings.getTextBaseBackground();
@@ -28133,9 +29110,6 @@ Enable it on boards.${location.hostname.split('.')[1]}.org in your browser's pri
         backgroundAttachment: style.backgroundAttachment || 'scroll',
       };
     },
-    backgroundStyleHasVisibleLayer(style) {
-      return (style.backgroundImage !== 'none') || !Settings.isTransparentCSSColor(style.backgroundColor);
-    },
     resolveCanvasBackgroundStyle() {
       const htmlStyle = Settings.backgroundStyleFromComputed(window.getComputedStyle(d.documentElement));
       if (!d.body)
@@ -28147,30 +29121,6 @@ Enable it on boards.${location.hostname.split('.')[1]}.org in your browser's pri
         Settings.isTransparentCSSColor(htmlStyle.backgroundColor));
       return htmlDefersToBody ? bodyStyle : htmlStyle;
     },
-    resolveEffectiveBackgroundStyle() {
-      if (g.SITE?.bgColoredEl && d.body) {
-        let probe = null;
-        try {
-          probe = g.SITE.bgColoredEl();
-          probe.style.position = 'absolute';
-          probe.style.visibility = 'hidden';
-          probe.style.pointerEvents = 'none';
-          probe.style.left = '-9999px';
-          probe.style.top = '-9999px';
-          $.add(d.body, probe);
-          const probeStyle = Settings.backgroundStyleFromComputed(window.getComputedStyle(probe));
-          if (Settings.backgroundStyleHasVisibleLayer(probeStyle)) {
-            return probeStyle;
-          }
-        } catch (err) {
-          // Fall through to root/body canvas background resolution.
-        } finally {
-          if (probe?.parentNode)
-            $.rm(probe);
-        }
-      }
-      return Settings.resolveCanvasBackgroundStyle();
-    },
     applyBackgroundStyle(el, background) {
       el.style.backgroundColor = background.backgroundColor;
       el.style.backgroundImage = background.backgroundImage;
@@ -28180,7 +29130,7 @@ Enable it on boards.${location.hostname.split('.')[1]}.org in your browser's pri
       el.style.backgroundAttachment = background.backgroundAttachment;
     },
     getTextBaseBackground() {
-      const style = Settings.resolveEffectiveBackgroundStyle();
+      const style = Settings.resolveCanvasBackgroundStyle();
       const rgba = Settings.parseCSSColorRGBA(style.backgroundColor);
       if (rgba && rgba[3] > 0) {
         return [rgba[0], rgba[1], rgba[2]];
@@ -28189,18 +29139,19 @@ Enable it on boards.${location.hostname.split('.')[1]}.org in your browser's pri
       // color; use white as a neutral fallback for contrast calculations.
       return [255, 255, 255];
     },
-    autoHighlightTextPalette(colorKey, opacityKey, baseBackground = Settings.getTextBaseBackground()) {
-      const color = Conf[colorKey];
+    autoHighlightTextPalette(colorKey, opacityKey, baseBackground = Settings.getTextBaseBackground(), variant) {
+      const color = Settings.styleConf(colorKey, variant);
       const rgb = Settings.hexToRgb(color);
       if (!rgb)
         return null;
-      const alpha = (Conf[opacityKey] === '' || Conf[opacityKey] == null) ? 1 : $.minmax(parseFloat(String(Conf[opacityKey])), 0, 1);
+      const opacity = Settings.styleConf(opacityKey, variant);
+      const alpha = (opacity === '' || opacity == null) ? 1 : $.minmax(parseFloat(String(opacity)), 0, 1);
       if (!Number.isFinite(alpha) || alpha <= 0)
         return null;
       return Settings.autoTextPalette(Settings.mixRgb(baseBackground, rgb, alpha));
     },
     colorExpressionForKey(key) {
-      switch (key) {
+      switch (Settings.styleKeyBase(key)) {
         case 'Highlight Own Color':
           return 'var(--xt-highlight-own, var(--xt-border-highlight, #d83030))';
         case 'Highlight You Color':
@@ -28324,21 +29275,24 @@ Enable it on boards.${location.hostname.split('.')[1]}.org in your browser's pri
         Settings.setColorInputValue(input, input.name, '');
       }
     },
-    syncLinkedMarkerColors(inputs) {
+    syncLinkedMarkerColors(inputs, variant) {
       const colorPairs = [
         ['Highlight Own Color', 'Scroll Marker Own Color', 'Scroll Marker Own Match Highlight'],
         ['Highlight You Color', 'Scroll Marker You Color', 'Scroll Marker You Match Highlight'],
         ['Highlight Ghost Color', 'Scroll Marker Ghost Color', 'Scroll Marker Ghost Match Highlight'],
       ];
       for (const [highlightKey, markerKey, matchKey] of colorPairs) {
-        const linked = !!Conf[matchKey];
-        const color = linked ? (Conf[highlightKey] || '') : (Conf[markerKey] || '');
-        if (linked && (Conf[markerKey] !== color)) {
-          Conf[markerKey] = color;
-          $.set(markerKey, color);
+        const linked = !!Settings.styleConf(matchKey, variant);
+        const color = linked
+          ? (Settings.styleConf(highlightKey, variant) || '')
+          : (Settings.styleConf(markerKey, variant) || '');
+        const markerStorageKey = Settings.variantKey(markerKey, variant);
+        if (linked && (Conf[markerStorageKey] !== color)) {
+          Conf[markerStorageKey] = color;
+          $.set(markerStorageKey, color);
         }
         const markerInput = inputs?.[markerKey]
-          || $(`#fourchanx-settings [name="${markerKey}"]`);
+          || $(`#fourchanx-settings [name="${markerStorageKey}"]`);
         if (!markerInput)
           continue;
         Settings.setColorInputValue(markerInput, markerKey, color);
@@ -28467,7 +29421,7 @@ Enable it on boards.${location.hostname.split('.')[1]}.org in your browser's pri
           note.hidden = true;
         }
       }
-      const desired = Conf['siteStyle'];
+      const desired = Settings.styleConf('siteStyle');
       if (desired && seen.has(desired)) {
         select.value = desired;
       } else if (!noOptions && select.selectedIndex < 0) {
@@ -28573,14 +29527,14 @@ Enable it on boards.${location.hostname.split('.')[1]}.org in your browser's pri
       const section = $('.section-styling', Settings.dialog);
       if (!section)
         return;
-      const select = $('[name="siteStyle"]', section);
+      const select = $('[name^="siteStyle"]', section);
       if (!select)
         return;
       Settings.populateSiteStylePicker(section, select);
       // Refresh the merge-mode "currently selected" label.
       const mergeLabel = $('.styling-add-theme-merge-current', section);
       if (mergeLabel) {
-        const value = select.value || Conf['siteStyle'] || '';
+        const value = select.value || Settings.styleConf('siteStyle') || '';
         mergeLabel.textContent = !value
           ? '—'
           : (Settings.isCustomSiteThemeValue(value)
@@ -28614,13 +29568,24 @@ Enable it on boards.${location.hostname.split('.')[1]}.org in your browser's pri
       Conf['customSiteThemes'] = list;
       $.set('customSiteThemes', list);
       const activeValue = `${Settings.CUSTOM_SITE_THEME_PREFIX}${name}`;
-      if (Conf['siteStyle'] === activeValue) {
-        // Fall back to the first available native theme (or empty).
-        const fallback = Settings.nativeSiteThemes()[0] || '';
-        Conf['siteStyle'] = fallback;
-        $.set('siteStyle', fallback);
+      // Clear the removed theme out of every variant slot so we don't leave a
+      // dangling reference behind.
+      const variants = ['sfw', 'nsfw'];
+      let activeRemoved = false;
+      for (const variant of variants) {
+        const key = Settings.variantKey('siteStyle', variant);
+        if (Conf[key] === activeValue) {
+          const fallback = Settings.nativeSiteThemes()[0] || '';
+          Conf[key] = fallback;
+          $.set(key, fallback);
+          if (variant === Settings.getActiveVariant())
+            activeRemoved = true;
+        }
+      }
+      if (activeRemoved) {
+        const fallback = Settings.styleConf('siteStyle') || '';
         if (Settings.dialog) {
-          const select = $('#fourchanx-settings [name="siteStyle"]');
+          const select = $('#fourchanx-settings [name^="siteStyle"]');
           if (select) {
             // Refresh first so the new option set is in the select before we dispatch.
             Settings.refreshSiteStylePickers();
@@ -28643,6 +29608,13 @@ Enable it on boards.${location.hostname.split('.')[1]}.org in your browser's pri
           if (label)
             Settings.refreshSiteStyleCurrentLabel(label, this);
         }
+      }
+      // If the user is editing a variant slot that isn't currently applied to
+      // this board, only update the picker label — don't switch the native
+      // theme or change cookies, because the choice doesn't apply here yet.
+      const editingVariant = Settings.stylingEditingVariant;
+      if (editingVariant && editingVariant !== Settings.getBoardVariant()) {
+        return;
       }
       if (!style) {
         $.event('CustomSiteThemeChanged');
@@ -28700,11 +29672,11 @@ Enable it on boards.${location.hostname.split('.')[1]}.org in your browser's pri
       const status = $('.styling-add-theme-status', container);
       if (!nameInput || !sourceSelect || !fileInput || !pasteInput || !addBtn)
         return;
-      const siteStyleSelect = $('[name="siteStyle"]', section);
+      const siteStyleSelect = $('[name^="siteStyle"]', section);
       const refreshMergeCurrent = () => {
         if (!mergeCurrentLabel)
           return;
-        const value = siteStyleSelect?.value || Conf['siteStyle'] || '';
+        const value = siteStyleSelect?.value || Settings.styleConf('siteStyle') || '';
         mergeCurrentLabel.textContent = !value
           ? '—'
           : (Settings.isCustomSiteThemeValue(value)
@@ -28771,12 +29743,12 @@ Enable it on boards.${location.hostname.split('.')[1]}.org in your browser's pri
             }
             finalize(Settings.addCustomSiteTheme(themeName, css), themeName);
           } else if (mode === 'merge') {
-            const base = siteStyleSelect?.value || Conf['siteStyle'] || '';
+            const base = siteStyleSelect?.value || Settings.styleConf('siteStyle') || '';
             if (!base) {
               showStatus('Select a base theme in the Theme dropdown above first.', false);
               return;
             }
-            const userCSS = String(Conf['usercss'] || '');
+            const userCSS = String(Settings.styleConf('usercss') || '');
             if (!userCSS.trim()) {
               showStatus('Custom CSS is empty — add CSS in the Custom CSS section below first.', false);
               return;
@@ -28833,12 +29805,14 @@ Enable it on boards.${location.hostname.split('.')[1]}.org in your browser's pri
     siteStyleHome() {
       if (!this.checked)
         return;
-      const style = Conf['siteStyle'] || $('#fourchanx-settings [name="siteStyle"]')?.value || '';
+      const activeStyle = Settings.styleConf('siteStyle');
+      const style = activeStyle || $('#fourchanx-settings [name^="siteStyle"]')?.value || '';
       if (!style)
         return;
-      if (!Conf['siteStyle']) {
-        Conf['siteStyle'] = style;
-        $.set('siteStyle', style);
+      if (!activeStyle) {
+        const key = Settings.variantKey('siteStyle');
+        Conf[key] = style;
+        $.set(key, style);
       }
       Settings.setSiteStyleHomeCookie(style);
     },
@@ -29060,7 +30034,10 @@ Enable it on boards.${location.hostname.split('.')[1]}.org in your browser's pri
         'fxtUrl',
         'fxtMaxReplies',
         'beepVolume',
-        'beepSource'
+        'soundLibrary',
+        'boardSounds',
+        'defaultSoundId',
+        'sounds'
       ];
       return options;
     },
@@ -29445,6 +30422,17 @@ Enable it on boards.${location.hostname.split('.')[1]}.org in your browser's pri
         set('XEmbedder', data['Embed Tweets inline with fxTwitter'] ? 'fxt' : 'tf');
         set('fxtMaxReplies', data['Resolve Tweet Replies'] ? (data['Resolve all Tweet Replies'] ? 100 : 1) : 0);
         set('fxtLang', data['Translate non-English Tweets to English'] ? 'en' : '');
+      }
+      // Seed SFW/NSFW siblings from each legacy styling value, once. Idempotent:
+      // skipped per-key as soon as a sibling already exists.
+      for (const k of styleVariantKeys) {
+        const legacy = data[k];
+        if (legacy === undefined)
+          continue;
+        if (data[`${k} SFW`] === undefined)
+          set(`${k} SFW`, legacy);
+        if (data[`${k} NSFW`] === undefined)
+          set(`${k} NSFW`, legacy);
       }
       return changes;
     },
@@ -30330,8 +31318,367 @@ Enable it on boards.${location.hostname.split('.')[1]}.org in your browser's pri
       if (updateArchives) {
         $.on(updateArchives, 'click', () => Redirect.update(() => Settings.addArchiveTable(section)));
       }
-      $.on(inputs.beepVolume, 'change', () => { ThreadUpdater.playBeep(false); });
-      $.on(inputs.beepSource, 'change', () => { ThreadUpdater.playBeep(false); });
+      if (inputs.beepVolume) {
+        $.on(inputs.beepVolume, 'change', () => { ThreadUpdater.playBeep(false); });
+      }
+      Settings.addSoundLibrary(section);
+      Settings.addBoardSoundOverrides(section);
+      Settings.addPostSoundOverrides(section);
+    },
+    addSoundLibrary(section) {
+      SoundManager.init();
+      const fileInput = $('#sound-upload', section);
+      const uploadBtn = $('#sound-upload-btn', section);
+      const list = $('#sound-library-list', section);
+      const render = () => {
+        $.rmAll(list);
+        const entries = SoundManager.library();
+        if (!entries.length) {
+          const empty = $.el('div', { className: 'sound-list__empty', textContent: 'No sounds yet — add one above.' });
+          $.add(list, empty);
+        }
+        for (const lib of entries) {
+          const isDefault = SoundManager.isDefault(lib.id);
+          const row = $.el('div', {
+            className: 'sound-list__row'
+              + (lib.builtin ? ' sound-list__row--builtin' : '')
+              + (isDefault ? ' sound-list__row--default' : ''),
+          });
+          const radioWrap = $.el('label', { className: 'sound-list__default', title: 'Use as default sound' });
+          const radio = $.el('input', { type: 'radio', name: 'sound-default' });
+          radio.checked = isDefault;
+          $.on(radio, 'change', () => {
+            SoundManager.setDefaultSoundId(lib.id, render);
+          });
+          $.add(radioWrap, radio);
+          const nameCell = $.el('div', { className: 'sound-list__name' });
+          if (lib.builtin) {
+            const label = $.el('span', { className: 'sound-list__name-label', textContent: lib.name });
+            const badge = $.el('span', { className: 'sound-list__badge', textContent: 'built-in' });
+            $.add(nameCell, [label, badge]);
+          } else {
+            const nameInput = $.el('input', { type: 'text', value: lib.name, className: 'field sound-list__name-input' });
+            $.on(nameInput, 'change', () => SoundManager.renameLibraryEntry(lib.id, nameInput.value));
+            $.add(nameCell, nameInput);
+          }
+          const actions = $.el('div', { className: 'sound-list__actions' });
+          const playBtn = $.el('button', { type: 'button', className: 'sound-btn sound-btn--icon', title: 'Preview', textContent: '▶' });
+          $.on(playBtn, 'click', () => ThreadUpdater.playSound(lib.data, false));
+          $.add(actions, playBtn);
+          if (!lib.builtin) {
+            const del = $.el('button', { type: 'button', className: 'sound-btn sound-btn--icon sound-btn--danger', title: 'Delete', textContent: '✕' });
+            $.on(del, 'click', () => SoundManager.removeFromLibrary(lib.id, render));
+            $.add(actions, del);
+          }
+          $.add(row, [radioWrap, nameCell, actions]);
+          $.add(list, row);
+        }
+        Settings.refreshBoardSoundsSelect(section);
+      };
+      $.on(uploadBtn, 'click', () => fileInput.click());
+      $.on(fileInput, 'change', () => {
+        const files = Array.from(fileInput.files || []);
+        if (!files.length)
+          return;
+        let remaining = files.length;
+        const finish = () => { if (--remaining === 0) {
+          fileInput.value = '';
+          render();
+        } };
+        for (const file of files) {
+          const reader = new FileReader();
+          reader.onload = () => {
+            const data = reader.result;
+            const name = file.name.replace(/\.[^.]+$/, '');
+            SoundManager.addToLibrary(name, data, finish);
+          };
+          reader.onerror = finish;
+          reader.readAsDataURL(file);
+        }
+      });
+      Settings.wireSoundUrlAdd(section, render);
+      Settings.wireSoundExportImport(section, render);
+      render();
+    },
+    wireSoundUrlAdd(section, render) {
+      const urlBtn = $('#sound-url-btn', section);
+      const urlRow = $('#sound-url-row', section);
+      const urlInput = $('#sound-url-input', section);
+      const urlAdd = $('#sound-url-add', section);
+      const urlCancel = $('#sound-url-cancel', section);
+      const status = $('#sound-status', section);
+      const setStatus = (msg, ok = false) => {
+        status.textContent = msg;
+        status.hidden = !msg;
+        status.dataset.kind = ok ? 'ok' : 'error';
+      };
+      const showRow = (visible) => {
+        urlRow.hidden = !visible;
+        if (visible) {
+          urlInput.focus();
+          setStatus('');
+        }
+      };
+      $.on(urlBtn, 'click', () => showRow(urlRow.hidden));
+      $.on(urlCancel, 'click', () => { urlInput.value = ''; showRow(false); });
+      $.on(urlAdd, 'click', () => {
+        const url = urlInput.value.trim();
+        if (!url)
+          return;
+        setStatus('Fetching…', true);
+        fetch(url)
+          .then(r => {
+          if (!r.ok)
+            throw new Error(`HTTP ${r.status}`);
+          return r.blob();
+        })
+          .then(blob => new Promise((resolve, reject) => {
+          const fr = new FileReader();
+          fr.onload = () => resolve(fr.result);
+          fr.onerror = () => reject(fr.error);
+          fr.readAsDataURL(blob);
+        }))
+          .then(dataUri => {
+          const name = url.split('/').pop()?.replace(/\.[^.]+$/, '') || 'sound';
+          SoundManager.addToLibrary(name, dataUri, () => {
+            urlInput.value = '';
+            showRow(false);
+            setStatus('');
+            render();
+          });
+        })
+          .catch(err => {
+          setStatus(`Could not fetch: ${err.message || err}. The host may block cross-origin requests.`);
+        });
+      });
+    },
+    wireSoundExportImport(section, render) {
+      const exportBtn = $('#sound-export-btn', section);
+      const importBtn = $('#sound-import-btn', section);
+      const importInput = $('#sound-import', section);
+      const status = $('#sound-status', section);
+      const setStatus = (msg, ok = false) => {
+        status.textContent = msg;
+        status.hidden = !msg;
+        status.dataset.kind = ok ? 'ok' : 'error';
+      };
+      $.on(exportBtn, 'click', () => {
+        const payload = {
+          kind: '4chan-neXT sound export',
+          version: 1,
+          date: Date.now(),
+          soundLibrary: Conf.soundLibrary || [],
+          boardSounds: Conf.boardSounds || {},
+          defaultSoundId: Conf.defaultSoundId || '',
+          sounds: Conf['sounds'] || {},
+        };
+        const blob = new Blob([JSON.stringify(payload, null, 2)], { type: 'application/json' });
+        const url = URL.createObjectURL(blob);
+        const a = $.el('a', {
+          href: url,
+          download: `4chan-neXT-sounds-${new Date().toISOString().slice(0, 10)}.json`,
+        });
+        $.add(d.body, a);
+        a.click();
+        $.rm(a);
+        setTimeout(() => URL.revokeObjectURL(url), 0);
+      });
+      $.on(importBtn, 'click', () => importInput.click());
+      $.on(importInput, 'change', () => {
+        const file = importInput.files?.[0];
+        if (!file)
+          return;
+        const reader = new FileReader();
+        reader.onload = () => {
+          try {
+            const data = JSON.parse(reader.result);
+            if (data.kind !== '4chan-neXT sound export') {
+              setStatus('Not a recognized sound export.');
+              return;
+            }
+            Settings.mergeSoundImport(data, () => {
+              importInput.value = '';
+              render();
+              setStatus(`Imported.`, true);
+            });
+          } catch (err) {
+            setStatus(`Import failed: ${err.message || err}`);
+          }
+        };
+        reader.readAsText(file);
+      });
+    },
+    mergeSoundImport(data, cb) {
+      // Merge library: keep existing entries; add imported ones that don't collide on id.
+      const existing = Array.isArray(Conf.soundLibrary) ? Conf.soundLibrary : [];
+      const seen = new Set(existing.map((e) => e.id));
+      const merged = [...existing];
+      for (const entry of (data.soundLibrary || [])) {
+        if (entry?.id && !seen.has(entry.id)) {
+          merged.push(entry);
+          seen.add(entry.id);
+        }
+      }
+      Conf.soundLibrary = merged;
+      // Merge board overrides: imported wins per key.
+      Conf.boardSounds = { ...(Conf.boardSounds || {}), ...(data.boardSounds || {}) };
+      // Default: only adopt if the imported id resolves in the merged library.
+      if (data.defaultSoundId && seen.has(data.defaultSoundId)) {
+        Conf.defaultSoundId = data.defaultSoundId;
+      }
+      // Merge DataBoard 'sounds' (post overrides) — deep-merge per site/board/thread.
+      const cur = (Conf['sounds'] && typeof Conf['sounds'] === 'object') ? Conf['sounds'] : dict();
+      const next = JSON.parse(JSON.stringify(cur));
+      const inSounds = data.sounds || {};
+      for (const siteID in inSounds) {
+        const site = inSounds[siteID];
+        if (!site?.boards)
+          continue;
+        if (!next[siteID])
+          next[siteID] = { boards: dict() };
+        for (const boardID in site.boards) {
+          const board = site.boards[boardID];
+          if (!next[siteID].boards[boardID])
+            next[siteID].boards[boardID] = dict();
+          for (const threadID in board) {
+            const wrapper = board[threadID];
+            if (!wrapper)
+              continue;
+            const cur = next[siteID].boards[boardID][threadID] || {};
+            const curPosts = { ...(cur.posts || {}) };
+            const inPosts = wrapper.posts || {};
+            for (const postID in inPosts) {
+              if (!(postID in curPosts))
+                curPosts[postID] = inPosts[postID];
+            }
+            if (Object.keys(curPosts).length) {
+              next[siteID].boards[boardID][threadID] = { ...cur, posts: curPosts };
+            }
+          }
+        }
+      }
+      Conf['sounds'] = next;
+      $.set({
+        soundLibrary: Conf.soundLibrary,
+        boardSounds: Conf.boardSounds,
+        defaultSoundId: Conf.defaultSoundId,
+        sounds: Conf['sounds'],
+      }, cb);
+    },
+    addBoardSoundOverrides(section) {
+      const list = $('#board-sounds-list', section);
+      const boardInput = $('#board-sounds-board', section);
+      const soundSelect = $('#board-sounds-sound', section);
+      const addBtn = $('#board-sounds-add', section);
+      Settings.populateBoardDatalist(section);
+      const render = () => {
+        $.rmAll(list);
+        const all = SoundManager.allBoardOverrides();
+        if (!all.length) {
+          const empty = $.el('div', { className: 'sound-list__empty', textContent: 'No board overrides yet.' });
+          $.add(list, empty);
+          return;
+        }
+        for (const { siteID, boardID, soundId } of all) {
+          const lib = SoundManager.getEntry(soundId);
+          const row = $.el('div', { className: 'sound-list__row' });
+          const nameCell = $.el('div', { className: 'sound-list__name' });
+          const board = $.el('span', { className: 'sound-list__board', textContent: `${siteID}/${boardID}` });
+          const arrow = $.el('span', { className: 'sound-list__sep', textContent: '→' });
+          const sound = $.el('span', {
+            className: 'sound-list__sound' + (lib ? '' : ' sound-list__sound--missing'),
+            textContent: lib?.name || `(missing: ${soundId})`,
+          });
+          $.add(nameCell, [board, arrow, sound]);
+          const actions = $.el('div', { className: 'sound-list__actions' });
+          const del = $.el('button', { type: 'button', className: 'sound-btn sound-btn--icon sound-btn--danger', title: 'Remove', textContent: '✕' });
+          $.on(del, 'click', () => {
+            const map = { ...(Conf.boardSounds || {}) };
+            delete map[`${siteID}/${boardID}`];
+            Conf.boardSounds = map;
+            $.set('boardSounds', map, render);
+          });
+          $.add(actions, del);
+          $.add(row, [nameCell, actions]);
+          $.add(list, row);
+        }
+      };
+      $.on(addBtn, 'click', () => {
+        const boardID = boardInput.value.trim();
+        const soundId = soundSelect.value;
+        if (!boardID || !soundId)
+          return;
+        SoundManager.setBoardOverride(boardID, soundId, render);
+        boardInput.value = '';
+      });
+      Settings.refreshBoardSoundsSelect(section);
+      render();
+    },
+    refreshBoardSoundsSelect(section) {
+      const sel = $('#board-sounds-sound', section);
+      if (!sel)
+        return;
+      $.rmAll(sel);
+      for (const lib of SoundManager.library()) {
+        const opt = $.el('option', { value: lib.id, textContent: lib.name });
+        $.add(sel, opt);
+      }
+    },
+    populateBoardDatalist(section) {
+      const datalist = $('#board-sounds-datalist', section);
+      if (!datalist)
+        return;
+      $.rmAll(datalist);
+      const boards = (Conf['boardConfig']?.boards) || {};
+      const seen = new Set();
+      for (const id in boards) {
+        if (seen.has(id))
+          continue;
+        seen.add(id);
+        const data = boards[id] || {};
+        const title = data.title ? `/${id}/ - ${data.title}` : `/${id}/`;
+        $.add(datalist, $.el('option', { value: id, textContent: title }));
+      }
+      // Also include any boards the user already has overrides for, in case BoardConfig isn't loaded.
+      for (const { boardID } of SoundManager.allBoardOverrides()) {
+        if (seen.has(boardID))
+          continue;
+        seen.add(boardID);
+        $.add(datalist, $.el('option', { value: boardID }));
+      }
+    },
+    addPostSoundOverrides(section) {
+      const list = $('#post-sounds-list', section);
+      const render = () => {
+        $.rmAll(list);
+        const all = SoundManager.allPostOverrides();
+        if (!all.length) {
+          const empty = $.el('div', { className: 'sound-list__empty', textContent: 'No post overrides yet.' });
+          $.add(list, empty);
+          return;
+        }
+        for (const { siteID, boardID, threadID, postID, soundId } of all) {
+          const lib = SoundManager.getEntry(soundId);
+          const row = $.el('div', { className: 'sound-list__row' });
+          const nameCell = $.el('div', { className: 'sound-list__name' });
+          const ref = $.el('span', { className: 'sound-list__board', textContent: `${siteID}/${boardID}/${threadID}#${postID}` });
+          const arrow = $.el('span', { className: 'sound-list__sep', textContent: '→' });
+          const sound = $.el('span', {
+            className: 'sound-list__sound' + (lib ? '' : ' sound-list__sound--missing'),
+            textContent: lib?.name || `(missing: ${soundId})`,
+          });
+          $.add(nameCell, [ref, arrow, sound]);
+          const actions = $.el('div', { className: 'sound-list__actions' });
+          const del = $.el('button', { type: 'button', className: 'sound-btn sound-btn--icon sound-btn--danger', title: 'Remove', textContent: '✕' });
+          $.on(del, 'click', () => {
+            SoundManager.setPostOverride({ siteID, boardID, threadID, postID }, null, render);
+          });
+          $.add(actions, del);
+          $.add(row, [nameCell, actions]);
+          $.add(list, row);
+        }
+      };
+      render();
     },
     addArchiveTable(section) {
       let boardID, o;
@@ -30491,7 +31838,7 @@ Enable it on boards.${location.hostname.split('.')[1]}.org in your browser's pri
     },
     togglecss() {
       const details = $.x('ancestor::details[1]', this);
-      const textarea = details ? $('textarea[name=usercss]', details) : null;
+      const textarea = details ? $('textarea[name^=usercss]', details) : null;
       const disabled = !this.checked;
       if (textarea)
         textarea.disabled = disabled;
@@ -30501,6 +31848,7 @@ Enable it on boards.${location.hostname.split('.')[1]}.org in your browser's pri
         CustomCSS.addStyle();
       }
       $.cb.checked.call(this);
+      Settings.applyStylingVars();
     },
     setTimeLocale(e) {
       const input = e.target;
@@ -33179,6 +34527,124 @@ Enable it on boards.${location.hostname.split('.')[1]}.org in your browser's pri
     }
   };
 
+  const SoundLink = {
+    init() {
+      if (!['index', 'thread'].includes(g.VIEW) || !Conf['Menu'])
+        return;
+      if (!Conf['Thread Updater'])
+        return;
+      SoundManager.init();
+      SoundLink.addPostEntry();
+      SoundLink.addBoardEntry();
+    },
+    addPostEntry() {
+      const el = $.el('a', {
+        className: 'sound-link sound-link-post',
+        href: 'javascript:;',
+        textContent: 'Sound (You-post)',
+      });
+      const entry = {
+        el,
+        order: 60,
+        open(post) {
+          if (!QuoteYou.isYou(post))
+            return false;
+          const target = { boardID: post.boardID, threadID: post.threadID, postID: post.ID };
+          const current = SoundManager.getPostOverride(target);
+          entry.subEntries = SoundLink.buildSubEntries('post', target, current);
+          return true;
+        },
+        subEntries: [],
+      };
+      Menu.menu.addEntry(entry);
+    },
+    addBoardEntry() {
+      if (!Header?.menu)
+        return;
+      const el = $.el('span', { className: 'sound-link sound-link-board', textContent: 'Update sound' });
+      const entry = {
+        el,
+        order: 115,
+        open() {
+          const boardID = g.BOARD?.ID;
+          if (!boardID)
+            return false;
+          const target = { boardID };
+          const current = SoundManager.getBoardOverride(boardID);
+          entry.subEntries = SoundLink.buildSubEntries('board', target, current);
+          return true;
+        },
+        subEntries: [],
+      };
+      Header.menu.addEntry(entry);
+    },
+    buildSubEntries(scope, target, currentSoundId) {
+      const subs = [];
+      let order = 10;
+      subs.push(SoundLink.makeOptionEntry({
+        label: 'None (inherit)',
+        soundId: null,
+        isCurrent: currentSoundId == null,
+        scope,
+        target,
+        order: order++,
+      }));
+      for (const lib of SoundManager.library()) {
+        subs.push(SoundLink.makeOptionEntry({
+          label: lib.name,
+          soundId: lib.id,
+          isCurrent: lib.id === currentSoundId,
+          scope,
+          target,
+          order: order++,
+        }));
+      }
+      subs.push(SoundLink.makeManageEntry(order++));
+      return subs;
+    },
+    makeOptionEntry({ label, soundId, isCurrent, scope, target, order, }) {
+      const a = $.el('a', {
+        href: 'javascript:;',
+        textContent: (isCurrent ? '✓ ' : '  ') + label,
+        className: 'entry sound-option' + (isCurrent ? ' current' : ''),
+      });
+      a.style.order = String(order);
+      $.on(a, 'click', () => {
+        SoundLink.applySelection(scope, target, soundId);
+        if (soundId) {
+          const entry = SoundManager.getEntry(soundId);
+          if (entry?.data)
+            ThreadUpdater.playSound(entry.data, false);
+        }
+        $.event('CloseMenu', null);
+      });
+      return { el: a };
+    },
+    makeManageEntry(order) {
+      const a = $.el('a', {
+        href: 'javascript:;',
+        textContent: 'Manage sounds…',
+        className: 'entry sound-manage',
+      });
+      a.style.order = String(order);
+      $.on(a, 'click', () => {
+        Settings.open('Advanced');
+        $.event('CloseMenu', null);
+      });
+      return { el: a };
+    },
+    applySelection(scope, target, soundId) {
+      switch (scope) {
+        case 'post':
+          SoundManager.setPostOverride(target, soundId);
+          break;
+        case 'board':
+          SoundManager.setBoardOverride(target.boardID, soundId);
+          break;
+      }
+    },
+  };
+
   var AntiAutoplay = {
     init() {
       if (!Conf['Disable Autoplaying Sounds']) { return; }
@@ -34890,29 +36356,36 @@ Enable it on boards.${location.hostname.split('.')[1]}.org in your browser's pri
     initHomePageStyleBridge() {
       const defaults = {
         siteStyleHome: false,
-        siteStyle: '',
+        sfwNsfwMode: 'auto',
+        'siteStyle SFW': '',
+        'siteStyle NSFW': '',
         customCSSHome: false,
         'Custom CSS': true,
-        usercss: '',
+        'usercss SFW': '',
+        'usercss NSFW': '',
       };
       ($.getSync || $.get)(defaults, (items) => {
+        // The home page has no board context, so 'auto' falls back to SFW.
+        const variant = items.sfwNsfwMode === 'nsfw' ? 'NSFW' : 'SFW';
+        let siteStyle = items[`siteStyle ${variant}`] || '';
+        const usercss = items[`usercss ${variant}`] || '';
         // Custom themes don't apply to the home page via 4chan's style cookie.
-        if (typeof items.siteStyle === 'string' && items.siteStyle.startsWith('custom:')) {
-          items.siteStyle = '';
+        if (typeof siteStyle === 'string' && siteStyle.startsWith('custom:')) {
+          siteStyle = '';
         }
-        const normalizedStyle = Main.normalizeSiteStyle(items.siteStyle);
+        const normalizedStyle = Main.normalizeSiteStyle(siteStyle);
         if (items.siteStyleHome && normalizedStyle) {
           // Persist 4chan's own theme cookie so future homepage requests render
           // server-side with the right stylesheet.
-          Main.setSiteStyleHomeCookie(items.siteStyle);
+          Main.setSiteStyleHomeCookie(siteStyle);
           // Tag <html> so 4chan-X / custom CSS rules targeting :root.<theme> match.
           $.addClass(doc, normalizedStyle);
           // Switch the active <link rel="stylesheet"> to the alternate matching
           // the chosen theme, so the homepage repaints immediately.
-          Main.applyHomePageSiteStyle(items.siteStyle);
+          Main.applyHomePageSiteStyle(siteStyle);
         }
-        if (items.customCSSHome && items['Custom CSS'] && items.usercss) {
-          Main.installHomePageCustomCSS(items.usercss);
+        if (items.customCSSHome && items['Custom CSS'] && usercss) {
+          Main.installHomePageCustomCSS(usercss);
         }
       });
     },
@@ -35054,8 +36527,9 @@ Enable it on boards.${location.hostname.split('.')[1]}.org in your browser's pri
 
     initStyle() {
       if (!Main.isThisPageLegit()) { return; }
-      if (Conf['siteStyleHome'] && Conf['siteStyle']) {
-        Main.setSiteStyleHomeCookie(Conf['siteStyle']);
+      const homeSiteStyle = Settings.styleConf('siteStyle');
+      if (Conf['siteStyleHome'] && homeSiteStyle) {
+        Main.setSiteStyleHomeCookie(homeSiteStyle);
       }
 
       // disable the mobile layout
@@ -35124,8 +36598,9 @@ Enable it on boards.${location.hostname.split('.')[1]}.org in your browser's pri
       };
       let preferredStyleApplied = false;
       const applyPreferredStyle = function() {
-        if (preferredStyleApplied || g.SITE.software !== 'yotsuba' || !Conf['siteStyle']) { return; }
-        const preferred = Conf['siteStyle'];
+        const activeSiteStyle = Settings.styleConf('siteStyle');
+        if (preferredStyleApplied || g.SITE.software !== 'yotsuba' || !activeSiteStyle) { return; }
+        const preferred = activeSiteStyle;
 
         if (isCustomSiteStyle(preferred)) {
           const theme = findCustomTheme(preferred);
@@ -35177,9 +36652,10 @@ Enable it on boards.${location.hostname.split('.')[1]}.org in your browser's pri
       const setStyle = function() {
         let activeStyleTitle = null;
         let customThemeApplied = false;
+        const currentSiteStyle = Settings.styleConf('siteStyle');
         // Custom themes win: disable the native sheet and inject the user CSS.
-        if (g.SITE.software === 'yotsuba' && isCustomSiteStyle(Conf['siteStyle'])) {
-          const theme = findCustomTheme(Conf['siteStyle']);
+        if (g.SITE.software === 'yotsuba' && isCustomSiteStyle(currentSiteStyle)) {
+          const theme = findCustomTheme(currentSiteStyle);
           if (theme) {
             $.rmClass(doc, style);
             if (applyCustomTheme(theme)) {
@@ -35204,9 +36680,15 @@ Enable it on boards.${location.hostname.split('.')[1]}.org in your browser's pri
               break;
             }
           }
-          if (activeStyleTitle && !isCustomSiteStyle(Conf['siteStyle']) && (Conf['siteStyle'] !== activeStyleTitle)) {
-            Conf['siteStyle'] = activeStyleTitle;
-            $.set('siteStyle', activeStyleTitle);
+          // Only auto-capture the currently-rendered native theme into the
+          // active variant slot if that slot is empty. Without this guard,
+          // events like a SFW/NSFW mode change (which re-runs setStyle for
+          // the new variant) would clobber the user's stored preference for
+          // the new variant with whatever theme happens to be on screen.
+          if (activeStyleTitle && !isCustomSiteStyle(currentSiteStyle) && !currentSiteStyle) {
+            const siteStyleKey = Settings.variantKey('siteStyle');
+            Conf[siteStyleKey] = activeStyleTitle;
+            $.set(siteStyleKey, activeStyleTitle);
             if (Conf['siteStyleHome']) {
               Main.setSiteStyleHomeCookie(activeStyleTitle);
             }
@@ -35259,11 +36741,13 @@ Enable it on boards.${location.hostname.split('.')[1]}.org in your browser's pri
           const syncSiteStyle = function() {
             const selected = styleSelector.value;
             if (!selected) { return; }
+            const activeSiteStyle = Settings.styleConf('siteStyle');
             // Don't clobber a custom theme selection with the native dropdown's value.
-            if (isCustomSiteStyle(Conf['siteStyle'])) { return; }
-            if (Conf['siteStyle'] !== selected) {
-              Conf['siteStyle'] = selected;
-              $.set('siteStyle', selected);
+            if (isCustomSiteStyle(activeSiteStyle)) { return; }
+            if (activeSiteStyle !== selected) {
+              const siteStyleKey = Settings.variantKey('siteStyle');
+              Conf[siteStyleKey] = selected;
+              $.set(siteStyleKey, selected);
             }
             if (Conf['siteStyleHome']) {
               Main.setSiteStyleHomeCookie(selected);
@@ -35278,9 +36762,13 @@ Enable it on boards.${location.hostname.split('.')[1]}.org in your browser's pri
           attributeFilter: ['href']
         });
         $.on(mainStyleSheet, 'load', setStyle);
-        // Re-run setStyle when the user adds, removes, or switches a custom theme.
+        // Re-run setStyle when the user adds, removes, or switches a custom
+        // theme, or flips SFW/NSFW mode. applyPreferredStyle is needed to
+        // actively swap to the new variant's chosen native theme (setStyle
+        // alone only reads the currently-rendered sheet).
         $.on(d, 'CustomSiteThemeChanged', () => {
           preferredStyleApplied = false;
+          applyPreferredStyle();
           setStyle();
         });
         return setStyle();
@@ -35749,6 +37237,7 @@ User agent: ${navigator.userAgent}\
       ['Edit Link',                 QR.oekaki.menu],
       ['Download Link',             DownloadLink],
       ['Archive Link',              ArchiveLink],
+      ['Sound Link',                SoundLink],
       ['Quote Inlining',            QuoteInline],
       ['Quote Previewing',          QuotePreview],
       ['Quote Backlinks',           QuoteBacklink],

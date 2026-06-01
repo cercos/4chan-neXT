@@ -1,20 +1,20 @@
 import $ from "../platform/$";
 import CSS from "../css/CSS";
 import { Conf } from "../globals/globals";
+import Settings from "../General/Settings";
 
-/*
- * decaffeinate suggestions:
- * DS102: Remove unnecessary code created because of implicit returns
- * Full docs: https://github.com/decaffeinate/decaffeinate/blob/main/docs/suggestions.md
- */
 const CustomCSS = {
   init() {
     if (!Conf['Custom CSS']) { return; }
     return this.addStyle();
   },
 
+  currentCSS() {
+    return Settings.styleConf('usercss') || '';
+  },
+
   addStyle() {
-    return this.style = $.addStyle(CSS.sub(Conf['usercss']), 'custom-css', '#fourchanx-css');
+    return this.style = $.addStyle(CSS.sub(this.currentCSS()), 'custom-css', '#fourchanx-css');
   },
 
   rmStyle() {
@@ -28,7 +28,7 @@ const CustomCSS = {
     if (!this.style) {
       return this.addStyle();
     }
-    return this.style.textContent = CSS.sub(Conf['usercss']);
+    return this.style.textContent = CSS.sub(this.currentCSS());
   }
 };
 export default CustomCSS;
