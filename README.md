@@ -25,6 +25,7 @@ You will need a userscript manager:
 - Fixed settings layout.
 - Added sorting to Thread Watcher.
 - Fixed flag dropdown colors.
+- Settings cleanup
 
 ## Migration from 4chan X / 4chan XT
 
