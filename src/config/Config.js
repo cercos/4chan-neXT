@@ -14,11 +14,6 @@ const Config = {
         `Link to ${meta.name}'s catalog instead of the native 4chan one.`,
         1
       ],
-      'Index Refresh Notifications': [
-        false,
-        'Show a notice at the top of the page when the index is refreshed.',
-        1
-      ],
       'Follow Cursor': [
         true,
         'Image Hover and Quote Preview move with the mouse cursor.'
@@ -63,15 +58,6 @@ const Config = {
         true,
         'Localize and format timestamps. Has more options on the "Advanced" tab.'
       ],
-      'Relative Post Dates': [
-        false,
-        'Display dates like "3 minutes ago". Tooltip shows the timestamp.'
-      ],
-      'Relative Date Title': [
-        false,
-        'Show Relative Post Date only when hovering over dates.',
-        1
-      ],
       'Comment Expansion': [
         true,
         'Expand comments that are too long to display on the index. Not applicable with JSON Index.'
@@ -100,15 +86,6 @@ const Config = {
         true,
         'Allow editing of the board title and subtitle by ctrl/\u2318+clicking them.'
       ],
-      'Persistent Custom Board Titles': [
-        false,
-        'Force custom board titles to be persistent, even if the board titles are updated.',
-        1
-      ],
-      'Show Updated Notifications': [
-        true,
-        `Show notifications when ${meta.name} is successfully updated.`
-      ],
       'Color User IDs': [
         true,
         'Assign unique colors to user IDs on boards that use them'
@@ -116,14 +93,6 @@ const Config = {
       'Count Posts by ID': [
         true,
         'Display number of posts in the thread when hovering over an ID.'
-      ],
-      'Remove Spoilers': [
-        false,
-        'Remove all spoilers in text.'
-      ],
-      'Reveal Spoilers': [
-        false,
-        'Indicate spoilers if Remove Spoilers is enabled, or make the text appear hovered if Remove Spoiler is disabled.'
       ],
       'Normalize URL': [
         true,
@@ -137,21 +106,9 @@ const Config = {
         true,
         `${meta.name} is NOT designed to work with the native extension.`
       ],
-      'Enable Native Flash Embedding': [
-        true,
-        'Activate the native extension\'s Flash embedding if the native extension is disabled.'
-      ],
-      'Defer Styling to StyleChan': [
-        true,
-        'When the StyleChan userscript is installed, hide visual styling controls (themes, colors, etc.) in favor of StyleChan\'s settings. Custom CSS remains available. Has no effect without StyleChan.'
-      ],
       'Export History': [
         true,
         'Export last read, your posts, etc. when exporting the setting'
-      ],
-      'Ask to Export History': [
-        true,
-        'Ask if history should be exported when settings are exported.'
       ],
       'Scroll Markers': [
         true,
@@ -219,21 +176,6 @@ const Config = {
       'Filter in Native Catalog': [
         true,
         'Apply 4chan X filters in native catalog.',
-        1
-      ],
-      'MD5 Quick Filter Notifications': [
-        true,
-        'Show notification when quick filtering MD5s using the button or keybind.',
-        1
-      ],
-      'MD5 Quick Filter in the Catalog': [
-        true,
-        'Quick filter by MD5 when clicking a thumbnail in the catalog and holding Shift. Disabling falls back on just hiding the thread.',
-        1
-      ],
-      'MD5 Quick Filter in Threads': [
-        true,
-        'Quick filter by MD5 when clicking a thumbnail in a thread while holding shift.',
         1
       ],
       'Recursive Hiding': [
@@ -375,14 +317,6 @@ const Config = {
       'Mouse Wheel Volume': [
         true,
         'Adjust volume of videos with the mouse wheel over the thumbnail/filename/gallery.'
-      ],
-      'Loop in New Tab': [
-        true,
-        'Loop videos opened in their own tabs.'
-      ],
-      'Volume in New Tab': [
-        true,
-        `Apply ${meta.name} mute and volume settings to videos opened in their own tabs.`
       ],
       'Enable sound posts': [
         true,
@@ -540,10 +474,6 @@ const Config = {
       'Scrollbar Markers': [
         true,
         'Show colored markers along the right edge of the page for tracked posts. Uses the highlight colors from the Style settings.'
-      ],
-      'Scrollbar Marker Hover Preview': [
-        true,
-        'Show a floating post preview when hovering scrollbar markers.'
       ],
       'Scrollbar Mark Own Posts': [
         true,
@@ -827,6 +757,7 @@ const Config = {
   'Thread Title': 'excerpt',
   'Unread Title Count': 'always',
   'Comment Preview Position': 'below',
+  'Spoiler Mode': 'default',
 
   threadWatcher: {
     'Current Board': [

@@ -494,7 +494,7 @@ $\
 
     parseCommentDisplay(html) {
       // Hide spoilers.
-      if (!Conf['Remove Spoilers'] && !Conf['Reveal Spoilers']) {
+      if (Conf['Spoiler Mode'] === 'default') {
         let html2;
         while ((html2 = html.replace(/<s>(?:(?!<\/?s>).)*<\/s>/g, '[spoiler]')) !== html) {
           html = html2;

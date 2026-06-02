@@ -322,7 +322,6 @@ var Main = {
       'Custom CSS': true,
       'usercss SFW': '',
       'usercss NSFW': '',
-      'Defer Styling to StyleChan': true,
     };
     ($.getSync || $.get)(defaults, (items) => {
       // The home page has no board context, so 'auto' falls back to SFW.
@@ -338,8 +337,7 @@ var Main = {
       // applying our site style — StyleChan owns the theme there and our
       // class/cookie/stylesheet overrides leave the home page looking scuffed.
       // Custom CSS on home page still applies; it's user-authored and owned.
-      const styleChanPresent = !!(d.getElementById('ch4SS') || d.getElementById('StyleChanLink'));
-      const deferToStyleChan = items['Defer Styling to StyleChan'] && styleChanPresent;
+      const deferToStyleChan = !!(d.getElementById('ch4SS') || d.getElementById('StyleChanLink'));
       // Persistently uncheck `siteStyleHome` when deferring — both so the
       // setting reflects reality and so future page loads skip the work
       // even before StyleChan has injected its detection marker.
@@ -401,11 +399,9 @@ var Main = {
     const changes = Settings.upgrade(items, previousversion);
     items.previousversion = (changes.previousversion = g.VERSION);
     return $.set(changes, function() {
-      if (items['Show Updated Notifications'] ?? true) {
-        const el = $.el('span',
-          { innerHTML: `${meta.name} has been updated to <a href="${meta.changelog}" target="_blank">version ${g.VERSION}</a>.` });
-        return new Notice('info', el, 15);
-      }
+      const el = $.el('span',
+        { innerHTML: `${meta.name} has been updated to <a href="${meta.changelog}" target="_blank">version ${g.VERSION}</a>.` });
+      return new Notice('info', el, 15);
     });
   },
 
@@ -460,14 +456,10 @@ var Main = {
             filename: pathname[pathname.length - 1]
           });
         } else if (video = $('video')) {
-          if (Conf['Volume in New Tab']) {
-            Volume.setup(video);
-          }
-          if (Conf['Loop in New Tab']) {
-            video.loop = true;
-            video.controls = true;
-            video.play();
-          }
+          Volume.setup(video);
+          video.loop = true;
+          video.controls = true;
+          video.play();
         }
       });
       return;
@@ -1195,7 +1187,7 @@ User agent: ${navigator.userAgent}\
     ['Custom CSS',                CustomCSS],
     ['Thread Links',              ThreadLinks],
     ['Linkify',                   Linkify],
-    ['Reveal Spoilers',           RemoveSpoilers],
+    ['Spoiler Mode',              RemoveSpoilers],
     ['Resurrect Quotes',          Quotify],
     ['Fetch Ghost Posts',         GhostPosts],
     ['Filter',                    Filter],

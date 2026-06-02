@@ -249,7 +249,7 @@ export default class Post {
     //   Preceding and following new lines.
     //   Trailing spaces.
     const bq = this.nodes.commentClean.cloneNode(true);
-    if (!Conf['Remove Spoilers'] && !Conf['Reveal Spoilers']) { this.cleanSpoilers(bq); }
+    if (Conf['Spoiler Mode'] === 'default') { this.cleanSpoilers(bq); }
     g.SITE.cleanCommentDisplay?.(bq);
     return this.nodesToText(bq).trim().replace(/\s+$/gm, '');
   }

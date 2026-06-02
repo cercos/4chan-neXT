@@ -1,4 +1,4 @@
-import { g, Conf } from "../globals/globals";
+import { g } from "../globals/globals";
 import $ from "../platform/$";
 
 /*
@@ -8,7 +8,7 @@ import $ from "../platform/$";
  */
 var Flash = {
   init() {
-    if ((g.BOARD.ID === 'f') && Conf['Enable Native Flash Embedding']) {
+    if (g.BOARD.ID === 'f') {
       return $.ready(Flash.initReady);
     }
   },

@@ -304,7 +304,7 @@ var Index = {
       if ((e.button !== 0) || !e.shiftKey) return;
       e.preventDefault();
       getSelection().removeAllRanges();
-      if (Conf['MD5 Quick Filter in the Catalog'] && e.target.classList.contains('catalog-thumb')) {
+      if (e.target.classList.contains('catalog-thumb')) {
         Filter.quickFilterMD5.call(this.thread.OP);
       } else {
         Index.toggleHide(this.thread);
@@ -761,20 +761,9 @@ var Index = {
       oldReq.abort();
     }
 
-    if (Conf['Index Refresh Notifications']) {
-      // Optional notification for manual refreshes
-      if (!Index.notice) { Index.notice = new Notice('info', 'Refreshing index...'); }
-      if (!Index.nTimeout) { Index.nTimeout = setTimeout(() => {
-          if (Index.notice) {
-            Index.notice.el.lastElementChild.textContent += ' (disable JSON Index if this takes too long)';
-          }
-        }
-        , 3 * SECOND); }
-    } else {
-      // Also display notice if Index Refresh is taking too long
-      if (!Index.nTimeout) { Index.nTimeout = setTimeout(() => Index.notice || (Index.notice = new Notice('info', 'Refreshing index... (disable JSON Index if this takes too long)'))
-      , 3 * SECOND); }
-    }
+    // Display notice if Index Refresh is taking too long
+    if (!Index.nTimeout) { Index.nTimeout = setTimeout(() => Index.notice || (Index.notice = new Notice('info', 'Refreshing index... (disable JSON Index if this takes too long)'))
+    , 3 * SECOND); }
 
     // Hard refresh in case of incomplete page load.
     if (!firstTime && (d.readyState !== 'loading') && !$('.board + *')) {
@@ -833,13 +822,7 @@ var Index = {
     }
 
     if (notice) {
-      if (Conf['Index Refresh Notifications']) {
-        notice.setType('success');
-        notice.el.lastElementChild.textContent = 'Index refreshed!';
-        setTimeout(notice.close, SECOND);
-      } else {
-        notice.close();
-      }
+      notice.close();
     }
 
     const timeEl = $('#index-last-refresh time', Index.navLinks);

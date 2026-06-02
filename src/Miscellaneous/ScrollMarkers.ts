@@ -22,7 +22,6 @@ const ScrollMarkers = {
 
     for (const key of [
       'Scrollbar Markers',
-      'Scrollbar Marker Hover Preview',
       'Scrollbar Mark Own Posts',
       'Scrollbar Mark Quotes You',
       'Scrollbar Mark Ghost Posts',
@@ -130,9 +129,7 @@ const ScrollMarkers = {
     marker.title = `Post No.${post.ID}`;
     $.on(marker, 'mouseenter', (e: MouseEvent) => {
       ScrollMarkers.highlightPost(post);
-      if (Conf['Scrollbar Marker Hover Preview']) {
-        ScrollMarkers.showPreview(marker, post, e);
-      }
+      ScrollMarkers.showPreview(marker, post, e);
     });
     $.on(marker, 'mousemove', (e: MouseEvent) => ScrollMarkers.movePreview(marker, e));
     $.on(marker, 'mouseleave', () => {

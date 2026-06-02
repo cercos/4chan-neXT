@@ -123,7 +123,7 @@ var Banner = {
     }
 
     if (data = Banner.db.get({boardID: g.BOARD.ID, threadID: className})) {
-      if (Conf['Persistent Custom Board Titles'] || (data.orig === child.textContent)) {
+      if (data.orig === child.textContent) {
         Banner.original[className] = child.cloneNode(true);
         return child.textContent = data.title;
       } else {

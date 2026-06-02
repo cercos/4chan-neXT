@@ -162,7 +162,7 @@ var Settings = {
   },
 
   shouldDeferStylingToStylechan(): boolean {
-    return !!Conf['Defer Styling to StyleChan'] && Settings.isStylechanInstalled();
+    return Settings.isStylechanInstalled();
   },
 
   open(openSection) {
@@ -895,9 +895,9 @@ Enable it on boards.${location.hostname.split('.')[1]}.org in your browser's pri
       categories: [{
         name: 'Miscellaneous',
         subgroups: [
-          ['System', ['JSON Index', `Use ${meta.name} Catalog`, 'Index Refresh Notifications', 'Open Threads in New Tab', 'External Catalog', '404 Redirect', 'Archive Report', 'Exempt Archives from Encryption', 'Show Updated Notifications']],
-          ['History', ['Export History', 'Ask to Export History']],
-          ['Compatibility', ['Disable Native Extension', 'Enable Native Flash Embedding', 'Defer Styling to StyleChan']]
+          ['System', ['JSON Index', `Use ${meta.name} Catalog`, 'Open Threads in New Tab', 'External Catalog', '404 Redirect', 'Archive Report', 'Exempt Archives from Encryption']],
+          ['History', ['Export History']],
+          ['Compatibility', ['Disable Native Extension']]
         ]
       }],
       includeWarnings: true,
@@ -995,20 +995,49 @@ Enable it on boards.${location.hostname.split('.')[1]}.org in your browser's pri
     const fmtGroup = dict();
     for (const key of [
       'Custom Board Titles',
-      'Persistent Custom Board Titles',
       'Color User IDs',
       'Count Posts by ID',
-      'Remove Spoilers',
-      'Reveal Spoilers',
       'Time Formatting',
-      'Relative Post Dates',
-      'Relative Date Title',
       'File Info Formatting',
       'Quote Backlinks',
     ]) {
       if (lookup[key]) fmtGroup[key] = lookup[key];
     }
     Settings.addCheckboxes(fsFmt, fmtGroup, items, inputs);
+    const inlineSelect = (name: string, label: string, description: string, opts: readonly (readonly [string, string])[]) => {
+      const div = $.el('div');
+      div.dataset.name = name;
+      const lblEl = $.el('label');
+      const select = $.el('select', { name }) as HTMLSelectElement;
+      for (const [value, text] of opts) {
+        select.appendChild($.el('option', { value, textContent: text }));
+      }
+      $.add(lblEl, [$.el('span', { textContent: `${label}: ` }), select]);
+      $.add(div, [
+        lblEl,
+        $.el('span', { className: 'description', textContent: `: ${description}` })
+      ]);
+      $.on(select, 'change', $.cb.value);
+      items[name] = Conf[name];
+      inputs[name] = select;
+      $.add(fsFmt, div);
+    };
+    inlineSelect('RelativeTime', 'Relative Post Dates',
+      'Display dates like "3 minutes ago" inline, on hover, or both.',
+      [
+        ['No', 'Off'],
+        ['Hover', 'Show on hover'],
+        ['Show', 'Show inline (full date on hover)'],
+        ['Both', 'Show timestamp, then relative'],
+        ['BothRelativeFirst', 'Show relative, then timestamp']
+      ]);
+    inlineSelect('Spoiler Mode', 'Spoilers',
+      'How to display [spoiler] text. "Default" matches the site’s native behavior.',
+      [
+        ['default', 'Default'],
+        ['reveal', 'Reveal on hover'],
+        ['remove', 'Remove entirely']
+      ]);
     $.add(section, fsFmt);
 
     const stylingOnlyKeys = new Set([
@@ -1256,7 +1285,7 @@ Enable it on boards.${location.hostname.split('.')[1]}.org in your browser's pri
     const groups: [string, string[]][] = [
       ['Image Behavior', ['Image Expansion', 'Image Hover', 'Image Hover in Catalog', 'Replace Thumbnails', 'Replace GIF', 'Replace JPG', 'Replace PNG', 'Replace WEBM', 'Restart when Opened']],
       ['Images', ['Gallery', 'Fullscreen Gallery', 'PDF in Gallery', 'Sauce', 'Reveal Spoiler Thumbnails', 'Image Prefetching', 'Fappe Tyme', 'Werk Tyme']],
-      ['Videos', ['WEBM Metadata', 'Autoplay', 'Show Controls', 'Click Passthrough', 'Allow Sound', 'Mouse Wheel Volume', 'Loop in New Tab', 'Volume in New Tab', 'Enable sound posts']]
+      ['Videos', ['WEBM Metadata', 'Autoplay', 'Show Controls', 'Click Passthrough', 'Allow Sound', 'Mouse Wheel Volume', 'Enable sound posts']]
     ];
     for (const [legendTitle, keys] of groups) {
       const fs = $.el('details', { open: true }, { innerHTML: `<summary>${legendTitle}</summary>` });
@@ -1363,7 +1392,7 @@ Enable it on boards.${location.hostname.split('.')[1]}.org in your browser's pri
           '<b>StyleChan is managing site themes.</b> '
           + 'The theme picker has been disabled; '
           + 'highlight colors, scroll markers, and Custom CSS below still work. '
-          + 'To restore the full Styling section, uncheck <i>Defer Styling to StyleChan</i> in <i>General → Compatibility</i>.'
+          + 'Uninstall StyleChan to restore the full Styling section.'
       });
       const button = $.el('button', {
         type: 'button',
@@ -3684,17 +3713,13 @@ Enable it on boards.${location.hostname.split('.')[1]}.org in your browser's pri
     options['General'] = [
       'JSON Index',
       `Use ${meta.name} Catalog`,
-      'Index Refresh Notifications',
       'Open Threads in New Tab',
       'External Catalog',
       '404 Redirect',
       'Archive Report',
       'Exempt Archives from Encryption',
-      'Show Updated Notifications',
       'Export History',
-      'Ask to Export History',
       'Disable Native Extension',
-      'Enable Native Flash Embedding',
       ...Object.keys(Config.Index)
     ];
 
@@ -3718,14 +3743,11 @@ Enable it on boards.${location.hostname.split('.')[1]}.org in your browser's pri
 
     options['Threads & Posts'] = [
       'Custom Board Titles',
-      'Persistent Custom Board Titles',
       'Color User IDs',
       'Count Posts by ID',
-      'Remove Spoilers',
-      'Reveal Spoilers',
+      'Spoiler Mode',
       'Time Formatting',
-      'Relative Post Dates',
-      'Relative Date Title',
+      'RelativeTime',
       'File Info Formatting',
       'Quote Backlinks',
       ...keysIn('Filtering').filter(key => !stylingOnlyKeys.includes(key)),
@@ -3837,7 +3859,6 @@ Enable it on boards.${location.hostname.split('.')[1]}.org in your browser's pri
       'captchaLanguage',
       'time',
       'timeLocale',
-      'RelativeTime',
       'backlink',
       'pastedname',
       'fileInfo',
@@ -4273,6 +4294,9 @@ Enable it on boards.${location.hostname.split('.')[1]}.org in your browser's pri
     }
     if (compareString < '00002.00003.00006.00000') {
       set('RelativeTime', data['Relative Post Dates'] ? (data['Relative Date Title'] ? 'Hover' : 'Show') : 'No');
+    }
+    if (data['Spoiler Mode'] === undefined && (data['Remove Spoilers'] !== undefined || data['Reveal Spoilers'] !== undefined)) {
+      set('Spoiler Mode', data['Remove Spoilers'] ? 'remove' : (data['Reveal Spoilers'] ? 'reveal' : 'default'));
     }
     if (compareString === '00002.00009.00000.00000') {
       set('XEmbedder', data['Embed Tweets inline with fxTwitter'] ? 'fxt' : 'tf');

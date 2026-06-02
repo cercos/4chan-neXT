@@ -448,7 +448,7 @@ var Filter = {
     }
     if (this.file?.thumbLink) {
       $.on(this.file.thumbLink, 'click', (e: MouseEvent) => {
-        if (!e.shiftKey || !Conf['MD5 Quick Filter in Threads']) return;
+        if (!e.shiftKey) return;
         Filter.quickFilterMD5.call(this);
         e.preventDefault();
         e.stopImmediatePropagation();
@@ -607,14 +607,6 @@ var Filter = {
       g.posts.forEach(hideMatchingPost);
     } else {
       hideMatchingPost(origin);
-    }
-
-    if (!Conf['MD5 Quick Filter Notifications']) {
-      // feedback for when nothing gets hidden
-      if (post.nodes.post.getBoundingClientRect().height) {
-        new Notice('info', 'MD5 filtered.', 2);
-      }
-      return;
     }
 
     let {notice} = Filter.quickFilterMD5;
