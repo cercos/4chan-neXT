@@ -27,9 +27,13 @@ export default async function generateMetadata(packageJson, fileName, metaFileNa
 `;
 
   output += (function () {
+    const allMatches = meta.includes_only.concat(meta.matches_only, meta.matches, meta.matches_extra);
     return [].concat(
       meta.includes_only.concat(meta.matches, meta.matches_extra).map(function (match) {
         return '// @include      ' + match;
+      }),
+      allMatches.map(function (match) {
+        return '// @match        ' + match;
       }),
       meta.exclude_matches.map(function (match) {
         return '// @exclude      ' + match;

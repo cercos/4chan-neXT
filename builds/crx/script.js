@@ -26932,6 +26932,7 @@ $\
     siteStylePickerOutsideHandler: null,
     stylingEditingVariant: null,
     styleVariantKeySet: new Set(styleVariantKeys),
+    resolvedStyleColorCache: null,
     // What's currently applied to the page. Always derived from the board
     // (or the forced mode); the Styling settings page does NOT override this,
     // so opening the dialog or clicking SFW/NSFW tabs never changes the
@@ -27164,6 +27165,7 @@ $\
         Settings.siteStylePickerOutsideHandler = null;
       }
       Settings.activeSiteStylePicker = null;
+      Settings.resolvedStyleColorCache = null;
       delete Settings.dialog;
       // The editing variant is dialog-only UI state; clear it on close.
       Settings.stylingEditingVariant = null;
@@ -28611,6 +28613,7 @@ Enable it on boards.${location.hostname.split('.')[1]}.org in your browser's pri
             $.on(input, 'input', applyRange);
         }
       }
+      Settings.primeResolvedStyleColorCache(Object.keys(inputs).filter(key => inputs[key].type === 'color'));
       // Custom CSS toggle + textarea behavior (mirrors Advanced wiring).
       const customCSS = inputs['Custom CSS'];
       customCSS.checked = Conf['Custom CSS'];
@@ -29337,6 +29340,7 @@ Enable it on boards.${location.hostname.split('.')[1]}.org in your browser's pri
         // dialog inherits from :root.
         Settings.clearStyleVarsOn(Settings.dialog);
       }
+      Settings.resolvedStyleColorCache = null;
       Settings.refreshUnsetStylingColorInputs();
       Settings.refreshStylingPreviewFromDialog();
     },
@@ -29733,19 +29737,43 @@ Enable it on boards.${location.hostname.split('.')[1]}.org in your browser's pri
       const to = (n) => Math.round($.minmax(n, 0, 255)).toString(16).padStart(2, '0');
       return `#${to(parts[0])}${to(parts[1])}${to(parts[2])}`;
     },
+    primeResolvedStyleColorCache(keys) {
+      if (!keys.length || !d.body)
+        return;
+      const cache = Settings.resolvedStyleColorCache || (Settings.resolvedStyleColorCache = dict());
+      const unresolvedKeys = Array.from(new Set(keys
+        .map(key => Settings.styleKeyBase(key))
+        .filter(key => !(key in cache) && !!Settings.colorExpressionForKey(key))));
+      if (!unresolvedKeys.length)
+        return;
+      // Resolve all needed fallback colors in one DOM insertion so Firefox
+      // doesn't pay a full style flush per color input while opening Styling.
+      const scope = Settings.dialog || d.body;
+      const host = $.el('div');
+      host.style.position = 'absolute';
+      host.style.visibility = 'hidden';
+      host.style.pointerEvents = 'none';
+      host.style.left = '0';
+      host.style.top = '0';
+      const probes = dict();
+      for (const key of unresolvedKeys) {
+        const probe = $.el('span');
+        probe.style.color = Settings.colorExpressionForKey(key);
+        probes[key] = probe;
+        $.add(host, probe);
+      }
+      $.add(scope, host);
+      for (const key of unresolvedKeys) {
+        const color = Settings.toHexColor(window.getComputedStyle(probes[key]).color);
+        if (color)
+          cache[key] = color;
+      }
+      $.rm(host);
+    },
     resolvedColorForKey(key) {
-      const expression = Settings.colorExpressionForKey(key);
-      if (!expression || !d.body)
-        return null;
-      const probe = $.el('span');
-      probe.style.position = 'absolute';
-      probe.style.visibility = 'hidden';
-      probe.style.pointerEvents = 'none';
-      probe.style.color = expression;
-      $.add(d.body, probe);
-      const color = Settings.toHexColor(window.getComputedStyle(probe).color);
-      $.rm(probe);
-      return color;
+      const baseKey = Settings.styleKeyBase(key);
+      Settings.primeResolvedStyleColorCache([baseKey]);
+      return Settings.resolvedStyleColorCache?.[baseKey] || null;
     },
     setColorInputValue(input, key, rawValue) {
       const explicit = (typeof rawValue === 'string' && /^#[0-9a-f]{6}$/i.test(rawValue))
@@ -29762,7 +29790,9 @@ Enable it on boards.${location.hostname.split('.')[1]}.org in your browser's pri
     refreshUnsetStylingColorInputs() {
       if (!Settings.dialog)
         return;
-      for (const input of $$('#fourchanx-settings input[type="color"][name][data-unset="1"]', Settings.dialog)) {
+      const inputs = $$('#fourchanx-settings input[type="color"][name][data-unset="1"]', Settings.dialog);
+      Settings.primeResolvedStyleColorCache(inputs.map(input => input.name));
+      for (const input of inputs) {
         Settings.setColorInputValue(input, input.name, '');
       }
     },
