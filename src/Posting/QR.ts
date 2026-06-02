@@ -1229,12 +1229,58 @@ var QR = {
       menu.style.maxHeight = `${maxHeight}px`;
     };
 
+    // The menu is appended to document.body so it escapes the QR form's
+    // overflow, but that means it can't inherit the QR's theme. We mirror
+    // colors from the QR onto the menu (and re-pin them on the toggle) so
+    // the dropdown matches whatever theme — StyleChan or otherwise — is
+    // styling the QR.
+    //
+    // For the text color we sample from the QR form (a non-button parent),
+    // because host themes like StyleChan apply their own `button { color }`
+    // rule and reading from the toggle itself would inherit that. For the
+    // background we walk up from the toggle until we hit the first opaque
+    // ancestor. For borders we copy the computed border from a sibling input,
+    // which has already been styled by the host theme. `setProperty(..., '',
+    // 'important')` is used so the inline styles beat any !important rules
+    // a host stylesheet may use against `button`.
+    const syncTheme = () => {
+      const formEl = (QR.nodes?.form || picker.parentElement) as HTMLElement | undefined;
+      const fg = formEl ? window.getComputedStyle(formEl).color : '';
+
+      let bg = '';
+      let el: HTMLElement | null = toggle;
+      while (el) {
+        const cs = window.getComputedStyle(el);
+        const m = cs.backgroundColor.match(/[\d.]+/g);
+        if (m && (m.length < 4 || parseFloat(m[3]) > 0.01)) { bg = cs.backgroundColor; break; }
+        el = el.parentElement;
+      }
+
+      if (bg) {
+        menu.style.setProperty('background-color', bg, 'important');
+      }
+      if (fg) {
+        menu.style.setProperty('color', fg, 'important');
+        toggle.style.setProperty('color', fg, 'important');
+      }
+
+      const sibling = QR.nodes?.name as HTMLElement | undefined;
+      if (sibling) {
+        const cs = window.getComputedStyle(sibling);
+        if (cs.borderTopColor) {
+          toggle.style.setProperty('border-color', cs.borderTopColor, 'important');
+          menu.style.setProperty('border-color', cs.borderTopColor, 'important');
+        }
+      }
+    };
+
     const openMenu = () => {
       if (open) return;
       open = true;
       picker.classList.add('open');
       toggle.setAttribute('aria-expanded', 'true');
       menu.hidden = false;
+      syncTheme();
       updateMenuPosition();
     };
 
@@ -1340,6 +1386,9 @@ var QR = {
 
     $.add(d.body, menu);
     syncSelected();
+    // Defer to next frame so QR.nodes.form / nodes.name are populated by
+    // flagsInput()'s caller before we sample computed styles off them.
+    setTimeout(syncTheme, 0);
     return {select, picker};
   },
 

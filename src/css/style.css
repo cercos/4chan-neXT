@@ -817,6 +817,12 @@ div[data-checked="false"] > .suboption-list {
 #fourchanx-settings .thread-watcher-width-input {
   width: 4.2em;
 }
+.watcher-sort-check {
+  display: inline-block;
+  width: 1em;
+  text-align: center;
+  margin-right: 4px;
+}
 .section-filtering .settings-subnav {
   display: flex;
   flex-wrap: wrap;
@@ -962,7 +968,85 @@ div[data-checked="false"] > .suboption-list {
 .section-styling .styling-actions {
   margin-top: 6px;
   display: flex;
+  flex-wrap: wrap;
   gap: 8px;
+}
+.section-styling .styling-palette-suggestions {
+  margin-top: 8px;
+  border: 1px solid color-mix(in srgb, currentColor 22%, transparent);
+  border-radius: 4px;
+  padding: 6px 8px;
+}
+.section-styling .styling-palette-header {
+  align-items: center;
+  display: flex;
+  flex-wrap: wrap;
+  gap: 6px 10px;
+  margin-bottom: 6px;
+}
+.section-styling .styling-palette-title {
+  font-weight: 600;
+}
+.section-styling .styling-palette-note {
+  opacity: .8;
+}
+.section-styling .styling-palette-list {
+  display: grid;
+  gap: 6px;
+}
+.section-styling .styling-palette-row {
+  align-items: center;
+  border-radius: 3px;
+  display: grid;
+  gap: 6px;
+  grid-template-columns: auto minmax(130px, 1fr) auto;
+  padding: 2px 4px;
+}
+.section-styling .styling-palette-row:hover {
+  background: color-mix(in srgb, currentColor 8%, transparent);
+}
+.section-styling .styling-palette-name {
+  min-width: 0;
+}
+.section-styling .styling-palette-swatches {
+  align-items: center;
+  display: inline-flex;
+  gap: 4px;
+}
+.section-styling .styling-palette-swatch {
+  border: 1px solid color-mix(in srgb, currentColor 24%, transparent);
+  border-radius: 2px;
+  display: inline-block;
+  height: 14px;
+  width: 18px;
+}
+.section-styling .styling-saved-palettes {
+  margin-top: 8px;
+}
+.section-styling .styling-saved-palette-controls {
+  align-items: center;
+  display: flex;
+  flex-wrap: wrap;
+  gap: 6px;
+}
+.section-styling .styling-saved-palette-name.field {
+  min-width: 180px;
+}
+.section-styling .styling-saved-palettes-list {
+  display: grid;
+  gap: 6px;
+  margin-top: 6px;
+}
+.section-styling .styling-saved-palette-row {
+  align-items: center;
+  border-radius: 3px;
+  display: grid;
+  gap: 6px;
+  grid-template-columns: auto auto minmax(130px, 1fr) auto;
+  padding: 2px 4px;
+}
+.section-styling .styling-saved-palette-row:hover {
+  background: color-mix(in srgb, currentColor 8%, transparent);
 }
 .styling-preview {
   width: min(960px, 92vw);
@@ -1619,41 +1703,44 @@ body > #overlay:not(.media-preview) {
   --custom-css-text: #2b2b2b;
   --custom-css-caret: #2b2b2b;
 }
+/* StyleChan (and similar) apply broad `textarea`/`pre` overrides with
+   `!important` that, if they hit only one of the two layers, shift the
+   textarea's text relative to the highlighted overlay. The user then sees
+   selections covering the wrong rows and backspace deleting the wrong
+   character. Pin every layout-affecting property on BOTH layers with
+   `!important` so the two stay glued together regardless of outside CSS. */
 .section-styling .custom-css-highlight,
 .section-styling .custom-css-textarea {
-  background: var(--custom-css-bg);
-  font: var(--custom-css-font);
-  font-kerning: none;
-  font-variant-ligatures: none;
-  inset: 0 0 12px 0;
-  letter-spacing: 0;
-  margin: 0;
-  overflow: auto;
-  overflow-wrap: normal;
-  padding: 8px;
-  position: absolute;
-  tab-size: 2;
-  text-shadow: none;
-  white-space: pre;
-  word-break: normal;
-}
-/* StyleChan applies broad `textarea`/`pre` color and background overrides
-   with `!important`, which kills the transparent-textarea-over-pre trick
-   the syntax highlighter relies on. Pin our own colors with `!important`
-   so the highlight layer stays visible and the textarea stays transparent. */
-.section-styling .custom-css-highlight {
   background: var(--custom-css-bg) !important;
+  box-sizing: border-box !important;
+  font: var(--custom-css-font) !important;
+  font-kerning: none !important;
+  font-variant-ligatures: none !important;
+  inset: 0 0 12px 0 !important;
+  letter-spacing: 0 !important;
+  margin: 0 !important;
+  overflow-wrap: normal !important;
+  padding: 8px !important;
+  position: absolute !important;
+  tab-size: 2 !important;
+  text-shadow: none !important;
+  white-space: pre !important;
+  word-break: normal !important;
+}
+.section-styling .custom-css-highlight {
+  border: 0 !important;
   color: var(--custom-css-text) !important;
-  overflow: hidden;
-  pointer-events: none;
+  overflow: hidden !important;
+  pointer-events: none !important;
 }
 .section-styling .custom-css-textarea {
   background: transparent !important;
-  border: 0;
+  border: 0 !important;
   color: var(--custom-css-caret) !important;
   caret-color: var(--custom-css-caret);
   -webkit-text-fill-color: transparent !important;
-  resize: none;
+  overflow: auto !important;
+  resize: none !important;
 }
 .section-styling .custom-css-textarea:focus {
   outline: none;
@@ -3093,6 +3180,10 @@ select.flagSelector {
   overflow: hidden;
   white-space: nowrap;
 }
+.flagSelector-picker,
+.flagSelector-menu {
+  --xt-flag-selector-hover-bg: var(--xt-entry-focus-bg, rgba(127, 127, 127, 0.25));
+}
 .flagSelector-picker {
   position: relative;
 }
@@ -3100,6 +3191,8 @@ select.flagSelector {
   align-items: center;
   -webkit-appearance: none;
   appearance: none;
+  background-color: transparent;
+  border: 1px solid color-mix(in srgb, currentColor 25%, transparent);
   cursor: pointer;
   display: flex;
   gap: 6px;
@@ -3132,10 +3225,11 @@ select.flagSelector {
   opacity: 0.6;
 }
 .flagSelector-menu {
-  background-color: var(--xt-background, #fff);
-  border: 1px solid var(--xt-border, #888);
+  background-color: #fff;
+  border: 1px solid color-mix(in srgb, currentColor 25%, transparent);
   border-radius: 2px;
-  box-shadow: 0 2px 4px rgba(0, 0, 0, 0.25);
+  color: inherit;
+  box-shadow: 0 2px 4px color-mix(in srgb, currentColor 25%, transparent);
   box-sizing: border-box;
   overflow-y: auto;
   position: fixed;
@@ -3154,9 +3248,16 @@ select.flagSelector {
   text-align: left;
   width: 100%;
 }
+.flagSelector-option,
+.flagSelector-option:hover,
+.flagSelector-option:focus,
+.flagSelector-option:active {
+  color: inherit !important;
+  -webkit-text-fill-color: inherit !important;
+}
 .flagSelector-option:hover,
 .flagSelector-option:focus {
-  background-color: rgba(127, 127, 127, 0.25);
+  background-color: var(--xt-flag-selector-hover-bg);
   outline: none;
 }
 .flagSelector-option.selected {
@@ -3576,8 +3677,9 @@ input[type="checkbox"]:checked ~ .checkbox-letter {
 
 /* Thread and Flash Tag Select */
 #qr select {
-  background: white;
-  border: 1px solid #CCC;
+  background: var(--xt-background, #fff);
+  border: 1px solid var(--xt-border, #CCC);
+  color: var(--xt-menu-fg, inherit);
 }
 #qr select[data-name="thread"] {
   float: right;

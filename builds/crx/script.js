@@ -1208,6 +1208,7 @@ http://eye.swfchan.com/search/?q=%name;types:swf
     siteStyle: '',
     siteStyleHome: false,
     customSiteThemes: [],
+    savedHighlightPalettes: [],
     // 'auto' applies the SFW or NSFW variant based on the active board's
     // ws_board flag; 'sfw'/'nsfw' force a single variant everywhere.
     sfwNsfwMode: 'auto',
@@ -2254,7 +2255,36 @@ current-archive-text:"Archive"]
     }
     return root.dispatchEvent(new CustomEvent(event, { bubbles: true, cancelable: true, detail }));
   };
-
+  if (platform === 'userscript') {
+    // XXX Make $.event work in Pale Moon with GM 3.x (no cloneInto function).
+    (function () {
+      if (!/PaleMoon\//.test(navigator.userAgent) || (+GM_info?.version?.split('.')[0] < 2) || (typeof cloneInto !== 'undefined')) {
+        return;
+      }
+      try {
+        return new CustomEvent('x', { detail: {} });
+      } catch (err) {
+        const unsafeConstructors = {
+          Object: unsafeWindow.Object,
+          Array: unsafeWindow.Array
+        };
+        var clone = function (obj) {
+          let constructor;
+          if ((obj != null) && (typeof obj === 'object') && (constructor = unsafeConstructors[obj.constructor.name])) {
+            const obj2 = new constructor();
+            for (var key in obj) {
+              var val = obj[key];
+              obj2[key] = clone(val);
+            }
+            return obj2;
+          } else {
+            return obj;
+          }
+        };
+        return $.event = (event, detail, root = d) => root.dispatchEvent(new CustomEvent(event, { bubbles: true, cancelable: true, detail: clone(detail) }));
+      }
+    })();
+  }
   $.modifiedClick = e => e.shiftKey || e.altKey || e.ctrlKey || e.metaKey || (e.button !== 0);
   if (!globalThis.chrome?.extension) {
     $.open =
@@ -2301,7 +2331,7 @@ current-archive-text:"Archive"]
       Promise.resolve().then(execTask);
     };
   })();
-
+  if (platform === 'crx') {
     const callbacks = new Map();
     chrome.runtime.onMessage.addListener(({ id, data }) => {
       callbacks.get(id)(data);
@@ -2310,7 +2340,7 @@ current-archive-text:"Archive"]
     $.eventPageRequest = (params) => new Promise(resolve => {
       chrome.runtime.sendMessage(params, id => { callbacks.set(id, resolve); });
     });
-
+  }
   /**
    * Runs a function on the page instead of the user script or extension context.
    * @param fn The name of the function in pageContext.ts. It must be defined there to run in a manifest V3 context.
@@ -2419,7 +2449,7 @@ current-archive-text:"Archive"]
       return delete data['Redirect to HTTPS'];
     }
   };
-
+  if (platform === 'crx') {
     // https://developer.chrome.com/extensions/storage.html
     $.oldValue = {
       local: dict(),
@@ -2590,6 +2620,224 @@ current-archive-text:"Archive"]
         return chrome.storage.sync.clear(done);
       };
     })();
+  } else {
+    // http://wiki.greasespot.net/Main_Page
+    // https://tampermonkey.net/documentation.php
+    if ((GM?.deleteValue != null) && window.BroadcastChannel && (typeof GM_addValueChangeListener === 'undefined' || GM_addValueChangeListener === null)) {
+      $.syncChannel = new BroadcastChannel(g.NAMESPACE + 'sync');
+      $.on($.syncChannel, 'message', e => (() => {
+        const result = [];
+        for (var key in e.data) {
+          var cb;
+          var val = e.data[key];
+          if (cb = $.syncing[key]) {
+            result.push(cb(dict.json(JSON.stringify(val)), key));
+          }
+        }
+        return result;
+      })());
+      $.sync = (key, cb) => $.syncing[key] = cb;
+      $.forceSync = function () { };
+      $.delete = function (keys, cb) {
+        let key;
+        if (!(keys instanceof Array)) {
+          keys = [keys];
+        }
+        Promise.all(keys.map(key => GM.deleteValue(g.NAMESPACE + key))).then(function () {
+          const items = dict();
+          for (key of keys)
+            items[key] = undefined;
+          $.syncChannel.postMessage(items);
+          cb?.();
+        });
+      };
+      $.get = $.oneItemSugar(function (items, cb) {
+        const keys = Object.keys(items);
+        return Promise.all(keys.map((key) => GM.getValue(g.NAMESPACE + key))).then(function (values) {
+          for (let i = 0; i < values.length; i++) {
+            var val = values[i];
+            if (val) {
+              items[keys[i]] = dict.json(val);
+            }
+          }
+          return cb(items);
+        });
+      });
+      $.set = $.oneItemSugar(function (items, cb) {
+        $.securityCheck(items);
+        return Promise.all((() => {
+          const result = [];
+          for (var key in items) {
+            var val = items[key];
+            result.push(GM.setValue(g.NAMESPACE + key, JSON.stringify(val)));
+          }
+          return result;
+        })()).then(function () {
+          $.syncChannel.postMessage(items);
+          return cb?.();
+        });
+      });
+      $.clear = cb => GM.listValues().then(keys => $.delete(keys.map(key => key.replace(g.NAMESPACE, '')), cb)).catch(() => $.delete(Object.keys(Conf).concat(['previousversion', 'QR Size', 'QR.persona']), cb));
+    } else {
+      if (typeof GM_deleteValue !== 'undefined' && GM_deleteValue !== null) {
+        $.getValue = GM_getValue;
+        $.listValues = () => GM_listValues(); // error when called if missing
+      } else if ($.hasStorage) {
+        $.getValue = key => localStorage.getItem(key);
+        $.listValues = () => (() => {
+          const result = [];
+          for (var key in localStorage) {
+            if (key.slice(0, g.NAMESPACE.length) === g.NAMESPACE) {
+              result.push(key);
+            }
+          }
+          return result;
+        })();
+      } else {
+        $.getValue = function () { };
+        $.listValues = () => [];
+      }
+      if (typeof GM_addValueChangeListener !== 'undefined' && GM_addValueChangeListener !== null) {
+        $.setValue = GM_setValue;
+        $.deleteValue = GM_deleteValue;
+      } else if (typeof GM_deleteValue !== 'undefined' && GM_deleteValue !== null) {
+        $.oldValue = dict();
+        $.setValue = function (key, val) {
+          GM_setValue(key, val);
+          if (key in $.syncing) {
+            $.oldValue[key] = val;
+            if ($.hasStorage) {
+              return localStorage.setItem(key, val);
+            } // for `storage` events
+          }
+        };
+        $.deleteValue = function (key) {
+          GM_deleteValue(key);
+          if (key in $.syncing) {
+            delete $.oldValue[key];
+            if ($.hasStorage) {
+              return localStorage.removeItem(key);
+            } // for `storage` events
+          }
+        };
+        if (!$.hasStorage) {
+          $.cantSync = true;
+        }
+      } else if ($.hasStorage) {
+        $.oldValue = dict();
+        $.setValue = function (key, val) {
+          if (key in $.syncing) {
+            $.oldValue[key] = val;
+          }
+          return localStorage.setItem(key, val);
+        };
+        $.deleteValue = function (key) {
+          if (key in $.syncing) {
+            delete $.oldValue[key];
+          }
+          return localStorage.removeItem(key);
+        };
+      } else {
+        $.setValue = function () { };
+        $.deleteValue = function () { };
+        $.cantSync = ($.cantSet = true);
+      }
+      if (typeof GM_addValueChangeListener !== 'undefined' && GM_addValueChangeListener !== null) {
+        $.sync = (key, cb) => $.syncing[key] = GM_addValueChangeListener(g.NAMESPACE + key, function (key2, oldValue, newValue, remote) {
+          if (remote) {
+            if (newValue !== undefined) {
+              newValue = dict.json(newValue);
+            }
+            return cb(newValue, key);
+          }
+        });
+        $.forceSync = function () { };
+      } else if ((typeof GM_deleteValue !== 'undefined' && GM_deleteValue !== null) || $.hasStorage) {
+        $.sync = function (key, cb) {
+          key = g.NAMESPACE + key;
+          $.syncing[key] = cb;
+          return $.oldValue[key] = $.getValue(key);
+        };
+        (function () {
+          const onChange = function ({ key, newValue }) {
+            let cb;
+            if (!(cb = $.syncing[key])) {
+              return;
+            }
+            if (newValue != null) {
+              if (newValue === $.oldValue[key]) {
+                return;
+              }
+              $.oldValue[key] = newValue;
+              return cb(dict.json(newValue), key.slice(g.NAMESPACE.length));
+            } else {
+              if ($.oldValue[key] == null) {
+                return;
+              }
+              delete $.oldValue[key];
+              return cb(undefined, key.slice(g.NAMESPACE.length));
+            }
+          };
+          $.on(window, 'storage', onChange);
+          return $.forceSync = function (key) {
+            // Storage events don't work across origins
+            // e.g. http://boards.4chan.org and https://boards.4chan.org
+            // so force a check for changes to avoid lost data.
+            key = g.NAMESPACE + key;
+            return onChange({ key, newValue: $.getValue(key) });
+          };
+        })();
+      } else {
+        $.sync = function () { };
+        $.forceSync = function () { };
+      }
+      $.delete = function (keys) {
+        if (!(keys instanceof Array)) {
+          keys = [keys];
+        }
+        for (var key of keys) {
+          $.deleteValue(g.NAMESPACE + key);
+        }
+      };
+      $.get = $.oneItemSugar((items, cb) => $.queueTask($.getSync, items, cb));
+      $.getSync = function (items, cb) {
+        for (var key in items) {
+          var val2;
+          if (val2 = $.getValue(g.NAMESPACE + key)) {
+            try {
+              items[key] = dict.json(val2);
+            } catch (err) {
+              // XXX https://github.com/ccd0/4chan-x/issues/2218
+              if (!/^(?:undefined)*$/.test(val2)) {
+                throw err;
+              }
+            }
+          }
+        }
+        return cb(items);
+      };
+      $.set = $.oneItemSugar(function (items, cb) {
+        $.securityCheck(items);
+        return $.queueTask(function () {
+          for (var key in items) {
+            var value = items[key];
+            $.setValue(g.NAMESPACE + key, JSON.stringify(value));
+          }
+          return cb?.();
+        });
+      });
+      $.clear = function (cb) {
+        // XXX https://github.com/greasemonkey/greasemonkey/issues/2033
+        // Also support case where GM_listValues is not defined.
+        $.delete(Object.keys(Conf));
+        $.delete(['previousversion', 'QR Size', 'QR.persona']);
+        try {
+          $.delete($.listValues().map(key => key.replace(g.NAMESPACE, '')));
+        } catch (error) { }
+        return cb?.();
+      };
+    }
+  }
 
   var Get = {
     url(type, IDs, ...args) {
@@ -3288,8 +3536,17 @@ current-archive-text:"Archive"]
     </div>
   </div>
   <div class="styling-actions">
+    <button type="button" id="styling-suggest-palettes" title="Show suggested highlight palettes for the current theme">Suggest palettes</button>
     <button type="button" id="styling-randomize" title="Generate random highlight colors that contrast with the page background">Randomize</button>
     <button type="button" id="styling-open-preview" title="Open a live preview of post highlight states">Preview states</button>
+  </div>
+  <div id="styling-palette-suggestions" class="styling-palette-suggestions" hidden></div>
+  <div class="styling-saved-palettes">
+    <div class="styling-saved-palette-controls">
+      <input type="text" class="field styling-saved-palette-name" id="styling-saved-palette-name" placeholder="Palette name" maxlength="60">
+      <button type="button" id="styling-save-palette" title="Save current highlight colors as a palette">Save palette</button>
+    </div>
+    <div id="styling-saved-palettes-list" class="styling-saved-palettes-list"></div>
   </div>
 </details>
 
@@ -4960,7 +5217,85 @@ div[data-checked="false"] > .suboption-list {
 .section-styling .styling-actions {
   margin-top: 6px;
   display: flex;
+  flex-wrap: wrap;
   gap: 8px;
+}
+.section-styling .styling-palette-suggestions {
+  margin-top: 8px;
+  border: 1px solid color-mix(in srgb, currentColor 22%, transparent);
+  border-radius: 4px;
+  padding: 6px 8px;
+}
+.section-styling .styling-palette-header {
+  align-items: center;
+  display: flex;
+  flex-wrap: wrap;
+  gap: 6px 10px;
+  margin-bottom: 6px;
+}
+.section-styling .styling-palette-title {
+  font-weight: 600;
+}
+.section-styling .styling-palette-note {
+  opacity: .8;
+}
+.section-styling .styling-palette-list {
+  display: grid;
+  gap: 6px;
+}
+.section-styling .styling-palette-row {
+  align-items: center;
+  border-radius: 3px;
+  display: grid;
+  gap: 6px;
+  grid-template-columns: auto minmax(130px, 1fr) auto;
+  padding: 2px 4px;
+}
+.section-styling .styling-palette-row:hover {
+  background: color-mix(in srgb, currentColor 8%, transparent);
+}
+.section-styling .styling-palette-name {
+  min-width: 0;
+}
+.section-styling .styling-palette-swatches {
+  align-items: center;
+  display: inline-flex;
+  gap: 4px;
+}
+.section-styling .styling-palette-swatch {
+  border: 1px solid color-mix(in srgb, currentColor 24%, transparent);
+  border-radius: 2px;
+  display: inline-block;
+  height: 14px;
+  width: 18px;
+}
+.section-styling .styling-saved-palettes {
+  margin-top: 8px;
+}
+.section-styling .styling-saved-palette-controls {
+  align-items: center;
+  display: flex;
+  flex-wrap: wrap;
+  gap: 6px;
+}
+.section-styling .styling-saved-palette-name.field {
+  min-width: 180px;
+}
+.section-styling .styling-saved-palettes-list {
+  display: grid;
+  gap: 6px;
+  margin-top: 6px;
+}
+.section-styling .styling-saved-palette-row {
+  align-items: center;
+  border-radius: 3px;
+  display: grid;
+  gap: 6px;
+  grid-template-columns: auto auto minmax(130px, 1fr) auto;
+  padding: 2px 4px;
+}
+.section-styling .styling-saved-palette-row:hover {
+  background: color-mix(in srgb, currentColor 8%, transparent);
 }
 .styling-preview {
   width: min(960px, 92vw);
@@ -7091,6 +7426,10 @@ select.flagSelector {
   overflow: hidden;
   white-space: nowrap;
 }
+.flagSelector-picker,
+.flagSelector-menu {
+  --xt-flag-selector-hover-bg: var(--xt-entry-focus-bg, rgba(127, 127, 127, 0.25));
+}
 .flagSelector-picker {
   position: relative;
 }
@@ -7098,6 +7437,8 @@ select.flagSelector {
   align-items: center;
   -webkit-appearance: none;
   appearance: none;
+  background-color: transparent;
+  border: 1px solid color-mix(in srgb, currentColor 25%, transparent);
   cursor: pointer;
   display: flex;
   gap: 6px;
@@ -7130,10 +7471,11 @@ select.flagSelector {
   opacity: 0.6;
 }
 .flagSelector-menu {
-  background-color: var(--xt-background, #fff);
-  border: 1px solid var(--xt-border, #888);
+  background-color: #fff;
+  border: 1px solid color-mix(in srgb, currentColor 25%, transparent);
   border-radius: 2px;
-  box-shadow: 0 2px 4px rgba(0, 0, 0, 0.25);
+  color: inherit;
+  box-shadow: 0 2px 4px color-mix(in srgb, currentColor 25%, transparent);
   box-sizing: border-box;
   overflow-y: auto;
   position: fixed;
@@ -7152,9 +7494,16 @@ select.flagSelector {
   text-align: left;
   width: 100%;
 }
+.flagSelector-option,
+.flagSelector-option:hover,
+.flagSelector-option:focus,
+.flagSelector-option:active {
+  color: inherit !important;
+  -webkit-text-fill-color: inherit !important;
+}
 .flagSelector-option:hover,
 .flagSelector-option:focus {
-  background-color: rgba(127, 127, 127, 0.25);
+  background-color: var(--xt-flag-selector-hover-bg);
   outline: none;
 }
 .flagSelector-option.selected {
@@ -7574,8 +7923,9 @@ input[type="checkbox"]:checked ~ .checkbox-letter {
 
 /* Thread and Flash Tag Select */
 #qr select {
-  background: white;
-  border: 1px solid #CCC;
+  background: var(--xt-background, #fff);
+  border: 1px solid var(--xt-border, #CCC);
+  color: var(--xt-menu-fg, inherit);
 }
 #qr select[data-name="thread"] {
   float: right;
@@ -9435,7 +9785,9 @@ svg.icon {
         failed: '#cf4a4a',
         expired: '#d0a64d',
       };
-      container.style.border = `2px solid ${borderColors[state] || borderColors.idle}`;
+      const borderColor = borderColors[state] || borderColors.idle;
+      const showBorder = state === 'complete' || state === 'failed' || state === 'expired';
+      container.style.border = showBorder ? `2px solid ${borderColor}` : '2px solid transparent';
       container.style.borderRadius = '4px';
       container.style.transition = 'border-color .2s ease';
       this.setStatusMessage({
@@ -23176,6 +23528,50 @@ aero|asia|biz|cat|com|coop|dance|info|int|jobs|mobi|moe|museum|name|net|org|post
         menu.style.width = `${width}px`;
         menu.style.maxHeight = `${maxHeight}px`;
       };
+      // The menu is appended to document.body so it escapes the QR form's
+      // overflow, but that means it can't inherit the QR's theme. We mirror
+      // colors from the QR onto the menu (and re-pin them on the toggle) so
+      // the dropdown matches whatever theme — StyleChan or otherwise — is
+      // styling the QR.
+      //
+      // For the text color we sample from the QR form (a non-button parent),
+      // because host themes like StyleChan apply their own `button { color }`
+      // rule and reading from the toggle itself would inherit that. For the
+      // background we walk up from the toggle until we hit the first opaque
+      // ancestor. For borders we copy the computed border from a sibling input,
+      // which has already been styled by the host theme. `setProperty(..., '',
+      // 'important')` is used so the inline styles beat any !important rules
+      // a host stylesheet may use against `button`.
+      const syncTheme = () => {
+        const formEl = (QR.nodes?.form || picker.parentElement);
+        const fg = formEl ? window.getComputedStyle(formEl).color : '';
+        let bg = '';
+        let el = toggle;
+        while (el) {
+          const cs = window.getComputedStyle(el);
+          const m = cs.backgroundColor.match(/[\d.]+/g);
+          if (m && (m.length < 4 || parseFloat(m[3]) > 0.01)) {
+            bg = cs.backgroundColor;
+            break;
+          }
+          el = el.parentElement;
+        }
+        if (bg) {
+          menu.style.setProperty('background-color', bg, 'important');
+        }
+        if (fg) {
+          menu.style.setProperty('color', fg, 'important');
+          toggle.style.setProperty('color', fg, 'important');
+        }
+        const sibling = QR.nodes?.name;
+        if (sibling) {
+          const cs = window.getComputedStyle(sibling);
+          if (cs.borderTopColor) {
+            toggle.style.setProperty('border-color', cs.borderTopColor, 'important');
+            menu.style.setProperty('border-color', cs.borderTopColor, 'important');
+          }
+        }
+      };
       const openMenu = () => {
         if (open)
           return;
@@ -23183,6 +23579,7 @@ aero|asia|biz|cat|com|coop|dance|info|int|jobs|mobi|moe|museum|name|net|org|post
         picker.classList.add('open');
         toggle.setAttribute('aria-expanded', 'true');
         menu.hidden = false;
+        syncTheme();
         updateMenuPosition();
       };
       const syncSelected = () => {
@@ -23284,6 +23681,9 @@ aero|asia|biz|cat|com|coop|dance|info|int|jobs|mobi|moe|museum|name|net|org|post
       };
       $.add(d.body, menu);
       syncSelected();
+      // Defer to next frame so QR.nodes.form / nodes.name are populated by
+      // flagsInput()'s caller before we sample computed styles off them.
+      setTimeout(syncTheme, 0);
       return { select, picker };
     },
     flagsInput() {
@@ -25057,14 +25457,66 @@ aero|asia|biz|cat|com|coop|dance|info|int|jobs|mobi|moe|museum|name|net|org|post
     binary(url, cb, headers = dict()) {
       // XXX https://forums.lanik.us/viewtopic.php?f=64&t=24173&p=78310
       url = url.replace(/^((?:https?:)?\/\/(?:\w+\.)?(?:4chan|4channel|4cdn)\.org)\/adv\//, '$1//adv/');
-
+      if (platform === 'crx') {
         $.eventPageRequest({ type: 'ajax', url, headers, responseType: 'arraybuffer' })
           .then(({ response, responseHeaderString }) => {
           if (response)
             response = new Uint8Array(response);
           cb(response, responseHeaderString);
         });
-
+      } else {
+        const fallback = function () {
+          return $.ajax(url, {
+            headers,
+            responseType: 'arraybuffer',
+            onloadend() {
+              if (this.status && this.response) {
+                return cb(new Uint8Array(this.response), this.getAllResponseHeaders());
+              } else {
+                return cb(null);
+              }
+            }
+          });
+        };
+        if ((typeof window.GM_xmlhttpRequest === 'undefined' || window.GM_xmlhttpRequest === null)) {
+          fallback();
+          return;
+        }
+        const gmOptions = {
+          method: "GET",
+          anonymous: true,
+          url,
+          headers,
+          responseType: 'arraybuffer',
+          overrideMimeType: 'text/plain; charset=x-user-defined',
+          onload(xhr) {
+            let data;
+            if (xhr.response instanceof ArrayBuffer) {
+              data = new Uint8Array(xhr.response);
+            } else {
+              const r = xhr.responseText;
+              data = new Uint8Array(r.length);
+              let i = 0;
+              while (i < r.length) {
+                data[i] = r.charCodeAt(i);
+                i++;
+              }
+            }
+            return cb(data, xhr.responseHeaders);
+          },
+          onerror() {
+            return cb(null);
+          },
+          onabort() {
+            return cb(null);
+          }
+        };
+        try {
+          return (GM?.xmlHttpRequest || GM_xmlhttpRequest)(gmOptions);
+        } catch (error) {
+          return fallback();
+        }
+      }
     },
     file(url, cb) {
       return CrossOrigin.binary(url, function (data, headers) {
@@ -25129,20 +25581,69 @@ aero|asia|biz|cat|com|coop|dance|info|int|jobs|mobi|moe|museum|name|net|org|post
     //   `abort` - function for aborting the request (silently fails on some platforms)
     //   `getResponseHeader` - function for reading response headers
     ajax(url, options = {}) {
+      let gmReq;
       let { onloadend, timeout, responseType, headers } = options;
       if (responseType == null) {
         responseType = 'json';
       }
       const req = new CrossOrigin.Request();
       req.onloadend = onloadend;
-
+      if (platform === 'userscript') {
+        if (window.GM?.xmlHttpRequest == null && window.GM_xmlhttpRequest == null) {
+          return $.ajax(url, options);
+        }
+        const gmOptions = {
+          method: 'GET',
+          anonymous: true,
+          url,
+          headers,
+          timeout,
+          onload(xhr) {
+            try {
+              let response = xhr.responseText;
+              if (responseType === 'json') {
+                try {
+                  response = JSON.parse(xhr.responseText);
+                } catch (error) {
+                  console.error(error);
+                  console.error(xhr);
+                }
+              }
+              $.extend(req, {
+                url,
+                headers,
+                response,
+                status: xhr.status,
+                statusText: xhr.statusText,
+                responseHeaderString: xhr.responseHeaders
+              });
+            } catch (error) { }
+            return req.onloadend();
+          },
+          onerror() { return req.onloadend(); },
+          onabort() { return req.onloadend(); },
+          ontimeout() { return req.onloadend(); }
+        };
+        try {
+          gmReq = (GM?.xmlHttpRequest || GM_xmlhttpRequest)(gmOptions);
+        } catch (error) {
+          return $.ajax(url, options);
+        }
+        if (gmReq && (typeof gmReq.abort === 'function')) {
+          req.abort = function () {
+            try {
+              return gmReq.abort();
+            } catch (error1) { }
+          };
+        }
+      } else {
         $.eventPageRequest({ type: 'ajax', url, responseType, headers, timeout }).then((result) => {
           if (result.status) {
             $.extend(req, result);
           }
           return req.onloadend();
         });
-
+      }
       return req;
     },
     ajaxPromise(url, options = {}) {
@@ -25157,7 +25658,7 @@ aero|asia|biz|cat|com|coop|dance|info|int|jobs|mobi|moe|museum|name|net|org|post
       });
     },
     permission(cb, cbFail, origins) {
-
+      if (platform === 'crx') {
         return $.eventPageRequest({ type: 'permission', origins }).then((result) => {
           if (result) {
             return cb();
@@ -25165,6 +25666,8 @@ aero|asia|biz|cat|com|coop|dance|info|int|jobs|mobi|moe|museum|name|net|org|post
             return cbFail();
           }
         });
+      }
+      return cb();
     },
   };
 
@@ -27843,20 +28346,52 @@ Enable it on boards.${location.hostname.split('.')[1]}.org in your browser's pri
     },
     posting(section) {
       Settings.renderMainGroups(section, {
-        categories: ['Posting and Captchas']
+        categories: ['Posting and Captchas'],
+        includeSetting: key => key !== 'Comment Preview',
       });
-      Settings.addSelectFieldset(section, 'Comment Preview', [
-        {
-          name: 'Comment Preview Position',
-          label: 'Preview Position',
-          description: 'Where the live preview appears relative to the comment box (requires Comment Preview enabled).',
-          options: [
-            ['below', 'Below the comment box'],
-            ['right', 'Right of the comment box'],
-            ['left', 'Left of the comment box']
-          ]
-        }
+      const fs = $.el('details', { open: true }, { innerHTML: '<summary>Comment Preview</summary>' });
+      const row = $.el('div', {
+        innerHTML: `<label><input type="checkbox" name="Comment Preview"><span class="setting-title">Comment Preview</span></label><span class="description">: <span class="setting-description">${Config.main['Posting and Captchas']['Comment Preview'][1]}</span></span>`,
+      });
+      row.dataset.name = 'Comment Preview';
+      const toggle = $('input[name="Comment Preview"]', row);
+      $.on(toggle, 'change', $.cb.checked);
+      $.on(toggle, 'change', function () { this.parentNode.parentNode.dataset.checked = this.checked; });
+      $.on(toggle, 'change', () => $.event('QRCommentPreviewChanged'));
+      const sub = $.el('div', { className: 'suboption-list' });
+      const positionRow = $.el('div');
+      positionRow.dataset.name = 'Comment Preview Position';
+      const label = $.el('label');
+      const select = $.el('select', { name: 'Comment Preview Position' });
+      for (const [value, text] of [
+        ['below', 'Below the comment box'],
+        ['right', 'Right of the comment box'],
+        ['left', 'Left of the comment box'],
+      ]) {
+        $.add(select, $.el('option', { value, textContent: text }));
+      }
+      $.on(select, 'change', $.cb.value);
+      $.on(select, 'change', () => $.event('QRCommentPreviewChanged'));
+      $.add(label, [$.el('span', { textContent: 'Preview Position: ' }), select]);
+      $.add(positionRow, [
+        label,
+        $.el('span', {
+          className: 'description',
+          textContent: ': Where the live preview appears relative to the comment box (requires Comment Preview enabled).',
+        }),
       ]);
+      $.add(sub, positionRow);
+      $.add(row, sub);
+      $.add(fs, row);
+      $.add(section, fs);
+      $.get({
+        'Comment Preview': Conf['Comment Preview'],
+        'Comment Preview Position': Conf['Comment Preview Position'],
+      }, items => {
+        toggle.checked = !!items['Comment Preview'];
+        row.dataset.checked = toggle.checked ? 'true' : 'false';
+        select.value = items['Comment Preview Position'] || 'below';
+      });
     },
     styling(section) {
       let input, name;
@@ -28319,6 +28854,189 @@ Enable it on boards.${location.hostname.split('.')[1]}.org in your browser's pri
           refreshStylingPreview();
         });
       }
+      const paletteSuggestionRoot = $('#styling-palette-suggestions', section);
+      const suggestPalettesBtn = $('#styling-suggest-palettes', section);
+      const savedPaletteNameInput = $('#styling-saved-palette-name', section);
+      const savePaletteBtn = $('#styling-save-palette', section);
+      const savedPalettesList = $('#styling-saved-palettes-list', section);
+      const paletteStateMap = [
+        ['own', 'Highlight Own Color', 'Thread: your post'],
+        ['you', 'Highlight You Color', 'Thread: quotes you'],
+        ['ghost', 'Highlight Ghost Color', 'Thread: ghost post'],
+        ['catalogOwn', 'Catalog Highlight Own Color', 'Catalog: your post'],
+        ['catalogWatched', 'Catalog Highlight Watched Color', 'Catalog: watched thread'],
+      ];
+      const readCurrentPaletteColors = () => {
+        const out = {
+          own: '#000000',
+          you: '#000000',
+          ghost: '#000000',
+          catalogOwn: '#000000',
+          catalogWatched: '#000000',
+        };
+        for (const [slot, baseKey] of paletteStateMap) {
+          const inputColor = inputs[baseKey]?.value || '';
+          const storedColor = editConf(baseKey) || '';
+          const resolved = Settings.toHexColor(inputColor)
+            || Settings.toHexColor(storedColor)
+            || Settings.resolvedColorForKey(baseKey)
+            || '#000000';
+          out[slot] = resolved.toLowerCase();
+        }
+        return out;
+      };
+      function applySuggestedPalette(palette) {
+        for (const [slot, baseKey] of paletteStateMap) {
+          const color = palette.colors[slot];
+          if (!color)
+            continue;
+          writeEditConf(baseKey, color);
+          const inp = inputs[baseKey];
+          if (inp)
+            Settings.setColorInputValue(inp, baseKey, color);
+        }
+        syncMarkerColorControls();
+        syncAutoHighlightPreviewInputs();
+        Settings.applyStylingVars();
+        refreshStylingPreview();
+      }
+      function renderSuggestedPalettes() {
+        if (!paletteSuggestionRoot)
+          return;
+        const { profile, palettes } = Settings.suggestedHighlightPalettes(editVariant());
+        paletteSuggestionRoot.textContent = '';
+        const header = $.el('div', { className: 'styling-palette-header' });
+        const title = $.el('div', {
+          className: 'styling-palette-title',
+          textContent: `Suggested palettes for ${profile.label}`,
+        });
+        const note = $.el('div', {
+          className: 'styling-palette-note note',
+          textContent: profile.note,
+        });
+        const refresh = $.el('button', {
+          type: 'button',
+          textContent: 'Refresh',
+        });
+        $.on(refresh, 'click', () => renderSuggestedPalettes());
+        $.add(header, [title, note, refresh]);
+        $.add(paletteSuggestionRoot, header);
+        const list = $.el('div', { className: 'styling-palette-list' });
+        for (const palette of palettes) {
+          const row = $.el('div', { className: 'styling-palette-row' });
+          const apply = $.el('button', {
+            type: 'button',
+            textContent: 'Apply',
+          });
+          $.on(apply, 'click', () => applySuggestedPalette(palette));
+          const name = $.el('div', { className: 'styling-palette-name', textContent: palette.name });
+          const swatches = $.el('div', { className: 'styling-palette-swatches' });
+          for (const [slot, , label] of paletteStateMap) {
+            const color = palette.colors[slot];
+            const swatch = $.el('span', {
+              className: 'styling-palette-swatch',
+              title: `${label}: ${color}`,
+            });
+            swatch.style.backgroundColor = color;
+            $.add(swatches, swatch);
+          }
+          $.add(row, [apply, name, swatches]);
+          $.add(list, row);
+        }
+        $.add(paletteSuggestionRoot, list);
+      }
+      function renderSavedPalettes() {
+        if (!savedPalettesList)
+          return;
+        savedPalettesList.textContent = '';
+        const palettes = Settings.savedHighlightPaletteList();
+        if (!palettes.length) {
+          const empty = $.el('div', {
+            className: 'styling-palette-note note',
+            textContent: 'No saved palettes yet.',
+          });
+          $.add(savedPalettesList, empty);
+          return;
+        }
+        for (const [index, palette] of palettes.entries()) {
+          const row = $.el('div', { className: 'styling-saved-palette-row' });
+          const apply = $.el('button', {
+            type: 'button',
+            textContent: 'Apply',
+          });
+          const remove = $.el('button', {
+            type: 'button',
+            textContent: 'Delete',
+            title: `Delete ${palette.name}`,
+          });
+          $.on(apply, 'click', () => applySuggestedPalette(palette));
+          $.on(remove, 'click', () => {
+            const list = Settings.savedHighlightPaletteList();
+            list.splice(index, 1);
+            Settings.setSavedHighlightPalettes(list);
+            renderSavedPalettes();
+          });
+          const name = $.el('div', { className: 'styling-palette-name', textContent: palette.name });
+          const swatches = $.el('div', { className: 'styling-palette-swatches' });
+          for (const [slot, , label] of paletteStateMap) {
+            const color = palette.colors[slot];
+            const swatch = $.el('span', {
+              className: 'styling-palette-swatch',
+              title: `${label}: ${color}`,
+            });
+            swatch.style.backgroundColor = color;
+            $.add(swatches, swatch);
+          }
+          $.add(row, [apply, remove, name, swatches]);
+          $.add(savedPalettesList, row);
+        }
+      }
+      function refreshSuggestedPalettesIfOpen() {
+        if (!paletteSuggestionRoot || paletteSuggestionRoot.hidden)
+          return;
+        renderSuggestedPalettes();
+      }
+      if (suggestPalettesBtn && paletteSuggestionRoot) {
+        $.on(suggestPalettesBtn, 'click', () => {
+          paletteSuggestionRoot.hidden = !paletteSuggestionRoot.hidden;
+          suggestPalettesBtn.textContent = paletteSuggestionRoot.hidden ? 'Suggest palettes' : 'Hide palettes';
+          if (!paletteSuggestionRoot.hidden)
+            renderSuggestedPalettes();
+        });
+      }
+      if (savePaletteBtn && savedPaletteNameInput) {
+        const saveCurrentPalette = () => {
+          const name = savedPaletteNameInput.value.trim();
+          if (!name) {
+            savedPaletteNameInput.focus();
+            return;
+          }
+          const colors = readCurrentPaletteColors();
+          const list = Settings.savedHighlightPaletteList();
+          const existing = list.findIndex(p => p.name.toLowerCase() === name.toLowerCase());
+          const entry = { name, colors };
+          if (existing >= 0) {
+            list[existing] = entry;
+            Settings.setSavedHighlightPalettes(list);
+          } else {
+            list.unshift(entry);
+            Settings.setSavedHighlightPalettes(list);
+          }
+          renderSavedPalettes();
+        };
+        $.on(savePaletteBtn, 'click', saveCurrentPalette);
+        $.on(savedPaletteNameInput, 'keydown', (e) => {
+          if (e.key !== 'Enter')
+            return;
+          e.preventDefault();
+          saveCurrentPalette();
+        });
+      }
+      renderSavedPalettes();
+      $.get({ savedHighlightPalettes: Conf['savedHighlightPalettes'] }, ({ savedHighlightPalettes }) => {
+        Conf['savedHighlightPalettes'] = savedHighlightPalettes;
+        renderSavedPalettes();
+      });
       // Randomize / reset highlight color buttons.
       const openPreview = $('#styling-open-preview', section);
       if (openPreview) {
@@ -28347,7 +29065,12 @@ Enable it on boards.${location.hostname.split('.')[1]}.org in your browser's pri
           syncAutoHighlightPreviewInputs();
           Settings.applyStylingVars();
           refreshStylingPreview();
+          refreshSuggestedPalettesIfOpen();
         });
+      }
+      const siteStyleInput = inputs['siteStyle'];
+      if (siteStyleInput) {
+        $.on(siteStyleInput, 'change', refreshSuggestedPalettesIfOpen);
       }
       // SFW / NSFW tab switcher.
       const variantBar = $('.styling-variant-bar', section);
@@ -28430,6 +29153,7 @@ Enable it on boards.${location.hostname.split('.')[1]}.org in your browser's pri
           populateInputsFromLoaded(loaded);
           updateVariantTabsSelected();
           updateVariantHint();
+          refreshSuggestedPalettesIfOpen();
         });
       };
       for (const variant of ['sfw', 'nsfw']) {
@@ -28464,6 +29188,7 @@ Enable it on boards.${location.hostname.split('.')[1]}.org in your browser's pri
             CustomCSS.update();
           $.event('CustomSiteThemeChanged');
           $.event('RefreshScrollMarkers');
+          refreshSuggestedPalettesIfOpen();
         });
       }
       const initialMode = Conf['sfwNsfwMode'];
@@ -29250,6 +29975,97 @@ Enable it on boards.${location.hostname.split('.')[1]}.org in your browser's pri
       const to = (v) => Math.round((v + m) * 255).toString(16).padStart(2, '0');
       return `#${to(r)}${to(g)}${to(b)}`;
     },
+    highlightPaletteThemeProfile(variant) {
+      const siteStyle = String(Settings.styleConf('siteStyle', variant) || '').trim();
+      const native = Settings.isCustomSiteThemeValue(siteStyle) ? '' : siteStyle.toLowerCase();
+      const darkThemes = ['tomorrow', 'spooky', 'photon'];
+      const lightThemes = ['yotsuba-b', 'yotsuba', 'futaba', 'burichan'];
+      if (native) {
+        if (darkThemes.some(name => native === name || native.includes(name))) {
+          return {
+            kind: 'dark',
+            label: Settings.nativeSiteThemeLabel(siteStyle),
+            note: 'based on the selected site style',
+          };
+        }
+        if (lightThemes.some(name => native === name || native.includes(name))) {
+          return {
+            kind: 'light',
+            label: Settings.nativeSiteThemeLabel(siteStyle),
+            note: 'based on the selected site style',
+          };
+        }
+      }
+      const bg = Settings.getTextBaseBackground();
+      const luminance = Settings.relativeLuminance(bg);
+      const kind = luminance < 0.42 ? 'dark' : 'light';
+      return {
+        kind,
+        label: kind === 'dark' ? 'dark background' : 'light background',
+        note: 'based on the current page background',
+      };
+    },
+    suggestedHighlightPalettes(variant) {
+      const profile = Settings.highlightPaletteThemeProfile(variant);
+      const dark = [
+        { id: 'ember-night', name: 'Ember Night', colors: { own: '#ff6b6b', you: '#ff9f43', ghost: '#9ca3af', catalogOwn: '#2dd4bf', catalogWatched: '#60a5fa' } },
+        { id: 'aurora', name: 'Aurora', colors: { own: '#22d3ee', you: '#a78bfa', ghost: '#94a3b8', catalogOwn: '#f472b6', catalogWatched: '#facc15' } },
+        { id: 'mint-ember', name: 'Mint Ember', colors: { own: '#34d399', you: '#fb7185', ghost: '#a1a1aa', catalogOwn: '#5eead4', catalogWatched: '#f59e0b' } },
+        { id: 'blue-steel', name: 'Blue Steel', colors: { own: '#60a5fa', you: '#f97316', ghost: '#9aa4b2', catalogOwn: '#38bdf8', catalogWatched: '#f43f5e' } },
+        { id: 'violet-lime', name: 'Violet Lime', colors: { own: '#c084fc', you: '#4ade80', ghost: '#a3a3a3', catalogOwn: '#818cf8', catalogWatched: '#fbbf24' } },
+      ];
+      const light = [
+        { id: 'classic-balanced', name: 'Classic Balanced', colors: { own: '#d94f4f', you: '#b76311', ghost: '#7a7a7a', catalogOwn: '#2f8f6a', catalogWatched: '#2f6cd6' } },
+        { id: 'ocean-ink', name: 'Ocean Ink', colors: { own: '#0f8fa8', you: '#5f3dc4', ghost: '#7f8c8d', catalogOwn: '#0a7a83', catalogWatched: '#b54708' } },
+        { id: 'forest-rose', name: 'Forest Rose', colors: { own: '#2f855a', you: '#b83280', ghost: '#6b7280', catalogOwn: '#1d7a55', catalogWatched: '#a16207' } },
+        { id: 'slate-citrus', name: 'Slate Citrus', colors: { own: '#2563eb', you: '#ca8a04', ghost: '#64748b', catalogOwn: '#0d9488', catalogWatched: '#dc2626' } },
+        { id: 'rust-teal', name: 'Rust Teal', colors: { own: '#b45309', you: '#2563eb', ghost: '#78716c', catalogOwn: '#0f766e', catalogWatched: '#be123c' } },
+      ];
+      return {
+        profile,
+        palettes: profile.kind === 'dark' ? dark : light,
+      };
+    },
+    normalizeSavedHighlightPalette(raw) {
+      if (!raw || typeof raw !== 'object')
+        return null;
+      const name = String(raw.name || '').trim();
+      if (!name)
+        return null;
+      const colors = raw.colors && typeof raw.colors === 'object' ? raw.colors : {};
+      const own = String(colors.own || '').trim().toLowerCase();
+      const you = String(colors.you || '').trim().toLowerCase();
+      const ghost = String(colors.ghost || '').trim().toLowerCase();
+      const catalogOwn = String(colors.catalogOwn || '').trim().toLowerCase();
+      const catalogWatched = String(colors.catalogWatched || '').trim().toLowerCase();
+      const isHex = (value) => /^#[0-9a-f]{6}$/i.test(value);
+      if (![own, you, ghost, catalogOwn, catalogWatched].every(isHex))
+        return null;
+      return {
+        name,
+        colors: { own, you, ghost, catalogOwn, catalogWatched },
+      };
+    },
+    savedHighlightPaletteList() {
+      const raw = Conf['savedHighlightPalettes'];
+      if (!Array.isArray(raw))
+        return [];
+      const out = [];
+      for (const item of raw) {
+        const normalized = Settings.normalizeSavedHighlightPalette(item);
+        if (!normalized)
+          continue;
+        out.push(normalized);
+      }
+      return out;
+    },
+    setSavedHighlightPalettes(list) {
+      const cleaned = list
+        .map(item => Settings.normalizeSavedHighlightPalette(item))
+        .filter(Boolean);
+      Conf['savedHighlightPalettes'] = cleaned;
+      $.set('savedHighlightPalettes', cleaned);
+    },
     CUSTOM_SITE_THEME_PREFIX: 'custom:',
     isCustomSiteThemeValue(value) {
       return typeof value === 'string' && value.startsWith(Settings.CUSTOM_SITE_THEME_PREFIX);
@@ -29872,6 +30688,7 @@ Enable it on boards.${location.hostname.split('.')[1]}.org in your browser's pri
         'siteStyle',
         'siteStyleHome',
         'customSiteThemes',
+        'savedHighlightPalettes',
         'Enable Thread Highlights',
         'Enable Catalog Highlights',
         'textColorMode',
@@ -30383,9 +31200,8 @@ Enable it on boards.${location.hostname.split('.')[1]}.org in your browser's pri
     filter(section) {
       const simplePanel = $.el('div');
       const advancedPanel = $.el('div');
-      const previewPanel = $.el('div');
       const previewState = {
-        panel: previewPanel,
+        panel: null,
         simpleTbody: null,
         advancedType: null,
         advancedTextarea: null,
@@ -30393,7 +31209,6 @@ Enable it on boards.${location.hostname.split('.')[1]}.org in your browser's pri
       Settings.filtersPreviewState = previewState;
       Settings.advancedFilter(advancedPanel, previewState);
       Settings.easyFilters(simplePanel, previewState);
-      $.add(advancedPanel, previewPanel);
       const details = $.el('details', { open: true }, { innerHTML: '<summary>Filtering Rules</summary>' });
       const subnav = $.el('div', { className: 'settings-subnav' });
       const simpleModePanel = $.el('div', { className: 'filter-mode-panel filter-mode-simple' });
@@ -36088,7 +36903,7 @@ Enable it on boards.${location.hostname.split('.')[1]}.org in your browser's pri
       // XXX Firefox reinjects WebExtension content scripts when extension is updated / reloaded.
       try {
         let w = window;
-         w = (w.wrappedJSObject || w);
+        if (platform === 'crx') { w = (w.wrappedJSObject || w); }
         if (`${meta.name} antidup` in w) { return; }
         w[`${meta.name} antidup`] = true;
       } catch (error) {}

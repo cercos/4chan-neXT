@@ -280,6 +280,18 @@
   border-left: 3px dashed color-mix(in srgb, var(--xt-catalog-own-highlight, var(--xt-highlight-own, var(--xt-border-highlight))) calc(var(--xt-catalog-own-highlight-opacity, 1) * 100%), transparent);
   color: var(--xt-catalog-own-text, var(--xt-text-color)) !important;
 }
+:root.xt-highlight-catalog-own .catalog-thread.yourPost .post.catalog-post .postInfo,
+:root.xt-highlight-catalog-own .catalog-thread.yourPost .post.catalog-post .postMessage,
+:root.xt-highlight-catalog-own .catalog-thread.yourPost .post.catalog-post .summary,
+:root.xt-highlight-catalog-own .catalog-thread.yourPost .post.catalog-post .fileText,
+:root.xt-highlight-catalog-own .catalog-thread.yourPost .post.catalog-post .catalog-stats,
+:root.xt-highlight-catalog-own .catalog-thread > .catalog-container.yourPost .post.catalog-post .postInfo,
+:root.xt-highlight-catalog-own .catalog-thread > .catalog-container.yourPost .post.catalog-post .postMessage,
+:root.xt-highlight-catalog-own .catalog-thread > .catalog-container.yourPost .post.catalog-post .summary,
+:root.xt-highlight-catalog-own .catalog-thread > .catalog-container.yourPost .post.catalog-post .fileText,
+:root.xt-highlight-catalog-own .catalog-thread > .catalog-container.yourPost .post.catalog-post .catalog-stats {
+  color: var(--xt-catalog-own-text, var(--xt-text-color)) !important;
+}
 :root.xt-highlight-catalog-own .catalog-thread.yourPost .post.catalog-post a,
 :root.xt-highlight-catalog-own .catalog-thread > .catalog-container.yourPost .post.catalog-post a {
   color: var(--xt-catalog-own-link, var(--xt-link-text-color)) !important;
@@ -306,6 +318,13 @@
 }
 :root.xt-highlight-catalog-watched .catalog-thread.watched:not(:has(.yourPost)) .catalog-post {
   border: 2px solid color-mix(in srgb, var(--xt-catalog-watched-highlight, var(--xt-watched-border, rgba(255, 0, 0, .75))) calc(var(--xt-catalog-watched-highlight-opacity, 1) * 100%), transparent);
+  color: var(--xt-catalog-watched-text, var(--xt-text-color)) !important;
+}
+:root.xt-highlight-catalog-watched .catalog-thread.watched:not(:has(.yourPost)) .post.catalog-post .postInfo,
+:root.xt-highlight-catalog-watched .catalog-thread.watched:not(:has(.yourPost)) .post.catalog-post .postMessage,
+:root.xt-highlight-catalog-watched .catalog-thread.watched:not(:has(.yourPost)) .post.catalog-post .summary,
+:root.xt-highlight-catalog-watched .catalog-thread.watched:not(:has(.yourPost)) .post.catalog-post .fileText,
+:root.xt-highlight-catalog-watched .catalog-thread.watched:not(:has(.yourPost)) .post.catalog-post .catalog-stats {
   color: var(--xt-catalog-watched-text, var(--xt-text-color)) !important;
 }
 :root.xt-highlight-catalog-watched .catalog-thread.watched:not(:has(.yourPost)) .post.catalog-post a {

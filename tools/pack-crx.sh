@@ -3,7 +3,7 @@ set -euo pipefail
 
 ROOT_DIR="$(cd "$(dirname "${BASH_SOURCE[0]}")/.." && pwd)"
 BUILD_DIR="$ROOT_DIR/builds/crx"
-KEY_DIR="${CRX_KEY_DIR:-$(dirname "$ROOT_DIR")/4chan-xt.keys}"
+KEY_DIR="${CRX_KEY_DIR:-$(dirname "$ROOT_DIR")/4chan-next.keys}"
 KEY_FILE="${CRX_KEY_FILE:-}"
 PACKER_BIN="${CRX_PACKER_BIN:-}"
 

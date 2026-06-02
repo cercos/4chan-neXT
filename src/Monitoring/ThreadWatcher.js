@@ -33,6 +33,10 @@ import Icon from '../Icons/icon';
 var ThreadWatcher = {
   drag: {
     start(e) {
+      if (ThreadWatcher.sortMode() !== 'manual') {
+        e.preventDefault();
+        return;
+      }
       ThreadWatcher.draggingLine = this;
       this.classList.add('drag');
       if (e.dataTransfer) {
@@ -296,7 +300,7 @@ var ThreadWatcher = {
     dismiss() {
       for (var {siteID, boardID, threadID, data} of ThreadWatcher.getAll()) {
         if (data.quotingYou) {
-          ThreadWatcher.update(siteID, boardID, threadID, {dismiss: data.quotingYou || 0});
+          ThreadWatcher.update(siteID, boardID, threadID, {dismiss: data.quotingYou || 0, yousCount: 0});
         }
       }
       $.event('CloseMenu');
@@ -310,6 +314,7 @@ var ThreadWatcher = {
         ThreadWatcher.update(siteID, boardID, threadID, {
           unread: 0,
           quotingYou: 0,
+          yousCount: 0,
           dismiss: data.quotingYou || 0
         });
       }
@@ -328,6 +333,7 @@ var ThreadWatcher = {
       ThreadWatcher.update(siteID, boardID, +threadID, {
         unread: 0,
         quotingYou: 0,
+        yousCount: 0,
         dismiss: data.quotingYou || 0
       });
     },
@@ -624,6 +630,7 @@ var ThreadWatcher = {
       const lastReadPost = ThreadWatcher.unreaddb.get({siteID, boardID, threadID, defaultValue: 0});
       let unread = data.unread || 0;
       let quotingYou = data.quotingYou || 0;
+      let yousCount = data.yousCount || 0;
       const youOP = !!QuoteYou.db?.get({siteID, boardID, threadID, postID: threadID});
 
       for (var postObj of this.response.posts) {
@@ -655,14 +662,14 @@ var ThreadWatcher = {
         }
 
         unread++;
-        if (quotesYou) { quotingYou = postObj.no; }
+        if (quotesYou) { quotingYou = postObj.no; yousCount++; }
       }
 
       if (!newData) { newData = {}; }
       if ((thumbURL != null) && (thumbURL !== data.thumbURL)) {
         newData.thumbURL = thumbURL;
       }
-      $.extend(newData, {last, replies, isDead, isArchived, unread, quotingYou});
+      $.extend(newData, {last, replies, isDead, isArchived, unread, quotingYou, yousCount});
       return ThreadWatcher.update(siteID, boardID, threadID, newData);
 
     } else if (this.status === 404) {
@@ -692,6 +699,46 @@ var ThreadWatcher = {
     }
   },
 
+  sortComparators: {
+    manual(a, b) {
+      const ao = a.data.order;
+      const bo = b.data.order;
+      if ((ao == null) && (bo == null)) { return 0; }
+      if (ao == null) { return 1; }
+      if (bo == null) { return -1; }
+      return ao - bo;
+    },
+    'date-added': (a, b) => (b.data.addedAt || 0) - (a.data.addedAt || 0),
+    'thread-date': (a, b) => Number(b.threadID) - Number(a.threadID),
+    replies: (a, b) => (b.data.replies || 0) - (a.data.replies || 0),
+    unread: (a, b) => (b.data.unread || 0) - (a.data.unread || 0),
+    activity: (a, b) => (b.data.modified || 0) - (a.data.modified || 0),
+    yous(a, b) {
+      const ay = ThreadWatcher.activeYous(a.data);
+      const by = ThreadWatcher.activeYous(b.data);
+      if (ay !== by) { return by - ay; }
+      return (b.data.addedAt || 0) - (a.data.addedAt || 0);
+    },
+    board(a, b) {
+      const sa = `${a.siteID}/${a.boardID}`;
+      const sb = `${b.siteID}/${b.boardID}`;
+      if (sa < sb) { return -1; }
+      if (sa > sb) { return 1; }
+      return (a.data.order || 0) - (b.data.order || 0);
+    }
+  },
+
+  sortMode() {
+    const mode = Conf['Thread Watcher Sort'] || 'manual';
+    return ThreadWatcher.sortComparators[mode] ? mode : 'manual';
+  },
+
+  activeYous(data) {
+    if (!data) { return 0; }
+    if ((data.quotingYou || 0) <= (data.dismiss || 0)) { return 0; }
+    return data.yousCount || 1;
+  },
+
   getAll(groupByBoard) {
     const all = [];
     for (var siteID in ThreadWatcher.db.data) {
@@ -714,14 +761,7 @@ var ThreadWatcher = {
       }
     }
     if (!groupByBoard) {
-      all.sort((a, b) => {
-        const ao = a.data.order;
-        const bo = b.data.order;
-        if ((ao == null) && (bo == null)) { return 0; }
-        if (ao == null) { return 1; }
-        if (bo == null) { return -1; }
-        return ao - bo;
-      });
+      all.sort(ThreadWatcher.sortComparators[ThreadWatcher.sortMode()]);
     }
     return all;
   },
@@ -788,7 +828,7 @@ var ThreadWatcher = {
     });
     $.add(link, title);
 
-    const div = $.el('div', { draggable: true });
+    const div = $.el('div', { draggable: ThreadWatcher.sortMode() === 'manual' });
     const fullID = `${boardID}.${threadID}`;
     div.dataset.fullID = fullID;
     div.dataset.siteID = siteID;
@@ -1109,6 +1149,9 @@ var ThreadWatcher = {
     for (key in newData) { val = newData[key]; if (data[key] !== val) { n++; } }
     if (!n) { return; }
     ThreadWatcher.db.extend({siteID, boardID, threadID, val: newData});
+    if (ThreadWatcher.sortMode() !== 'manual') {
+      return ThreadWatcher.refresh();
+    }
     if (line = $(`#watched-threads > [data-site-i-d='${siteID}'][data-full-i-d='${boardID}.${threadID}']`, ThreadWatcher.dialog)) {
       const newLine = ThreadWatcher.makeLine(siteID, boardID, threadID, data);
       $.replace(line, newLine);
@@ -1161,6 +1204,9 @@ var ThreadWatcher = {
     const oldData = ThreadWatcher.db.get({ boardID, threadID, defaultValue: dict() });
     if (oldData.order == null) {
       oldData.order = ThreadWatcher.getAll().length;
+    }
+    if (oldData.addedAt == null) {
+      oldData.addedAt = Date.now();
     }
     delete oldData.last;
     delete oldData.modified;
@@ -1318,6 +1364,8 @@ var ThreadWatcher = {
         this.menu.addEntry(entry);
       }
 
+      this.addSortEntry();
+
       // Settings checkbox entries:
       for (var name in Config.threadWatcher) {
         if (['Show OP Thumbnails', 'Thread Watcher Thumbnail Hover'].includes(name)) { continue; }
@@ -1351,6 +1399,60 @@ var ThreadWatcher = {
       if (['Show Page', 'Show Unread Count', 'Auto Update Thread Watcher'].includes(name))
         $.on(input, 'change', ThreadWatcher.fetchAuto);
       return this.menu.addEntry(entry);
+    },
+
+    addSortEntry() {
+      const sortOptions = [
+        ['manual',      'Manual (drag)'],
+        ['yous',        '(You)s'],
+        ['date-added',  'Date added'],
+        ['thread-date', 'Thread date'],
+        ['replies',     'Reply count'],
+        ['unread',      'Unread count'],
+        ['activity',    'Last activity'],
+        ['board',       'Board'],
+      ];
+      const subEntries = [];
+      sortOptions.forEach(([value, label]) => {
+        const el = $.el('a', {
+          href: 'javascript:;',
+          innerHTML: '<span class="watcher-sort-check"></span><span class="watcher-sort-label"></span>'
+        });
+        const check = $('.watcher-sort-check', el);
+        const labelEl = $('.watcher-sort-label', el);
+        labelEl.textContent = label;
+        const updateCheck = () => {
+          check.textContent = ThreadWatcher.sortMode() === value ? '✓' : '';
+        };
+        $.on(el, 'mousedown', e => e.stopPropagation());
+        $.on(el, 'click', function(e) {
+          e.stopPropagation();
+          $.set('Thread Watcher Sort', value);
+          Conf['Thread Watcher Sort'] = value;
+          ThreadWatcher.refresh();
+          for (const entry of subEntries) { entry.updateCheck(); }
+        });
+        subEntries.push({
+          el,
+          updateCheck,
+          open() {
+            updateCheck();
+            return true;
+          }
+        });
+      });
+      this.menu.addEntry({
+        el: $.el('a', {
+          href: 'javascript:;',
+          textContent: 'Sort'
+        }),
+        order: 50,
+        subEntries,
+        open() {
+          this.el.classList.toggle('disabled', !ThreadWatcher.list.firstElementChild);
+          return true;
+        }
+      });
     },
 
     addThumbnailControls() {

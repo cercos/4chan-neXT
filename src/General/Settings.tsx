@@ -1137,7 +1137,7 @@ Enable it on boards.${location.hostname.split('.')[1]}.org in your browser's pri
 
       if (name === 'Show OP Thumbnails') {
         div = $.el('div',
-          { innerHTML: `<label><input type="checkbox" name="${name}">${displayName(name)}</label><span class="thread-watcher-inline-number"><input type="number" name="Thread Watcher Thumbnail Size" min="16" max="160" step="1" class="thread-watcher-size-input" title="Thumbnail size in pixels"></span><span class="description">: <span class="setting-description">${description}</span></span><span class="thread-watcher-inline-subsetting"><label><input type="checkbox" name="Thread Watcher Thumbnail Hover">Hover Preview</label><span class="thread-watcher-inline-number"><input type="number" name="Thread Watcher Thumbnail Preview Size" min="10" max="99" step="1" class="thread-watcher-preview-size-input" title="Hover preview size as a percentage">%</span><span class="description">: <span class="setting-description">${hoverDescription}</span></span></span>` });
+          { innerHTML: `<label><input type="checkbox" name="${name}">${displayName(name)}</label><span class="thread-watcher-inline-number"><input type="number" name="Thread Watcher Thumbnail Size" min="16" max="160" step="1" class="field thread-watcher-size-input" title="Thumbnail size in pixels"></span><span class="description">: <span class="setting-description">${description}</span></span><span class="thread-watcher-inline-subsetting"><label><input type="checkbox" name="Thread Watcher Thumbnail Hover">Hover Preview</label><span class="thread-watcher-inline-number"><input type="number" name="Thread Watcher Thumbnail Preview Size" min="10" max="99" step="1" class="field thread-watcher-preview-size-input" title="Hover preview size as a percentage">%</span><span class="description">: <span class="setting-description">${hoverDescription}</span></span></span>` });
         div.dataset.name = `${name} Thread Watcher Thumbnail Size Thread Watcher Thumbnail Hover Thread Watcher Thumbnail Preview Size`;
         div.dataset.settingTitle = displayName(name);
         div.dataset.settingDescription = `${description} ${hoverDescription} Thread Watcher Thumbnail Size Thread Watcher Thumbnail Hover Thread Watcher Thumbnail Preview Size`;
@@ -1198,7 +1198,7 @@ Enable it on boards.${location.hostname.split('.')[1]}.org in your browser's pri
     }
 
     const heightDiv = $.el('div',
-      { innerHTML: '<label>TW Max H <input type="number" name="Thread Watcher Max Height" min="120" max="999" step="1" class="thread-watcher-height-input"></label><label class="thread-watcher-inline-number">W <input type="number" name="Thread Watcher Max Width" min="120" max="999" step="1" class="thread-watcher-width-input"></label><span class="description">: <span class="setting-description">Maximum watched-thread list height and width in pixels.</span></span>' });
+      { innerHTML: '<label>TW Max H <input type="number" name="Thread Watcher Max Height" min="120" max="999" step="1" class="field thread-watcher-height-input"></label><label class="thread-watcher-inline-number">W <input type="number" name="Thread Watcher Max Width" min="120" max="999" step="1" class="field thread-watcher-width-input"></label><span class="description">: <span class="setting-description">Maximum watched-thread list height and width in pixels.</span></span>' });
     heightDiv.dataset.name = 'Thread Watcher Max Height Thread Watcher Max Width';
     heightDiv.dataset.settingTitle = 'TW Max H/W';
     heightDiv.dataset.settingDescription = 'Maximum watched-thread list height and width in pixels.';
@@ -1292,20 +1292,57 @@ Enable it on boards.${location.hostname.split('.')[1]}.org in your browser's pri
 
   posting(section) {
     Settings.renderMainGroups(section, {
-      categories: ['Posting and Captchas']
+      categories: ['Posting and Captchas'],
+      includeSetting: key => key !== 'Comment Preview',
     });
-    Settings.addSelectFieldset(section, 'Comment Preview', [
-      {
-        name: 'Comment Preview Position',
-        label: 'Preview Position',
-        description: 'Where the live preview appears relative to the comment box (requires Comment Preview enabled).',
-        options: [
-          ['below', 'Below the comment box'],
-          ['right', 'Right of the comment box'],
-          ['left',  'Left of the comment box']
-        ]
-      }
+
+    const fs = $.el('details',
+      { open: true },
+      { innerHTML: '<summary>Comment Preview</summary>' }) as HTMLDetailsElement;
+    const row = $.el('div', {
+      innerHTML: `<label><input type="checkbox" name="Comment Preview"><span class="setting-title">Comment Preview</span></label><span class="description">: <span class="setting-description">${Config.main['Posting and Captchas']['Comment Preview'][1]}</span></span>`,
+    }) as HTMLDivElement;
+    row.dataset.name = 'Comment Preview';
+    const toggle = $('input[name="Comment Preview"]', row) as HTMLInputElement;
+    $.on(toggle, 'change', $.cb.checked);
+    $.on(toggle, 'change', function() { this.parentNode.parentNode.dataset.checked = this.checked; });
+    $.on(toggle, 'change', () => $.event('QRCommentPreviewChanged'));
+
+    const sub = $.el('div', { className: 'suboption-list' });
+    const positionRow = $.el('div') as HTMLDivElement;
+    positionRow.dataset.name = 'Comment Preview Position';
+    const label = $.el('label');
+    const select = $.el('select', { name: 'Comment Preview Position' }) as HTMLSelectElement;
+    for (const [value, text] of [
+      ['below', 'Below the comment box'],
+      ['right', 'Right of the comment box'],
+      ['left', 'Left of the comment box'],
+    ] as const) {
+      $.add(select, $.el('option', { value, textContent: text }));
+    }
+    $.on(select, 'change', $.cb.value);
+    $.on(select, 'change', () => $.event('QRCommentPreviewChanged'));
+    $.add(label, [$.el('span', { textContent: 'Preview Position: ' }), select]);
+    $.add(positionRow, [
+      label,
+      $.el('span', {
+        className: 'description',
+        textContent: ': Where the live preview appears relative to the comment box (requires Comment Preview enabled).',
+      }),
     ]);
+    $.add(sub, positionRow);
+    $.add(row, sub);
+    $.add(fs, row);
+    $.add(section, fs);
+
+    $.get({
+      'Comment Preview': Conf['Comment Preview'],
+      'Comment Preview Position': Conf['Comment Preview Position'],
+    }, items => {
+      toggle.checked = !!items['Comment Preview'];
+      row.dataset.checked = toggle.checked ? 'true' : 'false';
+      select.value = items['Comment Preview Position'] || 'below';
+    });
 
   },
 
@@ -1764,6 +1801,186 @@ Enable it on boards.${location.hostname.split('.')[1]}.org in your browser's pri
       });
     }
 
+    const paletteSuggestionRoot = $('#styling-palette-suggestions', section) as HTMLElement | null;
+    const suggestPalettesBtn = $('#styling-suggest-palettes', section) as HTMLButtonElement | null;
+    const savedPaletteNameInput = $('#styling-saved-palette-name', section) as HTMLInputElement | null;
+    const savePaletteBtn = $('#styling-save-palette', section) as HTMLButtonElement | null;
+    const savedPalettesList = $('#styling-saved-palettes-list', section) as HTMLElement | null;
+    const paletteStateMap = [
+      ['own', 'Highlight Own Color', 'Thread: your post'],
+      ['you', 'Highlight You Color', 'Thread: quotes you'],
+      ['ghost', 'Highlight Ghost Color', 'Thread: ghost post'],
+      ['catalogOwn', 'Catalog Highlight Own Color', 'Catalog: your post'],
+      ['catalogWatched', 'Catalog Highlight Watched Color', 'Catalog: watched thread'],
+    ] as const;
+    const readCurrentPaletteColors = () => {
+      const out = {
+        own: '#000000',
+        you: '#000000',
+        ghost: '#000000',
+        catalogOwn: '#000000',
+        catalogWatched: '#000000',
+      };
+      for (const [slot, baseKey] of paletteStateMap) {
+        const inputColor = inputs[baseKey]?.value || '';
+        const storedColor = editConf<string>(baseKey) || '';
+        const resolved = Settings.toHexColor(inputColor)
+          || Settings.toHexColor(storedColor)
+          || Settings.resolvedColorForKey(baseKey)
+          || '#000000';
+        out[slot] = resolved.toLowerCase();
+      }
+      return out;
+    };
+    function applySuggestedPalette(palette: {
+      colors: Record<'own' | 'you' | 'ghost' | 'catalogOwn' | 'catalogWatched', string>;
+    }) {
+      for (const [slot, baseKey] of paletteStateMap) {
+        const color = palette.colors[slot];
+        if (!color) continue;
+        writeEditConf(baseKey, color);
+        const inp = inputs[baseKey];
+        if (inp) Settings.setColorInputValue(inp, baseKey, color);
+      }
+      syncMarkerColorControls();
+      syncAutoHighlightPreviewInputs();
+      Settings.applyStylingVars();
+      refreshStylingPreview();
+    }
+    function renderSuggestedPalettes() {
+      if (!paletteSuggestionRoot) return;
+      const { profile, palettes } = Settings.suggestedHighlightPalettes(editVariant());
+      paletteSuggestionRoot.textContent = '';
+      const header = $.el('div', { className: 'styling-palette-header' });
+      const title = $.el('div', {
+        className: 'styling-palette-title',
+        textContent: `Suggested palettes for ${profile.label}`,
+      });
+      const note = $.el('div', {
+        className: 'styling-palette-note note',
+        textContent: profile.note,
+      });
+      const refresh = $.el('button', {
+        type: 'button',
+        textContent: 'Refresh',
+      }) as HTMLButtonElement;
+      $.on(refresh, 'click', () => renderSuggestedPalettes());
+      $.add(header, [title, note, refresh]);
+      $.add(paletteSuggestionRoot, header);
+
+      const list = $.el('div', { className: 'styling-palette-list' });
+      for (const palette of palettes) {
+        const row = $.el('div', { className: 'styling-palette-row' });
+        const apply = $.el('button', {
+          type: 'button',
+          textContent: 'Apply',
+        }) as HTMLButtonElement;
+        $.on(apply, 'click', () => applySuggestedPalette(palette));
+        const name = $.el('div', { className: 'styling-palette-name', textContent: palette.name });
+        const swatches = $.el('div', { className: 'styling-palette-swatches' });
+        for (const [slot, , label] of paletteStateMap) {
+          const color = palette.colors[slot];
+          const swatch = $.el('span', {
+            className: 'styling-palette-swatch',
+            title: `${label}: ${color}`,
+          }) as HTMLSpanElement;
+          swatch.style.backgroundColor = color;
+          $.add(swatches, swatch);
+        }
+        $.add(row, [apply, name, swatches]);
+        $.add(list, row);
+      }
+      $.add(paletteSuggestionRoot, list);
+    }
+    function renderSavedPalettes() {
+      if (!savedPalettesList) return;
+      savedPalettesList.textContent = '';
+      const palettes = Settings.savedHighlightPaletteList();
+      if (!palettes.length) {
+        const empty = $.el('div', {
+          className: 'styling-palette-note note',
+          textContent: 'No saved palettes yet.',
+        });
+        $.add(savedPalettesList, empty);
+        return;
+      }
+      for (const [index, palette] of palettes.entries()) {
+        const row = $.el('div', { className: 'styling-saved-palette-row' });
+        const apply = $.el('button', {
+          type: 'button',
+          textContent: 'Apply',
+        }) as HTMLButtonElement;
+        const remove = $.el('button', {
+          type: 'button',
+          textContent: 'Delete',
+          title: `Delete ${palette.name}`,
+        }) as HTMLButtonElement;
+        $.on(apply, 'click', () => applySuggestedPalette(palette));
+        $.on(remove, 'click', () => {
+          const list = Settings.savedHighlightPaletteList();
+          list.splice(index, 1);
+          Settings.setSavedHighlightPalettes(list);
+          renderSavedPalettes();
+        });
+        const name = $.el('div', { className: 'styling-palette-name', textContent: palette.name });
+        const swatches = $.el('div', { className: 'styling-palette-swatches' });
+        for (const [slot, , label] of paletteStateMap) {
+          const color = palette.colors[slot];
+          const swatch = $.el('span', {
+            className: 'styling-palette-swatch',
+            title: `${label}: ${color}`,
+          }) as HTMLSpanElement;
+          swatch.style.backgroundColor = color;
+          $.add(swatches, swatch);
+        }
+        $.add(row, [apply, remove, name, swatches]);
+        $.add(savedPalettesList, row);
+      }
+    }
+    function refreshSuggestedPalettesIfOpen() {
+      if (!paletteSuggestionRoot || paletteSuggestionRoot.hidden) return;
+      renderSuggestedPalettes();
+    }
+    if (suggestPalettesBtn && paletteSuggestionRoot) {
+      $.on(suggestPalettesBtn, 'click', () => {
+        paletteSuggestionRoot.hidden = !paletteSuggestionRoot.hidden;
+        suggestPalettesBtn.textContent = paletteSuggestionRoot.hidden ? 'Suggest palettes' : 'Hide palettes';
+        if (!paletteSuggestionRoot.hidden) renderSuggestedPalettes();
+      });
+    }
+    if (savePaletteBtn && savedPaletteNameInput) {
+      const saveCurrentPalette = () => {
+        const name = savedPaletteNameInput.value.trim();
+        if (!name) {
+          savedPaletteNameInput.focus();
+          return;
+        }
+        const colors = readCurrentPaletteColors();
+        const list = Settings.savedHighlightPaletteList();
+        const existing = list.findIndex(p => p.name.toLowerCase() === name.toLowerCase());
+        const entry = { name, colors };
+        if (existing >= 0) {
+          list[existing] = entry;
+          Settings.setSavedHighlightPalettes(list);
+        } else {
+          list.unshift(entry);
+          Settings.setSavedHighlightPalettes(list);
+        }
+        renderSavedPalettes();
+      };
+      $.on(savePaletteBtn, 'click', saveCurrentPalette);
+      $.on(savedPaletteNameInput, 'keydown', (e: KeyboardEvent) => {
+        if (e.key !== 'Enter') return;
+        e.preventDefault();
+        saveCurrentPalette();
+      });
+    }
+    renderSavedPalettes();
+    $.get({ savedHighlightPalettes: Conf['savedHighlightPalettes'] }, ({ savedHighlightPalettes }) => {
+      Conf['savedHighlightPalettes'] = savedHighlightPalettes;
+      renderSavedPalettes();
+    });
+
     // Randomize / reset highlight color buttons.
     const openPreview = $('#styling-open-preview', section);
     if (openPreview) {
@@ -1791,7 +2008,12 @@ Enable it on boards.${location.hostname.split('.')[1]}.org in your browser's pri
         syncAutoHighlightPreviewInputs();
         Settings.applyStylingVars();
         refreshStylingPreview();
+        refreshSuggestedPalettesIfOpen();
       });
+    }
+    const siteStyleInput = inputs['siteStyle'];
+    if (siteStyleInput) {
+      $.on(siteStyleInput, 'change', refreshSuggestedPalettesIfOpen);
     }
 
     // SFW / NSFW tab switcher.
@@ -1865,6 +2087,7 @@ Enable it on boards.${location.hostname.split('.')[1]}.org in your browser's pri
         populateInputsFromLoaded(loaded);
         updateVariantTabsSelected();
         updateVariantHint();
+        refreshSuggestedPalettesIfOpen();
       });
     };
     for (const variant of ['sfw', 'nsfw'] as const) {
@@ -1896,6 +2119,7 @@ Enable it on boards.${location.hostname.split('.')[1]}.org in your browser's pri
         if (Conf['Custom CSS']) CustomCSS.update();
         $.event('CustomSiteThemeChanged');
         $.event('RefreshScrollMarkers');
+        refreshSuggestedPalettesIfOpen();
       });
     }
     const initialMode = Conf['sfwNsfwMode'];
@@ -2798,6 +3022,113 @@ Enable it on boards.${location.hostname.split('.')[1]}.org in your browser's pri
     return `#${to(r)}${to(g)}${to(b)}`;
   },
 
+  highlightPaletteThemeProfile(variant?: StyleVariant) {
+    const siteStyle = String(Settings.styleConf<string>('siteStyle', variant) || '').trim();
+    const native = Settings.isCustomSiteThemeValue(siteStyle) ? '' : siteStyle.toLowerCase();
+    const darkThemes = ['tomorrow', 'spooky', 'photon'];
+    const lightThemes = ['yotsuba-b', 'yotsuba', 'futaba', 'burichan'];
+    if (native) {
+      if (darkThemes.some(name => native === name || native.includes(name))) {
+        return {
+          kind: 'dark' as const,
+          label: Settings.nativeSiteThemeLabel(siteStyle),
+          note: 'based on the selected site style',
+        };
+      }
+      if (lightThemes.some(name => native === name || native.includes(name))) {
+        return {
+          kind: 'light' as const,
+          label: Settings.nativeSiteThemeLabel(siteStyle),
+          note: 'based on the selected site style',
+        };
+      }
+    }
+
+    const bg = Settings.getTextBaseBackground();
+    const luminance = Settings.relativeLuminance(bg);
+    const kind = luminance < 0.42 ? 'dark' as const : 'light' as const;
+    return {
+      kind,
+      label: kind === 'dark' ? 'dark background' : 'light background',
+      note: 'based on the current page background',
+    };
+  },
+
+  suggestedHighlightPalettes(variant?: StyleVariant) {
+    const profile = Settings.highlightPaletteThemeProfile(variant);
+    const dark = [
+      { id: 'ember-night', name: 'Ember Night', colors: { own: '#ff6b6b', you: '#ff9f43', ghost: '#9ca3af', catalogOwn: '#2dd4bf', catalogWatched: '#60a5fa' } },
+      { id: 'aurora', name: 'Aurora', colors: { own: '#22d3ee', you: '#a78bfa', ghost: '#94a3b8', catalogOwn: '#f472b6', catalogWatched: '#facc15' } },
+      { id: 'mint-ember', name: 'Mint Ember', colors: { own: '#34d399', you: '#fb7185', ghost: '#a1a1aa', catalogOwn: '#5eead4', catalogWatched: '#f59e0b' } },
+      { id: 'blue-steel', name: 'Blue Steel', colors: { own: '#60a5fa', you: '#f97316', ghost: '#9aa4b2', catalogOwn: '#38bdf8', catalogWatched: '#f43f5e' } },
+      { id: 'violet-lime', name: 'Violet Lime', colors: { own: '#c084fc', you: '#4ade80', ghost: '#a3a3a3', catalogOwn: '#818cf8', catalogWatched: '#fbbf24' } },
+    ];
+    const light = [
+      { id: 'classic-balanced', name: 'Classic Balanced', colors: { own: '#d94f4f', you: '#b76311', ghost: '#7a7a7a', catalogOwn: '#2f8f6a', catalogWatched: '#2f6cd6' } },
+      { id: 'ocean-ink', name: 'Ocean Ink', colors: { own: '#0f8fa8', you: '#5f3dc4', ghost: '#7f8c8d', catalogOwn: '#0a7a83', catalogWatched: '#b54708' } },
+      { id: 'forest-rose', name: 'Forest Rose', colors: { own: '#2f855a', you: '#b83280', ghost: '#6b7280', catalogOwn: '#1d7a55', catalogWatched: '#a16207' } },
+      { id: 'slate-citrus', name: 'Slate Citrus', colors: { own: '#2563eb', you: '#ca8a04', ghost: '#64748b', catalogOwn: '#0d9488', catalogWatched: '#dc2626' } },
+      { id: 'rust-teal', name: 'Rust Teal', colors: { own: '#b45309', you: '#2563eb', ghost: '#78716c', catalogOwn: '#0f766e', catalogWatched: '#be123c' } },
+    ];
+    return {
+      profile,
+      palettes: profile.kind === 'dark' ? dark : light,
+    };
+  },
+
+  normalizeSavedHighlightPalette(raw: any): {
+    name: string;
+    colors: Record<'own' | 'you' | 'ghost' | 'catalogOwn' | 'catalogWatched', string>;
+  } | null {
+    if (!raw || typeof raw !== 'object') return null;
+    const name = String(raw.name || '').trim();
+    if (!name) return null;
+    const colors = raw.colors && typeof raw.colors === 'object' ? raw.colors : {};
+    const own = String(colors.own || '').trim().toLowerCase();
+    const you = String(colors.you || '').trim().toLowerCase();
+    const ghost = String(colors.ghost || '').trim().toLowerCase();
+    const catalogOwn = String(colors.catalogOwn || '').trim().toLowerCase();
+    const catalogWatched = String(colors.catalogWatched || '').trim().toLowerCase();
+    const isHex = (value: string) => /^#[0-9a-f]{6}$/i.test(value);
+    if (![own, you, ghost, catalogOwn, catalogWatched].every(isHex)) return null;
+    return {
+      name,
+      colors: { own, you, ghost, catalogOwn, catalogWatched },
+    };
+  },
+
+  savedHighlightPaletteList(): {
+    name: string;
+    colors: Record<'own' | 'you' | 'ghost' | 'catalogOwn' | 'catalogWatched', string>;
+  }[] {
+    const raw = Conf['savedHighlightPalettes'];
+    if (!Array.isArray(raw)) return [];
+    const out: {
+      name: string;
+      colors: Record<'own' | 'you' | 'ghost' | 'catalogOwn' | 'catalogWatched', string>;
+    }[] = [];
+    for (const item of raw) {
+      const normalized = Settings.normalizeSavedHighlightPalette(item);
+      if (!normalized) continue;
+      out.push(normalized);
+    }
+    return out;
+  },
+
+  setSavedHighlightPalettes(list: {
+    name: string;
+    colors: Record<'own' | 'you' | 'ghost' | 'catalogOwn' | 'catalogWatched', string>;
+  }[]) {
+    const cleaned = list
+      .map(item => Settings.normalizeSavedHighlightPalette(item))
+      .filter(Boolean) as {
+      name: string;
+      colors: Record<'own' | 'you' | 'ghost' | 'catalogOwn' | 'catalogWatched', string>;
+    }[];
+    Conf['savedHighlightPalettes'] = cleaned;
+    $.set('savedHighlightPalettes', cleaned);
+  },
+
   CUSTOM_SITE_THEME_PREFIX: 'custom:' as const,
 
   isCustomSiteThemeValue(value: string) {
@@ -3433,6 +3764,7 @@ Enable it on boards.${location.hostname.split('.')[1]}.org in your browser's pri
       'siteStyle',
       'siteStyleHome',
       'customSiteThemes',
+      'savedHighlightPalettes',
       'Enable Thread Highlights',
       'Enable Catalog Highlights',
       'textColorMode',
@@ -3981,7 +4313,7 @@ Enable it on boards.${location.hostname.split('.')[1]}.org in your browser's pri
   },
 
   filtersPreviewState: null as null | {
-    panel: HTMLDivElement;
+    panel: HTMLDivElement | null;
     simpleTbody: HTMLTableSectionElement | null;
     advancedType: string | null;
     advancedTextarea: HTMLTextAreaElement | null;
@@ -3992,9 +4324,8 @@ Enable it on boards.${location.hostname.split('.')[1]}.org in your browser's pri
   filter(section) {
     const simplePanel = $.el('div') as HTMLDivElement;
     const advancedPanel = $.el('div') as HTMLDivElement;
-    const previewPanel = $.el('div') as HTMLDivElement;
     const previewState = {
-      panel: previewPanel,
+      panel: null,
       simpleTbody: null as HTMLTableSectionElement | null,
       advancedType: null as string | null,
       advancedTextarea: null as HTMLTextAreaElement | null,
@@ -4002,7 +4333,6 @@ Enable it on boards.${location.hostname.split('.')[1]}.org in your browser's pri
     Settings.filtersPreviewState = previewState;
     Settings.advancedFilter(advancedPanel, previewState);
     Settings.easyFilters(simplePanel, previewState);
-    $.add(advancedPanel, previewPanel);
     const details = $.el('details',
       { open: true },
       { innerHTML: '<summary>Filtering Rules</summary>' }) as HTMLDetailsElement;

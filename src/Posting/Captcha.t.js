@@ -282,7 +282,9 @@ const CaptchaT = {
       failed: '#cf4a4a',
       expired: '#d0a64d',
     };
-    container.style.border = `2px solid ${borderColors[state] || borderColors.idle}`;
+    const borderColor = borderColors[state] || borderColors.idle;
+    const showBorder = state === 'complete' || state === 'failed' || state === 'expired';
+    container.style.border = showBorder ? `2px solid ${borderColor}` : '2px solid transparent';
     container.style.borderRadius = '4px';
     container.style.transition = 'border-color .2s ease';
     this.setStatusMessage({

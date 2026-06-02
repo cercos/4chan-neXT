@@ -823,6 +823,7 @@ const Config = {
   'Thread Watcher Thumbnail Preview Size': 40,
   'Thread Watcher Max Height': 210,
   'Thread Watcher Max Width': 250,
+  'Thread Watcher Sort': 'manual',
   'Thread Title': 'excerpt',
   'Unread Title Count': 'always',
   'Comment Preview Position': 'below',
@@ -990,6 +991,7 @@ http://eye.swfchan.com/search/?q=%name;types:swf
   siteStyle: '',
   siteStyleHome: false,
   customSiteThemes: [],
+  savedHighlightPalettes: [],
   // 'auto' applies the SFW or NSFW variant based on the active board's
   // ws_board flag; 'sfw'/'nsfw' force a single variant everywhere.
   sfwNsfwMode: 'auto',

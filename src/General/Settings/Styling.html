@@ -142,8 +142,17 @@
     </div>
   </div>
   <div class="styling-actions">
+    <button type="button" id="styling-suggest-palettes" title="Show suggested highlight palettes for the current theme">Suggest palettes</button>
     <button type="button" id="styling-randomize" title="Generate random highlight colors that contrast with the page background">Randomize</button>
     <button type="button" id="styling-open-preview" title="Open a live preview of post highlight states">Preview states</button>
+  </div>
+  <div id="styling-palette-suggestions" class="styling-palette-suggestions" hidden></div>
+  <div class="styling-saved-palettes">
+    <div class="styling-saved-palette-controls">
+      <input type="text" class="field styling-saved-palette-name" id="styling-saved-palette-name" placeholder="Palette name" maxlength="60">
+      <button type="button" id="styling-save-palette" title="Save current highlight colors as a palette">Save palette</button>
+    </div>
+    <div id="styling-saved-palettes-list" class="styling-saved-palettes-list"></div>
   </div>
 </details>
 
@@ -254,4 +263,3 @@
     <textarea hidden name="usercss" class="field custom-css-textarea" spellcheck="false" wrap="off"></textarea>
   </div>
 </details>
-
