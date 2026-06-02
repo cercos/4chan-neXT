@@ -106,10 +106,6 @@ const Config = {
         true,
         `${meta.name} is NOT designed to work with the native extension.`
       ],
-      'Export History': [
-        true,
-        'Export last read, your posts, etc. when exporting the setting'
-      ],
       'Scroll Markers': [
         true,
         'Mark your posts and replies to them on the scroll bar.'

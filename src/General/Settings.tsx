@@ -922,7 +922,6 @@ Enable it on boards.${location.hostname.split('.')[1]}.org in your browser's pri
         name: 'Miscellaneous',
         subgroups: [
           ['System', ['JSON Index', `Use ${meta.name} Catalog`, 'Open Threads in New Tab', 'External Catalog', '404 Redirect', 'Archive Report', 'Exempt Archives from Encryption']],
-          ['History', ['Export History']],
           ['Compatibility', ['Disable Native Extension']]
         ]
       }],
@@ -3792,7 +3791,6 @@ Enable it on boards.${location.hostname.split('.')[1]}.org in your browser's pri
       '404 Redirect',
       'Archive Report',
       'Exempt Archives from Encryption',
-      'Export History',
       'Disable Native Extension',
       ...Object.keys(Config.Index)
     ];
@@ -3985,7 +3983,6 @@ Enable it on boards.${location.hostname.split('.')[1]}.org in your browser's pri
       for (const name of Settings.exportOptionOrder) {
         defaultCheckedOptions[name] = true;
       }
-      defaultCheckedOptions['Watched Threads'] = !!Conf['Export History'];
       Settings.openImpExpPicker({
         title: 'Export Settings',
         action: 'Export',
@@ -4004,9 +4001,6 @@ Enable it on boards.${location.hostname.split('.')[1]}.org in your browser's pri
       if (checkedOptions[option]) out[key] = conf[key];
     }
     const groups = Settings.exportOptionOrder.filter(name => checkedOptions[name]);
-    const exportHistory = !!checkedOptions['Watched Threads'];
-    Conf['Export History'] = exportHistory;
-    $.set('Export History', exportHistory);
     Settings.downloadExport({version: g.VERSION, date: Date.now(), groups, Conf: out});
   },
 
