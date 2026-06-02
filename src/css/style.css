@@ -1136,6 +1136,9 @@ div[data-checked="false"] > .suboption-list {
 .styling-preview-post .postMessage {
   color: var(--xt-text-color);
 }
+.styling-preview-post .subject {
+  color: inherit;
+}
 .styling-preview-post a {
   color: var(--xt-link-text-color);
 }
@@ -1213,6 +1216,70 @@ div[data-checked="false"] > .suboption-list {
 .styling-preview .styling-preview-post.from-archive .quotelink.deadlink {
   color: var(--xt-highlight-ghost-dead-link, var(--xt-dead-link-text-color, var(--xt-dead-link))) !important;
 }
+.styling-preview[data-highlight-catalog-own="true"] .catalog-thread.yourPost > .catalog-container,
+.styling-preview[data-highlight-catalog-own="true"] .catalog-thread > .catalog-container.yourPost {
+  background: color-mix(in srgb, var(--xt-catalog-own-highlight, var(--xt-highlight-own, transparent)) calc(var(--xt-catalog-own-highlight-opacity, 1) * 100%), transparent) !important;
+}
+.styling-preview[data-highlight-catalog-own="true"] .catalog-thread.yourPost .post.catalog-post,
+.styling-preview[data-highlight-catalog-own="true"] .catalog-thread > .catalog-container.yourPost .post.catalog-post {
+  background: transparent !important;
+  border-left: 3px dashed color-mix(in srgb, var(--xt-catalog-own-highlight, var(--xt-highlight-own, var(--xt-border-highlight))) calc(var(--xt-catalog-own-highlight-opacity, 1) * 100%), transparent);
+  color: var(--xt-catalog-own-text, var(--xt-text-color)) !important;
+}
+.styling-preview[data-highlight-catalog-own="true"] .catalog-thread.yourPost .post.catalog-post .postInfo,
+.styling-preview[data-highlight-catalog-own="true"] .catalog-thread.yourPost .post.catalog-post .postMessage,
+.styling-preview[data-highlight-catalog-own="true"] .catalog-thread.yourPost .post.catalog-post .summary,
+.styling-preview[data-highlight-catalog-own="true"] .catalog-thread.yourPost .post.catalog-post .catalog-stats,
+.styling-preview[data-highlight-catalog-own="true"] .catalog-thread > .catalog-container.yourPost .post.catalog-post .postInfo,
+.styling-preview[data-highlight-catalog-own="true"] .catalog-thread > .catalog-container.yourPost .post.catalog-post .postMessage,
+.styling-preview[data-highlight-catalog-own="true"] .catalog-thread > .catalog-container.yourPost .post.catalog-post .summary,
+.styling-preview[data-highlight-catalog-own="true"] .catalog-thread > .catalog-container.yourPost .post.catalog-post .catalog-stats {
+  color: var(--xt-catalog-own-text, var(--xt-text-color)) !important;
+}
+.styling-preview[data-highlight-catalog-own="true"] .catalog-thread.yourPost .post.catalog-post .subject,
+.styling-preview[data-highlight-catalog-own="true"] .catalog-thread > .catalog-container.yourPost .post.catalog-post .subject {
+  color: var(--xt-catalog-own-subject, var(--xt-catalog-own-text, var(--xt-text-color))) !important;
+}
+.styling-preview[data-highlight-catalog-own="true"] .catalog-thread.yourPost .post.catalog-post a,
+.styling-preview[data-highlight-catalog-own="true"] .catalog-thread > .catalog-container.yourPost .post.catalog-post a {
+  color: var(--xt-catalog-own-link, var(--xt-link-text-color)) !important;
+}
+.styling-preview[data-highlight-catalog-own="true"] .catalog-thread.yourPost .post.catalog-post .quote,
+.styling-preview[data-highlight-catalog-own="true"] .catalog-thread > .catalog-container.yourPost .post.catalog-post .quote {
+  color: var(--xt-catalog-own-quote, var(--xt-quote-text-color)) !important;
+}
+.styling-preview[data-highlight-catalog-own="true"] .catalog-thread.yourPost .post.catalog-post .deadlink,
+.styling-preview[data-highlight-catalog-own="true"] .catalog-thread > .catalog-container.yourPost .post.catalog-post .deadlink {
+  color: var(--xt-catalog-own-dead-link, var(--xt-dead-link-text-color, var(--xt-dead-link))) !important;
+}
+.styling-preview[data-highlight-catalog-watched="true"] .catalog-thread.watched > .catalog-container {
+  background: color-mix(in srgb, var(--xt-catalog-watched-highlight, var(--xt-watched-border, rgba(255, 0, 0, .75))) calc(var(--xt-catalog-watched-highlight-opacity, 0.2) * 100%), transparent) !important;
+}
+.styling-preview[data-highlight-catalog-watched="true"] .catalog-thread.watched .post.catalog-post {
+  background: transparent !important;
+}
+.styling-preview[data-highlight-catalog-watched="true"] .catalog-thread.watched .catalog-post {
+  border: 2px solid color-mix(in srgb, var(--xt-catalog-watched-highlight, var(--xt-watched-border, rgba(255, 0, 0, .75))) calc(var(--xt-catalog-watched-highlight-opacity, 1) * 100%), transparent);
+  color: var(--xt-catalog-watched-text, var(--xt-text-color)) !important;
+}
+.styling-preview[data-highlight-catalog-watched="true"] .catalog-thread.watched .post.catalog-post .postInfo,
+.styling-preview[data-highlight-catalog-watched="true"] .catalog-thread.watched .post.catalog-post .postMessage,
+.styling-preview[data-highlight-catalog-watched="true"] .catalog-thread.watched .post.catalog-post .summary,
+.styling-preview[data-highlight-catalog-watched="true"] .catalog-thread.watched .post.catalog-post .catalog-stats {
+  color: var(--xt-catalog-watched-text, var(--xt-text-color)) !important;
+}
+.styling-preview[data-highlight-catalog-watched="true"] .catalog-thread.watched .post.catalog-post .subject {
+  color: var(--xt-catalog-watched-subject, var(--xt-catalog-watched-text, var(--xt-text-color))) !important;
+}
+.styling-preview[data-highlight-catalog-watched="true"] .catalog-thread.watched .post.catalog-post a {
+  color: var(--xt-catalog-watched-link, var(--xt-link-text-color)) !important;
+}
+.styling-preview[data-highlight-catalog-watched="true"] .catalog-thread.watched .post.catalog-post .quote {
+  color: var(--xt-catalog-watched-quote, var(--xt-quote-text-color)) !important;
+}
+.styling-preview[data-highlight-catalog-watched="true"] .catalog-thread.watched .post.catalog-post .deadlink {
+  color: var(--xt-catalog-watched-dead-link, var(--xt-dead-link-text-color, var(--xt-dead-link))) !important;
+}
 .section-styling .styling-variant-bar {
   align-items: center;
   border-bottom: 1px solid rgba(128, 128, 128, .25);
@@ -1273,12 +1340,10 @@ div[data-checked="false"] > .suboption-list {
   display: none;
 }
 
-/* StyleChan deferral: hide the Site Style section (the SFW/NSFW switcher
-   + theme picker — the only parts that genuinely conflict with StyleChan).
-   Highlight Colors, Scrollbar Markers, Text Colors and Custom CSS keep
-   working alongside StyleChan. */
+/* StyleChan deferral: hide 4chan XT styling controls that StyleChan owns. */
 .styling-deferred > .styling-site-style,
-.styling-deferred > .styling-text-colors {
+.styling-deferred > .styling-text-colors,
+.styling-deferred > .styling-custom-css {
   display: none;
 }
 /* StyleChan injects `<div id="overlay">` (same id as ours used to be — we

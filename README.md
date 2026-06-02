@@ -1,39 +1,56 @@
 # 4chan-neXT
 
-4chan-neXT is an actively maintained userscript fork of 4chan X for anonymous imageboards.
-It continues the 4chan XT codebase with ongoing fixes and updates.
-
-## Migration from 4chan X
-
-4chan-neXT uses a different user script namespace than 4chan X.
-To migrate your settings, export them from 4chan X and then import them in 4chan-neXT.
-
-## Latest Release
-
-- `1.0.4` (2026-06-01):
-  - Added scrollbar hover thumbnail preview.
-  - Added comment previewing.
-  - Fixed highlight colors previewer.
-  - Added more options for thread updater sound.
-  - Added built-in site theme styles.
-  - Added StyleChan compatibility.
-
-## Styling
-
-4chan-neXT includes built-in site styling.
-For the best styling experience, install StyleChan: https://github.com/3nly/StyleChan
-
-<details>
-<summary>Original README</summary>
+4chan-neXT is an actively maintained 4chan X fork with compatibility fixes, UI improvements, and fork-specific features.
 
 ## Install
 
-- Releases: https://github.com/TuxedoTako/4chan-xt/releases
-- Greasy Fork: https://greasyfork.org/scripts/489508-4chan-xt
+- **Stable userscript (recommended):**
+  - https://github.com/cercos/4chan-next/releases/latest/download/4chan-neXT.user.js
+- **Minified userscript:**
+  - https://github.com/cercos/4chan-next/releases/latest/download/4chan-neXT.min.user.js
+- **Releases page:**
+  - https://github.com/cercos/4chan-next/releases
 
-Use a userscript manager such as Violentmonkey or Tampermonkey.
+You will need a userscript manager:
+- Firefox: [Violentmonkey](https://addons.mozilla.org/en-US/firefox/addon/violentmonkey/) or [Tampermonkey](https://addons.mozilla.org/en-US/firefox/addon/tampermonkey/)
+- Chrome/Edge: [Violentmonkey](https://chromewebstore.google.com/detail/violentmonkey/jinjaccalgkegednnccohejagnlnfdag) or [Tampermonkey](https://tampermonkey.net/)
 
-## Build
+## Latest Version
+
+`1.0.5` (2026-06-01)
+
+- Fixed captcha behavior.
+- Fixed captcha text colors.
+- Added dynamic font colors.
+- Fixed settings layout.
+- Added sorting to Thread Watcher.
+- Fixed flag dropdown colors.
+
+## Migration from 4chan X / 4chan XT
+
+4chan-neXT uses its own userscript namespace.
+
+To migrate settings:
+1. Export settings from your current script.
+2. Install 4chan-neXT.
+3. Import your settings into 4chan-neXT.
+
+## Compatible Styling Scripts
+
+- StyleChan: https://github.com/3nly/StyleChan
+
+## Fork Additions
+
+Recent fork additions include:
+- Built-in site theme styles.
+- StyleChan compatibility updates.
+- Scrollbar hover thumbnail preview.
+- Thread Watcher thumbnails.
+- Comment previewing in replies.
+- Download-all media support.
+- Quick Reply layout and action button fixes.
+
+## Build from Source
 
 ```bash
 npm install
@@ -41,22 +58,16 @@ npm run build
 ```
 
 Useful build flags:
-
 - `-min`: minified output.
 - `-platform=userscript` or `-platform=crx`: build only one target.
 - `-no-format`: skip output formatting steps.
 - `-test`: include tests in build.
-- `npm run build:crxp`: build and pack CRX using a key from `../4chan-xt.keys/*.pem` (override with `CRX_KEY_FILE`).
+- `npm run build:crxp`: build and pack CRX using a key from `../4chan-next.keys/*.pem` (override with `CRX_KEY_FILE`).
 
-## Reporting Issues
-
-- Issues: https://github.com/TuxedoTako/4chan-xt/issues?q=is%3Aopen+sort%3Aupdated-desc
-- Contribution guide: [CONTRIBUTING.md](./CONTRIBUTING.md)
-
-## Documentation
+## Links
 
 - Changelog: [CHANGELOG.md](./CHANGELOG.md)
+- Issues: https://github.com/cercos/4chan-next/issues
+- Contributing: [CONTRIBUTING.md](./CONTRIBUTING.md)
 - Upstream FAQ: https://github.com/ccd0/4chan-x/wiki/Frequently-Asked-Questions
-- This fork FAQ: https://github.com/TuxedoTako/4chan-xt/wiki/Frequently-Asked-Questions
-
-</details>
+- This fork FAQ: https://github.com/cercos/4chan-next/wiki/Frequently-Asked-Questions

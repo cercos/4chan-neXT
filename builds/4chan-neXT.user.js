@@ -1,6 +1,6 @@
 // ==UserScript==
 // @name         4chan-neXT
-// @version      1.0.4
+// @version      1.0.5
 // @minGMVer     1.14
 // @minFFVer     78
 // @namespace    4chan-neXT
@@ -170,7 +170,7 @@
   'use strict';
 
   var version = {
-    "version": "1.0.4",
+    "version": "1.0.5",
     "date": "2026-06-01T00:00:00Z"
   }
   ;
@@ -317,11 +317,6 @@ div.boardTitle {
           `Link to ${meta.name}'s catalog instead of the native 4chan one.`,
           1
         ],
-        'Index Refresh Notifications': [
-          false,
-          'Show a notice at the top of the page when the index is refreshed.',
-          1
-        ],
         'Follow Cursor': [
           true,
           'Image Hover and Quote Preview move with the mouse cursor.'
@@ -366,15 +361,6 @@ div.boardTitle {
           true,
           'Localize and format timestamps. Has more options on the "Advanced" tab.'
         ],
-        'Relative Post Dates': [
-          false,
-          'Display dates like "3 minutes ago". Tooltip shows the timestamp.'
-        ],
-        'Relative Date Title': [
-          false,
-          'Show Relative Post Date only when hovering over dates.',
-          1
-        ],
         'Comment Expansion': [
           true,
           'Expand comments that are too long to display on the index. Not applicable with JSON Index.'
@@ -403,15 +389,6 @@ div.boardTitle {
           true,
           'Allow editing of the board title and subtitle by ctrl/\u2318+clicking them.'
         ],
-        'Persistent Custom Board Titles': [
-          false,
-          'Force custom board titles to be persistent, even if the board titles are updated.',
-          1
-        ],
-        'Show Updated Notifications': [
-          true,
-          `Show notifications when ${meta.name} is successfully updated.`
-        ],
         'Color User IDs': [
           true,
           'Assign unique colors to user IDs on boards that use them'
@@ -419,14 +396,6 @@ div.boardTitle {
         'Count Posts by ID': [
           true,
           'Display number of posts in the thread when hovering over an ID.'
-        ],
-        'Remove Spoilers': [
-          false,
-          'Remove all spoilers in text.'
-        ],
-        'Reveal Spoilers': [
-          false,
-          'Indicate spoilers if Remove Spoilers is enabled, or make the text appear hovered if Remove Spoiler is disabled.'
         ],
         'Normalize URL': [
           true,
@@ -440,21 +409,9 @@ div.boardTitle {
           true,
           `${meta.name} is NOT designed to work with the native extension.`
         ],
-        'Enable Native Flash Embedding': [
-          true,
-          'Activate the native extension\'s Flash embedding if the native extension is disabled.'
-        ],
-        'Defer Styling to StyleChan': [
-          true,
-          'When the StyleChan userscript is installed, hide visual styling controls (themes, colors, etc.) in favor of StyleChan\'s settings. Custom CSS remains available. Has no effect without StyleChan.'
-        ],
         'Export History': [
           true,
           'Export last read, your posts, etc. when exporting the setting'
-        ],
-        'Ask to Export History': [
-          true,
-          'Ask if history should be exported when settings are exported.'
         ],
         'Scroll Markers': [
           true,
@@ -522,21 +479,6 @@ div.boardTitle {
         'Filter in Native Catalog': [
           true,
           'Apply 4chan X filters in native catalog.',
-          1
-        ],
-        'MD5 Quick Filter Notifications': [
-          true,
-          'Show notification when quick filtering MD5s using the button or keybind.',
-          1
-        ],
-        'MD5 Quick Filter in the Catalog': [
-          true,
-          'Quick filter by MD5 when clicking a thumbnail in the catalog and holding Shift. Disabling falls back on just hiding the thread.',
-          1
-        ],
-        'MD5 Quick Filter in Threads': [
-          true,
-          'Quick filter by MD5 when clicking a thumbnail in a thread while holding shift.',
           1
         ],
         'Recursive Hiding': [
@@ -678,14 +620,6 @@ div.boardTitle {
         'Mouse Wheel Volume': [
           true,
           'Adjust volume of videos with the mouse wheel over the thumbnail/filename/gallery.'
-        ],
-        'Loop in New Tab': [
-          true,
-          'Loop videos opened in their own tabs.'
-        ],
-        'Volume in New Tab': [
-          true,
-          `Apply ${meta.name} mute and volume settings to videos opened in their own tabs.`
         ],
         'Enable sound posts': [
           true,
@@ -843,10 +777,6 @@ div.boardTitle {
         'Scrollbar Markers': [
           true,
           'Show colored markers along the right edge of the page for tracked posts. Uses the highlight colors from the Style settings.'
-        ],
-        'Scrollbar Marker Hover Preview': [
-          true,
-          'Show a floating post preview when hovering scrollbar markers.'
         ],
         'Scrollbar Mark Own Posts': [
           true,
@@ -1126,9 +1056,11 @@ div.boardTitle {
     'Thread Watcher Thumbnail Preview Size': 40,
     'Thread Watcher Max Height': 210,
     'Thread Watcher Max Width': 250,
+    'Thread Watcher Sort': 'manual',
     'Thread Title': 'excerpt',
     'Unread Title Count': 'always',
     'Comment Preview Position': 'below',
+    'Spoiler Mode': 'default',
 
     threadWatcher: {
       'Current Board': [
@@ -1293,6 +1225,7 @@ http://eye.swfchan.com/search/?q=%name;types:swf
     siteStyle: '',
     siteStyleHome: false,
     customSiteThemes: [],
+    savedHighlightPalettes: [],
     // 'auto' applies the SFW or NSFW variant based on the active board's
     // ws_board flag; 'sfw'/'nsfw' force a single variant everywhere.
     sfwNsfwMode: 'auto',
@@ -1338,11 +1271,13 @@ http://eye.swfchan.com/search/?q=%name;types:swf
     'Catalog Highlight Watched Opacity': '',
     'Catalog Highlight Own Text Auto': true,
     'Catalog Highlight Own Text Color': '',
+    'Catalog Highlight Own Subject Color': '',
     'Catalog Highlight Own Link Color': '',
     'Catalog Highlight Own Quote Color': '',
     'Catalog Highlight Own Dead Link Color': '',
     'Catalog Highlight Watched Text Auto': true,
     'Catalog Highlight Watched Text Color': '',
+    'Catalog Highlight Watched Subject Color': '',
     'Catalog Highlight Watched Link Color': '',
     'Catalog Highlight Watched Quote Color': '',
     'Catalog Highlight Watched Dead Link Color': '',
@@ -1759,9 +1694,9 @@ current-archive-text:"Archive"]
     'Catalog Highlight Own Color', 'Catalog Highlight Own Opacity',
     'Catalog Highlight Watched Color', 'Catalog Highlight Watched Opacity',
     'Catalog Highlight Own Text Auto',
-    'Catalog Highlight Own Text Color', 'Catalog Highlight Own Link Color', 'Catalog Highlight Own Quote Color', 'Catalog Highlight Own Dead Link Color',
+    'Catalog Highlight Own Text Color', 'Catalog Highlight Own Subject Color', 'Catalog Highlight Own Link Color', 'Catalog Highlight Own Quote Color', 'Catalog Highlight Own Dead Link Color',
     'Catalog Highlight Watched Text Auto',
-    'Catalog Highlight Watched Text Color', 'Catalog Highlight Watched Link Color', 'Catalog Highlight Watched Quote Color', 'Catalog Highlight Watched Dead Link Color',
+    'Catalog Highlight Watched Text Color', 'Catalog Highlight Watched Subject Color', 'Catalog Highlight Watched Link Color', 'Catalog Highlight Watched Quote Color', 'Catalog Highlight Watched Dead Link Color',
     'Scroll Marker Own Color', 'Scroll Marker You Color', 'Scroll Marker Ghost Color', 'Scroll Marker Unread Color',
     'Scroll Marker Own Opacity', 'Scroll Marker You Opacity', 'Scroll Marker Ghost Opacity', 'Scroll Marker Unread Opacity',
     'Scroll Marker Own Match Highlight', 'Scroll Marker You Match Highlight', 'Scroll Marker Ghost Match Highlight',
@@ -2901,7 +2836,7 @@ current-archive-text:"Archive"]
     h("div", { class: "settings-body" },
       h("nav", null,
         h("div", { class: "settings-search" },
-          h("input", { type: "search", placeholder: "Search settings", autocomplete: "off" })),
+          h("input", { type: "search", class: "field", placeholder: "Search settings", autocomplete: "off" })),
         h("div", { class: "sections-list" })),
       h("div", { class: "section-container" },
         h("section", null))),
@@ -3066,15 +3001,6 @@ current-archive-text:"Archive"]
   <div>Second: <code>%S</code></div>
   <div>Literal <code>%</code>: <code>%%</code></div>
   <div><a href="https://www.w3.org/International/articles/language-tags/" target="_blank">Language tag</a>: <input name="timeLocale" class="field" spellcheck="false"></div>
-  <div>Relative time, like "3 minutes ago":
-    <select name="RelativeTime">
-      <option value="No">Disabled</option>
-      <option value="Hover">Show when hovering on the date</option>
-      <option value="Show">Show relative time, and time and date on hover</option>
-      <option value="Both">Show both timestamp and relative date</option>
-      <option value="BothRelativeFirst">Show both relative date and timestamp</option>
-    </select>
-  </div>
 </details>
 
 <details open>
@@ -3412,6 +3338,7 @@ current-archive-text:"Archive"]
               <input type="color" name="Catalog Highlight Own Color" title="Catalog your-post highlight color">
               <span class="styling-highlight-manual" data-highlight-text-manual="catalog-own">
                 <input type="color" name="Catalog Highlight Own Text Color" title="Text color">
+                <input type="color" name="Catalog Highlight Own Subject Color" title="Subject color">
                 <input type="color" name="Catalog Highlight Own Link Color" title="Link color">
                 <input type="color" name="Catalog Highlight Own Quote Color" title="Quote color">
                 <input type="color" name="Catalog Highlight Own Dead Link Color" title="Dead link color">
@@ -3426,6 +3353,7 @@ current-archive-text:"Archive"]
               <input type="color" name="Catalog Highlight Watched Color" title="Catalog watched-thread highlight color">
               <span class="styling-highlight-manual" data-highlight-text-manual="catalog-watched">
                 <input type="color" name="Catalog Highlight Watched Text Color" title="Text color">
+                <input type="color" name="Catalog Highlight Watched Subject Color" title="Subject color">
                 <input type="color" name="Catalog Highlight Watched Link Color" title="Link color">
                 <input type="color" name="Catalog Highlight Watched Quote Color" title="Quote color">
                 <input type="color" name="Catalog Highlight Watched Dead Link Color" title="Dead link color">
@@ -3439,8 +3367,17 @@ current-archive-text:"Archive"]
     </div>
   </div>
   <div class="styling-actions">
+    <button type="button" id="styling-suggest-palettes" title="Show suggested highlight palettes for the current theme">Suggest palettes</button>
     <button type="button" id="styling-randomize" title="Generate random highlight colors that contrast with the page background">Randomize</button>
     <button type="button" id="styling-open-preview" title="Open a live preview of post highlight states">Preview states</button>
+  </div>
+  <div id="styling-palette-suggestions" class="styling-palette-suggestions" hidden></div>
+  <div class="styling-saved-palettes">
+    <div class="styling-saved-palette-controls">
+      <input type="text" class="field styling-saved-palette-name" id="styling-saved-palette-name" placeholder="Palette name" maxlength="60">
+      <button type="button" id="styling-save-palette" title="Save current highlight colors as a palette">Save palette</button>
+    </div>
+    <div id="styling-saved-palettes-list" class="styling-saved-palettes-list"></div>
   </div>
 </details>
 
@@ -3533,7 +3470,6 @@ current-archive-text:"Archive"]
     <label><input type="checkbox" name="Custom CSS"> Enable Custom CSS</label>
     <label><input type="checkbox" name="customCSSHome"> Load on home page</label>
   </div>
-  <div class="custom-css-note note">Custom CSS can override configured highlight colors.</div>
   <div>For more information about customizing 4chan X&#039;s CSS, see the <a href="https://github.com/ccd0/4chan-x/wiki/Styling-Guide" target="_blank">styling guide</a>.</div>
   <div class="custom-css-controls">
     <label>Syntax theme:
@@ -3974,6 +3910,18 @@ current-archive-text:"Archive"]
   border-left: 3px dashed color-mix(in srgb, var(--xt-catalog-own-highlight, var(--xt-highlight-own, var(--xt-border-highlight))) calc(var(--xt-catalog-own-highlight-opacity, 1) * 100%), transparent);
   color: var(--xt-catalog-own-text, var(--xt-text-color)) !important;
 }
+:root.xt-highlight-catalog-own .catalog-thread.yourPost .post.catalog-post .postInfo,
+:root.xt-highlight-catalog-own .catalog-thread.yourPost .post.catalog-post .postMessage,
+:root.xt-highlight-catalog-own .catalog-thread.yourPost .post.catalog-post .summary,
+:root.xt-highlight-catalog-own .catalog-thread.yourPost .post.catalog-post .fileText,
+:root.xt-highlight-catalog-own .catalog-thread.yourPost .post.catalog-post .catalog-stats,
+:root.xt-highlight-catalog-own .catalog-thread > .catalog-container.yourPost .post.catalog-post .postInfo,
+:root.xt-highlight-catalog-own .catalog-thread > .catalog-container.yourPost .post.catalog-post .postMessage,
+:root.xt-highlight-catalog-own .catalog-thread > .catalog-container.yourPost .post.catalog-post .summary,
+:root.xt-highlight-catalog-own .catalog-thread > .catalog-container.yourPost .post.catalog-post .fileText,
+:root.xt-highlight-catalog-own .catalog-thread > .catalog-container.yourPost .post.catalog-post .catalog-stats {
+  color: var(--xt-catalog-own-text, var(--xt-text-color)) !important;
+}
 :root.xt-highlight-catalog-own .catalog-thread.yourPost .post.catalog-post a,
 :root.xt-highlight-catalog-own .catalog-thread > .catalog-container.yourPost .post.catalog-post a {
   color: var(--xt-catalog-own-link, var(--xt-link-text-color)) !important;
@@ -3981,6 +3929,10 @@ current-archive-text:"Archive"]
 :root.xt-highlight-catalog-own .catalog-thread.yourPost .post.catalog-post .quote,
 :root.xt-highlight-catalog-own .catalog-thread > .catalog-container.yourPost .post.catalog-post .quote {
   color: var(--xt-catalog-own-quote, var(--xt-quote-text-color)) !important;
+}
+:root.xt-highlight-catalog-own .catalog-thread.yourPost .post.catalog-post .subject,
+:root.xt-highlight-catalog-own .catalog-thread > .catalog-container.yourPost .post.catalog-post .subject {
+  color: var(--xt-catalog-own-subject, var(--xt-catalog-own-text, var(--xt-text-color))) !important;
 }
 :root.xt-highlight-catalog-own .catalog-thread.yourPost .post.catalog-post .deadlink,
 :root.xt-highlight-catalog-own .catalog-thread > .catalog-container.yourPost .post.catalog-post .deadlink {
@@ -4002,11 +3954,21 @@ current-archive-text:"Archive"]
   border: 2px solid color-mix(in srgb, var(--xt-catalog-watched-highlight, var(--xt-watched-border, rgba(255, 0, 0, .75))) calc(var(--xt-catalog-watched-highlight-opacity, 1) * 100%), transparent);
   color: var(--xt-catalog-watched-text, var(--xt-text-color)) !important;
 }
+:root.xt-highlight-catalog-watched .catalog-thread.watched:not(:has(.yourPost)) .post.catalog-post .postInfo,
+:root.xt-highlight-catalog-watched .catalog-thread.watched:not(:has(.yourPost)) .post.catalog-post .postMessage,
+:root.xt-highlight-catalog-watched .catalog-thread.watched:not(:has(.yourPost)) .post.catalog-post .summary,
+:root.xt-highlight-catalog-watched .catalog-thread.watched:not(:has(.yourPost)) .post.catalog-post .fileText,
+:root.xt-highlight-catalog-watched .catalog-thread.watched:not(:has(.yourPost)) .post.catalog-post .catalog-stats {
+  color: var(--xt-catalog-watched-text, var(--xt-text-color)) !important;
+}
 :root.xt-highlight-catalog-watched .catalog-thread.watched:not(:has(.yourPost)) .post.catalog-post a {
   color: var(--xt-catalog-watched-link, var(--xt-link-text-color)) !important;
 }
 :root.xt-highlight-catalog-watched .catalog-thread.watched:not(:has(.yourPost)) .post.catalog-post .quote {
   color: var(--xt-catalog-watched-quote, var(--xt-quote-text-color)) !important;
+}
+:root.xt-highlight-catalog-watched .catalog-thread.watched:not(:has(.yourPost)) .post.catalog-post .subject {
+  color: var(--xt-catalog-watched-subject, var(--xt-catalog-watched-text, var(--xt-text-color))) !important;
 }
 :root.xt-highlight-catalog-watched .catalog-thread.watched:not(:has(.yourPost)) .post.catalog-post .deadlink {
   color: var(--xt-catalog-watched-dead-link, var(--xt-dead-link-text-color, var(--xt-dead-link))) !important;
@@ -4966,6 +4928,12 @@ div[data-checked="false"] > .suboption-list {
 #fourchanx-settings .thread-watcher-width-input {
   width: 4.2em;
 }
+.watcher-sort-check {
+  display: inline-block;
+  width: 1em;
+  text-align: center;
+  margin-right: 4px;
+}
 .section-filtering .settings-subnav {
   display: flex;
   flex-wrap: wrap;
@@ -5111,7 +5079,85 @@ div[data-checked="false"] > .suboption-list {
 .section-styling .styling-actions {
   margin-top: 6px;
   display: flex;
+  flex-wrap: wrap;
   gap: 8px;
+}
+.section-styling .styling-palette-suggestions {
+  margin-top: 8px;
+  border: 1px solid color-mix(in srgb, currentColor 22%, transparent);
+  border-radius: 4px;
+  padding: 6px 8px;
+}
+.section-styling .styling-palette-header {
+  align-items: center;
+  display: flex;
+  flex-wrap: wrap;
+  gap: 6px 10px;
+  margin-bottom: 6px;
+}
+.section-styling .styling-palette-title {
+  font-weight: 600;
+}
+.section-styling .styling-palette-note {
+  opacity: .8;
+}
+.section-styling .styling-palette-list {
+  display: grid;
+  gap: 6px;
+}
+.section-styling .styling-palette-row {
+  align-items: center;
+  border-radius: 3px;
+  display: grid;
+  gap: 6px;
+  grid-template-columns: auto minmax(130px, 1fr) auto;
+  padding: 2px 4px;
+}
+.section-styling .styling-palette-row:hover {
+  background: color-mix(in srgb, currentColor 8%, transparent);
+}
+.section-styling .styling-palette-name {
+  min-width: 0;
+}
+.section-styling .styling-palette-swatches {
+  align-items: center;
+  display: inline-flex;
+  gap: 4px;
+}
+.section-styling .styling-palette-swatch {
+  border: 1px solid color-mix(in srgb, currentColor 24%, transparent);
+  border-radius: 2px;
+  display: inline-block;
+  height: 14px;
+  width: 18px;
+}
+.section-styling .styling-saved-palettes {
+  margin-top: 8px;
+}
+.section-styling .styling-saved-palette-controls {
+  align-items: center;
+  display: flex;
+  flex-wrap: wrap;
+  gap: 6px;
+}
+.section-styling .styling-saved-palette-name.field {
+  min-width: 180px;
+}
+.section-styling .styling-saved-palettes-list {
+  display: grid;
+  gap: 6px;
+  margin-top: 6px;
+}
+.section-styling .styling-saved-palette-row {
+  align-items: center;
+  border-radius: 3px;
+  display: grid;
+  gap: 6px;
+  grid-template-columns: auto auto minmax(130px, 1fr) auto;
+  padding: 2px 4px;
+}
+.section-styling .styling-saved-palette-row:hover {
+  background: color-mix(in srgb, currentColor 8%, transparent);
 }
 .styling-preview {
   width: min(960px, 92vw);
@@ -5201,6 +5247,9 @@ div[data-checked="false"] > .suboption-list {
 .styling-preview-post .postMessage {
   color: var(--xt-text-color);
 }
+.styling-preview-post .subject {
+  color: inherit;
+}
 .styling-preview-post a {
   color: var(--xt-link-text-color);
 }
@@ -5278,6 +5327,70 @@ div[data-checked="false"] > .suboption-list {
 .styling-preview .styling-preview-post.from-archive .quotelink.deadlink {
   color: var(--xt-highlight-ghost-dead-link, var(--xt-dead-link-text-color, var(--xt-dead-link))) !important;
 }
+.styling-preview[data-highlight-catalog-own="true"] .catalog-thread.yourPost > .catalog-container,
+.styling-preview[data-highlight-catalog-own="true"] .catalog-thread > .catalog-container.yourPost {
+  background: color-mix(in srgb, var(--xt-catalog-own-highlight, var(--xt-highlight-own, transparent)) calc(var(--xt-catalog-own-highlight-opacity, 1) * 100%), transparent) !important;
+}
+.styling-preview[data-highlight-catalog-own="true"] .catalog-thread.yourPost .post.catalog-post,
+.styling-preview[data-highlight-catalog-own="true"] .catalog-thread > .catalog-container.yourPost .post.catalog-post {
+  background: transparent !important;
+  border-left: 3px dashed color-mix(in srgb, var(--xt-catalog-own-highlight, var(--xt-highlight-own, var(--xt-border-highlight))) calc(var(--xt-catalog-own-highlight-opacity, 1) * 100%), transparent);
+  color: var(--xt-catalog-own-text, var(--xt-text-color)) !important;
+}
+.styling-preview[data-highlight-catalog-own="true"] .catalog-thread.yourPost .post.catalog-post .postInfo,
+.styling-preview[data-highlight-catalog-own="true"] .catalog-thread.yourPost .post.catalog-post .postMessage,
+.styling-preview[data-highlight-catalog-own="true"] .catalog-thread.yourPost .post.catalog-post .summary,
+.styling-preview[data-highlight-catalog-own="true"] .catalog-thread.yourPost .post.catalog-post .catalog-stats,
+.styling-preview[data-highlight-catalog-own="true"] .catalog-thread > .catalog-container.yourPost .post.catalog-post .postInfo,
+.styling-preview[data-highlight-catalog-own="true"] .catalog-thread > .catalog-container.yourPost .post.catalog-post .postMessage,
+.styling-preview[data-highlight-catalog-own="true"] .catalog-thread > .catalog-container.yourPost .post.catalog-post .summary,
+.styling-preview[data-highlight-catalog-own="true"] .catalog-thread > .catalog-container.yourPost .post.catalog-post .catalog-stats {
+  color: var(--xt-catalog-own-text, var(--xt-text-color)) !important;
+}
+.styling-preview[data-highlight-catalog-own="true"] .catalog-thread.yourPost .post.catalog-post .subject,
+.styling-preview[data-highlight-catalog-own="true"] .catalog-thread > .catalog-container.yourPost .post.catalog-post .subject {
+  color: var(--xt-catalog-own-subject, var(--xt-catalog-own-text, var(--xt-text-color))) !important;
+}
+.styling-preview[data-highlight-catalog-own="true"] .catalog-thread.yourPost .post.catalog-post a,
+.styling-preview[data-highlight-catalog-own="true"] .catalog-thread > .catalog-container.yourPost .post.catalog-post a {
+  color: var(--xt-catalog-own-link, var(--xt-link-text-color)) !important;
+}
+.styling-preview[data-highlight-catalog-own="true"] .catalog-thread.yourPost .post.catalog-post .quote,
+.styling-preview[data-highlight-catalog-own="true"] .catalog-thread > .catalog-container.yourPost .post.catalog-post .quote {
+  color: var(--xt-catalog-own-quote, var(--xt-quote-text-color)) !important;
+}
+.styling-preview[data-highlight-catalog-own="true"] .catalog-thread.yourPost .post.catalog-post .deadlink,
+.styling-preview[data-highlight-catalog-own="true"] .catalog-thread > .catalog-container.yourPost .post.catalog-post .deadlink {
+  color: var(--xt-catalog-own-dead-link, var(--xt-dead-link-text-color, var(--xt-dead-link))) !important;
+}
+.styling-preview[data-highlight-catalog-watched="true"] .catalog-thread.watched > .catalog-container {
+  background: color-mix(in srgb, var(--xt-catalog-watched-highlight, var(--xt-watched-border, rgba(255, 0, 0, .75))) calc(var(--xt-catalog-watched-highlight-opacity, 0.2) * 100%), transparent) !important;
+}
+.styling-preview[data-highlight-catalog-watched="true"] .catalog-thread.watched .post.catalog-post {
+  background: transparent !important;
+}
+.styling-preview[data-highlight-catalog-watched="true"] .catalog-thread.watched .catalog-post {
+  border: 2px solid color-mix(in srgb, var(--xt-catalog-watched-highlight, var(--xt-watched-border, rgba(255, 0, 0, .75))) calc(var(--xt-catalog-watched-highlight-opacity, 1) * 100%), transparent);
+  color: var(--xt-catalog-watched-text, var(--xt-text-color)) !important;
+}
+.styling-preview[data-highlight-catalog-watched="true"] .catalog-thread.watched .post.catalog-post .postInfo,
+.styling-preview[data-highlight-catalog-watched="true"] .catalog-thread.watched .post.catalog-post .postMessage,
+.styling-preview[data-highlight-catalog-watched="true"] .catalog-thread.watched .post.catalog-post .summary,
+.styling-preview[data-highlight-catalog-watched="true"] .catalog-thread.watched .post.catalog-post .catalog-stats {
+  color: var(--xt-catalog-watched-text, var(--xt-text-color)) !important;
+}
+.styling-preview[data-highlight-catalog-watched="true"] .catalog-thread.watched .post.catalog-post .subject {
+  color: var(--xt-catalog-watched-subject, var(--xt-catalog-watched-text, var(--xt-text-color))) !important;
+}
+.styling-preview[data-highlight-catalog-watched="true"] .catalog-thread.watched .post.catalog-post a {
+  color: var(--xt-catalog-watched-link, var(--xt-link-text-color)) !important;
+}
+.styling-preview[data-highlight-catalog-watched="true"] .catalog-thread.watched .post.catalog-post .quote {
+  color: var(--xt-catalog-watched-quote, var(--xt-quote-text-color)) !important;
+}
+.styling-preview[data-highlight-catalog-watched="true"] .catalog-thread.watched .post.catalog-post .deadlink {
+  color: var(--xt-catalog-watched-dead-link, var(--xt-dead-link-text-color, var(--xt-dead-link))) !important;
+}
 .section-styling .styling-variant-bar {
   align-items: center;
   border-bottom: 1px solid rgba(128, 128, 128, .25);
@@ -5338,12 +5451,10 @@ div[data-checked="false"] > .suboption-list {
   display: none;
 }
 
-/* StyleChan deferral: hide the Site Style section (the SFW/NSFW switcher
-   + theme picker — the only parts that genuinely conflict with StyleChan).
-   Highlight Colors, Scrollbar Markers, Text Colors and Custom CSS keep
-   working alongside StyleChan. */
+/* StyleChan deferral: hide 4chan XT styling controls that StyleChan owns. */
 .styling-deferred > .styling-site-style,
-.styling-deferred > .styling-text-colors {
+.styling-deferred > .styling-text-colors,
+.styling-deferred > .styling-custom-css {
   display: none;
 }
 /* StyleChan injects \`<div id="overlay">\` (same id as ours used to be — we
@@ -5768,41 +5879,44 @@ body > #overlay:not(.media-preview) {
   --custom-css-text: #2b2b2b;
   --custom-css-caret: #2b2b2b;
 }
+/* StyleChan (and similar) apply broad \`textarea\`/\`pre\` overrides with
+   \`!important\` that, if they hit only one of the two layers, shift the
+   textarea's text relative to the highlighted overlay. The user then sees
+   selections covering the wrong rows and backspace deleting the wrong
+   character. Pin every layout-affecting property on BOTH layers with
+   \`!important\` so the two stay glued together regardless of outside CSS. */
 .section-styling .custom-css-highlight,
 .section-styling .custom-css-textarea {
-  background: var(--custom-css-bg);
-  font: var(--custom-css-font);
-  font-kerning: none;
-  font-variant-ligatures: none;
-  inset: 0 0 12px 0;
-  letter-spacing: 0;
-  margin: 0;
-  overflow: auto;
-  overflow-wrap: normal;
-  padding: 8px;
-  position: absolute;
-  tab-size: 2;
-  text-shadow: none;
-  white-space: pre;
-  word-break: normal;
-}
-/* StyleChan applies broad \`textarea\`/\`pre\` color and background overrides
-   with \`!important\`, which kills the transparent-textarea-over-pre trick
-   the syntax highlighter relies on. Pin our own colors with \`!important\`
-   so the highlight layer stays visible and the textarea stays transparent. */
-.section-styling .custom-css-highlight {
   background: var(--custom-css-bg) !important;
+  box-sizing: border-box !important;
+  font: var(--custom-css-font) !important;
+  font-kerning: none !important;
+  font-variant-ligatures: none !important;
+  inset: 0 0 12px 0 !important;
+  letter-spacing: 0 !important;
+  margin: 0 !important;
+  overflow-wrap: normal !important;
+  padding: 8px !important;
+  position: absolute !important;
+  tab-size: 2 !important;
+  text-shadow: none !important;
+  white-space: pre !important;
+  word-break: normal !important;
+}
+.section-styling .custom-css-highlight {
+  border: 0 !important;
   color: var(--custom-css-text) !important;
-  overflow: hidden;
-  pointer-events: none;
+  overflow: hidden !important;
+  pointer-events: none !important;
 }
 .section-styling .custom-css-textarea {
   background: transparent !important;
-  border: 0;
+  border: 0 !important;
   color: var(--custom-css-caret) !important;
   caret-color: var(--custom-css-caret);
   -webkit-text-fill-color: transparent !important;
-  resize: none;
+  overflow: auto !important;
+  resize: none !important;
 }
 .section-styling .custom-css-textarea:focus {
   outline: none;
@@ -7242,6 +7356,10 @@ select.flagSelector {
   overflow: hidden;
   white-space: nowrap;
 }
+.flagSelector-picker,
+.flagSelector-menu {
+  --xt-flag-selector-hover-bg: var(--xt-entry-focus-bg, rgba(127, 127, 127, 0.25));
+}
 .flagSelector-picker {
   position: relative;
 }
@@ -7249,6 +7367,8 @@ select.flagSelector {
   align-items: center;
   -webkit-appearance: none;
   appearance: none;
+  background-color: transparent;
+  border: 1px solid color-mix(in srgb, currentColor 25%, transparent);
   cursor: pointer;
   display: flex;
   gap: 6px;
@@ -7281,10 +7401,11 @@ select.flagSelector {
   opacity: 0.6;
 }
 .flagSelector-menu {
-  background-color: var(--xt-background, #fff);
-  border: 1px solid var(--xt-border, #888);
+  background-color: #fff;
+  border: 1px solid color-mix(in srgb, currentColor 25%, transparent);
   border-radius: 2px;
-  box-shadow: 0 2px 4px rgba(0, 0, 0, 0.25);
+  color: inherit;
+  box-shadow: 0 2px 4px color-mix(in srgb, currentColor 25%, transparent);
   box-sizing: border-box;
   overflow-y: auto;
   position: fixed;
@@ -7303,9 +7424,16 @@ select.flagSelector {
   text-align: left;
   width: 100%;
 }
+.flagSelector-option,
+.flagSelector-option:hover,
+.flagSelector-option:focus,
+.flagSelector-option:active {
+  color: inherit !important;
+  -webkit-text-fill-color: inherit !important;
+}
 .flagSelector-option:hover,
 .flagSelector-option:focus {
-  background-color: rgba(127, 127, 127, 0.25);
+  background-color: var(--xt-flag-selector-hover-bg);
   outline: none;
 }
 .flagSelector-option.selected {
@@ -7725,8 +7853,9 @@ input[type="checkbox"]:checked ~ .checkbox-letter {
 
 /* Thread and Flash Tag Select */
 #qr select {
-  background: white;
-  border: 1px solid #CCC;
+  background: var(--xt-background, #fff);
+  border: 1px solid var(--xt-border, #CCC);
+  color: var(--xt-menu-fg, inherit);
 }
 #qr select[data-name="thread"] {
   float: right;
@@ -8822,6 +8951,17 @@ svg.icon {
 
   const CustomCSS = {
     init() {
+      if (Settings.shouldDeferStylingToStylechan()) {
+        if (Conf['Custom CSS']) {
+          Conf['Custom CSS'] = false;
+          $.set('Custom CSS', false);
+        }
+        if (Conf['customCSSHome']) {
+          Conf['customCSSHome'] = false;
+          $.set('customCSSHome', false);
+        }
+        return;
+      }
       if (!Conf['Custom CSS']) { return; }
       return this.addStyle();
     },
@@ -9586,7 +9726,9 @@ svg.icon {
         failed: '#cf4a4a',
         expired: '#d0a64d',
       };
-      container.style.border = `2px solid ${borderColors[state] || borderColors.idle}`;
+      const borderColor = borderColors[state] || borderColors.idle;
+      const showBorder = state === 'complete' || state === 'failed' || state === 'expired';
+      container.style.border = showBorder ? `2px solid ${borderColor}` : '2px solid transparent';
       container.style.borderRadius = '4px';
       container.style.transition = 'border-color .2s ease';
       this.setStatusMessage({
@@ -11187,7 +11329,7 @@ svg.icon {
     cb: {
       toggle(e) {
         const post = Get.postFromNode(this);
-        if (e.shiftKey && Conf['MD5 Quick Filter in Threads']) {
+        if (e.shiftKey) {
           Filter.quickFilterMD5.call(post);
           e.preventDefault();
           e.stopImmediatePropagation();
@@ -11681,7 +11823,7 @@ svg.icon {
       //   Preceding and following new lines.
       //   Trailing spaces.
       const bq = this.nodes.commentClean.cloneNode(true);
-      if (!Conf['Remove Spoilers'] && !Conf['Reveal Spoilers']) {
+      if (Conf['Spoiler Mode'] === 'default') {
         this.cleanSpoilers(bq);
       }
       g.SITE.cleanCommentDisplay?.(bq);
@@ -13283,7 +13425,6 @@ svg.icon {
       ScrollMarkers.container.hidden = true;
       for (const key of [
         'Scrollbar Markers',
-        'Scrollbar Marker Hover Preview',
         'Scrollbar Mark Own Posts',
         'Scrollbar Mark Quotes You',
         'Scrollbar Mark Ghost Posts',
@@ -13383,9 +13524,7 @@ svg.icon {
       marker.title = `Post No.${post.ID}`;
       $.on(marker, 'mouseenter', (e) => {
         ScrollMarkers.highlightPost(post);
-        if (Conf['Scrollbar Marker Hover Preview']) {
-          ScrollMarkers.showPreview(marker, post, e);
-        }
+        ScrollMarkers.showPreview(marker, post, e);
       });
       $.on(marker, 'mousemove', (e) => ScrollMarkers.movePreview(marker, e));
       $.on(marker, 'mouseleave', () => {
@@ -13954,6 +14093,10 @@ svg.icon {
   var ThreadWatcher = {
     drag: {
       start(e) {
+        if (ThreadWatcher.sortMode() !== 'manual') {
+          e.preventDefault();
+          return;
+        }
         ThreadWatcher.draggingLine = this;
         this.classList.add('drag');
         if (e.dataTransfer) {
@@ -14217,7 +14360,7 @@ svg.icon {
       dismiss() {
         for (var {siteID, boardID, threadID, data} of ThreadWatcher.getAll()) {
           if (data.quotingYou) {
-            ThreadWatcher.update(siteID, boardID, threadID, {dismiss: data.quotingYou || 0});
+            ThreadWatcher.update(siteID, boardID, threadID, {dismiss: data.quotingYou || 0, yousCount: 0});
           }
         }
         $.event('CloseMenu');
@@ -14231,6 +14374,7 @@ svg.icon {
           ThreadWatcher.update(siteID, boardID, threadID, {
             unread: 0,
             quotingYou: 0,
+            yousCount: 0,
             dismiss: data.quotingYou || 0
           });
         }
@@ -14249,6 +14393,7 @@ svg.icon {
         ThreadWatcher.update(siteID, boardID, +threadID, {
           unread: 0,
           quotingYou: 0,
+          yousCount: 0,
           dismiss: data.quotingYou || 0
         });
       },
@@ -14545,6 +14690,7 @@ svg.icon {
         const lastReadPost = ThreadWatcher.unreaddb.get({siteID, boardID, threadID, defaultValue: 0});
         let unread = data.unread || 0;
         let quotingYou = data.quotingYou || 0;
+        let yousCount = data.yousCount || 0;
         const youOP = !!QuoteYou.db?.get({siteID, boardID, threadID, postID: threadID});
 
         for (var postObj of this.response.posts) {
@@ -14576,14 +14722,14 @@ svg.icon {
           }
 
           unread++;
-          if (quotesYou) { quotingYou = postObj.no; }
+          if (quotesYou) { quotingYou = postObj.no; yousCount++; }
         }
 
         if (!newData) { newData = {}; }
         if ((thumbURL != null) && (thumbURL !== data.thumbURL)) {
           newData.thumbURL = thumbURL;
         }
-        $.extend(newData, {last, replies, isDead, isArchived, unread, quotingYou});
+        $.extend(newData, {last, replies, isDead, isArchived, unread, quotingYou, yousCount});
         return ThreadWatcher.update(siteID, boardID, threadID, newData);
 
       } else if (this.status === 404) {
@@ -14613,6 +14759,46 @@ svg.icon {
       }
     },
 
+    sortComparators: {
+      manual(a, b) {
+        const ao = a.data.order;
+        const bo = b.data.order;
+        if ((ao == null) && (bo == null)) { return 0; }
+        if (ao == null) { return 1; }
+        if (bo == null) { return -1; }
+        return ao - bo;
+      },
+      'date-added': (a, b) => (b.data.addedAt || 0) - (a.data.addedAt || 0),
+      'thread-date': (a, b) => Number(b.threadID) - Number(a.threadID),
+      replies: (a, b) => (b.data.replies || 0) - (a.data.replies || 0),
+      unread: (a, b) => (b.data.unread || 0) - (a.data.unread || 0),
+      activity: (a, b) => (b.data.modified || 0) - (a.data.modified || 0),
+      yous(a, b) {
+        const ay = ThreadWatcher.activeYous(a.data);
+        const by = ThreadWatcher.activeYous(b.data);
+        if (ay !== by) { return by - ay; }
+        return (b.data.addedAt || 0) - (a.data.addedAt || 0);
+      },
+      board(a, b) {
+        const sa = `${a.siteID}/${a.boardID}`;
+        const sb = `${b.siteID}/${b.boardID}`;
+        if (sa < sb) { return -1; }
+        if (sa > sb) { return 1; }
+        return (a.data.order || 0) - (b.data.order || 0);
+      }
+    },
+
+    sortMode() {
+      const mode = Conf['Thread Watcher Sort'] || 'manual';
+      return ThreadWatcher.sortComparators[mode] ? mode : 'manual';
+    },
+
+    activeYous(data) {
+      if (!data) { return 0; }
+      if ((data.quotingYou || 0) <= (data.dismiss || 0)) { return 0; }
+      return data.yousCount || 1;
+    },
+
     getAll(groupByBoard) {
       const all = [];
       for (var siteID in ThreadWatcher.db.data) {
@@ -14635,14 +14821,7 @@ svg.icon {
         }
       }
       if (!groupByBoard) {
-        all.sort((a, b) => {
-          const ao = a.data.order;
-          const bo = b.data.order;
-          if ((ao == null) && (bo == null)) { return 0; }
-          if (ao == null) { return 1; }
-          if (bo == null) { return -1; }
-          return ao - bo;
-        });
+        all.sort(ThreadWatcher.sortComparators[ThreadWatcher.sortMode()]);
       }
       return all;
     },
@@ -14709,7 +14888,7 @@ svg.icon {
       });
       $.add(link, title);
 
-      const div = $.el('div', { draggable: true });
+      const div = $.el('div', { draggable: ThreadWatcher.sortMode() === 'manual' });
       const fullID = `${boardID}.${threadID}`;
       div.dataset.fullID = fullID;
       div.dataset.siteID = siteID;
@@ -15030,6 +15209,9 @@ svg.icon {
       for (key in newData) { val = newData[key]; if (data[key] !== val) { n++; } }
       if (!n) { return; }
       ThreadWatcher.db.extend({siteID, boardID, threadID, val: newData});
+      if (ThreadWatcher.sortMode() !== 'manual') {
+        return ThreadWatcher.refresh();
+      }
       if (line = $(`#watched-threads > [data-site-i-d='${siteID}'][data-full-i-d='${boardID}.${threadID}']`, ThreadWatcher.dialog)) {
         const newLine = ThreadWatcher.makeLine(siteID, boardID, threadID, data);
         $.replace(line, newLine);
@@ -15082,6 +15264,9 @@ svg.icon {
       const oldData = ThreadWatcher.db.get({ boardID, threadID, defaultValue: dict() });
       if (oldData.order == null) {
         oldData.order = ThreadWatcher.getAll().length;
+      }
+      if (oldData.addedAt == null) {
+        oldData.addedAt = Date.now();
       }
       delete oldData.last;
       delete oldData.modified;
@@ -15239,6 +15424,8 @@ svg.icon {
           this.menu.addEntry(entry);
         }
 
+        this.addSortEntry();
+
         // Settings checkbox entries:
         for (var name in Config.threadWatcher) {
           if (['Show OP Thumbnails', 'Thread Watcher Thumbnail Hover'].includes(name)) { continue; }
@@ -15272,6 +15459,60 @@ svg.icon {
         if (['Show Page', 'Show Unread Count', 'Auto Update Thread Watcher'].includes(name))
           $.on(input, 'change', ThreadWatcher.fetchAuto);
         return this.menu.addEntry(entry);
+      },
+
+      addSortEntry() {
+        const sortOptions = [
+          ['manual',      'Manual (drag)'],
+          ['yous',        '(You)s'],
+          ['date-added',  'Date added'],
+          ['thread-date', 'Thread date'],
+          ['replies',     'Reply count'],
+          ['unread',      'Unread count'],
+          ['activity',    'Last activity'],
+          ['board',       'Board'],
+        ];
+        const subEntries = [];
+        sortOptions.forEach(([value, label]) => {
+          const el = $.el('a', {
+            href: 'javascript:;',
+            innerHTML: '<span class="watcher-sort-check"></span><span class="watcher-sort-label"></span>'
+          });
+          const check = $('.watcher-sort-check', el);
+          const labelEl = $('.watcher-sort-label', el);
+          labelEl.textContent = label;
+          const updateCheck = () => {
+            check.textContent = ThreadWatcher.sortMode() === value ? '✓' : '';
+          };
+          $.on(el, 'mousedown', e => e.stopPropagation());
+          $.on(el, 'click', function(e) {
+            e.stopPropagation();
+            $.set('Thread Watcher Sort', value);
+            Conf['Thread Watcher Sort'] = value;
+            ThreadWatcher.refresh();
+            for (const entry of subEntries) { entry.updateCheck(); }
+          });
+          subEntries.push({
+            el,
+            updateCheck,
+            open() {
+              updateCheck();
+              return true;
+            }
+          });
+        });
+        this.menu.addEntry({
+          el: $.el('a', {
+            href: 'javascript:;',
+            textContent: 'Sort'
+          }),
+          order: 50,
+          subEntries,
+          open() {
+            this.el.classList.toggle('disabled', !ThreadWatcher.list.firstElementChild);
+            return true;
+          }
+        });
       },
 
       addThumbnailControls() {
@@ -16499,7 +16740,7 @@ svg.icon {
         if ((e.button !== 0) || !e.shiftKey) return;
         e.preventDefault();
         getSelection().removeAllRanges();
-        if (Conf['MD5 Quick Filter in the Catalog'] && e.target.classList.contains('catalog-thumb')) {
+        if (e.target.classList.contains('catalog-thumb')) {
           Filter.quickFilterMD5.call(this.thread.OP);
         } else {
           Index.toggleHide(this.thread);
@@ -16956,20 +17197,9 @@ svg.icon {
         oldReq.abort();
       }
 
-      if (Conf['Index Refresh Notifications']) {
-        // Optional notification for manual refreshes
-        if (!Index.notice) { Index.notice = new Notice('info', 'Refreshing index...'); }
-        if (!Index.nTimeout) { Index.nTimeout = setTimeout(() => {
-            if (Index.notice) {
-              Index.notice.el.lastElementChild.textContent += ' (disable JSON Index if this takes too long)';
-            }
-          }
-          , 3 * SECOND); }
-      } else {
-        // Also display notice if Index Refresh is taking too long
-        if (!Index.nTimeout) { Index.nTimeout = setTimeout(() => Index.notice || (Index.notice = new Notice('info', 'Refreshing index... (disable JSON Index if this takes too long)'))
-        , 3 * SECOND); }
-      }
+      // Display notice if Index Refresh is taking too long
+      if (!Index.nTimeout) { Index.nTimeout = setTimeout(() => Index.notice || (Index.notice = new Notice('info', 'Refreshing index... (disable JSON Index if this takes too long)'))
+      , 3 * SECOND); }
 
       // Hard refresh in case of incomplete page load.
       if (!firstTime && (d.readyState !== 'loading') && !$('.board + *')) {
@@ -17028,13 +17258,7 @@ svg.icon {
       }
 
       if (notice) {
-        if (Conf['Index Refresh Notifications']) {
-          notice.setType('success');
-          notice.el.lastElementChild.textContent = 'Index refreshed!';
-          setTimeout(notice.close, SECOND);
-        } else {
-          notice.close();
-        }
+        notice.close();
       }
 
       const timeEl = $('#index-last-refresh time', Index.navLinks);
@@ -23327,6 +23551,50 @@ aero|asia|biz|cat|com|coop|dance|info|int|jobs|mobi|moe|museum|name|net|org|post
         menu.style.width = `${width}px`;
         menu.style.maxHeight = `${maxHeight}px`;
       };
+      // The menu is appended to document.body so it escapes the QR form's
+      // overflow, but that means it can't inherit the QR's theme. We mirror
+      // colors from the QR onto the menu (and re-pin them on the toggle) so
+      // the dropdown matches whatever theme — StyleChan or otherwise — is
+      // styling the QR.
+      //
+      // For the text color we sample from the QR form (a non-button parent),
+      // because host themes like StyleChan apply their own `button { color }`
+      // rule and reading from the toggle itself would inherit that. For the
+      // background we walk up from the toggle until we hit the first opaque
+      // ancestor. For borders we copy the computed border from a sibling input,
+      // which has already been styled by the host theme. `setProperty(..., '',
+      // 'important')` is used so the inline styles beat any !important rules
+      // a host stylesheet may use against `button`.
+      const syncTheme = () => {
+        const formEl = (QR.nodes?.form || picker.parentElement);
+        const fg = formEl ? window.getComputedStyle(formEl).color : '';
+        let bg = '';
+        let el = toggle;
+        while (el) {
+          const cs = window.getComputedStyle(el);
+          const m = cs.backgroundColor.match(/[\d.]+/g);
+          if (m && (m.length < 4 || parseFloat(m[3]) > 0.01)) {
+            bg = cs.backgroundColor;
+            break;
+          }
+          el = el.parentElement;
+        }
+        if (bg) {
+          menu.style.setProperty('background-color', bg, 'important');
+        }
+        if (fg) {
+          menu.style.setProperty('color', fg, 'important');
+          toggle.style.setProperty('color', fg, 'important');
+        }
+        const sibling = QR.nodes?.name;
+        if (sibling) {
+          const cs = window.getComputedStyle(sibling);
+          if (cs.borderTopColor) {
+            toggle.style.setProperty('border-color', cs.borderTopColor, 'important');
+            menu.style.setProperty('border-color', cs.borderTopColor, 'important');
+          }
+        }
+      };
       const openMenu = () => {
         if (open)
           return;
@@ -23334,6 +23602,7 @@ aero|asia|biz|cat|com|coop|dance|info|int|jobs|mobi|moe|museum|name|net|org|post
         picker.classList.add('open');
         toggle.setAttribute('aria-expanded', 'true');
         menu.hidden = false;
+        syncTheme();
         updateMenuPosition();
       };
       const syncSelected = () => {
@@ -23435,6 +23704,9 @@ aero|asia|biz|cat|com|coop|dance|info|int|jobs|mobi|moe|museum|name|net|org|post
       };
       $.add(d.body, menu);
       syncSelected();
+      // Defer to next frame so QR.nodes.form / nodes.name are populated by
+      // flagsInput()'s caller before we sample computed styles off them.
+      setTimeout(syncTheme, 0);
       return { select, picker };
     },
     flagsInput() {
@@ -26295,7 +26567,7 @@ $\
       },
       parseCommentDisplay(html) {
         // Hide spoilers.
-        if (!Conf['Remove Spoilers'] && !Conf['Reveal Spoilers']) {
+        if (Conf['Spoiler Mode'] === 'default') {
           let html2;
           while ((html2 = html.replace(/<s>(?:(?!<\/?s>).)*<\/s>/g, '[spoiler]')) !== html) {
             html = html2;
@@ -26956,7 +27228,6 @@ $\
       });
       Header.addShortcut('settings', link, 820);
       const add = this.addSection;
-      add('All Settings', this.allSettings);
       add('General', this.general);
       add('Styling', this.styling);
       add('Interface', this.interface);
@@ -26966,6 +27237,7 @@ $\
       add('Filtering', this.filter);
       add('Keybinds', this.keybinds);
       add('Advanced', this.advanced);
+      add('All Settings', this.allSettings);
       $.on(d, 'AddSettingsSection', Settings.addSection);
       $.on(d, 'OpenSettings', e => Settings.open(e.detail));
       if ((g.SITE.software === 'yotsuba') && Conf['Disable Native Extension']) {
@@ -27000,7 +27272,27 @@ $\
       return true;
     },
     shouldDeferStylingToStylechan() {
-      return !!Conf['Defer Styling to StyleChan'] && Settings.isStylechanInstalled();
+      return Settings.isStylechanInstalled();
+    },
+    enforceStylechanStylingDeferral(section, inputs) {
+      if (!Settings.shouldDeferStylingToStylechan())
+        return;
+      const setFalse = (key) => {
+        if (!Conf[key])
+          return;
+        Conf[key] = false;
+        $.set(key, false);
+        const input = inputs?.[key] || (section ? $(`[name="${key}"]`, section) : null);
+        if (input?.type === 'checkbox') {
+          input.checked = false;
+          const container = input.closest('[data-name]');
+          if (container)
+            container.dataset.checked = 'false';
+        }
+      };
+      setFalse('siteStyleHome');
+      setFalse('customCSSHome');
+      setFalse('Custom CSS');
     },
     open(openSection) {
       let dialog, sectionToOpen;
@@ -27026,6 +27318,7 @@ $\
         $.on(actionEl, 'touchstart mousedown', e => e.stopPropagation());
       }
       const links = [];
+      let defaultLink;
       for (const section of Settings.sections) {
         const link = $.el('a', {
           className: `tab-${section.hyphenatedTitle}`,
@@ -27037,6 +27330,8 @@ $\
           Settings.openSection.call(section);
         });
         links.push(link);
+        if (!defaultLink && section.title === 'General')
+          defaultLink = link;
         if (section.title === openSection
           || (['Filter', 'Filters', 'Simple Filters'].includes(openSection) && section.title === 'Filtering')
           || (openSection === 'Main' && section.title === 'General')) {
@@ -27044,8 +27339,12 @@ $\
         }
       }
       $.add($('.sections-list', dialog), links);
+      // Opening on "All Settings" eagerly renders every section, which is
+      // noticeably slower in Firefox. Default to the lightweight General view
+      // unless the caller explicitly requested another section.
+      const initialLink = sectionToOpen || defaultLink || links[0];
       if (openSection !== 'none') {
-        (sectionToOpen ? sectionToOpen : links[0]).click();
+        initialLink.click();
       }
       Icon.set($('.close', dialog), 'xmark');
       $.on($('.close', dialog), 'click', e => { e.preventDefault(); Settings.close(); });
@@ -27069,7 +27368,7 @@ $\
       $.on(settingsWindow, 'click', e => e.stopPropagation());
       $.add(d.body, dialog);
       Settings.restoreWindowLayout(settingsWindow);
-      links[0].focus();
+      initialLink?.focus();
       Settings.loadLayoutPrefs();
       $.event('OpenSettings', null, dialog);
     },
@@ -27706,9 +28005,9 @@ Enable it on boards.${location.hostname.split('.')[1]}.org in your browser's pri
         categories: [{
             name: 'Miscellaneous',
             subgroups: [
-              ['System', ['JSON Index', `Use ${meta.name} Catalog`, 'Index Refresh Notifications', 'Open Threads in New Tab', 'External Catalog', '404 Redirect', 'Archive Report', 'Exempt Archives from Encryption', 'Show Updated Notifications']],
-              ['History', ['Export History', 'Ask to Export History']],
-              ['Compatibility', ['Disable Native Extension', 'Enable Native Flash Embedding', 'Defer Styling to StyleChan']]
+              ['System', ['JSON Index', `Use ${meta.name} Catalog`, 'Open Threads in New Tab', 'External Catalog', '404 Redirect', 'Archive Report', 'Exempt Archives from Encryption']],
+              ['History', ['Export History']],
+              ['Compatibility', ['Disable Native Extension']]
             ]
           }],
         includeWarnings: true,
@@ -27795,14 +28094,9 @@ Enable it on boards.${location.hostname.split('.')[1]}.org in your browser's pri
       const fmtGroup = dict();
       for (const key of [
         'Custom Board Titles',
-        'Persistent Custom Board Titles',
         'Color User IDs',
         'Count Posts by ID',
-        'Remove Spoilers',
-        'Reveal Spoilers',
         'Time Formatting',
-        'Relative Post Dates',
-        'Relative Date Title',
         'File Info Formatting',
         'Quote Backlinks',
       ]) {
@@ -27810,6 +28104,36 @@ Enable it on boards.${location.hostname.split('.')[1]}.org in your browser's pri
           fmtGroup[key] = lookup[key];
       }
       Settings.addCheckboxes(fsFmt, fmtGroup, items, inputs);
+      const inlineSelect = (name, label, description, opts) => {
+        const div = $.el('div');
+        div.dataset.name = name;
+        const lblEl = $.el('label');
+        const select = $.el('select', { name });
+        for (const [value, text] of opts) {
+          select.appendChild($.el('option', { value, textContent: text }));
+        }
+        $.add(lblEl, [$.el('span', { textContent: `${label}: ` }), select]);
+        $.add(div, [
+          lblEl,
+          $.el('span', { className: 'description', textContent: `: ${description}` })
+        ]);
+        $.on(select, 'change', $.cb.value);
+        items[name] = Conf[name];
+        inputs[name] = select;
+        $.add(fsFmt, div);
+      };
+      inlineSelect('RelativeTime', 'Relative Post Dates', 'Display dates like "3 minutes ago" inline, on hover, or both.', [
+        ['No', 'Off'],
+        ['Hover', 'Show on hover'],
+        ['Show', 'Show inline (full date on hover)'],
+        ['Both', 'Show timestamp, then relative'],
+        ['BothRelativeFirst', 'Show relative, then timestamp']
+      ]);
+      inlineSelect('Spoiler Mode', 'Spoilers', 'How to display [spoiler] text. "Default" matches the site’s native behavior.', [
+        ['default', 'Default'],
+        ['reveal', 'Reveal on hover'],
+        ['remove', 'Remove entirely']
+      ]);
       $.add(section, fsFmt);
       const stylingOnlyKeys = new Set([
         'Scrollbar Markers',
@@ -27923,7 +28247,7 @@ Enable it on boards.${location.hostname.split('.')[1]}.org in your browser's pri
         const hoverDescription = Config.threadWatcher['Thread Watcher Thumbnail Hover']?.[1] || '';
         let div;
         if (name === 'Show OP Thumbnails') {
-          div = $.el('div', { innerHTML: `<label><input type="checkbox" name="${name}">${displayName(name)}</label><span class="thread-watcher-inline-number"><input type="number" name="Thread Watcher Thumbnail Size" min="16" max="160" step="1" class="thread-watcher-size-input" title="Thumbnail size in pixels"></span><span class="description">: <span class="setting-description">${description}</span></span><span class="thread-watcher-inline-subsetting"><label><input type="checkbox" name="Thread Watcher Thumbnail Hover">Hover Preview</label><span class="thread-watcher-inline-number"><input type="number" name="Thread Watcher Thumbnail Preview Size" min="10" max="99" step="1" class="thread-watcher-preview-size-input" title="Hover preview size as a percentage">%</span><span class="description">: <span class="setting-description">${hoverDescription}</span></span></span>` });
+          div = $.el('div', { innerHTML: `<label><input type="checkbox" name="${name}">${displayName(name)}</label><span class="thread-watcher-inline-number"><input type="number" name="Thread Watcher Thumbnail Size" min="16" max="160" step="1" class="field thread-watcher-size-input" title="Thumbnail size in pixels"></span><span class="description">: <span class="setting-description">${description}</span></span><span class="thread-watcher-inline-subsetting"><label><input type="checkbox" name="Thread Watcher Thumbnail Hover">Hover Preview</label><span class="thread-watcher-inline-number"><input type="number" name="Thread Watcher Thumbnail Preview Size" min="10" max="99" step="1" class="field thread-watcher-preview-size-input" title="Hover preview size as a percentage">%</span><span class="description">: <span class="setting-description">${hoverDescription}</span></span></span>` });
           div.dataset.name = `${name} Thread Watcher Thumbnail Size Thread Watcher Thumbnail Hover Thread Watcher Thumbnail Preview Size`;
           div.dataset.settingTitle = displayName(name);
           div.dataset.settingDescription = `${description} ${hoverDescription} Thread Watcher Thumbnail Size Thread Watcher Thumbnail Hover Thread Watcher Thumbnail Preview Size`;
@@ -27982,7 +28306,7 @@ Enable it on boards.${location.hostname.split('.')[1]}.org in your browser's pri
         inputs[name] = input;
         $.add(fs, div);
       }
-      const heightDiv = $.el('div', { innerHTML: '<label>TW Max H <input type="number" name="Thread Watcher Max Height" min="120" max="999" step="1" class="thread-watcher-height-input"></label><label class="thread-watcher-inline-number">W <input type="number" name="Thread Watcher Max Width" min="120" max="999" step="1" class="thread-watcher-width-input"></label><span class="description">: <span class="setting-description">Maximum watched-thread list height and width in pixels.</span></span>' });
+      const heightDiv = $.el('div', { innerHTML: '<label>TW Max H <input type="number" name="Thread Watcher Max Height" min="120" max="999" step="1" class="field thread-watcher-height-input"></label><label class="thread-watcher-inline-number">W <input type="number" name="Thread Watcher Max Width" min="120" max="999" step="1" class="field thread-watcher-width-input"></label><span class="description">: <span class="setting-description">Maximum watched-thread list height and width in pixels.</span></span>' });
       heightDiv.dataset.name = 'Thread Watcher Max Height Thread Watcher Max Width';
       heightDiv.dataset.settingTitle = 'TW Max H/W';
       heightDiv.dataset.settingDescription = 'Maximum watched-thread list height and width in pixels.';
@@ -28042,7 +28366,7 @@ Enable it on boards.${location.hostname.split('.')[1]}.org in your browser's pri
       const groups = [
         ['Image Behavior', ['Image Expansion', 'Image Hover', 'Image Hover in Catalog', 'Replace Thumbnails', 'Replace GIF', 'Replace JPG', 'Replace PNG', 'Replace WEBM', 'Restart when Opened']],
         ['Images', ['Gallery', 'Fullscreen Gallery', 'PDF in Gallery', 'Sauce', 'Reveal Spoiler Thumbnails', 'Image Prefetching', 'Fappe Tyme', 'Werk Tyme']],
-        ['Videos', ['WEBM Metadata', 'Autoplay', 'Show Controls', 'Click Passthrough', 'Allow Sound', 'Mouse Wheel Volume', 'Loop in New Tab', 'Volume in New Tab', 'Enable sound posts']]
+        ['Videos', ['WEBM Metadata', 'Autoplay', 'Show Controls', 'Click Passthrough', 'Allow Sound', 'Mouse Wheel Volume', 'Enable sound posts']]
       ];
       for (const [legendTitle, keys] of groups) {
         const fs = $.el('details', { open: true }, { innerHTML: `<summary>${legendTitle}</summary>` });
@@ -28075,28 +28399,59 @@ Enable it on boards.${location.hostname.split('.')[1]}.org in your browser's pri
     },
     posting(section) {
       Settings.renderMainGroups(section, {
-        categories: ['Posting and Captchas']
+        categories: ['Posting and Captchas'],
+        includeSetting: key => key !== 'Comment Preview',
       });
-      Settings.addSelectFieldset(section, 'Comment Preview', [
-        {
-          name: 'Comment Preview Position',
-          label: 'Preview Position',
-          description: 'Where the live preview appears relative to the comment box (requires Comment Preview enabled).',
-          options: [
-            ['below', 'Below the comment box'],
-            ['right', 'Right of the comment box'],
-            ['left', 'Left of the comment box']
-          ]
-        }
+      const fs = $.el('details', { open: true }, { innerHTML: '<summary>Comment Preview</summary>' });
+      const row = $.el('div', {
+        innerHTML: `<label><input type="checkbox" name="Comment Preview"><span class="setting-title">Comment Preview</span></label><span class="description">: <span class="setting-description">${Config.main['Posting and Captchas']['Comment Preview'][1]}</span></span>`,
+      });
+      row.dataset.name = 'Comment Preview';
+      const toggle = $('input[name="Comment Preview"]', row);
+      $.on(toggle, 'change', $.cb.checked);
+      $.on(toggle, 'change', function () { this.parentNode.parentNode.dataset.checked = this.checked; });
+      $.on(toggle, 'change', () => $.event('QRCommentPreviewChanged'));
+      const sub = $.el('div', { className: 'suboption-list' });
+      const positionRow = $.el('div');
+      positionRow.dataset.name = 'Comment Preview Position';
+      const label = $.el('label');
+      const select = $.el('select', { name: 'Comment Preview Position' });
+      for (const [value, text] of [
+        ['below', 'Below the comment box'],
+        ['right', 'Right of the comment box'],
+        ['left', 'Left of the comment box'],
+      ]) {
+        $.add(select, $.el('option', { value, textContent: text }));
+      }
+      $.on(select, 'change', $.cb.value);
+      $.on(select, 'change', () => $.event('QRCommentPreviewChanged'));
+      $.add(label, [$.el('span', { textContent: 'Preview Position: ' }), select]);
+      $.add(positionRow, [
+        label,
+        $.el('span', {
+          className: 'description',
+          textContent: ': Where the live preview appears relative to the comment box (requires Comment Preview enabled).',
+        }),
       ]);
+      $.add(sub, positionRow);
+      $.add(row, sub);
+      $.add(fs, row);
+      $.add(section, fs);
+      $.get({
+        'Comment Preview': Conf['Comment Preview'],
+        'Comment Preview Position': Conf['Comment Preview Position'],
+      }, items => {
+        toggle.checked = !!items['Comment Preview'];
+        row.dataset.checked = toggle.checked ? 'true' : 'false';
+        select.value = items['Comment Preview Position'] || 'below';
+      });
     },
     styling(section) {
       let input, name;
       $.extend(section, { innerHTML: StylingPage });
-      // When StyleChan is present and the user wants to defer to it, replace
-      // every styling sub-section *except* Custom CSS with a banner that opens
-      // StyleChan's dialog on top of ours. CSS does the hiding via the
-      // `styling-deferred` class on the section root.
+      // When StyleChan is present, replace the conflicting styling controls
+      // with a banner that opens StyleChan's dialog on top of ours. CSS does
+      // the hiding via the `styling-deferred` class on the section root.
       if (Settings.shouldDeferStylingToStylechan()) {
         section.classList.add('styling-deferred');
         const banner = $.el('div', { className: 'styling-defer-banner' });
@@ -28104,8 +28459,8 @@ Enable it on boards.${location.hostname.split('.')[1]}.org in your browser's pri
           className: 'styling-defer-banner-text',
           innerHTML: '<b>StyleChan is managing site themes.</b> '
             + 'The theme picker has been disabled; '
-            + 'highlight colors, scroll markers, and Custom CSS below still work. '
-            + 'To restore the full Styling section, uncheck <i>Defer Styling to StyleChan</i> in <i>General → Compatibility</i>.'
+            + 'highlight colors and other 4chan XT styling controls are hidden while StyleChan is installed. '
+            + 'Uninstall StyleChan to restore the full Styling section.'
         });
         const button = $.el('button', {
           type: 'button',
@@ -28123,6 +28478,7 @@ Enable it on boards.${location.hostname.split('.')[1]}.org in your browser's pri
       for (input of $$('[name]', section)) {
         inputs[input.name] = input;
       }
+      Settings.enforceStylechanStylingDeferral(section, inputs);
       // Mark the enclosing <details> for every variant-aware input so CSS
       // can outline the whole section (Highlight Colors, Scrollbar Markers,
       // Text Colors, Custom CSS, etc.) — much less visual noise than
@@ -28198,14 +28554,14 @@ Enable it on boards.${location.hostname.split('.')[1]}.org in your browser's pri
           autoKey: 'Catalog Highlight Own Text Auto',
           colorKey: 'Catalog Highlight Own Color',
           opacityKey: 'Catalog Highlight Own Opacity',
-          keys: ['Catalog Highlight Own Text Color', 'Catalog Highlight Own Link Color', 'Catalog Highlight Own Quote Color', 'Catalog Highlight Own Dead Link Color'],
+          keys: ['Catalog Highlight Own Text Color', 'Catalog Highlight Own Subject Color', 'Catalog Highlight Own Link Color', 'Catalog Highlight Own Quote Color', 'Catalog Highlight Own Dead Link Color'],
         },
         {
           manualGroup: 'catalog-watched',
           autoKey: 'Catalog Highlight Watched Text Auto',
           colorKey: 'Catalog Highlight Watched Color',
           opacityKey: 'Catalog Highlight Watched Opacity',
-          keys: ['Catalog Highlight Watched Text Color', 'Catalog Highlight Watched Link Color', 'Catalog Highlight Watched Quote Color', 'Catalog Highlight Watched Dead Link Color'],
+          keys: ['Catalog Highlight Watched Text Color', 'Catalog Highlight Watched Subject Color', 'Catalog Highlight Watched Link Color', 'Catalog Highlight Watched Quote Color', 'Catalog Highlight Watched Dead Link Color'],
         },
       ];
       const textColorKeys = [
@@ -28317,11 +28673,11 @@ Enable it on boards.${location.hostname.split('.')[1]}.org in your browser's pri
           const controls = key === 'Catalog Highlight Own Posts' ?
             [
               'Catalog Highlight Own Color', 'Catalog Highlight Own Opacity', 'Catalog Highlight Own Text Auto',
-              'Catalog Highlight Own Text Color', 'Catalog Highlight Own Link Color', 'Catalog Highlight Own Quote Color', 'Catalog Highlight Own Dead Link Color',
+              'Catalog Highlight Own Text Color', 'Catalog Highlight Own Subject Color', 'Catalog Highlight Own Link Color', 'Catalog Highlight Own Quote Color', 'Catalog Highlight Own Dead Link Color',
             ] :
             [
               'Catalog Highlight Watched Color', 'Catalog Highlight Watched Opacity', 'Catalog Highlight Watched Text Auto',
-              'Catalog Highlight Watched Text Color', 'Catalog Highlight Watched Link Color', 'Catalog Highlight Watched Quote Color', 'Catalog Highlight Watched Dead Link Color',
+              'Catalog Highlight Watched Text Color', 'Catalog Highlight Watched Subject Color', 'Catalog Highlight Watched Link Color', 'Catalog Highlight Watched Quote Color', 'Catalog Highlight Watched Dead Link Color',
             ];
           for (const controlKey of controls) {
             const control = inputs[controlKey];
@@ -28551,6 +28907,189 @@ Enable it on boards.${location.hostname.split('.')[1]}.org in your browser's pri
           refreshStylingPreview();
         });
       }
+      const paletteSuggestionRoot = $('#styling-palette-suggestions', section);
+      const suggestPalettesBtn = $('#styling-suggest-palettes', section);
+      const savedPaletteNameInput = $('#styling-saved-palette-name', section);
+      const savePaletteBtn = $('#styling-save-palette', section);
+      const savedPalettesList = $('#styling-saved-palettes-list', section);
+      const paletteStateMap = [
+        ['own', 'Highlight Own Color', 'Thread: your post'],
+        ['you', 'Highlight You Color', 'Thread: quotes you'],
+        ['ghost', 'Highlight Ghost Color', 'Thread: ghost post'],
+        ['catalogOwn', 'Catalog Highlight Own Color', 'Catalog: your post'],
+        ['catalogWatched', 'Catalog Highlight Watched Color', 'Catalog: watched thread'],
+      ];
+      const readCurrentPaletteColors = () => {
+        const out = {
+          own: '#000000',
+          you: '#000000',
+          ghost: '#000000',
+          catalogOwn: '#000000',
+          catalogWatched: '#000000',
+        };
+        for (const [slot, baseKey] of paletteStateMap) {
+          const inputColor = inputs[baseKey]?.value || '';
+          const storedColor = editConf(baseKey) || '';
+          const resolved = Settings.toHexColor(inputColor)
+            || Settings.toHexColor(storedColor)
+            || Settings.resolvedColorForKey(baseKey)
+            || '#000000';
+          out[slot] = resolved.toLowerCase();
+        }
+        return out;
+      };
+      function applySuggestedPalette(palette) {
+        for (const [slot, baseKey] of paletteStateMap) {
+          const color = palette.colors[slot];
+          if (!color)
+            continue;
+          writeEditConf(baseKey, color);
+          const inp = inputs[baseKey];
+          if (inp)
+            Settings.setColorInputValue(inp, baseKey, color);
+        }
+        syncMarkerColorControls();
+        syncAutoHighlightPreviewInputs();
+        Settings.applyStylingVars();
+        refreshStylingPreview();
+      }
+      function renderSuggestedPalettes() {
+        if (!paletteSuggestionRoot)
+          return;
+        const { profile, palettes } = Settings.suggestedHighlightPalettes(editVariant());
+        paletteSuggestionRoot.textContent = '';
+        const header = $.el('div', { className: 'styling-palette-header' });
+        const title = $.el('div', {
+          className: 'styling-palette-title',
+          textContent: `Suggested palettes for ${profile.label}`,
+        });
+        const note = $.el('div', {
+          className: 'styling-palette-note note',
+          textContent: profile.note,
+        });
+        const refresh = $.el('button', {
+          type: 'button',
+          textContent: 'Refresh',
+        });
+        $.on(refresh, 'click', () => renderSuggestedPalettes());
+        $.add(header, [title, note, refresh]);
+        $.add(paletteSuggestionRoot, header);
+        const list = $.el('div', { className: 'styling-palette-list' });
+        for (const palette of palettes) {
+          const row = $.el('div', { className: 'styling-palette-row' });
+          const apply = $.el('button', {
+            type: 'button',
+            textContent: 'Apply',
+          });
+          $.on(apply, 'click', () => applySuggestedPalette(palette));
+          const name = $.el('div', { className: 'styling-palette-name', textContent: palette.name });
+          const swatches = $.el('div', { className: 'styling-palette-swatches' });
+          for (const [slot, , label] of paletteStateMap) {
+            const color = palette.colors[slot];
+            const swatch = $.el('span', {
+              className: 'styling-palette-swatch',
+              title: `${label}: ${color}`,
+            });
+            swatch.style.backgroundColor = color;
+            $.add(swatches, swatch);
+          }
+          $.add(row, [apply, name, swatches]);
+          $.add(list, row);
+        }
+        $.add(paletteSuggestionRoot, list);
+      }
+      function renderSavedPalettes() {
+        if (!savedPalettesList)
+          return;
+        savedPalettesList.textContent = '';
+        const palettes = Settings.savedHighlightPaletteList();
+        if (!palettes.length) {
+          const empty = $.el('div', {
+            className: 'styling-palette-note note',
+            textContent: 'No saved palettes yet.',
+          });
+          $.add(savedPalettesList, empty);
+          return;
+        }
+        for (const [index, palette] of palettes.entries()) {
+          const row = $.el('div', { className: 'styling-saved-palette-row' });
+          const apply = $.el('button', {
+            type: 'button',
+            textContent: 'Apply',
+          });
+          const remove = $.el('button', {
+            type: 'button',
+            textContent: 'Delete',
+            title: `Delete ${palette.name}`,
+          });
+          $.on(apply, 'click', () => applySuggestedPalette(palette));
+          $.on(remove, 'click', () => {
+            const list = Settings.savedHighlightPaletteList();
+            list.splice(index, 1);
+            Settings.setSavedHighlightPalettes(list);
+            renderSavedPalettes();
+          });
+          const name = $.el('div', { className: 'styling-palette-name', textContent: palette.name });
+          const swatches = $.el('div', { className: 'styling-palette-swatches' });
+          for (const [slot, , label] of paletteStateMap) {
+            const color = palette.colors[slot];
+            const swatch = $.el('span', {
+              className: 'styling-palette-swatch',
+              title: `${label}: ${color}`,
+            });
+            swatch.style.backgroundColor = color;
+            $.add(swatches, swatch);
+          }
+          $.add(row, [apply, remove, name, swatches]);
+          $.add(savedPalettesList, row);
+        }
+      }
+      function refreshSuggestedPalettesIfOpen() {
+        if (!paletteSuggestionRoot || paletteSuggestionRoot.hidden)
+          return;
+        renderSuggestedPalettes();
+      }
+      if (suggestPalettesBtn && paletteSuggestionRoot) {
+        $.on(suggestPalettesBtn, 'click', () => {
+          paletteSuggestionRoot.hidden = !paletteSuggestionRoot.hidden;
+          suggestPalettesBtn.textContent = paletteSuggestionRoot.hidden ? 'Suggest palettes' : 'Hide palettes';
+          if (!paletteSuggestionRoot.hidden)
+            renderSuggestedPalettes();
+        });
+      }
+      if (savePaletteBtn && savedPaletteNameInput) {
+        const saveCurrentPalette = () => {
+          const name = savedPaletteNameInput.value.trim();
+          if (!name) {
+            savedPaletteNameInput.focus();
+            return;
+          }
+          const colors = readCurrentPaletteColors();
+          const list = Settings.savedHighlightPaletteList();
+          const existing = list.findIndex(p => p.name.toLowerCase() === name.toLowerCase());
+          const entry = { name, colors };
+          if (existing >= 0) {
+            list[existing] = entry;
+            Settings.setSavedHighlightPalettes(list);
+          } else {
+            list.unshift(entry);
+            Settings.setSavedHighlightPalettes(list);
+          }
+          renderSavedPalettes();
+        };
+        $.on(savePaletteBtn, 'click', saveCurrentPalette);
+        $.on(savedPaletteNameInput, 'keydown', (e) => {
+          if (e.key !== 'Enter')
+            return;
+          e.preventDefault();
+          saveCurrentPalette();
+        });
+      }
+      renderSavedPalettes();
+      $.get({ savedHighlightPalettes: Conf['savedHighlightPalettes'] }, ({ savedHighlightPalettes }) => {
+        Conf['savedHighlightPalettes'] = savedHighlightPalettes;
+        renderSavedPalettes();
+      });
       // Randomize / reset highlight color buttons.
       const openPreview = $('#styling-open-preview', section);
       if (openPreview) {
@@ -28579,7 +29118,12 @@ Enable it on boards.${location.hostname.split('.')[1]}.org in your browser's pri
           syncAutoHighlightPreviewInputs();
           Settings.applyStylingVars();
           refreshStylingPreview();
+          refreshSuggestedPalettesIfOpen();
         });
+      }
+      const siteStyleInput = inputs['siteStyle'];
+      if (siteStyleInput) {
+        $.on(siteStyleInput, 'change', refreshSuggestedPalettesIfOpen);
       }
       // SFW / NSFW tab switcher.
       const variantBar = $('.styling-variant-bar', section);
@@ -28662,6 +29206,7 @@ Enable it on boards.${location.hostname.split('.')[1]}.org in your browser's pri
           populateInputsFromLoaded(loaded);
           updateVariantTabsSelected();
           updateVariantHint();
+          refreshSuggestedPalettesIfOpen();
         });
       };
       for (const variant of ['sfw', 'nsfw']) {
@@ -28696,6 +29241,7 @@ Enable it on boards.${location.hostname.split('.')[1]}.org in your browser's pri
             CustomCSS.update();
           $.event('CustomSiteThemeChanged');
           $.event('RefreshScrollMarkers');
+          refreshSuggestedPalettesIfOpen();
         });
       }
       const initialMode = Conf['sfwNsfwMode'];
@@ -28721,8 +29267,18 @@ Enable it on boards.${location.hostname.split('.')[1]}.org in your browser's pri
         return fallback;
       return text.length > 180 ? `${text.slice(0, 177)}...` : text;
     },
-    stylingPreviewPostHTML({ postID, extraClass = '', author = 'Anonymous', message = '', }) {
-      const safeMessage = E(message || Settings.stylingPreviewSampleText());
+    stylingPreviewSampleMessageHTML() {
+      return [
+        'Regular text sample with a ',
+        '<a href="https://example.com/thread-preview" target="_blank" rel="nofollow noopener">regular link</a>, ',
+        '<a class="quotelink" href="#p1213499548" rel="nofollow">&gt;&gt;1213499548</a>, ',
+        '<a class="quotelink deadlink" href="#p1213000000" rel="nofollow">&gt;&gt;1213000000</a>, ',
+        'and <span class="quote">&gt;quoted text preview</span>.'
+      ].join('');
+    },
+    stylingPreviewPostHTML({ postID, extraClass = '', author = 'Anonymous', subject = '', message = '', messageHTML = '', }) {
+      const subjectHTML = subject ? `<span class="subject">${E(subject)}</span> ` : '';
+      const renderedMessage = messageHTML || E(message || Settings.stylingPreviewSampleText());
       const classes = `postContainer replyContainer styling-preview-post ${extraClass}`.trim();
       return `
    <div class="${classes}" id="pc${postID}" itemprop="comment" itemscope itemtype="https://schema.org/Comment" data-full-i-d="g.${postID}">
@@ -28733,18 +29289,19 @@ Enable it on boards.${location.hostname.split('.')[1]}.org in your browser's pri
       <span class="dateTime postNum" data-utc="1780096072"><time datetime="2026-05-29T19:07:52-04:00">05/29/26(Fri)19:07:52</time> <a href="#p${postID}" rel="nofollow" title="Link to this post">No.</a><a href="javascript:quote('${postID}');" rel="nofollow" title="Reply to this post">${postID}</a></span>
      </div>
      <div class="postInfo desktop" id="pi${postID}">
-      <span class="nameBlock"><span class="name" itemprop="author" itemscope itemtype="https://schema.org/Person"><span itemprop="name">${E(author)}</span></span> </span>
+      ${subjectHTML}<span class="nameBlock"><span class="name" itemprop="author" itemscope itemtype="https://schema.org/Person"><span itemprop="name">${E(author)}</span></span> </span>
       <span class="dateTime" data-utc="1780096072">05/29/26(Fri)19:07:52</span>&nbsp;<span class="postNum desktop"><a href="#p${postID}" rel="nofollow" title="Link to this post">No.</a><a href="javascript:quote('${postID}');" rel="nofollow" title="Reply to this post">${postID}</a></span><a class="menu-button" href="javascript:;"><svg xmlns="http://www.w3.org/2000/svg" class="icon" viewBox="0 0 320 512"><path d="M137.4 374.6c12.5 12.5 32.8 12.5 45.3 0l128-128c9.2-9.2 11.9-22.9 6.9-34.9s-16.6-19.8-29.6-19.8L32 192c-12.9 0-24.6 7.8-29.6 19.8s-2.2 25.7 6.9 34.9l128 128z" fill="currentColor"></path></svg></a><span class="container"></span>
      </div>
-     <blockquote class="postMessage" id="m${postID}" itemprop="text">${safeMessage}</blockquote>
+     <blockquote class="postMessage" id="m${postID}" itemprop="text">${renderedMessage}</blockquote>
     </div>
    </div>
   `;
     },
-    stylingPreviewCatalogThreadHTML({ threadID, postID, extraThreadClass = '', extraContainerClass = '', message = '', summary = '', excerpt = '', }) {
+    stylingPreviewCatalogThreadHTML({ threadID, postID, extraThreadClass = '', extraContainerClass = '', subject = '', message = '', messageHTML = '', summary = '', excerpt = '', }) {
       const threadClasses = `thread catalog-thread ${extraThreadClass}`.trim();
       const containerClasses = `postContainer catalog-container ${extraContainerClass}`.trim();
-      const safeMessage = E(message || Settings.stylingPreviewSampleText());
+      const safeSubject = E(subject || 'Catalog subject preview');
+      const renderedMessage = messageHTML || E(message || Settings.stylingPreviewSampleText());
       const safeSummary = E(summary || '4 posts and 2 image replies');
       const safeExcerpt = E(excerpt || 'recent reply preview');
       return `
@@ -28757,7 +29314,10 @@ Enable it on boards.${location.hostname.split('.')[1]}.org in your browser's pri
       <div class="catalog-stats">
        <span title="Posts / Files / Page"><span class="post-count">12</span> / <span class="file-count">8</span> / <span class="page-count">1</span></span>
       </div>
-      <blockquote class="postMessage" id="m${postID}">${safeMessage}</blockquote>
+      <div class="postInfo">
+       <span class="subject">${safeSubject}</span>
+      </div>
+      <blockquote class="postMessage" id="m${postID}">${renderedMessage}</blockquote>
       <span class="summary preview-summary">${safeSummary}</span>
       <div class="catalog-replies">
        <div class="catalog-reply">
@@ -28787,14 +29347,15 @@ Enable it on boards.${location.hostname.split('.')[1]}.org in your browser's pri
       }
       const panel = $.el('div', { className: 'styling-preview styling-preview-dock dialog' });
       panel.dataset.collapsed = 'false';
+      const sampleMessageHTML = Settings.stylingPreviewSampleMessageHTML();
       panel.innerHTML = `
    <div class="styling-preview-layout">
     <div class="board styling-preview-thread">
      <div class="thread" id="t503286550">
-      ${Settings.stylingPreviewPostHTML({ postID: 503286554, message: 'Normal: thread is already discussing this topic.' })}
-      ${Settings.stylingPreviewPostHTML({ postID: 503286555, extraClass: 'yourPost', author: 'You', message: 'This is a post you created.' })}
-      ${Settings.stylingPreviewPostHTML({ postID: 503286556, extraClass: 'quotesYou', message: 'This is a post quoting you.' })}
-      ${Settings.stylingPreviewPostHTML({ postID: 503286557, extraClass: 'from-archive', author: 'Archived', message: 'This is a ghost post (deleted).' })}
+      ${Settings.stylingPreviewPostHTML({ postID: 503286554, subject: 'Normal thread state', messageHTML: sampleMessageHTML })}
+      ${Settings.stylingPreviewPostHTML({ postID: 503286555, extraClass: 'yourPost', author: 'You', subject: 'Your post state', messageHTML: sampleMessageHTML })}
+      ${Settings.stylingPreviewPostHTML({ postID: 503286556, extraClass: 'quotesYou', subject: 'Quotes you state', messageHTML: sampleMessageHTML })}
+      ${Settings.stylingPreviewPostHTML({ postID: 503286557, extraClass: 'from-archive', author: 'Archived', subject: 'Ghost post state', messageHTML: sampleMessageHTML })}
      </div>
     </div>
     <div class="board styling-preview-catalog catalog-small">
@@ -28803,7 +29364,8 @@ Enable it on boards.${location.hostname.split('.')[1]}.org in your browser's pri
       postID: 503286580,
       extraThreadClass: 'yourPost',
       extraContainerClass: 'yourPost',
-      message: 'Catalog own-post state preview.',
+      subject: 'Catalog own-post state',
+      messageHTML: sampleMessageHTML,
       summary: '5 posts and 3 image replies',
       excerpt: 'your post reply sample',
     })}
@@ -28811,7 +29373,8 @@ Enable it on boards.${location.hostname.split('.')[1]}.org in your browser's pri
       threadID: 503286590,
       postID: 503286590,
       extraThreadClass: 'watched',
-      message: 'Catalog watched-thread state preview.',
+      subject: 'Catalog watched-thread state',
+      messageHTML: sampleMessageHTML,
       summary: '10 posts and 4 image replies',
       excerpt: 'watched thread reply sample',
     })}
@@ -28856,9 +29419,14 @@ Enable it on boards.${location.hostname.split('.')[1]}.org in your browser's pri
       const youEnabled = readChecked('Highlight Posts Quoting You');
       const ghostEnabled = readChecked('Highlight Ghost Posts');
       const threadHighlightsEnabled = readChecked('Enable Thread Highlights', true);
+      const catalogHighlightsEnabled = readChecked('Enable Catalog Highlights', true);
+      const catalogOwnEnabled = readChecked('Catalog Highlight Own Posts', true);
+      const catalogWatchedEnabled = readChecked('Catalog Highlight Watched Threads', true);
       panel.dataset.highlightOwn = (threadHighlightsEnabled && ownEnabled) ? 'true' : 'false';
       panel.dataset.highlightYou = (threadHighlightsEnabled && youEnabled) ? 'true' : 'false';
       panel.dataset.highlightGhost = (threadHighlightsEnabled && ghostEnabled) ? 'true' : 'false';
+      panel.dataset.highlightCatalogOwn = (catalogHighlightsEnabled && catalogOwnEnabled) ? 'true' : 'false';
+      panel.dataset.highlightCatalogWatched = (catalogHighlightsEnabled && catalogWatchedEnabled) ? 'true' : 'false';
       const background = Settings.resolveCanvasBackgroundStyle();
       for (const previewPane of $$('.styling-preview-thread, .styling-preview-catalog', panel)) {
         Settings.applyBackgroundStyle(previewPane, background);
@@ -29023,8 +29591,8 @@ Enable it on boards.${location.hostname.split('.')[1]}.org in your browser's pri
       '--xt-highlight-own-text', '--xt-highlight-own-link', '--xt-highlight-own-quote', '--xt-highlight-own-dead-link',
       '--xt-highlight-you-text', '--xt-highlight-you-link', '--xt-highlight-you-quote', '--xt-highlight-you-dead-link',
       '--xt-highlight-ghost-text', '--xt-highlight-ghost-link', '--xt-highlight-ghost-quote', '--xt-highlight-ghost-dead-link',
-      '--xt-catalog-own-text', '--xt-catalog-own-link', '--xt-catalog-own-quote', '--xt-catalog-own-dead-link',
-      '--xt-catalog-watched-text', '--xt-catalog-watched-link', '--xt-catalog-watched-quote', '--xt-catalog-watched-dead-link',
+      '--xt-catalog-own-text', '--xt-catalog-own-subject', '--xt-catalog-own-link', '--xt-catalog-own-quote', '--xt-catalog-own-dead-link',
+      '--xt-catalog-watched-text', '--xt-catalog-watched-subject', '--xt-catalog-watched-link', '--xt-catalog-watched-quote', '--xt-catalog-watched-dead-link',
     ],
     clearStyleVarsOn(target) {
       for (const name of Settings.STYLE_VAR_NAMES)
@@ -29097,9 +29665,10 @@ Enable it on boards.${location.hostname.split('.')[1]}.org in your browser's pri
       setVar('--xt-quote-text-color', quoteColor || '');
       setVar('--xt-dead-link-text-color', deadLinkColor || '');
       const autoHighlightPalette = (colorKey, opacityKey) => Settings.autoHighlightTextPalette(colorKey, opacityKey, baseBackground, variant);
-      const withManual = (autoPalette, autoKey, textKey, linkKey, quoteKey, deadKey) => {
+      const withManual = (autoPalette, autoKey, textKey, subjectKey, linkKey, quoteKey, deadKey) => {
         const base = autoPalette || {
           text: textColor || '',
+          subject: textColor || '',
           link: linkColor || '',
           quote: quoteColor || '',
           deadLink: deadLinkColor || '',
@@ -29108,16 +29677,17 @@ Enable it on boards.${location.hostname.split('.')[1]}.org in your browser's pri
           return base;
         return {
           text: cv(textKey) || base.text,
+          subject: (subjectKey ? cv(subjectKey) : '') || base.subject || base.text,
           link: cv(linkKey) || base.link,
           quote: cv(quoteKey) || base.quote,
           deadLink: cv(deadKey) || base.deadLink,
         };
       };
-      const ownPalette = withManual(autoHighlightPalette('Highlight Own Color', 'Highlight Own Opacity'), 'Highlight Own Text Auto', 'Highlight Own Text Color', 'Highlight Own Link Color', 'Highlight Own Quote Color', 'Highlight Own Dead Link Color');
-      const youPalette = withManual(autoHighlightPalette('Highlight You Color', 'Highlight You Opacity'), 'Highlight You Text Auto', 'Highlight You Text Color', 'Highlight You Link Color', 'Highlight You Quote Color', 'Highlight You Dead Link Color');
-      const ghostPalette = withManual(autoHighlightPalette('Highlight Ghost Color', 'Highlight Ghost Opacity'), 'Highlight Ghost Text Auto', 'Highlight Ghost Text Color', 'Highlight Ghost Link Color', 'Highlight Ghost Quote Color', 'Highlight Ghost Dead Link Color');
-      const catalogOwnPalette = withManual(autoHighlightPalette('Catalog Highlight Own Color', 'Catalog Highlight Own Opacity'), 'Catalog Highlight Own Text Auto', 'Catalog Highlight Own Text Color', 'Catalog Highlight Own Link Color', 'Catalog Highlight Own Quote Color', 'Catalog Highlight Own Dead Link Color');
-      const catalogWatchedPalette = withManual(autoHighlightPalette('Catalog Highlight Watched Color', 'Catalog Highlight Watched Opacity'), 'Catalog Highlight Watched Text Auto', 'Catalog Highlight Watched Text Color', 'Catalog Highlight Watched Link Color', 'Catalog Highlight Watched Quote Color', 'Catalog Highlight Watched Dead Link Color');
+      const ownPalette = withManual(autoHighlightPalette('Highlight Own Color', 'Highlight Own Opacity'), 'Highlight Own Text Auto', 'Highlight Own Text Color', null, 'Highlight Own Link Color', 'Highlight Own Quote Color', 'Highlight Own Dead Link Color');
+      const youPalette = withManual(autoHighlightPalette('Highlight You Color', 'Highlight You Opacity'), 'Highlight You Text Auto', 'Highlight You Text Color', null, 'Highlight You Link Color', 'Highlight You Quote Color', 'Highlight You Dead Link Color');
+      const ghostPalette = withManual(autoHighlightPalette('Highlight Ghost Color', 'Highlight Ghost Opacity'), 'Highlight Ghost Text Auto', 'Highlight Ghost Text Color', null, 'Highlight Ghost Link Color', 'Highlight Ghost Quote Color', 'Highlight Ghost Dead Link Color');
+      const catalogOwnPalette = withManual(autoHighlightPalette('Catalog Highlight Own Color', 'Catalog Highlight Own Opacity'), 'Catalog Highlight Own Text Auto', 'Catalog Highlight Own Text Color', 'Catalog Highlight Own Subject Color', 'Catalog Highlight Own Link Color', 'Catalog Highlight Own Quote Color', 'Catalog Highlight Own Dead Link Color');
+      const catalogWatchedPalette = withManual(autoHighlightPalette('Catalog Highlight Watched Color', 'Catalog Highlight Watched Opacity'), 'Catalog Highlight Watched Text Auto', 'Catalog Highlight Watched Text Color', 'Catalog Highlight Watched Subject Color', 'Catalog Highlight Watched Link Color', 'Catalog Highlight Watched Quote Color', 'Catalog Highlight Watched Dead Link Color');
       setVar('--xt-highlight-own-text', ownPalette?.text || '');
       setVar('--xt-highlight-own-link', ownPalette?.link || '');
       setVar('--xt-highlight-own-quote', ownPalette?.quote || '');
@@ -29131,10 +29701,12 @@ Enable it on boards.${location.hostname.split('.')[1]}.org in your browser's pri
       setVar('--xt-highlight-ghost-quote', ghostPalette?.quote || '');
       setVar('--xt-highlight-ghost-dead-link', ghostPalette?.deadLink || '');
       setVar('--xt-catalog-own-text', catalogOwnPalette?.text || '');
+      setVar('--xt-catalog-own-subject', catalogOwnPalette?.subject || '');
       setVar('--xt-catalog-own-link', catalogOwnPalette?.link || '');
       setVar('--xt-catalog-own-quote', catalogOwnPalette?.quote || '');
       setVar('--xt-catalog-own-dead-link', catalogOwnPalette?.deadLink || '');
       setVar('--xt-catalog-watched-text', catalogWatchedPalette?.text || '');
+      setVar('--xt-catalog-watched-subject', catalogWatchedPalette?.subject || '');
       setVar('--xt-catalog-watched-link', catalogWatchedPalette?.link || '');
       setVar('--xt-catalog-watched-quote', catalogWatchedPalette?.quote || '');
       setVar('--xt-catalog-watched-dead-link', catalogWatchedPalette?.deadLink || '');
@@ -29168,6 +29740,7 @@ Enable it on boards.${location.hostname.split('.')[1]}.org in your browser's pri
       };
       return {
         text,
+        subject: text,
         link: safe(palette.link),
         quote: safe(palette.quote),
         deadLink: safe(palette.deadLink),
@@ -29355,6 +29928,8 @@ Enable it on boards.${location.hostname.split('.')[1]}.org in your browser's pri
           return 'var(--xt-highlight-ghost-dead-link, var(--xt-dead-link-text-color, #4c63be))';
         case 'Catalog Highlight Own Text Color':
           return 'var(--xt-catalog-own-text, var(--xt-text-color, #111111))';
+        case 'Catalog Highlight Own Subject Color':
+          return 'var(--xt-catalog-own-subject, var(--xt-catalog-own-text, var(--xt-text-color, #111111)))';
         case 'Catalog Highlight Own Link Color':
           return 'var(--xt-catalog-own-link, var(--xt-link-text-color, #0b52d6))';
         case 'Catalog Highlight Own Quote Color':
@@ -29363,6 +29938,8 @@ Enable it on boards.${location.hostname.split('.')[1]}.org in your browser's pri
           return 'var(--xt-catalog-own-dead-link, var(--xt-dead-link-text-color, #4c63be))';
         case 'Catalog Highlight Watched Text Color':
           return 'var(--xt-catalog-watched-text, var(--xt-text-color, #111111))';
+        case 'Catalog Highlight Watched Subject Color':
+          return 'var(--xt-catalog-watched-subject, var(--xt-catalog-watched-text, var(--xt-text-color, #111111)))';
         case 'Catalog Highlight Watched Link Color':
           return 'var(--xt-catalog-watched-link, var(--xt-link-text-color, #0b52d6))';
         case 'Catalog Highlight Watched Quote Color':
@@ -29481,6 +30058,97 @@ Enable it on boards.${location.hostname.split('.')[1]}.org in your browser's pri
       const m = l / 100 - c / 2;
       const to = (v) => Math.round((v + m) * 255).toString(16).padStart(2, '0');
       return `#${to(r)}${to(g)}${to(b)}`;
+    },
+    highlightPaletteThemeProfile(variant) {
+      const siteStyle = String(Settings.styleConf('siteStyle', variant) || '').trim();
+      const native = Settings.isCustomSiteThemeValue(siteStyle) ? '' : siteStyle.toLowerCase();
+      const darkThemes = ['tomorrow', 'spooky', 'photon'];
+      const lightThemes = ['yotsuba-b', 'yotsuba', 'futaba', 'burichan'];
+      if (native) {
+        if (darkThemes.some(name => native === name || native.includes(name))) {
+          return {
+            kind: 'dark',
+            label: Settings.nativeSiteThemeLabel(siteStyle),
+            note: 'based on the selected site style',
+          };
+        }
+        if (lightThemes.some(name => native === name || native.includes(name))) {
+          return {
+            kind: 'light',
+            label: Settings.nativeSiteThemeLabel(siteStyle),
+            note: 'based on the selected site style',
+          };
+        }
+      }
+      const bg = Settings.getTextBaseBackground();
+      const luminance = Settings.relativeLuminance(bg);
+      const kind = luminance < 0.42 ? 'dark' : 'light';
+      return {
+        kind,
+        label: kind === 'dark' ? 'dark background' : 'light background',
+        note: 'based on the current page background',
+      };
+    },
+    suggestedHighlightPalettes(variant) {
+      const profile = Settings.highlightPaletteThemeProfile(variant);
+      const dark = [
+        { id: 'ember-night', name: 'Ember Night', colors: { own: '#ff6b6b', you: '#ff9f43', ghost: '#9ca3af', catalogOwn: '#2dd4bf', catalogWatched: '#60a5fa' } },
+        { id: 'aurora', name: 'Aurora', colors: { own: '#22d3ee', you: '#a78bfa', ghost: '#94a3b8', catalogOwn: '#f472b6', catalogWatched: '#facc15' } },
+        { id: 'mint-ember', name: 'Mint Ember', colors: { own: '#34d399', you: '#fb7185', ghost: '#a1a1aa', catalogOwn: '#5eead4', catalogWatched: '#f59e0b' } },
+        { id: 'blue-steel', name: 'Blue Steel', colors: { own: '#60a5fa', you: '#f97316', ghost: '#9aa4b2', catalogOwn: '#38bdf8', catalogWatched: '#f43f5e' } },
+        { id: 'violet-lime', name: 'Violet Lime', colors: { own: '#c084fc', you: '#4ade80', ghost: '#a3a3a3', catalogOwn: '#818cf8', catalogWatched: '#fbbf24' } },
+      ];
+      const light = [
+        { id: 'classic-balanced', name: 'Classic Balanced', colors: { own: '#d94f4f', you: '#b76311', ghost: '#7a7a7a', catalogOwn: '#2f8f6a', catalogWatched: '#2f6cd6' } },
+        { id: 'ocean-ink', name: 'Ocean Ink', colors: { own: '#0f8fa8', you: '#5f3dc4', ghost: '#7f8c8d', catalogOwn: '#0a7a83', catalogWatched: '#b54708' } },
+        { id: 'forest-rose', name: 'Forest Rose', colors: { own: '#2f855a', you: '#b83280', ghost: '#6b7280', catalogOwn: '#1d7a55', catalogWatched: '#a16207' } },
+        { id: 'slate-citrus', name: 'Slate Citrus', colors: { own: '#2563eb', you: '#ca8a04', ghost: '#64748b', catalogOwn: '#0d9488', catalogWatched: '#dc2626' } },
+        { id: 'rust-teal', name: 'Rust Teal', colors: { own: '#b45309', you: '#2563eb', ghost: '#78716c', catalogOwn: '#0f766e', catalogWatched: '#be123c' } },
+      ];
+      return {
+        profile,
+        palettes: profile.kind === 'dark' ? dark : light,
+      };
+    },
+    normalizeSavedHighlightPalette(raw) {
+      if (!raw || typeof raw !== 'object')
+        return null;
+      const name = String(raw.name || '').trim();
+      if (!name)
+        return null;
+      const colors = raw.colors && typeof raw.colors === 'object' ? raw.colors : {};
+      const own = String(colors.own || '').trim().toLowerCase();
+      const you = String(colors.you || '').trim().toLowerCase();
+      const ghost = String(colors.ghost || '').trim().toLowerCase();
+      const catalogOwn = String(colors.catalogOwn || '').trim().toLowerCase();
+      const catalogWatched = String(colors.catalogWatched || '').trim().toLowerCase();
+      const isHex = (value) => /^#[0-9a-f]{6}$/i.test(value);
+      if (![own, you, ghost, catalogOwn, catalogWatched].every(isHex))
+        return null;
+      return {
+        name,
+        colors: { own, you, ghost, catalogOwn, catalogWatched },
+      };
+    },
+    savedHighlightPaletteList() {
+      const raw = Conf['savedHighlightPalettes'];
+      if (!Array.isArray(raw))
+        return [];
+      const out = [];
+      for (const item of raw) {
+        const normalized = Settings.normalizeSavedHighlightPalette(item);
+        if (!normalized)
+          continue;
+        out.push(normalized);
+      }
+      return out;
+    },
+    setSavedHighlightPalettes(list) {
+      const cleaned = list
+        .map(item => Settings.normalizeSavedHighlightPalette(item))
+        .filter(Boolean);
+      Conf['savedHighlightPalettes'] = cleaned;
+      $.set('savedHighlightPalettes', cleaned);
     },
     CUSTOM_SITE_THEME_PREFIX: 'custom:',
     isCustomSiteThemeValue(value) {
@@ -30031,17 +30699,13 @@ Enable it on boards.${location.hostname.split('.')[1]}.org in your browser's pri
       options['General'] = [
         'JSON Index',
         `Use ${meta.name} Catalog`,
-        'Index Refresh Notifications',
         'Open Threads in New Tab',
         'External Catalog',
         '404 Redirect',
         'Archive Report',
         'Exempt Archives from Encryption',
-        'Show Updated Notifications',
         'Export History',
-        'Ask to Export History',
         'Disable Native Extension',
-        'Enable Native Flash Embedding',
         ...Object.keys(Config.Index)
       ];
       options['Interface'] = [
@@ -30063,14 +30727,11 @@ Enable it on boards.${location.hostname.split('.')[1]}.org in your browser's pri
       ];
       options['Threads & Posts'] = [
         'Custom Board Titles',
-        'Persistent Custom Board Titles',
         'Color User IDs',
         'Count Posts by ID',
-        'Remove Spoilers',
-        'Reveal Spoilers',
+        'Spoiler Mode',
         'Time Formatting',
-        'Relative Post Dates',
-        'Relative Date Title',
+        'RelativeTime',
         'File Info Formatting',
         'Quote Backlinks',
         ...keysIn('Filtering').filter(key => !stylingOnlyKeys.includes(key)),
@@ -30104,6 +30765,7 @@ Enable it on boards.${location.hostname.split('.')[1]}.org in your browser's pri
         'siteStyle',
         'siteStyleHome',
         'customSiteThemes',
+        'savedHighlightPalettes',
         'Enable Thread Highlights',
         'Enable Catalog Highlights',
         'textColorMode',
@@ -30124,10 +30786,12 @@ Enable it on boards.${location.hostname.split('.')[1]}.org in your browser's pri
         'Catalog Highlight Own Text Auto',
         'Catalog Highlight Watched Text Auto',
         'Catalog Highlight Own Text Color',
+        'Catalog Highlight Own Subject Color',
         'Catalog Highlight Own Link Color',
         'Catalog Highlight Own Quote Color',
         'Catalog Highlight Own Dead Link Color',
         'Catalog Highlight Watched Text Color',
+        'Catalog Highlight Watched Subject Color',
         'Catalog Highlight Watched Link Color',
         'Catalog Highlight Watched Quote Color',
         'Catalog Highlight Watched Dead Link Color',
@@ -30175,7 +30839,6 @@ Enable it on boards.${location.hostname.split('.')[1]}.org in your browser's pri
         'captchaLanguage',
         'time',
         'timeLocale',
-        'RelativeTime',
         'backlink',
         'pastedname',
         'fileInfo',
@@ -30569,6 +31232,9 @@ Enable it on boards.${location.hostname.split('.')[1]}.org in your browser's pri
       if (compareString < '00002.00003.00006.00000') {
         set('RelativeTime', data['Relative Post Dates'] ? (data['Relative Date Title'] ? 'Hover' : 'Show') : 'No');
       }
+      if (data['Spoiler Mode'] === undefined && (data['Remove Spoilers'] !== undefined || data['Reveal Spoilers'] !== undefined)) {
+        set('Spoiler Mode', data['Remove Spoilers'] ? 'remove' : (data['Reveal Spoilers'] ? 'reveal' : 'default'));
+      }
       if (compareString === '00002.00009.00000.00000') {
         set('XEmbedder', data['Embed Tweets inline with fxTwitter'] ? 'fxt' : 'tf');
         set('fxtMaxReplies', data['Resolve Tweet Replies'] ? (data['Resolve all Tweet Replies'] ? 100 : 1) : 0);
@@ -30615,9 +31281,8 @@ Enable it on boards.${location.hostname.split('.')[1]}.org in your browser's pri
     filter(section) {
       const simplePanel = $.el('div');
       const advancedPanel = $.el('div');
-      const previewPanel = $.el('div');
       const previewState = {
-        panel: previewPanel,
+        panel: null,
         simpleTbody: null,
         advancedType: null,
         advancedTextarea: null,
@@ -30625,7 +31290,6 @@ Enable it on boards.${location.hostname.split('.')[1]}.org in your browser's pri
       Settings.filtersPreviewState = previewState;
       Settings.advancedFilter(advancedPanel, previewState);
       Settings.easyFilters(simplePanel, previewState);
-      $.add(advancedPanel, previewPanel);
       const details = $.el('details', { open: true }, { innerHTML: '<summary>Filtering Rules</summary>' });
       const subnav = $.el('div', { className: 'settings-subnav' });
       const simpleModePanel = $.el('div', { className: 'filter-mode-panel filter-mode-simple' });
@@ -32456,7 +33120,7 @@ Enable it on boards.${location.hostname.split('.')[1]}.org in your browser's pri
       }
       if (this.file?.thumbLink) {
         $.on(this.file.thumbLink, 'click', (e) => {
-          if (!e.shiftKey || !Conf['MD5 Quick Filter in Threads'])
+          if (!e.shiftKey)
             return;
           Filter.quickFilterMD5.call(this);
           e.preventDefault();
@@ -32617,13 +33281,6 @@ Enable it on boards.${location.hostname.split('.')[1]}.org in your browser's pri
         g.posts.forEach(hideMatchingPost);
       } else {
         hideMatchingPost(origin);
-      }
-      if (!Conf['MD5 Quick Filter Notifications']) {
-        // feedback for when nothing gets hidden
-        if (post.nodes.post.getBoundingClientRect().height) {
-          new Notice('info', 'MD5 filtered.', 2);
-        }
-        return;
       }
       let { notice } = Filter.quickFilterMD5;
       if (notice) {
@@ -34949,7 +35606,7 @@ Enable it on boards.${location.hostname.split('.')[1]}.org in your browser's pri
       }
 
       if (data = Banner.db.get({boardID: g.BOARD.ID, threadID: className})) {
-        if (Conf['Persistent Custom Board Titles'] || (data.orig === child.textContent)) {
+        if (data.orig === child.textContent) {
           Banner.original[className] = child.cloneNode(true);
           return child.textContent = data.title;
         } else {
@@ -34961,7 +35618,7 @@ Enable it on boards.${location.hostname.split('.')[1]}.org in your browser's pri
 
   var Flash = {
     init() {
-      if ((g.BOARD.ID === 'f') && Conf['Enable Native Flash Embedding']) {
+      if (g.BOARD.ID === 'f') {
         return $.ready(Flash.initReady);
       }
     },
@@ -35420,11 +36077,12 @@ Enable it on boards.${location.hostname.split('.')[1]}.org in your browser's pri
 
   var RemoveSpoilers = {
     init() {
-      if (Conf['Reveal Spoilers']) {
+      const mode = Conf['Spoiler Mode'];
+      if (mode === 'reveal') {
         $.addClass(doc, 'reveal-spoilers');
       }
 
-      if (!Conf['Remove Spoilers']) { return; }
+      if (mode !== 'remove') { return; }
 
       Callbacks.Post.push({
         name: 'Reveal Spoilers',
@@ -36514,7 +37172,6 @@ Enable it on boards.${location.hostname.split('.')[1]}.org in your browser's pri
         'Custom CSS': true,
         'usercss SFW': '',
         'usercss NSFW': '',
-        'Defer Styling to StyleChan': true,
       };
       ($.getSync || $.get)(defaults, (items) => {
         // The home page has no board context, so 'auto' falls back to SFW.
@@ -36526,18 +37183,24 @@ Enable it on boards.${location.hostname.split('.')[1]}.org in your browser's pri
           siteStyle = '';
         }
         const normalizedStyle = Main.normalizeSiteStyle(siteStyle);
-        // When StyleChan is running on the home page and deferral is on, skip
-        // applying our site style — StyleChan owns the theme there and our
-        // class/cookie/stylesheet overrides leave the home page looking scuffed.
-        // Custom CSS on home page still applies; it's user-authored and owned.
-        const styleChanPresent = !!(d.getElementById('ch4SS') || d.getElementById('StyleChanLink'));
-        const deferToStyleChan = items['Defer Styling to StyleChan'] && styleChanPresent;
-        // Persistently uncheck `siteStyleHome` when deferring — both so the
-        // setting reflects reality and so future page loads skip the work
-        // even before StyleChan has injected its detection marker.
+        // When StyleChan is running on the home page, skip applying our own
+        // style/theme overrides entirely. StyleChan owns the home page theme
+        // and custom CSS there, and mixing both leaves the page looking scuffed.
+        const deferToStyleChan = !!(d.getElementById('ch4SS') || d.getElementById('StyleChanLink'));
+        // Persistently uncheck the home-page style flags and custom CSS toggle
+        // when deferring so the stored settings match reality and future page
+        // loads skip the work even before StyleChan has injected its marker.
         if (deferToStyleChan && items.siteStyleHome) {
           items.siteStyleHome = false;
           $.set('siteStyleHome', false);
+        }
+        if (deferToStyleChan && items.customCSSHome) {
+          items.customCSSHome = false;
+          $.set('customCSSHome', false);
+        }
+        if (deferToStyleChan && items['Custom CSS']) {
+          items['Custom CSS'] = false;
+          $.set('Custom CSS', false);
         }
         if (items.siteStyleHome && normalizedStyle && !deferToStyleChan) {
           // Persist 4chan's own theme cookie so future homepage requests render
@@ -36593,11 +37256,9 @@ Enable it on boards.${location.hostname.split('.')[1]}.org in your browser's pri
       const changes = Settings.upgrade(items, previousversion);
       items.previousversion = (changes.previousversion = g.VERSION);
       return $.set(changes, function() {
-        if (items['Show Updated Notifications'] ?? true) {
-          const el = $.el('span',
-            { innerHTML: `${meta.name} has been updated to <a href="${meta.changelog}" target="_blank">version ${g.VERSION}</a>.` });
-          return new Notice('info', el, 15);
-        }
+        const el = $.el('span',
+          { innerHTML: `${meta.name} has been updated to <a href="${meta.changelog}" target="_blank">version ${g.VERSION}</a>.` });
+        return new Notice('info', el, 15);
       });
     },
 
@@ -36650,14 +37311,10 @@ Enable it on boards.${location.hostname.split('.')[1]}.org in your browser's pri
               filename: pathname[pathname.length - 1]
             });
           } else if (video = $('video')) {
-            if (Conf['Volume in New Tab']) {
-              Volume.setup(video);
-            }
-            if (Conf['Loop in New Tab']) {
-              video.loop = true;
-              video.controls = true;
-              video.play();
-            }
+            Volume.setup(video);
+            video.loop = true;
+            video.controls = true;
+            video.play();
           }
         });
         return;
@@ -36693,12 +37350,19 @@ Enable it on boards.${location.hostname.split('.')[1]}.org in your browser's pri
     initStyle() {
       if (!Main.isThisPageLegit()) { return; }
       const homeSiteStyle = Settings.styleConf('siteStyle');
-      // When deferring to StyleChan, the home-page styling preference is
-      // meaningless (StyleChan owns the home page theme), so persistently
-      // uncheck `siteStyleHome` and skip writing our theme cookie.
+      // When deferring to StyleChan, 4chan XT should not own the home-page
+      // styling or inject its custom CSS at all.
       if (Settings.shouldDeferStylingToStylechan() && Conf['siteStyleHome']) {
         Conf['siteStyleHome'] = false;
         $.set('siteStyleHome', false);
+      }
+      if (Settings.shouldDeferStylingToStylechan() && Conf['customCSSHome']) {
+        Conf['customCSSHome'] = false;
+        $.set('customCSSHome', false);
+      }
+      if (Settings.shouldDeferStylingToStylechan() && Conf['Custom CSS']) {
+        Conf['Custom CSS'] = false;
+        $.set('Custom CSS', false);
       }
       if (Conf['siteStyleHome'] && homeSiteStyle) {
         Main.setSiteStyleHomeCookie(homeSiteStyle);
@@ -37385,7 +38049,7 @@ User agent: ${navigator.userAgent}\
       ['Custom CSS',                CustomCSS],
       ['Thread Links',              ThreadLinks],
       ['Linkify',                   Linkify],
-      ['Reveal Spoilers',           RemoveSpoilers],
+      ['Spoiler Mode',              RemoveSpoilers],
       ['Resurrect Quotes',          Quotify],
       ['Fetch Ghost Posts',         GhostPosts],
       ['Filter',                    Filter],

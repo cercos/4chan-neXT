@@ -300,6 +300,10 @@
 :root.xt-highlight-catalog-own .catalog-thread > .catalog-container.yourPost .post.catalog-post .quote {
   color: var(--xt-catalog-own-quote, var(--xt-quote-text-color)) !important;
 }
+:root.xt-highlight-catalog-own .catalog-thread.yourPost .post.catalog-post .subject,
+:root.xt-highlight-catalog-own .catalog-thread > .catalog-container.yourPost .post.catalog-post .subject {
+  color: var(--xt-catalog-own-subject, var(--xt-catalog-own-text, var(--xt-text-color))) !important;
+}
 :root.xt-highlight-catalog-own .catalog-thread.yourPost .post.catalog-post .deadlink,
 :root.xt-highlight-catalog-own .catalog-thread > .catalog-container.yourPost .post.catalog-post .deadlink {
   color: var(--xt-catalog-own-dead-link, var(--xt-dead-link-text-color, var(--xt-dead-link))) !important;
@@ -332,6 +336,9 @@
 }
 :root.xt-highlight-catalog-watched .catalog-thread.watched:not(:has(.yourPost)) .post.catalog-post .quote {
   color: var(--xt-catalog-watched-quote, var(--xt-quote-text-color)) !important;
+}
+:root.xt-highlight-catalog-watched .catalog-thread.watched:not(:has(.yourPost)) .post.catalog-post .subject {
+  color: var(--xt-catalog-watched-subject, var(--xt-catalog-watched-text, var(--xt-text-color))) !important;
 }
 :root.xt-highlight-catalog-watched .catalog-thread.watched:not(:has(.yourPost)) .post.catalog-post .deadlink {
   color: var(--xt-catalog-watched-dead-link, var(--xt-dead-link-text-color, var(--xt-dead-link))) !important;

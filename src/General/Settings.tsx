@@ -113,7 +113,6 @@ var Settings = {
 
     const add = this.addSection;
 
-    add('All Settings',    this.allSettings);
     add('General',         this.general);
     add('Styling',         this.styling);
     add('Interface',       this.interface);
@@ -123,6 +122,7 @@ var Settings = {
     add('Filtering',       this.filter);
     add('Keybinds',        this.keybinds);
     add('Advanced',        this.advanced);
+    add('All Settings',    this.allSettings);
 
     $.on(d, 'AddSettingsSection',   Settings.addSection);
     $.on(d, 'OpenSettings', e => Settings.open(e.detail));
@@ -165,6 +165,26 @@ var Settings = {
     return Settings.isStylechanInstalled();
   },
 
+  enforceStylechanStylingDeferral(section?: HTMLElement, inputs?: Record<string, HTMLInputElement>) {
+    if (!Settings.shouldDeferStylingToStylechan()) return;
+
+    const setFalse = (key: string) => {
+      if (!Conf[key]) return;
+      Conf[key] = false;
+      $.set(key, false);
+      const input = inputs?.[key] || (section ? $(`[name="${key}"]`, section) as HTMLInputElement | null : null);
+      if (input?.type === 'checkbox') {
+        input.checked = false;
+        const container = input.closest('[data-name]') as HTMLElement | null;
+        if (container) container.dataset.checked = 'false';
+      }
+    };
+
+    setFalse('siteStyleHome');
+    setFalse('customCSSHome');
+    setFalse('Custom CSS');
+  },
+
   open(openSection) {
     let dialog, sectionToOpen;
     if (Settings.dialog) { return; }
@@ -192,6 +212,7 @@ var Settings = {
     }
 
     const links = [];
+    let defaultLink;
     for (const section of Settings.sections) {
       const link = $.el('a', {
         className: `tab-${section.hyphenatedTitle}`,
@@ -204,6 +225,7 @@ var Settings = {
         Settings.openSection.call(section);
       });
       links.push(link);
+      if (!defaultLink && section.title === 'General') defaultLink = link;
       if (
         section.title === openSection
         || (['Filter', 'Filters', 'Simple Filters'].includes(openSection) && section.title === 'Filtering')
@@ -211,7 +233,11 @@ var Settings = {
       ) { sectionToOpen = link; }
     }
     $.add($('.sections-list', dialog), links);
-    if (openSection !== 'none') { (sectionToOpen ? sectionToOpen : links[0]).click(); }
+    // Opening on "All Settings" eagerly renders every section, which is
+    // noticeably slower in Firefox. Default to the lightweight General view
+    // unless the caller explicitly requested another section.
+    const initialLink = sectionToOpen || defaultLink || links[0];
+    if (openSection !== 'none') { initialLink.click(); }
 
     Icon.set($('.close', dialog), 'xmark');
     $.on($('.close', dialog), 'click', e => { e.preventDefault(); Settings.close(); });
@@ -233,7 +259,7 @@ var Settings = {
 
     $.add(d.body, dialog);
     Settings.restoreWindowLayout(settingsWindow);
-    links[0].focus();
+    initialLink?.focus();
     Settings.loadLayoutPrefs();
 
     $.event('OpenSettings', null, dialog);
@@ -1379,10 +1405,9 @@ Enable it on boards.${location.hostname.split('.')[1]}.org in your browser's pri
     let input: HTMLInputElement, name: string;
     $.extend(section, { innerHTML: StylingPage });
 
-    // When StyleChan is present and the user wants to defer to it, replace
-    // every styling sub-section *except* Custom CSS with a banner that opens
-    // StyleChan's dialog on top of ours. CSS does the hiding via the
-    // `styling-deferred` class on the section root.
+    // When StyleChan is present, replace the conflicting styling controls
+    // with a banner that opens StyleChan's dialog on top of ours. CSS does
+    // the hiding via the `styling-deferred` class on the section root.
     if (Settings.shouldDeferStylingToStylechan()) {
       section.classList.add('styling-deferred');
       const banner = $.el('div', { className: 'styling-defer-banner' });
@@ -1391,7 +1416,7 @@ Enable it on boards.${location.hostname.split('.')[1]}.org in your browser's pri
         innerHTML:
           '<b>StyleChan is managing site themes.</b> '
           + 'The theme picker has been disabled; '
-          + 'highlight colors, scroll markers, and Custom CSS below still work. '
+          + 'highlight colors and other 4chan XT styling controls are hidden while StyleChan is installed. '
           + 'Uninstall StyleChan to restore the full Styling section.'
       });
       const button = $.el('button', {
@@ -1411,6 +1436,7 @@ Enable it on boards.${location.hostname.split('.')[1]}.org in your browser's pri
     for (input of $$('[name]', section)) {
       inputs[input.name] = input;
     }
+    Settings.enforceStylechanStylingDeferral(section, inputs);
 
     // Mark the enclosing <details> for every variant-aware input so CSS
     // can outline the whole section (Highlight Colors, Scrollbar Markers,
@@ -1486,14 +1512,14 @@ Enable it on boards.${location.hostname.split('.')[1]}.org in your browser's pri
         autoKey: 'Catalog Highlight Own Text Auto',
         colorKey: 'Catalog Highlight Own Color',
         opacityKey: 'Catalog Highlight Own Opacity',
-        keys: ['Catalog Highlight Own Text Color', 'Catalog Highlight Own Link Color', 'Catalog Highlight Own Quote Color', 'Catalog Highlight Own Dead Link Color'] as const,
+        keys: ['Catalog Highlight Own Text Color', 'Catalog Highlight Own Subject Color', 'Catalog Highlight Own Link Color', 'Catalog Highlight Own Quote Color', 'Catalog Highlight Own Dead Link Color'] as const,
       },
       {
         manualGroup: 'catalog-watched',
         autoKey: 'Catalog Highlight Watched Text Auto',
         colorKey: 'Catalog Highlight Watched Color',
         opacityKey: 'Catalog Highlight Watched Opacity',
-        keys: ['Catalog Highlight Watched Text Color', 'Catalog Highlight Watched Link Color', 'Catalog Highlight Watched Quote Color', 'Catalog Highlight Watched Dead Link Color'] as const,
+        keys: ['Catalog Highlight Watched Text Color', 'Catalog Highlight Watched Subject Color', 'Catalog Highlight Watched Link Color', 'Catalog Highlight Watched Quote Color', 'Catalog Highlight Watched Dead Link Color'] as const,
       },
     ] as const;
     const textColorKeys = [
@@ -1604,11 +1630,11 @@ Enable it on boards.${location.hostname.split('.')[1]}.org in your browser's pri
         const controls = key === 'Catalog Highlight Own Posts' ?
           [
             'Catalog Highlight Own Color', 'Catalog Highlight Own Opacity', 'Catalog Highlight Own Text Auto',
-            'Catalog Highlight Own Text Color', 'Catalog Highlight Own Link Color', 'Catalog Highlight Own Quote Color', 'Catalog Highlight Own Dead Link Color',
+            'Catalog Highlight Own Text Color', 'Catalog Highlight Own Subject Color', 'Catalog Highlight Own Link Color', 'Catalog Highlight Own Quote Color', 'Catalog Highlight Own Dead Link Color',
           ] :
           [
             'Catalog Highlight Watched Color', 'Catalog Highlight Watched Opacity', 'Catalog Highlight Watched Text Auto',
-            'Catalog Highlight Watched Text Color', 'Catalog Highlight Watched Link Color', 'Catalog Highlight Watched Quote Color', 'Catalog Highlight Watched Dead Link Color',
+            'Catalog Highlight Watched Text Color', 'Catalog Highlight Watched Subject Color', 'Catalog Highlight Watched Link Color', 'Catalog Highlight Watched Quote Color', 'Catalog Highlight Watched Dead Link Color',
           ];
         for (const controlKey of controls) {
           const control = inputs[controlKey];
@@ -2174,18 +2200,33 @@ Enable it on boards.${location.hostname.split('.')[1]}.org in your browser's pri
     return text.length > 180 ? `${text.slice(0, 177)}...` : text;
   },
 
+  stylingPreviewSampleMessageHTML() {
+    return [
+      'Regular text sample with a ',
+      '<a href="https://example.com/thread-preview" target="_blank" rel="nofollow noopener">regular link</a>, ',
+      '<a class="quotelink" href="#p1213499548" rel="nofollow">&gt;&gt;1213499548</a>, ',
+      '<a class="quotelink deadlink" href="#p1213000000" rel="nofollow">&gt;&gt;1213000000</a>, ',
+      'and <span class="quote">&gt;quoted text preview</span>.'
+    ].join('');
+  },
+
   stylingPreviewPostHTML({
     postID,
     extraClass = '',
     author = 'Anonymous',
+    subject = '',
     message = '',
+    messageHTML = '',
   }: {
     postID: number;
     extraClass?: string;
     author?: string;
+    subject?: string;
     message?: string;
+    messageHTML?: string;
   }) {
-    const safeMessage = E(message || Settings.stylingPreviewSampleText());
+    const subjectHTML = subject ? `<span class="subject">${E(subject)}</span> ` : '';
+    const renderedMessage = messageHTML || E(message || Settings.stylingPreviewSampleText());
     const classes = `postContainer replyContainer styling-preview-post ${extraClass}`.trim();
     return `
       <div class="${classes}" id="pc${postID}" itemprop="comment" itemscope itemtype="https://schema.org/Comment" data-full-i-d="g.${postID}">
@@ -2196,10 +2237,10 @@ Enable it on boards.${location.hostname.split('.')[1]}.org in your browser's pri
             <span class="dateTime postNum" data-utc="1780096072"><time datetime="2026-05-29T19:07:52-04:00">05/29/26(Fri)19:07:52</time> <a href="#p${postID}" rel="nofollow" title="Link to this post">No.</a><a href="javascript:quote('${postID}');" rel="nofollow" title="Reply to this post">${postID}</a></span>
           </div>
           <div class="postInfo desktop" id="pi${postID}">
-            <span class="nameBlock"><span class="name" itemprop="author" itemscope itemtype="https://schema.org/Person"><span itemprop="name">${E(author)}</span></span> </span>
+            ${subjectHTML}<span class="nameBlock"><span class="name" itemprop="author" itemscope itemtype="https://schema.org/Person"><span itemprop="name">${E(author)}</span></span> </span>
             <span class="dateTime" data-utc="1780096072">05/29/26(Fri)19:07:52</span>&nbsp;<span class="postNum desktop"><a href="#p${postID}" rel="nofollow" title="Link to this post">No.</a><a href="javascript:quote('${postID}');" rel="nofollow" title="Reply to this post">${postID}</a></span><a class="menu-button" href="javascript:;"><svg xmlns="http://www.w3.org/2000/svg" class="icon" viewBox="0 0 320 512"><path d="M137.4 374.6c12.5 12.5 32.8 12.5 45.3 0l128-128c9.2-9.2 11.9-22.9 6.9-34.9s-16.6-19.8-29.6-19.8L32 192c-12.9 0-24.6 7.8-29.6 19.8s-2.2 25.7 6.9 34.9l128 128z" fill="currentColor"></path></svg></a><span class="container"></span>
           </div>
-          <blockquote class="postMessage" id="m${postID}" itemprop="text">${safeMessage}</blockquote>
+          <blockquote class="postMessage" id="m${postID}" itemprop="text">${renderedMessage}</blockquote>
         </div>
       </div>
     `;
@@ -2210,7 +2251,9 @@ Enable it on boards.${location.hostname.split('.')[1]}.org in your browser's pri
     postID,
     extraThreadClass = '',
     extraContainerClass = '',
+    subject = '',
     message = '',
+    messageHTML = '',
     summary = '',
     excerpt = '',
   }: {
@@ -2218,13 +2261,16 @@ Enable it on boards.${location.hostname.split('.')[1]}.org in your browser's pri
     postID: number;
     extraThreadClass?: string;
     extraContainerClass?: string;
+    subject?: string;
     message?: string;
+    messageHTML?: string;
     summary?: string;
     excerpt?: string;
   }) {
     const threadClasses = `thread catalog-thread ${extraThreadClass}`.trim();
     const containerClasses = `postContainer catalog-container ${extraContainerClass}`.trim();
-    const safeMessage = E(message || Settings.stylingPreviewSampleText());
+    const safeSubject = E(subject || 'Catalog subject preview');
+    const renderedMessage = messageHTML || E(message || Settings.stylingPreviewSampleText());
     const safeSummary = E(summary || '4 posts and 2 image replies');
     const safeExcerpt = E(excerpt || 'recent reply preview');
     return `
@@ -2237,7 +2283,10 @@ Enable it on boards.${location.hostname.split('.')[1]}.org in your browser's pri
             <div class="catalog-stats">
               <span title="Posts / Files / Page"><span class="post-count">12</span> / <span class="file-count">8</span> / <span class="page-count">1</span></span>
             </div>
-            <blockquote class="postMessage" id="m${postID}">${safeMessage}</blockquote>
+            <div class="postInfo">
+              <span class="subject">${safeSubject}</span>
+            </div>
+            <blockquote class="postMessage" id="m${postID}">${renderedMessage}</blockquote>
             <span class="summary preview-summary">${safeSummary}</span>
             <div class="catalog-replies">
               <div class="catalog-reply">
@@ -2267,14 +2316,15 @@ Enable it on boards.${location.hostname.split('.')[1]}.org in your browser's pri
 
     const panel = $.el('div', { className: 'styling-preview styling-preview-dock dialog' }) as HTMLDivElement;
     panel.dataset.collapsed = 'false';
+    const sampleMessageHTML = Settings.stylingPreviewSampleMessageHTML();
     panel.innerHTML = `
       <div class="styling-preview-layout">
         <div class="board styling-preview-thread">
           <div class="thread" id="t503286550">
-            ${Settings.stylingPreviewPostHTML({ postID: 503286554, message: 'Normal: thread is already discussing this topic.' })}
-            ${Settings.stylingPreviewPostHTML({ postID: 503286555, extraClass: 'yourPost', author: 'You', message: 'This is a post you created.' })}
-            ${Settings.stylingPreviewPostHTML({ postID: 503286556, extraClass: 'quotesYou', message: 'This is a post quoting you.' })}
-            ${Settings.stylingPreviewPostHTML({ postID: 503286557, extraClass: 'from-archive', author: 'Archived', message: 'This is a ghost post (deleted).' })}
+            ${Settings.stylingPreviewPostHTML({ postID: 503286554, subject: 'Normal thread state', messageHTML: sampleMessageHTML })}
+            ${Settings.stylingPreviewPostHTML({ postID: 503286555, extraClass: 'yourPost', author: 'You', subject: 'Your post state', messageHTML: sampleMessageHTML })}
+            ${Settings.stylingPreviewPostHTML({ postID: 503286556, extraClass: 'quotesYou', subject: 'Quotes you state', messageHTML: sampleMessageHTML })}
+            ${Settings.stylingPreviewPostHTML({ postID: 503286557, extraClass: 'from-archive', author: 'Archived', subject: 'Ghost post state', messageHTML: sampleMessageHTML })}
           </div>
         </div>
         <div class="board styling-preview-catalog catalog-small">
@@ -2283,7 +2333,8 @@ Enable it on boards.${location.hostname.split('.')[1]}.org in your browser's pri
             postID: 503286580,
             extraThreadClass: 'yourPost',
             extraContainerClass: 'yourPost',
-            message: 'Catalog own-post state preview.',
+            subject: 'Catalog own-post state',
+            messageHTML: sampleMessageHTML,
             summary: '5 posts and 3 image replies',
             excerpt: 'your post reply sample',
           })}
@@ -2291,7 +2342,8 @@ Enable it on boards.${location.hostname.split('.')[1]}.org in your browser's pri
             threadID: 503286590,
             postID: 503286590,
             extraThreadClass: 'watched',
-            message: 'Catalog watched-thread state preview.',
+            subject: 'Catalog watched-thread state',
+            messageHTML: sampleMessageHTML,
             summary: '10 posts and 4 image replies',
             excerpt: 'watched thread reply sample',
           })}
@@ -2334,10 +2386,15 @@ Enable it on boards.${location.hostname.split('.')[1]}.org in your browser's pri
     const youEnabled = readChecked('Highlight Posts Quoting You');
     const ghostEnabled = readChecked('Highlight Ghost Posts');
     const threadHighlightsEnabled = readChecked('Enable Thread Highlights', true);
+    const catalogHighlightsEnabled = readChecked('Enable Catalog Highlights', true);
+    const catalogOwnEnabled = readChecked('Catalog Highlight Own Posts', true);
+    const catalogWatchedEnabled = readChecked('Catalog Highlight Watched Threads', true);
 
     panel.dataset.highlightOwn = (threadHighlightsEnabled && ownEnabled) ? 'true' : 'false';
     panel.dataset.highlightYou = (threadHighlightsEnabled && youEnabled) ? 'true' : 'false';
     panel.dataset.highlightGhost = (threadHighlightsEnabled && ghostEnabled) ? 'true' : 'false';
+    panel.dataset.highlightCatalogOwn = (catalogHighlightsEnabled && catalogOwnEnabled) ? 'true' : 'false';
+    panel.dataset.highlightCatalogWatched = (catalogHighlightsEnabled && catalogWatchedEnabled) ? 'true' : 'false';
 
     const background = Settings.resolveCanvasBackgroundStyle();
     for (const previewPane of $$('.styling-preview-thread, .styling-preview-catalog', panel) as HTMLElement[]) {
@@ -2505,8 +2562,8 @@ Enable it on boards.${location.hostname.split('.')[1]}.org in your browser's pri
     '--xt-highlight-own-text', '--xt-highlight-own-link', '--xt-highlight-own-quote', '--xt-highlight-own-dead-link',
     '--xt-highlight-you-text', '--xt-highlight-you-link', '--xt-highlight-you-quote', '--xt-highlight-you-dead-link',
     '--xt-highlight-ghost-text', '--xt-highlight-ghost-link', '--xt-highlight-ghost-quote', '--xt-highlight-ghost-dead-link',
-    '--xt-catalog-own-text', '--xt-catalog-own-link', '--xt-catalog-own-quote', '--xt-catalog-own-dead-link',
-    '--xt-catalog-watched-text', '--xt-catalog-watched-link', '--xt-catalog-watched-quote', '--xt-catalog-watched-dead-link',
+    '--xt-catalog-own-text', '--xt-catalog-own-subject', '--xt-catalog-own-link', '--xt-catalog-own-quote', '--xt-catalog-own-dead-link',
+    '--xt-catalog-watched-text', '--xt-catalog-watched-subject', '--xt-catalog-watched-link', '--xt-catalog-watched-quote', '--xt-catalog-watched-dead-link',
   ] as const,
 
   clearStyleVarsOn(target: HTMLElement) {
@@ -2610,6 +2667,9 @@ Enable it on boards.${location.hostname.split('.')[1]}.org in your browser's pri
       textKey:
         | 'Highlight Own Text Color' | 'Highlight You Text Color' | 'Highlight Ghost Text Color'
         | 'Catalog Highlight Own Text Color' | 'Catalog Highlight Watched Text Color',
+      subjectKey:
+        | null
+        | 'Catalog Highlight Own Subject Color' | 'Catalog Highlight Watched Subject Color',
       linkKey:
         | 'Highlight Own Link Color' | 'Highlight You Link Color' | 'Highlight Ghost Link Color'
         | 'Catalog Highlight Own Link Color' | 'Catalog Highlight Watched Link Color',
@@ -2622,6 +2682,7 @@ Enable it on boards.${location.hostname.split('.')[1]}.org in your browser's pri
     ) => {
       const base = autoPalette || {
         text: textColor || '',
+        subject: textColor || '',
         link: linkColor || '',
         quote: quoteColor || '',
         deadLink: deadLinkColor || '',
@@ -2629,6 +2690,7 @@ Enable it on boards.${location.hostname.split('.')[1]}.org in your browser's pri
       if (cv(autoKey)) return base;
       return {
         text: cv(textKey) || base.text,
+        subject: (subjectKey ? cv(subjectKey) : '') || base.subject || base.text,
         link: cv(linkKey) || base.link,
         quote: cv(quoteKey) || base.quote,
         deadLink: cv(deadKey) || base.deadLink,
@@ -2638,6 +2700,7 @@ Enable it on boards.${location.hostname.split('.')[1]}.org in your browser's pri
       autoHighlightPalette('Highlight Own Color', 'Highlight Own Opacity'),
       'Highlight Own Text Auto',
       'Highlight Own Text Color',
+      null,
       'Highlight Own Link Color',
       'Highlight Own Quote Color',
       'Highlight Own Dead Link Color',
@@ -2646,6 +2709,7 @@ Enable it on boards.${location.hostname.split('.')[1]}.org in your browser's pri
       autoHighlightPalette('Highlight You Color', 'Highlight You Opacity'),
       'Highlight You Text Auto',
       'Highlight You Text Color',
+      null,
       'Highlight You Link Color',
       'Highlight You Quote Color',
       'Highlight You Dead Link Color',
@@ -2654,6 +2718,7 @@ Enable it on boards.${location.hostname.split('.')[1]}.org in your browser's pri
       autoHighlightPalette('Highlight Ghost Color', 'Highlight Ghost Opacity'),
       'Highlight Ghost Text Auto',
       'Highlight Ghost Text Color',
+      null,
       'Highlight Ghost Link Color',
       'Highlight Ghost Quote Color',
       'Highlight Ghost Dead Link Color',
@@ -2662,6 +2727,7 @@ Enable it on boards.${location.hostname.split('.')[1]}.org in your browser's pri
       autoHighlightPalette('Catalog Highlight Own Color', 'Catalog Highlight Own Opacity'),
       'Catalog Highlight Own Text Auto',
       'Catalog Highlight Own Text Color',
+      'Catalog Highlight Own Subject Color',
       'Catalog Highlight Own Link Color',
       'Catalog Highlight Own Quote Color',
       'Catalog Highlight Own Dead Link Color',
@@ -2670,6 +2736,7 @@ Enable it on boards.${location.hostname.split('.')[1]}.org in your browser's pri
       autoHighlightPalette('Catalog Highlight Watched Color', 'Catalog Highlight Watched Opacity'),
       'Catalog Highlight Watched Text Auto',
       'Catalog Highlight Watched Text Color',
+      'Catalog Highlight Watched Subject Color',
       'Catalog Highlight Watched Link Color',
       'Catalog Highlight Watched Quote Color',
       'Catalog Highlight Watched Dead Link Color',
@@ -2687,10 +2754,12 @@ Enable it on boards.${location.hostname.split('.')[1]}.org in your browser's pri
     setVar('--xt-highlight-ghost-quote', ghostPalette?.quote || '');
     setVar('--xt-highlight-ghost-dead-link', ghostPalette?.deadLink || '');
     setVar('--xt-catalog-own-text', catalogOwnPalette?.text || '');
+    setVar('--xt-catalog-own-subject', catalogOwnPalette?.subject || '');
     setVar('--xt-catalog-own-link', catalogOwnPalette?.link || '');
     setVar('--xt-catalog-own-quote', catalogOwnPalette?.quote || '');
     setVar('--xt-catalog-own-dead-link', catalogOwnPalette?.deadLink || '');
     setVar('--xt-catalog-watched-text', catalogWatchedPalette?.text || '');
+    setVar('--xt-catalog-watched-subject', catalogWatchedPalette?.subject || '');
     setVar('--xt-catalog-watched-link', catalogWatchedPalette?.link || '');
     setVar('--xt-catalog-watched-quote', catalogWatchedPalette?.quote || '');
     setVar('--xt-catalog-watched-dead-link', catalogWatchedPalette?.deadLink || '');
@@ -2725,6 +2794,7 @@ Enable it on boards.${location.hostname.split('.')[1]}.org in your browser's pri
     };
     return {
       text,
+      subject: text,
       link: safe(palette.link),
       quote: safe(palette.quote),
       deadLink: safe(palette.deadLink),
@@ -2934,6 +3004,8 @@ Enable it on boards.${location.hostname.split('.')[1]}.org in your browser's pri
         return 'var(--xt-highlight-ghost-dead-link, var(--xt-dead-link-text-color, #4c63be))';
       case 'Catalog Highlight Own Text Color':
         return 'var(--xt-catalog-own-text, var(--xt-text-color, #111111))';
+      case 'Catalog Highlight Own Subject Color':
+        return 'var(--xt-catalog-own-subject, var(--xt-catalog-own-text, var(--xt-text-color, #111111)))';
       case 'Catalog Highlight Own Link Color':
         return 'var(--xt-catalog-own-link, var(--xt-link-text-color, #0b52d6))';
       case 'Catalog Highlight Own Quote Color':
@@ -2942,6 +3014,8 @@ Enable it on boards.${location.hostname.split('.')[1]}.org in your browser's pri
         return 'var(--xt-catalog-own-dead-link, var(--xt-dead-link-text-color, #4c63be))';
       case 'Catalog Highlight Watched Text Color':
         return 'var(--xt-catalog-watched-text, var(--xt-text-color, #111111))';
+      case 'Catalog Highlight Watched Subject Color':
+        return 'var(--xt-catalog-watched-subject, var(--xt-catalog-watched-text, var(--xt-text-color, #111111)))';
       case 'Catalog Highlight Watched Link Color':
         return 'var(--xt-catalog-watched-link, var(--xt-link-text-color, #0b52d6))';
       case 'Catalog Highlight Watched Quote Color':
@@ -3807,10 +3881,12 @@ Enable it on boards.${location.hostname.split('.')[1]}.org in your browser's pri
       'Catalog Highlight Own Text Auto',
       'Catalog Highlight Watched Text Auto',
       'Catalog Highlight Own Text Color',
+      'Catalog Highlight Own Subject Color',
       'Catalog Highlight Own Link Color',
       'Catalog Highlight Own Quote Color',
       'Catalog Highlight Own Dead Link Color',
       'Catalog Highlight Watched Text Color',
+      'Catalog Highlight Watched Subject Color',
       'Catalog Highlight Watched Link Color',
       'Catalog Highlight Watched Quote Color',
       'Catalog Highlight Watched Dead Link Color',

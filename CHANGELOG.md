@@ -2,6 +2,16 @@
 
 ### Unreleased
 
+### 1.0.5 (2026-06-01)
+
+- Fixed captcha behavior.
+- Fixed captcha text colors.
+- Fixed/added settings for highlight colors.
+- Added sorting to Thread Watcher.
+- Fixed flag dropdown colors.
+- Added dynamic font colors.
+- Settings cleanup
+
 ### 1.0.4 (2026-06-01)
 
 - Added scrollbar hover thumbnail preview.

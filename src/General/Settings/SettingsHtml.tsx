@@ -18,7 +18,7 @@ const settingsHtml = <div id="fourchanx-settings" class="dialog">
   <div class="settings-body">
     <nav>
       <div class="settings-search">
-        <input type="search" placeholder="Search settings" autocomplete="off" />
+        <input type="search" class="field" placeholder="Search settings" autocomplete="off" />
       </div>
       <div class="sections-list"></div>
     </nav>

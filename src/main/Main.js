@@ -333,17 +333,24 @@ var Main = {
         siteStyle = '';
       }
       const normalizedStyle = Main.normalizeSiteStyle(siteStyle);
-      // When StyleChan is running on the home page and deferral is on, skip
-      // applying our site style — StyleChan owns the theme there and our
-      // class/cookie/stylesheet overrides leave the home page looking scuffed.
-      // Custom CSS on home page still applies; it's user-authored and owned.
+      // When StyleChan is running on the home page, skip applying our own
+      // style/theme overrides entirely. StyleChan owns the home page theme
+      // and custom CSS there, and mixing both leaves the page looking scuffed.
       const deferToStyleChan = !!(d.getElementById('ch4SS') || d.getElementById('StyleChanLink'));
-      // Persistently uncheck `siteStyleHome` when deferring — both so the
-      // setting reflects reality and so future page loads skip the work
-      // even before StyleChan has injected its detection marker.
+      // Persistently uncheck the home-page style flags and custom CSS toggle
+      // when deferring so the stored settings match reality and future page
+      // loads skip the work even before StyleChan has injected its marker.
       if (deferToStyleChan && items.siteStyleHome) {
         items.siteStyleHome = false;
         $.set('siteStyleHome', false);
+      }
+      if (deferToStyleChan && items.customCSSHome) {
+        items.customCSSHome = false;
+        $.set('customCSSHome', false);
+      }
+      if (deferToStyleChan && items['Custom CSS']) {
+        items['Custom CSS'] = false;
+        $.set('Custom CSS', false);
       }
       if (items.siteStyleHome && normalizedStyle && !deferToStyleChan) {
         // Persist 4chan's own theme cookie so future homepage requests render
@@ -495,12 +502,19 @@ var Main = {
   initStyle() {
     if (!Main.isThisPageLegit()) { return; }
     const homeSiteStyle = Settings.styleConf('siteStyle');
-    // When deferring to StyleChan, the home-page styling preference is
-    // meaningless (StyleChan owns the home page theme), so persistently
-    // uncheck `siteStyleHome` and skip writing our theme cookie.
+    // When deferring to StyleChan, 4chan XT should not own the home-page
+    // styling or inject its custom CSS at all.
     if (Settings.shouldDeferStylingToStylechan() && Conf['siteStyleHome']) {
       Conf['siteStyleHome'] = false;
       $.set('siteStyleHome', false);
+    }
+    if (Settings.shouldDeferStylingToStylechan() && Conf['customCSSHome']) {
+      Conf['customCSSHome'] = false;
+      $.set('customCSSHome', false);
+    }
+    if (Settings.shouldDeferStylingToStylechan() && Conf['Custom CSS']) {
+      Conf['Custom CSS'] = false;
+      $.set('Custom CSS', false);
     }
     if (Conf['siteStyleHome'] && homeSiteStyle) {
       Main.setSiteStyleHomeCookie(homeSiteStyle);

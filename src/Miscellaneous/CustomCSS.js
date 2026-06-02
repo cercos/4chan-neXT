@@ -5,6 +5,17 @@ import Settings from "../General/Settings";
 
 const CustomCSS = {
   init() {
+    if (Settings.shouldDeferStylingToStylechan()) {
+      if (Conf['Custom CSS']) {
+        Conf['Custom CSS'] = false;
+        $.set('Custom CSS', false);
+      }
+      if (Conf['customCSSHome']) {
+        Conf['customCSSHome'] = false;
+        $.set('customCSSHome', false);
+      }
+      return;
+    }
     if (!Conf['Custom CSS']) { return; }
     return this.addStyle();
   },
