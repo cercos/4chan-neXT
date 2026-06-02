@@ -202,6 +202,10 @@ var Main = {
     Conf['Index Sort'] = dict();
     for (let i = 0; i < 2; i++) { Conf[`Last Long Reply Thresholds ${i}`] = dict(); }
     Conf['siteProperties'] = dict();
+    const legacyReplaceThumbnailKeys = ['Replace GIF', 'Replace JPG', 'Replace PNG', 'Replace WEBM'];
+    for (const key of legacyReplaceThumbnailKeys) {
+      Conf[key] = false;
+    }
 
     // XXX old key names
     Conf['Except Archives from Encryption'] = false;
@@ -233,6 +237,7 @@ var Main = {
     // Get saved values as items
     const items = dict();
     for (const key in Conf) items[key] = undefined;
+    for (const key of legacyReplaceThumbnailKeys) items[key] = undefined;
     items['previousversion'] = undefined;
     ($.getSync || $.get)(items, function(items) {
       $.asap(docSet, function() {
@@ -257,6 +262,10 @@ var Main = {
         // Combine default values with saved values
         for (const key in Conf) {
           Conf[key] = items[key] ?? Conf[key];
+        }
+        if (!Conf['Replace Thumbnails'] && legacyReplaceThumbnailKeys.some((key) => items[key] === true)) {
+          Conf['Replace Thumbnails'] = true;
+          $.set('Replace Thumbnails', true);
         }
 
         Site.init(Main.initFeatures);

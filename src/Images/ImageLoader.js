@@ -12,7 +12,7 @@ import $ from "../platform/$";
 var ImageLoader = {
   init() {
     if (!['index', 'thread', 'archive'].includes(g.VIEW)) { return; }
-    const replace = Conf['Replace JPG'] || Conf['Replace PNG'] || Conf['Replace GIF'] || Conf['Replace WEBM'];
+    const replace = Conf['Replace Thumbnails'];
     if (!Conf['Image Prefetching'] && !replace) { return; }
 
     Callbacks.Post.push({
@@ -26,7 +26,7 @@ var ImageLoader = {
       }
     });
 
-    if (Conf['Replace WEBM']) {
+    if (Conf['Replace Thumbnails']) {
       $.on(d, 'scroll visibilitychange 4chanXInitFinished PostsInserted', this.playVideos);
     }
 
@@ -47,7 +47,7 @@ var ImageLoader = {
   node() {
     if (this.isClone) { return; }
     for (var file of this.files) {
-      if (Conf['Replace WEBM'] && file.isVideo) { ImageLoader.replaceVideo(this, file); }
+      if (Conf['Replace Thumbnails'] && file.isVideo) { ImageLoader.replaceVideo(this, file); }
       ImageLoader.prefetch(this, file);
     }
   },
@@ -73,16 +73,10 @@ var ImageLoader = {
   },
 
   prefetch(post, file) {
-    let clone, type;
+    let clone;
     const {isImage, isVideo, thumb, url} = file;
     if (file.isPrefetched || !(isImage || isVideo) || post.isHidden || post.thread.isHidden) { return; }
-    if (isVideo) {
-      type = 'WEBM';
-    } else {
-      type = url.match(/\.([^.]+)$/)?.[1].toUpperCase();
-      if (type === 'JPEG') { type = 'JPG'; }
-    }
-    const replace = Conf[`Replace ${type}`] && !/spoiler/.test(thumb.src || thumb.dataset.src);
+    const replace = Conf['Replace Thumbnails'] && !/spoiler/.test(thumb.src || thumb.dataset.src);
     if (!replace && !ImageLoader.prefetchEnabled) { return; }
     if ($.hasClass(doc, 'catalog-mode')) { return; }
     if (![post, ...post.clones].some(clone => doc.contains(clone.nodes.root))) { return; }

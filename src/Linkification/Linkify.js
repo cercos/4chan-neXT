@@ -21,12 +21,18 @@ var Linkify = {
     // Live-toggle: re-sweep page when the user flips the setting in Settings.
     $.sync('Convert X to xcancel', enabled => {
       Conf['Convert X to xcancel'] = enabled;
-      Linkify.refreshXcancel();
+      Linkify.refreshFrontEndRewrites();
+    });
+
+    $.sync('Convert YouTube to yewtu.be', enabled => {
+      Conf['Convert YouTube to yewtu.be'] = enabled;
+      Linkify.refreshFrontEndRewrites();
     });
 
     const shouldLinkify = Conf['Linkify'];
     const shouldRewriteX = Conf['Convert X to xcancel'];
-    if (!shouldLinkify && !shouldRewriteX) { return; }
+    const shouldRewriteYouTube = Conf['Convert YouTube to yewtu.be'];
+    if (!shouldLinkify && !shouldRewriteX && !shouldRewriteYouTube) { return; }
 
     if (shouldLinkify && Conf['Comment Expansion']) {
       ExpandComment.callbacks.push(this.node);
@@ -42,26 +48,57 @@ var Linkify = {
     }
   },
 
-  refreshXcancel() {
-    if (Conf['Convert X to xcancel']) {
+  refreshFrontEndRewrites() {
+    const shouldRewriteX = Conf['Convert X to xcancel'];
+    const shouldRewriteYouTube = Conf['Convert YouTube to yewtu.be'];
+    if (shouldRewriteX || shouldRewriteYouTube) {
       // Apply rewrite to every <a> in post comments currently on the page.
       const selector = g.SITE?.selectors?.comment;
       if (!selector) { return; }
       for (const comment of $$(selector)) {
         for (const link of $$('a', comment)) {
-          Linkify.rewriteXLink(link);
+          if (shouldRewriteX) {
+            Linkify.rewriteXLink(link);
+          } else if (link.dataset.xcancelOrigHref) {
+            link.href = link.dataset.xcancelOrigHref;
+            if (link.dataset.xcancelOrigText != null && link.children.length === 0) {
+              link.textContent = link.dataset.xcancelOrigText;
+            }
+            delete link.dataset.xcancelOrigHref;
+            delete link.dataset.xcancelOrigText;
+          }
+
+          if (shouldRewriteYouTube) {
+            Linkify.rewriteYouTubeLink(link);
+          } else if (link.dataset.yewtuOrigHref) {
+            link.href = link.dataset.yewtuOrigHref;
+            if (link.dataset.yewtuOrigText != null && link.children.length === 0) {
+              link.textContent = link.dataset.yewtuOrigText;
+            }
+            delete link.dataset.yewtuOrigHref;
+            delete link.dataset.yewtuOrigText;
+          }
         }
       }
-    } else {
-      // Revert links we previously rewrote.
-      for (const link of $$('a[data-xcancel-orig-href]')) {
-        link.href = link.dataset.xcancelOrigHref;
-        if (link.dataset.xcancelOrigText != null && link.children.length === 0) {
-          link.textContent = link.dataset.xcancelOrigText;
-        }
-        delete link.dataset.xcancelOrigHref;
-        delete link.dataset.xcancelOrigText;
+      return;
+    }
+
+    // Revert links we previously rewrote.
+    for (const link of $$('a[data-xcancel-orig-href]')) {
+      link.href = link.dataset.xcancelOrigHref;
+      if (link.dataset.xcancelOrigText != null && link.children.length === 0) {
+        link.textContent = link.dataset.xcancelOrigText;
       }
+      delete link.dataset.xcancelOrigHref;
+      delete link.dataset.xcancelOrigText;
+    }
+    for (const link of $$('a[data-yewtu-orig-href]')) {
+      link.href = link.dataset.yewtuOrigHref;
+      if (link.dataset.yewtuOrigText != null && link.children.length === 0) {
+        link.textContent = link.dataset.yewtuOrigText;
+      }
+      delete link.dataset.yewtuOrigHref;
+      delete link.dataset.yewtuOrigText;
     }
   },
 
@@ -69,15 +106,17 @@ var Linkify = {
     let link;
     if (this.isClone) { return Embedding.events(this); }
     if (!Linkify.regString.test(this.info.comment)) {
-      if (Conf['Convert X to xcancel']) {
+      if (Conf['Convert X to xcancel'] || Conf['Convert YouTube to yewtu.be']) {
         for (link of $$('a', this.nodes.comment)) {
-          Linkify.rewriteXLink(link);
+          if (Conf['Convert X to xcancel']) { Linkify.rewriteXLink(link); }
+          if (Conf['Convert YouTube to yewtu.be']) { Linkify.rewriteYouTubeLink(link); }
         }
       }
       return;
     }
     for (link of $$('a', this.nodes.comment)) {
-      Linkify.rewriteXLink(link);
+      if (Conf['Convert X to xcancel']) { Linkify.rewriteXLink(link); }
+      if (Conf['Convert YouTube to yewtu.be']) { Linkify.rewriteYouTubeLink(link); }
       if (g.SITE.isLinkified?.(link)) {
         $.addClass(link, 'linkify');
         if (ImageHost.useFaster) { ImageHost.fixLinks([link]); }
@@ -237,7 +276,7 @@ aero|asia|biz|cat|com|coop|dance|info|int|jobs|mobi|moe|museum|name|net|org|post
       }) + encodedDomain[2];
     }
 
-    const rewrittenHref = Linkify.rewriteXURL(text);
+    const rewrittenHref = Linkify.rewriteURLs(text);
     const a = $.el('a', {
       className: 'linkify',
       rel:       'noreferrer noopener',
@@ -251,8 +290,13 @@ aero|asia|biz|cat|com|coop|dance|info|int|jobs|mobi|moe|museum|name|net|org|post
     range.insertNode(a);
 
     if (rewrittenHref !== text) {
-      a.dataset.xcancelOrigHref = text;
-      if (a.children.length === 0) { a.dataset.xcancelOrigText = a.textContent; }
+      if (Conf['Convert X to xcancel'] && Linkify.rewriteXURL(text) !== text) {
+        a.dataset.xcancelOrigHref = text;
+        if (a.children.length === 0) { a.dataset.xcancelOrigText = a.textContent; }
+      } else if (Conf['Convert YouTube to yewtu.be'] && Linkify.rewriteYouTubeURL(text) !== text) {
+        a.dataset.yewtuOrigHref = text;
+        if (a.children.length === 0) { a.dataset.yewtuOrigText = a.textContent; }
+      }
       Linkify.rewriteVisibleText(a);
     }
 
@@ -273,17 +317,42 @@ aero|asia|biz|cat|com|coop|dance|info|int|jobs|mobi|moe|museum|name|net|org|post
     }
   },
 
+  rewriteYouTubeLink(link) {
+    if (!Conf['Convert YouTube to yewtu.be']) { return; }
+    const oldHref = link.href;
+    const newHref = Linkify.rewriteYouTubeURL(oldHref);
+    if (newHref !== oldHref) {
+      if (!link.dataset.yewtuOrigHref) {
+        link.dataset.yewtuOrigHref = oldHref;
+        if (link.children.length === 0) { link.dataset.yewtuOrigText = link.textContent; }
+      }
+      link.href = newHref;
+      Linkify.rewriteVisibleText(link);
+    }
+  },
+
   rewriteVisibleText(link) {
     // Replace twitter.com / x.com hostnames in the link's visible text with xcancel.com.
+    // Replace youtube.com / youtu.be hostnames in the link's visible text with yewtu.be.
     // Only touches text nodes so we don't disturb embed icons or nested markup.
-    const replace = s => s.replace(
+    const replaceX = s => s.replace(
       /\b((?:www\.|mobile\.)?(?:fx|vx)?twitter\.com|(?:www\.|mobile\.)?(?:fixup|fixv)?x\.com|twittpr\.com)\b/gi,
       'xcancel.com'
+    );
+    const replaceYouTube = s => s.replace(
+      /\b((?:www\.|m\.|music\.|mobile\.)?(?:youtu\.be|youtube\.com|youtube-nocookie\.com))\b/gi,
+      'yewtu.be'
     );
     const walker = document.createTreeWalker(link, NodeFilter.SHOW_TEXT);
     let node;
     while ((node = walker.nextNode())) {
-      const updated = replace(node.data);
+      let updated = node.data;
+      if (Conf['Convert X to xcancel']) {
+        updated = replaceX(updated);
+      }
+      if (Conf['Convert YouTube to yewtu.be']) {
+        updated = replaceYouTube(updated);
+      }
       if (updated !== node.data) { node.data = updated; }
     }
   },
@@ -314,6 +383,52 @@ aero|asia|biz|cat|com|coop|dance|info|int|jobs|mobi|moe|museum|name|net|org|post
       }
     } catch {}
     return urlString;
+  },
+
+  rewriteYouTubeURL(urlString) {
+    if (!Conf['Convert YouTube to yewtu.be']) { return urlString; }
+    try {
+      const base = (typeof location === 'object' && location?.href) ? location.href : undefined;
+      const url = base ? new URL(urlString, base) : new URL(urlString);
+      if (!/^https?:$/.test(url.protocol)) { return urlString; }
+
+      const isYouTube = /(?:^|\.)youtube\.com$/i.test(url.hostname)
+        || /(?:^|\.)youtube-nocookie\.com$/i.test(url.hostname)
+        || /^(?:www\.)?youtu\.be$/i.test(url.hostname);
+
+      // Direct links.
+      if (isYouTube) {
+        if (/^(?:www\.)?youtu\.be$/i.test(url.hostname)) {
+          const shortId = url.pathname.replace(/^\//, '');
+          if (/^[\w-]{11}$/.test(shortId)) {
+            if (!url.searchParams.get('v')) {
+              url.searchParams.set('v', shortId);
+            }
+            url.pathname = '/watch';
+          }
+        }
+        url.hostname = 'yewtu.be';
+        return url.toString();
+      }
+
+      // Wrapped redirect links (e.g. ?url=https://youtube.com/...).
+      const redirectParams = ['url', 'u', 'to', 'target', 'dest', 'destination', 'redirect', 'redir', 'r'];
+      for (const key of redirectParams) {
+        const value = url.searchParams.get(key);
+        if (!value) { continue; }
+        const rewritten = Linkify.rewriteYouTubeURL(value);
+        if (rewritten !== value) {
+          url.searchParams.set(key, rewritten);
+          return url.toString();
+        }
+      }
+    } catch {}
+    return urlString;
+  },
+
+  rewriteURLs(urlString) {
+    const rewrittenX = Linkify.rewriteXURL(urlString);
+    return Linkify.rewriteYouTubeURL(rewrittenX);
   }
 };
 export default Linkify;

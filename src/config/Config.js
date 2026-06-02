@@ -153,6 +153,11 @@ const Config = {
         'Rewrite twitter.com / x.com links to xcancel.com so clicks open the privacy front-end instead.',
         1
       ],
+      'Convert YouTube to yewtu.be': [
+        false,
+        'Rewrite youtube.com / youtu.be links to yewtu.be so clicks open the privacy front-end instead.',
+        1
+      ],
     },
 
     'Filtering': {
@@ -260,22 +265,6 @@ const Config = {
       'Replace Thumbnails': [
         false,
         'Replace image and video thumbnails with the original media. Probably will degrade browser performance ;)'
-      ],
-      'Replace GIF': [
-        false,
-        'Replace gif thumbnails with the actual image.'
-      ],
-      'Replace JPG': [
-        false,
-        'Replace jpg thumbnails with the actual image.'
-      ],
-      'Replace PNG': [
-        false,
-        'Replace png thumbnails with the actual image.'
-      ],
-      'Replace WEBM': [
-        false,
-        'Replace webm, mp4, and ogv thumbnails with the actual video. Probably will degrade browser performance ;)'
       ],
       'Image Prefetching': [
         true,

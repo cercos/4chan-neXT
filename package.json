@@ -128,17 +128,21 @@
   },
   "type": "module",
   "scripts": {
+    "//testbuild": "Development build for verifying source changes locally. Outputs to testbuilds/ (gitignored). This is the default build to use when iterating on code.",
+    "testbuild": "node ./tools/rollup -build-dir=testbuilds",
+    "//build": "Production release build. Writes committed artifacts to builds/. Only run when explicitly preparing a release — use testbuild for development iteration.",
     "build": "node ./tools/rollup",
+    "//build:variants": "All build:* scripts below write release artifacts to builds/. Only run when explicitly preparing a release; use testbuild otherwise.",
     "build:min": "node ./tools/rollup -min -platform=userscript",
     "build:userscript": "node ./tools/rollup -platform=userscript",
     "build:crx": "node ./tools/rollup -platform=crx",
     "build:userscript:min": "node ./tools/rollup -min -platform=userscript",
     "build:crx:min": "node ./tools/rollup -min -platform=crx",
     "build:crxp": "npm run build:crx && bash ./tools/pack-crx.sh",
+    "//build:all": "Full multi-platform release build. Slow and writes to builds/. Only run when explicitly preparing a release.",
     "build:all": "node ./tools/build-all.js",
     "removebuild": "node ./tools/remove-build-changes.js",
     "removebuild:all": "node ./tools/remove-build-changes.js --all",
-    "testbuild": "node ./tools/rollup -build-dir=testbuilds",
     "serve:8123": "http-server . -p 8123 -c-1"
   }
 }

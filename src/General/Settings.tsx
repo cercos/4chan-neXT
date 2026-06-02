@@ -1310,7 +1310,7 @@ Enable it on boards.${location.hostname.split('.')[1]}.org in your browser's pri
     const lookup = Settings.getMainSettingLookup();
 
     const groups: [string, string[]][] = [
-      ['Image Behavior', ['Image Expansion', 'Image Hover', 'Image Hover in Catalog', 'Replace Thumbnails', 'Replace GIF', 'Replace JPG', 'Replace PNG', 'Replace WEBM', 'Restart when Opened']],
+      ['Image Behavior', ['Image Expansion', 'Image Hover', 'Image Hover in Catalog', 'Replace Thumbnails', 'Restart when Opened']],
       ['Images', ['Gallery', 'Fullscreen Gallery', 'PDF in Gallery', 'Sauce', 'Reveal Spoiler Thumbnails', 'Image Prefetching', 'Fappe Tyme', 'Werk Tyme']],
       ['Videos', ['WEBM Metadata', 'Autoplay', 'Show Controls', 'Click Passthrough', 'Allow Sound', 'Mouse Wheel Volume', 'Enable sound posts']]
     ];
@@ -1416,8 +1416,9 @@ Enable it on boards.${location.hostname.split('.')[1]}.org in your browser's pri
         className: 'styling-defer-banner-text',
         innerHTML:
           '<b>StyleChan is managing site themes.</b> '
-          + 'The theme picker has been disabled; '
-          + 'highlight colors and other 4chan XT styling controls are hidden while StyleChan is installed. '
+          + 'The theme picker has been disabled. '
+          + 'Some 4chan-neXT styling options, including text colors and custom CSS, are hidden while StyleChan is installed. '
+          + 'Highlight colors remain available here. '
           + 'Uninstall StyleChan to restore the full Styling section.'
       });
       const button = $.el('button', {
