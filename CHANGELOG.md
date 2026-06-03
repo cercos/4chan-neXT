@@ -2,7 +2,17 @@
 
 ### Unreleased
 
-### 1.0.5 (2026-06-01)
+### 1.0.6 (2026-06-03)
+
+- Added IDE-style "over scrollbar" marker mode with header menu toggle.
+- Added YouTube → yewtu.be link rewriting.
+- Reorganized thread updater sound settings; volume is now a slider.
+- Fixed thread updater sound race condition and multi-tab beeping.
+- Settings dialog opens to General by default; descriptions are hover tooltips.
+- Removed unused legacy settings and renamed "Filtering" to "Filters".
+- Styling page color cache and build tooling update.
+
+### 1.0.5 (2026-06-02)
 
 - Fixed captcha behavior.
 - Fixed captcha text colors.

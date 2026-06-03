@@ -85,8 +85,8 @@
   'use strict';
 
   var version = {
-    "version": "1.0.5",
-    "date": "2026-06-01T00:00:00Z"
+    "version": "1.0.6",
+    "date": "2026-06-03T00:00:00Z"
   }
   ;
 
@@ -371,6 +371,11 @@ div.boardTitle {
           'Rewrite twitter.com / x.com links to xcancel.com so clicks open the privacy front-end instead.',
           1
         ],
+        'Convert YouTube to yewtu.be': [
+          false,
+          'Rewrite youtube.com / youtu.be links to yewtu.be so clicks open the privacy front-end instead.',
+          1
+        ],
       },
 
       'Filtering': {
@@ -479,22 +484,6 @@ div.boardTitle {
           false,
           'Replace image and video thumbnails with the original media. Probably will degrade browser performance ;)'
         ],
-        'Replace GIF': [
-          false,
-          'Replace gif thumbnails with the actual image.'
-        ],
-        'Replace JPG': [
-          false,
-          'Replace jpg thumbnails with the actual image.'
-        ],
-        'Replace PNG': [
-          false,
-          'Replace png thumbnails with the actual image.'
-        ],
-        'Replace WEBM': [
-          false,
-          'Replace webm, mp4, and ogv thumbnails with the actual video. Probably will degrade browser performance ;)'
-        ],
         'Image Prefetching': [
           true,
           'Add a shortcut icon to the header to turn on image preloading.'
@@ -588,7 +577,7 @@ div.boardTitle {
       'Monitoring': {
         'Thread Updater': [
           true,
-          'Fetch and insert new replies. Has more options in the header menu and the "Advanced" tab.'
+          'Fetch and insert new replies. Quick toggles in the header menu; more options in Threads & Posts → Updater & Cooldown; sounds in Advanced → Thread updater sound.'
         ],
         'Unread Count': [
           true,
@@ -707,6 +696,11 @@ div.boardTitle {
         'Scrollbar Mark Unread Line': [
           true,
           'Mark the unread line position in the scrollbar.',
+          1
+        ],
+        'Scrollbar Marker Position': [
+          'offset',
+          'Where markers are drawn: beside the scrollbar (single or 3 columns) or over a custom scrollbar in IDE-style (single or 3 columns).',
           1
         ]
       },
@@ -1200,6 +1194,7 @@ http://eye.swfchan.com/search/?q=%name;types:swf
     'Scroll Marker You Opacity':   '',
     'Scroll Marker Ghost Opacity': '',
     'Scroll Marker Unread Opacity': '',
+    'Scrollbar Marker Position': 'offset',
 
     Index: {
       'Index Mode': 'paged',
@@ -2956,8 +2951,8 @@ current-archive-text:"Archive"]
 
   <div class="sound-row sound-row--field">
     <label for="beepVolume">Sound volume</label>
-    <input id="beepVolume" name="beepVolume" type="number" min=".01" max="1" step=".01" class="field" />
-    <span class="sound-row__hint">0 – 1</span>
+    <input id="beepVolume" name="beepVolume" type="range" min="0.01" max="1" step="0.01" class="beep-volume-slider" />
+    <span class="sound-row__hint beep-volume-value">100%</span>
   </div>
 
   <div class="sound-section">
@@ -3230,6 +3225,15 @@ current-archive-text:"Archive"]
   <summary>Scrollbar Markers</summary>
   <div data-name="Scrollbar Markers">
     <label><input type="checkbox" name="Scrollbar Markers"> Scrollbar markers</label>
+    <div class="styling-tree-row">
+      <label>Marker position:
+        <select name="Scrollbar Marker Position" class="field" title="Also in the header menu → Scroll markers. Beside = gutter left of track. On scrollbar = on the track. Overlay = above the thumb.">
+          <option value="offset">Beside scrollbar (default)</option>
+          <option value="scrollbar">On scrollbar (IDE-style)</option>
+          <option value="overlay">Over scrollbar</option>
+        </select>
+      </label>
+    </div>
     <div class="styling-tree">
       <div class="styling-inline-option" data-marker-color="own">
         <label><input type="checkbox" name="Scrollbar Mark Own Posts"> Your posts</label>
@@ -3745,16 +3749,34 @@ current-archive-text:"Archive"]
 :root.catalog-mode .catalog-thread > .catalog-container.filter-highlight {
   background: var(--xt-filter-highlight, rgba(221, 0, 0, .5)) !important;
 }
-:root.xt-highlight-catalog-own .catalog-thread.yourPost > .catalog-container,
-:root.xt-highlight-catalog-own .catalog-thread > .catalog-container.yourPost {
-  background: color-mix(in srgb, var(--xt-catalog-own-highlight, var(--xt-highlight-own, transparent)) calc(var(--xt-catalog-own-highlight-opacity, 1) * 100%), transparent) !important;
+/* Tint the catalog tile (.catalog-thread), not .catalog-post — post negative margins bleed upward. */
+:root.xt-highlight-catalog-own .catalog-thread:has(.yourPost),
+:root.xt-highlight-catalog-own .catalog-thread.yourPost {
+  background: color-mix(in srgb, var(--xt-catalog-own-highlight, var(--xt-highlight-own)) calc(var(--xt-catalog-own-highlight-opacity, 1) * 100%), var(--xt-background, #d6daf0)) !important;
 }
+:root:not(.catalog-hover-expand).xt-highlight-catalog-own .catalog-thread:has(.yourPost),
+:root:not(.catalog-hover-expand).xt-highlight-catalog-own .catalog-thread.yourPost {
+  overflow: hidden;
+}
+:root.xt-highlight-catalog-own .catalog-thread:has(.yourPost) > .catalog-container,
+:root.xt-highlight-catalog-own .catalog-thread.yourPost > .catalog-container,
+:root.xt-highlight-catalog-own .catalog-thread > .catalog-container.yourPost,
+:root.xt-highlight-catalog-own .catalog-thread:has(.yourPost) .post.catalog-post.yourPost,
 :root.xt-highlight-catalog-own .catalog-thread.yourPost .post.catalog-post,
 :root.xt-highlight-catalog-own .catalog-thread > .catalog-container.yourPost .post.catalog-post {
   background: transparent !important;
-  border-left: 3px dashed color-mix(in srgb, var(--xt-catalog-own-highlight, var(--xt-highlight-own, var(--xt-border-highlight))) calc(var(--xt-catalog-own-highlight-opacity, 1) * 100%), transparent);
+  border-color: transparent !important;
+}
+:root.xt-highlight-catalog-own .catalog-thread:has(.yourPost) .post.catalog-post.yourPost,
+:root.xt-highlight-catalog-own .catalog-thread.yourPost .post.catalog-post,
+:root.xt-highlight-catalog-own .catalog-thread > .catalog-container.yourPost .post.catalog-post {
   color: var(--xt-catalog-own-text, var(--xt-text-color)) !important;
 }
+:root.xt-highlight-catalog-own .catalog-thread:has(.yourPost) .post.catalog-post.yourPost .postInfo,
+:root.xt-highlight-catalog-own .catalog-thread:has(.yourPost) .post.catalog-post.yourPost .postMessage,
+:root.xt-highlight-catalog-own .catalog-thread:has(.yourPost) .post.catalog-post.yourPost .summary,
+:root.xt-highlight-catalog-own .catalog-thread:has(.yourPost) .post.catalog-post.yourPost .fileText,
+:root.xt-highlight-catalog-own .catalog-thread:has(.yourPost) .post.catalog-post.yourPost .catalog-stats,
 :root.xt-highlight-catalog-own .catalog-thread.yourPost .post.catalog-post .postInfo,
 :root.xt-highlight-catalog-own .catalog-thread.yourPost .post.catalog-post .postMessage,
 :root.xt-highlight-catalog-own .catalog-thread.yourPost .post.catalog-post .summary,
@@ -3767,36 +3789,46 @@ current-archive-text:"Archive"]
 :root.xt-highlight-catalog-own .catalog-thread > .catalog-container.yourPost .post.catalog-post .catalog-stats {
   color: var(--xt-catalog-own-text, var(--xt-text-color)) !important;
 }
+:root.xt-highlight-catalog-own .catalog-thread:has(.yourPost) .post.catalog-post.yourPost a,
 :root.xt-highlight-catalog-own .catalog-thread.yourPost .post.catalog-post a,
 :root.xt-highlight-catalog-own .catalog-thread > .catalog-container.yourPost .post.catalog-post a {
   color: var(--xt-catalog-own-link, var(--xt-link-text-color)) !important;
 }
+:root.xt-highlight-catalog-own .catalog-thread:has(.yourPost) .post.catalog-post.yourPost .quote,
 :root.xt-highlight-catalog-own .catalog-thread.yourPost .post.catalog-post .quote,
 :root.xt-highlight-catalog-own .catalog-thread > .catalog-container.yourPost .post.catalog-post .quote {
   color: var(--xt-catalog-own-quote, var(--xt-quote-text-color)) !important;
 }
+:root.xt-highlight-catalog-own .catalog-thread:has(.yourPost) .post.catalog-post.yourPost .subject,
 :root.xt-highlight-catalog-own .catalog-thread.yourPost .post.catalog-post .subject,
 :root.xt-highlight-catalog-own .catalog-thread > .catalog-container.yourPost .post.catalog-post .subject {
   color: var(--xt-catalog-own-subject, var(--xt-catalog-own-text, var(--xt-text-color))) !important;
 }
+:root.xt-highlight-catalog-own .catalog-thread:has(.yourPost) .post.catalog-post.yourPost .deadlink,
 :root.xt-highlight-catalog-own .catalog-thread.yourPost .post.catalog-post .deadlink,
 :root.xt-highlight-catalog-own .catalog-thread > .catalog-container.yourPost .post.catalog-post .deadlink {
   color: var(--xt-catalog-own-dead-link, var(--xt-dead-link-text-color, var(--xt-dead-link))) !important;
 }
+:root.xt-highlight-catalog-own .catalog-thread:has(.yourPost) .post.catalog-post.yourPost > *,
+:root.xt-highlight-catalog-own .catalog-thread:has(.yourPost) .post.catalog-post.yourPost .postMessage,
 :root.xt-highlight-catalog-own .catalog-thread.yourPost .post.catalog-post > *,
 :root.xt-highlight-catalog-own .catalog-thread.yourPost .post.catalog-post .postMessage,
 :root.xt-highlight-catalog-own .catalog-thread > .catalog-container.yourPost .post.catalog-post > *,
 :root.xt-highlight-catalog-own .catalog-thread > .catalog-container.yourPost .post.catalog-post .postMessage {
   background: transparent !important;
 }
-:root.xt-highlight-catalog-watched .catalog-thread.watched:not(:has(.yourPost)) > .catalog-container {
-  background: color-mix(in srgb, var(--xt-catalog-watched-highlight, var(--xt-watched-border, rgba(255, 0, 0, .75))) calc(var(--xt-catalog-watched-highlight-opacity, 0.2) * 100%), transparent) !important;
+:root.xt-highlight-catalog-watched .catalog-thread.watched:not(:has(.yourPost)) {
+  background: color-mix(in srgb, var(--xt-catalog-watched-highlight, var(--xt-watched-border, rgba(255, 0, 0, .75))) calc(var(--xt-catalog-watched-highlight-opacity, 0.2) * 100%), var(--xt-background, #d6daf0)) !important;
 }
+:root:not(.catalog-hover-expand).xt-highlight-catalog-watched .catalog-thread.watched:not(:has(.yourPost)) {
+  overflow: hidden;
+}
+:root.xt-highlight-catalog-watched .catalog-thread.watched:not(:has(.yourPost)) > .catalog-container,
 :root.xt-highlight-catalog-watched .catalog-thread.watched:not(:has(.yourPost)) .post.catalog-post {
   background: transparent !important;
+  border-color: transparent !important;
 }
-:root.xt-highlight-catalog-watched .catalog-thread.watched:not(:has(.yourPost)) .catalog-post {
-  border: 2px solid color-mix(in srgb, var(--xt-catalog-watched-highlight, var(--xt-watched-border, rgba(255, 0, 0, .75))) calc(var(--xt-catalog-watched-highlight-opacity, 1) * 100%), transparent);
+:root.xt-highlight-catalog-watched .catalog-thread.watched:not(:has(.yourPost)) .post.catalog-post {
   color: var(--xt-catalog-watched-text, var(--xt-text-color)) !important;
 }
 :root.xt-highlight-catalog-watched .catalog-thread.watched:not(:has(.yourPost)) .post.catalog-post .postInfo,
@@ -3947,6 +3979,15 @@ current-archive-text:"Archive"]
 :root.spooky #qr-filename {
   color: rgb(197,200,198);
 }
+:root.spooky #download-all-picker .da-buttons button {
+  background-color: rgb(26, 27, 29);
+  color: rgb(197, 200, 198);
+  border-color: rgb(40, 41, 42);
+}
+:root.spooky #download-all-picker .da-buttons button:hover:not(:disabled) {
+  background-color: rgb(30, 32, 36);
+  border-color: rgb(254, 150, 0);
+}
 
 /* Unread */
 :root.spooky .unread-line {
@@ -3960,11 +4001,12 @@ current-archive-text:"Archive"]
   display: block;
   background-color: inherit;
 }
-.dialog:not(#qr):not(#thread-watcher):not(#header-bar) {
+.dialog:not(#qr):not(#thread-watcher):not(#download-all-picker):not(#header-bar) {
   box-shadow: 0 1px 2px rgba(0, 0, 0, .15);
 }
 #qr,
-#thread-watcher {
+#thread-watcher,
+#download-all-picker {
   box-shadow: -1px 2px 2px rgba(0, 0, 0, 0.25);
 }
 .field {
@@ -4726,20 +4768,32 @@ div[data-checked="false"] > .suboption-list {
   border-left: 1px solid;
   border-bottom: 1px solid;
 }
+/* Hide the inline ": description" text — kept in the DOM for search
+   highlighting. Hover descriptions come from native browser tooltips:
+   each row's title attribute is set in Settings.tsx alongside its
+   data-setting-description, which avoids the parent-vs-child overlap
+   that a CSS :hover-based tooltip would cause on nested rows. */
+#fourchanx-settings .description {
+  display: none;
+}
+/* While searching, reveal descriptions so <mark> highlights are visible. */
+#fourchanx-settings.settings-searching .description {
+  display: inline;
+}
 #fourchanx-settings .section-main p {
   margin: .5em 0 0;
 }
 .section-filter ul,
-.section-filtering ul {
+.section-filters ul {
   padding: 0;
 }
 .section-filter li,
-.section-filtering li {
+.section-filters li {
   margin: 10px 40px;
   list-style: disc;
 }
 .section-filter textarea,
-.section-filtering textarea {
+.section-filters textarea {
   height: 500px;
 }
 .section-interface .boardnav-instructions {
@@ -4748,7 +4802,7 @@ div[data-checked="false"] > .suboption-list {
 .section-interface .boardnav-instructions > summary {
   font-weight: 600;
 }
-.section-main a, .section-filter a, .section-filtering a, .section-advanced a {
+.section-main a, .section-filter a, .section-filters a, .section-advanced a {
   text-decoration: underline;
 }
 #fourchanx-settings .thread-watcher-inline-number {
@@ -4779,13 +4833,13 @@ div[data-checked="false"] > .suboption-list {
   text-align: center;
   margin-right: 4px;
 }
-.section-filtering .settings-subnav {
+.section-filters .settings-subnav {
   display: flex;
   flex-wrap: wrap;
   gap: 4px;
   margin: 0 0 8px;
 }
-.section-filtering .settings-subnav-tab {
+.section-filters .settings-subnav-tab {
   background: transparent;
   border: 1px solid;
   border-radius: 3px;
@@ -4796,101 +4850,101 @@ div[data-checked="false"] > .suboption-list {
   padding: 2px 6px;
   text-decoration: none;
 }
-.section-filtering .settings-subnav-tab-selected {
+.section-filters .settings-subnav-tab-selected {
   font-weight: 700;
   background: rgba(128, 128, 128, .14);
 }
-.section-filtering .filter-stats {
+.section-filters .filter-stats {
   border-top: 1px solid;
   font-size: 11px;
   line-height: 1.45;
   margin-top: 8px;
   padding-top: 8px;
 }
-.section-filtering .filter-preview-group {
+.section-filters .filter-preview-group {
   margin: 0 0 12px;
 }
-.section-filtering .filter-preview-group:last-child {
+.section-filters .filter-preview-group:last-child {
   margin-bottom: 0;
 }
-.section-filtering .filter-preview-heading {
+.section-filters .filter-preview-heading {
   font-weight: 700;
   margin: 0 0 4px;
 }
-.section-filtering .filter-stats-summary {
+.section-filters .filter-stats-summary {
   font-weight: 700;
   margin: 0 0 6px;
 }
-.section-filtering .filter-stats-empty {
+.section-filters .filter-stats-empty {
   opacity: .8;
 }
-.section-filtering .filter-stat-row {
+.section-filters .filter-stat-row {
   margin: 0 0 6px;
 }
-.section-filtering .filter-stat {
+.section-filters .filter-stat {
   margin: 0;
 }
-.section-filtering .filter-stat > summary {
+.section-filters .filter-stat > summary {
   cursor: pointer;
   list-style-position: inside;
 }
-.section-filtering .filter-stat-threads {
+.section-filters .filter-stat-threads {
   margin: 4px 0 0 18px;
   padding: 0;
 }
-.section-filtering .filter-stat-threads > li {
+.section-filters .filter-stat-threads > li {
   list-style: disc;
   margin: 2px 0;
 }
-.section-filtering .filter-stat-invalid {
+.section-filters .filter-stat-invalid {
   color: #c33;
 }
-.section-filtering .filter-stat-count {
+.section-filters .filter-stat-count {
   font-weight: 700;
 }
-.section-filtering .filter-stat-more {
+.section-filters .filter-stat-more {
   opacity: .8;
 }
-.section-filtering .easy-filters-table {
+.section-filters .easy-filters-table {
   width: 100%;
   border-collapse: separate;
   border-spacing: 4px;
 }
-.section-filtering th,
-.section-filtering td {
+.section-filters th,
+.section-filters td {
   padding: 0;
   text-align: left;
   vertical-align: middle;
 }
-.section-filtering .easy-filter-enabled,
-.section-filtering .easy-filter-auto,
-.section-filtering .easy-filter-hide,
-.section-filtering .easy-filter-override {
+.section-filters .easy-filter-enabled,
+.section-filters .easy-filter-auto,
+.section-filters .easy-filter-hide,
+.section-filters .easy-filter-override {
   display: block;
   margin: auto;
 }
-.section-filtering .easy-filter-pattern {
+.section-filters .easy-filter-pattern {
   min-width: 200px;
 }
-.section-filtering .easy-filter-boards {
+.section-filters .easy-filter-boards {
   min-width: 96px;
 }
-.section-filtering .easy-filter-color {
+.section-filters .easy-filter-color {
   width: 84px;
 }
-.section-filtering .easy-filter-remove {
+.section-filters .easy-filter-remove {
   min-width: 26px;
   height: 24px;
   line-height: 20px;
   text-align: center;
 }
-.section-filtering .easy-filters-controls {
+.section-filters .easy-filters-controls {
   margin-top: 6px;
 }
-.section-filtering .easy-filter-save {
+.section-filters .easy-filter-save {
   margin-left: 6px;
 }
-.section-filtering .easy-filter-status {
+.section-filters .easy-filter-status {
   margin-left: 8px;
   opacity: .85;
 }
@@ -5172,14 +5226,23 @@ div[data-checked="false"] > .suboption-list {
 .styling-preview .styling-preview-post.from-archive .quotelink.deadlink {
   color: var(--xt-highlight-ghost-dead-link, var(--xt-dead-link-text-color, var(--xt-dead-link))) !important;
 }
-.styling-preview[data-highlight-catalog-own="true"] .catalog-thread.yourPost > .catalog-container,
-.styling-preview[data-highlight-catalog-own="true"] .catalog-thread > .catalog-container.yourPost {
-  background: color-mix(in srgb, var(--xt-catalog-own-highlight, var(--xt-highlight-own, transparent)) calc(var(--xt-catalog-own-highlight-opacity, 1) * 100%), transparent) !important;
+.styling-preview[data-highlight-catalog-own="true"] .catalog-thread:has(.yourPost),
+.styling-preview[data-highlight-catalog-own="true"] .catalog-thread.yourPost {
+  background: color-mix(in srgb, var(--xt-catalog-own-highlight, var(--xt-highlight-own)) calc(var(--xt-catalog-own-highlight-opacity, 1) * 100%), var(--xt-background, #d6daf0)) !important;
+  overflow: hidden;
 }
+.styling-preview[data-highlight-catalog-own="true"] .catalog-thread:has(.yourPost) > .catalog-container,
+.styling-preview[data-highlight-catalog-own="true"] .catalog-thread.yourPost > .catalog-container,
+.styling-preview[data-highlight-catalog-own="true"] .catalog-thread > .catalog-container.yourPost,
+.styling-preview[data-highlight-catalog-own="true"] .catalog-thread:has(.yourPost) .post.catalog-post.yourPost,
 .styling-preview[data-highlight-catalog-own="true"] .catalog-thread.yourPost .post.catalog-post,
 .styling-preview[data-highlight-catalog-own="true"] .catalog-thread > .catalog-container.yourPost .post.catalog-post {
   background: transparent !important;
-  border-left: 3px dashed color-mix(in srgb, var(--xt-catalog-own-highlight, var(--xt-highlight-own, var(--xt-border-highlight))) calc(var(--xt-catalog-own-highlight-opacity, 1) * 100%), transparent);
+  border-color: transparent !important;
+}
+.styling-preview[data-highlight-catalog-own="true"] .catalog-thread:has(.yourPost) .post.catalog-post.yourPost,
+.styling-preview[data-highlight-catalog-own="true"] .catalog-thread.yourPost .post.catalog-post,
+.styling-preview[data-highlight-catalog-own="true"] .catalog-thread > .catalog-container.yourPost .post.catalog-post {
   color: var(--xt-catalog-own-text, var(--xt-text-color)) !important;
 }
 .styling-preview[data-highlight-catalog-own="true"] .catalog-thread.yourPost .post.catalog-post .postInfo,
@@ -5208,14 +5271,16 @@ div[data-checked="false"] > .suboption-list {
 .styling-preview[data-highlight-catalog-own="true"] .catalog-thread > .catalog-container.yourPost .post.catalog-post .deadlink {
   color: var(--xt-catalog-own-dead-link, var(--xt-dead-link-text-color, var(--xt-dead-link))) !important;
 }
-.styling-preview[data-highlight-catalog-watched="true"] .catalog-thread.watched > .catalog-container {
-  background: color-mix(in srgb, var(--xt-catalog-watched-highlight, var(--xt-watched-border, rgba(255, 0, 0, .75))) calc(var(--xt-catalog-watched-highlight-opacity, 0.2) * 100%), transparent) !important;
+.styling-preview[data-highlight-catalog-watched="true"] .catalog-thread.watched {
+  background: color-mix(in srgb, var(--xt-catalog-watched-highlight, var(--xt-watched-border, rgba(255, 0, 0, .75))) calc(var(--xt-catalog-watched-highlight-opacity, 0.2) * 100%), var(--xt-background, #d6daf0)) !important;
+  overflow: hidden;
 }
+.styling-preview[data-highlight-catalog-watched="true"] .catalog-thread.watched > .catalog-container,
 .styling-preview[data-highlight-catalog-watched="true"] .catalog-thread.watched .post.catalog-post {
   background: transparent !important;
+  border-color: transparent !important;
 }
-.styling-preview[data-highlight-catalog-watched="true"] .catalog-thread.watched .catalog-post {
-  border: 2px solid color-mix(in srgb, var(--xt-catalog-watched-highlight, var(--xt-watched-border, rgba(255, 0, 0, .75))) calc(var(--xt-catalog-watched-highlight-opacity, 1) * 100%), transparent);
+.styling-preview[data-highlight-catalog-watched="true"] .catalog-thread.watched .post.catalog-post {
   color: var(--xt-catalog-watched-text, var(--xt-text-color)) !important;
 }
 .styling-preview[data-highlight-catalog-watched="true"] .catalog-thread.watched .post.catalog-post .postInfo,
@@ -5549,6 +5614,9 @@ body > #overlay:not(.media-preview) {
 }
 .section-styling .styling-add-theme-status[data-kind="ok"] {
   opacity: .8;
+}
+.section-styling [data-name] > .styling-tree-row {
+  margin: 6px 0 4px;
 }
 .section-styling [data-name] > .styling-tree {
   border-left: 1px solid color-mix(in srgb, currentColor 25%, transparent);
@@ -6983,8 +7051,9 @@ textarea.copy-text-element {
   display: none;
 }
 /* Volume control */
-input[name="Default Volume"] {
-  width: 4em;
+input[name="Default Volume"],
+input[name="beepVolume"] {
+  width: 10em;
   height: 1ex;
   vertical-align: middle;
   margin: 0px;
@@ -8161,44 +8230,178 @@ div.post {
 #scroll-markers {
   position: fixed;
   top: 0;
-  right: 0;
-  width: 27px;
   height: 100vh;
   pointer-events: none;
   z-index: 2147483646;
+  background: transparent;
+  box-sizing: border-box;
 }
 #scroll-markers[hidden] {
-  display: none;
+  display: none !important;
 }
 .scroll-marker {
   position: absolute;
-  width: 9px;
   min-height: 3px;
-  border-radius: 1px 0 0 1px;
   box-shadow: 0 0 0 1px rgba(0, 0, 0, .35);
   pointer-events: auto;
   cursor: pointer;
   transition: transform .08s ease-out, filter .08s ease-out;
-  transform-origin: right center;
-}
-.scroll-marker:hover {
-  transform: scaleX(1.6);
-  filter: brightness(1.2);
 }
 .scroll-marker-own {
-  right: 9px;
   background: var(--xt-scroll-marker-own, var(--xt-border-highlight, #d83030));
   opacity: var(--xt-scroll-marker-own-opacity, 1);
 }
 .scroll-marker-you {
-  right: 0;
   background: var(--xt-scroll-marker-you, var(--xt-border-highlight, #ff5050));
   opacity: var(--xt-scroll-marker-you-opacity, 1);
 }
 .scroll-marker-ghost {
-  right: 18px;
   background: var(--xt-scroll-marker-ghost, #888888);
   opacity: var(--xt-scroll-marker-ghost-opacity, 1);
+}
+/* Beside modes: hide the native scrollbar's track color (the 4chan
+   theme tints it dark blue, which reads as a backdrop behind our
+   markers). Only the native thumb stays visible. Over modes draw their
+   own track and aren't affected. */
+:root.scrollbar-markers-offset,
+:root.scrollbar-markers-offset-single { scrollbar-color: auto transparent; }
+:root.scrollbar-markers-offset::-webkit-scrollbar-track,
+:root.scrollbar-markers-offset-single::-webkit-scrollbar-track {
+  background: transparent;
+}
+/* Beside scrollbar (columns): N narrow sub-columns hugging the scrollbar.
+   Per-marker \`right\` and \`width\` are set inline by ScrollMarkers.refresh
+   based on how many marker types actually have content (so absent types
+   don't leave a gap on the left). */
+:root.scrollbar-markers-offset #scroll-markers {
+  right: var(--xt-scrollbar-offset, 0px);
+  width: calc(var(--xt-scroll-marker-gutter, 6px) * 3);
+}
+:root.scrollbar-markers-offset .scroll-marker {
+  border-radius: 1px 0 0 1px;
+  transform-origin: right center;
+}
+:root.scrollbar-markers-offset .scroll-marker:hover {
+  transform: scaleX(1.6);
+  filter: brightness(1.2);
+}
+/* Beside scrollbar (single): one tight column right against the native scrollbar */
+:root.scrollbar-markers-offset-single #scroll-markers {
+  right: var(--xt-scrollbar-offset, 0px);
+  width: var(--xt-scroll-marker-track, 8px);
+}
+:root.scrollbar-markers-offset-single .scroll-marker {
+  left: 0;
+  right: 0;
+  width: auto;
+  min-height: 3px;
+  border-radius: 0;
+  transform-origin: center center;
+}
+:root.scrollbar-markers-offset-single .scroll-marker:hover {
+  transform: scaleY(1.35);
+  filter: brightness(1.2);
+}
+/* Over scrollbar (shared): hide the native scrollbar and draw our own
+   track + thumb. Track is transparent — only markers and the thumb show. */
+:root.scrollbar-markers-over,
+:root.scrollbar-markers-over-columns { scrollbar-width: none; }
+:root.scrollbar-markers-over::-webkit-scrollbar,
+:root.scrollbar-markers-over-columns::-webkit-scrollbar { width: 0; height: 0; display: none; }
+/* Reserve the rightmost gutter for our custom scrollbar so the header
+   bar (and its dropdown button) isn't under our track and losing clicks
+   to us. The dropdown menu auto-positions relative to its button, so
+   shifting the header alone is enough. */
+:root.scrollbar-markers-over.fixed #header-bar,
+:root.scrollbar-markers-over #notifications {
+  margin-right: var(--xt-scroll-marker-track, 14px);
+}
+:root.scrollbar-markers-over-columns.fixed #header-bar,
+:root.scrollbar-markers-over-columns #notifications {
+  margin-right: var(--xt-scroll-marker-track, 14px);
+}
+:root.scrollbar-markers-over #scroll-markers,
+:root.scrollbar-markers-over-columns #scroll-markers {
+  right: 0;
+  pointer-events: none;
+  z-index: 2147483647;
+}
+:root.scrollbar-markers-over #scroll-markers {
+  width: var(--xt-scroll-marker-track, 14px);
+}
+:root.scrollbar-markers-over-columns #scroll-markers {
+  width: var(--xt-scroll-marker-track, 14px);
+}
+:root.scrollbar-markers-over .scroll-marker-track,
+:root.scrollbar-markers-over-columns .scroll-marker-track {
+  position: absolute;
+  inset: 0;
+  /* Use the theme's border color (already a per-theme contrast against
+     --xt-background) softened with transparency so it reads like the
+     native scrollbar track. Kept low so light themes (where --xt-border
+     is darker than the bg) don't read as a heavy dark band; dark themes
+     still get enough contrast because --xt-border there is close in
+     luminance to the bg. */
+  background: var(--xt-scroll-track-bg,
+    color-mix(in srgb, var(--xt-border, currentColor) 20%, transparent));
+  pointer-events: auto;
+  cursor: pointer;
+  z-index: 0;
+}
+:root.scrollbar-markers-over .scroll-marker-thumb,
+:root.scrollbar-markers-over-columns .scroll-marker-thumb {
+  position: absolute;
+  left: 2px;
+  right: 2px;
+  min-height: 24px;
+  background: var(--xt-scroll-thumb-bg,
+    color-mix(in srgb, var(--xt-border, currentColor) 75%, transparent));
+  border-radius: 3px;
+  pointer-events: auto;
+  cursor: grab;
+  z-index: 1;
+  transition: background-color .12s ease;
+  touch-action: none;
+}
+:root.scrollbar-markers-over .scroll-marker-thumb[hidden],
+:root.scrollbar-markers-over-columns .scroll-marker-thumb[hidden] { display: none; }
+:root.scrollbar-markers-over .scroll-marker-thumb:hover,
+:root.scrollbar-markers-over .scroll-marker-thumb.dragging,
+:root.scrollbar-markers-over-columns .scroll-marker-thumb:hover,
+:root.scrollbar-markers-over-columns .scroll-marker-thumb.dragging {
+  background: var(--xt-scroll-thumb-bg-hover,
+    color-mix(in srgb, var(--xt-border, currentColor) 100%, transparent));
+}
+:root.scrollbar-markers-over .scroll-marker-thumb.dragging,
+:root.scrollbar-markers-over-columns .scroll-marker-thumb.dragging { cursor: grabbing; }
+/* Over (single): markers span the full gutter, stacked vertically. */
+:root.scrollbar-markers-over .scroll-marker {
+  left: 0;
+  right: 0;
+  width: auto;
+  min-height: 3px;
+  border-radius: 0;
+  transform-origin: center center;
+  z-index: 2;
+  box-shadow: 0 0 0 1px rgba(0, 0, 0, .55);
+}
+:root.scrollbar-markers-over .scroll-marker:hover {
+  transform: scaleY(1.4);
+  filter: brightness(1.25);
+}
+/* Over (columns): markers in N sub-columns over the thumb, like JetBrains.
+   Per-marker \`right\` and \`width\` are set inline by ScrollMarkers.refresh
+   so absent types collapse and the remaining ones split the full width. */
+:root.scrollbar-markers-over-columns .scroll-marker {
+  min-height: 3px;
+  border-radius: 0;
+  transform-origin: right center;
+  z-index: 2;
+  box-shadow: 0 0 0 1px rgba(0, 0, 0, .55);
+}
+:root.scrollbar-markers-over-columns .scroll-marker:hover {
+  transform: scaleX(1.6);
+  filter: brightness(1.2);
 }
 .scroll-marker-unread {
   left: 0;
@@ -8216,6 +8419,7 @@ div.post {
   z-index: 20;
   padding: 0;
   min-width: 240px;
+  color: var(--xt-menu-fg, var(--xt-header-dialog-fg, inherit));
 }
 #download-all-picker .move {
   padding: 4px 8px;
@@ -8242,6 +8446,22 @@ div.post {
   align-items: flex-start;
   gap: 2px;
   line-height: 1.2;
+  appearance: none;
+  -webkit-appearance: none;
+  font: inherit;
+  text-align: left;
+  background-color: var(--xt-inline, color-mix(in srgb, var(--xt-border, currentColor) 14%, var(--xt-background, inherit)));
+  border: 1px solid var(--xt-border, color-mix(in srgb, currentColor 28%, transparent));
+  color: inherit;
+  transition: background-color .2s, border-color .2s;
+}
+#download-all-picker .da-buttons button:hover:not(:disabled) {
+  background-color: var(--xt-entry-focus-bg, color-mix(in srgb, currentColor 18%, transparent));
+  border-color: var(--xt-border-field-focus, var(--xt-border, currentColor));
+}
+#download-all-picker .da-buttons button:disabled {
+  opacity: .45;
+  cursor: not-allowed;
 }
 #download-all-picker .da-buttons .da-btn-title {
   font-weight: bold;
@@ -8249,6 +8469,7 @@ div.post {
 #download-all-picker .da-buttons .da-btn-count,
 #download-all-picker .da-buttons .da-btn-size {
   font-size: 11px;
+  opacity: .82;
 }
 .da-progress-cancel {
   margin-left: 6px;
@@ -8314,6 +8535,15 @@ div.post {
 }
 :root.tomorrow #qr-filename {
   color: rgb(197,200,198);
+}
+:root.tomorrow #download-all-picker .da-buttons button {
+  background-color: rgb(26, 27, 29);
+  color: rgb(197, 200, 198);
+  border-color: rgb(40, 41, 42);
+}
+:root.tomorrow #download-all-picker .da-buttons button:hover:not(:disabled) {
+  background-color: rgb(30, 32, 36);
+  border-color: var(--xt-border-field-focus);
 }`;
 
   var www = `#captcha-cnt {
@@ -12940,7 +13170,9 @@ svg.icon {
         !Conf['Unread Line'] &&
         !Conf['Remember Last Read Post'] &&
         !Conf['Desktop Notifications'] &&
-        !Conf['Quote Threading']
+        !Conf['Quote Threading'] &&
+        !Conf['Beep'] &&
+        !Conf['Beep Quoting You']
       )) { return; }
 
       if (Conf['Remember Last Read Post']) {
@@ -13096,6 +13328,10 @@ svg.icon {
     },
 
     openNotification(post, predicate=' replied to you') {
+      const isQuotingYou = predicate === ' replied to you';
+      if ((isQuotingYou && Conf['Beep Quoting You']) || (!isQuotingYou && Conf['Beep'])) {
+        $.event('PlayUpdaterSound', { post, predicate });
+      }
       if (!Header.areNotificationsEnabled) { return; }
       const notif = new Notification(`${post.info.nameBlock}${predicate}`, {
         body: post.commentDisplay(),
@@ -13263,11 +13499,269 @@ svg.icon {
     flashPost: undefined,
     flashTimer: 0,
     preview: undefined,
+    position() {
+      const pos = Conf['Scrollbar Marker Position'];
+      // Legacy values from prior builds collapsed into the unified Over (single) mode.
+      if (pos === 'scrollbar' || pos === 'overlay' || pos === 'over')
+        return 'over';
+      if (pos === 'over-columns')
+        return 'over-columns';
+      if (pos === 'offset-single')
+        return 'offset-single';
+      return 'offset';
+    },
+    isOverMode() {
+      const pos = ScrollMarkers.position();
+      return pos === 'over' || pos === 'over-columns';
+    },
+    applyPosition() {
+      const pos = ScrollMarkers.position();
+      $.rmClass(doc, 'scrollbar-markers-offset', 'scrollbar-markers-offset-single', 'scrollbar-markers-over', 'scrollbar-markers-over-columns');
+      $.addClass(doc, `scrollbar-markers-${pos}`);
+      ScrollMarkers.updateScrollbarMetrics();
+      if (ScrollMarkers.isOverMode())
+        ScrollMarkers.scrollbar.install();
+      else
+        ScrollMarkers.scrollbar.uninstall();
+    },
+    measureScrollbarWidth() {
+      let width = window.innerWidth - d.documentElement.clientWidth;
+      if (width > 0)
+        return width;
+      const outer = $.el('div', {
+        style: 'width:100px;height:100px;overflow:scroll;position:absolute;top:-9999px;visibility:hidden;pointer-events:none',
+      });
+      const inner = $.el('div', { style: 'width:100%' });
+      $.add(outer, inner);
+      $.add(d.body, outer);
+      width = outer.offsetWidth - inner.offsetWidth;
+      $.rm(outer);
+      return width;
+    },
+    updateScrollbarMetrics() {
+      const measured = ScrollMarkers.measureScrollbarWidth();
+      // In classic-scrollbar browsers (Windows/Linux), the scrollbar lives
+      // outside the initial containing block, so `right: 0` on a fixed
+      // element already lands at the scrollbar's inner edge — no offset is
+      // needed. Overlay scrollbars (Mac) float over content; reserve a small
+      // gap there so markers don't sit under the thumb when it appears.
+      const offset = measured > 0 ? 0 : 12;
+      d.documentElement.style.setProperty('--xt-scrollbar-offset', `${offset}px`);
+      d.documentElement.style.setProperty('--xt-scroll-marker-gutter', '6px');
+      d.documentElement.style.setProperty('--xt-scroll-marker-track', '14px');
+    },
+    scrollbar: {
+      track: undefined,
+      thumb: undefined,
+      rafId: 0,
+      dragOffset: 0,
+      activePointer: -1,
+      onScrollListener: undefined,
+      install() {
+        const container = ScrollMarkers.container;
+        if (!container || ScrollMarkers.scrollbar.thumb)
+          return;
+        const track = $.el('div', { className: 'scroll-marker-track' });
+        const thumb = $.el('div', { className: 'scroll-marker-thumb' });
+        ScrollMarkers.scrollbar.track = track;
+        ScrollMarkers.scrollbar.thumb = thumb;
+        $.add(container, track);
+        $.add(container, thumb);
+        const sched = () => ScrollMarkers.scrollbar.scheduleUpdate();
+        ScrollMarkers.scrollbar.onScrollListener = sched;
+        $.on(window, 'scroll', sched);
+        $.on(window, 'resize', sched);
+        $.on(thumb, 'pointerdown', ScrollMarkers.scrollbar.onThumbDown);
+        $.on(track, 'pointerdown', ScrollMarkers.scrollbar.onTrackDown);
+        ScrollMarkers.scrollbar.update();
+      },
+      uninstall() {
+        const sb = ScrollMarkers.scrollbar;
+        if (!sb.thumb)
+          return;
+        if (sb.onScrollListener) {
+          $.off(window, 'scroll', sb.onScrollListener);
+          $.off(window, 'resize', sb.onScrollListener);
+          sb.onScrollListener = undefined;
+        }
+        if (sb.rafId) {
+          cancelAnimationFrame(sb.rafId);
+          sb.rafId = 0;
+        }
+        $.rm(sb.thumb);
+        if (sb.track)
+          $.rm(sb.track);
+        sb.thumb = undefined;
+        sb.track = undefined;
+      },
+      scheduleUpdate() {
+        const sb = ScrollMarkers.scrollbar;
+        if (sb.rafId)
+          return;
+        sb.rafId = requestAnimationFrame(() => {
+          sb.rafId = 0;
+          sb.update();
+        });
+      },
+      update() {
+        const thumb = ScrollMarkers.scrollbar.thumb;
+        if (!thumb)
+          return;
+        const docHeight = d.documentElement.scrollHeight || d.body.scrollHeight || 0;
+        const viewHeight = window.innerHeight;
+        if (docHeight <= viewHeight + 1) {
+          thumb.hidden = true;
+          return;
+        }
+        thumb.hidden = false;
+        const heightPct = Math.max((viewHeight / docHeight) * 100, 3);
+        const scrollMax = docHeight - viewHeight;
+        const topPct = scrollMax > 0
+          ? (window.scrollY / scrollMax) * (100 - heightPct)
+          : 0;
+        thumb.style.top = `${topPct}%`;
+        thumb.style.height = `${heightPct}%`;
+      },
+      onThumbDown(e) {
+        const sb = ScrollMarkers.scrollbar;
+        const thumb = sb.thumb;
+        if (!thumb || e.button !== 0)
+          return;
+        e.preventDefault();
+        e.stopPropagation();
+        const rect = thumb.getBoundingClientRect();
+        sb.dragOffset = e.clientY - rect.top;
+        sb.activePointer = e.pointerId;
+        thumb.classList.add('dragging');
+        try {
+          thumb.setPointerCapture(e.pointerId);
+        } catch { /* ignore */ }
+        $.on(thumb, 'pointermove', sb.onThumbMove);
+        $.on(thumb, 'pointerup', sb.onThumbUp);
+        $.on(thumb, 'pointercancel', sb.onThumbUp);
+      },
+      // Begin a thumb drag from a pointer that started somewhere else
+      // (e.g. on a marker overlapping the thumb). Snaps the thumb under
+      // the pointer first, then continues normal drag handling.
+      startDragFromPointer(e) {
+        const sb = ScrollMarkers.scrollbar;
+        const thumb = sb.thumb;
+        const container = ScrollMarkers.container;
+        if (!thumb || !container)
+          return;
+        const trackRect = container.getBoundingClientRect();
+        const thumbHeight = thumb.offsetHeight;
+        const range = trackRect.height - thumbHeight;
+        if (range > 0) {
+          const desiredTop = e.clientY - trackRect.top - thumbHeight / 2;
+          const clampedTop = Math.max(0, Math.min(desiredTop, range));
+          const scrollMax = (d.documentElement.scrollHeight || d.body.scrollHeight || 0) - window.innerHeight;
+          window.scrollTo(0, (clampedTop / range) * scrollMax);
+        }
+        sb.dragOffset = thumbHeight / 2;
+        sb.activePointer = e.pointerId;
+        thumb.classList.add('dragging');
+        try {
+          thumb.setPointerCapture(e.pointerId);
+        } catch { /* ignore */ }
+        $.on(thumb, 'pointermove', sb.onThumbMove);
+        $.on(thumb, 'pointerup', sb.onThumbUp);
+        $.on(thumb, 'pointercancel', sb.onThumbUp);
+      },
+      onThumbMove(e) {
+        const sb = ScrollMarkers.scrollbar;
+        const container = ScrollMarkers.container;
+        const thumb = sb.thumb;
+        if (!container || !thumb || e.pointerId !== sb.activePointer)
+          return;
+        const trackRect = container.getBoundingClientRect();
+        const trackHeight = trackRect.height;
+        const thumbHeight = thumb.offsetHeight;
+        const range = trackHeight - thumbHeight;
+        if (range <= 0)
+          return;
+        const desiredTop = e.clientY - trackRect.top - sb.dragOffset;
+        const clampedTop = Math.max(0, Math.min(desiredTop, range));
+        const scrollMax = (d.documentElement.scrollHeight || d.body.scrollHeight || 0) - window.innerHeight;
+        window.scrollTo(0, (clampedTop / range) * scrollMax);
+      },
+      onThumbUp(e) {
+        const sb = ScrollMarkers.scrollbar;
+        const thumb = sb.thumb;
+        if (!thumb || e.pointerId !== sb.activePointer)
+          return;
+        sb.activePointer = -1;
+        thumb.classList.remove('dragging');
+        try {
+          thumb.releasePointerCapture(e.pointerId);
+        } catch { /* ignore */ }
+        $.off(thumb, 'pointermove', sb.onThumbMove);
+        $.off(thumb, 'pointerup', sb.onThumbUp);
+        $.off(thumb, 'pointercancel', sb.onThumbUp);
+      },
+      onTrackDown(e) {
+        const sb = ScrollMarkers.scrollbar;
+        const track = sb.track;
+        const thumb = sb.thumb;
+        if (!track || !thumb || e.target !== track || e.button !== 0)
+          return;
+        e.preventDefault();
+        const thumbRect = thumb.getBoundingClientRect();
+        const direction = e.clientY < thumbRect.top ? -1 : 1;
+        window.scrollBy({ top: direction * window.innerHeight * 0.9, behavior: 'smooth' });
+      },
+    },
+    menu: {
+      entry: undefined,
+      init() {
+        if (!['thread', 'index'].includes(g.VIEW))
+          return;
+        const el = $.el('span', { textContent: 'Scroll markers' });
+        const entry = {
+          el,
+          order: 112,
+          subEntries: [],
+          open() {
+            entry.subEntries = ScrollMarkers.menu.buildSubEntries();
+            return true;
+          },
+        };
+        ScrollMarkers.menu.entry = entry;
+        Header.menu.addEntry(entry);
+      },
+      buildSubEntries() {
+        const options = [
+          ['offset', 'Beside scrollbar (columns)'],
+          ['offset-single', 'Beside scrollbar (single)'],
+          ['over-columns', 'Over scrollbar (columns)'],
+          ['over', 'Over scrollbar (single)'],
+        ];
+        const current = ScrollMarkers.position();
+        return options.map(([value, label]) => {
+          const a = $.el('a', {
+            href: 'javascript:;',
+            textContent: `${current === value ? '✓ ' : '  '}${label}`,
+            className: 'entry scroll-marker-position-option',
+          });
+          $.on(a, 'click', (e) => {
+            e.preventDefault();
+            Conf['Scrollbar Marker Position'] = value;
+            $.set('Scrollbar Marker Position', value);
+            ScrollMarkers.applyPosition();
+            ScrollMarkers.refreshDeferred();
+            $.event('CloseMenu');
+          });
+          return { el: a };
+        });
+      },
+    },
     init() {
+      ScrollMarkers.menu.init();
       if (g.VIEW !== 'thread')
         return;
       ScrollMarkers.container = $.el('div', { id: 'scroll-markers' });
       ScrollMarkers.container.hidden = true;
+      ScrollMarkers.applyPosition();
       for (const key of [
         'Scrollbar Markers',
         'Scrollbar Mark Own Posts',
@@ -13281,6 +13775,11 @@ svg.icon {
           ScrollMarkers.refreshDeferred();
         });
       }
+      $.sync('Scrollbar Marker Position', (val) => {
+        Conf['Scrollbar Marker Position'] = val;
+        ScrollMarkers.applyPosition();
+        ScrollMarkers.refreshDeferred();
+      });
       Callbacks.Thread.push({
         name: 'Scroll Markers',
         cb: ScrollMarkers.node,
@@ -13290,13 +13789,17 @@ svg.icon {
       ScrollMarkers.thread = this;
       if (!ScrollMarkers.container)
         return;
+      ScrollMarkers.applyPosition();
       $.add(d.body, ScrollMarkers.container);
-      ScrollMarkers.container.hidden = false;
+      ScrollMarkers.container.hidden = true;
       $.on(d, '4chanXInitFinished', ScrollMarkers.refreshDeferred);
       $.on(d, 'PostsInserted', ScrollMarkers.refreshDeferred);
       $.on(d, 'ThreadUpdate', ScrollMarkers.refreshDeferred);
       $.on(d, 'RefreshScrollMarkers', ScrollMarkers.refreshDeferred);
-      $.on(window, 'resize', ScrollMarkers.refreshDeferred);
+      $.on(window, 'resize', () => {
+        ScrollMarkers.updateScrollbarMetrics();
+        ScrollMarkers.refreshDeferred();
+      });
       $.on(window, 'load', ScrollMarkers.refreshDeferred);
       ScrollMarkers.refreshDeferred();
     },
@@ -13312,15 +13815,20 @@ svg.icon {
         return;
       }
       ScrollMarkers.hidePreview();
-      container.hidden = false;
+      ScrollMarkers.applyPosition();
       const docHeight = d.documentElement.scrollHeight || d.body.scrollHeight || 0;
       if (!(docHeight > 0))
         return;
       const frag = $.frag();
+      const pos = ScrollMarkers.position();
+      const onTrack = pos !== 'offset';
+      const isColumnsMode = pos === 'offset' || pos === 'over-columns';
       const showOwn = Conf['Scrollbar Mark Own Posts'];
       const showYou = Conf['Scrollbar Mark Quotes You'];
       const showGhost = Conf['Scrollbar Mark Ghost Posts'];
       const showUnread = Conf['Unread Line'] && Conf['Scrollbar Mark Unread Line'];
+      const items = [];
+      let hasYou = false, hasOwn = false, hasGhost = false;
       ScrollMarkers.thread.posts.forEach((post) => {
         if (post.isHidden || post.isClone || post.isFetchedQuote)
           return;
@@ -13336,21 +13844,43 @@ svg.icon {
         const topInDoc = rect.top + window.scrollY;
         const topPct = (topInDoc / docHeight) * 100;
         const heightPct = Math.max((rect.height / docHeight) * 100, 0.15);
-        const make = (cls) => {
-          const marker = $.el('div', {
-            className: `scroll-marker ${cls}`,
-          });
-          marker.style.cssText = `top:${topPct}%;height:${heightPct}%`;
-          ScrollMarkers.bind(marker, post);
-          $.add(frag, marker);
-        };
-        if (isOwn)
-          make('scroll-marker-own');
-        if (isYou)
-          make('scroll-marker-you');
-        if (isGhost)
-          make('scroll-marker-ghost');
+        const heightStyle = onTrack ? 'height:3px' : `height:${heightPct}%`;
+        if (isYou) {
+          items.push({ post, type: 'you', cls: 'scroll-marker-you', topPct, heightStyle });
+          hasYou = true;
+        }
+        if (isOwn) {
+          items.push({ post, type: 'own', cls: 'scroll-marker-own', topPct, heightStyle });
+          hasOwn = true;
+        }
+        if (isGhost) {
+          items.push({ post, type: 'ghost', cls: 'scroll-marker-ghost', topPct, heightStyle });
+          hasGhost = true;
+        }
       });
+      // Slot 0 = rightmost (nearest the scrollbar). Priority order:
+      // you > own > ghost. Only present types consume a slot.
+      const slot = {};
+      let nextSlot = 0;
+      if (hasYou)
+        slot.you = nextSlot++;
+      if (hasOwn)
+        slot.own = nextSlot++;
+      if (hasGhost)
+        slot.ghost = nextSlot++;
+      const slotCount = nextSlot || 1;
+      const slotWidthPct = 100 / slotCount;
+      for (const item of items) {
+        const marker = $.el('div', { className: `scroll-marker ${item.cls}` });
+        let style = `top:${item.topPct}%;${item.heightStyle}`;
+        if (isColumnsMode) {
+          const s = slot[item.type] ?? 0;
+          style += `;right:${s * slotWidthPct}%;width:${slotWidthPct}%`;
+        }
+        marker.style.cssText = style;
+        ScrollMarkers.bind(marker, item.post);
+        $.add(frag, marker);
+      }
       if (showUnread && Unread?.hr?.isConnected && !Unread.hr.hidden) {
         const rect = Unread.hr.getBoundingClientRect();
         const topInDoc = rect.top + window.scrollY;
@@ -13362,8 +13892,13 @@ svg.icon {
         marker.style.cssText = `top:${topPct}%;height:2px`;
         $.add(frag, marker);
       }
-      container.textContent = '';
+      for (const m of Array.from(container.querySelectorAll('.scroll-marker')))
+        m.remove();
       $.add(container, frag);
+      const overMode = ScrollMarkers.isOverMode();
+      container.hidden = !overMode && !container.querySelector('.scroll-marker');
+      if (overMode)
+        ScrollMarkers.scrollbar.update();
     },
     bind(marker, post) {
       marker.title = `Post No.${post.ID}`;
@@ -13376,10 +13911,57 @@ svg.icon {
         ScrollMarkers.unhighlightPost(post);
         ScrollMarkers.hidePreview();
       });
-      $.on(marker, 'click', (e) => {
-        e.preventDefault();
-        ScrollMarkers.hidePreview();
-        ScrollMarkers.jumpTo(post);
+      // pointerdown lets us tell a click apart from a drag: release-without-
+      // movement = jump to the post, drag past threshold in Over mode = hand
+      // the gesture off to the custom scrollbar thumb. Markers are only a
+      // few pixels tall, so we capture the pointer to keep receiving move
+      // events once the cursor leaves the marker's box.
+      $.on(marker, 'pointerdown', (downEvent) => {
+        if (downEvent.button !== 0)
+          return;
+        const startY = downEvent.clientY;
+        const overMode = ScrollMarkers.isOverMode();
+        let handedOff = false;
+        try {
+          marker.setPointerCapture(downEvent.pointerId);
+        } catch { /* ignore */ }
+        const cleanup = () => {
+          $.off(marker, 'pointermove', move);
+          $.off(marker, 'pointerup', up);
+          $.off(marker, 'pointercancel', up);
+        };
+        const move = (moveEvent) => {
+          if (handedOff)
+            return;
+          if (!overMode)
+            return;
+          if (Math.abs(moveEvent.clientY - startY) <= 2)
+            return;
+          handedOff = true;
+          cleanup();
+          ScrollMarkers.hidePreview();
+          ScrollMarkers.unhighlightPost(post);
+          // Release the marker's capture so setPointerCapture on the thumb
+          // takes over cleanly.
+          try {
+            marker.releasePointerCapture(moveEvent.pointerId);
+          } catch { /* ignore */ }
+          ScrollMarkers.scrollbar.startDragFromPointer(moveEvent);
+        };
+        const up = (upEvent) => {
+          cleanup();
+          try {
+            marker.releasePointerCapture(upEvent.pointerId);
+          } catch { /* ignore */ }
+          if (handedOff)
+            return;
+          upEvent.preventDefault();
+          ScrollMarkers.hidePreview();
+          ScrollMarkers.jumpTo(post);
+        };
+        $.on(marker, 'pointermove', move);
+        $.on(marker, 'pointerup', up);
+        $.on(marker, 'pointercancel', up);
       });
     },
     showPreview(marker, post, e) {
@@ -13438,31 +14020,42 @@ svg.icon {
       }
       $.rm(preview.el);
     },
+    // Same targets as QuotePreview when hovering a >>quotelink (Quote Highlighting).
+    postsForQuoteHighlight(post) {
+      return [post].concat(post.clones || []);
+    },
     highlightPost(post) {
-      const root = post?.nodes?.root;
-      if (!root?.isConnected)
-        return;
-      $.addClass(root, g.SITE.classes.highlight);
+      for (const p of ScrollMarkers.postsForQuoteHighlight(post)) {
+        const el = p.nodes?.post;
+        if (!el?.isConnected || Header.hover?.contains(el))
+          continue;
+        $.addClass(el, 'qphl');
+      }
     },
     unhighlightPost(post) {
-      const root = post?.nodes?.root;
-      if (!root)
-        return;
-      $.rmClass(root, g.SITE.classes.highlight);
+      for (const p of ScrollMarkers.postsForQuoteHighlight(post)) {
+        const el = p.nodes?.post;
+        if (el)
+          $.rmClass(el, 'qphl');
+      }
     },
     jumpTo(post) {
       const root = post?.nodes?.root;
       if (!root?.isConnected)
         return;
       Header.scrollTo(root);
-      $.addClass(root, g.SITE.classes.highlight);
+      ScrollMarkers.unhighlightPost(post);
+      const el = post.nodes?.post;
+      if (!el)
+        return;
+      $.addClass(el, 'qphl');
       if (ScrollMarkers.flashTimer)
         clearTimeout(ScrollMarkers.flashTimer);
       ScrollMarkers.flashPost = post;
       ScrollMarkers.flashTimer = setTimeout(() => {
-        const r = ScrollMarkers.flashPost?.nodes?.root;
-        if (r)
-          $.rmClass(r, g.SITE.classes.highlight);
+        const flashEl = ScrollMarkers.flashPost?.nodes?.post;
+        if (flashEl)
+          $.rmClass(flashEl, 'qphl');
         ScrollMarkers.flashPost = undefined;
       }, 1500);
     },
@@ -19336,12 +19929,18 @@ svg.icon {
       // Live-toggle: re-sweep page when the user flips the setting in Settings.
       $.sync('Convert X to xcancel', enabled => {
         Conf['Convert X to xcancel'] = enabled;
-        Linkify.refreshXcancel();
+        Linkify.refreshFrontEndRewrites();
+      });
+
+      $.sync('Convert YouTube to yewtu.be', enabled => {
+        Conf['Convert YouTube to yewtu.be'] = enabled;
+        Linkify.refreshFrontEndRewrites();
       });
 
       const shouldLinkify = Conf['Linkify'];
       const shouldRewriteX = Conf['Convert X to xcancel'];
-      if (!shouldLinkify && !shouldRewriteX) { return; }
+      const shouldRewriteYouTube = Conf['Convert YouTube to yewtu.be'];
+      if (!shouldLinkify && !shouldRewriteX && !shouldRewriteYouTube) { return; }
 
       if (shouldLinkify && Conf['Comment Expansion']) {
         ExpandComment.callbacks.push(this.node);
@@ -19357,26 +19956,57 @@ svg.icon {
       }
     },
 
-    refreshXcancel() {
-      if (Conf['Convert X to xcancel']) {
+    refreshFrontEndRewrites() {
+      const shouldRewriteX = Conf['Convert X to xcancel'];
+      const shouldRewriteYouTube = Conf['Convert YouTube to yewtu.be'];
+      if (shouldRewriteX || shouldRewriteYouTube) {
         // Apply rewrite to every <a> in post comments currently on the page.
         const selector = g.SITE?.selectors?.comment;
         if (!selector) { return; }
         for (const comment of $$(selector)) {
           for (const link of $$('a', comment)) {
-            Linkify.rewriteXLink(link);
+            if (shouldRewriteX) {
+              Linkify.rewriteXLink(link);
+            } else if (link.dataset.xcancelOrigHref) {
+              link.href = link.dataset.xcancelOrigHref;
+              if (link.dataset.xcancelOrigText != null && link.children.length === 0) {
+                link.textContent = link.dataset.xcancelOrigText;
+              }
+              delete link.dataset.xcancelOrigHref;
+              delete link.dataset.xcancelOrigText;
+            }
+
+            if (shouldRewriteYouTube) {
+              Linkify.rewriteYouTubeLink(link);
+            } else if (link.dataset.yewtuOrigHref) {
+              link.href = link.dataset.yewtuOrigHref;
+              if (link.dataset.yewtuOrigText != null && link.children.length === 0) {
+                link.textContent = link.dataset.yewtuOrigText;
+              }
+              delete link.dataset.yewtuOrigHref;
+              delete link.dataset.yewtuOrigText;
+            }
           }
         }
-      } else {
-        // Revert links we previously rewrote.
-        for (const link of $$('a[data-xcancel-orig-href]')) {
-          link.href = link.dataset.xcancelOrigHref;
-          if (link.dataset.xcancelOrigText != null && link.children.length === 0) {
-            link.textContent = link.dataset.xcancelOrigText;
-          }
-          delete link.dataset.xcancelOrigHref;
-          delete link.dataset.xcancelOrigText;
+        return;
+      }
+
+      // Revert links we previously rewrote.
+      for (const link of $$('a[data-xcancel-orig-href]')) {
+        link.href = link.dataset.xcancelOrigHref;
+        if (link.dataset.xcancelOrigText != null && link.children.length === 0) {
+          link.textContent = link.dataset.xcancelOrigText;
         }
+        delete link.dataset.xcancelOrigHref;
+        delete link.dataset.xcancelOrigText;
+      }
+      for (const link of $$('a[data-yewtu-orig-href]')) {
+        link.href = link.dataset.yewtuOrigHref;
+        if (link.dataset.yewtuOrigText != null && link.children.length === 0) {
+          link.textContent = link.dataset.yewtuOrigText;
+        }
+        delete link.dataset.yewtuOrigHref;
+        delete link.dataset.yewtuOrigText;
       }
     },
 
@@ -19384,15 +20014,17 @@ svg.icon {
       let link;
       if (this.isClone) { return Embedding.events(this); }
       if (!Linkify.regString.test(this.info.comment)) {
-        if (Conf['Convert X to xcancel']) {
+        if (Conf['Convert X to xcancel'] || Conf['Convert YouTube to yewtu.be']) {
           for (link of $$('a', this.nodes.comment)) {
-            Linkify.rewriteXLink(link);
+            if (Conf['Convert X to xcancel']) { Linkify.rewriteXLink(link); }
+            if (Conf['Convert YouTube to yewtu.be']) { Linkify.rewriteYouTubeLink(link); }
           }
         }
         return;
       }
       for (link of $$('a', this.nodes.comment)) {
-        Linkify.rewriteXLink(link);
+        if (Conf['Convert X to xcancel']) { Linkify.rewriteXLink(link); }
+        if (Conf['Convert YouTube to yewtu.be']) { Linkify.rewriteYouTubeLink(link); }
         if (g.SITE.isLinkified?.(link)) {
           $.addClass(link, 'linkify');
           if (ImageHost.useFaster) { ImageHost.fixLinks([link]); }
@@ -19547,7 +20179,7 @@ aero|asia|biz|cat|com|coop|dance|info|int|jobs|mobi|moe|museum|name|net|org|post
         }) + encodedDomain[2];
       }
 
-      const rewrittenHref = Linkify.rewriteXURL(text);
+      const rewrittenHref = Linkify.rewriteURLs(text);
       const a = $.el('a', {
         className: 'linkify',
         rel:       'noreferrer noopener',
@@ -19561,8 +20193,13 @@ aero|asia|biz|cat|com|coop|dance|info|int|jobs|mobi|moe|museum|name|net|org|post
       range.insertNode(a);
 
       if (rewrittenHref !== text) {
-        a.dataset.xcancelOrigHref = text;
-        if (a.children.length === 0) { a.dataset.xcancelOrigText = a.textContent; }
+        if (Conf['Convert X to xcancel'] && Linkify.rewriteXURL(text) !== text) {
+          a.dataset.xcancelOrigHref = text;
+          if (a.children.length === 0) { a.dataset.xcancelOrigText = a.textContent; }
+        } else if (Conf['Convert YouTube to yewtu.be'] && Linkify.rewriteYouTubeURL(text) !== text) {
+          a.dataset.yewtuOrigHref = text;
+          if (a.children.length === 0) { a.dataset.yewtuOrigText = a.textContent; }
+        }
         Linkify.rewriteVisibleText(a);
       }
 
@@ -19583,17 +20220,42 @@ aero|asia|biz|cat|com|coop|dance|info|int|jobs|mobi|moe|museum|name|net|org|post
       }
     },
 
+    rewriteYouTubeLink(link) {
+      if (!Conf['Convert YouTube to yewtu.be']) { return; }
+      const oldHref = link.href;
+      const newHref = Linkify.rewriteYouTubeURL(oldHref);
+      if (newHref !== oldHref) {
+        if (!link.dataset.yewtuOrigHref) {
+          link.dataset.yewtuOrigHref = oldHref;
+          if (link.children.length === 0) { link.dataset.yewtuOrigText = link.textContent; }
+        }
+        link.href = newHref;
+        Linkify.rewriteVisibleText(link);
+      }
+    },
+
     rewriteVisibleText(link) {
       // Replace twitter.com / x.com hostnames in the link's visible text with xcancel.com.
+      // Replace youtube.com / youtu.be hostnames in the link's visible text with yewtu.be.
       // Only touches text nodes so we don't disturb embed icons or nested markup.
-      const replace = s => s.replace(
+      const replaceX = s => s.replace(
         /\b((?:www\.|mobile\.)?(?:fx|vx)?twitter\.com|(?:www\.|mobile\.)?(?:fixup|fixv)?x\.com|twittpr\.com)\b/gi,
         'xcancel.com'
+      );
+      const replaceYouTube = s => s.replace(
+        /\b((?:www\.|m\.|music\.|mobile\.)?(?:youtu\.be|youtube\.com|youtube-nocookie\.com))\b/gi,
+        'yewtu.be'
       );
       const walker = document.createTreeWalker(link, NodeFilter.SHOW_TEXT);
       let node;
       while ((node = walker.nextNode())) {
-        const updated = replace(node.data);
+        let updated = node.data;
+        if (Conf['Convert X to xcancel']) {
+          updated = replaceX(updated);
+        }
+        if (Conf['Convert YouTube to yewtu.be']) {
+          updated = replaceYouTube(updated);
+        }
         if (updated !== node.data) { node.data = updated; }
       }
     },
@@ -19624,6 +20286,52 @@ aero|asia|biz|cat|com|coop|dance|info|int|jobs|mobi|moe|museum|name|net|org|post
         }
       } catch {}
       return urlString;
+    },
+
+    rewriteYouTubeURL(urlString) {
+      if (!Conf['Convert YouTube to yewtu.be']) { return urlString; }
+      try {
+        const base = (typeof location === 'object' && location?.href) ? location.href : undefined;
+        const url = base ? new URL(urlString, base) : new URL(urlString);
+        if (!/^https?:$/.test(url.protocol)) { return urlString; }
+
+        const isYouTube = /(?:^|\.)youtube\.com$/i.test(url.hostname)
+          || /(?:^|\.)youtube-nocookie\.com$/i.test(url.hostname)
+          || /^(?:www\.)?youtu\.be$/i.test(url.hostname);
+
+        // Direct links.
+        if (isYouTube) {
+          if (/^(?:www\.)?youtu\.be$/i.test(url.hostname)) {
+            const shortId = url.pathname.replace(/^\//, '');
+            if (/^[\w-]{11}$/.test(shortId)) {
+              if (!url.searchParams.get('v')) {
+                url.searchParams.set('v', shortId);
+              }
+              url.pathname = '/watch';
+            }
+          }
+          url.hostname = 'yewtu.be';
+          return url.toString();
+        }
+
+        // Wrapped redirect links (e.g. ?url=https://youtube.com/...).
+        const redirectParams = ['url', 'u', 'to', 'target', 'dest', 'destination', 'redirect', 'redir', 'r'];
+        for (const key of redirectParams) {
+          const value = url.searchParams.get(key);
+          if (!value) { continue; }
+          const rewritten = Linkify.rewriteYouTubeURL(value);
+          if (rewritten !== value) {
+            url.searchParams.set(key, rewritten);
+            return url.toString();
+          }
+        }
+      } catch {}
+      return urlString;
+    },
+
+    rewriteURLs(urlString) {
+      const rewrittenX = Linkify.rewriteXURL(urlString);
+      return Linkify.rewriteYouTubeURL(rewrittenX);
     }
   };
 
@@ -20559,7 +21267,7 @@ aero|asia|biz|cat|com|coop|dance|info|int|jobs|mobi|moe|museum|name|net|org|post
       },
       {
         key: 'YouTube',
-        regExp: /^\w+:\/\/(?:youtu.be\/|[\w.]*youtube[\w.]*\/.*(?:v=|\bembed\/|\bv\/|shorts\/|live\/|watch\/))([\w\-]{11})(.*)/,
+        regExp: /^\w+:\/\/(?:youtu.be\/|(?:[\w.]*youtube[\w.]*|yewtu\.be)\/.*(?:v=|\bembed\/|\bv\/|shorts\/|live\/|watch\/))([\w\-]{11})(.*)/,
         el(a) {
           let start = a.dataset.options.match(/\b(?:star)?t\=(\w+)/);
           if (start) {
@@ -20605,11 +21313,34 @@ aero|asia|biz|cat|com|coop|dance|info|int|jobs|mobi|moe|museum|name|net|org|post
   const BUILTIN_DEFAULT_ID = 'builtin:default';
   const SoundManager = {
     db: undefined,
+    threadUpdateHooked: false,
     init() {
-      if (this.db)
+      if (this.db) {
+        this.hookThreadUpdate();
         return;
+      }
       this.db = new DataBoard('sounds');
       this.migrateBeepSource();
+      this.hookThreadUpdate();
+    },
+    hookThreadUpdate() {
+      if (this.threadUpdateHooked)
+        return;
+      this.threadUpdateHooked = true;
+      $.on(d, 'ThreadUpdate', SoundManager.onThreadUpdate);
+    },
+    onThreadUpdate(e) {
+      if (!e.detail?.[404])
+        return;
+      const thread = g.threads.get(e.detail.threadID);
+      if (!thread)
+        return;
+      SoundManager.clearThreadPostOverrides(thread.board.ID, thread.ID);
+    },
+    clearThreadPostOverrides(boardID, threadID, siteID = g.SITE.ID) {
+      if (!this.db)
+        return;
+      this.db.delete({ siteID, boardID, threadID });
     },
     /** One-time: if a legacy `beepSource` URL/data URI exists, fold it into the library. */
     migrateBeepSource() {
@@ -20793,10 +21524,12 @@ aero|asia|biz|cat|com|coop|dance|info|int|jobs|mobi|moe|museum|name|net|org|post
       // Chromium won't play audio created in an inactive tab until the tab has been focused, so set it up now.
       // XXX Sometimes the loading stalls in Firefox, esp. when opening in private browsing window followed by normal window.
       // Don't let it keep the loading icon on indefinitely.
+      SoundManager.init();
+      ThreadUpdater.initBeepChannel();
       this.audio = $.el('audio');
-      if ($.engine !== 'gecko') {
-        this.audio.src = this.beep;
-      }
+      this.audio.preload = 'auto';
+      // Preload on all engines so background-tab playback works after the tab was once active.
+      this.audio.src = this.beep;
       $.on(this.audio, 'error', () => {
         new Notice('error', this.audio.error.message || 'Error when trying to play thread updater beep.', 15);
       });
@@ -20882,24 +21615,84 @@ aero|asia|biz|cat|com|coop|dance|info|int|jobs|mobi|moe|museum|name|net|org|post
     beep: `data:audio/wav;base64,${Beep}`,
     playBeep(repeatIfPlaying = true) {
       const lib = SoundManager.getEntry(SoundManager.getDefaultSoundId());
-      ThreadUpdater.playSound(lib?.data || ThreadUpdater.beep, repeatIfPlaying);
+      ThreadUpdater.requestPlaySound(lib?.data || ThreadUpdater.beep, repeatIfPlaying);
+    },
+    initBeepChannel() {
+      if (ThreadUpdater.beepChannel || !window.BroadcastChannel)
+        return;
+      ThreadUpdater.beepChannel = new BroadcastChannel(`${g.NAMESPACE} updater-beep`);
+      $.on(ThreadUpdater.beepChannel, 'message', ThreadUpdater.onBeepMessage);
+      $.on(d, 'PlayUpdaterSound', ThreadUpdater.onPlayUpdaterSound);
+    },
+    onBeepMessage(e) {
+      const source = e.data?.source;
+      if (!source || d.hidden || !d.hasFocus())
+        return;
+      ThreadUpdater.playSound(source, false);
+    },
+    onPlayUpdaterSound(e) {
+      const { post, predicate } = e.detail || {};
+      if (!post?.board || !post?.thread)
+        return;
+      const context = { boardID: post.board.ID, threadID: post.thread.ID };
+      const isQuotingYou = predicate === ' replied to you';
+      if (isQuotingYou && Conf['Beep Quoting You']) {
+        let quotedYou;
+        for (const ql of post.nodes?.quotelinks || []) {
+          const data = Get.postDataFromLink(ql);
+          if (QuoteYou.db?.get(data)) {
+            quotedYou = { boardID: data.boardID, threadID: data.threadID, postID: data.postID };
+            break;
+          }
+        }
+        ThreadUpdater.requestPlaySound(SoundManager.resolveSource({ quotedYouPost: quotedYou, context }));
+      } else if (!isQuotingYou && Conf['Beep']) {
+        ThreadUpdater.requestPlaySound(SoundManager.resolveSource({ context }));
+      }
+    },
+    /**
+    * Play updater sound in this tab, or relay to a focused tab when backgrounded.
+    * Browsers block autoplay in inactive tabs; desktop notifications do not.
+    */
+    requestPlaySound(source, repeatIfPlaying = true) {
+      if (!source)
+        return;
+      const now = Date.now();
+      if (ThreadUpdater.lastBeepSource === source && (now - (ThreadUpdater.lastBeepAt || 0)) < 300)
+        return;
+      ThreadUpdater.lastBeepSource = source;
+      ThreadUpdater.lastBeepAt = now;
+      const away = d.hidden || !d.hasFocus();
+      if (!away) {
+        ThreadUpdater.playSound(source, repeatIfPlaying);
+        return;
+      }
+      ThreadUpdater.broadcastBeep(source);
+      ThreadUpdater.playSound(source, repeatIfPlaying);
+    },
+    broadcastBeep(source) {
+      ThreadUpdater.beepChannel?.postMessage({ source });
     },
     playSound(source, repeatIfPlaying = true) {
       const { audio } = ThreadUpdater;
       if (!source)
         source = ThreadUpdater.beep;
-      if (audio.src !== source)
+      if (audio.src !== source) {
         audio.src = source;
+        audio.load();
+      }
       const configuredVolume = Number(Conf.beepVolume);
       audio.volume = Number.isFinite(configuredVolume) ?
         Math.max(.01, Math.min(configuredVolume, 1))
         :
           1;
+      audio.currentTime = 0;
       if (audio.paused) {
         const playPromise = audio.play();
         if (playPromise && typeof playPromise.catch === 'function') {
           playPromise.catch((err) => {
             if (err?.name === 'NotAllowedError') {
+              ThreadUpdater.broadcastBeep(source);
               ThreadUpdater.armAudioUnlock(source);
             }
           });
@@ -20944,6 +21737,19 @@ aero|asia|biz|cat|com|coop|dance|info|int|jobs|mobi|moe|museum|name|net|org|post
       }
       return null;
     },
+    postsQuoteYou(posts) {
+      if (!QuoteYou.db)
+        return false;
+      for (const post of posts) {
+        if (!post.nodes?.quotelinks)
+          continue;
+        for (const ql of post.nodes.quotelinks) {
+          if (QuoteYou.db.get(Get.postDataFromLink(ql)))
+            return true;
+        }
+      }
+      return false;
+    },
     cb: {
       checkpost(e) {
         if (e.detail.threadID !== ThreadUpdater.thread.ID) {
@@ -20960,6 +21766,12 @@ aero|asia|biz|cat|com|coop|dance|info|int|jobs|mobi|moe|museum|name|net|org|post
         }
         // Reset the counter when we focus this tab.
         ThreadUpdater.outdateCount = 0;
+        if (ThreadUpdater.pendingAudioSource) {
+          const pendingSource = ThreadUpdater.pendingAudioSource;
+          delete ThreadUpdater.pendingAudioSource;
+          ThreadUpdater.audioUnlockArmed = false;
+          ThreadUpdater.playSound(pendingSource, false);
+        }
         if (ThreadUpdater.seconds > ThreadUpdater.interval) {
           return ThreadUpdater.setInterval();
         }
@@ -21071,9 +21883,28 @@ aero|asia|biz|cat|com|coop|dance|info|int|jobs|mobi|moe|museum|name|net|org|post
       return ThreadUpdater.timeout();
     },
     intervalShortcut() {
-      Settings.open('Advanced');
-      const settings = $.id('fourchanx-settings');
-      return $('input[name=Interval]', settings).focus();
+      const focusInterval = (section) => {
+        if (!section?.classList?.contains('section-threads-posts'))
+          return;
+        const fs = $.id('xt-updater-settings');
+        if (fs instanceof HTMLDetailsElement)
+          fs.open = true;
+        const input = $('input[name=Interval]', section);
+        input?.focus();
+      };
+      if (Settings.dialog) {
+        const threadsSection = Settings.sections.find(s => s.title === 'Threads & Posts');
+        if (threadsSection)
+          Settings.openSection.call(threadsSection);
+        focusInterval($('section', Settings.dialog));
+        return;
+      }
+      Settings.open('Threads & Posts');
+      const onOpen = (e) => {
+        $.off(d, 'OpenSettings', onOpen);
+        focusInterval(e.detail);
+      };
+      $.on(d, 'OpenSettings', onOpen);
     },
     set(name, text, klass) {
       let node;
@@ -21198,18 +22029,19 @@ aero|asia|biz|cat|com|coop|dance|info|int|jobs|mobi|moe|museum|name|net|org|post
       } else {
         ThreadUpdater.set('status', `+${posts.length}`, 'new');
         ThreadUpdater.outdateCount = 0;
-        const unreadCount = Unread.posts?.size;
-        const unreadQYCount = Unread.postsQuotingYou?.size;
+        const unreadCount = Unread.posts?.size ?? 0;
+        Unread.postsQuotingYou?.size ?? 0;
         Main.callbackNodes('Post', posts);
         if (d.hidden || !d.hasFocus()) {
-          const quotedYou = Conf['Beep Quoting You'] && (Unread.postsQuotingYou?.size > unreadQYCount)
-            ? ThreadUpdater.findFirstQuotedYouPost(posts)
-            : null;
+          const newUnread = (Unread.posts?.size ?? 0) > unreadCount;
+          const quotingYouInBatch = ThreadUpdater.postsQuoteYou(posts);
           const context = { boardID: thread.board.ID, threadID: thread.ID };
-          if (quotedYou) {
-            ThreadUpdater.playSound(SoundManager.resolveSource({ quotedYouPost: quotedYou, context }));
-          } else if (Conf['Beep'] && (Unread.posts?.size > 0) && (unreadCount === 0)) {
-            ThreadUpdater.playSound(SoundManager.resolveSource({ context }));
+          // QY sounds also fire from PlayUpdaterSound (same path as desktop notifications).
+          if (Conf['Beep Quoting You'] && quotingYouInBatch && !Conf['Desktop Notifications']) {
+            const quotedYou = ThreadUpdater.findFirstQuotedYouPost(posts);
+            ThreadUpdater.requestPlaySound(SoundManager.resolveSource({ quotedYouPost: quotedYou ?? undefined, context }));
+          } else if (Conf['Beep'] && posts.length > 0 && (newUnread || unreadCount === 0)) {
+            ThreadUpdater.requestPlaySound(SoundManager.resolveSource({ context }));
           }
         }
         const scroll = Conf['Auto Scroll'] && ThreadUpdater.scrollBG() &&
@@ -26999,7 +27831,7 @@ $\
       add('Threads & Posts', this.threadsAndPosts);
       add('Media', this.media);
       add('Posting', this.posting);
-      add('Filtering', this.filter);
+      add('Filters', this.filter);
       add('Keybinds', this.keybinds);
       add('Advanced', this.advanced);
       add('All Settings', this.allSettings);
@@ -27098,7 +27930,7 @@ $\
         if (!defaultLink && section.title === 'General')
           defaultLink = link;
         if (section.title === openSection
-          || (['Filter', 'Filters', 'Simple Filters'].includes(openSection) && section.title === 'Filtering')
+          || (['Filter', 'Filters', 'Simple Filters', 'Filtering'].includes(openSection) && section.title === 'Filters')
           || (openSection === 'Main' && section.title === 'General')) {
           sectionToOpen = link;
         }
@@ -27568,6 +28400,8 @@ Enable it on boards.${location.hostname.split('.')[1]}.org in your browser's pri
         div.dataset.name = key;
         div.dataset.settingTitle = key;
         div.dataset.settingDescription = description;
+        if (description)
+          div.title = description;
         const input = $('input', div);
         $.on(input, 'change', $.cb.checked);
         $.on(input, 'change', function () { this.parentNode.parentNode.dataset.checked = this.checked; });
@@ -27825,7 +28659,6 @@ Enable it on boards.${location.hostname.split('.')[1]}.org in your browser's pri
       items['boardnav'] = Conf['boardnav'];
       inputs['boardnav'] = textarea;
       $.add(fsNav, navContent);
-      $.add(section, fsNav);
       Settings.renderMainGroups(section, {
         categories: [
           {
@@ -27839,6 +28672,7 @@ Enable it on boards.${location.hostname.split('.')[1]}.org in your browser's pri
           'Menu'
         ]
       });
+      $.add(section, fsNav);
       $.get(items, function (items) {
         for (const key in items) {
           const input = inputs[key];
@@ -27938,7 +28772,15 @@ Enable it on boards.${location.hostname.split('.')[1]}.org in your browser's pri
           ]
         }
       ]);
-      const fsUC = $.el('details', { open: true }, { innerHTML: '<summary>Updater & Cooldown</summary>' });
+      const fsUC = $.el('details', { open: true, id: 'xt-updater-settings' }, { innerHTML: '<summary>Updater & Cooldown</summary>' });
+      Settings.addCheckboxes(fsUC, Config.updater.checkbox, items, inputs);
+      if (inputs['Scroll BG']) {
+        $.on(inputs['Scroll BG'], 'change', ThreadUpdater.cb.scrollBG);
+        ThreadUpdater.cb.scrollBG();
+      }
+      if (inputs['Auto Update']) {
+        $.on(inputs['Auto Update'], 'change', ThreadUpdater.setInterval);
+      }
       const divInterval = $.el('div', { innerHTML: '<label>Update Interval: <input type="number" name="Interval" class="field" min="1"></label><span class="description">: Seconds between updates.</span>' });
       divInterval.dataset.name = 'Interval';
       const intervalInput = $('input', divInterval);
@@ -27953,6 +28795,12 @@ Enable it on boards.${location.hostname.split('.')[1]}.org in your browser's pri
       items['customCooldown'] = Conf['customCooldown'];
       inputs['customCooldown'] = cooldownInput;
       $.add(fsUC, divCooldown);
+      Settings.addUpdaterBoardSound(fsUC);
+      const soundHint = $.el('div', {
+        className: 'description',
+        innerHTML: 'Sound library, volume, and per-board overrides: <b>Advanced → Thread updater sound</b>.',
+      });
+      $.add(fsUC, soundHint);
       $.add(section, fsUC);
       $.get(items, function (items) {
         for (const key in items) {
@@ -28016,6 +28864,8 @@ Enable it on boards.${location.hostname.split('.')[1]}.org in your browser's pri
           div.dataset.name = `${name} Thread Watcher Thumbnail Size Thread Watcher Thumbnail Hover Thread Watcher Thumbnail Preview Size`;
           div.dataset.settingTitle = displayName(name);
           div.dataset.settingDescription = `${description} ${hoverDescription} Thread Watcher Thumbnail Size Thread Watcher Thumbnail Hover Thread Watcher Thumbnail Preview Size`;
+          if (description)
+            div.title = description;
           const sizeInput = $('input[name="Thread Watcher Thumbnail Size"]', div);
           const previewToggle = $('input[name="Thread Watcher Thumbnail Hover"]', div);
           const previewSizeInput = $('input[name="Thread Watcher Thumbnail Preview Size"]', div);
@@ -28060,6 +28910,8 @@ Enable it on boards.${location.hostname.split('.')[1]}.org in your browser's pri
           div.dataset.name = name;
           div.dataset.settingTitle = displayName(name);
           div.dataset.settingDescription = description;
+          if (description)
+            div.title = description;
         }
         const level = arr[2] || 0;
         if (level > 0)
@@ -28075,6 +28927,7 @@ Enable it on boards.${location.hostname.split('.')[1]}.org in your browser's pri
       heightDiv.dataset.name = 'Thread Watcher Max Height Thread Watcher Max Width';
       heightDiv.dataset.settingTitle = 'TW Max H/W';
       heightDiv.dataset.settingDescription = 'Maximum watched-thread list height and width in pixels.';
+      heightDiv.title = 'Maximum watched-thread list height and width in pixels.';
       const heightInput = $('input[name="Thread Watcher Max Height"]', heightDiv);
       const widthInput = $('input[name="Thread Watcher Max Width"]', heightDiv);
       $.on(heightInput, 'change', function () {
@@ -28129,7 +28982,7 @@ Enable it on boards.${location.hostname.split('.')[1]}.org in your browser's pri
       const inputs = dict();
       const lookup = Settings.getMainSettingLookup();
       const groups = [
-        ['Image Behavior', ['Image Expansion', 'Image Hover', 'Image Hover in Catalog', 'Replace Thumbnails', 'Replace GIF', 'Replace JPG', 'Replace PNG', 'Replace WEBM', 'Restart when Opened']],
+        ['Image Behavior', ['Image Expansion', 'Image Hover', 'Image Hover in Catalog', 'Replace Thumbnails', 'Restart when Opened']],
         ['Images', ['Gallery', 'Fullscreen Gallery', 'PDF in Gallery', 'Sauce', 'Reveal Spoiler Thumbnails', 'Image Prefetching', 'Fappe Tyme', 'Werk Tyme']],
         ['Videos', ['WEBM Metadata', 'Autoplay', 'Show Controls', 'Click Passthrough', 'Allow Sound', 'Mouse Wheel Volume', 'Enable sound posts']]
       ];
@@ -28223,8 +29076,9 @@ Enable it on boards.${location.hostname.split('.')[1]}.org in your browser's pri
         const text = $.el('div', {
           className: 'styling-defer-banner-text',
           innerHTML: '<b>StyleChan is managing site themes.</b> '
-            + 'The theme picker has been disabled; '
-            + 'highlight colors and other 4chan XT styling controls are hidden while StyleChan is installed. '
+            + 'The theme picker has been disabled. '
+            + 'Some 4chan-neXT styling options, including text colors and custom CSS, are hidden while StyleChan is installed. '
+            + 'Highlight colors remain available here. '
             + 'Uninstall StyleChan to restore the full Styling section.'
         });
         const button = $.el('button', {
@@ -30445,25 +31299,25 @@ Enable it on boards.${location.hostname.split('.')[1]}.org in your browser's pri
     },
     exportOptionOrder: [
       'General',
+      'Styling',
+      'Custom CSS',
       'Interface',
       'Threads & Posts',
       'Watched Threads',
       'Media',
       'Posting',
       'Filters',
-      'Styling',
-      'Custom CSS',
       'Keybinds',
       'Advanced'
     ],
     exportSectionOrder: [
       { name: 'General', option: 'General' },
+      { name: 'Styling', option: 'Styling', children: ['Custom CSS'] },
       { name: 'Interface', option: 'Interface' },
       { name: 'Threads & Posts', option: 'Threads & Posts', children: ['Watched Threads'] },
       { name: 'Media', option: 'Media' },
       { name: 'Posting', option: 'Posting' },
       { name: 'Filters', option: 'Filters' },
-      { name: 'Styling', option: 'Styling', children: ['Custom CSS'] },
       { name: 'Keybinds', option: 'Keybinds' },
       { name: 'Advanced', option: 'Advanced' }
     ],
@@ -31922,7 +32776,20 @@ Enable it on boards.${location.hostname.split('.')[1]}.org in your browser's pri
         $.on(updateArchives, 'click', () => Redirect.update(() => Settings.addArchiveTable(section)));
       }
       if (inputs.beepVolume) {
-        $.on(inputs.beepVolume, 'change', () => { ThreadUpdater.playBeep(false); });
+        const volHint = inputs.beepVolume.closest('.sound-row')?.querySelector('.beep-volume-value');
+        const syncBeepVolumeLabel = () => {
+          if (volHint) {
+            volHint.textContent = `${Math.round(Number(inputs.beepVolume.value) * 100)}%`;
+          }
+        };
+        const previewBeepVolume = () => {
+          $.cb.value.call(inputs.beepVolume);
+          syncBeepVolumeLabel();
+          ThreadUpdater.playBeep(false);
+        };
+        syncBeepVolumeLabel();
+        $.on(inputs.beepVolume, 'input', previewBeepVolume);
+        $.on(inputs.beepVolume, 'change', previewBeepVolume);
       }
       Settings.addSoundLibrary(section);
       Settings.addBoardSoundOverrides(section);
@@ -32167,6 +33034,70 @@ Enable it on boards.${location.hostname.split('.')[1]}.org in your browser's pri
         defaultSoundId: Conf.defaultSoundId,
         sounds: Conf['sounds'],
       }, cb);
+    },
+    addUpdaterBoardSound(root) {
+      SoundManager.init();
+      const boardID = g.BOARD?.ID;
+      if (!boardID) {
+        $.add(root, $.el('div', {
+          className: 'description',
+          textContent: 'Open a board to pick its update sound here (or set overrides in Advanced).',
+        }));
+        return;
+      }
+      const div = $.el('div');
+      div.dataset.name = 'board-update-sound';
+      const label = $.el('label', { textContent: `Board update sound (/${boardID}/): ` });
+      const select = $.el('select', { className: 'field', name: 'board-update-sound' });
+      const previewBtn = $.el('button', {
+        type: 'button',
+        className: 'sound-btn',
+        textContent: 'Preview',
+        title: 'Play the selected sound',
+      });
+      const fillOptions = () => {
+        const current = SoundManager.getBoardOverride(boardID);
+        $.rmAll(select);
+        $.add(select, $.el('option', { value: '', textContent: 'Default (inherit)' }));
+        for (const lib of SoundManager.library()) {
+          const opt = $.el('option', { value: lib.id, textContent: lib.name });
+          if (lib.id === current)
+            opt.selected = true;
+          $.add(select, opt);
+        }
+        if (current && !SoundManager.getEntry(current)) {
+          const missing = $.el('option', { value: current, textContent: `(missing: ${current})` });
+          missing.selected = true;
+          $.add(select, missing);
+        }
+      };
+      fillOptions();
+      $.on(select, 'change', () => {
+        const soundId = select.value || null;
+        SoundManager.setBoardOverride(boardID, soundId);
+        if (soundId) {
+          const entry = SoundManager.getEntry(soundId);
+          if (entry?.data)
+            ThreadUpdater.playSound(entry.data, false);
+        }
+      });
+      $.on(previewBtn, 'click', () => {
+        const soundId = select.value;
+        if (!soundId) {
+          ThreadUpdater.playBeep(false);
+          return;
+        }
+        const entry = SoundManager.getEntry(soundId);
+        if (entry?.data)
+          ThreadUpdater.playSound(entry.data, false);
+      });
+      $.add(label, select);
+      $.add(div, [
+        label,
+        previewBtn,
+        $.el('span', { className: 'description', textContent: ': Plays on new posts in this board.' }),
+      ]);
+      $.add(root, div);
     },
     addBoardSoundOverrides(section) {
       const list = $('#board-sounds-list', section);
@@ -33032,7 +33963,7 @@ Enable it on boards.${location.hostname.split('.')[1]}.org in your browser's pri
       Settings.forcedFiltersMode = 'advanced';
       Settings.forcedFilterType = type;
       if (Settings.dialog) {
-        const filteringTab = $('.tab-filtering', Settings.dialog);
+        const filteringTab = $('.tab-filters', Settings.dialog);
         filteringTab?.click();
       } else {
         Settings.open('Filter');
@@ -34539,7 +35470,7 @@ Enable it on boards.${location.hostname.split('.')[1]}.org in your browser's pri
   var ImageLoader = {
     init() {
       if (!['index', 'thread', 'archive'].includes(g.VIEW)) { return; }
-      const replace = Conf['Replace JPG'] || Conf['Replace PNG'] || Conf['Replace GIF'] || Conf['Replace WEBM'];
+      const replace = Conf['Replace Thumbnails'];
       if (!Conf['Image Prefetching'] && !replace) { return; }
 
       Callbacks.Post.push({
@@ -34553,7 +35484,7 @@ Enable it on boards.${location.hostname.split('.')[1]}.org in your browser's pri
         }
       });
 
-      if (Conf['Replace WEBM']) {
+      if (Conf['Replace Thumbnails']) {
         $.on(d, 'scroll visibilitychange 4chanXInitFinished PostsInserted', this.playVideos);
       }
 
@@ -34574,7 +35505,7 @@ Enable it on boards.${location.hostname.split('.')[1]}.org in your browser's pri
     node() {
       if (this.isClone) { return; }
       for (var file of this.files) {
-        if (Conf['Replace WEBM'] && file.isVideo) { ImageLoader.replaceVideo(this, file); }
+        if (Conf['Replace Thumbnails'] && file.isVideo) { ImageLoader.replaceVideo(this, file); }
         ImageLoader.prefetch(this, file);
       }
     },
@@ -34600,16 +35531,10 @@ Enable it on boards.${location.hostname.split('.')[1]}.org in your browser's pri
     },
 
     prefetch(post, file) {
-      let clone, type;
+      let clone;
       const {isImage, isVideo, thumb, url} = file;
       if (file.isPrefetched || !(isImage || isVideo) || post.isHidden || post.thread.isHidden) { return; }
-      if (isVideo) {
-        type = 'WEBM';
-      } else {
-        type = url.match(/\.([^.]+)$/)?.[1].toUpperCase();
-        if (type === 'JPEG') { type = 'JPG'; }
-      }
-      const replace = Conf[`Replace ${type}`] && !/spoiler/.test(thumb.src || thumb.dataset.src);
+      const replace = Conf['Replace Thumbnails'] && !/spoiler/.test(thumb.src || thumb.dataset.src);
       if (!replace && !ImageLoader.prefetchEnabled) { return; }
       if ($.hasClass(doc, 'catalog-mode')) { return; }
       if (![post, ...post.clones].some(clone => doc.contains(clone.nodes.root))) { return; }
@@ -35131,7 +36056,6 @@ Enable it on boards.${location.hostname.split('.')[1]}.org in your browser's pri
         return;
       SoundManager.init();
       SoundLink.addPostEntry();
-      SoundLink.addBoardEntry();
     },
     addPostEntry() {
       const el = $.el('a', {
@@ -35153,26 +36077,6 @@ Enable it on boards.${location.hostname.split('.')[1]}.org in your browser's pri
         subEntries: [],
       };
       Menu.menu.addEntry(entry);
-    },
-    addBoardEntry() {
-      if (!Header?.menu)
-        return;
-      const el = $.el('span', { className: 'sound-link sound-link-board', textContent: 'Update sound' });
-      const entry = {
-        el,
-        order: 115,
-        open() {
-          const boardID = g.BOARD?.ID;
-          if (!boardID)
-            return false;
-          const target = { boardID };
-          const current = SoundManager.getBoardOverride(boardID);
-          entry.subEntries = SoundLink.buildSubEntries('board', target, current);
-          return true;
-        },
-        subEntries: [],
-      };
-      Header.menu.addEntry(entry);
     },
     buildSubEntries(scope, target, currentSoundId) {
       const subs = [];
@@ -36844,6 +37748,10 @@ Enable it on boards.${location.hostname.split('.')[1]}.org in your browser's pri
       Conf['Index Sort'] = dict();
       for (let i = 0; i < 2; i++) { Conf[`Last Long Reply Thresholds ${i}`] = dict(); }
       Conf['siteProperties'] = dict();
+      const legacyReplaceThumbnailKeys = ['Replace GIF', 'Replace JPG', 'Replace PNG', 'Replace WEBM'];
+      for (const key of legacyReplaceThumbnailKeys) {
+        Conf[key] = false;
+      }
 
       // XXX old key names
       Conf['Except Archives from Encryption'] = false;
@@ -36875,6 +37783,7 @@ Enable it on boards.${location.hostname.split('.')[1]}.org in your browser's pri
       // Get saved values as items
       const items = dict();
       for (const key in Conf) items[key] = undefined;
+      for (const key of legacyReplaceThumbnailKeys) items[key] = undefined;
       items['previousversion'] = undefined;
       ($.getSync || $.get)(items, function(items) {
         $.asap(docSet, function() {
@@ -36895,6 +37804,10 @@ Enable it on boards.${location.hostname.split('.')[1]}.org in your browser's pri
           // Combine default values with saved values
           for (const key in Conf) {
             Conf[key] = items[key] ?? Conf[key];
+          }
+          if (!Conf['Replace Thumbnails'] && legacyReplaceThumbnailKeys.some((key) => items[key] === true)) {
+            Conf['Replace Thumbnails'] = true;
+            $.set('Replace Thumbnails', true);
           }
 
           Site.init(Main.initFeatures);

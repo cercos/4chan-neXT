@@ -17,15 +17,15 @@ You will need a userscript manager:
 
 ## Latest Version
 
-`1.0.5` (2026-06-01)
+`1.0.6` (2026-06-03)
 
-- Fixed captcha behavior.
-- Fixed captcha text colors.
-- Added dynamic font colors.
-- Fixed settings layout.
-- Added sorting to Thread Watcher.
-- Fixed flag dropdown colors.
-- Settings cleanup
+- Added IDE-style "over scrollbar" marker mode with header menu toggle.
+- Added YouTube → yewtu.be link rewriting.
+- Reorganized thread updater sound settings; volume is now a slider.
+- Fixed thread updater sound race condition and multi-tab beeping.
+- Settings dialog opens to General by default; descriptions are hover tooltips.
+- Removed unused legacy settings and renamed "Filtering" to "Filters".
+- Styling page color cache and build tooling update.
 
 ## Migration from 4chan X / 4chan XT
 
@@ -43,13 +43,14 @@ To migrate settings:
 ## Fork Additions
 
 Recent fork additions include:
-- Built-in site theme styles.
-- StyleChan compatibility updates.
-- Scrollbar hover thumbnail preview.
-- Thread Watcher thumbnails.
+- Built-in site theme styles and StyleChan compatibility.
+- IDE-style "over scrollbar" marker mode (single or 3 columns), plus per-subject highlight colors for catalog Own / Watched threads.
+- Configurable thread updater sounds with per-board overrides, cross-tab single-beep, and a volume slider.
+- YouTube → yewtu.be and X → xcancel link rewriting.
+- Scrollbar hover thumbnail preview and Thread Watcher thumbnails.
 - Comment previewing in replies.
 - Download-all media support.
-- Quick Reply layout and action button fixes.
+- Reorganized Settings dialog: faster initial load, hover-tooltip descriptions, search-friendly layout.
 
 ## Build from Source
 
