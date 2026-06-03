@@ -359,7 +359,7 @@ const Config = {
     'Monitoring': {
       'Thread Updater': [
         true,
-        'Fetch and insert new replies. Has more options in the header menu and the "Advanced" tab.'
+        'Fetch and insert new replies. Quick toggles in the header menu; more options in Threads & Posts → Updater & Cooldown; sounds in Advanced → Thread updater sound.'
       ],
       'Unread Count': [
         true,
@@ -478,6 +478,11 @@ const Config = {
       'Scrollbar Mark Unread Line': [
         true,
         'Mark the unread line position in the scrollbar.',
+        1
+      ],
+      'Scrollbar Marker Position': [
+        'offset',
+        'Where markers are drawn: beside the scrollbar (single or 3 columns) or over a custom scrollbar in IDE-style (single or 3 columns).',
         1
       ]
     },
@@ -971,6 +976,7 @@ http://eye.swfchan.com/search/?q=%name;types:swf
   'Scroll Marker You Opacity':   '',
   'Scroll Marker Ghost Opacity': '',
   'Scroll Marker Unread Opacity': '',
+  'Scrollbar Marker Position': 'offset',
 
   Index: {
     'Index Mode': 'paged',

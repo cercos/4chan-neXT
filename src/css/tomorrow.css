@@ -59,3 +59,12 @@
 :root.tomorrow #qr-filename {
   color: rgb(197,200,198);
 }
+:root.tomorrow #download-all-picker .da-buttons button {
+  background-color: rgb(26, 27, 29);
+  color: rgb(197, 200, 198);
+  border-color: rgb(40, 41, 42);
+}
+:root.tomorrow #download-all-picker .da-buttons button:hover:not(:disabled) {
+  background-color: rgb(30, 32, 36);
+  border-color: var(--xt-border-field-focus);
+}

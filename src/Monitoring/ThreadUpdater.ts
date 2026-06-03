@@ -31,8 +31,12 @@ var ThreadUpdater = {
     // Chromium won't play audio created in an inactive tab until the tab has been focused, so set it up now.
     // XXX Sometimes the loading stalls in Firefox, esp. when opening in private browsing window followed by normal window.
     // Don't let it keep the loading icon on indefinitely.
+    SoundManager.init();
+    ThreadUpdater.initBeepChannel();
     this.audio = $.el('audio');
-    if ($.engine !== 'gecko') { this.audio.src = this.beep; }
+    this.audio.preload = 'auto';
+    // Preload on all engines so background-tab playback works after the tab was once active.
+    this.audio.src = this.beep;
     $.on(this.audio, 'error', () => {
       new Notice('error', this.audio.error.message || 'Error when trying to play thread updater beep.', 15);
     });
@@ -138,23 +142,85 @@ var ThreadUpdater = {
 
   playBeep(repeatIfPlaying = true) {
     const lib = SoundManager.getEntry(SoundManager.getDefaultSoundId());
-    ThreadUpdater.playSound(lib?.data || ThreadUpdater.beep, repeatIfPlaying);
+    ThreadUpdater.requestPlaySound(lib?.data || ThreadUpdater.beep, repeatIfPlaying);
+  },
+
+  initBeepChannel() {
+    if (ThreadUpdater.beepChannel || !window.BroadcastChannel) return;
+    ThreadUpdater.beepChannel = new BroadcastChannel(`${g.NAMESPACE} updater-beep`);
+    $.on(ThreadUpdater.beepChannel, 'message', ThreadUpdater.onBeepMessage);
+    $.on(d, 'PlayUpdaterSound', ThreadUpdater.onPlayUpdaterSound);
+  },
+
+  onBeepMessage(e: MessageEvent) {
+    const source = e.data?.source;
+    if (!source || d.hidden || !d.hasFocus()) return;
+    ThreadUpdater.playSound(source, false);
+  },
+
+  onPlayUpdaterSound(e: CustomEvent) {
+    const { post, predicate } = e.detail || {};
+    if (!post?.board || !post?.thread) return;
+    const context = { boardID: post.board.ID, threadID: post.thread.ID };
+    const isQuotingYou = predicate === ' replied to you';
+    if (isQuotingYou && Conf['Beep Quoting You']) {
+      let quotedYou: { boardID: string; threadID: string | number; postID: string | number } | undefined;
+      for (const ql of post.nodes?.quotelinks || []) {
+        const data = Get.postDataFromLink(ql);
+        if (QuoteYou.db?.get(data)) {
+          quotedYou = { boardID: data.boardID, threadID: data.threadID, postID: data.postID };
+          break;
+        }
+      }
+      ThreadUpdater.requestPlaySound(SoundManager.resolveSource({ quotedYouPost: quotedYou, context }));
+    } else if (!isQuotingYou && Conf['Beep']) {
+      ThreadUpdater.requestPlaySound(SoundManager.resolveSource({ context }));
+    }
+  },
+
+  /**
+   * Play updater sound in this tab, or relay to a focused tab when backgrounded.
+   * Browsers block autoplay in inactive tabs; desktop notifications do not.
+   */
+  requestPlaySound(source: string, repeatIfPlaying = true) {
+    if (!source) return;
+    const now = Date.now();
+    if (ThreadUpdater.lastBeepSource === source && (now - (ThreadUpdater.lastBeepAt || 0)) < 300) return;
+    ThreadUpdater.lastBeepSource = source;
+    ThreadUpdater.lastBeepAt = now;
+
+    const away = d.hidden || !d.hasFocus();
+    if (!away) {
+      ThreadUpdater.playSound(source, repeatIfPlaying);
+      return;
+    }
+    ThreadUpdater.broadcastBeep(source);
+    ThreadUpdater.playSound(source, repeatIfPlaying);
+  },
+
+  broadcastBeep(source: string) {
+    ThreadUpdater.beepChannel?.postMessage({ source });
   },
 
   playSound(source: string, repeatIfPlaying = true) {
     const { audio } = ThreadUpdater as { audio: HTMLAudioElement };
     if (!source) source = ThreadUpdater.beep;
-    if (audio.src !== source) audio.src = source;
+    if (audio.src !== source) {
+      audio.src = source;
+      audio.load();
+    }
     const configuredVolume = Number(Conf.beepVolume);
     audio.volume = Number.isFinite(configuredVolume) ?
       Math.max(.01, Math.min(configuredVolume, 1))
     :
       1;
+    audio.currentTime = 0;
     if (audio.paused) {
       const playPromise = audio.play();
       if (playPromise && typeof playPromise.catch === 'function') {
         playPromise.catch((err: any) => {
           if (err?.name === 'NotAllowedError') {
+            ThreadUpdater.broadcastBeep(source);
             ThreadUpdater.armAudioUnlock(source);
           }
         });
@@ -201,6 +267,17 @@ var ThreadUpdater = {
     return null;
   },
 
+  postsQuoteYou(posts: Post[]) {
+    if (!QuoteYou.db) return false;
+    for (const post of posts) {
+      if (!post.nodes?.quotelinks) continue;
+      for (const ql of post.nodes.quotelinks) {
+        if (QuoteYou.db.get(Get.postDataFromLink(ql))) return true;
+      }
+    }
+    return false;
+  },
+
   cb: {
     checkpost(e) {
       if (e.detail.threadID !== ThreadUpdater.thread.ID) { return; }
@@ -214,6 +291,12 @@ var ThreadUpdater = {
       if (d.hidden) { return; }
       // Reset the counter when we focus this tab.
       ThreadUpdater.outdateCount = 0;
+      if (ThreadUpdater.pendingAudioSource) {
+        const pendingSource = ThreadUpdater.pendingAudioSource;
+        delete ThreadUpdater.pendingAudioSource;
+        ThreadUpdater.audioUnlockArmed = false;
+        ThreadUpdater.playSound(pendingSource, false);
+      }
       if (ThreadUpdater.seconds > ThreadUpdater.interval) {
         return ThreadUpdater.setInterval();
       }
@@ -333,9 +416,25 @@ var ThreadUpdater = {
   },
 
   intervalShortcut() {
-    Settings.open('Advanced');
-    const settings = $.id('fourchanx-settings');
-    return $('input[name=Interval]', settings).focus();
+    const focusInterval = (section?: HTMLElement) => {
+      if (!section?.classList?.contains('section-threads-posts')) return;
+      const fs = $.id('xt-updater-settings');
+      if (fs instanceof HTMLDetailsElement) fs.open = true;
+      const input = $('input[name=Interval]', section) as HTMLInputElement | null;
+      input?.focus();
+    };
+    if (Settings.dialog) {
+      const threadsSection = Settings.sections.find(s => s.title === 'Threads & Posts');
+      if (threadsSection) Settings.openSection.call(threadsSection);
+      focusInterval($('section', Settings.dialog) as HTMLElement);
+      return;
+    }
+    Settings.open('Threads & Posts');
+    const onOpen = (e: CustomEvent) => {
+      $.off(d, 'OpenSettings', onOpen);
+      focusInterval(e.detail as HTMLElement);
+    };
+    $.on(d, 'OpenSettings', onOpen);
   },
 
   set(name, text, klass) {
@@ -469,20 +568,21 @@ var ThreadUpdater = {
       ThreadUpdater.set('status', `+${posts.length}`, 'new');
       ThreadUpdater.outdateCount = 0;
 
-      const unreadCount   = Unread.posts?.size;
-      const unreadQYCount = Unread.postsQuotingYou?.size;
+      const unreadCount   = Unread.posts?.size ?? 0;
+      const unreadQYCount = Unread.postsQuotingYou?.size ?? 0;
 
       Main.callbackNodes('Post', posts);
 
       if (d.hidden || !d.hasFocus()) {
-        const quotedYou = Conf['Beep Quoting You'] && (Unread.postsQuotingYou?.size > unreadQYCount)
-          ? ThreadUpdater.findFirstQuotedYouPost(posts)
-          : null;
+        const newUnread = (Unread.posts?.size ?? 0) > unreadCount;
+        const quotingYouInBatch = ThreadUpdater.postsQuoteYou(posts);
         const context = { boardID: thread.board.ID as string, threadID: thread.ID as string | number };
-        if (quotedYou) {
-          ThreadUpdater.playSound(SoundManager.resolveSource({ quotedYouPost: quotedYou, context }));
-        } else if (Conf['Beep'] && (Unread.posts?.size > 0) && (unreadCount === 0)) {
-          ThreadUpdater.playSound(SoundManager.resolveSource({ context }));
+        // QY sounds also fire from PlayUpdaterSound (same path as desktop notifications).
+        if (Conf['Beep Quoting You'] && quotingYouInBatch && !Conf['Desktop Notifications']) {
+          const quotedYou = ThreadUpdater.findFirstQuotedYouPost(posts);
+          ThreadUpdater.requestPlaySound(SoundManager.resolveSource({ quotedYouPost: quotedYou ?? undefined, context }));
+        } else if (Conf['Beep'] && posts.length > 0 && (newUnread || unreadCount === 0)) {
+          ThreadUpdater.requestPlaySound(SoundManager.resolveSource({ context }));
         }
       }
 

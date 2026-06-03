@@ -48,6 +48,15 @@
 :root.spooky #qr-filename {
   color: rgb(197,200,198);
 }
+:root.spooky #download-all-picker .da-buttons button {
+  background-color: rgb(26, 27, 29);
+  color: rgb(197, 200, 198);
+  border-color: rgb(40, 41, 42);
+}
+:root.spooky #download-all-picker .da-buttons button:hover:not(:disabled) {
+  background-color: rgb(30, 32, 36);
+  border-color: rgb(254, 150, 0);
+}
 
 /* Unread */
 :root.spooky .unread-line {

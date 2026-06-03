@@ -120,7 +120,7 @@ var Settings = {
     add('Threads & Posts', this.threadsAndPosts);
     add('Media',           this.media);
     add('Posting',         this.posting);
-    add('Filtering',       this.filter);
+    add('Filters',         this.filter);
     add('Keybinds',        this.keybinds);
     add('Advanced',        this.advanced);
     add('All Settings',    this.allSettings);
@@ -229,7 +229,7 @@ var Settings = {
       if (!defaultLink && section.title === 'General') defaultLink = link;
       if (
         section.title === openSection
-        || (['Filter', 'Filters', 'Simple Filters'].includes(openSection) && section.title === 'Filtering')
+        || (['Filter', 'Filters', 'Simple Filters', 'Filtering'].includes(openSection) && section.title === 'Filters')
         || (openSection === 'Main' && section.title === 'General')
       ) { sectionToOpen = link; }
     }
@@ -698,6 +698,7 @@ Enable it on boards.${location.hostname.split('.')[1]}.org in your browser's pri
       div.dataset.name = key;
       div.dataset.settingTitle = key;
       div.dataset.settingDescription = description;
+      if (description) div.title = description;
       const input = $('input', div) as HTMLInputElement;
       $.on(input, 'change', $.cb.checked);
       $.on(input, 'change', function() { this.parentNode.parentNode.dataset.checked = this.checked; });
@@ -982,7 +983,6 @@ Enable it on boards.${location.hostname.split('.')[1]}.org in your browser's pri
     items['boardnav'] = Conf['boardnav'];
     inputs['boardnav'] = textarea;
     $.add(fsNav, navContent);
-    $.add(section, fsNav);
 
     Settings.renderMainGroups(section, {
       categories: [
@@ -997,6 +997,8 @@ Enable it on boards.${location.hostname.split('.')[1]}.org in your browser's pri
         'Menu'
       ]
     });
+
+    $.add(section, fsNav);
 
     $.get(items, function(items) {
       for (const key in items) {
@@ -1110,8 +1112,16 @@ Enable it on boards.${location.hostname.split('.')[1]}.org in your browser's pri
     ]);
 
     const fsUC = $.el('details',
-      { open: true },
+      { open: true, id: 'xt-updater-settings' },
       { innerHTML: '<summary>Updater & Cooldown</summary>' });
+    Settings.addCheckboxes(fsUC, Config.updater.checkbox, items, inputs);
+    if (inputs['Scroll BG']) {
+      $.on(inputs['Scroll BG'], 'change', ThreadUpdater.cb.scrollBG);
+      ThreadUpdater.cb.scrollBG();
+    }
+    if (inputs['Auto Update']) {
+      $.on(inputs['Auto Update'], 'change', ThreadUpdater.setInterval);
+    }
     const divInterval = $.el('div',
       { innerHTML: '<label>Update Interval: <input type="number" name="Interval" class="field" min="1"></label><span class="description">: Seconds between updates.</span>' });
     divInterval.dataset.name = 'Interval';
@@ -1128,6 +1138,12 @@ Enable it on boards.${location.hostname.split('.')[1]}.org in your browser's pri
     items['customCooldown'] = Conf['customCooldown'];
     inputs['customCooldown'] = cooldownInput;
     $.add(fsUC, divCooldown);
+    Settings.addUpdaterBoardSound(fsUC);
+    const soundHint = $.el('div', {
+      className: 'description',
+      innerHTML: 'Sound library, volume, and per-board overrides: <b>Advanced → Thread updater sound</b>.',
+    });
+    $.add(fsUC, soundHint);
     $.add(section, fsUC);
 
     $.get(items, function(items) {
@@ -1197,6 +1213,7 @@ Enable it on boards.${location.hostname.split('.')[1]}.org in your browser's pri
         div.dataset.name = `${name} Thread Watcher Thumbnail Size Thread Watcher Thumbnail Hover Thread Watcher Thumbnail Preview Size`;
         div.dataset.settingTitle = displayName(name);
         div.dataset.settingDescription = `${description} ${hoverDescription} Thread Watcher Thumbnail Size Thread Watcher Thumbnail Hover Thread Watcher Thumbnail Preview Size`;
+        if (description) div.title = description;
 
         const sizeInput = $('input[name="Thread Watcher Thumbnail Size"]', div) as HTMLInputElement;
         const previewToggle = $('input[name="Thread Watcher Thumbnail Hover"]', div) as HTMLInputElement;
@@ -1241,6 +1258,7 @@ Enable it on boards.${location.hostname.split('.')[1]}.org in your browser's pri
         div.dataset.name = name;
         div.dataset.settingTitle = displayName(name);
         div.dataset.settingDescription = description;
+        if (description) div.title = description;
       }
 
       const level = arr[2] || 0;
@@ -1258,6 +1276,7 @@ Enable it on boards.${location.hostname.split('.')[1]}.org in your browser's pri
     heightDiv.dataset.name = 'Thread Watcher Max Height Thread Watcher Max Width';
     heightDiv.dataset.settingTitle = 'TW Max H/W';
     heightDiv.dataset.settingDescription = 'Maximum watched-thread list height and width in pixels.';
+    heightDiv.title = 'Maximum watched-thread list height and width in pixels.';
     const heightInput = $('input[name="Thread Watcher Max Height"]', heightDiv) as HTMLInputElement;
     const widthInput = $('input[name="Thread Watcher Max Width"]', heightDiv) as HTMLInputElement;
     $.on(heightInput, 'change', function() {
@@ -3773,26 +3792,26 @@ Enable it on boards.${location.hostname.split('.')[1]}.org in your browser's pri
 
   exportOptionOrder: [
     'General',
+    'Styling',
+    'Custom CSS',
     'Interface',
     'Threads & Posts',
     'Watched Threads',
     'Media',
     'Posting',
     'Filters',
-    'Styling',
-    'Custom CSS',
     'Keybinds',
     'Advanced'
   ],
 
   exportSectionOrder: [
     { name: 'General', option: 'General' },
+    { name: 'Styling', option: 'Styling', children: ['Custom CSS'] },
     { name: 'Interface', option: 'Interface' },
     { name: 'Threads & Posts', option: 'Threads & Posts', children: ['Watched Threads'] },
     { name: 'Media', option: 'Media' },
     { name: 'Posting', option: 'Posting' },
     { name: 'Filters', option: 'Filters' },
-    { name: 'Styling', option: 'Styling', children: ['Custom CSS'] },
     { name: 'Keybinds', option: 'Keybinds' },
     { name: 'Advanced', option: 'Advanced' }
   ],
@@ -5337,7 +5356,20 @@ Enable it on boards.${location.hostname.split('.')[1]}.org in your browser's pri
     }
 
     if (inputs.beepVolume) {
-      $.on(inputs.beepVolume, 'change', () => { ThreadUpdater.playBeep(false); });
+      const volHint = inputs.beepVolume.closest('.sound-row')?.querySelector('.beep-volume-value') as HTMLElement | null;
+      const syncBeepVolumeLabel = () => {
+        if (volHint) {
+          volHint.textContent = `${Math.round(Number(inputs.beepVolume.value) * 100)}%`;
+        }
+      };
+      const previewBeepVolume = () => {
+        $.cb.value.call(inputs.beepVolume);
+        syncBeepVolumeLabel();
+        ThreadUpdater.playBeep(false);
+      };
+      syncBeepVolumeLabel();
+      $.on(inputs.beepVolume, 'input', previewBeepVolume);
+      $.on(inputs.beepVolume, 'change', previewBeepVolume);
     }
 
     Settings.addSoundLibrary(section);
@@ -5592,6 +5624,72 @@ Enable it on boards.${location.hostname.split('.')[1]}.org in your browser's pri
       defaultSoundId: Conf.defaultSoundId,
       sounds: Conf['sounds'],
     }, cb);
+  },
+
+  addUpdaterBoardSound(root: HTMLElement) {
+    SoundManager.init();
+    const boardID = g.BOARD?.ID;
+    if (!boardID) {
+      $.add(root, $.el('div', {
+        className: 'description',
+        textContent: 'Open a board to pick its update sound here (or set overrides in Advanced).',
+      }));
+      return;
+    }
+
+    const div = $.el('div');
+    div.dataset.name = 'board-update-sound';
+    const label = $.el('label', { textContent: `Board update sound (/${boardID}/): ` });
+    const select = $.el('select', { className: 'field', name: 'board-update-sound' }) as HTMLSelectElement;
+    const previewBtn = $.el('button', {
+      type: 'button',
+      className: 'sound-btn',
+      textContent: 'Preview',
+      title: 'Play the selected sound',
+    });
+
+    const fillOptions = () => {
+      const current = SoundManager.getBoardOverride(boardID);
+      $.rmAll(select);
+      $.add(select, $.el('option', { value: '', textContent: 'Default (inherit)' }));
+      for (const lib of SoundManager.library()) {
+        const opt = $.el('option', { value: lib.id, textContent: lib.name });
+        if (lib.id === current) opt.selected = true;
+        $.add(select, opt);
+      }
+      if (current && !SoundManager.getEntry(current)) {
+        const missing = $.el('option', { value: current, textContent: `(missing: ${current})` });
+        missing.selected = true;
+        $.add(select, missing);
+      }
+    };
+
+    fillOptions();
+    $.on(select, 'change', () => {
+      const soundId = select.value || null;
+      SoundManager.setBoardOverride(boardID, soundId);
+      if (soundId) {
+        const entry = SoundManager.getEntry(soundId);
+        if (entry?.data) ThreadUpdater.playSound(entry.data, false);
+      }
+    });
+    $.on(previewBtn, 'click', () => {
+      const soundId = select.value;
+      if (!soundId) {
+        ThreadUpdater.playBeep(false);
+        return;
+      }
+      const entry = SoundManager.getEntry(soundId);
+      if (entry?.data) ThreadUpdater.playSound(entry.data, false);
+    });
+
+    $.add(label, select);
+    $.add(div, [
+      label,
+      previewBtn,
+      $.el('span', { className: 'description', textContent: ': Plays on new posts in this board.' }),
+    ]);
+    $.add(root, div);
   },
 
   addBoardSoundOverrides(section) {

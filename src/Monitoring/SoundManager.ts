@@ -1,6 +1,6 @@
 import DataBoard from '../classes/DataBoard';
 import $ from '../platform/$';
-import { Conf, g } from '../globals/globals';
+import { Conf, d, g } from '../globals/globals';
 import { dict } from '../platform/helpers';
 import Beep from './ThreadUpdater/beep.wav';
 
@@ -22,11 +22,34 @@ const BUILTIN_DEFAULT_ID = 'builtin:default';
 
 const SoundManager = {
   db: undefined as DataBoard | undefined,
+  threadUpdateHooked: false,
 
   init() {
-    if (this.db) return;
+    if (this.db) {
+      this.hookThreadUpdate();
+      return;
+    }
     this.db = new DataBoard('sounds');
     this.migrateBeepSource();
+    this.hookThreadUpdate();
+  },
+
+  hookThreadUpdate() {
+    if (this.threadUpdateHooked) return;
+    this.threadUpdateHooked = true;
+    $.on(d, 'ThreadUpdate', SoundManager.onThreadUpdate);
+  },
+
+  onThreadUpdate(e: CustomEvent) {
+    if (!e.detail?.[404]) return;
+    const thread = g.threads.get(e.detail.threadID);
+    if (!thread) return;
+    SoundManager.clearThreadPostOverrides(thread.board.ID, thread.ID);
+  },
+
+  clearThreadPostOverrides(boardID: string, threadID: string | number, siteID = g.SITE.ID) {
+    if (!this.db) return;
+    this.db.delete({ siteID, boardID, threadID });
   },
 
   /** One-time: if a legacy `beepSource` URL/data URI exists, fold it into the library. */

@@ -1,5 +1,4 @@
 import Menu from './Menu';
-import Header from '../General/Header';
 import { Conf, g } from '../globals/globals';
 import $ from '../platform/$';
 import QuoteYou from '../Quotelinks/QuoteYou';
@@ -22,7 +21,6 @@ const SoundLink = {
     SoundManager.init();
 
     SoundLink.addPostEntry();
-    SoundLink.addBoardEntry();
   },
 
   addPostEntry() {
@@ -44,25 +42,6 @@ const SoundLink = {
       subEntries: [] as any[],
     };
     Menu.menu.addEntry(entry);
-  },
-
-  addBoardEntry() {
-    if (!(Header as any)?.menu) return;
-    const el = $.el('span', { className: 'sound-link sound-link-board', textContent: 'Update sound' });
-    const entry: any = {
-      el,
-      order: 115,
-      open() {
-        const boardID = g.BOARD?.ID;
-        if (!boardID) return false;
-        const target: ScopeTarget = { boardID };
-        const current = SoundManager.getBoardOverride(boardID);
-        entry.subEntries = SoundLink.buildSubEntries('board', target, current);
-        return true;
-      },
-      subEntries: [] as any[],
-    };
-    (Header as any).menu.addEntry(entry);
   },
 
   buildSubEntries(scope: Scope, target: ScopeTarget, currentSoundId: string | undefined) {

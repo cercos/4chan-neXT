@@ -571,7 +571,7 @@ var Filter = {
     Settings.forcedFiltersMode = 'advanced';
     Settings.forcedFilterType = type;
     if (Settings.dialog) {
-      const filteringTab = $('.tab-filtering', Settings.dialog) as HTMLAnchorElement | null;
+      const filteringTab = $('.tab-filters', Settings.dialog) as HTMLAnchorElement | null;
       filteringTab?.click();
     } else {
       Settings.open('Filter');

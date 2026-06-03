@@ -24,7 +24,9 @@ var Unread = {
       !Conf['Unread Line'] &&
       !Conf['Remember Last Read Post'] &&
       !Conf['Desktop Notifications'] &&
-      !Conf['Quote Threading']
+      !Conf['Quote Threading'] &&
+      !Conf['Beep'] &&
+      !Conf['Beep Quoting You']
     )) { return; }
 
     if (Conf['Remember Last Read Post']) {
@@ -180,6 +182,10 @@ var Unread = {
   },
 
   openNotification(post, predicate=' replied to you') {
+    const isQuotingYou = predicate === ' replied to you';
+    if ((isQuotingYou && Conf['Beep Quoting You']) || (!isQuotingYou && Conf['Beep'])) {
+      $.event('PlayUpdaterSound', { post, predicate });
+    }
     if (!Header.areNotificationsEnabled) { return; }
     const notif = new Notification(`${post.info.nameBlock}${predicate}`, {
       body: post.commentDisplay(),

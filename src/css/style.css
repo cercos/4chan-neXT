@@ -4,11 +4,12 @@
   display: block;
   background-color: inherit;
 }
-.dialog:not(#qr):not(#thread-watcher):not(#header-bar) {
+.dialog:not(#qr):not(#thread-watcher):not(#download-all-picker):not(#header-bar) {
   box-shadow: 0 1px 2px rgba(0, 0, 0, .15);
 }
 #qr,
-#thread-watcher {
+#thread-watcher,
+#download-all-picker {
   box-shadow: -1px 2px 2px rgba(0, 0, 0, 0.25);
 }
 .field {
@@ -770,20 +771,32 @@ div[data-checked="false"] > .suboption-list {
   border-left: 1px solid;
   border-bottom: 1px solid;
 }
+/* Hide the inline ": description" text — kept in the DOM for search
+   highlighting. Hover descriptions come from native browser tooltips:
+   each row's title attribute is set in Settings.tsx alongside its
+   data-setting-description, which avoids the parent-vs-child overlap
+   that a CSS :hover-based tooltip would cause on nested rows. */
+#fourchanx-settings .description {
+  display: none;
+}
+/* While searching, reveal descriptions so <mark> highlights are visible. */
+#fourchanx-settings.settings-searching .description {
+  display: inline;
+}
 #fourchanx-settings .section-main p {
   margin: .5em 0 0;
 }
 .section-filter ul,
-.section-filtering ul {
+.section-filters ul {
   padding: 0;
 }
 .section-filter li,
-.section-filtering li {
+.section-filters li {
   margin: 10px 40px;
   list-style: disc;
 }
 .section-filter textarea,
-.section-filtering textarea {
+.section-filters textarea {
   height: 500px;
 }
 .section-interface .boardnav-instructions {
@@ -792,7 +805,7 @@ div[data-checked="false"] > .suboption-list {
 .section-interface .boardnav-instructions > summary {
   font-weight: 600;
 }
-.section-main a, .section-filter a, .section-filtering a, .section-advanced a {
+.section-main a, .section-filter a, .section-filters a, .section-advanced a {
   text-decoration: underline;
 }
 #fourchanx-settings .thread-watcher-inline-number {
@@ -823,13 +836,13 @@ div[data-checked="false"] > .suboption-list {
   text-align: center;
   margin-right: 4px;
 }
-.section-filtering .settings-subnav {
+.section-filters .settings-subnav {
   display: flex;
   flex-wrap: wrap;
   gap: 4px;
   margin: 0 0 8px;
 }
-.section-filtering .settings-subnav-tab {
+.section-filters .settings-subnav-tab {
   background: transparent;
   border: 1px solid;
   border-radius: 3px;
@@ -840,101 +853,101 @@ div[data-checked="false"] > .suboption-list {
   padding: 2px 6px;
   text-decoration: none;
 }
-.section-filtering .settings-subnav-tab-selected {
+.section-filters .settings-subnav-tab-selected {
   font-weight: 700;
   background: rgba(128, 128, 128, .14);
 }
-.section-filtering .filter-stats {
+.section-filters .filter-stats {
   border-top: 1px solid;
   font-size: 11px;
   line-height: 1.45;
   margin-top: 8px;
   padding-top: 8px;
 }
-.section-filtering .filter-preview-group {
+.section-filters .filter-preview-group {
   margin: 0 0 12px;
 }
-.section-filtering .filter-preview-group:last-child {
+.section-filters .filter-preview-group:last-child {
   margin-bottom: 0;
 }
-.section-filtering .filter-preview-heading {
+.section-filters .filter-preview-heading {
   font-weight: 700;
   margin: 0 0 4px;
 }
-.section-filtering .filter-stats-summary {
+.section-filters .filter-stats-summary {
   font-weight: 700;
   margin: 0 0 6px;
 }
-.section-filtering .filter-stats-empty {
+.section-filters .filter-stats-empty {
   opacity: .8;
 }
-.section-filtering .filter-stat-row {
+.section-filters .filter-stat-row {
   margin: 0 0 6px;
 }
-.section-filtering .filter-stat {
+.section-filters .filter-stat {
   margin: 0;
 }
-.section-filtering .filter-stat > summary {
+.section-filters .filter-stat > summary {
   cursor: pointer;
   list-style-position: inside;
 }
-.section-filtering .filter-stat-threads {
+.section-filters .filter-stat-threads {
   margin: 4px 0 0 18px;
   padding: 0;
 }
-.section-filtering .filter-stat-threads > li {
+.section-filters .filter-stat-threads > li {
   list-style: disc;
   margin: 2px 0;
 }
-.section-filtering .filter-stat-invalid {
+.section-filters .filter-stat-invalid {
   color: #c33;
 }
-.section-filtering .filter-stat-count {
+.section-filters .filter-stat-count {
   font-weight: 700;
 }
-.section-filtering .filter-stat-more {
+.section-filters .filter-stat-more {
   opacity: .8;
 }
-.section-filtering .easy-filters-table {
+.section-filters .easy-filters-table {
   width: 100%;
   border-collapse: separate;
   border-spacing: 4px;
 }
-.section-filtering th,
-.section-filtering td {
+.section-filters th,
+.section-filters td {
   padding: 0;
   text-align: left;
   vertical-align: middle;
 }
-.section-filtering .easy-filter-enabled,
-.section-filtering .easy-filter-auto,
-.section-filtering .easy-filter-hide,
-.section-filtering .easy-filter-override {
+.section-filters .easy-filter-enabled,
+.section-filters .easy-filter-auto,
+.section-filters .easy-filter-hide,
+.section-filters .easy-filter-override {
   display: block;
   margin: auto;
 }
-.section-filtering .easy-filter-pattern {
+.section-filters .easy-filter-pattern {
   min-width: 200px;
 }
-.section-filtering .easy-filter-boards {
+.section-filters .easy-filter-boards {
   min-width: 96px;
 }
-.section-filtering .easy-filter-color {
+.section-filters .easy-filter-color {
   width: 84px;
 }
-.section-filtering .easy-filter-remove {
+.section-filters .easy-filter-remove {
   min-width: 26px;
   height: 24px;
   line-height: 20px;
   text-align: center;
 }
-.section-filtering .easy-filters-controls {
+.section-filters .easy-filters-controls {
   margin-top: 6px;
 }
-.section-filtering .easy-filter-save {
+.section-filters .easy-filter-save {
   margin-left: 6px;
 }
-.section-filtering .easy-filter-status {
+.section-filters .easy-filter-status {
   margin-left: 8px;
   opacity: .85;
 }
@@ -1216,14 +1229,23 @@ div[data-checked="false"] > .suboption-list {
 .styling-preview .styling-preview-post.from-archive .quotelink.deadlink {
   color: var(--xt-highlight-ghost-dead-link, var(--xt-dead-link-text-color, var(--xt-dead-link))) !important;
 }
-.styling-preview[data-highlight-catalog-own="true"] .catalog-thread.yourPost > .catalog-container,
-.styling-preview[data-highlight-catalog-own="true"] .catalog-thread > .catalog-container.yourPost {
-  background: color-mix(in srgb, var(--xt-catalog-own-highlight, var(--xt-highlight-own, transparent)) calc(var(--xt-catalog-own-highlight-opacity, 1) * 100%), transparent) !important;
+.styling-preview[data-highlight-catalog-own="true"] .catalog-thread:has(.yourPost),
+.styling-preview[data-highlight-catalog-own="true"] .catalog-thread.yourPost {
+  background: color-mix(in srgb, var(--xt-catalog-own-highlight, var(--xt-highlight-own)) calc(var(--xt-catalog-own-highlight-opacity, 1) * 100%), var(--xt-background, #d6daf0)) !important;
+  overflow: hidden;
 }
+.styling-preview[data-highlight-catalog-own="true"] .catalog-thread:has(.yourPost) > .catalog-container,
+.styling-preview[data-highlight-catalog-own="true"] .catalog-thread.yourPost > .catalog-container,
+.styling-preview[data-highlight-catalog-own="true"] .catalog-thread > .catalog-container.yourPost,
+.styling-preview[data-highlight-catalog-own="true"] .catalog-thread:has(.yourPost) .post.catalog-post.yourPost,
 .styling-preview[data-highlight-catalog-own="true"] .catalog-thread.yourPost .post.catalog-post,
 .styling-preview[data-highlight-catalog-own="true"] .catalog-thread > .catalog-container.yourPost .post.catalog-post {
   background: transparent !important;
-  border-left: 3px dashed color-mix(in srgb, var(--xt-catalog-own-highlight, var(--xt-highlight-own, var(--xt-border-highlight))) calc(var(--xt-catalog-own-highlight-opacity, 1) * 100%), transparent);
+  border-color: transparent !important;
+}
+.styling-preview[data-highlight-catalog-own="true"] .catalog-thread:has(.yourPost) .post.catalog-post.yourPost,
+.styling-preview[data-highlight-catalog-own="true"] .catalog-thread.yourPost .post.catalog-post,
+.styling-preview[data-highlight-catalog-own="true"] .catalog-thread > .catalog-container.yourPost .post.catalog-post {
   color: var(--xt-catalog-own-text, var(--xt-text-color)) !important;
 }
 .styling-preview[data-highlight-catalog-own="true"] .catalog-thread.yourPost .post.catalog-post .postInfo,
@@ -1252,14 +1274,16 @@ div[data-checked="false"] > .suboption-list {
 .styling-preview[data-highlight-catalog-own="true"] .catalog-thread > .catalog-container.yourPost .post.catalog-post .deadlink {
   color: var(--xt-catalog-own-dead-link, var(--xt-dead-link-text-color, var(--xt-dead-link))) !important;
 }
-.styling-preview[data-highlight-catalog-watched="true"] .catalog-thread.watched > .catalog-container {
-  background: color-mix(in srgb, var(--xt-catalog-watched-highlight, var(--xt-watched-border, rgba(255, 0, 0, .75))) calc(var(--xt-catalog-watched-highlight-opacity, 0.2) * 100%), transparent) !important;
+.styling-preview[data-highlight-catalog-watched="true"] .catalog-thread.watched {
+  background: color-mix(in srgb, var(--xt-catalog-watched-highlight, var(--xt-watched-border, rgba(255, 0, 0, .75))) calc(var(--xt-catalog-watched-highlight-opacity, 0.2) * 100%), var(--xt-background, #d6daf0)) !important;
+  overflow: hidden;
 }
+.styling-preview[data-highlight-catalog-watched="true"] .catalog-thread.watched > .catalog-container,
 .styling-preview[data-highlight-catalog-watched="true"] .catalog-thread.watched .post.catalog-post {
   background: transparent !important;
+  border-color: transparent !important;
 }
-.styling-preview[data-highlight-catalog-watched="true"] .catalog-thread.watched .catalog-post {
-  border: 2px solid color-mix(in srgb, var(--xt-catalog-watched-highlight, var(--xt-watched-border, rgba(255, 0, 0, .75))) calc(var(--xt-catalog-watched-highlight-opacity, 1) * 100%), transparent);
+.styling-preview[data-highlight-catalog-watched="true"] .catalog-thread.watched .post.catalog-post {
   color: var(--xt-catalog-watched-text, var(--xt-text-color)) !important;
 }
 .styling-preview[data-highlight-catalog-watched="true"] .catalog-thread.watched .post.catalog-post .postInfo,
@@ -1593,6 +1617,9 @@ body > #overlay:not(.media-preview) {
 }
 .section-styling .styling-add-theme-status[data-kind="ok"] {
   opacity: .8;
+}
+.section-styling [data-name] > .styling-tree-row {
+  margin: 6px 0 4px;
 }
 .section-styling [data-name] > .styling-tree {
   border-left: 1px solid color-mix(in srgb, currentColor 25%, transparent);
@@ -3027,8 +3054,9 @@ textarea.copy-text-element {
   display: none;
 }
 /* Volume control */
-input[name="Default Volume"] {
-  width: 4em;
+input[name="Default Volume"],
+input[name="beepVolume"] {
+  width: 10em;
   height: 1ex;
   vertical-align: middle;
   margin: 0px;
@@ -4205,44 +4233,178 @@ div.post {
 #scroll-markers {
   position: fixed;
   top: 0;
-  right: 0;
-  width: 27px;
   height: 100vh;
   pointer-events: none;
   z-index: 2147483646;
+  background: transparent;
+  box-sizing: border-box;
 }
 #scroll-markers[hidden] {
-  display: none;
+  display: none !important;
 }
 .scroll-marker {
   position: absolute;
-  width: 9px;
   min-height: 3px;
-  border-radius: 1px 0 0 1px;
   box-shadow: 0 0 0 1px rgba(0, 0, 0, .35);
   pointer-events: auto;
   cursor: pointer;
   transition: transform .08s ease-out, filter .08s ease-out;
-  transform-origin: right center;
-}
-.scroll-marker:hover {
-  transform: scaleX(1.6);
-  filter: brightness(1.2);
 }
 .scroll-marker-own {
-  right: 9px;
   background: var(--xt-scroll-marker-own, var(--xt-border-highlight, #d83030));
   opacity: var(--xt-scroll-marker-own-opacity, 1);
 }
 .scroll-marker-you {
-  right: 0;
   background: var(--xt-scroll-marker-you, var(--xt-border-highlight, #ff5050));
   opacity: var(--xt-scroll-marker-you-opacity, 1);
 }
 .scroll-marker-ghost {
-  right: 18px;
   background: var(--xt-scroll-marker-ghost, #888888);
   opacity: var(--xt-scroll-marker-ghost-opacity, 1);
+}
+/* Beside modes: hide the native scrollbar's track color (the 4chan
+   theme tints it dark blue, which reads as a backdrop behind our
+   markers). Only the native thumb stays visible. Over modes draw their
+   own track and aren't affected. */
+:root.scrollbar-markers-offset,
+:root.scrollbar-markers-offset-single { scrollbar-color: auto transparent; }
+:root.scrollbar-markers-offset::-webkit-scrollbar-track,
+:root.scrollbar-markers-offset-single::-webkit-scrollbar-track {
+  background: transparent;
+}
+/* Beside scrollbar (columns): N narrow sub-columns hugging the scrollbar.
+   Per-marker `right` and `width` are set inline by ScrollMarkers.refresh
+   based on how many marker types actually have content (so absent types
+   don't leave a gap on the left). */
+:root.scrollbar-markers-offset #scroll-markers {
+  right: var(--xt-scrollbar-offset, 0px);
+  width: calc(var(--xt-scroll-marker-gutter, 6px) * 3);
+}
+:root.scrollbar-markers-offset .scroll-marker {
+  border-radius: 1px 0 0 1px;
+  transform-origin: right center;
+}
+:root.scrollbar-markers-offset .scroll-marker:hover {
+  transform: scaleX(1.6);
+  filter: brightness(1.2);
+}
+/* Beside scrollbar (single): one tight column right against the native scrollbar */
+:root.scrollbar-markers-offset-single #scroll-markers {
+  right: var(--xt-scrollbar-offset, 0px);
+  width: var(--xt-scroll-marker-track, 8px);
+}
+:root.scrollbar-markers-offset-single .scroll-marker {
+  left: 0;
+  right: 0;
+  width: auto;
+  min-height: 3px;
+  border-radius: 0;
+  transform-origin: center center;
+}
+:root.scrollbar-markers-offset-single .scroll-marker:hover {
+  transform: scaleY(1.35);
+  filter: brightness(1.2);
+}
+/* Over scrollbar (shared): hide the native scrollbar and draw our own
+   track + thumb. Track is transparent — only markers and the thumb show. */
+:root.scrollbar-markers-over,
+:root.scrollbar-markers-over-columns { scrollbar-width: none; }
+:root.scrollbar-markers-over::-webkit-scrollbar,
+:root.scrollbar-markers-over-columns::-webkit-scrollbar { width: 0; height: 0; display: none; }
+/* Reserve the rightmost gutter for our custom scrollbar so the header
+   bar (and its dropdown button) isn't under our track and losing clicks
+   to us. The dropdown menu auto-positions relative to its button, so
+   shifting the header alone is enough. */
+:root.scrollbar-markers-over.fixed #header-bar,
+:root.scrollbar-markers-over #notifications {
+  margin-right: var(--xt-scroll-marker-track, 14px);
+}
+:root.scrollbar-markers-over-columns.fixed #header-bar,
+:root.scrollbar-markers-over-columns #notifications {
+  margin-right: var(--xt-scroll-marker-track, 14px);
+}
+:root.scrollbar-markers-over #scroll-markers,
+:root.scrollbar-markers-over-columns #scroll-markers {
+  right: 0;
+  pointer-events: none;
+  z-index: 2147483647;
+}
+:root.scrollbar-markers-over #scroll-markers {
+  width: var(--xt-scroll-marker-track, 14px);
+}
+:root.scrollbar-markers-over-columns #scroll-markers {
+  width: var(--xt-scroll-marker-track, 14px);
+}
+:root.scrollbar-markers-over .scroll-marker-track,
+:root.scrollbar-markers-over-columns .scroll-marker-track {
+  position: absolute;
+  inset: 0;
+  /* Use the theme's border color (already a per-theme contrast against
+     --xt-background) softened with transparency so it reads like the
+     native scrollbar track. Kept low so light themes (where --xt-border
+     is darker than the bg) don't read as a heavy dark band; dark themes
+     still get enough contrast because --xt-border there is close in
+     luminance to the bg. */
+  background: var(--xt-scroll-track-bg,
+    color-mix(in srgb, var(--xt-border, currentColor) 20%, transparent));
+  pointer-events: auto;
+  cursor: pointer;
+  z-index: 0;
+}
+:root.scrollbar-markers-over .scroll-marker-thumb,
+:root.scrollbar-markers-over-columns .scroll-marker-thumb {
+  position: absolute;
+  left: 2px;
+  right: 2px;
+  min-height: 24px;
+  background: var(--xt-scroll-thumb-bg,
+    color-mix(in srgb, var(--xt-border, currentColor) 75%, transparent));
+  border-radius: 3px;
+  pointer-events: auto;
+  cursor: grab;
+  z-index: 1;
+  transition: background-color .12s ease;
+  touch-action: none;
+}
+:root.scrollbar-markers-over .scroll-marker-thumb[hidden],
+:root.scrollbar-markers-over-columns .scroll-marker-thumb[hidden] { display: none; }
+:root.scrollbar-markers-over .scroll-marker-thumb:hover,
+:root.scrollbar-markers-over .scroll-marker-thumb.dragging,
+:root.scrollbar-markers-over-columns .scroll-marker-thumb:hover,
+:root.scrollbar-markers-over-columns .scroll-marker-thumb.dragging {
+  background: var(--xt-scroll-thumb-bg-hover,
+    color-mix(in srgb, var(--xt-border, currentColor) 100%, transparent));
+}
+:root.scrollbar-markers-over .scroll-marker-thumb.dragging,
+:root.scrollbar-markers-over-columns .scroll-marker-thumb.dragging { cursor: grabbing; }
+/* Over (single): markers span the full gutter, stacked vertically. */
+:root.scrollbar-markers-over .scroll-marker {
+  left: 0;
+  right: 0;
+  width: auto;
+  min-height: 3px;
+  border-radius: 0;
+  transform-origin: center center;
+  z-index: 2;
+  box-shadow: 0 0 0 1px rgba(0, 0, 0, .55);
+}
+:root.scrollbar-markers-over .scroll-marker:hover {
+  transform: scaleY(1.4);
+  filter: brightness(1.25);
+}
+/* Over (columns): markers in N sub-columns over the thumb, like JetBrains.
+   Per-marker `right` and `width` are set inline by ScrollMarkers.refresh
+   so absent types collapse and the remaining ones split the full width. */
+:root.scrollbar-markers-over-columns .scroll-marker {
+  min-height: 3px;
+  border-radius: 0;
+  transform-origin: right center;
+  z-index: 2;
+  box-shadow: 0 0 0 1px rgba(0, 0, 0, .55);
+}
+:root.scrollbar-markers-over-columns .scroll-marker:hover {
+  transform: scaleX(1.6);
+  filter: brightness(1.2);
 }
 .scroll-marker-unread {
   left: 0;
@@ -4260,6 +4422,7 @@ div.post {
   z-index: 20;
   padding: 0;
   min-width: 240px;
+  color: var(--xt-menu-fg, var(--xt-header-dialog-fg, inherit));
 }
 #download-all-picker .move {
   padding: 4px 8px;
@@ -4286,6 +4449,22 @@ div.post {
   align-items: flex-start;
   gap: 2px;
   line-height: 1.2;
+  appearance: none;
+  -webkit-appearance: none;
+  font: inherit;
+  text-align: left;
+  background-color: var(--xt-inline, color-mix(in srgb, var(--xt-border, currentColor) 14%, var(--xt-background, inherit)));
+  border: 1px solid var(--xt-border, color-mix(in srgb, currentColor 28%, transparent));
+  color: inherit;
+  transition: background-color .2s, border-color .2s;
+}
+#download-all-picker .da-buttons button:hover:not(:disabled) {
+  background-color: var(--xt-entry-focus-bg, color-mix(in srgb, currentColor 18%, transparent));
+  border-color: var(--xt-border-field-focus, var(--xt-border, currentColor));
+}
+#download-all-picker .da-buttons button:disabled {
+  opacity: .45;
+  cursor: not-allowed;
 }
 #download-all-picker .da-buttons .da-btn-title {
   font-weight: bold;
@@ -4293,6 +4472,7 @@ div.post {
 #download-all-picker .da-buttons .da-btn-count,
 #download-all-picker .da-buttons .da-btn-size {
   font-size: 11px;
+  opacity: .82;
 }
 .da-progress-cancel {
   margin-left: 6px;
