@@ -1459,10 +1459,9 @@ Enable it on boards.${location.hostname.split('.')[1]}.org in your browser's pri
     }
     Settings.enforceStylechanStylingDeferral(section, inputs);
 
-    // Mark the enclosing <details> for every variant-aware input so CSS
-    // can outline the whole section (Highlight Colors, Scrollbar Markers,
-    // Text Colors, Custom CSS, etc.) — much less visual noise than
-    // outlining each input individually.
+    // Mark the enclosing <details> for every variant-aware input so CSS can
+    // label the whole section (Highlight Colors, Scrollbar Markers, Text
+    // Colors, Custom CSS, etc.) without decorating each input individually.
     for (const key of styleVariantKeys) {
       const inp = inputs[key];
       if (!inp) continue;
@@ -1486,7 +1485,6 @@ Enable it on boards.${location.hostname.split('.')[1]}.org in your browser's pri
 
     Settings.populateSiteStylePicker(section, inputs['siteStyle'] as HTMLSelectElement);
     Settings.bindSiteStylePicker(section);
-    Settings.bindAddCustomTheme(section);
 
     const setCheckedState = (checkbox: HTMLInputElement) => {
       const container = checkbox.closest('[data-name]') as HTMLElement | null;
@@ -2139,9 +2137,13 @@ Enable it on boards.${location.hostname.split('.')[1]}.org in your browser's pri
       // sections that remain (Highlight Colors, Scrollbar Markers, etc.).
       if (section.classList.contains('styling-deferred')) return;
       const label = `Editing ${variant.toUpperCase()}`;
+      const shortLabel = variant.toUpperCase();
       if (variantBar) variantBar.dataset.editingVariant = variant;
       stylingHost.dataset.editingVariant = variant;
       stylingHost.dataset.editingVariantLabel = label;
+      for (const detail of $$('details[data-variant-aware="true"]', section) as HTMLElement[]) {
+        detail.dataset.variantLabel = shortLabel;
+      }
     };
     const switchEditingVariant = (variant: StyleVariant) => {
       if (Settings.stylingEditingVariant === variant) return;
@@ -3371,7 +3373,7 @@ Enable it on boards.${location.hostname.split('.')[1]}.org in your browser's pri
     if (note) {
       if (noOptions) {
         note.hidden = false;
-        note.textContent = 'Style options are only available on supported board pages. You can still add custom themes below.';
+        note.textContent = 'Style options are only available on supported board pages.';
       } else {
         note.hidden = true;
       }
@@ -3495,34 +3497,6 @@ Enable it on boards.${location.hostname.split('.')[1]}.org in your browser's pri
     const select = $('[name^="siteStyle"]', section) as HTMLSelectElement | null;
     if (!select) return;
     Settings.populateSiteStylePicker(section, select);
-    // Refresh the merge-mode "currently selected" label.
-    const mergeLabel = $('.styling-add-theme-merge-current', section) as HTMLElement | null;
-    if (mergeLabel) {
-      const value = select.value || Settings.styleConf<string>('siteStyle') || '';
-      mergeLabel.textContent = !value
-        ? '—'
-        : (Settings.isCustomSiteThemeValue(value)
-          ? `Custom: ${Settings.customSiteThemeName(value)}`
-          : Settings.nativeSiteThemeLabel(value));
-    }
-  },
-
-  addCustomSiteTheme(name: string, css: string): { ok: boolean; error?: string } {
-    const trimmedName = (name || '').trim();
-    if (!trimmedName) return { ok: false, error: 'Theme name is required.' };
-    if (!css || !css.trim()) return { ok: false, error: 'Theme CSS is empty.' };
-    const list = Settings.customSiteThemeList();
-    if (list.some(t => t.name === trimmedName)) {
-      return { ok: false, error: `A custom theme named "${trimmedName}" already exists.` };
-    }
-    if (Settings.nativeSiteThemes().includes(trimmedName)) {
-      return { ok: false, error: `"${trimmedName}" conflicts with a built-in theme name.` };
-    }
-    list.push({ name: trimmedName, css });
-    Conf['customSiteThemes'] = list;
-    $.set('customSiteThemes', list);
-    Settings.refreshSiteStylePickers();
-    return { ok: true };
   },
 
   removeCustomSiteTheme(name: string) {
@@ -3620,146 +3594,6 @@ Enable it on boards.${location.hostname.split('.')[1]}.org in your browser's pri
         else Settings.openSiteStyleMenu(picker);
       });
     }
-  },
-
-  bindAddCustomTheme(section: HTMLElement) {
-    const container = $('.styling-add-theme', section) as HTMLElement | null;
-    if (!container) return;
-    const nameInput = $('.styling-add-theme-name', container) as HTMLInputElement | null;
-    const sourceSelect = $('.styling-add-theme-source-select', container) as HTMLSelectElement | null;
-    const fileInput = $('.styling-add-theme-file', container) as HTMLInputElement | null;
-    const pasteInput = $('.styling-add-theme-paste', container) as HTMLTextAreaElement | null;
-    const mergeCurrentLabel = $('.styling-add-theme-merge-current', container) as HTMLElement | null;
-    const addBtn = $('.styling-add-theme-button', container) as HTMLButtonElement | null;
-    const status = $('.styling-add-theme-status', container) as HTMLElement | null;
-    if (!nameInput || !sourceSelect || !fileInput || !pasteInput || !addBtn) return;
-    const siteStyleSelect = $('[name^="siteStyle"]', section) as HTMLSelectElement | null;
-    const refreshMergeCurrent = () => {
-      if (!mergeCurrentLabel) return;
-      const value = siteStyleSelect?.value || Settings.styleConf<string>('siteStyle') || '';
-      mergeCurrentLabel.textContent = !value
-        ? '—'
-        : (Settings.isCustomSiteThemeValue(value)
-          ? `Custom: ${Settings.customSiteThemeName(value)}`
-          : Settings.nativeSiteThemeLabel(value));
-    };
-    if (siteStyleSelect) $.on(siteStyleSelect, 'change', refreshMergeCurrent);
-    refreshMergeCurrent();
-
-    const showStatus = (msg: string, ok: boolean) => {
-      if (!status) return;
-      status.textContent = msg;
-      status.dataset.kind = ok ? 'ok' : 'error';
-      status.hidden = !msg;
-    };
-
-    const setMode = (mode: string) => {
-      for (const input of $$('.styling-add-theme-input', container) as HTMLElement[]) {
-        input.hidden = input.dataset.mode !== mode;
-      }
-    };
-
-    $.on(sourceSelect, 'change', () => {
-      setMode(sourceSelect.value);
-      showStatus('', true);
-    });
-    setMode(sourceSelect.value);
-
-    const readFileAsText = (file: File): Promise<string> =>
-      new Promise((resolve, reject) => {
-        const reader = new FileReader();
-        reader.onload = () => resolve(String(reader.result || ''));
-        reader.onerror = () => reject(reader.error || new Error('Read failed'));
-        reader.readAsText(file);
-      });
-
-    const finalize = (result: { ok: boolean; error?: string }, themeName: string) => {
-      if (!result.ok) {
-        showStatus(result.error || 'Could not add theme.', false);
-        return;
-      }
-      showStatus(`Added "${themeName}".`, true);
-      nameInput.value = '';
-      fileInput.value = '';
-      pasteInput.value = '';
-    };
-
-    $.on(addBtn, 'click', async () => {
-      const themeName = nameInput.value.trim();
-      if (!themeName) {
-        showStatus('Theme name is required.', false);
-        return;
-      }
-      const mode = sourceSelect.value;
-      try {
-        if (mode === 'file') {
-          const file = fileInput.files?.[0];
-          if (!file) {
-            showStatus('Choose a CSS file first.', false);
-            return;
-          }
-          const css = await readFileAsText(file);
-          finalize(Settings.addCustomSiteTheme(themeName, css), themeName);
-        } else if (mode === 'paste') {
-          const css = pasteInput.value;
-          if (!css.trim()) {
-            showStatus('Paste some CSS first.', false);
-            return;
-          }
-          finalize(Settings.addCustomSiteTheme(themeName, css), themeName);
-        } else if (mode === 'merge') {
-          const base = siteStyleSelect?.value || Settings.styleConf<string>('siteStyle') || '';
-          if (!base) {
-            showStatus('Select a base theme in the Theme dropdown above first.', false);
-            return;
-          }
-          const userCSS = String(Settings.styleConf<string>('usercss') || '');
-          if (!userCSS.trim()) {
-            showStatus('Custom CSS is empty — add CSS in the Custom CSS section below first.', false);
-            return;
-          }
-          const baseLabel = Settings.isCustomSiteThemeValue(base)
-            ? `Custom: ${Settings.customSiteThemeName(base)}`
-            : Settings.nativeSiteThemeLabel(base);
-          showStatus(`Fetching "${baseLabel}" stylesheet…`, true);
-          try {
-            const baseCSS = await Settings.fetchBaseThemeCSS(base);
-            const combined = `/* === Base theme: ${baseLabel} === */\n${baseCSS}\n\n/* === Custom CSS overrides === */\n${userCSS}\n`;
-            finalize(Settings.addCustomSiteTheme(themeName, combined), themeName);
-          } catch (err) {
-            showStatus(`Could not fetch "${baseLabel}": ${(err as Error)?.message || err}`, false);
-          }
-        }
-      } catch (err) {
-        showStatus(`Failed: ${(err as Error)?.message || err}`, false);
-      }
-    });
-  },
-
-  async fetchBaseThemeCSS(value: string): Promise<string> {
-    if (Settings.isCustomSiteThemeValue(value)) {
-      const theme = Settings.findCustomSiteTheme(Settings.customSiteThemeName(value));
-      if (!theme) throw new Error('custom theme not found in storage');
-      return String(theme.css || '');
-    }
-    // Find the <link> for the requested native theme name and read its CSS via fetch.
-    const links = $$('link[rel="alternate stylesheet"], link[rel="stylesheet"]', d.head) as HTMLLinkElement[];
-    let href: string | null = null;
-    for (const link of links) {
-      if ((link.title || '').trim() === value) { href = link.href; break; }
-    }
-    if (!href) {
-      // Fallback: native style selector may point at a script-managed sheet.
-      const selector = $.id('styleSelector') as HTMLSelectElement | null;
-      if (selector && selector.value === value) {
-        const active = $(g.SITE.selectors.styleSheet) as HTMLLinkElement | null;
-        if (active?.href) href = active.href;
-      }
-    }
-    if (!href) throw new Error('stylesheet URL not found');
-    const res = await fetch(href, { credentials: 'omit' });
-    if (!res.ok) throw new Error(`HTTP ${res.status}`);
-    return await res.text();
   },
 
   siteStyleHome(this: HTMLInputElement) {

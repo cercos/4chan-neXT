@@ -1319,8 +1319,8 @@ div[data-checked="false"] > .suboption-list {
    gets the colored treatment so the user gets a visual warning when
    editing the NSFW variant. */
 .section-styling .styling-variant-bar[data-editing-variant="nsfw"] {
-  --xt-variant-accent: #c64a3a;
-  background: rgba(198, 74, 58, .07);
+  --xt-variant-accent: #a66a00;
+  background: rgba(166, 106, 0, .07);
 }
 .section-styling .styling-variant-mode {
   align-items: center;
@@ -1421,23 +1421,30 @@ body > #overlay:not(.media-preview) {
   position: relative;
 }
 #fourchanx-settings .section-styling[data-editing-variant="nsfw"] {
-  --xt-variant-accent: #c64a3a;
+  --xt-variant-accent: #a66a00;
 }
 
-/* Mark each <details> section that contains variant-aware controls
-   (Site Style, Highlight Colors, Scrollbar Markers, Text Colors, Custom
-   CSS) with the active variant's accent so it's clear which whole
-   sections switch between SFW and NSFW. The accent color flips when the
-   active tab changes. The #fourchanx-settings prefix is required so
-   these rules beat the generic `#fourchanx-settings details { border: ... }`
-   baseline below. */
+/* Mark each <details> section that contains variant-aware controls without
+   turning the whole Styling page into a stack of warning boxes. The left
+   accent and compact summary badge make the affected sections scannable
+   after switching SFW/NSFW tabs. */
 #fourchanx-settings .section-styling details[data-variant-aware="true"] {
-  border: 1px solid var(--xt-variant-accent, rgba(128, 128, 128, .3));
-  transition: border-color .15s ease;
+  border-left: 3px solid var(--xt-variant-accent, rgba(128, 128, 128, .35));
+  transition: border-left-color .15s ease;
 }
-#fourchanx-settings .section-styling details[data-variant-aware="true"][open] > summary {
-  border-bottom-color: var(--xt-variant-accent, rgba(128, 128, 128, .2));
-  transition: border-color .15s ease;
+#fourchanx-settings .section-styling details[data-variant-aware="true"] > summary::after {
+  background: color-mix(in srgb, var(--xt-variant-accent, currentColor) 16%, transparent);
+  border: 1px solid color-mix(in srgb, var(--xt-variant-accent, currentColor) 45%, transparent);
+  border-radius: 3px;
+  color: inherit;
+  content: attr(data-variant-label);
+  display: inline-block;
+  font-size: 10px;
+  font-weight: 700;
+  line-height: 1.2;
+  margin-left: 8px;
+  padding: 1px 5px;
+  vertical-align: 1px;
 }
 .section-styling .styling-theme-picker > select[name^="siteStyle"] {
   display: none !important;
@@ -1543,80 +1550,6 @@ body > #overlay:not(.media-preview) {
 .section-styling .styling-theme-divider {
   border-top: 1px solid rgba(128, 128, 128, .35);
   margin: 4px 0;
-}
-#fourchanx-settings .section-styling .styling-add-theme {
-  border: none;
-  border-top: 1px dashed color-mix(in srgb, currentColor 25%, transparent);
-  border-radius: 0;
-  margin: 10px 0 0;
-  padding: 4px 0 0;
-}
-#fourchanx-settings .section-styling .styling-add-theme > .styling-add-theme-summary {
-  font-weight: 600;
-  margin: 0;
-  padding: 4px 0;
-  opacity: .85;
-}
-#fourchanx-settings .section-styling .styling-add-theme > .styling-add-theme-summary::before {
-  content: '▸';
-  display: inline-block;
-  font-size: 11px;
-  margin-right: 6px;
-  transition: transform .12s ease;
-}
-#fourchanx-settings .section-styling .styling-add-theme[open] > .styling-add-theme-summary::before {
-  transform: rotate(90deg);
-}
-#fourchanx-settings .section-styling .styling-add-theme[open] > .styling-add-theme-summary {
-  border-bottom: none;
-  margin-bottom: 4px;
-}
-.section-styling .styling-add-theme-row {
-  align-items: center;
-  display: flex;
-  flex-wrap: wrap;
-  gap: 6px 8px;
-  margin-bottom: 6px;
-}
-.section-styling .styling-add-theme-name {
-  flex: 1 1 260px;
-  max-width: 380px;
-  min-width: 180px;
-  padding: 2px 6px;
-}
-:root .section-styling .styling-add-theme-name.field {
-  background: transparent;
-  border-color: rgba(128, 128, 128, .45);
-  color: inherit;
-}
-.section-styling .styling-add-theme-name.field::placeholder {
-  color: color-mix(in srgb, currentColor 58%, transparent);
-}
-.section-styling .styling-add-theme-name.field:hover,
-.section-styling .styling-add-theme-name.field:focus {
-  border-color: rgba(128, 128, 128, .45);
-}
-.section-styling .styling-add-theme-source {
-  align-items: center;
-  display: inline-flex;
-  gap: 4px;
-}
-.section-styling .styling-add-theme-input {
-  margin: 4px 0;
-}
-.section-styling .styling-add-theme-paste {
-  font: 12px/1.42 ui-monospace, SFMono-Regular, Menlo, Monaco, Consolas, "Liberation Mono", "Courier New", monospace;
-  width: 100%;
-}
-.section-styling .styling-add-theme-status {
-  font-size: .9em;
-  margin-top: 4px;
-}
-.section-styling .styling-add-theme-status[data-kind="error"] {
-  color: #c0392b;
-}
-.section-styling .styling-add-theme-status[data-kind="ok"] {
-  opacity: .8;
 }
 .section-styling [data-name] > .styling-tree-row {
   margin: 6px 0 4px;
@@ -4306,7 +4239,7 @@ div.post {
   filter: brightness(1.2);
 }
 /* Over scrollbar (shared): hide the native scrollbar and draw our own
-   track + thumb. Track is transparent — only markers and the thumb show. */
+   thumb. The track stays invisible but keeps its click target. */
 :root.scrollbar-markers-over,
 :root.scrollbar-markers-over-columns { scrollbar-width: none; }
 :root.scrollbar-markers-over::-webkit-scrollbar,
@@ -4339,14 +4272,7 @@ div.post {
 :root.scrollbar-markers-over-columns .scroll-marker-track {
   position: absolute;
   inset: 0;
-  /* Use the theme's border color (already a per-theme contrast against
-     --xt-background) softened with transparency so it reads like the
-     native scrollbar track. Kept low so light themes (where --xt-border
-     is darker than the bg) don't read as a heavy dark band; dark themes
-     still get enough contrast because --xt-border there is close in
-     luminance to the bg. */
-  background: var(--xt-scroll-track-bg,
-    color-mix(in srgb, var(--xt-border, currentColor) 20%, transparent));
+  background: transparent;
   pointer-events: auto;
   cursor: pointer;
   z-index: 0;

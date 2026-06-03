@@ -3091,30 +3091,6 @@ current-archive-text:"Archive"]
     <label><input type="checkbox" name="siteStyleHome"> Apply on home page</label>
   </div>
   <div id="styling-site-style-note" class="note" hidden></div>
-  <details class="styling-add-theme" data-remember-layout="false">
-    <summary class="styling-add-theme-summary">Add custom theme</summary>
-    <div class="styling-add-theme-row">
-      <input type="text" class="field styling-add-theme-name" placeholder="Theme name" maxlength="60">
-      <label class="styling-add-theme-source">Source:
-        <select class="styling-add-theme-source-select">
-          <option value="file">CSS file</option>
-          <option value="paste">Paste CSS</option>
-          <option value="merge">Merge Custom CSS + base theme</option>
-        </select>
-      </label>
-      <button type="button" class="styling-add-theme-button">Add</button>
-    </div>
-    <div class="styling-add-theme-input" data-mode="file">
-      <input type="file" class="styling-add-theme-file" accept=".css,text/css">
-    </div>
-    <div class="styling-add-theme-input" data-mode="paste" hidden>
-      <textarea class="styling-add-theme-paste" rows="4" spellcheck="false" wrap="off" placeholder="Paste CSS here"></textarea>
-    </div>
-    <div class="styling-add-theme-input" data-mode="merge" hidden>
-      <p class="note">Combines the current Custom CSS with the currently selected theme (<span class="styling-add-theme-merge-current">—</span>) into a new entry.</p>
-    </div>
-    <div class="styling-add-theme-status" hidden></div>
-  </details>
 </details>
 
 <details open>
@@ -5316,8 +5292,8 @@ div[data-checked="false"] > .suboption-list {
    gets the colored treatment so the user gets a visual warning when
    editing the NSFW variant. */
 .section-styling .styling-variant-bar[data-editing-variant="nsfw"] {
-  --xt-variant-accent: #c64a3a;
-  background: rgba(198, 74, 58, .07);
+  --xt-variant-accent: #a66a00;
+  background: rgba(166, 106, 0, .07);
 }
 .section-styling .styling-variant-mode {
   align-items: center;
@@ -5418,23 +5394,30 @@ body > #overlay:not(.media-preview) {
   position: relative;
 }
 #fourchanx-settings .section-styling[data-editing-variant="nsfw"] {
-  --xt-variant-accent: #c64a3a;
+  --xt-variant-accent: #a66a00;
 }
 
-/* Mark each <details> section that contains variant-aware controls
-   (Site Style, Highlight Colors, Scrollbar Markers, Text Colors, Custom
-   CSS) with the active variant's accent so it's clear which whole
-   sections switch between SFW and NSFW. The accent color flips when the
-   active tab changes. The #fourchanx-settings prefix is required so
-   these rules beat the generic \`#fourchanx-settings details { border: ... }\`
-   baseline below. */
+/* Mark each <details> section that contains variant-aware controls without
+   turning the whole Styling page into a stack of warning boxes. The left
+   accent and compact summary badge make the affected sections scannable
+   after switching SFW/NSFW tabs. */
 #fourchanx-settings .section-styling details[data-variant-aware="true"] {
-  border: 1px solid var(--xt-variant-accent, rgba(128, 128, 128, .3));
-  transition: border-color .15s ease;
+  border-left: 3px solid var(--xt-variant-accent, rgba(128, 128, 128, .35));
+  transition: border-left-color .15s ease;
 }
-#fourchanx-settings .section-styling details[data-variant-aware="true"][open] > summary {
-  border-bottom-color: var(--xt-variant-accent, rgba(128, 128, 128, .2));
-  transition: border-color .15s ease;
+#fourchanx-settings .section-styling details[data-variant-aware="true"] > summary::after {
+  background: color-mix(in srgb, var(--xt-variant-accent, currentColor) 16%, transparent);
+  border: 1px solid color-mix(in srgb, var(--xt-variant-accent, currentColor) 45%, transparent);
+  border-radius: 3px;
+  color: inherit;
+  content: attr(data-variant-label);
+  display: inline-block;
+  font-size: 10px;
+  font-weight: 700;
+  line-height: 1.2;
+  margin-left: 8px;
+  padding: 1px 5px;
+  vertical-align: 1px;
 }
 .section-styling .styling-theme-picker > select[name^="siteStyle"] {
   display: none !important;
@@ -5540,80 +5523,6 @@ body > #overlay:not(.media-preview) {
 .section-styling .styling-theme-divider {
   border-top: 1px solid rgba(128, 128, 128, .35);
   margin: 4px 0;
-}
-#fourchanx-settings .section-styling .styling-add-theme {
-  border: none;
-  border-top: 1px dashed color-mix(in srgb, currentColor 25%, transparent);
-  border-radius: 0;
-  margin: 10px 0 0;
-  padding: 4px 0 0;
-}
-#fourchanx-settings .section-styling .styling-add-theme > .styling-add-theme-summary {
-  font-weight: 600;
-  margin: 0;
-  padding: 4px 0;
-  opacity: .85;
-}
-#fourchanx-settings .section-styling .styling-add-theme > .styling-add-theme-summary::before {
-  content: '▸';
-  display: inline-block;
-  font-size: 11px;
-  margin-right: 6px;
-  transition: transform .12s ease;
-}
-#fourchanx-settings .section-styling .styling-add-theme[open] > .styling-add-theme-summary::before {
-  transform: rotate(90deg);
-}
-#fourchanx-settings .section-styling .styling-add-theme[open] > .styling-add-theme-summary {
-  border-bottom: none;
-  margin-bottom: 4px;
-}
-.section-styling .styling-add-theme-row {
-  align-items: center;
-  display: flex;
-  flex-wrap: wrap;
-  gap: 6px 8px;
-  margin-bottom: 6px;
-}
-.section-styling .styling-add-theme-name {
-  flex: 1 1 260px;
-  max-width: 380px;
-  min-width: 180px;
-  padding: 2px 6px;
-}
-:root .section-styling .styling-add-theme-name.field {
-  background: transparent;
-  border-color: rgba(128, 128, 128, .45);
-  color: inherit;
-}
-.section-styling .styling-add-theme-name.field::placeholder {
-  color: color-mix(in srgb, currentColor 58%, transparent);
-}
-.section-styling .styling-add-theme-name.field:hover,
-.section-styling .styling-add-theme-name.field:focus {
-  border-color: rgba(128, 128, 128, .45);
-}
-.section-styling .styling-add-theme-source {
-  align-items: center;
-  display: inline-flex;
-  gap: 4px;
-}
-.section-styling .styling-add-theme-input {
-  margin: 4px 0;
-}
-.section-styling .styling-add-theme-paste {
-  font: 12px/1.42 ui-monospace, SFMono-Regular, Menlo, Monaco, Consolas, "Liberation Mono", "Courier New", monospace;
-  width: 100%;
-}
-.section-styling .styling-add-theme-status {
-  font-size: .9em;
-  margin-top: 4px;
-}
-.section-styling .styling-add-theme-status[data-kind="error"] {
-  color: #c0392b;
-}
-.section-styling .styling-add-theme-status[data-kind="ok"] {
-  opacity: .8;
 }
 .section-styling [data-name] > .styling-tree-row {
   margin: 6px 0 4px;
@@ -8303,7 +8212,7 @@ div.post {
   filter: brightness(1.2);
 }
 /* Over scrollbar (shared): hide the native scrollbar and draw our own
-   track + thumb. Track is transparent — only markers and the thumb show. */
+   thumb. The track stays invisible but keeps its click target. */
 :root.scrollbar-markers-over,
 :root.scrollbar-markers-over-columns { scrollbar-width: none; }
 :root.scrollbar-markers-over::-webkit-scrollbar,
@@ -8336,14 +8245,7 @@ div.post {
 :root.scrollbar-markers-over-columns .scroll-marker-track {
   position: absolute;
   inset: 0;
-  /* Use the theme's border color (already a per-theme contrast against
-     --xt-background) softened with transparency so it reads like the
-     native scrollbar track. Kept low so light themes (where --xt-border
-     is darker than the bg) don't read as a heavy dark band; dark themes
-     still get enough contrast because --xt-border there is close in
-     luminance to the bg. */
-  background: var(--xt-scroll-track-bg,
-    color-mix(in srgb, var(--xt-border, currentColor) 20%, transparent));
+  background: transparent;
   pointer-events: auto;
   cursor: pointer;
   z-index: 0;
@@ -15864,18 +15766,36 @@ svg.icon {
 
         this.addSortEntry();
 
-        // Settings checkbox entries:
+        // Settings checkbox entries, grouped into submenus to save vertical space:
+        const automationNames = ['Auto Update Thread Watcher', 'Auto Watch', 'Auto Watch Reply', 'Auto Prune'];
+        const displayNames = ['Show Page', 'Show Unread Count', 'Show Mark All Read Icon', 'Show Mark Thread Read Icons', 'Show Site Prefix'];
+        // Names that live in a submenu or have their own dedicated control, so they
+        // shouldn't also appear as a standalone top-level checkbox.
+        const grouped = new Set([...automationNames, ...displayNames, 'Show OP Thumbnails', 'Thread Watcher Thumbnail Hover']);
+        const makeCheckboxes = names => names
+          .filter(name => Config.threadWatcher[name])
+          .map(name => this.makeCheckbox(name, Config.threadWatcher[name][1]));
+
+        this.menu.addEntry({
+          el: $.el('a', {href: 'javascript:;', textContent: 'Auto'}),
+          subEntries: makeCheckboxes(automationNames)
+        });
+        this.menu.addEntry({
+          el: $.el('a', {href: 'javascript:;', textContent: 'Display'}),
+          subEntries: makeCheckboxes(displayNames)
+        });
+
+        // Remaining standalone checkboxes (e.g. Current Board, Require OP Quote Link):
         for (var name in Config.threadWatcher) {
-          if (['Show OP Thumbnails', 'Thread Watcher Thumbnail Hover'].includes(name)) { continue; }
-          var conf = Config.threadWatcher[name];
-          this.addCheckbox(name, conf[1]);
+          if (grouped.has(name)) { continue; }
+          this.menu.addEntry(this.makeCheckbox(name, Config.threadWatcher[name][1]));
         }
 
         this.addThumbnailControls();
 
       },
 
-      addCheckbox(name, desc) {
+      makeCheckbox(name, desc) {
         const label = ({
           'Show Mark All Read Icon': 'Mark All Read Icon',
           'Show Mark Thread Read Icons': 'Mark Thread Read Icons'
@@ -15891,12 +15811,15 @@ svg.icon {
           $.addClass(entry.el, 'disabled');
           entry.el.title += '\n[Remember Last Read Post is disabled.]';
         }
+        // Keep the menu open while toggling so several settings can be changed at once.
+        $.on(entry.el, 'mousedown', e => e.stopPropagation());
+        $.on(entry.el, 'click', e => e.stopPropagation());
         $.on(input, 'change', $.cb.checked);
         if (['Current Board', 'Show Page', 'Show Unread Count', 'Show Mark All Read Icon', 'Show Site Prefix', 'Show Mark Thread Read Icons'].includes(name))
           $.on(input, 'change', () => ThreadWatcher.refresh());
         if (['Show Page', 'Show Unread Count', 'Auto Update Thread Watcher'].includes(name))
           $.on(input, 'change', ThreadWatcher.fetchAuto);
-        return this.menu.addEntry(entry);
+        return entry;
       },
 
       addSortEntry() {
@@ -29098,10 +29021,9 @@ Enable it on boards.${location.hostname.split('.')[1]}.org in your browser's pri
         inputs[input.name] = input;
       }
       Settings.enforceStylechanStylingDeferral(section, inputs);
-      // Mark the enclosing <details> for every variant-aware input so CSS
-      // can outline the whole section (Highlight Colors, Scrollbar Markers,
-      // Text Colors, Custom CSS, etc.) — much less visual noise than
-      // outlining each input individually.
+      // Mark the enclosing <details> for every variant-aware input so CSS can
+      // label the whole section (Highlight Colors, Scrollbar Markers, Text
+      // Colors, Custom CSS, etc.) without decorating each input individually.
       for (const key of styleVariantKeys) {
         const inp = inputs[key];
         if (!inp)
@@ -29126,7 +29048,6 @@ Enable it on boards.${location.hostname.split('.')[1]}.org in your browser's pri
       renameVariantInputs(Settings.stylingEditingVariant);
       Settings.populateSiteStylePicker(section, inputs['siteStyle']);
       Settings.bindSiteStylePicker(section);
-      Settings.bindAddCustomTheme(section);
       const setCheckedState = (checkbox) => {
         const container = checkbox.closest('[data-name]');
         if (!container)
@@ -29796,10 +29717,14 @@ Enable it on boards.${location.hostname.split('.')[1]}.org in your browser's pri
         if (section.classList.contains('styling-deferred'))
           return;
         const label = `Editing ${variant.toUpperCase()}`;
+        const shortLabel = variant.toUpperCase();
         if (variantBar)
           variantBar.dataset.editingVariant = variant;
         stylingHost.dataset.editingVariant = variant;
         stylingHost.dataset.editingVariantLabel = label;
+        for (const detail of $$('details[data-variant-aware="true"]', section)) {
+          detail.dataset.variantLabel = shortLabel;
+        }
       };
       const switchEditingVariant = (variant) => {
         if (Settings.stylingEditingVariant === variant)
@@ -30882,7 +30807,7 @@ Enable it on boards.${location.hostname.split('.')[1]}.org in your browser's pri
       if (note) {
         if (noOptions) {
           note.hidden = false;
-          note.textContent = 'Style options are only available on supported board pages. You can still add custom themes below.';
+          note.textContent = 'Style options are only available on supported board pages.';
         } else {
           note.hidden = true;
         }
@@ -30997,35 +30922,6 @@ Enable it on boards.${location.hostname.split('.')[1]}.org in your browser's pri
       if (!select)
         return;
       Settings.populateSiteStylePicker(section, select);
-      // Refresh the merge-mode "currently selected" label.
-      const mergeLabel = $('.styling-add-theme-merge-current', section);
-      if (mergeLabel) {
-        const value = select.value || Settings.styleConf('siteStyle') || '';
-        mergeLabel.textContent = !value
-          ? '—'
-          : (Settings.isCustomSiteThemeValue(value)
-            ? `Custom: ${Settings.customSiteThemeName(value)}`
-            : Settings.nativeSiteThemeLabel(value));
-      }
-    },
-    addCustomSiteTheme(name, css) {
-      const trimmedName = (name || '').trim();
-      if (!trimmedName)
-        return { ok: false, error: 'Theme name is required.' };
-      if (!css || !css.trim())
-        return { ok: false, error: 'Theme CSS is empty.' };
-      const list = Settings.customSiteThemeList();
-      if (list.some(t => t.name === trimmedName)) {
-        return { ok: false, error: `A custom theme named "${trimmedName}" already exists.` };
-      }
-      if (Settings.nativeSiteThemes().includes(trimmedName)) {
-        return { ok: false, error: `"${trimmedName}" conflicts with a built-in theme name.` };
-      }
-      list.push({ name: trimmedName, css });
-      Conf['customSiteThemes'] = list;
-      $.set('customSiteThemes', list);
-      Settings.refreshSiteStylePickers();
-      return { ok: true };
     },
     removeCustomSiteTheme(name) {
       if (!name)
@@ -31124,149 +31020,6 @@ Enable it on boards.${location.hostname.split('.')[1]}.org in your browser's pri
             Settings.openSiteStyleMenu(picker);
         });
       }
-    },
-    bindAddCustomTheme(section) {
-      const container = $('.styling-add-theme', section);
-      if (!container)
-        return;
-      const nameInput = $('.styling-add-theme-name', container);
-      const sourceSelect = $('.styling-add-theme-source-select', container);
-      const fileInput = $('.styling-add-theme-file', container);
-      const pasteInput = $('.styling-add-theme-paste', container);
-      const mergeCurrentLabel = $('.styling-add-theme-merge-current', container);
-      const addBtn = $('.styling-add-theme-button', container);
-      const status = $('.styling-add-theme-status', container);
-      if (!nameInput || !sourceSelect || !fileInput || !pasteInput || !addBtn)
-        return;
-      const siteStyleSelect = $('[name^="siteStyle"]', section);
-      const refreshMergeCurrent = () => {
-        if (!mergeCurrentLabel)
-          return;
-        const value = siteStyleSelect?.value || Settings.styleConf('siteStyle') || '';
-        mergeCurrentLabel.textContent = !value
-          ? '—'
-          : (Settings.isCustomSiteThemeValue(value)
-            ? `Custom: ${Settings.customSiteThemeName(value)}`
-            : Settings.nativeSiteThemeLabel(value));
-      };
-      if (siteStyleSelect)
-        $.on(siteStyleSelect, 'change', refreshMergeCurrent);
-      refreshMergeCurrent();
-      const showStatus = (msg, ok) => {
-        if (!status)
-          return;
-        status.textContent = msg;
-        status.dataset.kind = ok ? 'ok' : 'error';
-        status.hidden = !msg;
-      };
-      const setMode = (mode) => {
-        for (const input of $$('.styling-add-theme-input', container)) {
-          input.hidden = input.dataset.mode !== mode;
-        }
-      };
-      $.on(sourceSelect, 'change', () => {
-        setMode(sourceSelect.value);
-        showStatus('', true);
-      });
-      setMode(sourceSelect.value);
-      const readFileAsText = (file) => new Promise((resolve, reject) => {
-        const reader = new FileReader();
-        reader.onload = () => resolve(String(reader.result || ''));
-        reader.onerror = () => reject(reader.error || new Error('Read failed'));
-        reader.readAsText(file);
-      });
-      const finalize = (result, themeName) => {
-        if (!result.ok) {
-          showStatus(result.error || 'Could not add theme.', false);
-          return;
-        }
-        showStatus(`Added "${themeName}".`, true);
-        nameInput.value = '';
-        fileInput.value = '';
-        pasteInput.value = '';
-      };
-      $.on(addBtn, 'click', async () => {
-        const themeName = nameInput.value.trim();
-        if (!themeName) {
-          showStatus('Theme name is required.', false);
-          return;
-        }
-        const mode = sourceSelect.value;
-        try {
-          if (mode === 'file') {
-            const file = fileInput.files?.[0];
-            if (!file) {
-              showStatus('Choose a CSS file first.', false);
-              return;
-            }
-            const css = await readFileAsText(file);
-            finalize(Settings.addCustomSiteTheme(themeName, css), themeName);
-          } else if (mode === 'paste') {
-            const css = pasteInput.value;
-            if (!css.trim()) {
-              showStatus('Paste some CSS first.', false);
-              return;
-            }
-            finalize(Settings.addCustomSiteTheme(themeName, css), themeName);
-          } else if (mode === 'merge') {
-            const base = siteStyleSelect?.value || Settings.styleConf('siteStyle') || '';
-            if (!base) {
-              showStatus('Select a base theme in the Theme dropdown above first.', false);
-              return;
-            }
-            const userCSS = String(Settings.styleConf('usercss') || '');
-            if (!userCSS.trim()) {
-              showStatus('Custom CSS is empty — add CSS in the Custom CSS section below first.', false);
-              return;
-            }
-            const baseLabel = Settings.isCustomSiteThemeValue(base)
-              ? `Custom: ${Settings.customSiteThemeName(base)}`
-              : Settings.nativeSiteThemeLabel(base);
-            showStatus(`Fetching "${baseLabel}" stylesheet…`, true);
-            try {
-              const baseCSS = await Settings.fetchBaseThemeCSS(base);
-              const combined = `/* === Base theme: ${baseLabel} === */\n${baseCSS}\n\n/* === Custom CSS overrides === */\n${userCSS}\n`;
-              finalize(Settings.addCustomSiteTheme(themeName, combined), themeName);
-            } catch (err) {
-              showStatus(`Could not fetch "${baseLabel}": ${err?.message || err}`, false);
-            }
-          }
-        } catch (err) {
-          showStatus(`Failed: ${err?.message || err}`, false);
-        }
-      });
-    },
-    async fetchBaseThemeCSS(value) {
-      if (Settings.isCustomSiteThemeValue(value)) {
-        const theme = Settings.findCustomSiteTheme(Settings.customSiteThemeName(value));
-        if (!theme)
-          throw new Error('custom theme not found in storage');
-        return String(theme.css || '');
-      }
-      // Find the <link> for the requested native theme name and read its CSS via fetch.
-      const links = $$('link[rel="alternate stylesheet"], link[rel="stylesheet"]', d.head);
-      let href = null;
-      for (const link of links) {
-        if ((link.title || '').trim() === value) {
-          href = link.href;
-          break;
-        }
-      }
-      if (!href) {
-        // Fallback: native style selector may point at a script-managed sheet.
-        const selector = $.id('styleSelector');
-        if (selector && selector.value === value) {
-          const active = $(g.SITE.selectors.styleSheet);
-          if (active?.href)
-            href = active.href;
-        }
-      }
-      if (!href)
-        throw new Error('stylesheet URL not found');
-      const res = await fetch(href, { credentials: 'omit' });
-      if (!res.ok)
-        throw new Error(`HTTP ${res.status}`);
-      return await res.text();
     },
     siteStyleHome() {
       if (!this.checked)
@@ -37929,7 +37682,15 @@ Enable it on boards.${location.hostname.split('.')[1]}.org in your browser's pri
         // (body, #bd, #ft, #header, etc.). The theme class is added on <html>
         // by initHomePageStyleBridge, which activates the matching rules.
         $.addStyle(www, 'fourchanx-homepage-theme-css');
+        Main.ensureHomePageCustomCSSLast();
       });
+    },
+
+    ensureHomePageCustomCSSLast() {
+      const style = $.id('custom-css-home');
+      if (style && d.head && d.head.lastElementChild !== style) {
+        $.add(d.head, style);
+      }
     },
 
     installHomePageCustomCSS(usercss) {
@@ -37948,8 +37709,10 @@ Enable it on boards.${location.hostname.split('.')[1]}.org in your browser's pri
       $.onExists(doc, 'head', () => {
         ensure();
         new MutationObserver(ensure).observe(d.head, { childList: true });
+        d.head.addEventListener('load', ensure, true);
       });
       $.on(window, 'pageshow', ensure);
+      $.on(window, 'load', ensure);
     },
 
     upgrade(items) {

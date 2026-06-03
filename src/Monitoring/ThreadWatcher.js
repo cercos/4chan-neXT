@@ -1366,18 +1366,36 @@ var ThreadWatcher = {
 
       this.addSortEntry();
 
-      // Settings checkbox entries:
+      // Settings checkbox entries, grouped into submenus to save vertical space:
+      const automationNames = ['Auto Update Thread Watcher', 'Auto Watch', 'Auto Watch Reply', 'Auto Prune'];
+      const displayNames = ['Show Page', 'Show Unread Count', 'Show Mark All Read Icon', 'Show Mark Thread Read Icons', 'Show Site Prefix'];
+      // Names that live in a submenu or have their own dedicated control, so they
+      // shouldn't also appear as a standalone top-level checkbox.
+      const grouped = new Set([...automationNames, ...displayNames, 'Show OP Thumbnails', 'Thread Watcher Thumbnail Hover']);
+      const makeCheckboxes = names => names
+        .filter(name => Config.threadWatcher[name])
+        .map(name => this.makeCheckbox(name, Config.threadWatcher[name][1]));
+
+      this.menu.addEntry({
+        el: $.el('a', {href: 'javascript:;', textContent: 'Auto'}),
+        subEntries: makeCheckboxes(automationNames)
+      });
+      this.menu.addEntry({
+        el: $.el('a', {href: 'javascript:;', textContent: 'Display'}),
+        subEntries: makeCheckboxes(displayNames)
+      });
+
+      // Remaining standalone checkboxes (e.g. Current Board, Require OP Quote Link):
       for (var name in Config.threadWatcher) {
-        if (['Show OP Thumbnails', 'Thread Watcher Thumbnail Hover'].includes(name)) { continue; }
-        var conf = Config.threadWatcher[name];
-        this.addCheckbox(name, conf[1]);
+        if (grouped.has(name)) { continue; }
+        this.menu.addEntry(this.makeCheckbox(name, Config.threadWatcher[name][1]));
       }
 
       this.addThumbnailControls();
 
     },
 
-    addCheckbox(name, desc) {
+    makeCheckbox(name, desc) {
       const label = ({
         'Show Mark All Read Icon': 'Mark All Read Icon',
         'Show Mark Thread Read Icons': 'Mark Thread Read Icons'
@@ -1393,12 +1411,15 @@ var ThreadWatcher = {
         $.addClass(entry.el, 'disabled');
         entry.el.title += '\n[Remember Last Read Post is disabled.]';
       }
+      // Keep the menu open while toggling so several settings can be changed at once.
+      $.on(entry.el, 'mousedown', e => e.stopPropagation());
+      $.on(entry.el, 'click', e => e.stopPropagation());
       $.on(input, 'change', $.cb.checked);
       if (['Current Board', 'Show Page', 'Show Unread Count', 'Show Mark All Read Icon', 'Show Site Prefix', 'Show Mark Thread Read Icons'].includes(name))
         $.on(input, 'change', () => ThreadWatcher.refresh());
       if (['Show Page', 'Show Unread Count', 'Auto Update Thread Watcher'].includes(name))
         $.on(input, 'change', ThreadWatcher.fetchAuto);
-      return this.menu.addEntry(entry);
+      return entry;
     },
 
     addSortEntry() {

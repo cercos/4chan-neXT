@@ -387,7 +387,15 @@ var Main = {
       // (body, #bd, #ft, #header, etc.). The theme class is added on <html>
       // by initHomePageStyleBridge, which activates the matching rules.
       $.addStyle(www, 'fourchanx-homepage-theme-css');
+      Main.ensureHomePageCustomCSSLast();
     });
+  },
+
+  ensureHomePageCustomCSSLast() {
+    const style = $.id('custom-css-home');
+    if (style && d.head && d.head.lastElementChild !== style) {
+      $.add(d.head, style);
+    }
   },
 
   installHomePageCustomCSS(usercss) {
@@ -406,8 +414,10 @@ var Main = {
     $.onExists(doc, 'head', () => {
       ensure();
       new MutationObserver(ensure).observe(d.head, { childList: true });
+      d.head.addEventListener('load', ensure, true);
     });
     $.on(window, 'pageshow', ensure);
+    $.on(window, 'load', ensure);
   },
 
   upgrade(items) {
