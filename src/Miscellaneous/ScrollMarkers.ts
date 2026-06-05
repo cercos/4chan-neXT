@@ -40,8 +40,27 @@ const ScrollMarkers = {
     );
     $.addClass(doc, `scrollbar-markers-${pos}`);
     ScrollMarkers.updateScrollbarMetrics();
+    ScrollMarkers.updateHeaderOffset();
     if (ScrollMarkers.isOverMode()) ScrollMarkers.scrollbar.install();
     else ScrollMarkers.scrollbar.uninstall();
+  },
+
+  // In "over" modes our custom track spans the full height at right:0.
+  // A fixed header would otherwise sit on top of the track (eating its
+  // dropdown button's clicks) and hide the topmost markers, so inset the
+  // marker container past the header instead of pushing the header aside.
+  // Top header -> reserve at the top; bottom header -> at the bottom; no
+  // reservation when the header isn't fixed (it scrolls away with content).
+  updateHeaderOffset() {
+    const style = d.documentElement.style;
+    let top = 0, bottom = 0;
+    if (ScrollMarkers.isOverMode() && Conf['Fixed Header'] && Header.bar?.isConnected) {
+      const height = Header.bar.getBoundingClientRect().height || 0;
+      if (Conf['Bottom Header']) bottom = height;
+      else top = height;
+    }
+    style.setProperty('--xt-scroll-marker-top', `${top}px`);
+    style.setProperty('--xt-scroll-marker-bottom', `${bottom}px`);
   },
 
   measureScrollbarWidth() {
@@ -306,6 +325,13 @@ const ScrollMarkers = {
       ScrollMarkers.applyPosition();
       ScrollMarkers.refreshDeferred();
     });
+    // Header geometry feeds the over-mode top/bottom inset.
+    for (const key of ['Fixed Header', 'Bottom Header'] as const) {
+      $.sync(key, (val: boolean) => {
+        Conf[key] = val;
+        ScrollMarkers.updateHeaderOffset();
+      });
+    }
 
     Callbacks.Thread.push({
       name: 'Scroll Markers',

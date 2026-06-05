@@ -929,6 +929,13 @@ http://eye.swfchan.com/search/?q=%name;types:swf
   customCSSHome: false,
   siteStyle: '',
   siteStyleHome: false,
+  // StyleChan bridge: when StyleChan is managing site themes (it excludes the
+  // 4chan home page), this opt-in replays StyleChan's injected stylesheet on the
+  // home page. styleChanThemeCSS / styleChanVarsCSS hold the snapshot captured
+  // on board pages (where StyleChan runs) so the home page can reuse it.
+  styleChanThemeHome: false,
+  styleChanThemeCSS: '',
+  styleChanVarsCSS: '',
   customSiteThemes: [],
   savedHighlightPalettes: [],
   // 'auto' applies the SFW or NSFW variant based on the active board's
@@ -966,6 +973,9 @@ http://eye.swfchan.com/search/?q=%name;types:swf
   'Highlight Own Opacity':       '',
   'Highlight You Opacity':       '',
   'Highlight Ghost Opacity':     '',
+  'Highlight Own Edge Only':     true,
+  'Highlight You Edge Only':     true,
+  'Highlight Ghost Edge Only':   true,
   'Enable Thread Highlights':    true,
   'Enable Catalog Highlights':   true,
   'Catalog Highlight Own Posts': true,

@@ -1186,6 +1186,11 @@ div[data-checked="false"] > .suboption-list {
   border-left: 3px dotted var(--xt-highlight-ghost, #888) !important;
   background-color: color-mix(in srgb, var(--xt-highlight-ghost, transparent) calc(var(--xt-highlight-ghost-opacity, 1) * 100%), transparent) !important;
 }
+.styling-preview[data-edge-own="true"] .styling-preview-post.yourPost > .reply,
+.styling-preview[data-edge-you="true"] .styling-preview-post.quotesYou > .reply,
+.styling-preview[data-edge-ghost="true"] .styling-preview-post.from-archive > .reply {
+  background-color: transparent !important;
+}
 .styling-preview[data-highlight-own="false"] .styling-preview-post.yourPost > .reply,
 .styling-preview[data-highlight-you="false"] .styling-preview-post.quotesYou > .reply,
 .styling-preview[data-highlight-ghost="false"] .styling-preview-post.from-archive > .reply {
@@ -1373,6 +1378,14 @@ div[data-checked="false"] > .suboption-list {
 .styling-deferred > .styling-text-colors,
 .styling-deferred > .styling-custom-css {
   display: none;
+}
+
+/* Home-page opt-in lives as a full-width bottom row inside the deferral
+   banner (beneath the explanatory text and the Open StyleChan button). */
+.styling-defer-home {
+  cursor: pointer;
+  flex: 1 1 100%;
+  font-size: 12px;
 }
 /* StyleChan injects `<div id="overlay">` (same id as ours used to be — we
    renamed ours to `xt-settings-overlay`). Their overlay needs to stack
@@ -4337,21 +4350,18 @@ div.post {
 :root.scrollbar-markers-over-columns { scrollbar-width: none; }
 :root.scrollbar-markers-over::-webkit-scrollbar,
 :root.scrollbar-markers-over-columns::-webkit-scrollbar { width: 0; height: 0; display: none; }
-/* Reserve the rightmost gutter for our custom scrollbar so the header
-   bar (and its dropdown button) isn't under our track and losing clicks
-   to us. The dropdown menu auto-positions relative to its button, so
-   shifting the header alone is enough. */
-:root.scrollbar-markers-over.fixed #header-bar,
-:root.scrollbar-markers-over #notifications {
-  margin-right: var(--xt-scroll-marker-track, 14px);
-}
-:root.scrollbar-markers-over-columns.fixed #header-bar,
-:root.scrollbar-markers-over-columns #notifications {
-  margin-right: var(--xt-scroll-marker-track, 14px);
-}
+/* Rather than shoving the header bar aside to clear our custom track
+   (which the "beside" modes never do), start the track below a fixed
+   header so it doesn't sit under the header's dropdown button stealing
+   clicks, and so the topmost markers aren't hidden behind the header.
+   The offset is measured in JS (ScrollMarkers.updateHeaderOffset): top
+   header -> --xt-scroll-marker-top, bottom header -> ...-bottom, 0 when
+   the header isn't fixed. */
 :root.scrollbar-markers-over #scroll-markers,
 :root.scrollbar-markers-over-columns #scroll-markers {
   right: 0;
+  top: var(--xt-scroll-marker-top, 0px);
+  height: calc(100vh - var(--xt-scroll-marker-top, 0px) - var(--xt-scroll-marker-bottom, 0px));
   pointer-events: none;
   z-index: 2147483647;
 }

@@ -1078,7 +1078,10 @@ Enable it on boards.${location.hostname.split('.')[1]}.org in your browser's pri
       'Scrollbar Marker Position',
       'Highlight Posts Quoting You',
       'Highlight Own Posts',
-      'Highlight Ghost Posts'
+      'Highlight Ghost Posts',
+      'Highlight Own Edge Only',
+      'Highlight You Edge Only',
+      'Highlight Ghost Edge Only'
     ]);
 
     Settings.renderMainGroups(section, {
@@ -1511,7 +1514,15 @@ Enable it on boards.${location.hostname.split('.')[1]}.org in your browser's pri
         e.preventDefault();
         Settings.openStylechanSettings();
       });
-      $.add(banner, [text, button]);
+      // Bottom row: opt-in to mirroring StyleChan's theme on the (StyleChan-
+      // excluded) home page. The checkbox carries a real `name`, so the generic
+      // input wiring below binds/persists it like any other styling control.
+      const homeRow = $.el('label', {
+        className: 'styling-defer-home',
+        title: "Mirror StyleChan's current theme (and its custom CSS) on the 4chan home page, where StyleChan doesn't run. Captured while you browse a board, so visit one after switching themes.",
+        innerHTML: '<input type="checkbox" name="styleChanThemeHome"> Apply StyleChan\'s theme on home page',
+      });
+      $.add(banner, [text, button, homeRow]);
       section.insertBefore(banner, section.firstChild);
     }
 
@@ -2556,6 +2567,10 @@ Enable it on boards.${location.hostname.split('.')[1]}.org in your browser's pri
     panel.dataset.highlightCatalogOwn = (catalogHighlightsEnabled && catalogOwnEnabled) ? 'true' : 'false';
     panel.dataset.highlightCatalogWatched = (catalogHighlightsEnabled && catalogWatchedEnabled) ? 'true' : 'false';
 
+    panel.dataset.edgeOwn = readChecked('Highlight Own Edge Only', true) ? 'true' : 'false';
+    panel.dataset.edgeYou = readChecked('Highlight You Edge Only', true) ? 'true' : 'false';
+    panel.dataset.edgeGhost = readChecked('Highlight Ghost Edge Only', true) ? 'true' : 'false';
+
     const background = Settings.resolveCanvasBackgroundStyle();
     for (const previewPane of $$('.styling-preview-thread, .styling-preview-catalog', panel) as HTMLElement[]) {
       Settings.applyBackgroundStyle(previewPane, background);
@@ -2757,6 +2772,9 @@ Enable it on boards.${location.hostname.split('.')[1]}.org in your browser's pri
         threadHighlightsEnabled && !!Conf['Highlight Ghost Posts'] && !!cv('Highlight Ghost Color'));
       doc.classList.toggle('xt-highlight-catalog-own', catalogOwnEnabled);
       doc.classList.toggle('xt-highlight-catalog-watched', catalogWatchedEnabled);
+      doc.classList.toggle('xt-edge-own', !!Conf['Highlight Own Edge Only']);
+      doc.classList.toggle('xt-edge-you', !!Conf['Highlight You Edge Only']);
+      doc.classList.toggle('xt-edge-ghost', !!Conf['Highlight Ghost Edge Only']);
     }
     setVar('--xt-highlight-own',   cv('Highlight Own Color'));
     setVar('--xt-highlight-you',   cv('Highlight You Color'));
@@ -3996,6 +4014,9 @@ Enable it on boards.${location.hostname.split('.')[1]}.org in your browser's pri
       'Highlight Own Opacity',
       'Highlight You Opacity',
       'Highlight Ghost Opacity',
+      'Highlight Own Edge Only',
+      'Highlight You Edge Only',
+      'Highlight Ghost Edge Only',
       'Catalog Highlight Own Opacity',
       'Catalog Highlight Watched Opacity',
       'Scroll Marker Own Color',
@@ -4470,6 +4491,12 @@ Enable it on boards.${location.hostname.split('.')[1]}.org in your browser's pri
       if (legacy === undefined) continue;
       if (data[`${k} SFW`] === undefined) set(`${k} SFW`, legacy);
       if (data[`${k} NSFW`] === undefined) set(`${k} NSFW`, legacy);
+    }
+    // Edge-only highlighting defaults on for fresh installs. Existing users are
+    // upgraded here, so seed it off to preserve their current filled highlights
+    // unless they opt in. Idempotent: only seeds keys not already present.
+    for (const k of ['Highlight Own Edge Only', 'Highlight You Edge Only', 'Highlight Ghost Edge Only']) {
+      if (data[k] === undefined) set(k, false);
     }
     return changes;
   },
