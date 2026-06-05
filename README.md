@@ -22,7 +22,7 @@ You will need a userscript manager:
 - Added Thread Watcher attach/detach support for docking it to the Quick Reply.
 - Added a Quick Reply header preview toggle icon.
 - Grouped and cleaned up Thread Watcher settings in the settings dropdown.
-- Fixed userscript download/update metadata.
+- Fixed updatge button in script managers by adding userscript download/update metadata.
 - Fixed QR captcha wait messages with sign-in links and long text wrapping.
 - Fixed a LibreWolf/Violentmonkey sync error when storage change events provide empty board data, which could also disrupt settings updates such as Custom CSS.
 - Small Quick Reply, Thread Watcher, and settings fixes.
