@@ -2198,7 +2198,36 @@ current-archive-text:"Archive"]
     }
     return root.dispatchEvent(new CustomEvent(event, { bubbles: true, cancelable: true, detail }));
   };
-
+  if (platform === 'userscript') {
+    // XXX Make $.event work in Pale Moon with GM 3.x (no cloneInto function).
+    (function () {
+      if (!/PaleMoon\//.test(navigator.userAgent) || (+GM_info?.version?.split('.')[0] < 2) || (typeof cloneInto !== 'undefined')) {
+        return;
+      }
+      try {
+        return new CustomEvent('x', { detail: {} });
+      } catch (err) {
+        const unsafeConstructors = {
+          Object: unsafeWindow.Object,
+          Array: unsafeWindow.Array
+        };
+        var clone = function (obj) {
+          let constructor;
+          if ((obj != null) && (typeof obj === 'object') && (constructor = unsafeConstructors[obj.constructor.name])) {
+            const obj2 = new constructor();
+            for (var key in obj) {
+              var val = obj[key];
+              obj2[key] = clone(val);
+            }
+            return obj2;
+          } else {
+            return obj;
+          }
+        };
+        return $.event = (event, detail, root = d) => root.dispatchEvent(new CustomEvent(event, { bubbles: true, cancelable: true, detail: clone(detail) }));
+      }
+    })();
+  }
   $.modifiedClick = e => e.shiftKey || e.altKey || e.ctrlKey || e.metaKey || (e.button !== 0);
   if (!globalThis.chrome?.extension) {
     $.open =
@@ -2245,7 +2274,7 @@ current-archive-text:"Archive"]
       Promise.resolve().then(execTask);
     };
   })();
-
+  if (platform === 'crx') {
     const callbacks = new Map();
     chrome.runtime.onMessage.addListener(({ id, data }) => {
       callbacks.get(id)(data);
@@ -2254,7 +2283,7 @@ current-archive-text:"Archive"]
     $.eventPageRequest = (params) => new Promise(resolve => {
       chrome.runtime.sendMessage(params, id => { callbacks.set(id, resolve); });
     });
-
+  }
   /**
    * Runs a function on the page instead of the user script or extension context.
    * @param fn The name of the function in pageContext.ts. It must be defined there to run in a manifest V3 context.
@@ -2363,7 +2392,7 @@ current-archive-text:"Archive"]
       return delete data['Redirect to HTTPS'];
     }
   };
-
+  if (platform === 'crx') {
     // https://developer.chrome.com/extensions/storage.html
     $.oldValue = {
       local: dict(),
@@ -2534,6 +2563,224 @@ current-archive-text:"Archive"]
         return chrome.storage.sync.clear(done);
       };
     })();
+  } else {
+    // http://wiki.greasespot.net/Main_Page
+    // https://tampermonkey.net/documentation.php
+    if ((GM?.deleteValue != null) && window.BroadcastChannel && (typeof GM_addValueChangeListener === 'undefined' || GM_addValueChangeListener === null)) {
+      $.syncChannel = new BroadcastChannel(g.NAMESPACE + 'sync');
+      $.on($.syncChannel, 'message', e => (() => {
+        const result = [];
+        for (var key in e.data) {
+          var cb;
+          var val = e.data[key];
+          if (cb = $.syncing[key]) {
+            result.push(cb(dict.json(JSON.stringify(val)), key));
+          }
+        }
+        return result;
+      })());
+      $.sync = (key, cb) => $.syncing[key] = cb;
+      $.forceSync = function () { };
+      $.delete = function (keys, cb) {
+        let key;
+        if (!(keys instanceof Array)) {
+          keys = [keys];
+        }
+        Promise.all(keys.map(key => GM.deleteValue(g.NAMESPACE + key))).then(function () {
+          const items = dict();
+          for (key of keys)
+            items[key] = undefined;
+          $.syncChannel.postMessage(items);
+          cb?.();
+        });
+      };
+      $.get = $.oneItemSugar(function (items, cb) {
+        const keys = Object.keys(items);
+        return Promise.all(keys.map((key) => GM.getValue(g.NAMESPACE + key))).then(function (values) {
+          for (let i = 0; i < values.length; i++) {
+            var val = values[i];
+            if (val) {
+              items[keys[i]] = dict.json(val);
+            }
+          }
+          return cb(items);
+        });
+      });
+      $.set = $.oneItemSugar(function (items, cb) {
+        $.securityCheck(items);
+        return Promise.all((() => {
+          const result = [];
+          for (var key in items) {
+            var val = items[key];
+            result.push(GM.setValue(g.NAMESPACE + key, JSON.stringify(val)));
+          }
+          return result;
+        })()).then(function () {
+          $.syncChannel.postMessage(items);
+          return cb?.();
+        });
+      });
+      $.clear = cb => GM.listValues().then(keys => $.delete(keys.map(key => key.replace(g.NAMESPACE, '')), cb)).catch(() => $.delete(Object.keys(Conf).concat(['previousversion', 'QR Size', 'QR.persona']), cb));
+    } else {
+      if (typeof GM_deleteValue !== 'undefined' && GM_deleteValue !== null) {
+        $.getValue = GM_getValue;
+        $.listValues = () => GM_listValues(); // error when called if missing
+      } else if ($.hasStorage) {
+        $.getValue = key => localStorage.getItem(key);
+        $.listValues = () => (() => {
+          const result = [];
+          for (var key in localStorage) {
+            if (key.slice(0, g.NAMESPACE.length) === g.NAMESPACE) {
+              result.push(key);
+            }
+          }
+          return result;
+        })();
+      } else {
+        $.getValue = function () { };
+        $.listValues = () => [];
+      }
+      if (typeof GM_addValueChangeListener !== 'undefined' && GM_addValueChangeListener !== null) {
+        $.setValue = GM_setValue;
+        $.deleteValue = GM_deleteValue;
+      } else if (typeof GM_deleteValue !== 'undefined' && GM_deleteValue !== null) {
+        $.oldValue = dict();
+        $.setValue = function (key, val) {
+          GM_setValue(key, val);
+          if (key in $.syncing) {
+            $.oldValue[key] = val;
+            if ($.hasStorage) {
+              return localStorage.setItem(key, val);
+            } // for `storage` events
+          }
+        };
+        $.deleteValue = function (key) {
+          GM_deleteValue(key);
+          if (key in $.syncing) {
+            delete $.oldValue[key];
+            if ($.hasStorage) {
+              return localStorage.removeItem(key);
+            } // for `storage` events
+          }
+        };
+        if (!$.hasStorage) {
+          $.cantSync = true;
+        }
+      } else if ($.hasStorage) {
+        $.oldValue = dict();
+        $.setValue = function (key, val) {
+          if (key in $.syncing) {
+            $.oldValue[key] = val;
+          }
+          return localStorage.setItem(key, val);
+        };
+        $.deleteValue = function (key) {
+          if (key in $.syncing) {
+            delete $.oldValue[key];
+          }
+          return localStorage.removeItem(key);
+        };
+      } else {
+        $.setValue = function () { };
+        $.deleteValue = function () { };
+        $.cantSync = ($.cantSet = true);
+      }
+      if (typeof GM_addValueChangeListener !== 'undefined' && GM_addValueChangeListener !== null) {
+        $.sync = (key, cb) => $.syncing[key] = GM_addValueChangeListener(g.NAMESPACE + key, function (key2, oldValue, newValue, remote) {
+          if (remote) {
+            if (newValue !== undefined) {
+              newValue = dict.json(newValue);
+            }
+            return cb(newValue, key);
+          }
+        });
+        $.forceSync = function () { };
+      } else if ((typeof GM_deleteValue !== 'undefined' && GM_deleteValue !== null) || $.hasStorage) {
+        $.sync = function (key, cb) {
+          key = g.NAMESPACE + key;
+          $.syncing[key] = cb;
+          return $.oldValue[key] = $.getValue(key);
+        };
+        (function () {
+          const onChange = function ({ key, newValue }) {
+            let cb;
+            if (!(cb = $.syncing[key])) {
+              return;
+            }
+            if (newValue != null) {
+              if (newValue === $.oldValue[key]) {
+                return;
+              }
+              $.oldValue[key] = newValue;
+              return cb(dict.json(newValue), key.slice(g.NAMESPACE.length));
+            } else {
+              if ($.oldValue[key] == null) {
+                return;
+              }
+              delete $.oldValue[key];
+              return cb(undefined, key.slice(g.NAMESPACE.length));
+            }
+          };
+          $.on(window, 'storage', onChange);
+          return $.forceSync = function (key) {
+            // Storage events don't work across origins
+            // e.g. http://boards.4chan.org and https://boards.4chan.org
+            // so force a check for changes to avoid lost data.
+            key = g.NAMESPACE + key;
+            return onChange({ key, newValue: $.getValue(key) });
+          };
+        })();
+      } else {
+        $.sync = function () { };
+        $.forceSync = function () { };
+      }
+      $.delete = function (keys) {
+        if (!(keys instanceof Array)) {
+          keys = [keys];
+        }
+        for (var key of keys) {
+          $.deleteValue(g.NAMESPACE + key);
+        }
+      };
+      $.get = $.oneItemSugar((items, cb) => $.queueTask($.getSync, items, cb));
+      $.getSync = function (items, cb) {
+        for (var key in items) {
+          var val2;
+          if (val2 = $.getValue(g.NAMESPACE + key)) {
+            try {
+              items[key] = dict.json(val2);
+            } catch (err) {
+              // XXX https://github.com/ccd0/4chan-x/issues/2218
+              if (!/^(?:undefined)*$/.test(val2)) {
+                throw err;
+              }
+            }
+          }
+        }
+        return cb(items);
+      };
+      $.set = $.oneItemSugar(function (items, cb) {
+        $.securityCheck(items);
+        return $.queueTask(function () {
+          for (var key in items) {
+            var value = items[key];
+            $.setValue(g.NAMESPACE + key, JSON.stringify(value));
+          }
+          return cb?.();
+        });
+      });
+      $.clear = function (cb) {
+        // XXX https://github.com/greasemonkey/greasemonkey/issues/2033
+        // Also support case where GM_listValues is not defined.
+        $.delete(Object.keys(Conf));
+        $.delete(['previousversion', 'QR Size', 'QR.persona']);
+        try {
+          $.delete($.listValues().map(key => key.replace(g.NAMESPACE, '')));
+        } catch (error) { }
+        return cb?.();
+      };
+    }
+  }
 
   var Get = {
     url(type, IDs, ...args) {
@@ -26553,14 +26800,66 @@ aero|asia|biz|cat|com|coop|dance|info|int|jobs|mobi|moe|museum|name|net|org|post
     binary(url, cb, headers = dict()) {
       // XXX https://forums.lanik.us/viewtopic.php?f=64&t=24173&p=78310
       url = url.replace(/^((?:https?:)?\/\/(?:\w+\.)?(?:4chan|4channel|4cdn)\.org)\/adv\//, '$1//adv/');
-
+      if (platform === 'crx') {
         $.eventPageRequest({ type: 'ajax', url, headers, responseType: 'arraybuffer' })
           .then(({ response, responseHeaderString }) => {
           if (response)
             response = new Uint8Array(response);
           cb(response, responseHeaderString);
         });
-
+      } else {
+        const fallback = function () {
+          return $.ajax(url, {
+            headers,
+            responseType: 'arraybuffer',
+            onloadend() {
+              if (this.status && this.response) {
+                return cb(new Uint8Array(this.response), this.getAllResponseHeaders());
+              } else {
+                return cb(null);
+              }
+            }
+          });
+        };
+        if ((typeof window.GM_xmlhttpRequest === 'undefined' || window.GM_xmlhttpRequest === null)) {
+          fallback();
+          return;
+        }
+        const gmOptions = {
+          method: "GET",
+          anonymous: true,
+          url,
+          headers,
+          responseType: 'arraybuffer',
+          overrideMimeType: 'text/plain; charset=x-user-defined',
+          onload(xhr) {
+            let data;
+            if (xhr.response instanceof ArrayBuffer) {
+              data = new Uint8Array(xhr.response);
+            } else {
+              const r = xhr.responseText;
+              data = new Uint8Array(r.length);
+              let i = 0;
+              while (i < r.length) {
+                data[i] = r.charCodeAt(i);
+                i++;
+              }
+            }
+            return cb(data, xhr.responseHeaders);
+          },
+          onerror() {
+            return cb(null);
+          },
+          onabort() {
+            return cb(null);
+          }
+        };
+        try {
+          return (GM?.xmlHttpRequest || GM_xmlhttpRequest)(gmOptions);
+        } catch (error) {
+          return fallback();
+        }
+      }
     },
     file(url, cb) {
       return CrossOrigin.binary(url, function (data, headers) {
@@ -26625,20 +26924,69 @@ aero|asia|biz|cat|com|coop|dance|info|int|jobs|mobi|moe|museum|name|net|org|post
     //   `abort` - function for aborting the request (silently fails on some platforms)
     //   `getResponseHeader` - function for reading response headers
     ajax(url, options = {}) {
+      let gmReq;
       let { onloadend, timeout, responseType, headers } = options;
       if (responseType == null) {
         responseType = 'json';
       }
       const req = new CrossOrigin.Request();
       req.onloadend = onloadend;
-
+      if (platform === 'userscript') {
+        if (window.GM?.xmlHttpRequest == null && window.GM_xmlhttpRequest == null) {
+          return $.ajax(url, options);
+        }
+        const gmOptions = {
+          method: 'GET',
+          anonymous: true,
+          url,
+          headers,
+          timeout,
+          onload(xhr) {
+            try {
+              let response = xhr.responseText;
+              if (responseType === 'json') {
+                try {
+                  response = JSON.parse(xhr.responseText);
+                } catch (error) {
+                  console.error(error);
+                  console.error(xhr);
+                }
+              }
+              $.extend(req, {
+                url,
+                headers,
+                response,
+                status: xhr.status,
+                statusText: xhr.statusText,
+                responseHeaderString: xhr.responseHeaders
+              });
+            } catch (error) { }
+            return req.onloadend();
+          },
+          onerror() { return req.onloadend(); },
+          onabort() { return req.onloadend(); },
+          ontimeout() { return req.onloadend(); }
+        };
+        try {
+          gmReq = (GM?.xmlHttpRequest || GM_xmlhttpRequest)(gmOptions);
+        } catch (error) {
+          return $.ajax(url, options);
+        }
+        if (gmReq && (typeof gmReq.abort === 'function')) {
+          req.abort = function () {
+            try {
+              return gmReq.abort();
+            } catch (error1) { }
+          };
+        }
+      } else {
         $.eventPageRequest({ type: 'ajax', url, responseType, headers, timeout }).then((result) => {
           if (result.status) {
             $.extend(req, result);
           }
           return req.onloadend();
         });
-
+      }
       return req;
     },
     ajaxPromise(url, options = {}) {
@@ -26653,7 +27001,7 @@ aero|asia|biz|cat|com|coop|dance|info|int|jobs|mobi|moe|museum|name|net|org|post
       });
     },
     permission(cb, cbFail, origins) {
-
+      if (platform === 'crx') {
         return $.eventPageRequest({ type: 'permission', origins }).then((result) => {
           if (result) {
             return cb();
@@ -26661,6 +27009,8 @@ aero|asia|biz|cat|com|coop|dance|info|int|jobs|mobi|moe|museum|name|net|org|post
             return cbFail();
           }
         });
+      }
+      return cb();
     },
   };
 
@@ -38111,7 +38461,7 @@ Enable it on boards.${location.hostname.split('.')[1]}.org in your browser's pri
       // XXX Firefox reinjects WebExtension content scripts when extension is updated / reloaded.
       try {
         let w = window;
-         w = (w.wrappedJSObject || w);
+        if (platform === 'crx') { w = (w.wrappedJSObject || w); }
         if (`${meta.name} antidup` in w) { return; }
         w[`${meta.name} antidup`] = true;
       } catch (error) {}
