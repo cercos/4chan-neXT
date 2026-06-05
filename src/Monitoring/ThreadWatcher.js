@@ -1585,21 +1585,6 @@ var ThreadWatcher = {
 
       this.addSortEntry();
 
-      // Attach to QR controls (in dropdown per request; header button removed)
-      const attachEl = UI.checkbox('Thread Watcher Attached', 'Attach to QR');
-      attachEl.title = 'Attach/dock the thread watcher to the Quick Reply dialog. Bottom is natural (watcher width follows QR); left/right: width uses manual max W, height sizes to content. Drag watcher or use manual position to detach.';
-      const attachIn = attachEl.firstElementChild;
-      $.on(attachIn, 'mousedown', e => e.stopPropagation());
-      $.on(attachIn, 'click', e => e.stopPropagation());
-      $.on(attachIn, 'change', $.cb.checked);
-      $.on(attachIn, 'change', () => {
-        if (Conf['Thread Watcher Attached']) {
-          ThreadWatcher.positionIfAttached(true);
-        } else if (ThreadWatcher.dialog) {
-          ThreadWatcher.restorePosition();
-        }
-      });
-      this.menu.addEntry({ el: attachEl });
       this.addAttachLocationEntry();
 
       // Settings checkbox entries, grouped into submenus to save vertical space:

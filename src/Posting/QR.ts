@@ -263,6 +263,10 @@ var QR = {
       Conf['Comment Preview Position'] = ['below', 'right', 'left'].includes(value || '') ? value! : 'below';
       QR.applyCommentPreviewSettings();
     });
+    $.sync('Show Comment Preview Header Icon', (value: boolean | undefined) => {
+      Conf['Show Comment Preview Header Icon'] = value !== false;
+      QR.applyCommentPreviewSettings();
+    });
 
     $.on(d, 'paste',              QR.paste);
     $.on(d, 'dragover',           QR.dragOver);
@@ -407,6 +411,9 @@ var QR = {
     classList.toggle('has-com-preview', enabled);
     QR.nodes.previewToggle?.classList.toggle('enabled', enabled);
     QR.nodes.previewToggle?.setAttribute('aria-pressed', enabled ? 'true' : 'false');
+    if (QR.nodes.previewToggle) {
+      QR.nodes.previewToggle.hidden = Conf['Show Comment Preview Header Icon'] === false;
+    }
     classList.remove('com-preview-below', 'com-preview-right', 'com-preview-left');
     classList.add(`com-preview-${pos}`);
     if (enabled) {

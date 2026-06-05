@@ -935,6 +935,11 @@ div.boardTitle {
           false,
           'Add a toggle below the Quick Reply comment box to switch between editing and a preview of how the post will render on the current board (greentext, quotes, [spoiler]/[code]/[math]/sjis when supported).',
           1
+        ],
+        'Show Comment Preview Header Icon': [
+          true,
+          'Show the comment preview toggle icon in the Quick Reply titlebar.',
+          2
         ]
       },
 
@@ -1095,6 +1100,7 @@ div.boardTitle {
     'Thread Title': 'excerpt',
     'Unread Title Count': 'always',
     'Comment Preview Position': 'below',
+    'Show Comment Preview Header Icon': true,
     'Spoiler Mode': 'default',
 
     threadWatcher: {
@@ -16345,21 +16351,6 @@ svg.icon {
 
         this.addSortEntry();
 
-        // Attach to QR controls (in dropdown per request; header button removed)
-        const attachEl = UI.checkbox('Thread Watcher Attached', 'Attach to QR');
-        attachEl.title = 'Attach/dock the thread watcher to the Quick Reply dialog. Bottom is natural (watcher width follows QR); left/right: width uses manual max W, height sizes to content. Drag watcher or use manual position to detach.';
-        const attachIn = attachEl.firstElementChild;
-        $.on(attachIn, 'mousedown', e => e.stopPropagation());
-        $.on(attachIn, 'click', e => e.stopPropagation());
-        $.on(attachIn, 'change', $.cb.checked);
-        $.on(attachIn, 'change', () => {
-          if (Conf['Thread Watcher Attached']) {
-            ThreadWatcher$1.positionIfAttached(true);
-          } else if (ThreadWatcher$1.dialog) {
-            ThreadWatcher$1.restorePosition();
-          }
-        });
-        this.menu.addEntry({ el: attachEl });
         this.addAttachLocationEntry();
 
         // Settings checkbox entries, grouped into submenus to save vertical space:
@@ -23862,6 +23853,10 @@ aero|asia|biz|cat|com|coop|dance|info|int|jobs|mobi|moe|museum|name|net|org|post
         Conf['Comment Preview Position'] = ['below', 'right', 'left'].includes(value || '') ? value : 'below';
         QR.applyCommentPreviewSettings();
       });
+      $.sync('Show Comment Preview Header Icon', (value) => {
+        Conf['Show Comment Preview Header Icon'] = value !== false;
+        QR.applyCommentPreviewSettings();
+      });
       $.on(d, 'paste', QR.paste);
       $.on(d, 'dragover', QR.dragOver);
       $.on(d, 'drop', QR.dropFile);
@@ -24003,6 +23998,9 @@ aero|asia|biz|cat|com|coop|dance|info|int|jobs|mobi|moe|museum|name|net|org|post
       classList.toggle('has-com-preview', enabled);
       QR.nodes.previewToggle?.classList.toggle('enabled', enabled);
       QR.nodes.previewToggle?.setAttribute('aria-pressed', enabled ? 'true' : 'false');
+      if (QR.nodes.previewToggle) {
+        QR.nodes.previewToggle.hidden = Conf['Show Comment Preview Header Icon'] === false;
+      }
       classList.remove('com-preview-below', 'com-preview-right', 'com-preview-left');
       classList.add(`com-preview-${pos}`);
       if (enabled) {
@@ -29726,7 +29724,7 @@ Enable it on boards.${location.hostname.split('.')[1]}.org in your browser's pri
     posting(section) {
       Settings.renderMainGroups(section, {
         categories: ['Posting and Captchas'],
-        includeSetting: key => key !== 'Comment Preview',
+        includeSetting: key => !['Comment Preview', 'Show Comment Preview Header Icon'].includes(key),
       });
       const fs = $.el('details', { open: true }, { innerHTML: '<summary>Comment Preview</summary>' });
       const row = $.el('div', {
@@ -29759,18 +29757,35 @@ Enable it on boards.${location.hostname.split('.')[1]}.org in your browser's pri
           textContent: ': Where the live preview appears relative to the comment box (requires Comment Preview enabled).',
         }),
       ]);
+      const iconDescription = String(Config.main['Posting and Captchas']['Show Comment Preview Header Icon'][1]);
+      const iconRow = $.el('div', {
+        innerHTML: `<label><input type="checkbox" name="Show Comment Preview Header Icon"><span class="setting-title">Show Header Icon</span></label><span class="description">: <span class="setting-description">${iconDescription}</span></span>`,
+      });
+      iconRow.dataset.name = 'Show Comment Preview Header Icon';
+      iconRow.dataset.settingTitle = 'Show Header Icon';
+      iconRow.dataset.settingDescription = iconDescription;
+      iconRow.title = iconDescription;
+      const iconToggle = $('input[name="Show Comment Preview Header Icon"]', iconRow);
+      $.on(iconToggle, 'change', $.cb.checked);
+      $.on(iconToggle, 'change', function () { this.parentNode.parentNode.dataset.checked = this.checked; });
+      $.on(iconToggle, 'change', () => $.event('QRCommentPreviewChanged', null));
       $.add(sub, positionRow);
       $.add(row, sub);
       $.add(fs, row);
+      $.add(fs, iconRow);
       $.add(section, fs);
-      $.get({
-        'Comment Preview': Conf['Comment Preview'],
-        'Comment Preview Position': Conf['Comment Preview Position'],
-      }, items => {
+      const updateCommentPreviewSettings = (items) => {
         toggle.checked = !!items['Comment Preview'];
         row.dataset.checked = toggle.checked ? 'true' : 'false';
         select.value = items['Comment Preview Position'] || 'below';
-      });
+        iconToggle.checked = items['Show Comment Preview Header Icon'] !== false;
+        iconRow.dataset.checked = iconToggle.checked ? 'true' : 'false';
+      };
+      $.get({
+        'Comment Preview': Conf['Comment Preview'],
+        'Comment Preview Position': Conf['Comment Preview Position'],
+        'Show Comment Preview Header Icon': Conf['Show Comment Preview Header Icon'],
+      }, updateCommentPreviewSettings);
     },
     styling(section) {
       let input, name;

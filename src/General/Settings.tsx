@@ -1413,7 +1413,7 @@ Enable it on boards.${location.hostname.split('.')[1]}.org in your browser's pri
   posting(section) {
     Settings.renderMainGroups(section, {
       categories: ['Posting and Captchas'],
-      includeSetting: key => key !== 'Comment Preview',
+      includeSetting: key => !['Comment Preview', 'Show Comment Preview Header Icon'].includes(key),
     });
 
     const fs = $.el('details',
@@ -1450,19 +1450,36 @@ Enable it on boards.${location.hostname.split('.')[1]}.org in your browser's pri
         textContent: ': Where the live preview appears relative to the comment box (requires Comment Preview enabled).',
       }),
     ]);
+    const iconDescription = String(Config.main['Posting and Captchas']['Show Comment Preview Header Icon'][1]);
+    const iconRow = $.el('div', {
+      innerHTML: `<label><input type="checkbox" name="Show Comment Preview Header Icon"><span class="setting-title">Show Header Icon</span></label><span class="description">: <span class="setting-description">${iconDescription}</span></span>`,
+    }) as HTMLDivElement;
+    iconRow.dataset.name = 'Show Comment Preview Header Icon';
+    iconRow.dataset.settingTitle = 'Show Header Icon';
+    iconRow.dataset.settingDescription = iconDescription;
+    iconRow.title = iconDescription;
+    const iconToggle = $('input[name="Show Comment Preview Header Icon"]', iconRow) as HTMLInputElement;
+    $.on(iconToggle, 'change', $.cb.checked);
+    $.on(iconToggle, 'change', function() { this.parentNode.parentNode.dataset.checked = this.checked; });
+    $.on(iconToggle, 'change', () => $.event('QRCommentPreviewChanged', null));
     $.add(sub, positionRow);
     $.add(row, sub);
     $.add(fs, row);
+    $.add(fs, iconRow);
     $.add(section, fs);
 
-    $.get({
-      'Comment Preview': Conf['Comment Preview'],
-      'Comment Preview Position': Conf['Comment Preview Position'],
-    }, items => {
+    const updateCommentPreviewSettings = (items: Record<string, any>) => {
       toggle.checked = !!items['Comment Preview'];
       row.dataset.checked = toggle.checked ? 'true' : 'false';
       select.value = items['Comment Preview Position'] || 'below';
-    });
+      iconToggle.checked = items['Show Comment Preview Header Icon'] !== false;
+      iconRow.dataset.checked = iconToggle.checked ? 'true' : 'false';
+    };
+    $.get({
+      'Comment Preview': Conf['Comment Preview'],
+      'Comment Preview Position': Conf['Comment Preview Position'],
+      'Show Comment Preview Header Icon': Conf['Show Comment Preview Header Icon'],
+    }, updateCommentPreviewSettings as any);
 
   },
 

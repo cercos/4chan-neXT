@@ -599,6 +599,11 @@ const Config = {
         false,
         'Add a toggle below the Quick Reply comment box to switch between editing and a preview of how the post will render on the current board (greentext, quotes, [spoiler]/[code]/[math]/sjis when supported).',
         1
+      ],
+      'Show Comment Preview Header Icon': [
+        true,
+        'Show the comment preview toggle icon in the Quick Reply titlebar.',
+        2
       ]
     },
 
@@ -759,6 +764,7 @@ const Config = {
   'Thread Title': 'excerpt',
   'Unread Title Count': 'always',
   'Comment Preview Position': 'below',
+  'Show Comment Preview Header Icon': true,
   'Spoiler Mode': 'default',
 
   threadWatcher: {
