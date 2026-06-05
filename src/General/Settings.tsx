@@ -1075,6 +1075,7 @@ Enable it on boards.${location.hostname.split('.')[1]}.org in your browser's pri
       'Scrollbar Mark Quotes You',
       'Scrollbar Mark Ghost Posts',
       'Scrollbar Mark Unread Line',
+      'Scrollbar Marker Position',
       'Highlight Posts Quoting You',
       'Highlight Own Posts',
       'Highlight Ghost Posts'
@@ -1303,6 +1304,38 @@ Enable it on boards.${location.hostname.split('.')[1]}.org in your browser's pri
     inputs['Thread Watcher Max Width'] = widthInput;
     $.add(fs, heightDiv);
 
+    const attachDiv = $.el('div',
+      { innerHTML: '<label><input type="checkbox" name="Thread Watcher Attached">Attach to QR</label><label class="thread-watcher-inline-number">at <select name="Thread Watcher Attach Location" class="field thread-watcher-attach-loc"><option value="bottom">bottom</option><option value="top">top</option><option value="left">left</option><option value="right">right</option></select></label><span class="description">: <span class="setting-description">Attach/dock watcher to Quick Reply. Bottom natural (width follows QR); left/right use manual width (height to content, capped by max H). Manual max W/H apply. Drag to detach.</span></span>' });
+    attachDiv.dataset.name = 'Thread Watcher Attached Thread Watcher Attach Location';
+    attachDiv.dataset.settingTitle = 'Attach to QR';
+    attachDiv.dataset.settingDescription = 'Attach the thread watcher to the Quick Reply dialog.';
+    attachDiv.title = 'Attach the thread watcher to the Quick Reply dialog.';
+    const attachInput = $('input[name="Thread Watcher Attached"]', attachDiv) as HTMLInputElement;
+    const locInput = $('select[name="Thread Watcher Attach Location"]', attachDiv) as HTMLSelectElement;
+    $.on(attachInput, 'change', $.cb.checked);
+    $.on(attachInput, 'change', function() { this.parentNode.parentNode.dataset.checked = this.checked; });
+    $.on(attachInput, 'change', () => {
+      const TW: any = ThreadWatcher;
+      if (attachInput.checked) {
+        if (TW && TW.positionIfAttached) TW.positionIfAttached(true);
+      } else if (TW && TW.restorePosition) {
+        TW.restorePosition();
+      }
+    });
+    $.on(locInput, 'change', function() {
+      $.set(this.name, this.value);
+      Conf[this.name] = this.value;
+      if (Conf['Thread Watcher Attached']) {
+        const TW: any = ThreadWatcher;
+        if (TW && TW.positionIfAttached) TW.positionIfAttached(true);
+      }
+    });
+    items['Thread Watcher Attached'] = Conf['Thread Watcher Attached'];
+    items['Thread Watcher Attach Location'] = Conf['Thread Watcher Attach Location'];
+    inputs['Thread Watcher Attached'] = attachInput;
+    inputs['Thread Watcher Attach Location'] = locInput;
+    $.add(fs, attachDiv);
+
     $.add(section, fs);
     $.get(items, function(items) {
       for (const key in items) {
@@ -1310,6 +1343,8 @@ Enable it on boards.${location.hostname.split('.')[1]}.org in your browser's pri
         if (input.type === 'checkbox') {
           input.checked = items[key];
           input.parentNode.parentNode.dataset.checked = items[key];
+        } else if (input.tagName === 'SELECT') {
+          input.value = items[key] || 'bottom';
         } else {
           input.value = items[key];
         }
@@ -1320,6 +1355,16 @@ Enable it on boards.${location.hostname.split('.')[1]}.org in your browser's pri
       if (Number.isFinite(watcherHeight)) syncWatcherHeightToDialog(Math.max(120, Math.min(999, watcherHeight)));
       const watcherWidth = parseInt(`${items['Thread Watcher Max Width']}`, 10);
       if (Number.isFinite(watcherWidth)) syncWatcherWidthToDialog(Math.max(120, Math.min(999, watcherWidth)));
+      const attachInput2 = inputs['Thread Watcher Attached'] as HTMLInputElement | undefined;
+      if (attachInput2) {
+        attachInput2.parentNode.parentNode.dataset.checked = !!items['Thread Watcher Attached'];
+      }
+      if (items['Thread Watcher Attached']) {
+        const TW: any = ThreadWatcher;
+        if (TW && TW.positionIfAttached) {
+          setTimeout(() => TW.positionIfAttached(true), 0);
+        }
+      }
     });
   },
 
@@ -1547,6 +1592,17 @@ Enable it on boards.${location.hostname.split('.')[1]}.org in your browser's pri
       'Quote Text Color',
       'Dead Link Text Color',
     ] as const;
+    const hexEditableColorKeys = new Set([
+      'Highlight Own Color',
+      'Highlight You Color',
+      'Highlight Ghost Color',
+      'Catalog Highlight Own Color',
+      'Catalog Highlight Watched Color',
+      'Scroll Marker Own Color',
+      'Scroll Marker You Color',
+      'Scroll Marker Ghost Color',
+      'Scroll Marker Unread Color',
+    ]);
     const markerRefreshKeys = new Set([
       'Scrollbar Markers',
       'Scrollbar Mark Own Posts',
@@ -1642,6 +1698,58 @@ Enable it on boards.${location.hostname.split('.')[1]}.org in your browser's pri
       }
     };
     const refreshStylingPreview = () => Settings.refreshStylingPreviewFromDialog();
+    const colorHexInputs: Record<string, HTMLInputElement> = dict();
+    const syncColorHexInput = (baseKey: string) => {
+      const colorInput = inputs[baseKey];
+      const hexInput = colorHexInputs[baseKey];
+      if (!colorInput || !hexInput) return;
+      hexInput.value = colorInput.value || '';
+      hexInput.disabled = colorInput.disabled;
+      hexInput.classList.remove('styling-color-hex-invalid');
+    };
+    const syncColorHexInputs = () => {
+      for (const baseKey in colorHexInputs) syncColorHexInput(baseKey);
+    };
+    for (const baseKey of hexEditableColorKeys) {
+      const colorInput = inputs[baseKey];
+      if (!colorInput || colorInput.type !== 'color') continue;
+      const hexInput = $.el('input', {
+        type: 'text',
+        className: 'field styling-color-hex',
+        placeholder: '#rrggbb',
+        title: 'Hex color, e.g. #ff5050',
+      }) as HTMLInputElement;
+      hexInput.maxLength = 7;
+      hexInput.setAttribute('spellcheck', 'false');
+      colorInput.insertAdjacentElement('afterend', hexInput);
+      colorHexInputs[baseKey] = hexInput;
+      $.on(hexInput, 'input', () => {
+        const raw = hexInput.value.trim();
+        const validPartial = /^#?[0-9a-f]{0,6}$/i.test(raw);
+        const normalized = /^#?[0-9a-f]{6}$/i.test(raw)
+          ? Settings.normalizeHexColorInput(raw)
+          : null;
+        hexInput.classList.toggle('styling-color-hex-invalid', !!raw && !validPartial);
+        if (!normalized) return;
+        colorInput.value = normalized;
+        delete colorInput.dataset.unset;
+        hexInput.value = normalized;
+        colorInput.dispatchEvent(new Event('input', { bubbles: true }));
+      });
+      $.on(hexInput, 'change', () => {
+        const normalized = Settings.normalizeHexColorInput(hexInput.value);
+        if (normalized) {
+          colorInput.value = normalized;
+          delete colorInput.dataset.unset;
+          hexInput.value = normalized;
+          colorInput.dispatchEvent(new Event('change', { bubbles: true }));
+        } else {
+          syncColorHexInput(baseKey);
+        }
+      });
+      $.on(colorInput, 'input', () => syncColorHexInput(baseKey));
+      $.on(colorInput, 'change', () => syncColorHexInput(baseKey));
+    }
     const syncCatalogHighlightControls = () => {
       const catalogEnabled = !!inputs['Enable Catalog Highlights']?.checked;
       for (const key of catalogHighlightKeys) {
@@ -1660,6 +1768,7 @@ Enable it on boards.${location.hostname.split('.')[1]}.org in your browser's pri
           if (control) control.disabled = !enabled;
         }
       }
+      syncColorHexInputs();
     };
     const syncMarkerColorControls = () => {
       Settings.syncLinkedMarkerColors(inputs, editVariant());
@@ -1674,6 +1783,7 @@ Enable it on boards.${location.hostname.split('.')[1]}.org in your browser's pri
           if (clearButton) clearButton.disabled = linked;
         }
       }
+      syncColorHexInputs();
     };
     const syncTextColorControls = () => {
       const manualMode = (textColorModeSelect?.value || 'auto') === 'manual';
@@ -1852,6 +1962,7 @@ Enable it on boards.${location.hostname.split('.')[1]}.org in your browser's pri
       Settings.applyStylingVars();
       refreshUnsetColorInputs();
       Settings.refreshCustomCSSEditor(section);
+      syncColorHexInputs();
       refreshStylingPreview();
     };
 
@@ -1883,6 +1994,7 @@ Enable it on boards.${location.hostname.split('.')[1]}.org in your browser's pri
     const savedPaletteNameInput = $('#styling-saved-palette-name', section) as HTMLInputElement | null;
     const savePaletteBtn = $('#styling-save-palette', section) as HTMLButtonElement | null;
     const savedPalettesList = $('#styling-saved-palettes-list', section) as HTMLElement | null;
+    let suggestedPaletteBatch = 0;
     const paletteStateMap = [
       ['own', 'Highlight Own Color', 'Thread: your post'],
       ['you', 'Highlight You Color', 'Thread: quotes you'],
@@ -1924,14 +2036,15 @@ Enable it on boards.${location.hostname.split('.')[1]}.org in your browser's pri
       Settings.applyStylingVars();
       refreshStylingPreview();
     }
-    function renderSuggestedPalettes() {
+    function renderSuggestedPalettes(advance = false) {
       if (!paletteSuggestionRoot) return;
-      const { profile, palettes } = Settings.suggestedHighlightPalettes(editVariant());
+      if (advance) suggestedPaletteBatch += 1;
+      const { profile, palettes } = Settings.suggestedHighlightPalettes(editVariant(), suggestedPaletteBatch);
       paletteSuggestionRoot.textContent = '';
       const header = $.el('div', { className: 'styling-palette-header' });
       const title = $.el('div', {
         className: 'styling-palette-title',
-        textContent: `Suggested palettes for ${profile.label}`,
+        textContent: `Suggested palettes for ${profile.label}${suggestedPaletteBatch ? ` - set ${suggestedPaletteBatch + 1}` : ''}`,
       });
       const note = $.el('div', {
         className: 'styling-palette-note note',
@@ -1941,7 +2054,7 @@ Enable it on boards.${location.hostname.split('.')[1]}.org in your browser's pri
         type: 'button',
         textContent: 'Refresh',
       }) as HTMLButtonElement;
-      $.on(refresh, 'click', () => renderSuggestedPalettes());
+      $.on(refresh, 'click', () => renderSuggestedPalettes(true));
       $.add(header, [title, note, refresh]);
       $.add(paletteSuggestionRoot, header);
 
@@ -2016,13 +2129,17 @@ Enable it on boards.${location.hostname.split('.')[1]}.org in your browser's pri
     }
     function refreshSuggestedPalettesIfOpen() {
       if (!paletteSuggestionRoot || paletteSuggestionRoot.hidden) return;
+      suggestedPaletteBatch = 0;
       renderSuggestedPalettes();
     }
     if (suggestPalettesBtn && paletteSuggestionRoot) {
       $.on(suggestPalettesBtn, 'click', () => {
         paletteSuggestionRoot.hidden = !paletteSuggestionRoot.hidden;
         suggestPalettesBtn.textContent = paletteSuggestionRoot.hidden ? 'Suggest palettes' : 'Hide palettes';
-        if (!paletteSuggestionRoot.hidden) renderSuggestedPalettes();
+        if (!paletteSuggestionRoot.hidden) {
+          suggestedPaletteBatch = 0;
+          renderSuggestedPalettes();
+        }
       });
     }
     if (savePaletteBtn && savedPaletteNameInput) {
@@ -3071,6 +3188,17 @@ Enable it on boards.${location.hostname.split('.')[1]}.org in your browser's pri
     return `#${to(parts[0])}${to(parts[1])}${to(parts[2])}`;
   },
 
+  normalizeHexColorInput(value: string): string | null {
+    const input = value.trim().replace(/^#/, '');
+    if (/^[0-9a-f]{3}$/i.test(input)) {
+      return `#${input[0]}${input[0]}${input[1]}${input[1]}${input[2]}${input[2]}`.toLowerCase();
+    }
+    if (/^[0-9a-f]{6}$/i.test(input)) {
+      return `#${input}`.toLowerCase();
+    }
+    return null;
+  },
+
   primeResolvedStyleColorCache(keys: string[]) {
     if (!keys.length || !d.body) return;
     const cache = Settings.resolvedStyleColorCache || (Settings.resolvedStyleColorCache = dict());
@@ -3123,6 +3251,12 @@ Enable it on boards.${location.hostname.split('.')[1]}.org in your browser's pri
       delete input.dataset.unset;
     } else {
       input.dataset.unset = '1';
+    }
+    const hexInput = input.nextElementSibling as HTMLInputElement | null;
+    if (hexInput?.classList.contains('styling-color-hex')) {
+      hexInput.value = input.value || '';
+      hexInput.disabled = input.disabled;
+      hexInput.classList.remove('styling-color-hex-invalid');
     }
   },
 
@@ -3182,6 +3316,25 @@ Enable it on boards.${location.hostname.split('.')[1]}.org in your browser's pri
     return `#${to(r)}${to(g)}${to(b)}`;
   },
 
+  hslToHex(h: number, s: number, l: number): string {
+    const hue = ((h % 360) + 360) % 360;
+    const sat = $.minmax(s, 0, 100) / 100;
+    const light = $.minmax(l, 0, 100) / 100;
+    const c = (1 - Math.abs(2 * light - 1)) * sat;
+    const hh = hue / 60;
+    const x = c * (1 - Math.abs((hh % 2) - 1));
+    let r = 0, g = 0, b = 0;
+    if (hh < 1)      { r = c; g = x; }
+    else if (hh < 2) { r = x; g = c; }
+    else if (hh < 3) { g = c; b = x; }
+    else if (hh < 4) { g = x; b = c; }
+    else if (hh < 5) { r = x; b = c; }
+    else             { r = c; b = x; }
+    const m = light - c / 2;
+    const to = (v: number) => Math.round((v + m) * 255).toString(16).padStart(2, '0');
+    return `#${to(r)}${to(g)}${to(b)}`;
+  },
+
   highlightPaletteThemeProfile(variant?: StyleVariant) {
     const siteStyle = String(Settings.styleConf<string>('siteStyle', variant) || '').trim();
     const native = Settings.isCustomSiteThemeValue(siteStyle) ? '' : siteStyle.toLowerCase();
@@ -3214,7 +3367,7 @@ Enable it on boards.${location.hostname.split('.')[1]}.org in your browser's pri
     };
   },
 
-  suggestedHighlightPalettes(variant?: StyleVariant) {
+  suggestedHighlightPalettes(variant?: StyleVariant, batch = 0) {
     const profile = Settings.highlightPaletteThemeProfile(variant);
     const dark = [
       { id: 'ember-night', name: 'Ember Night', colors: { own: '#ff6b6b', you: '#ff9f43', ghost: '#9ca3af', catalogOwn: '#2dd4bf', catalogWatched: '#60a5fa' } },
@@ -3230,6 +3383,33 @@ Enable it on boards.${location.hostname.split('.')[1]}.org in your browser's pri
       { id: 'slate-citrus', name: 'Slate Citrus', colors: { own: '#2563eb', you: '#ca8a04', ghost: '#64748b', catalogOwn: '#0d9488', catalogWatched: '#dc2626' } },
       { id: 'rust-teal', name: 'Rust Teal', colors: { own: '#b45309', you: '#2563eb', ghost: '#78716c', catalogOwn: '#0f766e', catalogWatched: '#be123c' } },
     ];
+    if (batch > 0) {
+      const baseHue = (batch * 47) % 360;
+      const sat = profile.kind === 'dark' ? 72 : 66;
+      const ownLight = profile.kind === 'dark' ? 64 : 42;
+      const youLight = profile.kind === 'dark' ? 66 : 38;
+      const ghostLight = profile.kind === 'dark' ? 68 : 48;
+      const catalogLight = profile.kind === 'dark' ? 62 : 36;
+      const generated = Array.from({ length: 5 }, (_, i) => {
+        const h = baseHue + (i * 31);
+        const accentShift = 96 + ((batch + i) % 3) * 24;
+        return {
+          id: `generated-${batch}-${i}`,
+          name: `Generated ${batch + 1}.${i + 1}`,
+          colors: {
+            own: Settings.hslToHex(h, sat, ownLight),
+            you: Settings.hslToHex(h + accentShift, sat - 4, youLight),
+            ghost: Settings.hslToHex(h + 210, profile.kind === 'dark' ? 12 : 10, ghostLight),
+            catalogOwn: Settings.hslToHex(h + 165, sat - 8, catalogLight),
+            catalogWatched: Settings.hslToHex(h + 270, sat - 2, catalogLight + (profile.kind === 'dark' ? 3 : 2)),
+          },
+        };
+      });
+      return {
+        profile,
+        palettes: generated,
+      };
+    }
     return {
       profile,
       palettes: profile.kind === 'dark' ? dark : light,
@@ -3668,6 +3848,7 @@ Enable it on boards.${location.hostname.split('.')[1]}.org in your browser's pri
       'Scrollbar Mark Quotes You',
       'Scrollbar Mark Ghost Posts',
       'Scrollbar Mark Unread Line',
+      'Scrollbar Marker Position',
       'Highlight Posts Quoting You',
       'Highlight Own Posts',
       'Highlight Ghost Posts'
@@ -3720,6 +3901,8 @@ Enable it on boards.${location.hostname.split('.')[1]}.org in your browser's pri
       'Thread Watcher Thumbnail Preview Size',
       'Thread Watcher Max Height',
       'Thread Watcher Max Width',
+      'Thread Watcher Attached',
+      'Thread Watcher Attach Location',
       'Thread Title',
       'Unread Title Count',
       'Interval',

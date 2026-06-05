@@ -346,19 +346,64 @@ const CaptchaT = {
       statusNode.appendChild($.el('span', {
         className: `fourchanx-captcha-status-icon state-${state}`,
         textContent: icon,
-        title: text
+        title: this.plainStatusMessage(text)
       }));
     }
 
-    statusNode.appendChild($.el('span', {
-      className: 'fourchanx-captcha-status-text',
-      textContent: text
-    }));
+    const message = $.el('span', {
+      className: 'fourchanx-captcha-status-text'
+    });
+    this.appendStatusMessage(message, text);
+    statusNode.appendChild(message);
     this.applyAdaptiveTextColors();
   },
 
+  decodeStatusMessage(text) {
+    const decoder = document.createElement('textarea');
+    decoder.innerHTML = `${text || ''}`;
+    return decoder.value;
+  },
+
+  plainStatusMessage(text) {
+    const html = document.createElement('div');
+    html.innerHTML = this.decodeStatusMessage(text);
+    return html.textContent || '';
+  },
+
+  appendStatusMessage(parent, text) {
+    const html = document.createElement('div');
+    html.innerHTML = this.decodeStatusMessage(text);
+
+    const appendSafe = node => {
+      if (node.nodeType === Node.TEXT_NODE) {
+        parent.appendChild(document.createTextNode(node.textContent || ''));
+        return;
+      }
+      if (node.nodeType !== Node.ELEMENT_NODE) { return; }
+
+      if (node.localName === 'a') {
+        const href = node.getAttribute('href') || '';
+        if (/^https?:\/\//i.test(href)) {
+          const link = document.createElement('a');
+          link.href = href;
+          link.target = '_blank';
+          link.rel = 'noopener';
+          link.textContent = node.textContent || href;
+          parent.appendChild(link);
+          return;
+        }
+      }
+
+      parent.appendChild(document.createTextNode(node.textContent || ''));
+    };
+
+    for (const node of Array.from(html.childNodes)) {
+      appendSafe(node);
+    }
+  },
+
   messageStateFromText(text) {
-    const plain = `${text || ''}`.toLowerCase();
+    const plain = this.plainStatusMessage(text).toLowerCase();
     if (/expired/.test(plain)) { return 'expired'; }
     if (/done|verification not required/.test(plain)) { return 'complete'; }
     if (/error|failed|couldn\'t|mistyped|malfunctioned/.test(plain)) { return 'failed'; }

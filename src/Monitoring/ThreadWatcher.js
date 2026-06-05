@@ -1,5 +1,6 @@
 import ThreadWatcherPage from './ThreadWatcher/ThreadWatcher.html';
 import $ from "../platform/$";
+import QR from '../Posting/QR';
 import Board from '../classes/Board';
 import Callbacks from '../classes/Callbacks';
 import DataBoard from '../classes/DataBoard';
@@ -91,6 +92,7 @@ var ThreadWatcher = {
     this.markReadButton = $('.mark-read', this.dialog);
     this.menuButton = $('.menu-button', this.dialog);
     this.closeButton = $('.move > .close', this.dialog);
+    this.attachButton = $('.attach', this.dialog);
     this.unreaddb = Unread.db || UnreadIndex.db || new DataBoard('lastReadPosts');
     this.unreadEnabled = Conf['Remember Last Read Post'];
 
@@ -98,16 +100,35 @@ var ThreadWatcher = {
     Icon.set(this.markReadButton, 'check');
     Icon.set(this.menuButton, 'caretDown');
     Icon.set(this.closeButton, 'xmark');
+    if (this.attachButton) {
+      Icon.set(this.attachButton, 'link');
+    }
 
     $.on(d, 'QRPostSuccessful',   this.cb.post);
     $.on(sc, 'click', this.toggleWatcher);
     $.on(this.refreshButton, 'click', this.buttonFetchAll);
     $.on(this.markReadButton, 'click', this.cb.markAllRead);
     $.on(this.closeButton, 'click', this.toggleWatcher);
+    if (this.attachButton) {
+      $.on(this.attachButton, 'click', this.toggleAttach);
+    }
     $.on(window, 'resize scroll', () => ThreadWatcher.positionThumbnailHover(ThreadWatcher.hoveredThumbnail));
     $.on(this.list, 'scroll', () => ThreadWatcher.positionThumbnailHover(ThreadWatcher.hoveredThumbnail));
 
     this.menu.addHeaderMenuEntry();
+    $.on(d, 'QRDialogCreation', ThreadWatcher.onQRDialogCreation);
+    $.on(d, '4chanXQRMove', () => {
+      if (ThreadWatcher.attached()) {
+        // Direct for tight sync during QR drag (mousemove rate); rAF would add visible lag/glitch to follower.
+        ThreadWatcher._doPositionAttached();
+      }
+    });
+    $.on(window, 'resize', () => { if (ThreadWatcher.attached()) ThreadWatcher.positionIfAttached(); });
+    $.on(d, '4chanXDragend', (e) => {
+      if (e.detail?.id === 'thread-watcher') {
+        ThreadWatcher.updateAttachButton();
+      }
+    });
     $.onExists(doc, 'body', this.addDialog);
 
     switch (g.VIEW) {
@@ -132,6 +153,24 @@ var ThreadWatcher = {
     ThreadWatcher.initLastModified();
     ThreadWatcher.fetchAuto();
     $.on(window, 'visibilitychange focus', () => $.queueTask(ThreadWatcher.fetchAuto));
+
+    $.sync('Thread Watcher Attached', (val) => {
+      Conf['Thread Watcher Attached'] = !!val;
+      ThreadWatcher.updateAttachButton();
+      if (val) {
+        ThreadWatcher.positionIfAttached(true);
+      } else if (ThreadWatcher.dialog) {
+        ThreadWatcher.restorePosition();
+      }
+    });
+    $.sync('Thread Watcher Attach Location', (val) => {
+      Conf['Thread Watcher Attach Location'] = val || 'bottom';
+      if (ThreadWatcher.attached()) {
+        // Force re-compute size targets (sides no longer match height).
+        ThreadWatcher._lastAttachedW = null;
+        ThreadWatcher._doPositionAttached();
+      }
+    });
 
     if (Conf['Menu'] && Index.enabled) {
       Menu.menu.addEntry({
@@ -233,6 +272,14 @@ var ThreadWatcher = {
     if (!Main.isThisPageLegit()) { return; }
     ThreadWatcher.applyLayout();
     ThreadWatcher.build();
+    ThreadWatcher.updateAttachButton();
+    ThreadWatcher._lastAttachedW = null;
+    if (ThreadWatcher.attached()) {
+      ThreadWatcher.positionIfAttached(true);
+    }
+    if (QR.nodes?.el) {
+      ThreadWatcher.onQRDialogCreation();
+    }
     return $.prepend(d.body, ThreadWatcher.dialog);
   },
 
@@ -981,7 +1028,9 @@ var ThreadWatcher = {
     $.rmAll(list);
     $.add(list, nodes);
 
-    return ThreadWatcher.refreshIcon();
+    const ret = ThreadWatcher.refreshIcon();
+    if (ThreadWatcher.attached()) { ThreadWatcher.positionIfAttached(true); }
+    return ret;
   },
 
   refresh(manual) {
@@ -1126,6 +1175,176 @@ var ThreadWatcher = {
     if (ThreadWatcher.markReadButton) {
       ThreadWatcher.markReadButton.hidden = !Conf['Show Mark All Read Icon'];
     }
+  },
+
+  attached() {
+    return !!Conf['Thread Watcher Attached'];
+  },
+
+  attachLocation() {
+    let loc = Conf['Thread Watcher Attach Location'];
+    if (!['bottom', 'top', 'left', 'right'].includes(loc)) { loc = 'bottom'; }
+    return loc;
+  },
+
+  updateAttachButton() {
+    const btn = ThreadWatcher.attachButton;
+    if (!btn) { return; }
+    const isAttached = ThreadWatcher.attached();
+    btn.classList.toggle('attached', isAttached);
+    btn.title = isAttached ? 'Detach from Quick Reply' : 'Attach to Quick Reply';
+  },
+
+  toggleAttach() {
+    const val = !ThreadWatcher.attached();
+    $.set('Thread Watcher Attached', val);
+    Conf['Thread Watcher Attached'] = val;
+    ThreadWatcher.updateAttachButton();
+    if (val) {
+      ThreadWatcher.positionIfAttached(true);
+    } else {
+      ThreadWatcher.restorePosition();
+    }
+  },
+
+  _posRaf: null,
+
+  positionIfAttached(immediate = false) {
+    if (!ThreadWatcher.dialog || !ThreadWatcher.attached()) { return; }
+    const qr = QR?.nodes?.el;
+    if (!qr || qr.hidden) {
+      ThreadWatcher.restorePosition();
+      return;
+    }
+    if (immediate) {
+      if (ThreadWatcher._posRaf) {
+        cancelAnimationFrame(ThreadWatcher._posRaf);
+        ThreadWatcher._posRaf = null;
+      }
+      ThreadWatcher._doPositionAttached();
+      return;
+    }
+    if (ThreadWatcher._posRaf) { return; }
+    ThreadWatcher._posRaf = requestAnimationFrame(() => {
+      ThreadWatcher._posRaf = null;
+      ThreadWatcher._doPositionAttached();
+    });
+  },
+
+  _doPositionAttached() {
+    const dialog = ThreadWatcher.dialog;
+    if (!dialog) { return; }
+    const qr = QR?.nodes?.el;
+    if (!qr || qr.hidden) {
+      ThreadWatcher.restorePosition();
+      return;
+    }
+    if (!dialog.classList.contains('watcher-attached')) {
+      dialog.classList.add('watcher-attached');
+    }
+    if (dialog.style.position !== 'fixed') {
+      dialog.style.position = 'fixed';
+    }
+    const qrRect = qr.getBoundingClientRect();
+    const loc = ThreadWatcher.attachLocation();
+    let targetW = Math.round(qrRect.width);
+    if (loc === 'left' || loc === 'right') {
+      targetW = ThreadWatcher.maxWidth();
+    }
+
+    // Only rewrite size styles (and trigger inner layout + applyLayout) on actual change.
+    // This avoids heavy reflow/jank on every frame during QR *position* drags (width unchanged).
+    // Width changes (QR resize) will still update live but only do the expensive work when needed.
+    let sizeChanged = false;
+    if (ThreadWatcher._lastAttachedW !== targetW) {
+      dialog.style.width = `${targetW}px`;
+      ThreadWatcher._lastAttachedW = targetW;
+      sizeChanged = true;
+    }
+
+    // Position updates are cheap (fixed element move); always apply for smooth following.
+    if (loc === 'bottom') {
+      dialog.style.left = `${qrRect.left}px`;
+      dialog.style.top = `${qrRect.bottom}px`;
+      dialog.style.right = '';
+      dialog.style.bottom = '';
+    } else if (loc === 'top') {
+      // Use bottom positioning so we don't need to measure our own height (avoids sync layout after width set).
+      dialog.style.left = `${qrRect.left}px`;
+      dialog.style.bottom = `${window.innerHeight - qrRect.top}px`;
+      dialog.style.top = '';
+      dialog.style.right = '';
+    } else if (loc === 'left') {
+      // Use right positioning + explicit width so watcher extends leftward; no own-size read needed.
+      dialog.style.top = `${qrRect.top}px`;
+      dialog.style.right = `${window.innerWidth - qrRect.left}px`;
+      dialog.style.left = '';
+      dialog.style.bottom = '';
+    } else if (loc === 'right') {
+      dialog.style.top = `${qrRect.top}px`;
+      dialog.style.left = `${qrRect.right + 2}px`;
+      dialog.style.right = '';
+      dialog.style.bottom = '';
+    }
+
+    if (sizeChanged) {
+      if (loc === 'left' || loc === 'right') {
+        ThreadWatcher.applyLayout();
+        // Sides: width set to manual max W; height sizes to content (capped by manual --max-height via applyLayout).
+      } else {
+        ThreadWatcher.applyLayout();
+        // When vertically attached (bottom/top), fill the list content to the followed QR width
+        // (instead of being capped by the manual "max W" setting). The manual value from settings
+        // is still the default for standalone (non-attached) watcher and "still works" if you
+        // adjust it while attached (the settings sync will push the manual value to --max-width).
+        dialog.style.setProperty('--watcher-max-width', `${Math.max(120, targetW - 12)}px`);
+      }
+    }
+  },
+
+  restorePosition() {
+    const dialog = ThreadWatcher.dialog;
+    if (!dialog) { return; }
+    dialog.classList.remove('watcher-attached');
+    ThreadWatcher._lastAttachedW = null;
+    const saved = Conf['thread-watcher.position'] || '';
+    if (saved) {
+      dialog.style.cssText = saved;
+    } else {
+      dialog.style.cssText = '';
+    }
+    dialog.style.width = '';
+    dialog.style.height = '';
+    dialog.style.position = Conf['Fixed Thread Watcher'] ? 'fixed' : 'absolute';
+    ThreadWatcher.applyLayout();
+  },
+
+  onQRDialogCreation() {
+    const qr = QR?.nodes?.el;
+    if (!qr) { return; }
+    if (ThreadWatcher._qrObs) {
+      try { ThreadWatcher._qrObs.disconnect(); } catch (e) {}
+    }
+    const schedule = () => {
+      if (ThreadWatcher.attached()) {
+        // Direct for resize following (avoids rAF frame of lag between QR size change and watcher width update).
+        ThreadWatcher._doPositionAttached();
+      }
+    };
+    let ro = null;
+    if (typeof ResizeObserver === 'function') {
+      ro = new ResizeObserver(schedule);
+      ro.observe(qr);
+    }
+    const mo = new MutationObserver(schedule);
+    // Do NOT observe 'style' — drag updates fire too often and cause jank/lag when attached.
+    // ResizeObserver covers size (e.g. QR textarea resize); we call _do direct from RO/MO and 4chanXQRMove.
+    mo.observe(qr, { attributes: true, attributeFilter: ['hidden', 'class'] });
+    ThreadWatcher._qrObs = {
+      ro, mo,
+      disconnect() { try { ro?.disconnect(); } catch(e){} try { mo.disconnect(); } catch(e){} }
+    };
+    schedule();
   },
 
   update(siteID, boardID, threadID, newData) {
@@ -1366,6 +1585,23 @@ var ThreadWatcher = {
 
       this.addSortEntry();
 
+      // Attach to QR controls (in dropdown per request; header button removed)
+      const attachEl = UI.checkbox('Thread Watcher Attached', 'Attach to QR');
+      attachEl.title = 'Attach/dock the thread watcher to the Quick Reply dialog. Bottom is natural (watcher width follows QR); left/right: width uses manual max W, height sizes to content. Drag watcher or use manual position to detach.';
+      const attachIn = attachEl.firstElementChild;
+      $.on(attachIn, 'mousedown', e => e.stopPropagation());
+      $.on(attachIn, 'click', e => e.stopPropagation());
+      $.on(attachIn, 'change', $.cb.checked);
+      $.on(attachIn, 'change', () => {
+        if (Conf['Thread Watcher Attached']) {
+          ThreadWatcher.positionIfAttached(true);
+        } else if (ThreadWatcher.dialog) {
+          ThreadWatcher.restorePosition();
+        }
+      });
+      this.menu.addEntry({ el: attachEl });
+      this.addAttachLocationEntry();
+
       // Settings checkbox entries, grouped into submenus to save vertical space:
       const automationNames = ['Auto Update Thread Watcher', 'Auto Watch', 'Auto Watch Reply', 'Auto Prune'];
       const displayNames = ['Show Page', 'Show Unread Count', 'Show Mark All Read Icon', 'Show Mark Thread Read Icons', 'Show Site Prefix'];
@@ -1471,6 +1707,57 @@ var ThreadWatcher = {
         subEntries,
         open() {
           this.el.classList.toggle('disabled', !ThreadWatcher.list.firstElementChild);
+          return true;
+        }
+      });
+    },
+
+    addAttachLocationEntry() {
+      const locOptions = [
+        ['bottom', 'Bottom (QR width)'],
+        ['top',    'Top (QR width)'],
+        ['left',   'Left (manual W, auto H)'],
+        ['right',  'Right (manual W, auto H)'],
+      ];
+      const subEntries = [];
+      locOptions.forEach(([value, label]) => {
+        const el = $.el('a', {
+          href: 'javascript:;',
+          innerHTML: '<span class="watcher-sort-check"></span><span class="watcher-loc-label"></span>'
+        });
+        const check = $('.watcher-sort-check', el);
+        const labelEl = $('.watcher-loc-label', el);
+        labelEl.textContent = label;
+        const updateCheck = () => {
+          check.textContent = ThreadWatcher.attachLocation() === value ? '✓' : '';
+        };
+        $.on(el, 'mousedown', e => e.stopPropagation());
+        $.on(el, 'click', function(e) {
+          e.stopPropagation();
+          $.set('Thread Watcher Attach Location', value);
+          Conf['Thread Watcher Attach Location'] = value;
+          if (ThreadWatcher.attached()) {
+            ThreadWatcher.positionIfAttached(true);
+          }
+          subEntries.forEach(s => s.updateCheck && s.updateCheck());
+        });
+        subEntries.push({
+          el,
+          updateCheck,
+          open() {
+            updateCheck();
+            return true;
+          }
+        });
+      });
+      this.menu.addEntry({
+        el: $.el('a', {
+          href: 'javascript:;',
+          textContent: 'Attach Location'
+        }),
+        subEntries,
+        open() {
+          // always allow changing location
           return true;
         }
       });

@@ -249,7 +249,7 @@ const ScrollMarkers = {
         ['over', 'Over scrollbar (single)'],
       ];
       const current = ScrollMarkers.position();
-      return options.map(([value, label]) => {
+      const entries = options.map(([value, label]) => {
         const a = $.el('a', {
           href: 'javascript:;',
           textContent: `${current === value ? '✓ ' : '  '}${label}`,
@@ -265,6 +265,18 @@ const ScrollMarkers = {
         });
         return { el: a };
       });
+      const manage = $.el('a', {
+        href: 'javascript:;',
+        textContent: 'Manage styles',
+        className: 'entry scroll-marker-manage-styles',
+      });
+      $.on(manage, 'click', (e: Event) => {
+        e.preventDefault();
+        $.event('OpenSettings', 'Styling');
+        $.event('CloseMenu');
+      });
+      entries.push({ el: manage });
+      return entries;
     },
   },
 

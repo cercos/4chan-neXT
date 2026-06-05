@@ -830,6 +830,10 @@ div[data-checked="false"] > .suboption-list {
 #fourchanx-settings .thread-watcher-width-input {
   width: 4.2em;
 }
+#fourchanx-settings .thread-watcher-attach-loc {
+  width: 5.5em;
+  font-size: 90%;
+}
 .watcher-sort-check {
   display: inline-block;
   width: 1em;
@@ -1618,6 +1622,18 @@ body > #overlay:not(.media-preview) {
   padding: 0;
   border: 1px solid rgba(128, 128, 128, .35);
   background: transparent;
+}
+.section-styling .styling-inline-controls .styling-color-hex {
+  font-family: ui-monospace, SFMono-Regular, Menlo, Monaco, Consolas, "Liberation Mono", "Courier New", monospace;
+  font-size: 11px;
+  height: 22px;
+  padding: 1px 4px;
+  text-transform: lowercase;
+  width: 70px;
+}
+.section-styling .styling-inline-controls .styling-color-hex-invalid {
+  border-color: #d33;
+  box-shadow: 0 0 0 1px color-mix(in srgb, #d33 45%, transparent);
 }
 .section-styling .styling-inline-controls input[type="range"] {
   width: 156px;
@@ -2761,7 +2777,28 @@ textarea.copy-text-element {
   text-decoration: none;
 }
 #thread-watcher .move > .close {
+  /* grouped to the right after the attach button */
+}
+#thread-watcher > .move > .attach {
+  display: inline-flex;
+  align-items: center;
+  justify-content: center;
+  width: 18px;
+  height: 18px;
+  flex: 0 0 18px;
+  padding: 0;
   margin-left: auto;
+  margin-right: 1px;
+  opacity: 0.7;
+}
+#thread-watcher > .move > .attach:hover {
+  opacity: 1;
+}
+#thread-watcher > .move > .attach.attached {
+  opacity: 1;
+}
+#thread-watcher.watcher-attached {
+  /* visually indicate docked/attached state (e.g. via themes) */
 }
 #thread-watcher .mark-read.disabled {
   opacity: .5;
@@ -3429,15 +3466,60 @@ input.field.tripped:not(:hover):not(:focus) {
 
 #qr > .move {
   display: flex;
-  justify-content: space-between;
   align-items: center;
 }
 #qr > .move label {
   display: inline-flex;
   align-items: center;
+  padding: 0;
+}
+#qr-preview-toggle {
+  align-items: center;
+  appearance: none;
+  background: transparent;
+  border: 0;
+  color: inherit;
+  cursor: pointer;
+  display: inline-flex;
+  font: inherit;
+  height: 1.2em;
+  justify-content: center;
+  line-height: inherit;
+  margin: 0 4px;
+  opacity: .45;
+  padding: 0 2px;
+}
+#qr-preview-toggle > .icon {
+  display: block;
+  height: 1em;
+  width: auto;
+}
+#qr-preview-toggle.enabled,
+#qr-preview-toggle:hover,
+#qr-preview-toggle:focus {
+  opacity: 1;
+}
+#qr > .move select[data-name="thread"] {
+  margin-left: auto;
+  min-height: 20px;
+  padding: 1px 18px 1px 4px;
 }
 #qr > .move .close {
-  order: 2;
+  margin-left: 6px;
+  display: inline-flex;
+  align-items: center;
+  justify-content: center;
+  width: 18px;
+  height: 18px;
+  flex: 0 0 18px;
+  padding: 0;
+}
+#qr > .move .close > .icon {
+  display: block;
+}
+/* When the thread select is hidden, the close button takes over right-anchoring */
+:root.thread-view #qr:not(.show-new-thread-option) > .move .close {
+  margin-left: auto;
 }
 
 /* Recaptcha v2 */
@@ -3490,11 +3572,17 @@ input.field.tripped:not(:hover):not(:focus) {
   display: inline-flex;
   align-items: center;
   gap: 5px;
+  flex: 1 1 140px;
+  min-width: 0;
   margin-left: 6px;
   font-size: 11px;
-  line-height: 18px;
+  line-height: 1.35;
   opacity: .8;
-  white-space: nowrap;
+  white-space: normal;
+  overflow-wrap: anywhere;
+}
+#qr.captcha-t .fourchanx-captcha-status-text {
+  min-width: 0;
 }
 #qr.captcha-t .fourchanx-captcha-status-icon {
   display: inline-flex;
@@ -3891,6 +3979,11 @@ input[type="checkbox"]:checked ~ .checkbox-letter {
   opacity: 0.5;
   font-size: 70%;
   margin-left: 5px;
+}
+.entry.scroll-marker-manage-styles {
+  border-top: 1px solid color-mix(in srgb, currentColor 25%, transparent);
+  margin-top: 3px;
+  padding-top: 5px;
 }
 .menu-indicator {
   pointer-events: none;

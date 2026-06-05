@@ -378,6 +378,10 @@ export var drag = function (e) {
   style.right  = right;
   style.top    = top;
   style.bottom = bottom;
+
+  if (this.id === 'qr') {
+    $.event('4chanXQRMove');  // attached watcher listens directly for tight following (no rAF lag)
+  }
 };
 
 export var touchend = function (e) {
@@ -390,12 +394,21 @@ export var touchend = function (e) {
 };
 
 export var dragend = function () {
+  if (this.id === 'thread-watcher' && Conf['Thread Watcher Attached']) {
+    $.set('Thread Watcher Attached', false);
+    Conf['Thread Watcher Attached'] = false;
+    $.event('4chanXDragend', {id: this.id});
+  }
   if (this.isTouching) {
     $.off(d, 'touchmove', this.move);
     $.off(d, 'touchend touchcancel', this.up);
   } else { // mouseup
     $.off(d, 'mousemove', this.move);
     $.off(d, 'mouseup',   this.up);
+  }
+  if (this.id === 'thread-watcher' && Conf['Thread Watcher Attached']) {
+    // shouldn't reach, but don't persist attached pos as the free one
+    return;
   }
   if (this.style.length === 2) { // assume only left or right and top or bottom
     $.set(`${this.id}.position`, this.style.cssText);
@@ -407,6 +420,12 @@ export var dragend = function () {
     if (top) position += `top:${top};`;
     if (bottom) position += `bottom:${bottom};`;
     $.set(`${this.id}.position`, position);
+  }
+  if (this.id === 'thread-watcher') {
+    $.event('4chanXDragend', {id: this.id});
+  }
+  if (this.id === 'qr') {
+    $.event('4chanXQRMove');
   }
 };
 

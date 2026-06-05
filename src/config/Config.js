@@ -438,6 +438,16 @@ const Config = {
         'The thread watcher will be visible when the page is loaded.',
         1
       ],
+      'Thread Watcher Attached': [
+        false,
+        'Attach the thread watcher to the Quick Reply (at the location below). Dragging the watcher detaches it; manual positioning still works when not attached.',
+        2
+      ],
+      'Thread Watcher Attach Location': [
+        'bottom',
+        'Position to attach the thread watcher relative to the Quick Reply dialog (bottom/top: width follows QR; left/right: width uses manual max W, height sizes to content).',
+        2
+      ],
       'Mark New IPs': [
         false,
         'Label each post from a new IP with the thread\'s current IP count.'
@@ -744,6 +754,8 @@ const Config = {
   'Thread Watcher Max Height': 210,
   'Thread Watcher Max Width': 250,
   'Thread Watcher Sort': 'manual',
+  'Thread Watcher Attached': false,
+  'Thread Watcher Attach Location': 'bottom',
   'Thread Title': 'excerpt',
   'Unread Title Count': 'always',
   'Comment Preview Position': 'below',

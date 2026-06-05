@@ -56,6 +56,7 @@ var QR = {
     el: HTMLDivElement,
     move: HTMLDivElement,
     autohide: HTMLInputElement,
+    previewToggle: HTMLButtonElement,
     close: HTMLAnchorElement,
     thread: HTMLSelectElement,
     form: HTMLFormElement,
@@ -374,6 +375,14 @@ var QR = {
     return QR.nodes.el.classList.toggle('sjis-preview', Conf['sjisPreview']);
   },
 
+  toggleCommentPreview(e) {
+    e.preventDefault();
+    Conf['Comment Preview'] = !Conf['Comment Preview'];
+    $.set('Comment Preview', Conf['Comment Preview']);
+    QR.applyCommentPreviewSettings();
+    return $.event('QRCommentPreviewChanged');
+  },
+
   texPreviewShow() {
     if ($.hasClass(QR.nodes.el, 'tex-preview')) { return QR.texPreviewHide(); }
     $.addClass(QR.nodes.el, 'tex-preview');
@@ -396,6 +405,8 @@ var QR = {
     const enabled = !!Conf['Comment Preview'];
     const pos = ['below', 'right', 'left'].includes(Conf['Comment Preview Position']) ? Conf['Comment Preview Position'] : 'below';
     classList.toggle('has-com-preview', enabled);
+    QR.nodes.previewToggle?.classList.toggle('enabled', enabled);
+    QR.nodes.previewToggle?.setAttribute('aria-pressed', enabled ? 'true' : 'false');
     classList.remove('com-preview-below', 'com-preview-right', 'com-preview-left');
     classList.add(`com-preview-${pos}`);
     if (enabled) {
@@ -1010,6 +1021,7 @@ var QR = {
 
     setNode('move',           '.move');
     setNode('autohide',       '#autohide');
+    setNode('previewToggle',  '#qr-preview-toggle');
     setNode('close',          '.close');
     setNode('thread',         'select');
     setNode('form',           'form');
@@ -1054,6 +1066,7 @@ var QR = {
     classList.toggle('has-math',     !!config.math_tags);
     classList.toggle('sjis-preview', !!config.sjis_tags && Conf['sjisPreview']);
     classList.toggle('show-new-thread-option', Conf['Show New Thread Option in Threads']);
+    Icon.set(nodes.previewToggle, 'eye');
     QR.applyCommentPreviewSettings();
 
     if (parseInt(Conf['customCooldown'], 10) > 0) {
@@ -1074,6 +1087,7 @@ var QR = {
     $.on(nodes.close,          'click',     QR.close);
     $.on(nodes.status,         'click',     QR.submit);
     $.on(nodes.form,           'submit',    QR.submit);
+    $.on(nodes.previewToggle,  'click',     QR.toggleCommentPreview);
     $.on(nodes.sjisToggle,     'click',     QR.toggleSJIS);
     $.on(nodes.texButton,      'mousedown', QR.texPreviewShow);
     $.on(nodes.texButton,      'mouseup',   QR.texPreviewHide);
