@@ -2,6 +2,16 @@
 
 ### Unreleased
 
+### 1.0.7 (2026-06-05)
+
+- Added an attach/detach control for docking the Thread Watcher to the Quick Reply.
+- Added a preview toggle icon to the Quick Reply header.
+- Grouped and cleaned up Thread Watcher settings in the settings dropdown.
+- Fixed update metadata so userscript managers can find the download and update URLs.
+- Fixed QR captcha wait messages so embedded sign-in links render correctly and long messages wrap inside the captcha box.
+- Fixed a LibreWolf/Violentmonkey sync error when storage change events provide empty board data, which could also disrupt settings updates such as Custom CSS.
+- Small Quick Reply, Thread Watcher, and settings fixes.
+
 ### 1.0.6 (2026-06-03)
 
 - Added IDE-style "over scrollbar" marker mode with header menu toggle.

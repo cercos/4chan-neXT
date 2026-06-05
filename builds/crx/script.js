@@ -85,8 +85,8 @@
   'use strict';
 
   var version = {
-    "version": "1.0.6",
-    "date": "2026-06-03T00:00:00Z"
+    "version": "1.0.7",
+    "date": "2026-06-05T00:00:00Z"
   }
   ;
 
@@ -656,6 +656,16 @@ div.boardTitle {
           'The thread watcher will be visible when the page is loaded.',
           1
         ],
+        'Thread Watcher Attached': [
+          false,
+          'Attach the thread watcher to the Quick Reply (at the location below). Dragging the watcher detaches it; manual positioning still works when not attached.',
+          2
+        ],
+        'Thread Watcher Attach Location': [
+          'bottom',
+          'Position to attach the thread watcher relative to the Quick Reply dialog (bottom/top: width follows QR; left/right: width uses manual max W, height sizes to content).',
+          2
+        ],
         'Mark New IPs': [
           false,
           'Label each post from a new IP with the thread\'s current IP count.'
@@ -962,6 +972,8 @@ div.boardTitle {
     'Thread Watcher Max Height': 210,
     'Thread Watcher Max Width': 250,
     'Thread Watcher Sort': 'manual',
+    'Thread Watcher Attached': false,
+    'Thread Watcher Attach Location': 'bottom',
     'Thread Title': 'excerpt',
     'Unread Title Count': 'always',
     'Comment Preview Position': 'below',
@@ -3201,15 +3213,6 @@ current-archive-text:"Archive"]
   <summary>Scrollbar Markers</summary>
   <div data-name="Scrollbar Markers">
     <label><input type="checkbox" name="Scrollbar Markers"> Scrollbar markers</label>
-    <div class="styling-tree-row">
-      <label>Marker position:
-        <select name="Scrollbar Marker Position" class="field" title="Also in the header menu → Scroll markers. Beside = gutter left of track. On scrollbar = on the track. Overlay = above the thumb.">
-          <option value="offset">Beside scrollbar (default)</option>
-          <option value="scrollbar">On scrollbar (IDE-style)</option>
-          <option value="overlay">Over scrollbar</option>
-        </select>
-      </label>
-    </div>
     <div class="styling-tree">
       <div class="styling-inline-option" data-marker-color="own">
         <label><input type="checkbox" name="Scrollbar Mark Own Posts"> Your posts</label>
@@ -4803,6 +4806,10 @@ div[data-checked="false"] > .suboption-list {
 #fourchanx-settings .thread-watcher-width-input {
   width: 4.2em;
 }
+#fourchanx-settings .thread-watcher-attach-loc {
+  width: 5.5em;
+  font-size: 90%;
+}
 .watcher-sort-check {
   display: inline-block;
   width: 1em;
@@ -5591,6 +5598,18 @@ body > #overlay:not(.media-preview) {
   padding: 0;
   border: 1px solid rgba(128, 128, 128, .35);
   background: transparent;
+}
+.section-styling .styling-inline-controls .styling-color-hex {
+  font-family: ui-monospace, SFMono-Regular, Menlo, Monaco, Consolas, "Liberation Mono", "Courier New", monospace;
+  font-size: 11px;
+  height: 22px;
+  padding: 1px 4px;
+  text-transform: lowercase;
+  width: 70px;
+}
+.section-styling .styling-inline-controls .styling-color-hex-invalid {
+  border-color: #d33;
+  box-shadow: 0 0 0 1px color-mix(in srgb, #d33 45%, transparent);
 }
 .section-styling .styling-inline-controls input[type="range"] {
   width: 156px;
@@ -6734,7 +6753,28 @@ textarea.copy-text-element {
   text-decoration: none;
 }
 #thread-watcher .move > .close {
+  /* grouped to the right after the attach button */
+}
+#thread-watcher > .move > .attach {
+  display: inline-flex;
+  align-items: center;
+  justify-content: center;
+  width: 18px;
+  height: 18px;
+  flex: 0 0 18px;
+  padding: 0;
   margin-left: auto;
+  margin-right: 1px;
+  opacity: 0.7;
+}
+#thread-watcher > .move > .attach:hover {
+  opacity: 1;
+}
+#thread-watcher > .move > .attach.attached {
+  opacity: 1;
+}
+#thread-watcher.watcher-attached {
+  /* visually indicate docked/attached state (e.g. via themes) */
 }
 #thread-watcher .mark-read.disabled {
   opacity: .5;
@@ -7402,15 +7442,60 @@ input.field.tripped:not(:hover):not(:focus) {
 
 #qr > .move {
   display: flex;
-  justify-content: space-between;
   align-items: center;
 }
 #qr > .move label {
   display: inline-flex;
   align-items: center;
+  padding: 0;
+}
+#qr-preview-toggle {
+  align-items: center;
+  appearance: none;
+  background: transparent;
+  border: 0;
+  color: inherit;
+  cursor: pointer;
+  display: inline-flex;
+  font: inherit;
+  height: 1.2em;
+  justify-content: center;
+  line-height: inherit;
+  margin: 0 4px;
+  opacity: .45;
+  padding: 0 2px;
+}
+#qr-preview-toggle > .icon {
+  display: block;
+  height: 1em;
+  width: auto;
+}
+#qr-preview-toggle.enabled,
+#qr-preview-toggle:hover,
+#qr-preview-toggle:focus {
+  opacity: 1;
+}
+#qr > .move select[data-name="thread"] {
+  margin-left: auto;
+  min-height: 20px;
+  padding: 1px 18px 1px 4px;
 }
 #qr > .move .close {
-  order: 2;
+  margin-left: 6px;
+  display: inline-flex;
+  align-items: center;
+  justify-content: center;
+  width: 18px;
+  height: 18px;
+  flex: 0 0 18px;
+  padding: 0;
+}
+#qr > .move .close > .icon {
+  display: block;
+}
+/* When the thread select is hidden, the close button takes over right-anchoring */
+:root.thread-view #qr:not(.show-new-thread-option) > .move .close {
+  margin-left: auto;
 }
 
 /* Recaptcha v2 */
@@ -7463,11 +7548,17 @@ input.field.tripped:not(:hover):not(:focus) {
   display: inline-flex;
   align-items: center;
   gap: 5px;
+  flex: 1 1 140px;
+  min-width: 0;
   margin-left: 6px;
   font-size: 11px;
-  line-height: 18px;
+  line-height: 1.35;
   opacity: .8;
-  white-space: nowrap;
+  white-space: normal;
+  overflow-wrap: anywhere;
+}
+#qr.captcha-t .fourchanx-captcha-status-text {
+  min-width: 0;
 }
 #qr.captcha-t .fourchanx-captcha-status-icon {
   display: inline-flex;
@@ -7864,6 +7955,11 @@ input[type="checkbox"]:checked ~ .checkbox-letter {
   opacity: 0.5;
   font-size: 70%;
   margin-left: 5px;
+}
+.entry.scroll-marker-manage-styles {
+  border-top: 1px solid color-mix(in srgb, currentColor 25%, transparent);
+  margin-top: 3px;
+  padding-top: 5px;
 }
 .menu-indicator {
   pointer-events: none;
@@ -9123,10 +9219,11 @@ svg.icon {
     <input type="checkbox" id="autohide" title="Auto-hide">
     Quick Reply
   </label>
-  <a href="javascript:;" class="close" title="Close">✕</a>
+  <button type="button" id="qr-preview-toggle" title="Toggle comment preview"></button>
   <select data-name="thread" title="Create a new thread / Reply">
     <option value="new">New thread</option>
   </select>
+  <a href="javascript:;" class="close" title="Close">✕</a>
 </div>
 <form>
   <div class="persona">
@@ -9767,19 +9864,64 @@ svg.icon {
         statusNode.appendChild($.el('span', {
           className: `fourchanx-captcha-status-icon state-${state}`,
           textContent: icon,
-          title: text
+          title: this.plainStatusMessage(text)
         }));
       }
 
-      statusNode.appendChild($.el('span', {
-        className: 'fourchanx-captcha-status-text',
-        textContent: text
-      }));
+      const message = $.el('span', {
+        className: 'fourchanx-captcha-status-text'
+      });
+      this.appendStatusMessage(message, text);
+      statusNode.appendChild(message);
       this.applyAdaptiveTextColors();
     },
 
+    decodeStatusMessage(text) {
+      const decoder = document.createElement('textarea');
+      decoder.innerHTML = `${text || ''}`;
+      return decoder.value;
+    },
+
+    plainStatusMessage(text) {
+      const html = document.createElement('div');
+      html.innerHTML = this.decodeStatusMessage(text);
+      return html.textContent || '';
+    },
+
+    appendStatusMessage(parent, text) {
+      const html = document.createElement('div');
+      html.innerHTML = this.decodeStatusMessage(text);
+
+      const appendSafe = node => {
+        if (node.nodeType === Node.TEXT_NODE) {
+          parent.appendChild(document.createTextNode(node.textContent || ''));
+          return;
+        }
+        if (node.nodeType !== Node.ELEMENT_NODE) { return; }
+
+        if (node.localName === 'a') {
+          const href = node.getAttribute('href') || '';
+          if (/^https?:\/\//i.test(href)) {
+            const link = document.createElement('a');
+            link.href = href;
+            link.target = '_blank';
+            link.rel = 'noopener';
+            link.textContent = node.textContent || href;
+            parent.appendChild(link);
+            return;
+          }
+        }
+
+        parent.appendChild(document.createTextNode(node.textContent || ''));
+      };
+
+      for (const node of Array.from(html.childNodes)) {
+        appendSafe(node);
+      }
+    },
+
     messageStateFromText(text) {
-      const plain = `${text || ''}`.toLowerCase();
+      const plain = this.plainStatusMessage(text).toLowerCase();
       if (/expired/.test(plain)) { return 'expired'; }
       if (/done|verification not required/.test(plain)) { return 'complete'; }
       if (/error|failed|couldn\'t|mistyped|malfunctioned/.test(plain)) { return 'failed'; }
@@ -10309,6 +10451,9 @@ svg.icon {
       $.set(this.key, this.data);
     }
     onSync(data) {
+      if (!data) {
+        return;
+      }
       if ((data.version || 0) <= (this.data.version || 0)) {
         return;
       }
@@ -10891,6 +11036,10 @@ svg.icon {
     style.right  = right;
     style.top    = top;
     style.bottom = bottom;
+
+    if (this.id === 'qr') {
+      $.event('4chanXQRMove');  // attached watcher listens directly for tight following (no rAF lag)
+    }
   };
 
   var touchend = function (e) {
@@ -10903,12 +11052,21 @@ svg.icon {
   };
 
   var dragend = function () {
+    if (this.id === 'thread-watcher' && Conf['Thread Watcher Attached']) {
+      $.set('Thread Watcher Attached', false);
+      Conf['Thread Watcher Attached'] = false;
+      $.event('4chanXDragend', {id: this.id});
+    }
     if (this.isTouching) {
       $.off(d, 'touchmove', this.move);
       $.off(d, 'touchend touchcancel', this.up);
     } else { // mouseup
       $.off(d, 'mousemove', this.move);
       $.off(d, 'mouseup',   this.up);
+    }
+    if (this.id === 'thread-watcher' && Conf['Thread Watcher Attached']) {
+      // shouldn't reach, but don't persist attached pos as the free one
+      return;
     }
     if (this.style.length === 2) { // assume only left or right and top or bottom
       $.set(`${this.id}.position`, this.style.cssText);
@@ -10920,6 +11078,12 @@ svg.icon {
       if (top) position += `top:${top};`;
       if (bottom) position += `bottom:${bottom};`;
       $.set(`${this.id}.position`, position);
+    }
+    if (this.id === 'thread-watcher') {
+      $.event('4chanXDragend', {id: this.id});
+    }
+    if (this.id === 'qr') {
+      $.event('4chanXQRMove');
     }
   };
 
@@ -12801,6 +12965,7 @@ svg.icon {
   <a class="mark-read" title="Mark all watched threads as read" href="javascript:;"></a>
   <span id="watcher-status"></span>
   <a class="menu-button" href="javascript:;"></a>
+  <a class="attach" href="javascript:;"></a>
   <a class="close" href="javascript:;">×</a>
 </div>
 <div id="watched-threads"></div>`;
@@ -13383,7 +13548,7 @@ svg.icon {
             }
           }
         }
-        return ThreadWatcher.update(g.SITE.ID, Unread.thread.board.ID, Unread.thread.ID, {
+        return ThreadWatcher$1.update(g.SITE.ID, Unread.thread.board.ID, Unread.thread.ID, {
           last: Unread.thread.lastPost,
           isDead: Unread.thread.isDead,
           isArchived: Unread.thread.isArchived,
@@ -13639,7 +13804,7 @@ svg.icon {
           ['over', 'Over scrollbar (single)'],
         ];
         const current = ScrollMarkers.position();
-        return options.map(([value, label]) => {
+        const entries = options.map(([value, label]) => {
           const a = $.el('a', {
             href: 'javascript:;',
             textContent: `${current === value ? '✓ ' : '  '}${label}`,
@@ -13655,6 +13820,18 @@ svg.icon {
           });
           return { el: a };
         });
+        const manage = $.el('a', {
+          href: 'javascript:;',
+          textContent: 'Manage styles',
+          className: 'entry scroll-marker-manage-styles',
+        });
+        $.on(manage, 'click', (e) => {
+          e.preventDefault();
+          $.event('OpenSettings', 'Styling');
+          $.event('CloseMenu');
+        });
+        entries.push({ el: manage });
+        return entries;
       },
     },
     init() {
@@ -14421,7 +14598,7 @@ svg.icon {
       });
       $.rm(UnreadIndex.hr[thread.fullID]);
       thread.nodes.root.classList.remove('unread-thread');
-      return ThreadWatcher.update(g.SITE.ID, thread.board.ID, thread.ID, {
+      return ThreadWatcher$1.update(g.SITE.ID, thread.board.ID, thread.ID, {
         last: thread.lastPost,
         unread: 0,
         quotingYou: 0
@@ -14430,25 +14607,25 @@ svg.icon {
     }
   };
 
-  var ThreadWatcher = {
+  var ThreadWatcher$1 = {
     drag: {
       start(e) {
-        if (ThreadWatcher.sortMode() !== 'manual') {
+        if (ThreadWatcher$1.sortMode() !== 'manual') {
           e.preventDefault();
           return;
         }
-        ThreadWatcher.draggingLine = this;
+        ThreadWatcher$1.draggingLine = this;
         this.classList.add('drag');
         if (e.dataTransfer) {
           e.dataTransfer.effectAllowed = 'move';
-          e.dataTransfer.setData('text/plain', ThreadWatcher.keyFromLine(this));
+          e.dataTransfer.setData('text/plain', ThreadWatcher$1.keyFromLine(this));
         }
       },
       end() {
-        ThreadWatcher.clearDragState();
+        ThreadWatcher$1.clearDragState();
       },
       enter() {
-        if (ThreadWatcher.draggingLine && ThreadWatcher.draggingLine !== this) {
+        if (ThreadWatcher$1.draggingLine && ThreadWatcher$1.draggingLine !== this) {
           this.classList.add('over');
         }
       },
@@ -14456,18 +14633,18 @@ svg.icon {
         this.classList.remove('over');
       },
       over(e) {
-        if (ThreadWatcher.draggingLine && ThreadWatcher.draggingLine !== this) {
+        if (ThreadWatcher$1.draggingLine && ThreadWatcher$1.draggingLine !== this) {
           e.preventDefault();
           e.dataTransfer.dropEffect = 'move';
         }
       },
       drop(e) {
-        if (!ThreadWatcher.draggingLine || ThreadWatcher.draggingLine === this) { return; }
+        if (!ThreadWatcher$1.draggingLine || ThreadWatcher$1.draggingLine === this) { return; }
         e.preventDefault();
         this.classList.remove('over');
-        const { before } = ThreadWatcher.dropPosition(this, e);
-        ThreadWatcher.reorderInDOM(ThreadWatcher.draggingLine, this, before);
-        ThreadWatcher.clearDragState();
+        const { before } = ThreadWatcher$1.dropPosition(this, e);
+        ThreadWatcher$1.reorderInDOM(ThreadWatcher$1.draggingLine, this, before);
+        ThreadWatcher$1.clearDragState();
       }
     },
 
@@ -14491,6 +14668,7 @@ svg.icon {
       this.markReadButton = $('.mark-read', this.dialog);
       this.menuButton = $('.menu-button', this.dialog);
       this.closeButton = $('.move > .close', this.dialog);
+      this.attachButton = $('.attach', this.dialog);
       this.unreaddb = Unread.db || UnreadIndex.db || new DataBoard('lastReadPosts');
       this.unreadEnabled = Conf['Remember Last Read Post'];
 
@@ -14498,16 +14676,35 @@ svg.icon {
       Icon.set(this.markReadButton, 'check');
       Icon.set(this.menuButton, 'caretDown');
       Icon.set(this.closeButton, 'xmark');
+      if (this.attachButton) {
+        Icon.set(this.attachButton, 'link');
+      }
 
       $.on(d, 'QRPostSuccessful',   this.cb.post);
       $.on(sc, 'click', this.toggleWatcher);
       $.on(this.refreshButton, 'click', this.buttonFetchAll);
       $.on(this.markReadButton, 'click', this.cb.markAllRead);
       $.on(this.closeButton, 'click', this.toggleWatcher);
-      $.on(window, 'resize scroll', () => ThreadWatcher.positionThumbnailHover(ThreadWatcher.hoveredThumbnail));
-      $.on(this.list, 'scroll', () => ThreadWatcher.positionThumbnailHover(ThreadWatcher.hoveredThumbnail));
+      if (this.attachButton) {
+        $.on(this.attachButton, 'click', this.toggleAttach);
+      }
+      $.on(window, 'resize scroll', () => ThreadWatcher$1.positionThumbnailHover(ThreadWatcher$1.hoveredThumbnail));
+      $.on(this.list, 'scroll', () => ThreadWatcher$1.positionThumbnailHover(ThreadWatcher$1.hoveredThumbnail));
 
       this.menu.addHeaderMenuEntry();
+      $.on(d, 'QRDialogCreation', ThreadWatcher$1.onQRDialogCreation);
+      $.on(d, '4chanXQRMove', () => {
+        if (ThreadWatcher$1.attached()) {
+          // Direct for tight sync during QR drag (mousemove rate); rAF would add visible lag/glitch to follower.
+          ThreadWatcher$1._doPositionAttached();
+        }
+      });
+      $.on(window, 'resize', () => { if (ThreadWatcher$1.attached()) ThreadWatcher$1.positionIfAttached(); });
+      $.on(d, '4chanXDragend', (e) => {
+        if (e.detail?.id === 'thread-watcher') {
+          ThreadWatcher$1.updateAttachButton();
+        }
+      });
       $.onExists(doc, 'body', this.addDialog);
 
       switch (g.VIEW) {
@@ -14523,15 +14720,33 @@ svg.icon {
         $.addClass(doc, 'fixed-watcher');
       }
       if (!Conf['Persistent Thread Watcher']) {
-        $.addClass(ThreadWatcher.shortcut, 'disabled');
+        $.addClass(ThreadWatcher$1.shortcut, 'disabled');
         this.dialog.hidden = true;
       }
 
       Header.addShortcut('watcher', sc, 510,);
 
-      ThreadWatcher.initLastModified();
-      ThreadWatcher.fetchAuto();
-      $.on(window, 'visibilitychange focus', () => $.queueTask(ThreadWatcher.fetchAuto));
+      ThreadWatcher$1.initLastModified();
+      ThreadWatcher$1.fetchAuto();
+      $.on(window, 'visibilitychange focus', () => $.queueTask(ThreadWatcher$1.fetchAuto));
+
+      $.sync('Thread Watcher Attached', (val) => {
+        Conf['Thread Watcher Attached'] = !!val;
+        ThreadWatcher$1.updateAttachButton();
+        if (val) {
+          ThreadWatcher$1.positionIfAttached(true);
+        } else if (ThreadWatcher$1.dialog) {
+          ThreadWatcher$1.restorePosition();
+        }
+      });
+      $.sync('Thread Watcher Attach Location', (val) => {
+        Conf['Thread Watcher Attach Location'] = val || 'bottom';
+        if (ThreadWatcher$1.attached()) {
+          // Force re-compute size targets (sides no longer match height).
+          ThreadWatcher$1._lastAttachedW = null;
+          ThreadWatcher$1._doPositionAttached();
+        }
+      });
 
       if (Conf['Menu'] && Index.enabled) {
         Menu.menu.addEntry({
@@ -14543,7 +14758,7 @@ svg.icon {
           order: 6,
           open({thread}) {
             if (Conf['Index Mode'] !== 'catalog') { return false; }
-            this.el.firstElementChild.textContent = ThreadWatcher.isWatched(thread) ?
+            this.el.firstElementChild.textContent = ThreadWatcher$1.isWatched(thread) ?
               'Unwatch'
             :
               'Watch';
@@ -14552,7 +14767,7 @@ svg.icon {
             if (this.cb) { $.off(this.el, 'click', this.cb); }
             this.cb = function() {
               $.event('CloseMenu');
-              return ThreadWatcher.toggle(thread, true);
+              return ThreadWatcher$1.toggle(thread, true);
             };
             $.on(this.el, 'click', this.cb);
             return true;
@@ -14573,11 +14788,11 @@ svg.icon {
     },
 
     isWatched(thread) {
-      return !!ThreadWatcher.db?.get({boardID: thread.board.ID, threadID: thread.ID});
+      return !!ThreadWatcher$1.db?.get({boardID: thread.board.ID, threadID: thread.ID});
     },
 
     isWatchedRaw(boardID, threadID) {
-      return !!ThreadWatcher.db?.get({boardID, threadID});
+      return !!ThreadWatcher$1.db?.get({boardID, threadID});
     },
 
     setToggler(toggler, isWatched) {
@@ -14601,19 +14816,19 @@ svg.icon {
       const siteID = g.SITE.ID;
       const boardID = this.board.ID;
       const threadID = this.thread.ID;
-      const data = ThreadWatcher.db.get({siteID, boardID, threadID});
-      ThreadWatcher.setToggler(toggler, !!data);
-      $.on(toggler, 'click', ThreadWatcher.cb.toggle);
+      const data = ThreadWatcher$1.db.get({siteID, boardID, threadID});
+      ThreadWatcher$1.setToggler(toggler, !!data);
+      $.on(toggler, 'click', ThreadWatcher$1.cb.toggle);
       // Add missing excerpt for threads added by Auto Watch
       if (data && (data.excerpt == null)) {
         return $.queueTask(() => {
-          return ThreadWatcher.update(siteID, boardID, threadID, {excerpt: Get.threadExcerpt(this.thread)});
+          return ThreadWatcher$1.update(siteID, boardID, threadID, {excerpt: Get.threadExcerpt(this.thread)});
       });
       }
     },
 
     catalogNode() {
-      if (ThreadWatcher.isWatched(this.thread)) { $.addClass(this.nodes.root, 'watched'); }
+      if (ThreadWatcher$1.isWatched(this.thread)) { $.addClass(this.nodes.root, 'watched'); }
       return $.on(this.nodes.root, 'mousedown click', e => {
         if (e.button !== 0) return;
         const wanted = Conf['Watch (catalog click)'];
@@ -14624,23 +14839,31 @@ svg.icon {
         if (e.metaKey)  { got.push('Meta'); }
         if (e.shiftKey) { got.push('Shift'); }
         if (got.join('+') !== wanted) return;
-        if (e.type === 'click') ThreadWatcher.toggle(this.thread, true);
+        if (e.type === 'click') ThreadWatcher$1.toggle(this.thread, true);
         return e.preventDefault();
       });
     }, // Also on mousedown to prevent highlighting thumbnail in Firefox.
 
     addDialog() {
       if (!Main.isThisPageLegit()) { return; }
-      ThreadWatcher.applyLayout();
-      ThreadWatcher.build();
-      return $.prepend(d.body, ThreadWatcher.dialog);
+      ThreadWatcher$1.applyLayout();
+      ThreadWatcher$1.build();
+      ThreadWatcher$1.updateAttachButton();
+      ThreadWatcher$1._lastAttachedW = null;
+      if (ThreadWatcher$1.attached()) {
+        ThreadWatcher$1.positionIfAttached(true);
+      }
+      if (QR.nodes?.el) {
+        ThreadWatcher$1.onQRDialogCreation();
+      }
+      return $.prepend(d.body, ThreadWatcher$1.dialog);
     },
 
     toggleWatcher() {
-      $.toggleClass(ThreadWatcher.shortcut, 'disabled');
-      const hidden = (ThreadWatcher.dialog.hidden = !ThreadWatcher.dialog.hidden);
+      $.toggleClass(ThreadWatcher$1.shortcut, 'disabled');
+      const hidden = (ThreadWatcher$1.dialog.hidden = !ThreadWatcher$1.dialog.hidden);
       if (hidden) {
-        ThreadWatcher.hideThumbnailHover();
+        ThreadWatcher$1.hideThumbnailHover();
       }
       return hidden;
     },
@@ -14648,70 +14871,70 @@ svg.icon {
     cb: {
       openAll() {
         if ($.hasClass(this, 'disabled')) return;
-        for (var a of $$('a.watcher-link', ThreadWatcher.list)) {
+        for (var a of $$('a.watcher-link', ThreadWatcher$1.list)) {
           $.open(a.href);
         }
         $.event('CloseMenu');
       },
       openUnread() {
         if ($.hasClass(this, 'disabled')) return;
-        for (var a of $$('.replies-unread > a.watcher-link', ThreadWatcher.list)) {
+        for (var a of $$('.replies-unread > a.watcher-link', ThreadWatcher$1.list)) {
           $.open(a.href);
         }
         $.event('CloseMenu');
       },
       openDeads() {
         if ($.hasClass(this, 'disabled')) return;
-        for (var a of $$('.dead-thread.replies-unread > a.watcher-link', ThreadWatcher.list)) {
+        for (var a of $$('.dead-thread.replies-unread > a.watcher-link', ThreadWatcher$1.list)) {
           $.open(a.href);
         }
         $.event('CloseMenu');
       },
       clear() {
         if (!confirm("Delete ALL threads from watcher?")) return;
-        const ref = ThreadWatcher.getAll();
+        const ref = ThreadWatcher$1.getAll();
         for (let i = 0, len = ref.length; i < len; i++) {
           const { siteID, boardID, threadID } = ref[i];
-          ThreadWatcher.db.delete({ siteID, boardID, threadID });
+          ThreadWatcher$1.db.delete({ siteID, boardID, threadID });
         }
-        ThreadWatcher.refresh(true);
+        ThreadWatcher$1.refresh(true);
         $.event('CloseMenu');
       },
       pruneDeads() {
         if ($.hasClass(this, 'disabled')) return;
-        for (var {siteID, boardID, threadID, data} of ThreadWatcher.getAll()) {
+        for (var {siteID, boardID, threadID, data} of ThreadWatcher$1.getAll()) {
           if (data.isDead) {
-            ThreadWatcher.db.delete({siteID, boardID, threadID});
+            ThreadWatcher$1.db.delete({siteID, boardID, threadID});
           }
         }
-        ThreadWatcher.refresh(true);
+        ThreadWatcher$1.refresh(true);
         $.event('CloseMenu');
       },
       pruneReadDeads() {
         if ($.hasClass(this, 'disabled')) return;
-        for (var { siteID, boardID, threadID, data } of ThreadWatcher.getAll()) {
+        for (var { siteID, boardID, threadID, data } of ThreadWatcher$1.getAll()) {
           if (data.isDead && !data.unread) {
-            ThreadWatcher.db.delete({ siteID, boardID, threadID });
+            ThreadWatcher$1.db.delete({ siteID, boardID, threadID });
           }
         }
-        ThreadWatcher.refresh(true);
+        ThreadWatcher$1.refresh(true);
         $.event('CloseMenu');
       },
       dismiss() {
-        for (var {siteID, boardID, threadID, data} of ThreadWatcher.getAll()) {
+        for (var {siteID, boardID, threadID, data} of ThreadWatcher$1.getAll()) {
           if (data.quotingYou) {
-            ThreadWatcher.update(siteID, boardID, threadID, {dismiss: data.quotingYou || 0, yousCount: 0});
+            ThreadWatcher$1.update(siteID, boardID, threadID, {dismiss: data.quotingYou || 0, yousCount: 0});
           }
         }
         $.event('CloseMenu');
       },
       markAllRead() {
-        if ($.hasClass(this, 'disabled') || !ThreadWatcher.unreadEnabled) { return; }
-        for (var {siteID, boardID, threadID, data} of ThreadWatcher.getAll()) {
+        if ($.hasClass(this, 'disabled') || !ThreadWatcher$1.unreadEnabled) { return; }
+        for (var {siteID, boardID, threadID, data} of ThreadWatcher$1.getAll()) {
           if (data.last != null) {
-            ThreadWatcher.unreaddb.set({siteID, boardID, threadID, val: data.last});
+            ThreadWatcher$1.unreaddb.set({siteID, boardID, threadID, val: data.last});
           }
-          ThreadWatcher.update(siteID, boardID, threadID, {
+          ThreadWatcher$1.update(siteID, boardID, threadID, {
             unread: 0,
             quotingYou: 0,
             yousCount: 0,
@@ -14720,17 +14943,17 @@ svg.icon {
         }
       },
       markRead() {
-        if ($.hasClass(this, 'disabled') || !ThreadWatcher.unreadEnabled) { return; }
+        if ($.hasClass(this, 'disabled') || !ThreadWatcher$1.unreadEnabled) { return; }
         const line = this.parentNode;
         if (!line) { return; }
         const {siteID} = line.dataset;
         const [boardID, threadID] = line.dataset.fullID.split('.');
-        const data = ThreadWatcher.db?.get({siteID, boardID, threadID: +threadID});
+        const data = ThreadWatcher$1.db?.get({siteID, boardID, threadID: +threadID});
         if (!data) { return; }
         if (data.last != null) {
-          ThreadWatcher.unreaddb.set({siteID, boardID, threadID: +threadID, val: data.last});
+          ThreadWatcher$1.unreaddb.set({siteID, boardID, threadID: +threadID, val: data.last});
         }
-        ThreadWatcher.update(siteID, boardID, +threadID, {
+        ThreadWatcher$1.update(siteID, boardID, +threadID, {
           unread: 0,
           quotingYou: 0,
           yousCount: 0,
@@ -14738,42 +14961,42 @@ svg.icon {
         });
       },
       thumbnailHoverIn() {
-        ThreadWatcher.showThumbnailHover(this);
+        ThreadWatcher$1.showThumbnailHover(this);
       },
       thumbnailHoverMove() {
-        if (ThreadWatcher.hoveredThumbnail === this) {
-          ThreadWatcher.positionThumbnailHover(this);
+        if (ThreadWatcher$1.hoveredThumbnail === this) {
+          ThreadWatcher$1.positionThumbnailHover(this);
         }
       },
       thumbnailHoverOut() {
-        if (ThreadWatcher.hoveredThumbnail === this) {
-          ThreadWatcher.hideThumbnailHover();
+        if (ThreadWatcher$1.hoveredThumbnail === this) {
+          ThreadWatcher$1.hideThumbnailHover();
         }
       },
       toggle() {
         const {thread} = Get.postFromNode(this);
-        ThreadWatcher.toggle(thread, true);
+        ThreadWatcher$1.toggle(thread, true);
       },
       rm() {
         const {siteID} = this.parentNode.dataset;
         const [boardID, threadID] = this.parentNode.dataset.fullID.split('.');
-        ThreadWatcher.rm(siteID, boardID, +threadID, undefined, true);
+        ThreadWatcher$1.rm(siteID, boardID, +threadID, undefined, true);
       },
       post(e) {
         const {boardID, threadID, postID} = e.detail;
         const cb = PostRedirect.delay();
         if (postID === threadID) {
           if (Conf['Auto Watch']) {
-            ThreadWatcher.addRaw(boardID, threadID, {}, cb, true);
+            ThreadWatcher$1.addRaw(boardID, threadID, {}, cb, true);
           }
         } else if (Conf['Auto Watch Reply']) {
-          ThreadWatcher.add(
+          ThreadWatcher$1.add(
             (g.threads.get(boardID + '.' + threadID) || new Thread(threadID, g.boards[boardID] || new Board(boardID))),
             cb, true);
         }
       },
       onIndexUpdate(e) {
-        const {db}    = ThreadWatcher;
+        const {db}    = ThreadWatcher$1;
         const siteID  = g.SITE.ID;
         const boardID = g.BOARD.ID;
         let nKilled = 0;
@@ -14786,17 +15009,17 @@ svg.icon {
               db.delete({boardID, threadID});
               nKilled++;
             } else {
-              ThreadWatcher.fetchStatus({siteID, boardID, threadID, data});
+              ThreadWatcher$1.fetchStatus({siteID, boardID, threadID, data});
             }
           }
         }
-        if (nKilled) { return ThreadWatcher.refresh(); }
+        if (nKilled) { return ThreadWatcher$1.refresh(); }
       },
       onThreadRefresh(e) {
         const thread = g.threads.get(e.detail.threadID);
-        if (!e.detail[404] || !ThreadWatcher.isWatched(thread)) { return; }
+        if (!e.detail[404] || !ThreadWatcher$1.isWatched(thread)) { return; }
         // Update dead status.
-        return ThreadWatcher.add(thread);
+        return ThreadWatcher$1.add(thread);
       }
     },
 
@@ -14804,18 +15027,18 @@ svg.icon {
     fetched:  0,
 
     fetch(url, {siteID, force}, args, cb) {
-      if (ThreadWatcher.requests.length === 0) {
-        ThreadWatcher.status.textContent = '...';
-        $.addClass(ThreadWatcher.refreshButton, 'spin');
+      if (ThreadWatcher$1.requests.length === 0) {
+        ThreadWatcher$1.status.textContent = '...';
+        $.addClass(ThreadWatcher$1.refreshButton, 'spin');
       }
       const onloadend = function() {
         if (this.finished) { return; }
         this.finished = true;
-        ThreadWatcher.fetched++;
-        if (ThreadWatcher.fetched === ThreadWatcher.requests.length) {
-          ThreadWatcher.clearRequests();
+        ThreadWatcher$1.fetched++;
+        if (ThreadWatcher$1.fetched === ThreadWatcher$1.requests.length) {
+          ThreadWatcher$1.clearRequests();
         } else {
-          ThreadWatcher.status.textContent = `${Math.round((ThreadWatcher.fetched / ThreadWatcher.requests.length) * 100)}%`;
+          ThreadWatcher$1.status.textContent = `${Math.round((ThreadWatcher$1.fetched / ThreadWatcher$1.requests.length) * 100)}%`;
         }
         return cb.apply(this, args);
       };
@@ -14829,40 +15052,40 @@ svg.icon {
         onloadend,
         { timeout: MINUTE, ajax }
       );
-      return ThreadWatcher.requests.push(req);
+      return ThreadWatcher$1.requests.push(req);
     },
 
     clearRequests() {
-      ThreadWatcher.requests = [];
-      ThreadWatcher.fetched = 0;
-      ThreadWatcher.status.textContent = '';
-      return $.rmClass(ThreadWatcher.refreshButton, 'spin');
+      ThreadWatcher$1.requests = [];
+      ThreadWatcher$1.fetched = 0;
+      ThreadWatcher$1.status.textContent = '';
+      return $.rmClass(ThreadWatcher$1.refreshButton, 'spin');
     },
 
     abort() {
-      delete ThreadWatcher.syncing;
-      for (var req of ThreadWatcher.requests) {
+      delete ThreadWatcher$1.syncing;
+      for (var req of ThreadWatcher$1.requests) {
         if (!req.finished) {
           req.finished = true;
           req.abort();
         }
       }
-      return ThreadWatcher.clearRequests();
+      return ThreadWatcher$1.clearRequests();
     },
 
     initLastModified() {
       const lm = ($.lastModified['ThreadWatcher'] || ($.lastModified['ThreadWatcher'] = dict()));
-      for (var siteID in ThreadWatcher.dbLM.data) {
-        var boards = ThreadWatcher.dbLM.data[siteID];
+      for (var siteID in ThreadWatcher$1.dbLM.data) {
+        var boards = ThreadWatcher$1.dbLM.data[siteID];
         for (var boardID in boards.boards) {
           var data = boards.boards[boardID];
-          if (ThreadWatcher.db.get({siteID, boardID})) {
+          if (ThreadWatcher$1.db.get({siteID, boardID})) {
             for (var url in data) {
               var date = data[url];
               lm[url] = date;
             }
           } else {
-            ThreadWatcher.dbLM.delete({siteID, boardID});
+            ThreadWatcher$1.dbLM.delete({siteID, boardID});
           }
         }
       }
@@ -14870,53 +15093,53 @@ svg.icon {
 
     fetchAuto() {
       let middle;
-      clearTimeout(ThreadWatcher.timeout);
+      clearTimeout(ThreadWatcher$1.timeout);
       if (!Conf['Auto Update Thread Watcher']) { return; }
-      const {db} = ThreadWatcher;
-      const interval = Conf['Show Page'] || (ThreadWatcher.unreadEnabled && Conf['Show Unread Count']) ? 5 * MINUTE : 2 * HOUR;
+      const {db} = ThreadWatcher$1;
+      const interval = Conf['Show Page'] || (ThreadWatcher$1.unreadEnabled && Conf['Show Unread Count']) ? 5 * MINUTE : 2 * HOUR;
       const now = Date.now();
       if ((now - interval >= ((middle = db.data.lastChecked || 0)) || middle > now) && !d.hidden && !!d.hasFocus()) {
-        ThreadWatcher.fetchAllStatus(interval);
+        ThreadWatcher$1.fetchAllStatus(interval);
       }
-      return ThreadWatcher.timeout = setTimeout(ThreadWatcher.fetchAuto, interval);
+      return ThreadWatcher$1.timeout = setTimeout(ThreadWatcher$1.fetchAuto, interval);
     },
 
     buttonFetchAll() {
-      if (ThreadWatcher.syncing || ThreadWatcher.requests.length) {
-        return ThreadWatcher.abort();
+      if (ThreadWatcher$1.syncing || ThreadWatcher$1.requests.length) {
+        return ThreadWatcher$1.abort();
       } else {
-        return ThreadWatcher.fetchAllStatus();
+        return ThreadWatcher$1.fetchAllStatus();
       }
     },
 
     fetchAllStatus(interval=0) {
-      ThreadWatcher.status.textContent = '...';
-      $.addClass(ThreadWatcher.refreshButton, 'spin');
-      ThreadWatcher.syncing = true;
-      const dbs = [ThreadWatcher.db, ThreadWatcher.unreaddb, QuoteYou.db].filter(x => x);
+      ThreadWatcher$1.status.textContent = '...';
+      $.addClass(ThreadWatcher$1.refreshButton, 'spin');
+      ThreadWatcher$1.syncing = true;
+      const dbs = [ThreadWatcher$1.db, ThreadWatcher$1.unreaddb, QuoteYou.db].filter(x => x);
       let n = 0;
       return dbs.map((dbi) =>
         dbi.forceSync(function() {
           if ((++n) === dbs.length) {
             let middle;
-            if (!ThreadWatcher.syncing) { return; } // aborted
-            delete ThreadWatcher.syncing;
-            if (0 > (middle = Date.now() - (ThreadWatcher.db.data.lastChecked || 0)) || middle >= interval) { // not checked in another tab
+            if (!ThreadWatcher$1.syncing) { return; } // aborted
+            delete ThreadWatcher$1.syncing;
+            if (0 > (middle = Date.now() - (ThreadWatcher$1.db.data.lastChecked || 0)) || middle >= interval) { // not checked in another tab
               // XXX On vichan boards, last_modified field of threads.json does not account for sage posts.
               // Occasionally check replies field of catalog.json to find these posts.
               let middle1;
-              const {db} = ThreadWatcher;
+              const {db} = ThreadWatcher$1;
               const now = Date.now();
               const deep = !(now - (2 * HOUR) < ((middle1 = db.data.lastChecked2 || 0)) && middle1 <= now);
-              const boards = ThreadWatcher.getAll(true);
+              const boards = ThreadWatcher$1.getAll(true);
               for (var board of boards) {
-                ThreadWatcher.fetchBoard(board, deep);
+                ThreadWatcher$1.fetchBoard(board, deep);
               }
               db.setLastChecked();
               if (deep) { db.setLastChecked('lastChecked2'); }
             }
-            if (ThreadWatcher.fetched === ThreadWatcher.requests.length) {
-              return ThreadWatcher.clearRequests();
+            if (ThreadWatcher$1.fetched === ThreadWatcher$1.requests.length) {
+              return ThreadWatcher$1.clearRequests();
             }
           }
         }));
@@ -14930,7 +15153,7 @@ svg.icon {
         if (!data.isDead && (data.last !== -1)) {
           if (Conf['Show Page'] && (data.page == null)) { force = true; }
           if ((data.modified == null)) { force = (thread.force = true); }
-          if (ThreadWatcher.showThumbnails() && !data.thumbURL) { force = (thread.force = true); }
+          if (ThreadWatcher$1.showThumbnails() && !data.thumbURL) { force = (thread.force = true); }
         }
       }
       const {siteID, boardID} = board[0];
@@ -14939,7 +15162,7 @@ svg.icon {
       const urlF = deep && site.threadModTimeIgnoresSage ? 'catalogJSON' : 'threadsListJSON';
       const url = site.urls[urlF]?.({siteID, boardID});
       if (!url) { return; }
-      return ThreadWatcher.fetch(url, {siteID, force}, [board, url], ThreadWatcher.parseBoard);
+      return ThreadWatcher$1.fetch(url, {siteID, force}, [board, url], ThreadWatcher$1.parseBoard);
     },
 
     parseBoard(board, url) {
@@ -14947,7 +15170,7 @@ svg.icon {
       if (this.status !== 200) { return; }
       const {siteID, boardID} = board[0];
       const lmDate = this.getResponseHeader('Last-Modified');
-      ThreadWatcher.dbLM.extend({siteID, boardID, val: $.item(url, lmDate)});
+      ThreadWatcher$1.dbLM.extend({siteID, boardID, val: $.item(url, lmDate)});
       const threads = dict();
       let pageLength = 0;
       let nThreads = 0;
@@ -14971,7 +15194,7 @@ svg.icon {
         }
       } catch (error) {
         for (thread of board) {
-          ThreadWatcher.fetchStatus(thread);
+          ThreadWatcher$1.fetchStatus(thread);
         }
       }
       for (thread of board) {
@@ -14984,19 +15207,19 @@ svg.icon {
               threadID === oldest
             :
               index >= (nThreads - pageLength);
-            ThreadWatcher.update(siteID, boardID, threadID, {page, lastPage});
+            ThreadWatcher$1.update(siteID, boardID, threadID, {page, lastPage});
           }
-          if (ThreadWatcher.unreadEnabled && Conf['Show Unread Count']) {
+          if (ThreadWatcher$1.unreadEnabled && Conf['Show Unread Count']) {
             if ((modified !== data.modified) || ((replies != null) && (replies !== data.replies))) {
               (thread.newData || (thread.newData = {})).modified = modified;
-              ThreadWatcher.fetchStatus(thread);
+              ThreadWatcher$1.fetchStatus(thread);
             }
           }
-          if (ThreadWatcher.showThumbnails() && !data.thumbURL) {
-            ThreadWatcher.fetchStatus(thread);
+          if (ThreadWatcher$1.showThumbnails() && !data.thumbURL) {
+            ThreadWatcher$1.fetchStatus(thread);
           }
         } else {
-          ThreadWatcher.fetchStatus(thread);
+          ThreadWatcher$1.fetchStatus(thread);
         }
       }
     },
@@ -15007,7 +15230,7 @@ svg.icon {
       if (!url) { return; }
       if (data.isDead && !force) { return; }
       if (data.last === -1) { return; } // 404 or no JSON API
-      return ThreadWatcher.fetch(url, {siteID, force}, [thread], ThreadWatcher.parseStatus);
+      return ThreadWatcher$1.fetch(url, {siteID, force}, [thread], ThreadWatcher$1.parseStatus);
     },
 
     parseStatus(thread, isArchiveURL) {
@@ -15019,15 +15242,15 @@ svg.icon {
         last = this.response.posts[this.response.posts.length-1].no;
         const replies = this.response.posts.length-1;
         isDead = (isArchived = !!(this.response.posts[0].archived || isArchiveURL));
-        const thumbURL = ThreadWatcher.getOPThumbURL({siteID, boardID, postObj: this.response.posts[0]});
+        const thumbURL = ThreadWatcher$1.getOPThumbURL({siteID, boardID, postObj: this.response.posts[0]});
         if (isDead && Conf['Auto Prune']) {
-          ThreadWatcher.rm(siteID, boardID, threadID);
+          ThreadWatcher$1.rm(siteID, boardID, threadID);
           return;
         }
 
         if ((last === data.last) && (isDead === data.isDead) && (isArchived === data.isArchived) && (!thumbURL || thumbURL === data.thumbURL)) { return; }
 
-        const lastReadPost = ThreadWatcher.unreaddb.get({siteID, boardID, threadID, defaultValue: 0});
+        const lastReadPost = ThreadWatcher$1.unreaddb.get({siteID, boardID, threadID, defaultValue: 0});
         let unread = data.unread || 0;
         let quotingYou = data.quotingYou || 0;
         let yousCount = data.yousCount || 0;
@@ -15070,16 +15293,16 @@ svg.icon {
           newData.thumbURL = thumbURL;
         }
         $.extend(newData, {last, replies, isDead, isArchived, unread, quotingYou, yousCount});
-        return ThreadWatcher.update(siteID, boardID, threadID, newData);
+        return ThreadWatcher$1.update(siteID, boardID, threadID, newData);
 
       } else if (this.status === 404) {
         const archiveURL = g.sites[siteID]?.urls.archivedThreadJSON?.({siteID, boardID, threadID});
         if (!isArchiveURL && archiveURL) {
-          return ThreadWatcher.fetch(archiveURL, {siteID, force}, [thread, true], ThreadWatcher.parseStatus);
+          return ThreadWatcher$1.fetch(archiveURL, {siteID, force}, [thread, true], ThreadWatcher$1.parseStatus);
         } else if (site.mayLackJSON && (data.last == null)) {
-          return ThreadWatcher.update(siteID, boardID, threadID, {last: -1});
+          return ThreadWatcher$1.update(siteID, boardID, threadID, {last: -1});
         } else {
-          return ThreadWatcher.update(siteID, boardID, threadID, {isDead: true});
+          return ThreadWatcher$1.update(siteID, boardID, threadID, {isDead: true});
         }
       }
     },
@@ -15114,8 +15337,8 @@ svg.icon {
       unread: (a, b) => (b.data.unread || 0) - (a.data.unread || 0),
       activity: (a, b) => (b.data.modified || 0) - (a.data.modified || 0),
       yous(a, b) {
-        const ay = ThreadWatcher.activeYous(a.data);
-        const by = ThreadWatcher.activeYous(b.data);
+        const ay = ThreadWatcher$1.activeYous(a.data);
+        const by = ThreadWatcher$1.activeYous(b.data);
         if (ay !== by) { return by - ay; }
         return (b.data.addedAt || 0) - (a.data.addedAt || 0);
       },
@@ -15130,7 +15353,7 @@ svg.icon {
 
     sortMode() {
       const mode = Conf['Thread Watcher Sort'] || 'manual';
-      return ThreadWatcher.sortComparators[mode] ? mode : 'manual';
+      return ThreadWatcher$1.sortComparators[mode] ? mode : 'manual';
     },
 
     activeYous(data) {
@@ -15141,8 +15364,8 @@ svg.icon {
 
     getAll(groupByBoard) {
       const all = [];
-      for (var siteID in ThreadWatcher.db.data) {
-        var boards = ThreadWatcher.db.data[siteID];
+      for (var siteID in ThreadWatcher$1.db.data) {
+        var boards = ThreadWatcher$1.db.data[siteID];
         for (var boardID in boards.boards) {
           var cont;
           var threads = boards.boards[boardID];
@@ -15161,7 +15384,7 @@ svg.icon {
         }
       }
       if (!groupByBoard) {
-        all.sort(ThreadWatcher.sortComparators[ThreadWatcher.sortMode()]);
+        all.sort(ThreadWatcher$1.sortComparators[ThreadWatcher$1.sortMode()]);
       }
       return all;
     },
@@ -15174,11 +15397,11 @@ svg.icon {
         draggable: false
       });
       Icon.set(x, 'xmark');
-      $.on(x, 'click', ThreadWatcher.cb.rm);
+      $.on(x, 'click', ThreadWatcher$1.cb.rm);
 
       let {excerpt, isArchived} = data;
       if (!excerpt) { excerpt = `/${boardID}/ - No.${threadID}`; }
-      if (Conf['Show Site Prefix']) { excerpt = ThreadWatcher.prefixes[siteID] + excerpt; }
+      if (Conf['Show Site Prefix']) { excerpt = ThreadWatcher$1.prefixes[siteID] + excerpt; }
 
       const link = $.el('a', {
         href: g.sites[siteID]?.urls.thread({siteID, boardID, threadID}, isArchived) || '',
@@ -15187,7 +15410,7 @@ svg.icon {
         draggable: false
       });
 
-      if (ThreadWatcher.showThumbnails()) {
+      if (ThreadWatcher$1.showThumbnails()) {
         const thumb = data.thumbURL ?
           $.el('img', {
             src: data.thumbURL,
@@ -15199,9 +15422,9 @@ svg.icon {
             className: 'watcher-thumb watcher-thumb-missing'
           });
         if (Conf['Thread Watcher Thumbnail Hover'] && thumb.nodeName === 'IMG') {
-          $.on(thumb, 'mouseover', ThreadWatcher.cb.thumbnailHoverIn);
-          $.on(thumb, 'mousemove', ThreadWatcher.cb.thumbnailHoverMove);
-          $.on(thumb, 'mouseout', ThreadWatcher.cb.thumbnailHoverOut);
+          $.on(thumb, 'mouseover', ThreadWatcher$1.cb.thumbnailHoverIn);
+          $.on(thumb, 'mousemove', ThreadWatcher$1.cb.thumbnailHoverMove);
+          $.on(thumb, 'mouseout', ThreadWatcher$1.cb.thumbnailHoverOut);
         }
         $.add(link, thumb);
       }
@@ -15214,7 +15437,7 @@ svg.icon {
         $.add(link, page);
       }
 
-      if (ThreadWatcher.unreadEnabled && Conf['Show Unread Count'] && (data.unread != null)) {
+      if (ThreadWatcher$1.unreadEnabled && Conf['Show Unread Count'] && (data.unread != null)) {
         const count = $.el('span', {
           textContent: `(${data.unread})`,
           className: 'watcher-unread'
@@ -15228,7 +15451,7 @@ svg.icon {
       });
       $.add(link, title);
 
-      const div = $.el('div', { draggable: ThreadWatcher.sortMode() === 'manual' });
+      const div = $.el('div', { draggable: ThreadWatcher$1.sortMode() === 'manual' });
       const fullID = `${boardID}.${threadID}`;
       div.dataset.fullID = fullID;
       div.dataset.siteID = siteID;
@@ -15238,32 +15461,32 @@ svg.icon {
         if (data.lastPage) { $.addClass(div, 'last-page'); }
         if (data.page != null) { div.dataset.page = data.page; }
       }
-      if (ThreadWatcher.unreadEnabled && Conf['Show Unread Count']) {
+      if (ThreadWatcher$1.unreadEnabled && Conf['Show Unread Count']) {
         if (data.unread === 0) { $.addClass(div, 'replies-read'); }
         if (data.unread) { $.addClass(div, 'replies-unread'); }
         if ((data.quotingYou || 0) > (data.dismiss || 0)) { $.addClass(div, 'replies-quoting-you'); }
       }
       for (var event of ['start', 'end', 'enter', 'leave', 'over']) {
-        $.on(div, `drag${event}`, ThreadWatcher.drag[event]);
+        $.on(div, `drag${event}`, ThreadWatcher$1.drag[event]);
       }
-      $.on(div, 'drop', ThreadWatcher.drag.drop);
+      $.on(div, 'drop', ThreadWatcher$1.drag.drop);
       const nodes = [x, link];
       if (Conf['Show Mark Thread Read Icons']) {
         const markRead = $.el('a', {
           href: 'javascript:;',
           className: 'watcher-mark-read',
           draggable: false,
-          title: ThreadWatcher.unreadEnabled ?
+          title: ThreadWatcher$1.unreadEnabled ?
             'Mark this watched thread as read'
           :
             'Mark read is unavailable because Remember Last Read Post is disabled.'
         });
         Icon.set(markRead, 'check');
-        if (!ThreadWatcher.unreadEnabled || (!data.unread && !((data.quotingYou || 0) > (data.dismiss || 0)))) {
+        if (!ThreadWatcher$1.unreadEnabled || (!data.unread && !((data.quotingYou || 0) > (data.dismiss || 0)))) {
           $.addClass(markRead, 'disabled');
         }
         $.on(markRead, 'mousedown pointerdown', e => e.stopPropagation());
-        $.on(markRead, 'click', ThreadWatcher.cb.markRead);
+        $.on(markRead, 'click', ThreadWatcher$1.cb.markRead);
         nodes.push(markRead);
       }
       $.add(div, nodes);
@@ -15284,11 +15507,11 @@ svg.icon {
     },
 
     clearDragState() {
-      if (ThreadWatcher.draggingLine) {
-        ThreadWatcher.draggingLine.classList.remove('drag');
+      if (ThreadWatcher$1.draggingLine) {
+        ThreadWatcher$1.draggingLine.classList.remove('drag');
       }
-      ThreadWatcher.draggingLine = null;
-      for (const line of $$('#watched-threads > div', ThreadWatcher.list)) {
+      ThreadWatcher$1.draggingLine = null;
+      for (const line of $$('#watched-threads > div', ThreadWatcher$1.list)) {
         line.classList.remove('over');
         delete line.dataset.dropBefore;
       }
@@ -15296,41 +15519,41 @@ svg.icon {
 
     reorderInDOM(sourceLine, targetLine, before) {
       if (!sourceLine || !targetLine || sourceLine === targetLine) { return; }
-      const list = ThreadWatcher.list;
+      const list = ThreadWatcher$1.list;
       if (!list) { return; }
       if (before) {
         list.insertBefore(sourceLine, targetLine);
       } else {
         list.insertBefore(sourceLine, targetLine.nextSibling);
       }
-      ThreadWatcher.persistOrderFromDOM();
-      ThreadWatcher.refreshIcon();
+      ThreadWatcher$1.persistOrderFromDOM();
+      ThreadWatcher$1.refreshIcon();
     },
 
     persistOrder(threads) {
       if (!threads) {
-        threads = ThreadWatcher.getAll(false, true);
+        threads = ThreadWatcher$1.getAll(false, true);
       }
       for (let i = 0; i < threads.length; i++) {
         const thread = threads[i];
         const order = i + 1;
         if (thread.data.order === order) { continue; }
         thread.data.order = order;
-        ThreadWatcher.db.extend({siteID: thread.siteID, boardID: thread.boardID, threadID: +thread.threadID, val: {order}});
+        ThreadWatcher$1.db.extend({siteID: thread.siteID, boardID: thread.boardID, threadID: +thread.threadID, val: {order}});
       }
     },
 
     persistOrderFromDOM() {
-      const lines = $$('#watched-threads > div', ThreadWatcher.list);
+      const lines = $$('#watched-threads > div', ThreadWatcher$1.list);
       for (let i = 0; i < lines.length; i++) {
         const line = lines[i];
         const siteID = line.dataset.siteID;
         const [boardID, threadID] = line.dataset.fullID.split('.');
         const order = i + 1;
-        const data = ThreadWatcher.db.get({siteID, boardID, threadID});
+        const data = ThreadWatcher$1.db.get({siteID, boardID, threadID});
         if (!data || data.order === order) { continue; }
         data.order = order;
-        ThreadWatcher.db.extend({siteID, boardID, threadID: +threadID, val: {order}});
+        ThreadWatcher$1.db.extend({siteID, boardID, threadID: +threadID, val: {order}});
       }
     },
 
@@ -15356,44 +15579,46 @@ svg.icon {
         }
         prefixes[siteID] = prefix;
       }
-      return ThreadWatcher.prefixes = prefixes;
+      return ThreadWatcher$1.prefixes = prefixes;
     },
 
     build() {
-      ThreadWatcher.applyLayout();
-      ThreadWatcher.hideThumbnailHover();
+      ThreadWatcher$1.applyLayout();
+      ThreadWatcher$1.hideThumbnailHover();
       const nodes = [];
-      const threads = ThreadWatcher.getAll();
-      ThreadWatcher.setPrefixes(threads);
+      const threads = ThreadWatcher$1.getAll();
+      ThreadWatcher$1.setPrefixes(threads);
       for (var {siteID, boardID, threadID, data} of threads) {
         // Add missing excerpt for threads added by Auto Watch
         var thread;
         if ((data.excerpt == null) && (siteID === g.SITE.ID) && (thread = g.threads.get(`${boardID}.${threadID}`)) && thread.OP) {
-          ThreadWatcher.db.extend({boardID, threadID, val: {excerpt: Get.threadExcerpt(thread)}});
+          ThreadWatcher$1.db.extend({boardID, threadID, val: {excerpt: Get.threadExcerpt(thread)}});
         }
         if ((data.thumbURL == null) && (siteID === g.SITE.ID) && (thread = g.threads.get(`${boardID}.${threadID}`)) && thread.OP?.file?.thumbURL) {
-          ThreadWatcher.db.extend({boardID, threadID, val: {thumbURL: thread.OP.file.thumbURL}});
+          ThreadWatcher$1.db.extend({boardID, threadID, val: {thumbURL: thread.OP.file.thumbURL}});
           data.thumbURL = thread.OP.file.thumbURL;
         }
-        nodes.push(ThreadWatcher.makeLine(siteID, boardID, threadID, data));
+        nodes.push(ThreadWatcher$1.makeLine(siteID, boardID, threadID, data));
       }
-      const {list} = ThreadWatcher;
+      const {list} = ThreadWatcher$1;
       $.rmAll(list);
       $.add(list, nodes);
 
-      return ThreadWatcher.refreshIcon();
+      const ret = ThreadWatcher$1.refreshIcon();
+      if (ThreadWatcher$1.attached()) { ThreadWatcher$1.positionIfAttached(true); }
+      return ret;
     },
 
     refresh(manual) {
-      ThreadWatcher.build();
+      ThreadWatcher$1.build();
 
       g.threads.forEach(function(thread) {
-        const isWatched = ThreadWatcher.isWatched(thread);
+        const isWatched = ThreadWatcher$1.isWatched(thread);
         if (thread.OP) {
           for (var post of [thread.OP, ...thread.OP.clones]) {
             var toggler;
             if (toggler = $('.watch-thread-link', post.nodes.info)) {
-              ThreadWatcher.setToggler(toggler, isWatched);
+              ThreadWatcher$1.setToggler(toggler, isWatched);
             }
           }
         }
@@ -15407,12 +15632,12 @@ svg.icon {
 
     refreshIcon() {
       for (var className of ['replies-unread', 'replies-quoting-you']) {
-        ThreadWatcher.shortcut.classList.toggle(className, !!$(`.${className}`, ThreadWatcher.dialog));
+        ThreadWatcher$1.shortcut.classList.toggle(className, !!$(`.${className}`, ThreadWatcher$1.dialog));
       }
-      if (ThreadWatcher.markReadButton) {
-        const hasUnread = !!$('.replies-unread, .replies-quoting-you', ThreadWatcher.list);
-        ThreadWatcher.markReadButton.classList.toggle('disabled', !ThreadWatcher.unreadEnabled || !hasUnread);
-        ThreadWatcher.markReadButton.title = !ThreadWatcher.unreadEnabled ?
+      if (ThreadWatcher$1.markReadButton) {
+        const hasUnread = !!$('.replies-unread, .replies-quoting-you', ThreadWatcher$1.list);
+        ThreadWatcher$1.markReadButton.classList.toggle('disabled', !ThreadWatcher$1.unreadEnabled || !hasUnread);
+        ThreadWatcher$1.markReadButton.title = !ThreadWatcher$1.unreadEnabled ?
           'Mark all read is unavailable because Remember Last Read Post is disabled.'
         : hasUnread ?
           'Mark all watched threads as read'
@@ -15422,38 +15647,38 @@ svg.icon {
     },
 
     ensureThumbnailHover() {
-      if (ThreadWatcher.thumbnailHover) { return ThreadWatcher.thumbnailHover; }
+      if (ThreadWatcher$1.thumbnailHover) { return ThreadWatcher$1.thumbnailHover; }
       const hover = $.el('img', {
         id: 'tw-ihover',
         alt: ''
       });
       hover.hidden = true;
       $.add(Header.hover, hover);
-      return (ThreadWatcher.thumbnailHover = hover);
+      return (ThreadWatcher$1.thumbnailHover = hover);
     },
 
     hideThumbnailHover() {
-      const hover = ThreadWatcher.thumbnailHover;
+      const hover = ThreadWatcher$1.thumbnailHover;
       if (!hover) { return; }
       hover.hidden = true;
       hover.removeAttribute('src');
       hover.removeAttribute('style');
-      delete ThreadWatcher.hoveredThumbnail;
+      delete ThreadWatcher$1.hoveredThumbnail;
     },
 
     showThumbnailHover(thumb) {
       if (!Conf['Thread Watcher Thumbnail Hover'] || !thumb?.src) { return; }
       if (!doc.contains(thumb)) { return; }
-      const hover = ThreadWatcher.ensureThumbnailHover();
+      const hover = ThreadWatcher$1.ensureThumbnailHover();
       hover.hidden = false;
       hover.src = thumb.src;
-      ThreadWatcher.hoveredThumbnail = thumb;
-      ThreadWatcher.positionThumbnailHover(thumb);
+      ThreadWatcher$1.hoveredThumbnail = thumb;
+      ThreadWatcher$1.positionThumbnailHover(thumb);
       if (!hover.complete) {
         const onLoad = function() {
           $.off(hover, 'load', onLoad);
-          if (ThreadWatcher.hoveredThumbnail === thumb) {
-            ThreadWatcher.positionThumbnailHover(thumb);
+          if (ThreadWatcher$1.hoveredThumbnail === thumb) {
+            ThreadWatcher$1.positionThumbnailHover(thumb);
           }
         };
         $.on(hover, 'load', onLoad);
@@ -15461,22 +15686,22 @@ svg.icon {
     },
 
     positionThumbnailHover(thumb) {
-      const hover = ThreadWatcher.thumbnailHover;
-      if (!hover || hover.hidden || !thumb || !ThreadWatcher.dialog) { return; }
+      const hover = ThreadWatcher$1.thumbnailHover;
+      if (!hover || hover.hidden || !thumb || !ThreadWatcher$1.dialog) { return; }
       if (!doc.contains(thumb)) {
-        ThreadWatcher.hideThumbnailHover();
+        ThreadWatcher$1.hideThumbnailHover();
         return;
       }
-      const dialogRect = ThreadWatcher.dialog.getBoundingClientRect();
+      const dialogRect = ThreadWatcher$1.dialog.getBoundingClientRect();
       const thumbRect = thumb.getBoundingClientRect();
       const gap = 8;
       const viewportPadding = 8;
       const availableWidth = dialogRect.left - gap - viewportPadding;
       if (availableWidth < 80) {
-        ThreadWatcher.hideThumbnailHover();
+        ThreadWatcher$1.hideThumbnailHover();
         return;
       }
-      const targetWidth = Math.max(80, Math.floor((availableWidth * ThreadWatcher.thumbnailPreviewSize()) / 99));
+      const targetWidth = Math.max(80, Math.floor((availableWidth * ThreadWatcher$1.thumbnailPreviewSize()) / 99));
       hover.style.width = `${targetWidth}px`;
       hover.style.maxWidth = `${targetWidth}px`;
       hover.style.maxHeight = `${Math.max(120, doc.clientHeight - (viewportPadding * 2))}px`;
@@ -15519,20 +15744,190 @@ svg.icon {
     },
 
     applyLayout() {
-      if (!ThreadWatcher.dialog) { return; }
-      ThreadWatcher.dialog.style.setProperty('--watcher-thumb-size', `${ThreadWatcher.thumbnailSize()}px`);
-      ThreadWatcher.dialog.style.setProperty('--watcher-max-height', `${ThreadWatcher.maxHeight()}px`);
-      ThreadWatcher.dialog.style.setProperty('--watcher-max-width', `${ThreadWatcher.maxWidth()}px`);
-      if (ThreadWatcher.markReadButton) {
-        ThreadWatcher.markReadButton.hidden = !Conf['Show Mark All Read Icon'];
+      if (!ThreadWatcher$1.dialog) { return; }
+      ThreadWatcher$1.dialog.style.setProperty('--watcher-thumb-size', `${ThreadWatcher$1.thumbnailSize()}px`);
+      ThreadWatcher$1.dialog.style.setProperty('--watcher-max-height', `${ThreadWatcher$1.maxHeight()}px`);
+      ThreadWatcher$1.dialog.style.setProperty('--watcher-max-width', `${ThreadWatcher$1.maxWidth()}px`);
+      if (ThreadWatcher$1.markReadButton) {
+        ThreadWatcher$1.markReadButton.hidden = !Conf['Show Mark All Read Icon'];
       }
+    },
+
+    attached() {
+      return !!Conf['Thread Watcher Attached'];
+    },
+
+    attachLocation() {
+      let loc = Conf['Thread Watcher Attach Location'];
+      if (!['bottom', 'top', 'left', 'right'].includes(loc)) { loc = 'bottom'; }
+      return loc;
+    },
+
+    updateAttachButton() {
+      const btn = ThreadWatcher$1.attachButton;
+      if (!btn) { return; }
+      const isAttached = ThreadWatcher$1.attached();
+      btn.classList.toggle('attached', isAttached);
+      btn.title = isAttached ? 'Detach from Quick Reply' : 'Attach to Quick Reply';
+    },
+
+    toggleAttach() {
+      const val = !ThreadWatcher$1.attached();
+      $.set('Thread Watcher Attached', val);
+      Conf['Thread Watcher Attached'] = val;
+      ThreadWatcher$1.updateAttachButton();
+      if (val) {
+        ThreadWatcher$1.positionIfAttached(true);
+      } else {
+        ThreadWatcher$1.restorePosition();
+      }
+    },
+
+    _posRaf: null,
+
+    positionIfAttached(immediate = false) {
+      if (!ThreadWatcher$1.dialog || !ThreadWatcher$1.attached()) { return; }
+      const qr = QR?.nodes?.el;
+      if (!qr || qr.hidden) {
+        ThreadWatcher$1.restorePosition();
+        return;
+      }
+      if (immediate) {
+        if (ThreadWatcher$1._posRaf) {
+          cancelAnimationFrame(ThreadWatcher$1._posRaf);
+          ThreadWatcher$1._posRaf = null;
+        }
+        ThreadWatcher$1._doPositionAttached();
+        return;
+      }
+      if (ThreadWatcher$1._posRaf) { return; }
+      ThreadWatcher$1._posRaf = requestAnimationFrame(() => {
+        ThreadWatcher$1._posRaf = null;
+        ThreadWatcher$1._doPositionAttached();
+      });
+    },
+
+    _doPositionAttached() {
+      const dialog = ThreadWatcher$1.dialog;
+      if (!dialog) { return; }
+      const qr = QR?.nodes?.el;
+      if (!qr || qr.hidden) {
+        ThreadWatcher$1.restorePosition();
+        return;
+      }
+      if (!dialog.classList.contains('watcher-attached')) {
+        dialog.classList.add('watcher-attached');
+      }
+      if (dialog.style.position !== 'fixed') {
+        dialog.style.position = 'fixed';
+      }
+      const qrRect = qr.getBoundingClientRect();
+      const loc = ThreadWatcher$1.attachLocation();
+      let targetW = Math.round(qrRect.width);
+      if (loc === 'left' || loc === 'right') {
+        targetW = ThreadWatcher$1.maxWidth();
+      }
+
+      // Only rewrite size styles (and trigger inner layout + applyLayout) on actual change.
+      // This avoids heavy reflow/jank on every frame during QR *position* drags (width unchanged).
+      // Width changes (QR resize) will still update live but only do the expensive work when needed.
+      let sizeChanged = false;
+      if (ThreadWatcher$1._lastAttachedW !== targetW) {
+        dialog.style.width = `${targetW}px`;
+        ThreadWatcher$1._lastAttachedW = targetW;
+        sizeChanged = true;
+      }
+
+      // Position updates are cheap (fixed element move); always apply for smooth following.
+      if (loc === 'bottom') {
+        dialog.style.left = `${qrRect.left}px`;
+        dialog.style.top = `${qrRect.bottom}px`;
+        dialog.style.right = '';
+        dialog.style.bottom = '';
+      } else if (loc === 'top') {
+        // Use bottom positioning so we don't need to measure our own height (avoids sync layout after width set).
+        dialog.style.left = `${qrRect.left}px`;
+        dialog.style.bottom = `${window.innerHeight - qrRect.top}px`;
+        dialog.style.top = '';
+        dialog.style.right = '';
+      } else if (loc === 'left') {
+        // Use right positioning + explicit width so watcher extends leftward; no own-size read needed.
+        dialog.style.top = `${qrRect.top}px`;
+        dialog.style.right = `${window.innerWidth - qrRect.left}px`;
+        dialog.style.left = '';
+        dialog.style.bottom = '';
+      } else if (loc === 'right') {
+        dialog.style.top = `${qrRect.top}px`;
+        dialog.style.left = `${qrRect.right + 2}px`;
+        dialog.style.right = '';
+        dialog.style.bottom = '';
+      }
+
+      if (sizeChanged) {
+        if (loc === 'left' || loc === 'right') {
+          ThreadWatcher$1.applyLayout();
+          // Sides: width set to manual max W; height sizes to content (capped by manual --max-height via applyLayout).
+        } else {
+          ThreadWatcher$1.applyLayout();
+          // When vertically attached (bottom/top), fill the list content to the followed QR width
+          // (instead of being capped by the manual "max W" setting). The manual value from settings
+          // is still the default for standalone (non-attached) watcher and "still works" if you
+          // adjust it while attached (the settings sync will push the manual value to --max-width).
+          dialog.style.setProperty('--watcher-max-width', `${Math.max(120, targetW - 12)}px`);
+        }
+      }
+    },
+
+    restorePosition() {
+      const dialog = ThreadWatcher$1.dialog;
+      if (!dialog) { return; }
+      dialog.classList.remove('watcher-attached');
+      ThreadWatcher$1._lastAttachedW = null;
+      const saved = Conf['thread-watcher.position'] || '';
+      if (saved) {
+        dialog.style.cssText = saved;
+      } else {
+        dialog.style.cssText = '';
+      }
+      dialog.style.width = '';
+      dialog.style.height = '';
+      dialog.style.position = Conf['Fixed Thread Watcher'] ? 'fixed' : 'absolute';
+      ThreadWatcher$1.applyLayout();
+    },
+
+    onQRDialogCreation() {
+      const qr = QR?.nodes?.el;
+      if (!qr) { return; }
+      if (ThreadWatcher$1._qrObs) {
+        try { ThreadWatcher$1._qrObs.disconnect(); } catch (e) {}
+      }
+      const schedule = () => {
+        if (ThreadWatcher$1.attached()) {
+          // Direct for resize following (avoids rAF frame of lag between QR size change and watcher width update).
+          ThreadWatcher$1._doPositionAttached();
+        }
+      };
+      let ro = null;
+      if (typeof ResizeObserver === 'function') {
+        ro = new ResizeObserver(schedule);
+        ro.observe(qr);
+      }
+      const mo = new MutationObserver(schedule);
+      // Do NOT observe 'style' — drag updates fire too often and cause jank/lag when attached.
+      // ResizeObserver covers size (e.g. QR textarea resize); we call _do direct from RO/MO and 4chanXQRMove.
+      mo.observe(qr, { attributes: true, attributeFilter: ['hidden', 'class'] });
+      ThreadWatcher$1._qrObs = {
+        ro, mo,
+        disconnect() { try { ro?.disconnect(); } catch(e){} try { mo.disconnect(); } catch(e){} }
+      };
+      schedule();
     },
 
     update(siteID, boardID, threadID, newData) {
       let data, key, line, val;
-      if (!(data = ThreadWatcher.db?.get({siteID, boardID, threadID}))) { return; }
+      if (!(data = ThreadWatcher$1.db?.get({siteID, boardID, threadID}))) { return; }
       if (newData.isDead && Conf['Auto Prune']) {
-        ThreadWatcher.rm(siteID, boardID, threadID);
+        ThreadWatcher$1.rm(siteID, boardID, threadID);
         return;
       }
       if (newData.isDead || (newData.last === -1)) {
@@ -15548,38 +15943,38 @@ svg.icon {
       let n = 0;
       for (key in newData) { val = newData[key]; if (data[key] !== val) { n++; } }
       if (!n) { return; }
-      ThreadWatcher.db.extend({siteID, boardID, threadID, val: newData});
-      if (ThreadWatcher.sortMode() !== 'manual') {
-        return ThreadWatcher.refresh();
+      ThreadWatcher$1.db.extend({siteID, boardID, threadID, val: newData});
+      if (ThreadWatcher$1.sortMode() !== 'manual') {
+        return ThreadWatcher$1.refresh();
       }
-      if (line = $(`#watched-threads > [data-site-i-d='${siteID}'][data-full-i-d='${boardID}.${threadID}']`, ThreadWatcher.dialog)) {
-        const newLine = ThreadWatcher.makeLine(siteID, boardID, threadID, data);
+      if (line = $(`#watched-threads > [data-site-i-d='${siteID}'][data-full-i-d='${boardID}.${threadID}']`, ThreadWatcher$1.dialog)) {
+        const newLine = ThreadWatcher$1.makeLine(siteID, boardID, threadID, data);
         $.replace(line, newLine);
-        return ThreadWatcher.refreshIcon();
+        return ThreadWatcher$1.refreshIcon();
       } else {
-        return ThreadWatcher.refresh();
+        return ThreadWatcher$1.refresh();
       }
     },
 
     set404(boardID, threadID, cb) {
       let data;
-      if (!(data = ThreadWatcher.db?.get({boardID, threadID}))) { return cb(); }
+      if (!(data = ThreadWatcher$1.db?.get({boardID, threadID}))) { return cb(); }
       if (Conf['Auto Prune']) {
-        ThreadWatcher.db.delete({boardID, threadID});
+        ThreadWatcher$1.db.delete({boardID, threadID});
         return cb();
       }
       if (data.isDead && !((data.isArchived != null) || (data.page != null) || (data.lastPage != null) || (data.unread != null) || (data.quotingYou != null))) { return cb(); }
-      return ThreadWatcher.db.extend({boardID, threadID, val: {isDead: true, isArchived: undefined, page: undefined, lastPage: undefined, unread: undefined, quotingYou: undefined}}, cb);
+      return ThreadWatcher$1.db.extend({boardID, threadID, val: {isDead: true, isArchived: undefined, page: undefined, lastPage: undefined, unread: undefined, quotingYou: undefined}}, cb);
     },
 
     toggle(thread, manual) {
       const siteID   = g.SITE.ID;
       const boardID  = thread.board.ID;
       const threadID = thread.ID;
-      if (ThreadWatcher.db.get({boardID, threadID})) {
-        return ThreadWatcher.rm(siteID, boardID, threadID, undefined, manual);
+      if (ThreadWatcher$1.db.get({boardID, threadID})) {
+        return ThreadWatcher$1.rm(siteID, boardID, threadID, undefined, manual);
       } else {
-        return ThreadWatcher.add(thread, undefined, manual);
+        return ThreadWatcher$1.add(thread, undefined, manual);
       }
     },
 
@@ -15589,21 +15984,21 @@ svg.icon {
       const boardID  = thread.board.ID;
       const threadID = thread.ID;
       if (thread.isDead) {
-        if (Conf['Auto Prune'] && ThreadWatcher.db.get({boardID, threadID})) {
-          ThreadWatcher.rm(siteID, boardID, threadID, cb);
+        if (Conf['Auto Prune'] && ThreadWatcher$1.db.get({boardID, threadID})) {
+          ThreadWatcher$1.rm(siteID, boardID, threadID, cb);
           return;
         }
         data.isDead = true;
       }
       if (thread.OP) { data.excerpt = Get.threadExcerpt(thread); }
       if (thread.OP?.file?.thumbURL) { data.thumbURL = thread.OP.file.thumbURL; }
-      return ThreadWatcher.addRaw(boardID, threadID, data, cb, manual);
+      return ThreadWatcher$1.addRaw(boardID, threadID, data, cb, manual);
     },
 
     addRaw(boardID, threadID, data, cb, manual) {
-      const oldData = ThreadWatcher.db.get({ boardID, threadID, defaultValue: dict() });
+      const oldData = ThreadWatcher$1.db.get({ boardID, threadID, defaultValue: dict() });
       if (oldData.order == null) {
-        oldData.order = ThreadWatcher.getAll().length;
+        oldData.order = ThreadWatcher$1.getAll().length;
       }
       if (oldData.addedAt == null) {
         oldData.addedAt = Date.now();
@@ -15611,27 +16006,27 @@ svg.icon {
       delete oldData.last;
       delete oldData.modified;
       $.extend(oldData, data);
-      ThreadWatcher.db.set({boardID, threadID, val: oldData}, cb);
-      ThreadWatcher.refresh(manual);
+      ThreadWatcher$1.db.set({boardID, threadID, val: oldData}, cb);
+      ThreadWatcher$1.refresh(manual);
       const thread = {siteID: g.SITE.ID, boardID, threadID, data, force: true};
       if (Conf['Show Page'] && !data.isDead) {
-        return ThreadWatcher.fetchBoard([thread]);
-      } else if (ThreadWatcher.unreadEnabled && Conf['Show Unread Count']) {
-        return ThreadWatcher.fetchStatus(thread);
+        return ThreadWatcher$1.fetchBoard([thread]);
+      } else if (ThreadWatcher$1.unreadEnabled && Conf['Show Unread Count']) {
+        return ThreadWatcher$1.fetchStatus(thread);
       }
     },
 
     rm(siteID, boardID, threadID, cb, manual) {
-      ThreadWatcher.db.delete({siteID, boardID, threadID}, cb);
-      return ThreadWatcher.refresh(manual);
+      ThreadWatcher$1.db.delete({siteID, boardID, threadID}, cb);
+      return ThreadWatcher$1.refresh(manual);
     },
 
     menu: {
       init() {
         if (!Conf['Thread Watcher']) { return; }
         const menu = (this.menu = new UI.Menu('thread watcher'));
-        $.on($('.menu-button', ThreadWatcher.dialog), 'click', function(e) {
-          return menu.toggle(e, this, ThreadWatcher);
+        $.on($('.menu-button', ThreadWatcher$1.dialog), 'click', function(e) {
+          return menu.toggle(e, this, ThreadWatcher$1);
         });
         return this.addMenuEntries();
       },
@@ -15644,7 +16039,7 @@ svg.icon {
           el: entryEl,
           order: 60,
           open() {
-            const [addClass, rmClass, text] = !!ThreadWatcher.db.get({boardID: g.BOARD.ID, threadID: g.THREADID}) ?
+            const [addClass, rmClass, text] = !!ThreadWatcher$1.db.get({boardID: g.BOARD.ID, threadID: g.THREADID}) ?
               ['unwatch-thread', 'watch-thread', 'Unwatch thread']
             :
               ['watch-thread', 'unwatch-thread', 'Watch thread'];
@@ -15654,12 +16049,12 @@ svg.icon {
             return true;
           }
         });
-        return $.on(entryEl, 'click', () => ThreadWatcher.toggle(g.threads.get(`${g.BOARD}.${g.THREADID}`), true));
+        return $.on(entryEl, 'click', () => ThreadWatcher$1.toggle(g.threads.get(`${g.BOARD}.${g.THREADID}`), true));
       },
 
       addMenuEntries() {
         const toggleDisabledDead = function () {
-          this.el.classList.toggle('disabled', !$('.dead-thread', ThreadWatcher.list));
+          this.el.classList.toggle('disabled', !$('.dead-thread', ThreadWatcher$1.list));
           return true;
         };
 
@@ -15667,61 +16062,61 @@ svg.icon {
           // `Open all` entry
           {
             text: 'Open all threads',
-            cb: ThreadWatcher.cb.openAll,
+            cb: ThreadWatcher$1.cb.openAll,
             open() {
-              this.el.classList.toggle('disabled', !ThreadWatcher.list.firstElementChild);
+              this.el.classList.toggle('disabled', !ThreadWatcher$1.list.firstElementChild);
               return true;
             }
           },
           {
             text: 'Clear all threads',
-            cb: ThreadWatcher.cb.clear,
+            cb: ThreadWatcher$1.cb.clear,
             open() {
-              this.el.classList.toggle('disabled', !ThreadWatcher.list.firstElementChild);
+              this.el.classList.toggle('disabled', !ThreadWatcher$1.list.firstElementChild);
               return true;
             }
           },
           // `Open Unread` entry
           {
             text: 'Open unread threads',
-            cb: ThreadWatcher.cb.openUnread,
+            cb: ThreadWatcher$1.cb.openUnread,
             open() {
-              this.el.classList.toggle('disabled', !$('.replies-unread', ThreadWatcher.list));
+              this.el.classList.toggle('disabled', !$('.replies-unread', ThreadWatcher$1.list));
               return true;
             }
           },
           // `Open unread dead threads` entry
           {
             text: 'Open unread dead threads',
-            cb: ThreadWatcher.cb.openDeads,
+            cb: ThreadWatcher$1.cb.openDeads,
             open: toggleDisabledDead,
           },
           // `Prune all dead threads` entry
           {
             text: 'Prune all dead threads',
-            cb: ThreadWatcher.cb.pruneDeads,
+            cb: ThreadWatcher$1.cb.pruneDeads,
             open: toggleDisabledDead,
           },
           // `Prune read dead threads` entry
           {
             text: 'Prune read dead threads',
-            cb: ThreadWatcher.cb.pruneReadDeads,
+            cb: ThreadWatcher$1.cb.pruneReadDeads,
             open: toggleDisabledDead,
           },
           // `Dismiss posts quoting you` entry
           {
             text: 'Dismiss posts quoting you',
             title: 'Unhighlight the thread watcher icon and threads until there are new replies quoting you.',
-            cb: ThreadWatcher.cb.dismiss,
+            cb: ThreadWatcher$1.cb.dismiss,
             open() {
-              this.el.classList.toggle('disabled', !$.hasClass(ThreadWatcher.shortcut, 'replies-quoting-you'));
+              this.el.classList.toggle('disabled', !$.hasClass(ThreadWatcher$1.shortcut, 'replies-quoting-you'));
               return true;
             }
           },
           {
             text: 'Max H/W',
             open() {
-              this.el.innerHTML = `Max H <input type="number" value="${ThreadWatcher.maxHeight()}" min="120" max="999" class="field" style="width:4.2em"> W<input type="number" value="${ThreadWatcher.maxWidth()}" min="120" max="999" class="field" style="width:4.2em">`;
+              this.el.innerHTML = `Max H <input type="number" value="${ThreadWatcher$1.maxHeight()}" min="120" max="999" class="field" style="width:4.2em"> W<input type="number" value="${ThreadWatcher$1.maxWidth()}" min="120" max="999" class="field" style="width:4.2em">`;
               const [heightInput, widthInput] = $$('input', this.el);
               for (const input of [heightInput, widthInput]) {
                 $.on(input, 'click', e => e.stopPropagation());
@@ -15735,7 +16130,7 @@ svg.icon {
                 this.value = `${height}`;
                 $.set('Thread Watcher Max Height', height);
                 Conf['Thread Watcher Max Height'] = height;
-                ThreadWatcher.applyLayout();
+                ThreadWatcher$1.applyLayout();
               });
               $.on(widthInput, 'change', function() {
                 let width = parseInt(this.value, 10);
@@ -15744,7 +16139,7 @@ svg.icon {
                 this.value = `${width}`;
                 $.set('Thread Watcher Max Width', width);
                 Conf['Thread Watcher Max Width'] = width;
-                ThreadWatcher.applyLayout();
+                ThreadWatcher$1.applyLayout();
               });
               return true;
             }
@@ -15765,6 +16160,23 @@ svg.icon {
         }
 
         this.addSortEntry();
+
+        // Attach to QR controls (in dropdown per request; header button removed)
+        const attachEl = UI.checkbox('Thread Watcher Attached', 'Attach to QR');
+        attachEl.title = 'Attach/dock the thread watcher to the Quick Reply dialog. Bottom is natural (watcher width follows QR); left/right: width uses manual max W, height sizes to content. Drag watcher or use manual position to detach.';
+        const attachIn = attachEl.firstElementChild;
+        $.on(attachIn, 'mousedown', e => e.stopPropagation());
+        $.on(attachIn, 'click', e => e.stopPropagation());
+        $.on(attachIn, 'change', $.cb.checked);
+        $.on(attachIn, 'change', () => {
+          if (Conf['Thread Watcher Attached']) {
+            ThreadWatcher$1.positionIfAttached(true);
+          } else if (ThreadWatcher$1.dialog) {
+            ThreadWatcher$1.restorePosition();
+          }
+        });
+        this.menu.addEntry({ el: attachEl });
+        this.addAttachLocationEntry();
 
         // Settings checkbox entries, grouped into submenus to save vertical space:
         const automationNames = ['Auto Update Thread Watcher', 'Auto Watch', 'Auto Watch Reply', 'Auto Prune'];
@@ -15806,7 +16218,7 @@ svg.icon {
         };
         entry.el.title = desc;
         const input = entry.el.firstElementChild;
-        if ((name === 'Show Unread Count') && !ThreadWatcher.unreadEnabled) {
+        if ((name === 'Show Unread Count') && !ThreadWatcher$1.unreadEnabled) {
           input.disabled = true;
           $.addClass(entry.el, 'disabled');
           entry.el.title += '\n[Remember Last Read Post is disabled.]';
@@ -15816,9 +16228,9 @@ svg.icon {
         $.on(entry.el, 'click', e => e.stopPropagation());
         $.on(input, 'change', $.cb.checked);
         if (['Current Board', 'Show Page', 'Show Unread Count', 'Show Mark All Read Icon', 'Show Site Prefix', 'Show Mark Thread Read Icons'].includes(name))
-          $.on(input, 'change', () => ThreadWatcher.refresh());
+          $.on(input, 'change', () => ThreadWatcher$1.refresh());
         if (['Show Page', 'Show Unread Count', 'Auto Update Thread Watcher'].includes(name))
-          $.on(input, 'change', ThreadWatcher.fetchAuto);
+          $.on(input, 'change', ThreadWatcher$1.fetchAuto);
         return entry;
       },
 
@@ -15843,14 +16255,14 @@ svg.icon {
           const labelEl = $('.watcher-sort-label', el);
           labelEl.textContent = label;
           const updateCheck = () => {
-            check.textContent = ThreadWatcher.sortMode() === value ? '✓' : '';
+            check.textContent = ThreadWatcher$1.sortMode() === value ? '✓' : '';
           };
           $.on(el, 'mousedown', e => e.stopPropagation());
           $.on(el, 'click', function(e) {
             e.stopPropagation();
             $.set('Thread Watcher Sort', value);
             Conf['Thread Watcher Sort'] = value;
-            ThreadWatcher.refresh();
+            ThreadWatcher$1.refresh();
             for (const entry of subEntries) { entry.updateCheck(); }
           });
           subEntries.push({
@@ -15870,7 +16282,58 @@ svg.icon {
           order: 50,
           subEntries,
           open() {
-            this.el.classList.toggle('disabled', !ThreadWatcher.list.firstElementChild);
+            this.el.classList.toggle('disabled', !ThreadWatcher$1.list.firstElementChild);
+            return true;
+          }
+        });
+      },
+
+      addAttachLocationEntry() {
+        const locOptions = [
+          ['bottom', 'Bottom (QR width)'],
+          ['top',    'Top (QR width)'],
+          ['left',   'Left (manual W, auto H)'],
+          ['right',  'Right (manual W, auto H)'],
+        ];
+        const subEntries = [];
+        locOptions.forEach(([value, label]) => {
+          const el = $.el('a', {
+            href: 'javascript:;',
+            innerHTML: '<span class="watcher-sort-check"></span><span class="watcher-loc-label"></span>'
+          });
+          const check = $('.watcher-sort-check', el);
+          const labelEl = $('.watcher-loc-label', el);
+          labelEl.textContent = label;
+          const updateCheck = () => {
+            check.textContent = ThreadWatcher$1.attachLocation() === value ? '✓' : '';
+          };
+          $.on(el, 'mousedown', e => e.stopPropagation());
+          $.on(el, 'click', function(e) {
+            e.stopPropagation();
+            $.set('Thread Watcher Attach Location', value);
+            Conf['Thread Watcher Attach Location'] = value;
+            if (ThreadWatcher$1.attached()) {
+              ThreadWatcher$1.positionIfAttached(true);
+            }
+            subEntries.forEach(s => s.updateCheck && s.updateCheck());
+          });
+          subEntries.push({
+            el,
+            updateCheck,
+            open() {
+              updateCheck();
+              return true;
+            }
+          });
+        });
+        this.menu.addEntry({
+          el: $.el('a', {
+            href: 'javascript:;',
+            textContent: 'Attach Location'
+          }),
+          subEntries,
+          open() {
+            // always allow changing location
             return true;
           }
         });
@@ -15884,7 +16347,7 @@ svg.icon {
             href: 'javascript:;'
           }),
           open() {
-            this.el.innerHTML = `<span style="display:inline-flex;align-items:center;gap:4px;"><label style="display:inline-flex;align-items:center;gap:4px;"><input type="checkbox"${Conf['Show OP Thumbnails'] ? ' checked' : ''}>Thumbnails</label><input type="number" value="${ThreadWatcher.thumbnailSize()}" min="16" max="160" class="field" style="width:3.2em"></span><br><span style="display:inline-flex;align-items:center;gap:4px;"><label style="display:inline-flex;align-items:center;gap:4px;"><input type="checkbox"${Conf['Thread Watcher Thumbnail Hover'] ? ' checked' : ''}>Hover Preview</label><input type="number" value="${ThreadWatcher.thumbnailPreviewSize()}" min="10" max="99" class="field" style="width:3.2em"><span>%</span></span>`;
+            this.el.innerHTML = `<span style="display:inline-flex;align-items:center;gap:4px;"><label style="display:inline-flex;align-items:center;gap:4px;"><input type="checkbox"${Conf['Show OP Thumbnails'] ? ' checked' : ''}>Thumbnails</label><input type="number" value="${ThreadWatcher$1.thumbnailSize()}" min="16" max="160" class="field" style="width:3.2em"></span><br><span style="display:inline-flex;align-items:center;gap:4px;"><label style="display:inline-flex;align-items:center;gap:4px;"><input type="checkbox"${Conf['Thread Watcher Thumbnail Hover'] ? ' checked' : ''}>Hover Preview</label><input type="number" value="${ThreadWatcher$1.thumbnailPreviewSize()}" min="10" max="99" class="field" style="width:3.2em"><span>%</span></span>`;
             const [thumbToggle, previewToggle] = $$('input[type="checkbox"]', this.el);
             const [sizeInput, previewSizeInput] = $$('input[type="number"]', this.el);
             for (const input of [thumbToggle, previewToggle, sizeInput, previewSizeInput]) {
@@ -15896,20 +16359,20 @@ svg.icon {
               $.set('Show OP Thumbnails', this.checked);
               Conf['Show OP Thumbnails'] = this.checked;
               if (!this.checked) {
-                ThreadWatcher.hideThumbnailHover();
+                ThreadWatcher$1.hideThumbnailHover();
               }
               if (this.checked) {
-                ThreadWatcher.fetchAllStatus();
+                ThreadWatcher$1.fetchAllStatus();
               }
-              ThreadWatcher.refresh();
+              ThreadWatcher$1.refresh();
             });
             $.on(previewToggle, 'change', function() {
               $.set('Thread Watcher Thumbnail Hover', this.checked);
               Conf['Thread Watcher Thumbnail Hover'] = this.checked;
               if (!this.checked) {
-                ThreadWatcher.hideThumbnailHover();
+                ThreadWatcher$1.hideThumbnailHover();
               }
-              ThreadWatcher.refresh();
+              ThreadWatcher$1.refresh();
             });
             $.on(sizeInput, 'change', function() {
               let size = parseInt(this.value, 10);
@@ -15918,8 +16381,8 @@ svg.icon {
               this.value = `${size}`;
               $.set('Thread Watcher Thumbnail Size', size);
               Conf['Thread Watcher Thumbnail Size'] = size;
-              ThreadWatcher.applyLayout();
-              ThreadWatcher.refresh();
+              ThreadWatcher$1.applyLayout();
+              ThreadWatcher$1.refresh();
             });
             $.on(previewSizeInput, 'change', function() {
               let size = parseInt(this.value, 10);
@@ -15928,7 +16391,7 @@ svg.icon {
               this.value = `${size}`;
               $.set('Thread Watcher Thumbnail Preview Size', size);
               Conf['Thread Watcher Thumbnail Preview Size'] = size;
-              ThreadWatcher.positionThumbnailHover(ThreadWatcher.hoveredThumbnail);
+              ThreadWatcher$1.positionThumbnailHover(ThreadWatcher$1.hoveredThumbnail);
             });
             return true;
           }
@@ -17940,7 +18403,7 @@ svg.icon {
       // Sticky threads
       Index.sortOnTop(obj => obj.isSticky);
       // Highlighted threads
-      Index.sortOnTop(obj => obj.isOnTop || (Conf['Pin Watched Threads'] && ThreadWatcher.isWatchedRaw(obj.boardID, obj.threadID)));
+      Index.sortOnTop(obj => obj.isOnTop || (Conf['Pin Watched Threads'] && ThreadWatcher$1.isWatchedRaw(obj.boardID, obj.threadID)));
       // Non-hidden threads
       if (Conf['Anchor Hidden Threads']) { return Index.sortOnTop(obj => !Index.isHidden(obj.threadID)); }
     },
@@ -22137,16 +22600,16 @@ aero|asia|biz|cat|com|coop|dance|info|int|jobs|mobi|moe|museum|name|net|org|post
             hasAction = true;
         }
       }
-      if (key === Conf['Watch'] && ThreadWatcher.enabled && thread) {
-        ThreadWatcher.toggle(thread);
+      if (key === Conf['Watch'] && ThreadWatcher$1.enabled && thread) {
+        ThreadWatcher$1.toggle(thread);
         hasAction = true;
       }
-      if (key === Conf['Update thread watcher'] && ThreadWatcher.enabled) {
-        ThreadWatcher.buttonFetchAll();
+      if (key === Conf['Update thread watcher'] && ThreadWatcher$1.enabled) {
+        ThreadWatcher$1.buttonFetchAll();
         hasAction = true;
       }
-      if (key === Conf['Toggle thread watcher'] && ThreadWatcher.enabled) {
-        ThreadWatcher.toggleWatcher();
+      if (key === Conf['Toggle thread watcher'] && ThreadWatcher$1.enabled) {
+        ThreadWatcher$1.toggleWatcher();
         hasAction = true;
       }
       if (key === Conf['Toggle threading'] && QuoteThreading.ready) {
@@ -23324,6 +23787,13 @@ aero|asia|biz|cat|com|coop|dance|info|int|jobs|mobi|moe|museum|name|net|org|post
       $.set('sjisPreview', Conf['sjisPreview']);
       return QR.nodes.el.classList.toggle('sjis-preview', Conf['sjisPreview']);
     },
+    toggleCommentPreview(e) {
+      e.preventDefault();
+      Conf['Comment Preview'] = !Conf['Comment Preview'];
+      $.set('Comment Preview', Conf['Comment Preview']);
+      QR.applyCommentPreviewSettings();
+      return $.event('QRCommentPreviewChanged');
+    },
     texPreviewShow() {
       if ($.hasClass(QR.nodes.el, 'tex-preview')) {
         return QR.texPreviewHide();
@@ -23347,6 +23817,8 @@ aero|asia|biz|cat|com|coop|dance|info|int|jobs|mobi|moe|museum|name|net|org|post
       const enabled = !!Conf['Comment Preview'];
       const pos = ['below', 'right', 'left'].includes(Conf['Comment Preview Position']) ? Conf['Comment Preview Position'] : 'below';
       classList.toggle('has-com-preview', enabled);
+      QR.nodes.previewToggle?.classList.toggle('enabled', enabled);
+      QR.nodes.previewToggle?.setAttribute('aria-pressed', enabled ? 'true' : 'false');
       classList.remove('com-preview-below', 'com-preview-right', 'com-preview-left');
       classList.add(`com-preview-${pos}`);
       if (enabled) {
@@ -23946,6 +24418,7 @@ aero|asia|biz|cat|com|coop|dance|info|int|jobs|mobi|moe|museum|name|net|org|post
       const setNode = (name, query) => nodes[name] = $(query, dialog);
       setNode('move', '.move');
       setNode('autohide', '#autohide');
+      setNode('previewToggle', '#qr-preview-toggle');
       setNode('close', '.close');
       setNode('thread', 'select');
       setNode('form', 'form');
@@ -23989,6 +24462,7 @@ aero|asia|biz|cat|com|coop|dance|info|int|jobs|mobi|moe|museum|name|net|org|post
       classList.toggle('has-math', !!config.math_tags);
       classList.toggle('sjis-preview', !!config.sjis_tags && Conf['sjisPreview']);
       classList.toggle('show-new-thread-option', Conf['Show New Thread Option in Threads']);
+      Icon.set(nodes.previewToggle, 'eye');
       QR.applyCommentPreviewSettings();
       if (parseInt(Conf['customCooldown'], 10) > 0) {
         $.addClass(QR.nodes.fileSubmit, 'custom-cooldown');
@@ -24006,6 +24480,7 @@ aero|asia|biz|cat|com|coop|dance|info|int|jobs|mobi|moe|museum|name|net|org|post
       $.on(nodes.close, 'click', QR.close);
       $.on(nodes.status, 'click', QR.submit);
       $.on(nodes.form, 'submit', QR.submit);
+      $.on(nodes.previewToggle, 'click', QR.toggleCommentPreview);
       $.on(nodes.sjisToggle, 'click', QR.toggleSJIS);
       $.on(nodes.texButton, 'mousedown', QR.texPreviewShow);
       $.on(nodes.texButton, 'mouseup', QR.texPreviewHide);
@@ -28663,6 +29138,7 @@ Enable it on boards.${location.hostname.split('.')[1]}.org in your browser's pri
         'Scrollbar Mark Quotes You',
         'Scrollbar Mark Ghost Posts',
         'Scrollbar Mark Unread Line',
+        'Scrollbar Marker Position',
         'Highlight Posts Quoting You',
         'Highlight Own Posts',
         'Highlight Ghost Posts'
@@ -28878,6 +29354,38 @@ Enable it on boards.${location.hostname.split('.')[1]}.org in your browser's pri
       inputs['Thread Watcher Max Height'] = heightInput;
       inputs['Thread Watcher Max Width'] = widthInput;
       $.add(fs, heightDiv);
+      const attachDiv = $.el('div', { innerHTML: '<label><input type="checkbox" name="Thread Watcher Attached">Attach to QR</label><label class="thread-watcher-inline-number">at <select name="Thread Watcher Attach Location" class="field thread-watcher-attach-loc"><option value="bottom">bottom</option><option value="top">top</option><option value="left">left</option><option value="right">right</option></select></label><span class="description">: <span class="setting-description">Attach/dock watcher to Quick Reply. Bottom natural (width follows QR); left/right use manual width (height to content, capped by max H). Manual max W/H apply. Drag to detach.</span></span>' });
+      attachDiv.dataset.name = 'Thread Watcher Attached Thread Watcher Attach Location';
+      attachDiv.dataset.settingTitle = 'Attach to QR';
+      attachDiv.dataset.settingDescription = 'Attach the thread watcher to the Quick Reply dialog.';
+      attachDiv.title = 'Attach the thread watcher to the Quick Reply dialog.';
+      const attachInput = $('input[name="Thread Watcher Attached"]', attachDiv);
+      const locInput = $('select[name="Thread Watcher Attach Location"]', attachDiv);
+      $.on(attachInput, 'change', $.cb.checked);
+      $.on(attachInput, 'change', function () { this.parentNode.parentNode.dataset.checked = this.checked; });
+      $.on(attachInput, 'change', () => {
+        const TW = ThreadWatcher;
+        if (attachInput.checked) {
+          if (TW && TW.positionIfAttached)
+            TW.positionIfAttached(true);
+        } else if (TW && TW.restorePosition) {
+          TW.restorePosition();
+        }
+      });
+      $.on(locInput, 'change', function () {
+        $.set(this.name, this.value);
+        Conf[this.name] = this.value;
+        if (Conf['Thread Watcher Attached']) {
+          const TW = ThreadWatcher;
+          if (TW && TW.positionIfAttached)
+            TW.positionIfAttached(true);
+        }
+      });
+      items['Thread Watcher Attached'] = Conf['Thread Watcher Attached'];
+      items['Thread Watcher Attach Location'] = Conf['Thread Watcher Attach Location'];
+      inputs['Thread Watcher Attached'] = attachInput;
+      inputs['Thread Watcher Attach Location'] = locInput;
+      $.add(fs, attachDiv);
       $.add(section, fs);
       $.get(items, function (items) {
         for (const key in items) {
@@ -28885,6 +29393,8 @@ Enable it on boards.${location.hostname.split('.')[1]}.org in your browser's pri
           if (input.type === 'checkbox') {
             input.checked = items[key];
             input.parentNode.parentNode.dataset.checked = items[key];
+          } else if (input.tagName === 'SELECT') {
+            input.value = items[key] || 'bottom';
           } else {
             input.value = items[key];
           }
@@ -28898,6 +29408,16 @@ Enable it on boards.${location.hostname.split('.')[1]}.org in your browser's pri
         const watcherWidth = parseInt(`${items['Thread Watcher Max Width']}`, 10);
         if (Number.isFinite(watcherWidth))
           syncWatcherWidthToDialog(Math.max(120, Math.min(999, watcherWidth)));
+        const attachInput2 = inputs['Thread Watcher Attached'];
+        if (attachInput2) {
+          attachInput2.parentNode.parentNode.dataset.checked = !!items['Thread Watcher Attached'];
+        }
+        if (items['Thread Watcher Attached']) {
+          const TW = ThreadWatcher;
+          if (TW && TW.positionIfAttached) {
+            setTimeout(() => TW.positionIfAttached(true), 0);
+          }
+        }
       });
     },
     media(section) {
@@ -29110,6 +29630,17 @@ Enable it on boards.${location.hostname.split('.')[1]}.org in your browser's pri
         'Quote Text Color',
         'Dead Link Text Color',
       ];
+      const hexEditableColorKeys = new Set([
+        'Highlight Own Color',
+        'Highlight You Color',
+        'Highlight Ghost Color',
+        'Catalog Highlight Own Color',
+        'Catalog Highlight Watched Color',
+        'Scroll Marker Own Color',
+        'Scroll Marker You Color',
+        'Scroll Marker Ghost Color',
+        'Scroll Marker Unread Color',
+      ]);
       const markerRefreshKeys = new Set([
         'Scrollbar Markers',
         'Scrollbar Mark Own Posts',
@@ -29206,6 +29737,62 @@ Enable it on boards.${location.hostname.split('.')[1]}.org in your browser's pri
         }
       };
       const refreshStylingPreview = () => Settings.refreshStylingPreviewFromDialog();
+      const colorHexInputs = dict();
+      const syncColorHexInput = (baseKey) => {
+        const colorInput = inputs[baseKey];
+        const hexInput = colorHexInputs[baseKey];
+        if (!colorInput || !hexInput)
+          return;
+        hexInput.value = colorInput.value || '';
+        hexInput.disabled = colorInput.disabled;
+        hexInput.classList.remove('styling-color-hex-invalid');
+      };
+      const syncColorHexInputs = () => {
+        for (const baseKey in colorHexInputs)
+          syncColorHexInput(baseKey);
+      };
+      for (const baseKey of hexEditableColorKeys) {
+        const colorInput = inputs[baseKey];
+        if (!colorInput || colorInput.type !== 'color')
+          continue;
+        const hexInput = $.el('input', {
+          type: 'text',
+          className: 'field styling-color-hex',
+          placeholder: '#rrggbb',
+          title: 'Hex color, e.g. #ff5050',
+        });
+        hexInput.maxLength = 7;
+        hexInput.setAttribute('spellcheck', 'false');
+        colorInput.insertAdjacentElement('afterend', hexInput);
+        colorHexInputs[baseKey] = hexInput;
+        $.on(hexInput, 'input', () => {
+          const raw = hexInput.value.trim();
+          const validPartial = /^#?[0-9a-f]{0,6}$/i.test(raw);
+          const normalized = /^#?[0-9a-f]{6}$/i.test(raw)
+            ? Settings.normalizeHexColorInput(raw)
+            : null;
+          hexInput.classList.toggle('styling-color-hex-invalid', !!raw && !validPartial);
+          if (!normalized)
+            return;
+          colorInput.value = normalized;
+          delete colorInput.dataset.unset;
+          hexInput.value = normalized;
+          colorInput.dispatchEvent(new Event('input', { bubbles: true }));
+        });
+        $.on(hexInput, 'change', () => {
+          const normalized = Settings.normalizeHexColorInput(hexInput.value);
+          if (normalized) {
+            colorInput.value = normalized;
+            delete colorInput.dataset.unset;
+            hexInput.value = normalized;
+            colorInput.dispatchEvent(new Event('change', { bubbles: true }));
+          } else {
+            syncColorHexInput(baseKey);
+          }
+        });
+        $.on(colorInput, 'input', () => syncColorHexInput(baseKey));
+        $.on(colorInput, 'change', () => syncColorHexInput(baseKey));
+      }
       const syncCatalogHighlightControls = () => {
         const catalogEnabled = !!inputs['Enable Catalog Highlights']?.checked;
         for (const key of catalogHighlightKeys) {
@@ -29225,6 +29812,7 @@ Enable it on boards.${location.hostname.split('.')[1]}.org in your browser's pri
               control.disabled = !enabled;
           }
         }
+        syncColorHexInputs();
       };
       const syncMarkerColorControls = () => {
         Settings.syncLinkedMarkerColors(inputs, editVariant());
@@ -29241,6 +29829,7 @@ Enable it on boards.${location.hostname.split('.')[1]}.org in your browser's pri
               clearButton.disabled = linked;
           }
         }
+        syncColorHexInputs();
       };
       const syncTextColorControls = () => {
         const manualMode = (textColorModeSelect?.value || 'auto') === 'manual';
@@ -29425,6 +30014,7 @@ Enable it on boards.${location.hostname.split('.')[1]}.org in your browser's pri
         Settings.applyStylingVars();
         refreshUnsetColorInputs();
         Settings.refreshCustomCSSEditor(section);
+        syncColorHexInputs();
         refreshStylingPreview();
       };
       $.get(items, populateInputsFromLoaded);
@@ -29453,6 +30043,7 @@ Enable it on boards.${location.hostname.split('.')[1]}.org in your browser's pri
       const savedPaletteNameInput = $('#styling-saved-palette-name', section);
       const savePaletteBtn = $('#styling-save-palette', section);
       const savedPalettesList = $('#styling-saved-palettes-list', section);
+      let suggestedPaletteBatch = 0;
       const paletteStateMap = [
         ['own', 'Highlight Own Color', 'Thread: your post'],
         ['you', 'Highlight You Color', 'Thread: quotes you'],
@@ -29494,15 +30085,17 @@ Enable it on boards.${location.hostname.split('.')[1]}.org in your browser's pri
         Settings.applyStylingVars();
         refreshStylingPreview();
       }
-      function renderSuggestedPalettes() {
+      function renderSuggestedPalettes(advance = false) {
         if (!paletteSuggestionRoot)
           return;
-        const { profile, palettes } = Settings.suggestedHighlightPalettes(editVariant());
+        if (advance)
+          suggestedPaletteBatch += 1;
+        const { profile, palettes } = Settings.suggestedHighlightPalettes(editVariant(), suggestedPaletteBatch);
         paletteSuggestionRoot.textContent = '';
         const header = $.el('div', { className: 'styling-palette-header' });
         const title = $.el('div', {
           className: 'styling-palette-title',
-          textContent: `Suggested palettes for ${profile.label}`,
+          textContent: `Suggested palettes for ${profile.label}${suggestedPaletteBatch ? ` - set ${suggestedPaletteBatch + 1}` : ''}`,
         });
         const note = $.el('div', {
           className: 'styling-palette-note note',
@@ -29512,7 +30105,7 @@ Enable it on boards.${location.hostname.split('.')[1]}.org in your browser's pri
           type: 'button',
           textContent: 'Refresh',
         });
-        $.on(refresh, 'click', () => renderSuggestedPalettes());
+        $.on(refresh, 'click', () => renderSuggestedPalettes(true));
         $.add(header, [title, note, refresh]);
         $.add(paletteSuggestionRoot, header);
         const list = $.el('div', { className: 'styling-palette-list' });
@@ -29588,14 +30181,17 @@ Enable it on boards.${location.hostname.split('.')[1]}.org in your browser's pri
       function refreshSuggestedPalettesIfOpen() {
         if (!paletteSuggestionRoot || paletteSuggestionRoot.hidden)
           return;
+        suggestedPaletteBatch = 0;
         renderSuggestedPalettes();
       }
       if (suggestPalettesBtn && paletteSuggestionRoot) {
         $.on(suggestPalettesBtn, 'click', () => {
           paletteSuggestionRoot.hidden = !paletteSuggestionRoot.hidden;
           suggestPalettesBtn.textContent = paletteSuggestionRoot.hidden ? 'Suggest palettes' : 'Hide palettes';
-          if (!paletteSuggestionRoot.hidden)
+          if (!paletteSuggestionRoot.hidden) {
+            suggestedPaletteBatch = 0;
             renderSuggestedPalettes();
+          }
         });
       }
       if (savePaletteBtn && savedPaletteNameInput) {
@@ -30516,6 +31112,16 @@ Enable it on boards.${location.hostname.split('.')[1]}.org in your browser's pri
       const to = (n) => Math.round($.minmax(n, 0, 255)).toString(16).padStart(2, '0');
       return `#${to(parts[0])}${to(parts[1])}${to(parts[2])}`;
     },
+    normalizeHexColorInput(value) {
+      const input = value.trim().replace(/^#/, '');
+      if (/^[0-9a-f]{3}$/i.test(input)) {
+        return `#${input[0]}${input[0]}${input[1]}${input[1]}${input[2]}${input[2]}`.toLowerCase();
+      }
+      if (/^[0-9a-f]{6}$/i.test(input)) {
+        return `#${input}`.toLowerCase();
+      }
+      return null;
+    },
     primeResolvedStyleColorCache(keys) {
       if (!keys.length || !d.body)
         return;
@@ -30564,6 +31170,12 @@ Enable it on boards.${location.hostname.split('.')[1]}.org in your browser's pri
         delete input.dataset.unset;
       } else {
         input.dataset.unset = '1';
+      }
+      const hexInput = input.nextElementSibling;
+      if (hexInput?.classList.contains('styling-color-hex')) {
+        hexInput.value = input.value || '';
+        hexInput.disabled = input.disabled;
+        hexInput.classList.remove('styling-color-hex-invalid');
       }
     },
     refreshUnsetStylingColorInputs() {
@@ -30631,6 +31243,37 @@ Enable it on boards.${location.hostname.split('.')[1]}.org in your browser's pri
       const to = (v) => Math.round((v + m) * 255).toString(16).padStart(2, '0');
       return `#${to(r)}${to(g)}${to(b)}`;
     },
+    hslToHex(h, s, l) {
+      const hue = ((h % 360) + 360) % 360;
+      const sat = $.minmax(s, 0, 100) / 100;
+      const light = $.minmax(l, 0, 100) / 100;
+      const c = (1 - Math.abs(2 * light - 1)) * sat;
+      const hh = hue / 60;
+      const x = c * (1 - Math.abs((hh % 2) - 1));
+      let r = 0, g = 0, b = 0;
+      if (hh < 1) {
+        r = c;
+        g = x;
+      } else if (hh < 2) {
+        r = x;
+        g = c;
+      } else if (hh < 3) {
+        g = c;
+        b = x;
+      } else if (hh < 4) {
+        g = x;
+        b = c;
+      } else if (hh < 5) {
+        r = x;
+        b = c;
+      } else {
+        r = c;
+        b = x;
+      }
+      const m = light - c / 2;
+      const to = (v) => Math.round((v + m) * 255).toString(16).padStart(2, '0');
+      return `#${to(r)}${to(g)}${to(b)}`;
+    },
     highlightPaletteThemeProfile(variant) {
       const siteStyle = String(Settings.styleConf('siteStyle', variant) || '').trim();
       const native = Settings.isCustomSiteThemeValue(siteStyle) ? '' : siteStyle.toLowerCase();
@@ -30661,7 +31304,7 @@ Enable it on boards.${location.hostname.split('.')[1]}.org in your browser's pri
         note: 'based on the current page background',
       };
     },
-    suggestedHighlightPalettes(variant) {
+    suggestedHighlightPalettes(variant, batch = 0) {
       const profile = Settings.highlightPaletteThemeProfile(variant);
       const dark = [
         { id: 'ember-night', name: 'Ember Night', colors: { own: '#ff6b6b', you: '#ff9f43', ghost: '#9ca3af', catalogOwn: '#2dd4bf', catalogWatched: '#60a5fa' } },
@@ -30677,6 +31320,33 @@ Enable it on boards.${location.hostname.split('.')[1]}.org in your browser's pri
         { id: 'slate-citrus', name: 'Slate Citrus', colors: { own: '#2563eb', you: '#ca8a04', ghost: '#64748b', catalogOwn: '#0d9488', catalogWatched: '#dc2626' } },
         { id: 'rust-teal', name: 'Rust Teal', colors: { own: '#b45309', you: '#2563eb', ghost: '#78716c', catalogOwn: '#0f766e', catalogWatched: '#be123c' } },
       ];
+      if (batch > 0) {
+        const baseHue = (batch * 47) % 360;
+        const sat = profile.kind === 'dark' ? 72 : 66;
+        const ownLight = profile.kind === 'dark' ? 64 : 42;
+        const youLight = profile.kind === 'dark' ? 66 : 38;
+        const ghostLight = profile.kind === 'dark' ? 68 : 48;
+        const catalogLight = profile.kind === 'dark' ? 62 : 36;
+        const generated = Array.from({ length: 5 }, (_, i) => {
+          const h = baseHue + (i * 31);
+          const accentShift = 96 + ((batch + i) % 3) * 24;
+          return {
+            id: `generated-${batch}-${i}`,
+            name: `Generated ${batch + 1}.${i + 1}`,
+            colors: {
+              own: Settings.hslToHex(h, sat, ownLight),
+              you: Settings.hslToHex(h + accentShift, sat - 4, youLight),
+              ghost: Settings.hslToHex(h + 210, profile.kind === 'dark' ? 12 : 10, ghostLight),
+              catalogOwn: Settings.hslToHex(h + 165, sat - 8, catalogLight),
+              catalogWatched: Settings.hslToHex(h + 270, sat - 2, catalogLight + (profile.kind === 'dark' ? 3 : 2)),
+            },
+          };
+        });
+        return {
+          profile,
+          palettes: generated,
+        };
+      }
       return {
         profile,
         palettes: profile.kind === 'dark' ? dark : light,
@@ -31092,6 +31762,7 @@ Enable it on boards.${location.hostname.split('.')[1]}.org in your browser's pri
         'Scrollbar Mark Quotes You',
         'Scrollbar Mark Ghost Posts',
         'Scrollbar Mark Unread Line',
+        'Scrollbar Marker Position',
         'Highlight Posts Quoting You',
         'Highlight Own Posts',
         'Highlight Ghost Posts'
@@ -31141,6 +31812,8 @@ Enable it on boards.${location.hostname.split('.')[1]}.org in your browser's pri
         'Thread Watcher Thumbnail Preview Size',
         'Thread Watcher Max Height',
         'Thread Watcher Max Width',
+        'Thread Watcher Attached',
+        'Thread Watcher Attach Location',
         'Thread Title',
         'Unread Title Count',
         'Interval',
@@ -38100,7 +38773,7 @@ Enable it on boards.${location.hostname.split('.')[1]}.org in your browser's pri
     initReady() {
       if (g.SITE.is404?.()) {
         if (g.VIEW === 'thread') {
-          ThreadWatcher.set404(g.BOARD.ID, g.THREADID, function() {
+          ThreadWatcher$1.set404(g.BOARD.ID, g.THREADID, function() {
             if (Conf['404 Redirect']) {
               return Redirect.navigate('thread', {
                 boardID:  g.BOARD.ID,
@@ -38569,8 +39242,8 @@ User agent: ${navigator.userAgent}\
       ['Quote Threading',           QuoteThreading],
       ['Thread Stats',              ThreadStats],
       ['Thread Updater',            ThreadUpdater],
-      ['Thread Watcher',            ThreadWatcher],
-      ['Thread Watcher (Menu)',     ThreadWatcher.menu],
+      ['Thread Watcher',            ThreadWatcher$1],
+      ['Thread Watcher (Menu)',     ThreadWatcher$1.menu],
       ['Mark New IPs',              MarkNewIPs],
       ['Index Navigation',          Nav],
       ['Keybinds',                  Keybinds],

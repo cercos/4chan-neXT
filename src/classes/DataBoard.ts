@@ -262,7 +262,8 @@ export default class DataBoard {
     $.set(this.key, this.data);
   }
 
-  onSync(data) {
+  onSync(data?: DataBoardData) {
+    if (!data) { return; }
     if ((data.version || 0) <= (this.data.version || 0)) { return; }
     this.initData(data);
     this.sync?.();

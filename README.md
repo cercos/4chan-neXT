@@ -17,15 +17,15 @@ You will need a userscript manager:
 
 ## Latest Version
 
-`1.0.6` (2026-06-03)
+`1.0.7` (2026-06-05)
 
-- Added IDE-style "over scrollbar" marker mode with header menu toggle.
-- Added YouTube → yewtu.be link rewriting.
-- Reorganized thread updater sound settings; volume is now a slider.
-- Fixed thread updater sound race condition and multi-tab beeping.
-- Settings dialog opens to General by default; descriptions are hover tooltips.
-- Removed unused legacy settings and renamed "Filtering" to "Filters".
-- Styling page color cache and build tooling update.
+- Added Thread Watcher attach/detach support for docking it to the Quick Reply.
+- Added a Quick Reply header preview toggle icon.
+- Grouped and cleaned up Thread Watcher settings in the settings dropdown.
+- Fixed userscript download/update metadata.
+- Fixed QR captcha wait messages with sign-in links and long text wrapping.
+- Fixed a LibreWolf/Violentmonkey sync error when storage change events provide empty board data, which could also disrupt settings updates such as Custom CSS.
+- Small Quick Reply, Thread Watcher, and settings fixes.
 
 ## Migration from 4chan X / 4chan XT
 
@@ -45,6 +45,7 @@ To migrate settings:
 Recent fork additions include:
 - Built-in site theme styles and StyleChan compatibility.
 - IDE-style "over scrollbar" marker mode (single or 3 columns), plus per-subject highlight colors for catalog Own / Watched threads.
+- Quick Reply docking controls for the Thread Watcher and a compact preview toggle.
 - Configurable thread updater sounds with per-board overrides, cross-tab single-beep, and a volume slider.
 - YouTube → yewtu.be and X → xcancel link rewriting.
 - Scrollbar hover thumbnail preview and Thread Watcher thumbnails.
