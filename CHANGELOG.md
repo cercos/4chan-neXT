@@ -4,7 +4,9 @@
 
 - Added a setting to show or hide the Quick Reply preview button.
 - Added gallery grid layout support with updated thumbnail placement.
+- Added border highlighting for catalog threads.
 - Added the ability to re-enable disabled style settings while StyleChan is active.
+- Changed "Download all media" to always bundle downloads as a ZIP archive.
 - Fixed scrollbar marker single mode so the scrollbar no longer pushes the header out of alignment.
 - Fixed edge highlighting.
 

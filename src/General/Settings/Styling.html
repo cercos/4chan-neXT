@@ -1,4 +1,4 @@
-<details open class="styling-site-style">
+<details open class="styling-site-style" data-styling-section="siteStyle">
   <summary>Site Style</summary>
   <div class="styling-variant-bar">
     <label class="styling-variant-mode">SFW / NSFW mode:
@@ -30,13 +30,19 @@
   <div id="styling-site-style-note" class="note" hidden></div>
 </details>
 
-<details open>
+<details open data-styling-section="highlights">
   <summary>Highlight Colors</summary>
   <p>Choose highlight colors for thread and catalog states.</p>
   <div data-name="Highlight Colors">
     <div class="styling-tree">
       <div data-name="Thread Highlights">
         <label><input type="checkbox" name="Enable Thread Highlights"> Threads</label>
+        <p class="styling-compact-control">
+          <label title="Width for thread edge-only highlights.">
+            Edge width
+            <input type="range" name="Thread Highlight Edge Width" min="1" max="8" step="1">
+          </label>
+        </p>
         <div class="styling-tree">
           <div class="styling-inline-option" data-highlight-row="own">
             <label><input type="checkbox" name="Highlight Own Posts"> Your post</label>
@@ -87,6 +93,12 @@
       </div>
       <div data-name="Catalog Highlights">
         <label><input type="checkbox" name="Enable Catalog Highlights"> Catalog</label>
+        <p class="styling-compact-control">
+          <label title="Width for catalog border-only highlights.">
+            Border width
+            <input type="range" name="Catalog Highlight Border Width" min="1" max="8" step="1">
+          </label>
+        </p>
         <div class="styling-tree">
           <div class="styling-inline-option">
             <label><input type="checkbox" name="Catalog Highlight Own Posts"> Your post</label>
@@ -100,6 +112,7 @@
                 <input type="color" name="Catalog Highlight Own Dead Link Color" title="Dead link color">
               </span>
               <label class="styling-inline-toggle" title="Automatically choose readable text colors for this highlight"><input type="checkbox" name="Catalog Highlight Own Text Auto"> Auto text</label>
+              <label class="styling-inline-toggle" title="Show only a colored border around the catalog tile, no background fill"><input type="checkbox" name="Catalog Highlight Own Border Only"> Border only</label>
               <input type="range" name="Catalog Highlight Own Opacity" min="0" max="1" step="0.05" title="Highlight opacity">
             </span>
           </div>
@@ -115,6 +128,7 @@
                 <input type="color" name="Catalog Highlight Watched Dead Link Color" title="Dead link color">
               </span>
               <label class="styling-inline-toggle" title="Automatically choose readable text colors for this highlight"><input type="checkbox" name="Catalog Highlight Watched Text Auto"> Auto text</label>
+              <label class="styling-inline-toggle" title="Show only a colored border around the catalog tile, no background fill"><input type="checkbox" name="Catalog Highlight Watched Border Only"> Border only</label>
               <input type="range" name="Catalog Highlight Watched Opacity" min="0" max="1" step="0.05" title="Highlight opacity">
             </span>
           </div>
@@ -137,7 +151,7 @@
   </div>
 </details>
 
-<details open>
+<details open data-styling-section="scrollbarMarkers">
   <summary>Scrollbar Markers</summary>
   <div data-name="Scrollbar Markers">
     <label><input type="checkbox" name="Scrollbar Markers"> Scrollbar markers</label>
@@ -177,7 +191,7 @@
   </div>
 </details>
 
-<details open class="styling-text-colors">
+<details open class="styling-text-colors" data-styling-section="textColors">
   <summary>Text Colors</summary>
   <div class="styling-theme-row">
     <label>Mode:
@@ -220,7 +234,7 @@
   </div>
 </details>
 
-<details open class="styling-custom-css">
+<details open class="styling-custom-css" data-styling-section="customCSS">
   <summary>Custom CSS</summary>
   <div class="custom-css-toggle-row">
     <label><input type="checkbox" name="Custom CSS"> Enable Custom CSS</label>

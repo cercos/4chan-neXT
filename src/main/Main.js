@@ -334,6 +334,11 @@ var Main = {
       styleChanThemeHome: false,
       styleChanThemeCSS: '',
       styleChanVarsCSS: '',
+      // Per-section master switches. The home page can't detect StyleChan
+      // (it doesn't run here), so we read the persisted flags a board visit
+      // synced. Default-true ⇒ non-StyleChan users are unaffected.
+      stylingSectionSiteStyle: true,
+      stylingSectionCustomCSS: true,
     };
     ($.getSync || $.get)(defaults, (items) => {
       // The home page has no board context, so 'auto' falls back to SFW.
@@ -350,7 +355,9 @@ var Main = {
       // board), replay StyleChan's stylesheet on the home page instead of our
       // own. This takes precedence so the two don't fight over the same page.
       const useStylechanHome = !!(items.styleChanThemeHome && (items.styleChanThemeCSS || items.styleChanVarsCSS));
-      if (items.siteStyleHome && normalizedStyle && !useStylechanHome) {
+      const siteStyleSectionOn = items.stylingSectionSiteStyle !== false;
+      const customCSSSectionOn = items.stylingSectionCustomCSS !== false;
+      if (items.siteStyleHome && siteStyleSectionOn && normalizedStyle && !useStylechanHome) {
         // Persist 4chan's own theme cookie so future homepage requests render
         // server-side with the right stylesheet.
         Main.setSiteStyleHomeCookie(siteStyle);
@@ -360,7 +367,7 @@ var Main = {
         // the chosen theme, so the homepage repaints immediately.
         Main.applyHomePageSiteStyle(siteStyle);
       }
-      if (items.customCSSHome && items['Custom CSS'] && usercss && !useStylechanHome) {
+      if (items.customCSSHome && customCSSSectionOn && items['Custom CSS'] && usercss && !useStylechanHome) {
         Main.installHomePageCustomCSS(usercss);
       }
       if (useStylechanHome) {
@@ -575,26 +582,17 @@ var Main = {
   initStyle() {
     if (!Main.isThisPageLegit()) { return; }
     const homeSiteStyle = Settings.styleConf('siteStyle');
-    // When deferring to StyleChan, 4chan XT should not own the home-page
-    // styling or inject its custom CSS at all.
-    if (Settings.shouldDeferStylingToStylechan() && Conf['siteStyleHome']) {
-      Conf['siteStyleHome'] = false;
-      $.set('siteStyleHome', false);
-    }
-    if (Settings.shouldDeferStylingToStylechan() && Conf['customCSSHome']) {
-      Conf['customCSSHome'] = false;
-      $.set('customCSSHome', false);
-    }
-    if (Settings.shouldDeferStylingToStylechan() && Conf['Custom CSS']) {
-      Conf['Custom CSS'] = false;
-      $.set('Custom CSS', false);
-    }
+    // On a board page StyleChan detection is reliable, so this is where we run
+    // the one-time "hand StyleChan-owned sections over" recommendation (and the
+    // reverse reset once StyleChan is uninstalled). The per-section master
+    // switches then gate styling at runtime instead of force-disabling settings.
+    Settings.initStylingSectionDefaults();
     // While StyleChan is managing this board, capture its injected stylesheet so
     // the (StyleChan-excluded) home page can mirror it when the user opts in.
     if (Settings.shouldDeferStylingToStylechan()) {
       Main.snapshotStylechanForHome();
     }
-    if (Conf['siteStyleHome'] && homeSiteStyle) {
+    if (Conf['siteStyleHome'] && Settings.stylingSectionEnabled('siteStyle') && homeSiteStyle) {
       Main.setSiteStyleHomeCookie(homeSiteStyle);
     }
 
@@ -665,6 +663,9 @@ var Main = {
     let preferredStyleApplied = false;
     const applyPreferredStyle = function() {
       const activeSiteStyle = Settings.styleConf('siteStyle');
+      // Site Style section off ⇒ don't actively switch the site theme; leave
+      // whatever the page / native extension / StyleChan rendered in place.
+      if (!Settings.stylingSectionEnabled('siteStyle')) { return; }
       if (preferredStyleApplied || g.SITE.software !== 'yotsuba' || !activeSiteStyle) { return; }
       const preferred = activeSiteStyle;
 
@@ -755,7 +756,7 @@ var Main = {
           const siteStyleKey = Settings.variantKey('siteStyle');
           Conf[siteStyleKey] = activeStyleTitle;
           $.set(siteStyleKey, activeStyleTitle);
-          if (Conf['siteStyleHome'] && !Settings.shouldDeferStylingToStylechan()) {
+          if (Conf['siteStyleHome'] && Settings.stylingSectionEnabled('siteStyle')) {
             Main.setSiteStyleHomeCookie(activeStyleTitle);
           }
         }
@@ -815,7 +816,7 @@ var Main = {
             Conf[siteStyleKey] = selected;
             $.set(siteStyleKey, selected);
           }
-          if (Conf['siteStyleHome'] && !Settings.shouldDeferStylingToStylechan()) {
+          if (Conf['siteStyleHome'] && Settings.stylingSectionEnabled('siteStyle')) {
             Main.setSiteStyleHomeCookie(selected);
           }
         };

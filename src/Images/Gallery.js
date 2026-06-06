@@ -519,7 +519,7 @@ var Gallery = {
 
       // The number means columns for the vertical (left/right) strips and rows
       // for the horizontal (top/bottom) ones; relabel the field to match.
-      if (Gallery.colLabelText) { Gallery.colLabelText.nodeValue = horizontal ? 'Gallery Rows: ' : 'Gallery Columns: '; }
+      if (Gallery.colLabelText) { Gallery.colLabelText.nodeValue = horizontal ? 'Grid Rows: ' : 'Grid Columns: '; }
 
       Gallery.fullscreen = grid && (cols === 0);
       doc.classList.toggle('gal-fullscreen-thumbs', Gallery.fullscreen);
@@ -617,21 +617,36 @@ var Gallery = {
     },
 
     createSubEntries() {
-      const subEntries = (['Hide Thumbnails', 'Grid Thumbnails', 'Fit Width', 'Fit Height', 'Stretch to Fit', 'Scroll to Post'].map((item) => Gallery.menu.createSubEntry(item)));
+      const subEntries = (['Hide Thumbnails', 'Fit Width', 'Fit Height', 'Stretch to Fit', 'Scroll to Post'].map((item) => Gallery.menu.createSubEntry(item)));
 
-      const colLabel = $.el('label', {title: '0 disables the image preview and shows fullscreen thumbnails.', innerHTML: 'Gallery Columns: <input type="number" name="Gallery Columns" min="0" step="1" class="field" title="0 disables the image preview and shows fullscreen thumbnails.">'});
+      // Grid toggle and its track count share one row: [✓] Grid Columns: [N].
+      // The checkbox drives 'Grid Thumbnails'; the number drives 'Gallery Columns',
+      // whose label setLayout() flips between Columns/Rows with the dock edge. The
+      // checkbox and number sit in separate labels so editing one never toggles
+      // the other.
+      const gridRow = $.el('span', {className: 'gal-grid-entry'});
+      const gridCheck = UI.checkbox('Grid Thumbnails', '');
+      const gridInput = gridCheck.firstElementChild;
+      $.on(gridInput, 'change', Gallery.cb.setFitness);
+      $.event('change', null, gridInput);
+      $.on(gridInput, 'change', $.cb.checked);
+      $.on(gridInput, 'change', Gallery.cb.setLayout);
+
+      const colLabel = $.el('label', {title: '0 disables the image preview and shows fullscreen thumbnails.', innerHTML: 'Grid Columns: <input type="number" name="Gallery Columns" min="0" step="1" class="field gal-col-input" title="0 disables the image preview and shows fullscreen thumbnails.">'});
       const colInput = colLabel.firstElementChild;
       colInput.value = Math.max(0, parseInt(Conf['Gallery Columns'], 10) || 0);
       Gallery.colInput = colInput;
-      Gallery.colLabelText = colLabel.firstChild;   // "Gallery Columns: " text node, relabelled per dock
+      Gallery.colLabelText = colLabel.firstChild;   // "Grid Columns: " text node, relabelled per dock
       $.on(colInput, 'change', Gallery.cb.clampColumns);
       $.on(colInput, 'change', $.cb.value);
       $.on(colInput, 'change', Gallery.cb.setLayout);
-      subEntries.push({el: colLabel});
+
+      $.add(gridRow, [gridCheck, colLabel]);
+      subEntries.push({el: gridRow});
 
       const posOptions = Gallery.cb.positions.map(p =>
         `<option value="${p}">${p[0].toUpperCase()}${p.slice(1)}</option>`).join('');
-      const posLabel = $.el('label', {innerHTML: `Thumbnails Position: <select name="Gallery Thumbnails Position" class="field">${posOptions}</select>`});
+      const posLabel = $.el('label', {innerHTML: `Thumbnails Position: <select name="Gallery Thumbnails Position" class="field gal-field">${posOptions}</select>`});
       const posInput = posLabel.firstElementChild;
       posInput.value = Gallery.cb.positions.includes(Conf['Gallery Thumbnails Position'])
         ? Conf['Gallery Thumbnails Position'] : 'right';

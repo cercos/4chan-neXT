@@ -314,6 +314,7 @@ const ScrollMarkers = {
       'Scrollbar Mark Ghost Posts',
       'Scrollbar Mark Unread Line',
       'Unread Line',
+      'stylingSectionScrollbarMarkers',
     ] as const) {
       $.sync(key, (val: boolean) => {
         Conf[key] = val;
@@ -364,7 +365,10 @@ const ScrollMarkers = {
   refresh() {
     const container = ScrollMarkers.container;
     if (!ScrollMarkers.thread || !container?.parentNode) return;
-    if (!Conf['Scrollbar Markers']) {
+    // `stylingSectionScrollbarMarkers` is the Styling page's per-section master
+    // switch (only ever off when StyleChan is installed). Read Conf directly to
+    // avoid a Settings <-> ScrollMarkers import cycle.
+    if (!Conf['Scrollbar Markers'] || Conf['stylingSectionScrollbarMarkers'] === false) {
       ScrollMarkers.hidePreview();
       container.textContent = '';
       container.hidden = true;

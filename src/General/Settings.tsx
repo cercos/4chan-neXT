@@ -166,24 +166,135 @@ var Settings = {
     return Settings.isStylechanInstalled();
   },
 
-  enforceStylechanStylingDeferral(section?: HTMLElement, inputs?: Record<string, HTMLInputElement>) {
-    if (!Settings.shouldDeferStylingToStylechan()) return;
+  // Maps a Styling subsection id to its master-switch Conf key. The title
+  // checkbox for each section (shown only when StyleChan is installed) flips
+  // the corresponding flag; runtime apply paths read it via
+  // stylingSectionEnabled to gate the section's effect on the page.
+  stylingSectionKeys: {
+    siteStyle: 'stylingSectionSiteStyle',
+    highlights: 'stylingSectionHighlights',
+    scrollbarMarkers: 'stylingSectionScrollbarMarkers',
+    textColors: 'stylingSectionTextColors',
+    customCSS: 'stylingSectionCustomCSS',
+  } as const,
 
-    const setFalse = (key: string) => {
-      if (!Conf[key]) return;
-      Conf[key] = false;
-      $.set(key, false);
-      const input = inputs?.[key] || (section ? $(`[name="${key}"]`, section) as HTMLInputElement | null : null);
-      if (input?.type === 'checkbox') {
-        input.checked = false;
-        const container = input.closest('[data-name]') as HTMLElement | null;
-        if (container) container.dataset.checked = 'false';
-      }
+  // Whether a Styling subsection is active. A pure flag read: works on board
+  // pages, the home page, and the scroll-marker renderer alike. Correctness
+  // after a StyleChan *uninstall* is guaranteed by initStylingSectionDefaults,
+  // which resets every flag to true on board pages when StyleChan is absent —
+  // so a section can never get stuck off with no checkbox to re-enable it.
+  stylingSectionEnabled(id: keyof typeof Settings.stylingSectionKeys): boolean {
+    return Conf[Settings.stylingSectionKeys[id]] !== false;
+  },
+
+  // The StyleChan recommendation: hand the sections StyleChan owns (site theme,
+  // text colors, custom CSS) over to it, keep the ones it doesn't (highlight +
+  // scrollbar marker colors) on. Used by the one-time init and the "Apply
+  // recommended settings" button. Does NOT touch any inner section settings.
+  applyRecommendedStylingSections() {
+    const recommended: Record<string, boolean> = {
+      stylingSectionSiteStyle: false,
+      stylingSectionTextColors: false,
+      stylingSectionCustomCSS: false,
+      stylingSectionHighlights: true,
+      stylingSectionScrollbarMarkers: true,
     };
+    for (const [key, val] of Object.entries(recommended)) {
+      Conf[key] = val;
+      $.set(key, val);
+    }
+  },
 
-    setFalse('siteStyleHome');
-    setFalse('customCSSHome');
-    setFalse('Custom CSS');
+  // One-time recommendation + uninstall reset, run from Main.initStyle on board
+  // pages (where StyleChan detection is reliable). On first detection of
+  // StyleChan, hand its owned sections over; never re-applied automatically so
+  // the user's later choices stick. When StyleChan is absent, clear any stale
+  // StyleChan-era state so all sections come back on.
+  initStylingSectionDefaults() {
+    if (Settings.isStylechanInstalled()) {
+      if (!Conf['stylingSectionsInitialized']) {
+        Settings.applyRecommendedStylingSections();
+        Conf['stylingSectionsInitialized'] = true;
+        $.set('stylingSectionsInitialized', true);
+      }
+      return;
+    }
+    const keys = Object.values(Settings.stylingSectionKeys) as string[];
+    const dirty = Conf['stylingSectionsInitialized'] || keys.some(k => Conf[k] === false);
+    if (!dirty) return;
+    for (const k of keys) {
+      if (Conf[k] !== true) { Conf[k] = true; $.set(k, true); }
+    }
+    Conf['stylingSectionsInitialized'] = false;
+    $.set('stylingSectionsInitialized', false);
+  },
+
+  // Inject a master-switch checkbox into each Styling subsection's <summary>.
+  // Toggling it persists the section flag, grays the section out
+  // (`styling-section-off`), and re-applies the runtime gates — all without
+  // touching the inner settings. Returns a function that re-syncs every
+  // checkbox + gray state from Conf (used by "Apply recommended settings").
+  setupStylingSectionToggles(section: HTMLElement): () => void {
+    const details = $$('details[data-styling-section]', section) as HTMLElement[];
+    const entries: { detail: HTMLElement; id: keyof typeof Settings.stylingSectionKeys; cb: HTMLInputElement }[] = [];
+    const syncOne = (detail: HTMLElement, id: keyof typeof Settings.stylingSectionKeys, cb: HTMLInputElement) => {
+      const on = Settings.stylingSectionEnabled(id);
+      cb.checked = on;
+      detail.classList.toggle('styling-section-off', !on);
+    };
+    for (const detail of details) {
+      const id = detail.dataset.stylingSection as keyof typeof Settings.stylingSectionKeys;
+      if (!id || !(id in Settings.stylingSectionKeys)) continue;
+      const summary = $('summary', detail) as HTMLElement | null;
+      if (!summary) continue;
+      // Wrap the toggle in a <label> with an explicit visual box. Bare native
+      // checkboxes are zeroed out by some host/StyleChan themes; the label's
+      // `.styling-section-toggle-box` is a plain styled element that always
+      // shows the on/off state regardless of native `appearance`.
+      const label = $.el('label', {
+        className: 'styling-section-toggle',
+        title: 'Enable this styling section (off hands it to StyleChan)',
+      });
+      const cb = $.el('input', { type: 'checkbox' }) as HTMLInputElement;
+      const boxIcon = $.el('span', { className: 'styling-section-toggle-box', 'aria-hidden': 'true' } as any);
+      $.add(label, [cb, boxIcon]);
+      // Stop the click from reaching the <summary>, whose activation behavior
+      // would otherwise expand/collapse the <details> when toggling the box.
+      $.on(label, 'click', e => e.stopPropagation());
+      $.on(cb, 'change', () => {
+        const key = Settings.stylingSectionKeys[id];
+        Conf[key] = cb.checked;
+        $.set(key, cb.checked);
+        detail.classList.toggle('styling-section-off', !cb.checked);
+        Settings.applyStylingSectionRuntime();
+      });
+      // The summary is a `display:flex; justify-content:space-between` row whose
+      // only other items are the title text and the disclosure caret (::after).
+      // Wrap the toggle + title together so they stay grouped at the left and
+      // the caret stays at the right, instead of being scattered three ways.
+      // The title text goes in its own `.styling-section-summary-text` span:
+      // the search highlighter (highlightSettingRow) resets that span's text
+      // instead of the whole summary, so it can't wipe the injected toggle.
+      const titleWrap = $.el('span', { className: 'styling-section-summary-label' });
+      const titleText = $.el('span', { className: 'styling-section-summary-text' });
+      while (summary.firstChild) titleText.appendChild(summary.firstChild);
+      $.add(titleWrap, [label, titleText]);
+      summary.appendChild(titleWrap);
+      syncOne(detail, id, cb);
+      entries.push({ detail, id, cb });
+    }
+    return () => { for (const e of entries) syncOne(e.detail, e.id, e.cb); };
+  },
+
+  // Re-apply every section gate to the live page + dialog after a toggle. Cheap
+  // and idempotent, so we just refresh all paths rather than tracking which
+  // section changed: CSS vars/classes (highlights, markers, text colors),
+  // the scroll-marker renderer, custom CSS injection, and the site theme.
+  applyStylingSectionRuntime() {
+    Settings.applyStylingVars();
+    $.event('RefreshScrollMarkers');
+    CustomCSS.update();
+    $.event('CustomSiteThemeChanged');
   },
 
   open(openSection) {
@@ -549,7 +660,12 @@ var Settings = {
   },
 
   highlightSettingRow(root, query) {
-    for (const el of $$('.setting-title, .setting-description, .settings-section-header, summary, th, h4', root)) {
+    for (const el of $$('.setting-title, .setting-description, .settings-section-header, .styling-section-summary-text, summary, th, h4', root)) {
+      // Styling summaries carry an injected section toggle plus a dedicated
+      // `.styling-section-summary-text` span for their title. Highlight that
+      // span, not the bare summary — resetting the summary's textContent here
+      // would destroy the toggle (and the title wrapper) on every render.
+      if ((el as HTMLElement).tagName === 'SUMMARY' && el.querySelector('.styling-section-summary-text')) continue;
       const source = (el as HTMLElement).dataset.rawText ?? el.textContent ?? '';
       (el as HTMLElement).dataset.rawText = source;
       if (query) {
@@ -1490,47 +1606,60 @@ Enable it on boards.${location.hostname.split('.')[1]}.org in your browser's pri
     let input: HTMLInputElement, name: string;
     $.extend(section, { innerHTML: StylingPage });
 
-    // When StyleChan is present, replace the conflicting styling controls
-    // with a banner that opens StyleChan's dialog on top of ours. CSS does
-    // the hiding via the `styling-deferred` class on the section root.
-    if (Settings.shouldDeferStylingToStylechan()) {
-      section.classList.add('styling-deferred');
-      const banner = $.el('div', { className: 'styling-defer-banner' });
+    // When StyleChan is present, each Styling subsection gets a master-switch
+    // checkbox in its title (see setupStylingSectionToggles) so the user can
+    // hand individual sections over to StyleChan. We surface a small info box at
+    // the top with shortcuts and the home-page mirror opt-in. Sections are no
+    // longer hidden — the per-section gates remove their effect when toggled off.
+    if (Settings.isStylechanInstalled()) {
+      const refreshToggles = Settings.setupStylingSectionToggles(section);
+
+      const box = $.el('div', { className: 'styling-stylechan-box' });
       const text = $.el('div', {
-        className: 'styling-defer-banner-text',
+        className: 'styling-stylechan-text',
         innerHTML:
-          '<b>StyleChan is managing site themes.</b> '
-          + 'The theme picker has been disabled. '
-          + 'Some 4chan-neXT styling options, including text colors and custom CSS, are hidden while StyleChan is installed. '
-          + 'Highlight colors remain available here. '
-          + 'Uninstall StyleChan to restore the full Styling section.'
+          '<b>StyleChan is detected.</b> '
+          + 'Use the checkbox in each section title below to choose what 4chan-neXT styles and what StyleChan owns. '
+          + 'Turning a section off removes its effect from the page without changing the settings inside it.'
       });
-      const button = $.el('button', {
+      const buttons = $.el('div', { className: 'styling-stylechan-buttons' });
+      const openButton = $.el('button', {
         type: 'button',
-        className: 'styling-defer-open',
+        className: 'styling-stylechan-open',
         textContent: 'Open StyleChan Settings',
       }) as HTMLButtonElement;
-      $.on(button, 'click', e => {
+      $.on(openButton, 'click', e => {
         e.preventDefault();
         Settings.openStylechanSettings();
       });
-      // Bottom row: opt-in to mirroring StyleChan's theme on the (StyleChan-
-      // excluded) home page. The checkbox carries a real `name`, so the generic
-      // input wiring below binds/persists it like any other styling control.
+      const recommendButton = $.el('button', {
+        type: 'button',
+        className: 'styling-stylechan-recommend',
+        title: 'Turn off the sections StyleChan owns (Site Style, Text Colors, Custom CSS) and keep the others on. Does not change the settings inside any section.',
+        textContent: 'Apply recommended settings',
+      }) as HTMLButtonElement;
+      $.on(recommendButton, 'click', e => {
+        e.preventDefault();
+        Settings.applyRecommendedStylingSections();
+        refreshToggles();
+        Settings.applyStylingSectionRuntime();
+      });
+      $.add(buttons, [openButton, recommendButton]);
+      // Home-page mirror opt-in. The checkbox carries a real `name`, so the
+      // generic input wiring below binds/persists it like any other control.
       const homeRow = $.el('label', {
-        className: 'styling-defer-home',
+        className: 'styling-stylechan-home',
         title: "Mirror StyleChan's current theme (and its custom CSS) on the 4chan home page, where StyleChan doesn't run. Captured while you browse a board, so visit one after switching themes.",
         innerHTML: '<input type="checkbox" name="styleChanThemeHome"> Apply StyleChan\'s theme on home page',
       });
-      $.add(banner, [text, button, homeRow]);
-      section.insertBefore(banner, section.firstChild);
+      $.add(box, [text, buttons, homeRow]);
+      section.insertBefore(box, section.firstChild);
     }
 
     const inputs: Record<string, HTMLInputElement> = dict();
     for (input of $$('[name]', section)) {
       inputs[input.name] = input;
     }
-    Settings.enforceStylechanStylingDeferral(section, inputs);
 
     // Mark the enclosing <details> for every variant-aware input so CSS can
     // label the whole section (Highlight Colors, Scrollbar Markers, Text
@@ -1784,11 +1913,11 @@ Enable it on boards.${location.hostname.split('.')[1]}.org in your browser's pri
         const enabled = catalogEnabled && !!inputs[key]?.checked;
         const controls = key === 'Catalog Highlight Own Posts' ?
           [
-            'Catalog Highlight Own Color', 'Catalog Highlight Own Opacity', 'Catalog Highlight Own Text Auto',
+            'Catalog Highlight Own Color', 'Catalog Highlight Own Opacity', 'Catalog Highlight Own Border Only', 'Catalog Highlight Own Text Auto',
             'Catalog Highlight Own Text Color', 'Catalog Highlight Own Subject Color', 'Catalog Highlight Own Link Color', 'Catalog Highlight Own Quote Color', 'Catalog Highlight Own Dead Link Color',
           ] :
           [
-            'Catalog Highlight Watched Color', 'Catalog Highlight Watched Opacity', 'Catalog Highlight Watched Text Auto',
+            'Catalog Highlight Watched Color', 'Catalog Highlight Watched Opacity', 'Catalog Highlight Watched Border Only', 'Catalog Highlight Watched Text Auto',
             'Catalog Highlight Watched Text Color', 'Catalog Highlight Watched Subject Color', 'Catalog Highlight Watched Link Color', 'Catalog Highlight Watched Quote Color', 'Catalog Highlight Watched Dead Link Color',
           ];
         for (const controlKey of controls) {
@@ -2277,10 +2406,6 @@ Enable it on boards.${location.hostname.split('.')[1]}.org in your browser's pri
     // owns that class for the CSS selectors to match either way.
     const stylingHost = (section.closest('.section-styling') as HTMLElement | null) || section;
     const updateVariantDecoration = (variant: StyleVariant) => {
-      // When deferring to StyleChan, the SFW/NSFW UI is hidden, so the
-      // orange NSFW accent and corner badge would just be noise on the
-      // sections that remain (Highlight Colors, Scrollbar Markers, etc.).
-      if (section.classList.contains('styling-deferred')) return;
       const label = `Editing ${variant.toUpperCase()}`;
       const shortLabel = variant.toUpperCase();
       if (variantBar) variantBar.dataset.editingVariant = variant;
@@ -2570,6 +2695,8 @@ Enable it on boards.${location.hostname.split('.')[1]}.org in your browser's pri
     panel.dataset.edgeOwn = readChecked('Highlight Own Edge Only', true) ? 'true' : 'false';
     panel.dataset.edgeYou = readChecked('Highlight You Edge Only', true) ? 'true' : 'false';
     panel.dataset.edgeGhost = readChecked('Highlight Ghost Edge Only', true) ? 'true' : 'false';
+    panel.dataset.edgeCatalogOwn = readChecked('Catalog Highlight Own Border Only', true) ? 'true' : 'false';
+    panel.dataset.edgeCatalogWatched = readChecked('Catalog Highlight Watched Border Only', true) ? 'true' : 'false';
 
     const background = Settings.resolveCanvasBackgroundStyle();
     for (const previewPane of $$('.styling-preview-thread, .styling-preview-catalog', panel) as HTMLElement[]) {
@@ -2729,6 +2856,7 @@ Enable it on boards.${location.hostname.split('.')[1]}.org in your browser's pri
   STYLE_VAR_NAMES: [
     '--xt-highlight-own', '--xt-highlight-you', '--xt-highlight-ghost',
     '--xt-highlight-own-opacity', '--xt-highlight-you-opacity', '--xt-highlight-ghost-opacity',
+    '--xt-highlight-edge-width', '--xt-catalog-border-width',
     '--xt-catalog-own-highlight', '--xt-catalog-own-highlight-opacity',
     '--xt-catalog-watched-highlight', '--xt-catalog-watched-highlight-opacity',
     '--xt-scroll-marker-own', '--xt-scroll-marker-you', '--xt-scroll-marker-ghost', '--xt-scroll-marker-unread',
@@ -2756,8 +2884,14 @@ Enable it on boards.${location.hostname.split('.')[1]}.org in your browser's pri
       else target.style.removeProperty(cssVar);
     };
     const cv = (key: string) => Settings.styleConf(key, variant);
-    const threadHighlightsEnabled = Conf['Enable Thread Highlights'] !== false;
-    const catalogHighlightsEnabled = Conf['Enable Catalog Highlights'] !== false;
+    // Per-section master switches (only ever off when StyleChan is installed).
+    // When a section is off its whole effect is removed from the page without
+    // touching the inner settings, so flipping it back on restores the look.
+    const highlightsOn = Settings.stylingSectionEnabled('highlights');
+    const markersOn = Settings.stylingSectionEnabled('scrollbarMarkers');
+    const textColorsOn = Settings.stylingSectionEnabled('textColors');
+    const threadHighlightsEnabled = highlightsOn && Conf['Enable Thread Highlights'] !== false;
+    const catalogHighlightsEnabled = highlightsOn && Conf['Enable Catalog Highlights'] !== false;
     const catalogOwnEnabled = catalogHighlightsEnabled && Conf['Catalog Highlight Own Posts'] !== false;
     const catalogWatchedEnabled = catalogHighlightsEnabled && Conf['Catalog Highlight Watched Threads'] !== false;
     if (updateRootClasses) {
@@ -2772,9 +2906,11 @@ Enable it on boards.${location.hostname.split('.')[1]}.org in your browser's pri
         threadHighlightsEnabled && !!Conf['Highlight Ghost Posts'] && !!cv('Highlight Ghost Color'));
       doc.classList.toggle('xt-highlight-catalog-own', catalogOwnEnabled);
       doc.classList.toggle('xt-highlight-catalog-watched', catalogWatchedEnabled);
-      doc.classList.toggle('xt-edge-own', !!Conf['Highlight Own Edge Only']);
-      doc.classList.toggle('xt-edge-you', !!Conf['Highlight You Edge Only']);
-      doc.classList.toggle('xt-edge-ghost', !!Conf['Highlight Ghost Edge Only']);
+      doc.classList.toggle('xt-catalog-edge-own', catalogOwnEnabled && !!cv('Catalog Highlight Own Border Only'));
+      doc.classList.toggle('xt-catalog-edge-watched', catalogWatchedEnabled && !!cv('Catalog Highlight Watched Border Only'));
+      doc.classList.toggle('xt-edge-own', highlightsOn && !!Conf['Highlight Own Edge Only']);
+      doc.classList.toggle('xt-edge-you', highlightsOn && !!Conf['Highlight You Edge Only']);
+      doc.classList.toggle('xt-edge-ghost', highlightsOn && !!Conf['Highlight Ghost Edge Only']);
     }
     setVar('--xt-highlight-own',   cv('Highlight Own Color'));
     setVar('--xt-highlight-you',   cv('Highlight You Color'));
@@ -2785,6 +2921,11 @@ Enable it on boards.${location.hostname.split('.')[1]}.org in your browser's pri
       cv('Highlight You Opacity') === '' ? '' : String(cv('Highlight You Opacity')));
     setVar('--xt-highlight-ghost-opacity',
       cv('Highlight Ghost Opacity') === '' ? '' : String(cv('Highlight Ghost Opacity')));
+    const legacyWidth = Settings.styleConf('Highlight Edge Width', variant);
+    const edgeWidth = parseFloat(String(cv('Thread Highlight Edge Width') || legacyWidth));
+    setVar('--xt-highlight-edge-width', Number.isFinite(edgeWidth) ? `${$.minmax(edgeWidth, 1, 12)}px` : '');
+    const catalogBorderWidth = parseFloat(String(cv('Catalog Highlight Border Width') || legacyWidth));
+    setVar('--xt-catalog-border-width', Number.isFinite(catalogBorderWidth) ? `${$.minmax(catalogBorderWidth, 1, 12)}px` : '');
     setVar('--xt-catalog-own-highlight', catalogOwnEnabled ? cv('Catalog Highlight Own Color') : '');
     setVar('--xt-catalog-own-highlight-opacity',
       (catalogOwnEnabled && cv('Catalog Highlight Own Opacity') !== '') ? String(cv('Catalog Highlight Own Opacity')) : '');
@@ -2794,29 +2935,32 @@ Enable it on boards.${location.hostname.split('.')[1]}.org in your browser's pri
     const ownMarkerLinked = !!cv('Scroll Marker Own Match Highlight');
     const youMarkerLinked = !!cv('Scroll Marker You Match Highlight');
     const ghostMarkerLinked = !!cv('Scroll Marker Ghost Match Highlight');
-    setVar('--xt-scroll-marker-own',
+    // Scrollbar Markers section off ⇒ emit no marker color/opacity vars (the
+    // ScrollMarkers renderer is also gated, so markers vanish entirely).
+    const markerVar = (cssVar: string, value: any) =>
+      setVar(cssVar, markersOn && value !== '' ? String(value) : '');
+    markerVar('--xt-scroll-marker-own',
       ownMarkerLinked ? cv('Highlight Own Color') : cv('Scroll Marker Own Color'));
-    setVar('--xt-scroll-marker-you',
+    markerVar('--xt-scroll-marker-you',
       youMarkerLinked ? cv('Highlight You Color') : cv('Scroll Marker You Color'));
-    setVar('--xt-scroll-marker-ghost',
+    markerVar('--xt-scroll-marker-ghost',
       ghostMarkerLinked ? cv('Highlight Ghost Color') : cv('Scroll Marker Ghost Color'));
-    setVar('--xt-scroll-marker-unread', cv('Scroll Marker Unread Color'));
-    setVar('--xt-scroll-marker-own-opacity',
-      cv('Scroll Marker Own Opacity') === '' ? '' : String(cv('Scroll Marker Own Opacity')));
-    setVar('--xt-scroll-marker-you-opacity',
-      cv('Scroll Marker You Opacity') === '' ? '' : String(cv('Scroll Marker You Opacity')));
-    setVar('--xt-scroll-marker-ghost-opacity',
-      cv('Scroll Marker Ghost Opacity') === '' ? '' : String(cv('Scroll Marker Ghost Opacity')));
-    setVar('--xt-scroll-marker-unread-opacity',
-      cv('Scroll Marker Unread Opacity') === '' ? '' : String(cv('Scroll Marker Unread Opacity')));
+    markerVar('--xt-scroll-marker-unread', cv('Scroll Marker Unread Color'));
+    markerVar('--xt-scroll-marker-own-opacity', cv('Scroll Marker Own Opacity'));
+    markerVar('--xt-scroll-marker-you-opacity', cv('Scroll Marker You Opacity'));
+    markerVar('--xt-scroll-marker-ghost-opacity', cv('Scroll Marker Ghost Opacity'));
+    markerVar('--xt-scroll-marker-unread-opacity', cv('Scroll Marker Unread Opacity'));
 
     const baseBackground = Settings.getTextBaseBackground();
     const textColorMode = cv('textColorMode') === 'manual' ? 'manual' : 'auto';
     const autoTextPalette = Settings.autoTextPalette(baseBackground);
-    const textColor = textColorMode === 'auto' ? autoTextPalette.text : cv('Text Color');
-    const linkColor = textColorMode === 'auto' ? autoTextPalette.link : cv('Link Text Color');
-    const quoteColor = textColorMode === 'auto' ? autoTextPalette.quote : cv('Quote Text Color');
-    const deadLinkColor = textColorMode === 'auto' ? autoTextPalette.deadLink : cv('Dead Link Text Color');
+    // Text Colors section off ⇒ no text-color override at all (page falls back
+    // to the theme's native colors; the empty values also flow through to the
+    // highlight-text fallback below, so they stay theme-default too).
+    const textColor = !textColorsOn ? '' : (textColorMode === 'auto' ? autoTextPalette.text : cv('Text Color'));
+    const linkColor = !textColorsOn ? '' : (textColorMode === 'auto' ? autoTextPalette.link : cv('Link Text Color'));
+    const quoteColor = !textColorsOn ? '' : (textColorMode === 'auto' ? autoTextPalette.quote : cv('Quote Text Color'));
+    const deadLinkColor = !textColorsOn ? '' : (textColorMode === 'auto' ? autoTextPalette.deadLink : cv('Dead Link Text Color'));
     const hasAnyTextOverride = !!(textColor || linkColor || quoteColor || deadLinkColor);
     if (updateRootClasses) {
       if (hasAnyTextOverride) {
@@ -3974,16 +4118,22 @@ Enable it on boards.${location.hostname.split('.')[1]}.org in your browser's pri
       'Link Text Color',
       'Quote Text Color',
       'Dead Link Text Color',
+      'Thread Highlight Edge Width',
+      'Catalog Highlight Border Width',
       'Scroll Marker Own Match Highlight',
       'Scroll Marker You Match Highlight',
       'Scroll Marker Ghost Match Highlight',
       'Catalog Highlight Own Posts',
       'Catalog Highlight Watched Threads',
+      'Catalog Highlight Own Border Only',
+      'Catalog Highlight Watched Border Only',
       'Highlight Own Color',
       'Highlight You Color',
       'Highlight Ghost Color',
       'Catalog Highlight Own Color',
       'Catalog Highlight Watched Color',
+      'Catalog Highlight Own Border Only',
+      'Catalog Highlight Watched Border Only',
       'Catalog Highlight Own Text Auto',
       'Catalog Highlight Watched Text Auto',
       'Catalog Highlight Own Text Color',
@@ -4491,6 +4641,12 @@ Enable it on boards.${location.hostname.split('.')[1]}.org in your browser's pri
       if (legacy === undefined) continue;
       if (data[`${k} SFW`] === undefined) set(`${k} SFW`, legacy);
       if (data[`${k} NSFW`] === undefined) set(`${k} NSFW`, legacy);
+    }
+    for (const variant of ['SFW', 'NSFW']) {
+      const legacyWidth = data[`Highlight Edge Width ${variant}`] ?? data['Highlight Edge Width'];
+      if (legacyWidth === undefined) continue;
+      if (data[`Thread Highlight Edge Width ${variant}`] === undefined) set(`Thread Highlight Edge Width ${variant}`, legacyWidth);
+      if (data[`Catalog Highlight Border Width ${variant}`] === undefined) set(`Catalog Highlight Border Width ${variant}`, legacyWidth);
     }
     // Edge-only highlighting defaults on for fresh installs. Existing users are
     // upgraded here, so seed it off to preserve their current filled highlights

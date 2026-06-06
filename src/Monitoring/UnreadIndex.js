@@ -47,7 +47,6 @@ var UnreadIndex = {
   },
 
   onIndexRefresh(e) {
-    if (e.detail.isCatalog) { return; }
     return (() => {
       const result = [];
       for (var threadID of e.detail.threadIDs) {
@@ -119,6 +118,11 @@ var UnreadIndex = {
     :
       thread.OP.ID > lastReadPost;
     thread.nodes.root.classList.toggle('unread-thread', hasUnread);
+    thread.nodes.root.classList.toggle('read-thread', !!lastReadPost && !hasUnread);
+    if (thread.catalogView?.nodes.root) {
+      thread.catalogView.nodes.root.classList.toggle('unread-thread', hasUnread);
+      thread.catalogView.nodes.root.classList.toggle('read-thread', !!lastReadPost && !hasUnread);
+    }
 
     let link = UnreadIndex.markReadLink[thread.fullID];
     if (!link) {
@@ -147,6 +151,11 @@ var UnreadIndex = {
     });
     $.rm(UnreadIndex.hr[thread.fullID]);
     thread.nodes.root.classList.remove('unread-thread');
+    thread.nodes.root.classList.add('read-thread');
+    if (thread.catalogView?.nodes.root) {
+      thread.catalogView.nodes.root.classList.remove('unread-thread');
+      thread.catalogView.nodes.root.classList.add('read-thread');
+    }
     return ThreadWatcher.update(g.SITE.ID, thread.board.ID, thread.ID, {
       last: thread.lastPost,
       unread: 0,

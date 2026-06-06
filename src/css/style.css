@@ -1172,18 +1172,18 @@ div[data-checked="false"] > .suboption-list {
   /* Reset any site theme that forces a reply background via !important so the
      preview faithfully shows the configured highlight colors. */
   background-color: transparent !important;
-  border-left: 3px solid transparent !important;
+  border-left: var(--xt-highlight-edge-width, 3px) solid transparent !important;
 }
 .styling-preview[data-highlight-own="true"] .styling-preview-post.yourPost > .reply {
-  border-left: 3px dashed var(--xt-highlight-own, var(--xt-border-highlight)) !important;
+  border-left: var(--xt-highlight-edge-width, 3px) dashed var(--xt-highlight-own, var(--xt-border-highlight)) !important;
   background-color: color-mix(in srgb, var(--xt-highlight-own, transparent) calc(var(--xt-highlight-own-opacity, 1) * 100%), transparent) !important;
 }
 .styling-preview[data-highlight-you="true"] .styling-preview-post.quotesYou > .reply {
-  border-left: 3px solid var(--xt-highlight-you, var(--xt-border-highlight)) !important;
+  border-left: var(--xt-highlight-edge-width, 3px) solid var(--xt-highlight-you, var(--xt-border-highlight)) !important;
   background-color: color-mix(in srgb, var(--xt-highlight-you, transparent) calc(var(--xt-highlight-you-opacity, 1) * 100%), transparent) !important;
 }
 .styling-preview[data-highlight-ghost="true"] .styling-preview-post.from-archive > .reply {
-  border-left: 3px dotted var(--xt-highlight-ghost, #888) !important;
+  border-left: var(--xt-highlight-edge-width, 3px) dotted var(--xt-highlight-ghost, #888) !important;
   background-color: color-mix(in srgb, var(--xt-highlight-ghost, transparent) calc(var(--xt-highlight-ghost-opacity, 1) * 100%), transparent) !important;
 }
 .styling-preview[data-edge-own="true"] .styling-preview-post.yourPost > .reply,
@@ -1238,17 +1238,22 @@ div[data-checked="false"] > .suboption-list {
 .styling-preview .styling-preview-post.from-archive .quotelink.deadlink {
   color: var(--xt-highlight-ghost-dead-link, var(--xt-dead-link-text-color, var(--xt-dead-link))) !important;
 }
-.styling-preview[data-highlight-catalog-own="true"] .catalog-thread:has(.yourPost),
-.styling-preview[data-highlight-catalog-own="true"] .catalog-thread.yourPost {
+.styling-preview[data-highlight-catalog-own="true"]:not([data-edge-catalog-own="true"]) .catalog-thread:has(.yourPost),
+.styling-preview[data-highlight-catalog-own="true"]:not([data-edge-catalog-own="true"]) .catalog-thread.yourPost {
   background: color-mix(in srgb, var(--xt-catalog-own-highlight, var(--xt-highlight-own)) calc(var(--xt-catalog-own-highlight-opacity, 1) * 100%), var(--xt-background, #d6daf0)) !important;
   overflow: hidden;
 }
-.styling-preview[data-highlight-catalog-own="true"] .catalog-thread:has(.yourPost) > .catalog-container,
-.styling-preview[data-highlight-catalog-own="true"] .catalog-thread.yourPost > .catalog-container,
-.styling-preview[data-highlight-catalog-own="true"] .catalog-thread > .catalog-container.yourPost,
-.styling-preview[data-highlight-catalog-own="true"] .catalog-thread:has(.yourPost) .post.catalog-post.yourPost,
-.styling-preview[data-highlight-catalog-own="true"] .catalog-thread.yourPost .post.catalog-post,
-.styling-preview[data-highlight-catalog-own="true"] .catalog-thread > .catalog-container.yourPost .post.catalog-post {
+.styling-preview[data-highlight-catalog-own="true"][data-edge-catalog-own="true"] .catalog-thread:has(.yourPost),
+.styling-preview[data-highlight-catalog-own="true"][data-edge-catalog-own="true"] .catalog-thread.yourPost {
+  border-color: var(--xt-catalog-own-highlight, var(--xt-highlight-own, var(--xt-border-highlight))) !important;
+  border-width: var(--xt-catalog-border-width, 3px) !important;
+}
+.styling-preview[data-highlight-catalog-own="true"]:not([data-edge-catalog-own="true"]) .catalog-thread:has(.yourPost) > .catalog-container,
+.styling-preview[data-highlight-catalog-own="true"]:not([data-edge-catalog-own="true"]) .catalog-thread.yourPost > .catalog-container,
+.styling-preview[data-highlight-catalog-own="true"]:not([data-edge-catalog-own="true"]) .catalog-thread > .catalog-container.yourPost,
+.styling-preview[data-highlight-catalog-own="true"]:not([data-edge-catalog-own="true"]) .catalog-thread:has(.yourPost) .post.catalog-post.yourPost,
+.styling-preview[data-highlight-catalog-own="true"]:not([data-edge-catalog-own="true"]) .catalog-thread.yourPost .post.catalog-post,
+.styling-preview[data-highlight-catalog-own="true"]:not([data-edge-catalog-own="true"]) .catalog-thread > .catalog-container.yourPost .post.catalog-post {
   background: transparent !important;
   border-color: transparent !important;
 }
@@ -1283,12 +1288,16 @@ div[data-checked="false"] > .suboption-list {
 .styling-preview[data-highlight-catalog-own="true"] .catalog-thread > .catalog-container.yourPost .post.catalog-post .deadlink {
   color: var(--xt-catalog-own-dead-link, var(--xt-dead-link-text-color, var(--xt-dead-link))) !important;
 }
-.styling-preview[data-highlight-catalog-watched="true"] .catalog-thread.watched {
+.styling-preview[data-highlight-catalog-watched="true"]:not([data-edge-catalog-watched="true"]) .catalog-thread.watched {
   background: color-mix(in srgb, var(--xt-catalog-watched-highlight, var(--xt-watched-border, rgba(255, 0, 0, .75))) calc(var(--xt-catalog-watched-highlight-opacity, 0.2) * 100%), var(--xt-background, #d6daf0)) !important;
   overflow: hidden;
 }
-.styling-preview[data-highlight-catalog-watched="true"] .catalog-thread.watched > .catalog-container,
-.styling-preview[data-highlight-catalog-watched="true"] .catalog-thread.watched .post.catalog-post {
+.styling-preview[data-highlight-catalog-watched="true"][data-edge-catalog-watched="true"] .catalog-thread.watched {
+  border-color: var(--xt-catalog-watched-highlight, var(--xt-watched-border, rgba(255, 0, 0, .75))) !important;
+  border-width: var(--xt-catalog-border-width, 3px) !important;
+}
+.styling-preview[data-highlight-catalog-watched="true"]:not([data-edge-catalog-watched="true"]) .catalog-thread.watched > .catalog-container,
+.styling-preview[data-highlight-catalog-watched="true"]:not([data-edge-catalog-watched="true"]) .catalog-thread.watched .post.catalog-post {
   background: transparent !important;
   border-color: transparent !important;
 }
@@ -1373,48 +1382,109 @@ div[data-checked="false"] > .suboption-list {
   display: none;
 }
 
-/* StyleChan deferral: hide 4chan XT styling controls that StyleChan owns. */
-.styling-deferred > .styling-site-style,
-.styling-deferred > .styling-text-colors,
-.styling-deferred > .styling-custom-css {
-  display: none;
+/* StyleChan compatibility: each Styling subsection carries a master-switch
+   checkbox in its <summary> title. Disabling one grays its body out and blocks
+   interaction, while the runtime gates remove its effect from the page. The
+   inner controls keep their values so re-enabling restores the look. */
+.styling-section-summary-label {
+  display: inline-flex;
+  align-items: center;
+  gap: .45em;
+  min-width: 0;
+}
+/* The toggle is a <label> wrapping a hidden native checkbox + a custom box that
+   we draw ourselves, so it stays visible even when a host/StyleChan theme zeroes
+   out native checkbox rendering. */
+.styling-section-toggle {
+  flex: 0 0 auto;
+  display: inline-flex;
+  align-items: center;
+  margin: 0;
+  cursor: pointer;
+}
+.styling-section-toggle > input {
+  position: absolute;
+  width: 1px;
+  height: 1px;
+  opacity: 0;
+  pointer-events: none;
+}
+.styling-section-toggle-box {
+  box-sizing: border-box;
+  display: inline-block;
+  width: 15px;
+  height: 15px;
+  border: 1px solid currentColor;
+  border-radius: 3px;
+  opacity: .85;
+  background: transparent;
+  position: relative;
+}
+.styling-section-toggle > input:checked + .styling-section-toggle-box {
+  background: var(--xt-variant-accent, #2d7d46);
+  border-color: var(--xt-variant-accent, #2d7d46);
+  opacity: 1;
+}
+.styling-section-toggle > input:checked + .styling-section-toggle-box::after {
+  content: "";
+  position: absolute;
+  left: 4px;
+  top: 1px;
+  width: 4px;
+  height: 8px;
+  border: solid #fff;
+  border-width: 0 2px 2px 0;
+  transform: rotate(45deg);
+}
+.styling-section-toggle > input:focus-visible + .styling-section-toggle-box {
+  outline: 2px solid var(--xt-variant-accent, #2d7d46);
+  outline-offset: 1px;
+}
+details[data-styling-section].styling-section-off > :not(summary) {
+  opacity: .45;
+  pointer-events: none;
+}
+details[data-styling-section].styling-section-off > summary {
+  opacity: .7;
 }
 
-/* Home-page opt-in lives as a full-width bottom row inside the deferral
-   banner (beneath the explanatory text and the Open StyleChan button). */
-.styling-defer-home {
-  cursor: pointer;
-  flex: 1 1 100%;
-  font-size: 12px;
-}
 /* StyleChan injects `<div id="overlay">` (same id as ours used to be — we
-   renamed ours to `xt-settings-overlay`). Their overlay needs to stack
-   above ours when opened on top from the deferral banner. The QR media
-   preview also uses #overlay but is excluded by its `.media-preview` class.
-   `!important` is required because StyleChan's own CSS pins their overlay
-   at `z-index: 99 !important`. */
+   renamed ours to `xt-settings-overlay`). Their overlay needs to stack above
+   ours when opened on top from the StyleChan info box's "Open StyleChan
+   Settings" shortcut. The QR media preview also uses #overlay but is excluded
+   by its `.media-preview` class. `!important` is required because StyleChan's
+   own CSS pins their overlay at `z-index: 99 !important`. */
 body > #overlay:not(.media-preview) {
   z-index: 1003 !important;
 }
-.styling-defer-banner {
-  align-items: center;
+
+/* StyleChan info box: sits at the top of the Styling page with shortcuts and
+   the home-page mirror opt-in. */
+.styling-stylechan-box {
   border: 1px solid rgba(128, 128, 128, .35);
   border-radius: 4px;
   display: flex;
-  flex-wrap: wrap;
-  gap: 10px 14px;
+  flex-direction: column;
+  gap: 8px;
   margin: 0 0 12px;
   padding: 10px 12px;
 }
-.styling-defer-banner-text {
-  flex: 1 1 240px;
+.styling-stylechan-text {
   font-size: 12px;
   line-height: 1.4;
 }
-.styling-defer-open {
+.styling-stylechan-buttons {
+  display: flex;
+  flex-wrap: wrap;
+  gap: 8px;
+}
+.styling-stylechan-buttons > button {
   cursor: pointer;
-  flex: 0 0 auto;
   padding: 6px 12px;
+}
+.styling-stylechan-home {
+  cursor: pointer;
+  font-size: 12px;
 }
 /* Tag the whole settings dialog with a small badge so the user always
    sees which variant they're editing, even when scrolled away from the
@@ -1580,6 +1650,14 @@ body > #overlay:not(.media-preview) {
   border-left: 0;
   margin-left: 0;
   padding-left: 0;
+}
+.section-styling .styling-compact-control {
+  margin: 6px 0 8px;
+}
+.section-styling .styling-compact-control label {
+  align-items: center;
+  display: inline-flex;
+  gap: 8px;
 }
 .section-styling div[data-checked="false"] > .styling-tree {
   display: none;
@@ -4361,6 +4439,29 @@ input[type="checkbox"]:checked ~ .checkbox-letter {
 :root.gal-thumbs-bottom .gal-labels {
   bottom: calc(23px + var(--gal-thumbs-width, 150px)) !important;
 }
+
+/* Gallery menu — the Grid toggle + track-count row, kept on one line. */
+.gal-grid-entry {
+  display: flex;
+  align-items: center;
+}
+.gal-grid-entry > label {
+  display: inline-flex;
+  align-items: center;
+}
+/* Two digits is plenty — the track count is capped well under 100. */
+.gal-col-input {
+  width: 3.5em;
+}
+/* The position dropdown follows the active theme like the app's other selects,
+   instead of .field's hard-coded white (which left light menu text unreadable). */
+.gal-field,
+.gal-field option {
+  background: var(--xt-background, #fff);
+  color: var(--xt-menu-fg, var(--xt-header-dialog-fg, #333));
+  border-color: var(--xt-border, #ccc);
+}
+
 :root.gallery-open.fixed #header-bar:not(.autohide) {
   visibility: hidden;
 }

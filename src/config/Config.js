@@ -230,11 +230,6 @@ const Config = {
         true,
         'Adds a header shortcut and menu entry to download all images/videos in the current thread/index.'
       ],
-      'Download All as ZIP': [
-        true,
-        'Bundle "Download all media" downloads into a single ZIP archive instead of saving each file individually.',
-        1
-      ],
       'Persistent Download Media': [
         false,
         'Keep the "Download all media" dialog open across page loads.',
@@ -948,6 +943,20 @@ http://eye.swfchan.com/search/?q=%name;types:swf
   styleChanThemeHome: false,
   styleChanThemeCSS: '',
   styleChanVarsCSS: '',
+  // Per-section master switches for the Styling page. Each gates one Styling
+  // subsection (Site Style, Highlight Colors, Scrollbar Markers, Text Colors,
+  // Custom CSS) at runtime *without* touching the section's inner settings, so
+  // toggling a section off and back on restores the user's prior config. The
+  // title checkboxes that flip these only appear when StyleChan is installed;
+  // defaults are all-on so non-StyleChan users see no behavior change.
+  // `stylingSectionsInitialized` guards the one-time recommendation that
+  // disables StyleChan-owned sections the first time StyleChan is detected.
+  stylingSectionSiteStyle: true,
+  stylingSectionHighlights: true,
+  stylingSectionScrollbarMarkers: true,
+  stylingSectionTextColors: true,
+  stylingSectionCustomCSS: true,
+  stylingSectionsInitialized: false,
   customSiteThemes: [],
   savedHighlightPalettes: [],
   // 'auto' applies the SFW or NSFW variant based on the active board's
@@ -985,6 +994,7 @@ http://eye.swfchan.com/search/?q=%name;types:swf
   'Highlight Own Opacity':       '',
   'Highlight You Opacity':       '',
   'Highlight Ghost Opacity':     '',
+  'Thread Highlight Edge Width': 3,
   'Highlight Own Edge Only':     true,
   'Highlight You Edge Only':     true,
   'Highlight Ghost Edge Only':   true,
@@ -994,8 +1004,11 @@ http://eye.swfchan.com/search/?q=%name;types:swf
   'Catalog Highlight Watched Threads': true,
   'Catalog Highlight Own Color': '',
   'Catalog Highlight Own Opacity': '',
+  'Catalog Highlight Own Border Only': true,
   'Catalog Highlight Watched Color': '',
   'Catalog Highlight Watched Opacity': '',
+  'Catalog Highlight Watched Border Only': true,
+  'Catalog Highlight Border Width': 3,
   'Catalog Highlight Own Text Auto': true,
   'Catalog Highlight Own Text Color': '',
   'Catalog Highlight Own Subject Color': '',
@@ -1415,12 +1428,16 @@ export const styleVariantKeys = [
   'Text Color', 'Link Text Color', 'Quote Text Color', 'Dead Link Text Color',
   'Highlight Own Color', 'Highlight You Color', 'Highlight Ghost Color',
   'Highlight Own Opacity', 'Highlight You Opacity', 'Highlight Ghost Opacity',
+  'Thread Highlight Edge Width',
   'Highlight Own Text Auto', 'Highlight You Text Auto', 'Highlight Ghost Text Auto',
   'Highlight Own Text Color', 'Highlight Own Link Color', 'Highlight Own Quote Color', 'Highlight Own Dead Link Color',
   'Highlight You Text Color', 'Highlight You Link Color', 'Highlight You Quote Color', 'Highlight You Dead Link Color',
   'Highlight Ghost Text Color', 'Highlight Ghost Link Color', 'Highlight Ghost Quote Color', 'Highlight Ghost Dead Link Color',
   'Catalog Highlight Own Color', 'Catalog Highlight Own Opacity',
+  'Catalog Highlight Own Border Only',
   'Catalog Highlight Watched Color', 'Catalog Highlight Watched Opacity',
+  'Catalog Highlight Watched Border Only',
+  'Catalog Highlight Border Width',
   'Catalog Highlight Own Text Auto',
   'Catalog Highlight Own Text Color', 'Catalog Highlight Own Subject Color', 'Catalog Highlight Own Link Color', 'Catalog Highlight Own Quote Color', 'Catalog Highlight Own Dead Link Color',
   'Catalog Highlight Watched Text Auto',

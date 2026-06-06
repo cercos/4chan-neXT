@@ -1,6 +1,5 @@
 import Notice from "../classes/Notice";
 import Header from "../General/Header";
-import UI from "../General/UI";
 import { dragstart } from "../General/UI";
 import { Conf, d, g } from "../globals/globals";
 import Icon from "../Icons/icon";
@@ -69,15 +68,10 @@ const DownloadAll = {
       const videos = $.el('a', { href: 'javascript:;', textContent: 'Download videos only' });
       $.on(videos, 'click', () => DownloadAll.start('video'));
 
-      const zipLabel = UI.checkbox('Download All as ZIP', 'Bundle as ZIP');
-      const zipInput = zipLabel.firstElementChild as HTMLInputElement;
-      $.on(zipInput, 'change', $.cb.checked);
-
       return [
         { el: all },
         { el: images },
         { el: videos },
-        { el: zipLabel },
       ];
     },
   },
@@ -126,12 +120,8 @@ const DownloadAll = {
           '<button type="button" data-filter="image"><span class="da-btn-title">Images</span><span class="da-btn-count">0 files</span><span class="da-btn-size">0 B</span></button>' +
           '<button type="button" data-filter="video"><span class="da-btn-title">Videos</span><span class="da-btn-count">0 files</span><span class="da-btn-size">0 B</span></button>' +
         '</div>' +
-        '<label><input type="checkbox" name="Download All as ZIP"> Bundle as a single ZIP archive</label>' +
+        '<div class="da-zip-note">Downloads are bundled into a single ZIP archive.</div>' +
       '</div>';
-
-    const zipBox = $('input[name="Download All as ZIP"]', dialog) as HTMLInputElement;
-    zipBox.checked = !!Conf['Download All as ZIP'];
-    $.on(zipBox, 'change', $.cb.checked);
 
     const persistBox = $('input[name="Persistent Download Media"]', dialog) as HTMLInputElement;
     persistBox.checked = !!Conf['Persistent Download Media'];
@@ -217,11 +207,7 @@ const DownloadAll = {
     const progress = DownloadAll.makeProgress(items.length);
     const done = () => { DownloadAll.busy = false; progress.close(); };
 
-    if (Conf['Download All as ZIP']) {
-      DownloadAll.runZip(items, progress, done);
-    } else {
-      DownloadAll.runIndividual(items, progress, done);
-    }
+    DownloadAll.runZip(items, progress, done);
   },
 
   fetchCatalog(cb: () => void) {
@@ -328,36 +314,6 @@ const DownloadAll = {
       isCancelled: () => cancelled,
       close: () => notice.close(),
     };
-  },
-
-  runIndividual(items: MediaItem[], progress: ReturnType<typeof DownloadAll.makeProgress>, done: () => void) {
-    let i = 0, failed = 0;
-    const step = () => {
-      if (progress.isCancelled() || i >= items.length) {
-        done();
-        if (!progress.isCancelled()) {
-          new Notice('success', `Saved ${i - failed} file(s)${failed ? `, ${failed} failed` : ''}.`, 5);
-        }
-        return;
-      }
-      const item = items[i++];
-      CrossOrigin.binary(item.url, (data: Uint8Array | null) => {
-        if (!data) {
-          failed++;
-        } else {
-          const blob = new Blob([data]);
-          const a = $.el('a', { href: URL.createObjectURL(blob), download: item.name, hidden: true }) as HTMLAnchorElement;
-          $.add(d.body, a);
-          a.click();
-          $.rm(a);
-          setTimeout(() => URL.revokeObjectURL(a.href), 30 * SECOND);
-        }
-        progress.update(i, failed);
-        // Small gap to avoid the browser collapsing/blocking rapid downloads.
-        setTimeout(step, 250);
-      });
-    };
-    step();
   },
 
   runZip(items: MediaItem[], progress: ReturnType<typeof DownloadAll.makeProgress>, done: () => void) {

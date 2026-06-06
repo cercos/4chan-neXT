@@ -5,17 +5,10 @@ import Settings from "../General/Settings";
 
 const CustomCSS = {
   init() {
-    if (Settings.shouldDeferStylingToStylechan()) {
-      if (Conf['Custom CSS']) {
-        Conf['Custom CSS'] = false;
-        $.set('Custom CSS', false);
-      }
-      if (Conf['customCSSHome']) {
-        Conf['customCSSHome'] = false;
-        $.set('customCSSHome', false);
-      }
-      return;
-    }
+    // The Custom CSS section's master switch (only ever off when StyleChan is
+    // installed) gates injection without touching the user's `Custom CSS` /
+    // `usercss` settings, so re-enabling the section restores their CSS.
+    if (!Settings.stylingSectionEnabled('customCSS')) { return; }
     if (!Conf['Custom CSS']) { return; }
     return this.addStyle();
   },
@@ -36,6 +29,9 @@ const CustomCSS = {
   },
 
   update() {
+    if (!Settings.stylingSectionEnabled('customCSS') || !Conf['Custom CSS']) {
+      return this.rmStyle();
+    }
     if (!this.style) {
       return this.addStyle();
     }
