@@ -653,7 +653,7 @@ div.boardTitle {
         ],
         'Thread Watcher Attached': [
           false,
-          'Attach the thread watcher to the Quick Reply (at the location below). Dragging the watcher detaches it; manual positioning still works when not attached.',
+          'Attach the thread watcher to the Quick Reply (at the location below). Drag either title bar to move both dialogs; use the attach button to detach.',
           2
         ],
         'Thread Watcher Attach Location': [
@@ -11292,7 +11292,15 @@ svg.icon {
       e = e.changedTouches[e.changedTouches.length - 1];
     }
     // distance from pointer to el edge is constant; calculate it here.
-    const el = $.x('ancestor::div[contains(@class,"dialog")][1]', this);
+    let el = $.x('ancestor::div[contains(@class,"dialog")][1]', this);
+    if (el.id === 'thread-watcher' && Conf['Thread Watcher Attached']) {
+      const qr = $.id('qr');
+      if (qr && !qr.hidden) {
+        // Dragging an attached watcher moves the QR/watcher pair. Detaching is
+        // handled only by the watcher's attach button.
+        el = qr;
+      }
+    }
     const rect = el.getBoundingClientRect();
     const screenHeight = doc.clientHeight;
     const screenWidth  = doc.clientWidth;
@@ -11388,11 +11396,6 @@ svg.icon {
   };
 
   var dragend = function () {
-    if (this.id === 'thread-watcher' && Conf['Thread Watcher Attached']) {
-      $.set('Thread Watcher Attached', false);
-      Conf['Thread Watcher Attached'] = false;
-      $.event('4chanXDragend', {id: this.id});
-    }
     if (this.isTouching) {
       $.off(d, 'touchmove', this.move);
       $.off(d, 'touchend touchcancel', this.up);
@@ -11400,10 +11403,7 @@ svg.icon {
       $.off(d, 'mousemove', this.move);
       $.off(d, 'mouseup',   this.up);
     }
-    if (this.id === 'thread-watcher' && Conf['Thread Watcher Attached']) {
-      // shouldn't reach, but don't persist attached pos as the free one
-      return;
-    }
+    if (this.id === 'thread-watcher' && Conf['Thread Watcher Attached']) { return; }
     if (this.style.length === 2) { // assume only left or right and top or bottom
       $.set(`${this.id}.position`, this.style.cssText);
     } else { // only include position data.
@@ -29958,7 +29958,7 @@ Enable it on boards.${location.hostname.split('.')[1]}.org in your browser's pri
       inputs['Thread Watcher Max Height'] = heightInput;
       inputs['Thread Watcher Max Width'] = widthInput;
       $.add(fs, heightDiv);
-      const attachDiv = $.el('div', { innerHTML: '<label><input type="checkbox" name="Thread Watcher Attached">Attach to QR</label><label class="thread-watcher-inline-number">at <select name="Thread Watcher Attach Location" class="field thread-watcher-attach-loc"><option value="bottom">bottom</option><option value="top">top</option><option value="left">left</option><option value="right">right</option></select></label><span class="description">: <span class="setting-description">Attach/dock watcher to Quick Reply. Bottom natural (width follows QR); left/right use manual width (height to content, capped by max H). Manual max W/H apply. Drag to detach.</span></span>' });
+      const attachDiv = $.el('div', { innerHTML: '<label><input type="checkbox" name="Thread Watcher Attached">Attach to QR</label><label class="thread-watcher-inline-number">at <select name="Thread Watcher Attach Location" class="field thread-watcher-attach-loc"><option value="bottom">bottom</option><option value="top">top</option><option value="left">left</option><option value="right">right</option></select></label><span class="description">: <span class="setting-description">Attach/dock watcher to Quick Reply. Bottom natural (width follows QR); left/right use manual width (height to content, capped by max H). Manual max W/H apply. Drag either title bar to move both; use the attach button to detach.</span></span>' });
       attachDiv.dataset.name = 'Thread Watcher Attached Thread Watcher Attach Location';
       attachDiv.dataset.settingTitle = 'Attach to QR';
       attachDiv.dataset.settingDescription = 'Attach the thread watcher to the Quick Reply dialog.';
@@ -30234,6 +30234,7 @@ Enable it on boards.${location.hostname.split('.')[1]}.org in your browser's pri
           autoKey: 'Highlight Own Text Auto',
           colorKey: 'Highlight Own Color',
           opacityKey: 'Highlight Own Opacity',
+          edgeKey: 'Highlight Own Edge Only',
           keys: ['Highlight Own Text Color', 'Highlight Own Link Color', 'Highlight Own Quote Color', 'Highlight Own Dead Link Color'],
         },
         {
@@ -30241,6 +30242,7 @@ Enable it on boards.${location.hostname.split('.')[1]}.org in your browser's pri
           autoKey: 'Highlight You Text Auto',
           colorKey: 'Highlight You Color',
           opacityKey: 'Highlight You Opacity',
+          edgeKey: 'Highlight You Edge Only',
           keys: ['Highlight You Text Color', 'Highlight You Link Color', 'Highlight You Quote Color', 'Highlight You Dead Link Color'],
         },
         {
@@ -30248,6 +30250,7 @@ Enable it on boards.${location.hostname.split('.')[1]}.org in your browser's pri
           autoKey: 'Highlight Ghost Text Auto',
           colorKey: 'Highlight Ghost Color',
           opacityKey: 'Highlight Ghost Opacity',
+          edgeKey: 'Highlight Ghost Edge Only',
           keys: ['Highlight Ghost Text Color', 'Highlight Ghost Link Color', 'Highlight Ghost Quote Color', 'Highlight Ghost Dead Link Color'],
         },
         {
@@ -30255,6 +30258,7 @@ Enable it on boards.${location.hostname.split('.')[1]}.org in your browser's pri
           autoKey: 'Catalog Highlight Own Text Auto',
           colorKey: 'Catalog Highlight Own Color',
           opacityKey: 'Catalog Highlight Own Opacity',
+          edgeKey: 'Catalog Highlight Own Border Only',
           keys: ['Catalog Highlight Own Text Color', 'Catalog Highlight Own Subject Color', 'Catalog Highlight Own Link Color', 'Catalog Highlight Own Quote Color', 'Catalog Highlight Own Dead Link Color'],
         },
         {
@@ -30262,6 +30266,7 @@ Enable it on boards.${location.hostname.split('.')[1]}.org in your browser's pri
           autoKey: 'Catalog Highlight Watched Text Auto',
           colorKey: 'Catalog Highlight Watched Color',
           opacityKey: 'Catalog Highlight Watched Opacity',
+          edgeKey: 'Catalog Highlight Watched Border Only',
           keys: ['Catalog Highlight Watched Text Color', 'Catalog Highlight Watched Subject Color', 'Catalog Highlight Watched Link Color', 'Catalog Highlight Watched Quote Color', 'Catalog Highlight Watched Dead Link Color'],
         },
       ];
@@ -30335,7 +30340,11 @@ Enable it on boards.${location.hostname.split('.')[1]}.org in your browser's pri
           const autoToggle = inputs[group.autoKey];
           if (!autoToggle || !autoToggle.checked)
             continue;
-          const palette = Settings.autoHighlightTextPalette(group.colorKey, group.opacityKey, baseBackground, v) || basePalette;
+          // Edge/border-only highlights leave the post on its base background, so the
+          // auto color is derived from that, not the highlight-tinted background.
+          const palette = editConf(group.edgeKey)
+            ? basePalette
+            : (Settings.autoHighlightTextPalette(group.colorKey, group.opacityKey, baseBackground, v) || basePalette);
           const nextValues = [palette.text, palette.link, palette.quote, palette.deadLink];
           for (let i = 0; i < group.keys.length; i++) {
             const key = group.keys[i];
@@ -30359,7 +30368,9 @@ Enable it on boards.${location.hostname.split('.')[1]}.org in your browser's pri
           const autoToggle = inputs[group.autoKey];
           if (!autoToggle || autoToggle.checked)
             continue;
-          const autoPalette = Settings.autoHighlightTextPalette(group.colorKey, group.opacityKey, baseBackground, v) || basePalette;
+          const autoPalette = editConf(group.edgeKey)
+            ? basePalette
+            : (Settings.autoHighlightTextPalette(group.colorKey, group.opacityKey, baseBackground, v) || basePalette);
           const nextValues = [autoPalette.text, autoPalette.link, autoPalette.quote, autoPalette.deadLink];
           for (let i = 0; i < group.keys.length; i++) {
             const key = group.keys[i];
@@ -31471,6 +31482,18 @@ Enable it on boards.${location.hostname.split('.')[1]}.org in your browser's pri
       setVar('--xt-quote-text-color', quoteColor || '');
       setVar('--xt-dead-link-text-color', deadLinkColor || '');
       const autoHighlightPalette = (colorKey, opacityKey) => Settings.autoHighlightTextPalette(colorKey, opacityKey, baseBackground, variant);
+      // Edge/border-only highlights draw just a border and leave the post on its
+      // normal background — the highlight color never fills behind the text (see
+      // the `:not(.xt-edge-*)` / `:not(.xt-catalog-edge-*)` gating in
+      // variableBase.css). So the auto text palette must NOT tint the background
+      // with the highlight color; passing null below makes withManual fall back to
+      // the default text palette, which is computed against the bare baseBackground.
+      const ownEdgeOnly = highlightsOn && !!Conf['Highlight Own Edge Only'];
+      const youEdgeOnly = highlightsOn && !!Conf['Highlight You Edge Only'];
+      const ghostEdgeOnly = highlightsOn && !!Conf['Highlight Ghost Edge Only'];
+      const catalogOwnBorderOnly = catalogOwnEnabled && !!cv('Catalog Highlight Own Border Only');
+      const catalogWatchedBorderOnly = catalogWatchedEnabled && !!cv('Catalog Highlight Watched Border Only');
+      const highlightPaletteFor = (edgeOnly, colorKey, opacityKey) => edgeOnly ? null : autoHighlightPalette(colorKey, opacityKey);
       const withManual = (autoPalette, autoKey, textKey, subjectKey, linkKey, quoteKey, deadKey) => {
         const base = autoPalette || {
           text: textColor || '',
@@ -31489,11 +31512,11 @@ Enable it on boards.${location.hostname.split('.')[1]}.org in your browser's pri
           deadLink: cv(deadKey) || base.deadLink,
         };
       };
-      const ownPalette = withManual(autoHighlightPalette('Highlight Own Color', 'Highlight Own Opacity'), 'Highlight Own Text Auto', 'Highlight Own Text Color', null, 'Highlight Own Link Color', 'Highlight Own Quote Color', 'Highlight Own Dead Link Color');
-      const youPalette = withManual(autoHighlightPalette('Highlight You Color', 'Highlight You Opacity'), 'Highlight You Text Auto', 'Highlight You Text Color', null, 'Highlight You Link Color', 'Highlight You Quote Color', 'Highlight You Dead Link Color');
-      const ghostPalette = withManual(autoHighlightPalette('Highlight Ghost Color', 'Highlight Ghost Opacity'), 'Highlight Ghost Text Auto', 'Highlight Ghost Text Color', null, 'Highlight Ghost Link Color', 'Highlight Ghost Quote Color', 'Highlight Ghost Dead Link Color');
-      const catalogOwnPalette = withManual(autoHighlightPalette('Catalog Highlight Own Color', 'Catalog Highlight Own Opacity'), 'Catalog Highlight Own Text Auto', 'Catalog Highlight Own Text Color', 'Catalog Highlight Own Subject Color', 'Catalog Highlight Own Link Color', 'Catalog Highlight Own Quote Color', 'Catalog Highlight Own Dead Link Color');
-      const catalogWatchedPalette = withManual(autoHighlightPalette('Catalog Highlight Watched Color', 'Catalog Highlight Watched Opacity'), 'Catalog Highlight Watched Text Auto', 'Catalog Highlight Watched Text Color', 'Catalog Highlight Watched Subject Color', 'Catalog Highlight Watched Link Color', 'Catalog Highlight Watched Quote Color', 'Catalog Highlight Watched Dead Link Color');
+      const ownPalette = withManual(highlightPaletteFor(ownEdgeOnly, 'Highlight Own Color', 'Highlight Own Opacity'), 'Highlight Own Text Auto', 'Highlight Own Text Color', null, 'Highlight Own Link Color', 'Highlight Own Quote Color', 'Highlight Own Dead Link Color');
+      const youPalette = withManual(highlightPaletteFor(youEdgeOnly, 'Highlight You Color', 'Highlight You Opacity'), 'Highlight You Text Auto', 'Highlight You Text Color', null, 'Highlight You Link Color', 'Highlight You Quote Color', 'Highlight You Dead Link Color');
+      const ghostPalette = withManual(highlightPaletteFor(ghostEdgeOnly, 'Highlight Ghost Color', 'Highlight Ghost Opacity'), 'Highlight Ghost Text Auto', 'Highlight Ghost Text Color', null, 'Highlight Ghost Link Color', 'Highlight Ghost Quote Color', 'Highlight Ghost Dead Link Color');
+      const catalogOwnPalette = withManual(highlightPaletteFor(catalogOwnBorderOnly, 'Catalog Highlight Own Color', 'Catalog Highlight Own Opacity'), 'Catalog Highlight Own Text Auto', 'Catalog Highlight Own Text Color', 'Catalog Highlight Own Subject Color', 'Catalog Highlight Own Link Color', 'Catalog Highlight Own Quote Color', 'Catalog Highlight Own Dead Link Color');
+      const catalogWatchedPalette = withManual(highlightPaletteFor(catalogWatchedBorderOnly, 'Catalog Highlight Watched Color', 'Catalog Highlight Watched Opacity'), 'Catalog Highlight Watched Text Auto', 'Catalog Highlight Watched Text Color', 'Catalog Highlight Watched Subject Color', 'Catalog Highlight Watched Link Color', 'Catalog Highlight Watched Quote Color', 'Catalog Highlight Watched Dead Link Color');
       setVar('--xt-highlight-own-text', ownPalette?.text || '');
       setVar('--xt-highlight-own-link', ownPalette?.link || '');
       setVar('--xt-highlight-own-quote', ownPalette?.quote || '');
