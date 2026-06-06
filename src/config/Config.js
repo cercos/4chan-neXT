@@ -435,7 +435,7 @@ const Config = {
       ],
       'Thread Watcher Attached': [
         false,
-        'Attach the thread watcher to the Quick Reply (at the location below). Dragging the watcher detaches it; manual positioning still works when not attached.',
+        'Attach the thread watcher to the Quick Reply (at the location below). Drag either title bar to move both dialogs; use the attach button to detach.',
         2
       ],
       'Thread Watcher Attach Location': [

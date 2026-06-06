@@ -1,5 +1,9 @@
 ## 4chan-neXT changelog
 
+### Unreleased
+
+- Fixed attached Thread Watcher dragging so dragging either the Quick Reply or Thread Watcher title bar moves both together; detach now only happens from the attach button.
+
 ### 1.0.8 (2026-06-05)
 
 - Added a setting to show or hide the Quick Reply preview button.

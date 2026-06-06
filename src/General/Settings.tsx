@@ -1444,7 +1444,7 @@ Enable it on boards.${location.hostname.split('.')[1]}.org in your browser's pri
     $.add(fs, heightDiv);
 
     const attachDiv = $.el('div',
-      { innerHTML: '<label><input type="checkbox" name="Thread Watcher Attached">Attach to QR</label><label class="thread-watcher-inline-number">at <select name="Thread Watcher Attach Location" class="field thread-watcher-attach-loc"><option value="bottom">bottom</option><option value="top">top</option><option value="left">left</option><option value="right">right</option></select></label><span class="description">: <span class="setting-description">Attach/dock watcher to Quick Reply. Bottom natural (width follows QR); left/right use manual width (height to content, capped by max H). Manual max W/H apply. Drag to detach.</span></span>' });
+      { innerHTML: '<label><input type="checkbox" name="Thread Watcher Attached">Attach to QR</label><label class="thread-watcher-inline-number">at <select name="Thread Watcher Attach Location" class="field thread-watcher-attach-loc"><option value="bottom">bottom</option><option value="top">top</option><option value="left">left</option><option value="right">right</option></select></label><span class="description">: <span class="setting-description">Attach/dock watcher to Quick Reply. Bottom natural (width follows QR); left/right use manual width (height to content, capped by max H). Manual max W/H apply. Drag either title bar to move both; use the attach button to detach.</span></span>' });
     attachDiv.dataset.name = 'Thread Watcher Attached Thread Watcher Attach Location';
     attachDiv.dataset.settingTitle = 'Attach to QR';
     attachDiv.dataset.settingDescription = 'Attach the thread watcher to the Quick Reply dialog.';

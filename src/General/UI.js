@@ -298,7 +298,15 @@ export var dragstart = function (e) {
     e = e.changedTouches[e.changedTouches.length - 1];
   }
   // distance from pointer to el edge is constant; calculate it here.
-  const el = $.x('ancestor::div[contains(@class,"dialog")][1]', this);
+  let el = $.x('ancestor::div[contains(@class,"dialog")][1]', this);
+  if (el.id === 'thread-watcher' && Conf['Thread Watcher Attached']) {
+    const qr = $.id('qr');
+    if (qr && !qr.hidden) {
+      // Dragging an attached watcher moves the QR/watcher pair. Detaching is
+      // handled only by the watcher's attach button.
+      el = qr;
+    }
+  }
   const rect = el.getBoundingClientRect();
   const screenHeight = doc.clientHeight;
   const screenWidth  = doc.clientWidth;
@@ -394,11 +402,6 @@ export var touchend = function (e) {
 };
 
 export var dragend = function () {
-  if (this.id === 'thread-watcher' && Conf['Thread Watcher Attached']) {
-    $.set('Thread Watcher Attached', false);
-    Conf['Thread Watcher Attached'] = false;
-    $.event('4chanXDragend', {id: this.id});
-  }
   if (this.isTouching) {
     $.off(d, 'touchmove', this.move);
     $.off(d, 'touchend touchcancel', this.up);
@@ -406,10 +409,7 @@ export var dragend = function () {
     $.off(d, 'mousemove', this.move);
     $.off(d, 'mouseup',   this.up);
   }
-  if (this.id === 'thread-watcher' && Conf['Thread Watcher Attached']) {
-    // shouldn't reach, but don't persist attached pos as the free one
-    return;
-  }
+  if (this.id === 'thread-watcher' && Conf['Thread Watcher Attached']) { return; }
   if (this.style.length === 2) { // assume only left or right and top or bottom
     $.set(`${this.id}.position`, this.style.cssText);
   } else { // only include position data.
