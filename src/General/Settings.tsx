@@ -1834,16 +1834,21 @@ Enable it on boards.${location.hostname.split('.')[1]}.org in your browser's pri
     };
     const syncAutoHighlightPreviewInputs = () => {
       const baseBackground = Settings.getTextBaseBackground();
+      const postBackground = Settings.getPostBaseBackground();
       const basePalette = baseTextPalette(baseBackground);
       const v = editVariant();
       for (const group of highlightTextControlGroups) {
         const autoToggle = inputs[group.autoKey] as HTMLInputElement | null;
         if (!autoToggle || !autoToggle.checked) continue;
-        // Edge/border-only highlights leave the post on its base background, so the
-        // auto color is derived from that, not the highlight-tinted background.
-        const palette = editConf<boolean>(group.edgeKey)
+        const groupBackground = group.manualGroup.startsWith('catalog-') ? baseBackground : postBackground;
+        const groupBasePalette = group.manualGroup.startsWith('catalog-')
           ? basePalette
-          : (Settings.autoHighlightTextPalette(group.colorKey, group.opacityKey, baseBackground, v) || basePalette);
+          : baseTextPalette(postBackground);
+        // Edge/border-only highlights leave the post on its base background, so
+        // the auto color is derived from that, not the highlight-tinted background.
+        const palette = editConf<boolean>(group.edgeKey)
+          ? groupBasePalette
+          : (Settings.autoHighlightTextPalette(group.colorKey, group.opacityKey, groupBackground, v) || groupBasePalette);
         const nextValues = [palette.text, palette.link, palette.quote, palette.deadLink] as const;
         for (let i = 0; i < group.keys.length; i++) {
           const key = group.keys[i];
@@ -1861,15 +1866,20 @@ Enable it on boards.${location.hostname.split('.')[1]}.org in your browser's pri
       overwrite = false,
     ) => {
       const baseBackground = Settings.getTextBaseBackground();
+      const postBackground = Settings.getPostBaseBackground();
       const basePalette = baseTextPalette(baseBackground);
       const groups = targetGroup ? [targetGroup] : highlightTextControlGroups;
       const v = editVariant();
       for (const group of groups) {
         const autoToggle = inputs[group.autoKey] as HTMLInputElement | null;
         if (!autoToggle || autoToggle.checked) continue;
-        const autoPalette = editConf<boolean>(group.edgeKey)
+        const groupBackground = group.manualGroup.startsWith('catalog-') ? baseBackground : postBackground;
+        const groupBasePalette = group.manualGroup.startsWith('catalog-')
           ? basePalette
-          : (Settings.autoHighlightTextPalette(group.colorKey, group.opacityKey, baseBackground, v) || basePalette);
+          : baseTextPalette(postBackground);
+        const autoPalette = editConf<boolean>(group.edgeKey)
+          ? groupBasePalette
+          : (Settings.autoHighlightTextPalette(group.colorKey, group.opacityKey, groupBackground, v) || groupBasePalette);
         const nextValues = [autoPalette.text, autoPalette.link, autoPalette.quote, autoPalette.deadLink] as const;
         for (let i = 0; i < group.keys.length; i++) {
           const key = group.keys[i];
@@ -2885,7 +2895,7 @@ Enable it on boards.${location.hostname.split('.')[1]}.org in your browser's pri
   STYLE_VAR_NAMES: [
     '--xt-highlight-own', '--xt-highlight-you', '--xt-highlight-ghost',
     '--xt-highlight-own-opacity', '--xt-highlight-you-opacity', '--xt-highlight-ghost-opacity',
-    '--xt-highlight-edge-width', '--xt-catalog-border-width',
+    '--xt-highlight-edge-width', '--xt-post-background', '--xt-catalog-border-width',
     '--xt-catalog-own-highlight', '--xt-catalog-own-highlight-opacity',
     '--xt-catalog-watched-highlight', '--xt-catalog-watched-highlight-opacity',
     '--xt-scroll-marker-own', '--xt-scroll-marker-you', '--xt-scroll-marker-ghost', '--xt-scroll-marker-unread',
@@ -2953,6 +2963,7 @@ Enable it on boards.${location.hostname.split('.')[1]}.org in your browser's pri
     const legacyWidth = Settings.styleConf('Highlight Edge Width', variant);
     const edgeWidth = parseFloat(String(cv('Thread Highlight Edge Width') || legacyWidth));
     setVar('--xt-highlight-edge-width', Number.isFinite(edgeWidth) ? `${$.minmax(edgeWidth, 1, 12)}px` : '');
+    setVar('--xt-post-background', Settings.getPostBaseBackgroundCSS());
     const catalogBorderWidth = parseFloat(String(cv('Catalog Highlight Border Width') || legacyWidth));
     setVar('--xt-catalog-border-width', Number.isFinite(catalogBorderWidth) ? `${$.minmax(catalogBorderWidth, 1, 12)}px` : '');
     setVar('--xt-catalog-own-highlight', catalogOwnEnabled ? cv('Catalog Highlight Own Color') : '');
@@ -2981,6 +2992,7 @@ Enable it on boards.${location.hostname.split('.')[1]}.org in your browser's pri
     markerVar('--xt-scroll-marker-unread-opacity', cv('Scroll Marker Unread Opacity'));
 
     const baseBackground = Settings.getTextBaseBackground();
+    const postBackground = Settings.getPostBaseBackground();
     const textColorMode = cv('textColorMode') === 'manual' ? 'manual' : 'auto';
     const autoTextPalette = Settings.autoTextPalette(baseBackground);
     // Text Colors section off ⇒ no text-color override at all (page falls back
@@ -3069,7 +3081,7 @@ Enable it on boards.${location.hostname.split('.')[1]}.org in your browser's pri
       };
     };
     const ownPalette = withManual(
-      highlightPaletteFor(ownEdgeOnly, 'Highlight Own Color', 'Highlight Own Opacity'),
+      ownEdgeOnly ? null : Settings.autoHighlightTextPalette('Highlight Own Color', 'Highlight Own Opacity', postBackground, variant),
       'Highlight Own Text Auto',
       'Highlight Own Text Color',
       null,
@@ -3078,7 +3090,7 @@ Enable it on boards.${location.hostname.split('.')[1]}.org in your browser's pri
       'Highlight Own Dead Link Color',
     );
     const youPalette = withManual(
-      highlightPaletteFor(youEdgeOnly, 'Highlight You Color', 'Highlight You Opacity'),
+      youEdgeOnly ? null : Settings.autoHighlightTextPalette('Highlight You Color', 'Highlight You Opacity', postBackground, variant),
       'Highlight You Text Auto',
       'Highlight You Text Color',
       null,
@@ -3087,7 +3099,7 @@ Enable it on boards.${location.hostname.split('.')[1]}.org in your browser's pri
       'Highlight You Dead Link Color',
     );
     const ghostPalette = withManual(
-      highlightPaletteFor(ghostEdgeOnly, 'Highlight Ghost Color', 'Highlight Ghost Opacity'),
+      ghostEdgeOnly ? null : Settings.autoHighlightTextPalette('Highlight Ghost Color', 'Highlight Ghost Opacity', postBackground, variant),
       'Highlight Ghost Text Auto',
       'Highlight Ghost Text Color',
       null,
@@ -3299,6 +3311,32 @@ Enable it on boards.${location.hostname.split('.')[1]}.org in your browser's pri
     // Transparent background color with only an image has no reliable average
     // color; use white as a neutral fallback for contrast calculations.
     return [255, 255, 255];
+  },
+
+  getPostBaseBackground(): [number, number, number] {
+    const fallback = Settings.getTextBaseBackground();
+    let bgColor = '';
+    try {
+      const el = g.SITE?.bgColoredEl?.();
+      if (el && d.body) {
+        el.style.cssText = 'position:absolute;left:-9999px;top:-9999px;visibility:hidden;pointer-events:none;';
+        d.body.appendChild(el);
+        bgColor = window.getComputedStyle(el).backgroundColor;
+        $.rm(el);
+      }
+    } catch (e) {
+      bgColor = '';
+    }
+
+    const rgba = Settings.parseCSSColorRGBA(bgColor);
+    if (!rgba || rgba[3] <= 0) return fallback;
+    const postRgb: [number, number, number] = [rgba[0], rgba[1], rgba[2]];
+    return rgba[3] >= 1 ? postRgb : Settings.mixRgb(fallback, postRgb, rgba[3]);
+  },
+
+  getPostBaseBackgroundCSS(): string {
+    const bg = Settings.getPostBaseBackground();
+    return `rgb(${bg[0]}, ${bg[1]}, ${bg[2]})`;
   },
 
   autoHighlightTextPalette(

@@ -1176,25 +1176,25 @@ div[data-checked="false"] > .suboption-list {
 .styling-preview-post.from-archive > .reply {
   /* Reset any site theme that forces a reply background via !important so the
      preview faithfully shows the configured highlight colors. */
-  background-color: transparent !important;
+  background-color: var(--xt-post-background, var(--xt-background, transparent)) !important;
   border-left: var(--xt-highlight-edge-width, 3px) solid transparent !important;
 }
 .styling-preview[data-highlight-own="true"] .styling-preview-post.yourPost > .reply {
-  border-left: var(--xt-highlight-edge-width, 3px) dashed var(--xt-highlight-own, var(--xt-border-highlight)) !important;
-  background-color: color-mix(in srgb, var(--xt-highlight-own, transparent) calc(var(--xt-highlight-own-opacity, 1) * 100%), transparent) !important;
+  border-left: var(--xt-highlight-edge-width, 3px) dashed color-mix(in srgb, var(--xt-highlight-own, var(--xt-border-highlight)) calc(var(--xt-highlight-own-opacity, 1) * 100%), transparent) !important;
+  background-color: color-mix(in srgb, var(--xt-highlight-own, var(--xt-border-highlight)) calc(var(--xt-highlight-own-opacity, 1) * 100%), var(--xt-post-background, var(--xt-background, transparent))) !important;
 }
 .styling-preview[data-highlight-you="true"] .styling-preview-post.quotesYou > .reply {
-  border-left: var(--xt-highlight-edge-width, 3px) solid var(--xt-highlight-you, var(--xt-border-highlight)) !important;
-  background-color: color-mix(in srgb, var(--xt-highlight-you, transparent) calc(var(--xt-highlight-you-opacity, 1) * 100%), transparent) !important;
+  border-left: var(--xt-highlight-edge-width, 3px) solid color-mix(in srgb, var(--xt-highlight-you, var(--xt-border-highlight)) calc(var(--xt-highlight-you-opacity, 1) * 100%), transparent) !important;
+  background-color: color-mix(in srgb, var(--xt-highlight-you, var(--xt-border-highlight)) calc(var(--xt-highlight-you-opacity, 1) * 100%), var(--xt-post-background, var(--xt-background, transparent))) !important;
 }
 .styling-preview[data-highlight-ghost="true"] .styling-preview-post.from-archive > .reply {
-  border-left: var(--xt-highlight-edge-width, 3px) dotted var(--xt-highlight-ghost, #888) !important;
-  background-color: color-mix(in srgb, var(--xt-highlight-ghost, transparent) calc(var(--xt-highlight-ghost-opacity, 1) * 100%), transparent) !important;
+  border-left: var(--xt-highlight-edge-width, 3px) dotted color-mix(in srgb, var(--xt-highlight-ghost, #888) calc(var(--xt-highlight-ghost-opacity, 1) * 100%), transparent) !important;
+  background-color: color-mix(in srgb, var(--xt-highlight-ghost, #888) calc(var(--xt-highlight-ghost-opacity, 1) * 100%), var(--xt-post-background, var(--xt-background, transparent))) !important;
 }
 .styling-preview[data-edge-own="true"] .styling-preview-post.yourPost > .reply,
 .styling-preview[data-edge-you="true"] .styling-preview-post.quotesYou > .reply,
 .styling-preview[data-edge-ghost="true"] .styling-preview-post.from-archive > .reply {
-  background-color: transparent !important;
+  background-color: var(--xt-post-background, var(--xt-background, transparent)) !important;
 }
 .styling-preview[data-highlight-own="false"] .styling-preview-post.yourPost > .reply,
 .styling-preview[data-highlight-you="false"] .styling-preview-post.quotesYou > .reply,
