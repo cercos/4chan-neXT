@@ -1732,6 +1732,7 @@ Enable it on boards.${location.hostname.split('.')[1]}.org in your browser's pri
         autoKey: 'Highlight Own Text Auto',
         colorKey: 'Highlight Own Color',
         opacityKey: 'Highlight Own Opacity',
+        edgeKey: 'Highlight Own Edge Only',
         keys: ['Highlight Own Text Color', 'Highlight Own Link Color', 'Highlight Own Quote Color', 'Highlight Own Dead Link Color'] as const,
       },
       {
@@ -1739,6 +1740,7 @@ Enable it on boards.${location.hostname.split('.')[1]}.org in your browser's pri
         autoKey: 'Highlight You Text Auto',
         colorKey: 'Highlight You Color',
         opacityKey: 'Highlight You Opacity',
+        edgeKey: 'Highlight You Edge Only',
         keys: ['Highlight You Text Color', 'Highlight You Link Color', 'Highlight You Quote Color', 'Highlight You Dead Link Color'] as const,
       },
       {
@@ -1746,6 +1748,7 @@ Enable it on boards.${location.hostname.split('.')[1]}.org in your browser's pri
         autoKey: 'Highlight Ghost Text Auto',
         colorKey: 'Highlight Ghost Color',
         opacityKey: 'Highlight Ghost Opacity',
+        edgeKey: 'Highlight Ghost Edge Only',
         keys: ['Highlight Ghost Text Color', 'Highlight Ghost Link Color', 'Highlight Ghost Quote Color', 'Highlight Ghost Dead Link Color'] as const,
       },
       {
@@ -1753,6 +1756,7 @@ Enable it on boards.${location.hostname.split('.')[1]}.org in your browser's pri
         autoKey: 'Catalog Highlight Own Text Auto',
         colorKey: 'Catalog Highlight Own Color',
         opacityKey: 'Catalog Highlight Own Opacity',
+        edgeKey: 'Catalog Highlight Own Border Only',
         keys: ['Catalog Highlight Own Text Color', 'Catalog Highlight Own Subject Color', 'Catalog Highlight Own Link Color', 'Catalog Highlight Own Quote Color', 'Catalog Highlight Own Dead Link Color'] as const,
       },
       {
@@ -1760,6 +1764,7 @@ Enable it on boards.${location.hostname.split('.')[1]}.org in your browser's pri
         autoKey: 'Catalog Highlight Watched Text Auto',
         colorKey: 'Catalog Highlight Watched Color',
         opacityKey: 'Catalog Highlight Watched Opacity',
+        edgeKey: 'Catalog Highlight Watched Border Only',
         keys: ['Catalog Highlight Watched Text Color', 'Catalog Highlight Watched Subject Color', 'Catalog Highlight Watched Link Color', 'Catalog Highlight Watched Quote Color', 'Catalog Highlight Watched Dead Link Color'] as const,
       },
     ] as const;
@@ -1834,7 +1839,11 @@ Enable it on boards.${location.hostname.split('.')[1]}.org in your browser's pri
       for (const group of highlightTextControlGroups) {
         const autoToggle = inputs[group.autoKey] as HTMLInputElement | null;
         if (!autoToggle || !autoToggle.checked) continue;
-        const palette = Settings.autoHighlightTextPalette(group.colorKey, group.opacityKey, baseBackground, v) || basePalette;
+        // Edge/border-only highlights leave the post on its base background, so the
+        // auto color is derived from that, not the highlight-tinted background.
+        const palette = editConf<boolean>(group.edgeKey)
+          ? basePalette
+          : (Settings.autoHighlightTextPalette(group.colorKey, group.opacityKey, baseBackground, v) || basePalette);
         const nextValues = [palette.text, palette.link, palette.quote, palette.deadLink] as const;
         for (let i = 0; i < group.keys.length; i++) {
           const key = group.keys[i];
@@ -1858,7 +1867,9 @@ Enable it on boards.${location.hostname.split('.')[1]}.org in your browser's pri
       for (const group of groups) {
         const autoToggle = inputs[group.autoKey] as HTMLInputElement | null;
         if (!autoToggle || autoToggle.checked) continue;
-        const autoPalette = Settings.autoHighlightTextPalette(group.colorKey, group.opacityKey, baseBackground, v) || basePalette;
+        const autoPalette = editConf<boolean>(group.edgeKey)
+          ? basePalette
+          : (Settings.autoHighlightTextPalette(group.colorKey, group.opacityKey, baseBackground, v) || basePalette);
         const nextValues = [autoPalette.text, autoPalette.link, autoPalette.quote, autoPalette.deadLink] as const;
         for (let i = 0; i < group.keys.length; i++) {
           const key = group.keys[i];
@@ -3002,6 +3013,26 @@ Enable it on boards.${location.hostname.split('.')[1]}.org in your browser's pri
         | 'Highlight Own Opacity' | 'Highlight You Opacity' | 'Highlight Ghost Opacity'
         | 'Catalog Highlight Own Opacity' | 'Catalog Highlight Watched Opacity',
     ) => Settings.autoHighlightTextPalette(colorKey, opacityKey, baseBackground, variant);
+    // Edge/border-only highlights draw just a border and leave the post on its
+    // normal background — the highlight color never fills behind the text (see
+    // the `:not(.xt-edge-*)` / `:not(.xt-catalog-edge-*)` gating in
+    // variableBase.css). So the auto text palette must NOT tint the background
+    // with the highlight color; passing null below makes withManual fall back to
+    // the default text palette, which is computed against the bare baseBackground.
+    const ownEdgeOnly = highlightsOn && !!Conf['Highlight Own Edge Only'];
+    const youEdgeOnly = highlightsOn && !!Conf['Highlight You Edge Only'];
+    const ghostEdgeOnly = highlightsOn && !!Conf['Highlight Ghost Edge Only'];
+    const catalogOwnBorderOnly = catalogOwnEnabled && !!cv('Catalog Highlight Own Border Only');
+    const catalogWatchedBorderOnly = catalogWatchedEnabled && !!cv('Catalog Highlight Watched Border Only');
+    const highlightPaletteFor = (
+      edgeOnly: boolean,
+      colorKey:
+        | 'Highlight Own Color' | 'Highlight You Color' | 'Highlight Ghost Color'
+        | 'Catalog Highlight Own Color' | 'Catalog Highlight Watched Color',
+      opacityKey:
+        | 'Highlight Own Opacity' | 'Highlight You Opacity' | 'Highlight Ghost Opacity'
+        | 'Catalog Highlight Own Opacity' | 'Catalog Highlight Watched Opacity',
+    ) => edgeOnly ? null : autoHighlightPalette(colorKey, opacityKey);
     const withManual = (
       autoPalette: ReturnType<typeof Settings.autoTextPalette> | null,
       autoKey:
@@ -3040,7 +3071,7 @@ Enable it on boards.${location.hostname.split('.')[1]}.org in your browser's pri
       };
     };
     const ownPalette = withManual(
-      autoHighlightPalette('Highlight Own Color', 'Highlight Own Opacity'),
+      highlightPaletteFor(ownEdgeOnly, 'Highlight Own Color', 'Highlight Own Opacity'),
       'Highlight Own Text Auto',
       'Highlight Own Text Color',
       null,
@@ -3049,7 +3080,7 @@ Enable it on boards.${location.hostname.split('.')[1]}.org in your browser's pri
       'Highlight Own Dead Link Color',
     );
     const youPalette = withManual(
-      autoHighlightPalette('Highlight You Color', 'Highlight You Opacity'),
+      highlightPaletteFor(youEdgeOnly, 'Highlight You Color', 'Highlight You Opacity'),
       'Highlight You Text Auto',
       'Highlight You Text Color',
       null,
@@ -3058,7 +3089,7 @@ Enable it on boards.${location.hostname.split('.')[1]}.org in your browser's pri
       'Highlight You Dead Link Color',
     );
     const ghostPalette = withManual(
-      autoHighlightPalette('Highlight Ghost Color', 'Highlight Ghost Opacity'),
+      highlightPaletteFor(ghostEdgeOnly, 'Highlight Ghost Color', 'Highlight Ghost Opacity'),
       'Highlight Ghost Text Auto',
       'Highlight Ghost Text Color',
       null,
@@ -3067,7 +3098,7 @@ Enable it on boards.${location.hostname.split('.')[1]}.org in your browser's pri
       'Highlight Ghost Dead Link Color',
     );
     const catalogOwnPalette = withManual(
-      autoHighlightPalette('Catalog Highlight Own Color', 'Catalog Highlight Own Opacity'),
+      highlightPaletteFor(catalogOwnBorderOnly, 'Catalog Highlight Own Color', 'Catalog Highlight Own Opacity'),
       'Catalog Highlight Own Text Auto',
       'Catalog Highlight Own Text Color',
       'Catalog Highlight Own Subject Color',
@@ -3076,7 +3107,7 @@ Enable it on boards.${location.hostname.split('.')[1]}.org in your browser's pri
       'Catalog Highlight Own Dead Link Color',
     );
     const catalogWatchedPalette = withManual(
-      autoHighlightPalette('Catalog Highlight Watched Color', 'Catalog Highlight Watched Opacity'),
+      highlightPaletteFor(catalogWatchedBorderOnly, 'Catalog Highlight Watched Color', 'Catalog Highlight Watched Opacity'),
       'Catalog Highlight Watched Text Auto',
       'Catalog Highlight Watched Text Color',
       'Catalog Highlight Watched Subject Color',
