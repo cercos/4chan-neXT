@@ -17,15 +17,15 @@ You will need a userscript manager:
 
 ## Latest Version
 
-`1.0.7` (2026-06-05)
+`1.0.8` (2026-06-05)
 
-- Added Thread Watcher attach/detach support for docking it to the Quick Reply.
-- Added a Quick Reply header preview toggle icon.
-- Grouped and cleaned up Thread Watcher settings in the settings dropdown.
-- Fixed updatge button in script managers by adding userscript download/update metadata.
-- Fixed QR captcha wait messages with sign-in links and long text wrapping.
-- Fixed a LibreWolf/Violentmonkey sync error when storage change events provide empty board data, which could also disrupt settings updates such as Custom CSS.
-- Small Quick Reply, Thread Watcher, and settings fixes.
+- Added a setting to show or hide the Quick Reply preview button.
+- Added gallery grid layout support with updated thumbnail placement.
+- Added border highlighting for catalog threads.
+- Added the ability to re-enable disabled style settings while StyleChan is active.
+- Changed "Download all media" to always bundle downloads as a ZIP archive.
+- Fixed scrollbar marker single mode so the scrollbar no longer pushes the header out of alignment.
+- Fixed edge highlighting.
 
 ## Migration from 4chan X / 4chan XT
 

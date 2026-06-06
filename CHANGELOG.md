@@ -1,6 +1,6 @@
 ## 4chan-neXT changelog
 
-### Unreleased
+### 1.0.8 (2026-06-05)
 
 - Added a setting to show or hide the Quick Reply preview button.
 - Added gallery grid layout support with updated thumbnail placement.

@@ -1,6 +1,6 @@
 // ==UserScript==
 // @name         4chan-neXT
-// @version      1.0.7
+// @version      1.0.8
 // @minGMVer     1.14
 // @minFFVer     78
 // @namespace    4chan-neXT
@@ -203,7 +203,7 @@
   'use strict';
 
   var version = {
-    "version": "1.0.7",
+    "version": "1.0.8",
     "date": "2026-06-05T00:00:00Z"
   }
   ;
@@ -565,11 +565,6 @@ div.boardTitle {
         'Download All Media': [
           true,
           'Adds a header shortcut and menu entry to download all images/videos in the current thread/index.'
-        ],
-        'Download All as ZIP': [
-          true,
-          'Bundle "Download all media" downloads into a single ZIP archive instead of saving each file individually.',
-          1
         ],
         'Persistent Download Media': [
           false,
@@ -1084,6 +1079,18 @@ div.boardTitle {
       'Scroll to Post': [
         true
       ],
+      'Grid Thumbnails': [
+        false,
+        'Lay gallery thumbnails out in a grid instead of a single column.'
+      ],
+      'Gallery Columns': [
+        3,
+        'Number of thumbnail columns to show in grid mode. Columns stop being added once the strip would exceed 75% of the screen width. 0 disables the image preview and shows fullscreen thumbnails (click a thumbnail to open it in a lightbox).'
+      ],
+      'Gallery Thumbnails Position': [
+        'right',
+        'Which edge of the gallery the thumbnail strip docks to: top, bottom, left or right.'
+      ],
       'Slide Delay': [
         6.0
       ]
@@ -1265,6 +1272,27 @@ http://eye.swfchan.com/search/?q=%name;types:swf
     customCSSHome: false,
     siteStyle: '',
     siteStyleHome: false,
+    // StyleChan bridge: when StyleChan is managing site themes (it excludes the
+    // 4chan home page), this opt-in replays StyleChan's injected stylesheet on the
+    // home page. styleChanThemeCSS / styleChanVarsCSS hold the snapshot captured
+    // on board pages (where StyleChan runs) so the home page can reuse it.
+    styleChanThemeHome: false,
+    styleChanThemeCSS: '',
+    styleChanVarsCSS: '',
+    // Per-section master switches for the Styling page. Each gates one Styling
+    // subsection (Site Style, Highlight Colors, Scrollbar Markers, Text Colors,
+    // Custom CSS) at runtime *without* touching the section's inner settings, so
+    // toggling a section off and back on restores the user's prior config. The
+    // title checkboxes that flip these only appear when StyleChan is installed;
+    // defaults are all-on so non-StyleChan users see no behavior change.
+    // `stylingSectionsInitialized` guards the one-time recommendation that
+    // disables StyleChan-owned sections the first time StyleChan is detected.
+    stylingSectionSiteStyle: true,
+    stylingSectionHighlights: true,
+    stylingSectionScrollbarMarkers: true,
+    stylingSectionTextColors: true,
+    stylingSectionCustomCSS: true,
+    stylingSectionsInitialized: false,
     customSiteThemes: [],
     savedHighlightPalettes: [],
     // 'auto' applies the SFW or NSFW variant based on the active board's
@@ -1302,14 +1330,21 @@ http://eye.swfchan.com/search/?q=%name;types:swf
     'Highlight Own Opacity':       '',
     'Highlight You Opacity':       '',
     'Highlight Ghost Opacity':     '',
+    'Thread Highlight Edge Width': 3,
+    'Highlight Own Edge Only':     true,
+    'Highlight You Edge Only':     true,
+    'Highlight Ghost Edge Only':   true,
     'Enable Thread Highlights':    true,
     'Enable Catalog Highlights':   true,
     'Catalog Highlight Own Posts': true,
     'Catalog Highlight Watched Threads': true,
     'Catalog Highlight Own Color': '',
     'Catalog Highlight Own Opacity': '',
+    'Catalog Highlight Own Border Only': true,
     'Catalog Highlight Watched Color': '',
     'Catalog Highlight Watched Opacity': '',
+    'Catalog Highlight Watched Border Only': true,
+    'Catalog Highlight Border Width': 3,
     'Catalog Highlight Own Text Auto': true,
     'Catalog Highlight Own Text Color': '',
     'Catalog Highlight Own Subject Color': '',
@@ -1729,12 +1764,16 @@ current-archive-text:"Archive"]
     'Text Color', 'Link Text Color', 'Quote Text Color', 'Dead Link Text Color',
     'Highlight Own Color', 'Highlight You Color', 'Highlight Ghost Color',
     'Highlight Own Opacity', 'Highlight You Opacity', 'Highlight Ghost Opacity',
+    'Thread Highlight Edge Width',
     'Highlight Own Text Auto', 'Highlight You Text Auto', 'Highlight Ghost Text Auto',
     'Highlight Own Text Color', 'Highlight Own Link Color', 'Highlight Own Quote Color', 'Highlight Own Dead Link Color',
     'Highlight You Text Color', 'Highlight You Link Color', 'Highlight You Quote Color', 'Highlight You Dead Link Color',
     'Highlight Ghost Text Color', 'Highlight Ghost Link Color', 'Highlight Ghost Quote Color', 'Highlight Ghost Dead Link Color',
     'Catalog Highlight Own Color', 'Catalog Highlight Own Opacity',
+    'Catalog Highlight Own Border Only',
     'Catalog Highlight Watched Color', 'Catalog Highlight Watched Opacity',
+    'Catalog Highlight Watched Border Only',
+    'Catalog Highlight Border Width',
     'Catalog Highlight Own Text Auto',
     'Catalog Highlight Own Text Color', 'Catalog Highlight Own Subject Color', 'Catalog Highlight Own Link Color', 'Catalog Highlight Own Quote Color', 'Catalog Highlight Own Dead Link Color',
     'Catalog Highlight Watched Text Auto',
@@ -2316,7 +2355,7 @@ current-archive-text:"Archive"]
     }
     return root.dispatchEvent(new CustomEvent(event, { bubbles: true, cancelable: true, detail }));
   };
-  if (platform === 'userscript') {
+
     // XXX Make $.event work in Pale Moon with GM 3.x (no cloneInto function).
     (function () {
       if (!/PaleMoon\//.test(navigator.userAgent) || (+GM_info?.version?.split('.')[0] < 2) || (typeof cloneInto !== 'undefined')) {
@@ -2345,7 +2384,7 @@ current-archive-text:"Archive"]
         return $.event = (event, detail, root = d) => root.dispatchEvent(new CustomEvent(event, { bubbles: true, cancelable: true, detail: clone(detail) }));
       }
     })();
-  }
+
   $.modifiedClick = e => e.shiftKey || e.altKey || e.ctrlKey || e.metaKey || (e.button !== 0);
   if (!globalThis.chrome?.extension) {
     $.open =
@@ -2392,16 +2431,7 @@ current-archive-text:"Archive"]
       Promise.resolve().then(execTask);
     };
   })();
-  if (platform === 'crx') {
-    const callbacks = new Map();
-    chrome.runtime.onMessage.addListener(({ id, data }) => {
-      callbacks.get(id)(data);
-      callbacks.delete(id);
-    });
-    $.eventPageRequest = (params) => new Promise(resolve => {
-      chrome.runtime.sendMessage(params, id => { callbacks.set(id, resolve); });
-    });
-  }
+
   /**
    * Runs a function on the page instead of the user script or extension context.
    * @param fn The name of the function in pageContext.ts. It must be defined there to run in a manifest V3 context.
@@ -2510,178 +2540,7 @@ current-archive-text:"Archive"]
       return delete data['Redirect to HTTPS'];
     }
   };
-  if (platform === 'crx') {
-    // https://developer.chrome.com/extensions/storage.html
-    $.oldValue = {
-      local: dict(),
-      sync: dict()
-    };
-    chrome.storage.onChanged.addListener(function (changes, area) {
-      for (var key in changes) {
-        var oldValue = $.oldValue.local[key] ?? $.oldValue.sync[key];
-        $.oldValue[area][key] = dict.clone(changes[key].newValue);
-        var newValue = $.oldValue.local[key] ?? $.oldValue.sync[key];
-        var cb = $.syncing[key];
-        if (cb && (JSON.stringify(newValue) !== JSON.stringify(oldValue))) {
-          cb(newValue, key);
-        }
-      }
-    });
-    $.sync = (key, cb) => $.syncing[key] = cb;
-    $.forceSync = function () { };
-    $.crxWorking = function () {
-      try {
-        if (chrome.runtime.getManifest()) {
-          return true;
-        }
-      } catch (error) { }
-      if (!$.crxWarningShown) {
-        const msg = $.el('div', { innerHTML: `${meta.name} seems to have been updated. You will need to <a href="javascript:;">reload</a> the page.` });
-        $.on($('a', msg), 'click', () => location.reload());
-        new Notice('warning', msg);
-        $.crxWarningShown = true;
-      }
-      return false;
-    };
-    $.get = $.oneItemSugar(function (data, cb) {
-      if (!$.crxWorking()) {
-        return;
-      }
-      const results = {};
-      const get = function (area) {
-        let keys = Object.keys(data);
-        // XXX slow performance in Firefox
-        if (($.engine === 'gecko') && (area === 'sync') && (keys.length > 3)) {
-          keys = null;
-        }
-        return chrome.storage[area].get(keys, function (result) {
-          let key;
-          result = dict.clone(result);
-          if (chrome.runtime.lastError) {
-            c.error(chrome.runtime.lastError.message);
-          }
-          if (keys === null) {
-            const result2 = dict();
-            for (key in result) {
-              var val = result[key];
-              if ($.hasOwn(data, key)) {
-                result2[key] = val;
-              }
-            }
-            result = result2;
-          }
-          for (key in data) {
-            $.oldValue[area][key] = result[key];
-          }
-          results[area] = result;
-          if (results.local && results.sync) {
-            $.extend(data, results.sync);
-            $.extend(data, results.local);
-            return cb(data);
-          }
-        });
-      };
-      get('local');
-      return get('sync');
-    });
-    (function () {
-      const items = {
-        local: dict(),
-        sync: dict()
-      };
-      const exceedsQuota = (key, value) => // bytes in UTF-8
-      unescape(encodeURIComponent(JSON.stringify(key))).length + unescape(encodeURIComponent(JSON.stringify(value))).length > chrome.storage.sync.QUOTA_BYTES_PER_ITEM;
-      $.delete = function (keys) {
-        if (!$.crxWorking()) {
-          return;
-        }
-        if (typeof keys === 'string') {
-          keys = [keys];
-        }
-        for (var key of keys) {
-          delete items.local[key];
-          delete items.sync[key];
-        }
-        chrome.storage.local.remove(keys);
-        return chrome.storage.sync.remove(keys);
-      };
-      const timeout = {};
-      var setArea = function (area, cb) {
-        const data = dict();
-        $.extend(data, items[area]);
-        if (!Object.keys(data).length || (timeout[area] > Date.now())) {
-          return;
-        }
-        return chrome.storage[area].set(data, function () {
-          let err;
-          let key;
-          if (err = chrome.runtime.lastError) {
-            c.error(err.message);
-            setTimeout(setArea, MINUTE, area);
-            timeout[area] = Date.now() + MINUTE;
-            return cb?.(err);
-          }
-          delete timeout[area];
-          for (key in data) {
-            if (items[area][key] === data[key]) {
-              delete items[area][key];
-            }
-          }
-          if (area === 'local') {
-            for (key in data) {
-              var val = data[key];
-              if (!exceedsQuota(key, val)) {
-                items.sync[key] = val;
-              }
-            }
-            setSync();
-          } else {
-            chrome.storage.local.remove(((() => {
-              const result = [];
-              for (key in data) {
-                if (!(key in items.local)) {
-                  result.push(key);
-                }
-              }
-              return result;
-            })()));
-          }
-          return cb?.();
-        });
-      };
-      var setSync = debounce(SECOND, () => setArea('sync'));
-      $.set = $.oneItemSugar(function (data, cb) {
-        if (!$.crxWorking()) {
-          return;
-        }
-        $.securityCheck(data);
-        $.extend(items.local, data);
-        return setArea('local', cb);
-      });
-      return $.clear = function (cb) {
-        if (!$.crxWorking()) {
-          return;
-        }
-        items.local = dict();
-        items.sync = dict();
-        let count = 2;
-        let err = null;
-        const done = function () {
-          if (chrome.runtime.lastError) {
-            c.error(chrome.runtime.lastError.message);
-          }
-          if (err == null) {
-            err = chrome.runtime.lastError;
-          }
-          if (!--count) {
-            return cb?.(err);
-          }
-        };
-        chrome.storage.local.clear(done);
-        return chrome.storage.sync.clear(done);
-      };
-    })();
-  } else {
+
     // http://wiki.greasespot.net/Main_Page
     // https://tampermonkey.net/documentation.php
     if ((GM?.deleteValue != null) && window.BroadcastChannel && (typeof GM_addValueChangeListener === 'undefined' || GM_addValueChangeListener === null)) {
@@ -2898,7 +2757,6 @@ current-archive-text:"Archive"]
         return cb?.();
       };
     }
-  }
 
   var Get = {
     url(type, IDs, ...args) {
@@ -3444,7 +3302,7 @@ current-archive-text:"Archive"]
   <span class="easy-filter-status"></span>
 </div>`;
 
-  var StylingPage = `<details open class="styling-site-style">
+  var StylingPage = `<details open class="styling-site-style" data-styling-section="siteStyle">
   <summary>Site Style</summary>
   <div class="styling-variant-bar">
     <label class="styling-variant-mode">SFW / NSFW mode:
@@ -3476,13 +3334,19 @@ current-archive-text:"Archive"]
   <div id="styling-site-style-note" class="note" hidden></div>
 </details>
 
-<details open>
+<details open data-styling-section="highlights">
   <summary>Highlight Colors</summary>
   <p>Choose highlight colors for thread and catalog states.</p>
   <div data-name="Highlight Colors">
     <div class="styling-tree">
       <div data-name="Thread Highlights">
         <label><input type="checkbox" name="Enable Thread Highlights"> Threads</label>
+        <p class="styling-compact-control">
+          <label title="Width for thread edge-only highlights.">
+            Edge width
+            <input type="range" name="Thread Highlight Edge Width" min="1" max="8" step="1">
+          </label>
+        </p>
         <div class="styling-tree">
           <div class="styling-inline-option" data-highlight-row="own">
             <label><input type="checkbox" name="Highlight Own Posts"> Your post</label>
@@ -3495,6 +3359,7 @@ current-archive-text:"Archive"]
                 <input type="color" name="Highlight Own Dead Link Color" title="Dead link color">
               </span>
               <label class="styling-inline-toggle" title="Automatically choose readable text colors for this highlight"><input type="checkbox" name="Highlight Own Text Auto"> Auto text</label>
+              <label class="styling-inline-toggle" title="Show only the colored left edge, no background fill (classic XT look)"><input type="checkbox" name="Highlight Own Edge Only"> Edge only</label>
               <input type="range" name="Highlight Own Opacity" min="0" max="1" step="0.05" title="Highlight opacity">
             </span>
           </div>
@@ -3509,6 +3374,7 @@ current-archive-text:"Archive"]
                 <input type="color" name="Highlight You Dead Link Color" title="Dead link color">
               </span>
               <label class="styling-inline-toggle" title="Automatically choose readable text colors for this highlight"><input type="checkbox" name="Highlight You Text Auto"> Auto text</label>
+              <label class="styling-inline-toggle" title="Show only the colored left edge, no background fill (classic XT look)"><input type="checkbox" name="Highlight You Edge Only"> Edge only</label>
               <input type="range" name="Highlight You Opacity" min="0" max="1" step="0.05" title="Highlight opacity">
             </span>
           </div>
@@ -3523,6 +3389,7 @@ current-archive-text:"Archive"]
                 <input type="color" name="Highlight Ghost Dead Link Color" title="Dead link color">
               </span>
               <label class="styling-inline-toggle" title="Automatically choose readable text colors for this highlight"><input type="checkbox" name="Highlight Ghost Text Auto"> Auto text</label>
+              <label class="styling-inline-toggle" title="Show only the colored left edge, no background fill (classic XT look)"><input type="checkbox" name="Highlight Ghost Edge Only"> Edge only</label>
               <input type="range" name="Highlight Ghost Opacity" min="0" max="1" step="0.05" title="Highlight opacity">
             </span>
           </div>
@@ -3530,6 +3397,12 @@ current-archive-text:"Archive"]
       </div>
       <div data-name="Catalog Highlights">
         <label><input type="checkbox" name="Enable Catalog Highlights"> Catalog</label>
+        <p class="styling-compact-control">
+          <label title="Width for catalog border-only highlights.">
+            Border width
+            <input type="range" name="Catalog Highlight Border Width" min="1" max="8" step="1">
+          </label>
+        </p>
         <div class="styling-tree">
           <div class="styling-inline-option">
             <label><input type="checkbox" name="Catalog Highlight Own Posts"> Your post</label>
@@ -3543,6 +3416,7 @@ current-archive-text:"Archive"]
                 <input type="color" name="Catalog Highlight Own Dead Link Color" title="Dead link color">
               </span>
               <label class="styling-inline-toggle" title="Automatically choose readable text colors for this highlight"><input type="checkbox" name="Catalog Highlight Own Text Auto"> Auto text</label>
+              <label class="styling-inline-toggle" title="Show only a colored border around the catalog tile, no background fill"><input type="checkbox" name="Catalog Highlight Own Border Only"> Border only</label>
               <input type="range" name="Catalog Highlight Own Opacity" min="0" max="1" step="0.05" title="Highlight opacity">
             </span>
           </div>
@@ -3558,6 +3432,7 @@ current-archive-text:"Archive"]
                 <input type="color" name="Catalog Highlight Watched Dead Link Color" title="Dead link color">
               </span>
               <label class="styling-inline-toggle" title="Automatically choose readable text colors for this highlight"><input type="checkbox" name="Catalog Highlight Watched Text Auto"> Auto text</label>
+              <label class="styling-inline-toggle" title="Show only a colored border around the catalog tile, no background fill"><input type="checkbox" name="Catalog Highlight Watched Border Only"> Border only</label>
               <input type="range" name="Catalog Highlight Watched Opacity" min="0" max="1" step="0.05" title="Highlight opacity">
             </span>
           </div>
@@ -3580,7 +3455,7 @@ current-archive-text:"Archive"]
   </div>
 </details>
 
-<details open>
+<details open data-styling-section="scrollbarMarkers">
   <summary>Scrollbar Markers</summary>
   <div data-name="Scrollbar Markers">
     <label><input type="checkbox" name="Scrollbar Markers"> Scrollbar markers</label>
@@ -3620,7 +3495,7 @@ current-archive-text:"Archive"]
   </div>
 </details>
 
-<details open class="styling-text-colors">
+<details open class="styling-text-colors" data-styling-section="textColors">
   <summary>Text Colors</summary>
   <div class="styling-theme-row">
     <label>Mode:
@@ -3663,7 +3538,7 @@ current-archive-text:"Archive"]
   </div>
 </details>
 
-<details open class="styling-custom-css">
+<details open class="styling-custom-css" data-styling-section="customCSS">
   <summary>Custom CSS</summary>
   <div class="custom-css-toggle-row">
     <label><input type="checkbox" name="Custom CSS"> Enable Custom CSS</label>
@@ -3839,10 +3714,10 @@ current-archive-text:"Archive"]
 
 /* 4chan style fixes */
 :root:not(.oneechan).highlight-you .quotesYou$site$highlightable$reply {
-  border-left: 3px solid var(--xt-border-highlight) !important;
+  border-left: var(--xt-highlight-edge-width, 3px) solid var(--xt-border-highlight) !important;
 }
 :root:not(.oneechan).highlight-own .yourPost$site$highlightable$reply {
-  border-left: 3px dashed var(--xt-border-highlight) !important;
+  border-left: var(--xt-highlight-edge-width, 3px) dashed var(--xt-border-highlight) !important;
 }
 
 /* Header */
@@ -4046,36 +3921,60 @@ current-archive-text:"Archive"]
 .qphl {
   outline: 2px solid var(--xt-qphl, rgba(216, 94, 49, .8));
 }
+/* The colored left border is always applied when a post is highlighted. The
+   translucent background fill is gated on :not(.xt-edge-*) so that "edge only"
+   mode leaves the post's own background completely untouched (the original XT
+   look) — we never set a background value in that case, so the theme's normal
+   reply background shows and the post matches its neighbours. */
 :root.highlight-you .quotesYou$site$highlightable$op,
 :root.highlight-you .quotesYou$site$highlightable$reply {
-  border-left: 3px solid var(--xt-highlight-you, var(--xt-border-highlight));
+  border-left: var(--xt-highlight-edge-width, 3px) solid var(--xt-highlight-you, var(--xt-border-highlight));
+}
+:root.highlight-you:not(.xt-edge-you) .quotesYou$site$highlightable$op,
+:root.highlight-you:not(.xt-edge-you) .quotesYou$site$highlightable$reply {
   background-color: color-mix(in srgb, var(--xt-highlight-you, transparent) calc(var(--xt-highlight-you-opacity, 1) * 100%), transparent);
 }
 :root.highlight-own .yourPost$site$highlightable$op,
 :root.highlight-own .yourPost$site$highlightable$reply {
-  border-left: 3px dashed var(--xt-highlight-own, var(--xt-border-highlight));
+  border-left: var(--xt-highlight-edge-width, 3px) dashed var(--xt-highlight-own, var(--xt-border-highlight));
+}
+:root.highlight-own:not(.xt-edge-own) .yourPost$site$highlightable$op,
+:root.highlight-own:not(.xt-edge-own) .yourPost$site$highlightable$reply {
   background-color: color-mix(in srgb, var(--xt-highlight-own, transparent) calc(var(--xt-highlight-own-opacity, 1) * 100%), transparent);
 }
 :root.highlight-ghost .from-archive$site$highlightable$op,
 :root.highlight-ghost .from-archive$site$highlightable$reply {
-  border-left: 3px dotted var(--xt-highlight-ghost, #888);
+  border-left: var(--xt-highlight-edge-width, 3px) dotted var(--xt-highlight-ghost, #888);
+}
+:root.highlight-ghost:not(.xt-edge-ghost) .from-archive$site$highlightable$op,
+:root.highlight-ghost:not(.xt-edge-ghost) .from-archive$site$highlightable$reply {
   background-color: color-mix(in srgb, var(--xt-highlight-ghost, transparent) calc(var(--xt-highlight-ghost-opacity, 1) * 100%), transparent);
 }
 /* When a highlight color is explicitly configured, force it with !important so
-   custom site themes that use \`!important\` on \`.reply\` can't suppress it. */
+   custom site themes that use \`!important\` on \`.reply\` can't suppress it. The
+   background fill stays gated on :not(.xt-edge-*) for the same reason as above. */
 :root.xt-set-you-highlight.highlight-you .quotesYou$site$highlightable$op,
 :root.xt-set-you-highlight.highlight-you .quotesYou$site$highlightable$reply {
-  border-left: 3px solid var(--xt-highlight-you) !important;
+  border-left: var(--xt-highlight-edge-width, 3px) solid var(--xt-highlight-you) !important;
+}
+:root.xt-set-you-highlight.highlight-you:not(.xt-edge-you) .quotesYou$site$highlightable$op,
+:root.xt-set-you-highlight.highlight-you:not(.xt-edge-you) .quotesYou$site$highlightable$reply {
   background-color: color-mix(in srgb, var(--xt-highlight-you) calc(var(--xt-highlight-you-opacity, 1) * 100%), transparent) !important;
 }
 :root.xt-set-own-highlight.highlight-own .yourPost$site$highlightable$op,
 :root.xt-set-own-highlight.highlight-own .yourPost$site$highlightable$reply {
-  border-left: 3px dashed var(--xt-highlight-own) !important;
+  border-left: var(--xt-highlight-edge-width, 3px) dashed var(--xt-highlight-own) !important;
+}
+:root.xt-set-own-highlight.highlight-own:not(.xt-edge-own) .yourPost$site$highlightable$op,
+:root.xt-set-own-highlight.highlight-own:not(.xt-edge-own) .yourPost$site$highlightable$reply {
   background-color: color-mix(in srgb, var(--xt-highlight-own) calc(var(--xt-highlight-own-opacity, 1) * 100%), transparent) !important;
 }
 :root.xt-set-ghost-highlight.highlight-ghost .from-archive$site$highlightable$op,
 :root.xt-set-ghost-highlight.highlight-ghost .from-archive$site$highlightable$reply {
-  border-left: 3px dotted var(--xt-highlight-ghost) !important;
+  border-left: var(--xt-highlight-edge-width, 3px) dotted var(--xt-highlight-ghost) !important;
+}
+:root.xt-set-ghost-highlight.highlight-ghost:not(.xt-edge-ghost) .from-archive$site$highlightable$op,
+:root.xt-set-ghost-highlight.highlight-ghost:not(.xt-edge-ghost) .from-archive$site$highlightable$reply {
   background-color: color-mix(in srgb, var(--xt-highlight-ghost) calc(var(--xt-highlight-ghost-opacity, 1) * 100%), transparent) !important;
 }
 .filter-highlight$site$highlightable$op,
@@ -4100,20 +3999,25 @@ current-archive-text:"Archive"]
   background: var(--xt-filter-highlight, rgba(221, 0, 0, .5)) !important;
 }
 /* Tint the catalog tile (.catalog-thread), not .catalog-post — post negative margins bleed upward. */
-:root.xt-highlight-catalog-own .catalog-thread:has(.yourPost),
-:root.xt-highlight-catalog-own .catalog-thread.yourPost {
+:root.xt-highlight-catalog-own:not(.xt-catalog-edge-own) .catalog-thread:has(.yourPost),
+:root.xt-highlight-catalog-own:not(.xt-catalog-edge-own) .catalog-thread.yourPost {
   background: color-mix(in srgb, var(--xt-catalog-own-highlight, var(--xt-highlight-own)) calc(var(--xt-catalog-own-highlight-opacity, 1) * 100%), var(--xt-background, #d6daf0)) !important;
+}
+:root.xt-highlight-catalog-own.xt-catalog-edge-own .catalog-thread:has(.yourPost),
+:root.xt-highlight-catalog-own.xt-catalog-edge-own .catalog-thread.yourPost {
+  border-color: var(--xt-catalog-own-highlight, var(--xt-highlight-own, var(--xt-border-highlight))) !important;
+  border-width: var(--xt-catalog-border-width, 3px) !important;
 }
 :root:not(.catalog-hover-expand).xt-highlight-catalog-own .catalog-thread:has(.yourPost),
 :root:not(.catalog-hover-expand).xt-highlight-catalog-own .catalog-thread.yourPost {
   overflow: hidden;
 }
-:root.xt-highlight-catalog-own .catalog-thread:has(.yourPost) > .catalog-container,
-:root.xt-highlight-catalog-own .catalog-thread.yourPost > .catalog-container,
-:root.xt-highlight-catalog-own .catalog-thread > .catalog-container.yourPost,
-:root.xt-highlight-catalog-own .catalog-thread:has(.yourPost) .post.catalog-post.yourPost,
-:root.xt-highlight-catalog-own .catalog-thread.yourPost .post.catalog-post,
-:root.xt-highlight-catalog-own .catalog-thread > .catalog-container.yourPost .post.catalog-post {
+:root.xt-highlight-catalog-own:not(.xt-catalog-edge-own) .catalog-thread:has(.yourPost) > .catalog-container,
+:root.xt-highlight-catalog-own:not(.xt-catalog-edge-own) .catalog-thread.yourPost > .catalog-container,
+:root.xt-highlight-catalog-own:not(.xt-catalog-edge-own) .catalog-thread > .catalog-container.yourPost,
+:root.xt-highlight-catalog-own:not(.xt-catalog-edge-own) .catalog-thread:has(.yourPost) .post.catalog-post.yourPost,
+:root.xt-highlight-catalog-own:not(.xt-catalog-edge-own) .catalog-thread.yourPost .post.catalog-post,
+:root.xt-highlight-catalog-own:not(.xt-catalog-edge-own) .catalog-thread > .catalog-container.yourPost .post.catalog-post {
   background: transparent !important;
   border-color: transparent !important;
 }
@@ -4159,22 +4063,26 @@ current-archive-text:"Archive"]
 :root.xt-highlight-catalog-own .catalog-thread > .catalog-container.yourPost .post.catalog-post .deadlink {
   color: var(--xt-catalog-own-dead-link, var(--xt-dead-link-text-color, var(--xt-dead-link))) !important;
 }
-:root.xt-highlight-catalog-own .catalog-thread:has(.yourPost) .post.catalog-post.yourPost > *,
-:root.xt-highlight-catalog-own .catalog-thread:has(.yourPost) .post.catalog-post.yourPost .postMessage,
-:root.xt-highlight-catalog-own .catalog-thread.yourPost .post.catalog-post > *,
-:root.xt-highlight-catalog-own .catalog-thread.yourPost .post.catalog-post .postMessage,
-:root.xt-highlight-catalog-own .catalog-thread > .catalog-container.yourPost .post.catalog-post > *,
-:root.xt-highlight-catalog-own .catalog-thread > .catalog-container.yourPost .post.catalog-post .postMessage {
+:root.xt-highlight-catalog-own:not(.xt-catalog-edge-own) .catalog-thread:has(.yourPost) .post.catalog-post.yourPost > *,
+:root.xt-highlight-catalog-own:not(.xt-catalog-edge-own) .catalog-thread:has(.yourPost) .post.catalog-post.yourPost .postMessage,
+:root.xt-highlight-catalog-own:not(.xt-catalog-edge-own) .catalog-thread.yourPost .post.catalog-post > *,
+:root.xt-highlight-catalog-own:not(.xt-catalog-edge-own) .catalog-thread.yourPost .post.catalog-post .postMessage,
+:root.xt-highlight-catalog-own:not(.xt-catalog-edge-own) .catalog-thread > .catalog-container.yourPost .post.catalog-post > *,
+:root.xt-highlight-catalog-own:not(.xt-catalog-edge-own) .catalog-thread > .catalog-container.yourPost .post.catalog-post .postMessage {
   background: transparent !important;
 }
-:root.xt-highlight-catalog-watched .catalog-thread.watched:not(:has(.yourPost)) {
+:root.xt-highlight-catalog-watched:not(.xt-catalog-edge-watched) .catalog-thread.watched:not(:has(.yourPost)) {
   background: color-mix(in srgb, var(--xt-catalog-watched-highlight, var(--xt-watched-border, rgba(255, 0, 0, .75))) calc(var(--xt-catalog-watched-highlight-opacity, 0.2) * 100%), var(--xt-background, #d6daf0)) !important;
+}
+:root.xt-highlight-catalog-watched.xt-catalog-edge-watched .catalog-thread.watched:not(:has(.yourPost)) {
+  border-color: var(--xt-catalog-watched-highlight, var(--xt-watched-border, rgba(255, 0, 0, .75))) !important;
+  border-width: var(--xt-catalog-border-width, 3px) !important;
 }
 :root:not(.catalog-hover-expand).xt-highlight-catalog-watched .catalog-thread.watched:not(:has(.yourPost)) {
   overflow: hidden;
 }
-:root.xt-highlight-catalog-watched .catalog-thread.watched:not(:has(.yourPost)) > .catalog-container,
-:root.xt-highlight-catalog-watched .catalog-thread.watched:not(:has(.yourPost)) .post.catalog-post {
+:root.xt-highlight-catalog-watched:not(.xt-catalog-edge-watched) .catalog-thread.watched:not(:has(.yourPost)) > .catalog-container,
+:root.xt-highlight-catalog-watched:not(.xt-catalog-edge-watched) .catalog-thread.watched:not(:has(.yourPost)) .post.catalog-post {
   background: transparent !important;
   border-color: transparent !important;
 }
@@ -4200,12 +4108,15 @@ current-archive-text:"Archive"]
 :root.xt-highlight-catalog-watched .catalog-thread.watched:not(:has(.yourPost)) .post.catalog-post .deadlink {
   color: var(--xt-catalog-watched-dead-link, var(--xt-dead-link-text-color, var(--xt-dead-link))) !important;
 }
-:root.xt-highlight-catalog-watched .catalog-thread.watched:not(:has(.yourPost)) .post.catalog-post > *,
-:root.xt-highlight-catalog-watched .catalog-thread.watched:not(:has(.yourPost)) .post.catalog-post .postMessage {
+:root.xt-highlight-catalog-watched:not(.xt-catalog-edge-watched) .catalog-thread.watched:not(:has(.yourPost)) .post.catalog-post > *,
+:root.xt-highlight-catalog-watched:not(.xt-catalog-edge-watched) .catalog-thread.watched:not(:has(.yourPost)) .post.catalog-post .postMessage {
   background: transparent !important;
 }
 
 .unread-line {
+  border-color: var(--xt-unread-line, rgb(255,0,0));
+}
+:root.catalog-mode .catalog-thread.unread-thread {
   border-color: var(--xt-unread-line, rgb(255,0,0));
 }
 
@@ -5519,19 +5430,24 @@ div[data-checked="false"] > .suboption-list {
   /* Reset any site theme that forces a reply background via !important so the
      preview faithfully shows the configured highlight colors. */
   background-color: transparent !important;
-  border-left: 3px solid transparent !important;
+  border-left: var(--xt-highlight-edge-width, 3px) solid transparent !important;
 }
 .styling-preview[data-highlight-own="true"] .styling-preview-post.yourPost > .reply {
-  border-left: 3px dashed var(--xt-highlight-own, var(--xt-border-highlight)) !important;
+  border-left: var(--xt-highlight-edge-width, 3px) dashed var(--xt-highlight-own, var(--xt-border-highlight)) !important;
   background-color: color-mix(in srgb, var(--xt-highlight-own, transparent) calc(var(--xt-highlight-own-opacity, 1) * 100%), transparent) !important;
 }
 .styling-preview[data-highlight-you="true"] .styling-preview-post.quotesYou > .reply {
-  border-left: 3px solid var(--xt-highlight-you, var(--xt-border-highlight)) !important;
+  border-left: var(--xt-highlight-edge-width, 3px) solid var(--xt-highlight-you, var(--xt-border-highlight)) !important;
   background-color: color-mix(in srgb, var(--xt-highlight-you, transparent) calc(var(--xt-highlight-you-opacity, 1) * 100%), transparent) !important;
 }
 .styling-preview[data-highlight-ghost="true"] .styling-preview-post.from-archive > .reply {
-  border-left: 3px dotted var(--xt-highlight-ghost, #888) !important;
+  border-left: var(--xt-highlight-edge-width, 3px) dotted var(--xt-highlight-ghost, #888) !important;
   background-color: color-mix(in srgb, var(--xt-highlight-ghost, transparent) calc(var(--xt-highlight-ghost-opacity, 1) * 100%), transparent) !important;
+}
+.styling-preview[data-edge-own="true"] .styling-preview-post.yourPost > .reply,
+.styling-preview[data-edge-you="true"] .styling-preview-post.quotesYou > .reply,
+.styling-preview[data-edge-ghost="true"] .styling-preview-post.from-archive > .reply {
+  background-color: transparent !important;
 }
 .styling-preview[data-highlight-own="false"] .styling-preview-post.yourPost > .reply,
 .styling-preview[data-highlight-you="false"] .styling-preview-post.quotesYou > .reply,
@@ -5580,17 +5496,22 @@ div[data-checked="false"] > .suboption-list {
 .styling-preview .styling-preview-post.from-archive .quotelink.deadlink {
   color: var(--xt-highlight-ghost-dead-link, var(--xt-dead-link-text-color, var(--xt-dead-link))) !important;
 }
-.styling-preview[data-highlight-catalog-own="true"] .catalog-thread:has(.yourPost),
-.styling-preview[data-highlight-catalog-own="true"] .catalog-thread.yourPost {
+.styling-preview[data-highlight-catalog-own="true"]:not([data-edge-catalog-own="true"]) .catalog-thread:has(.yourPost),
+.styling-preview[data-highlight-catalog-own="true"]:not([data-edge-catalog-own="true"]) .catalog-thread.yourPost {
   background: color-mix(in srgb, var(--xt-catalog-own-highlight, var(--xt-highlight-own)) calc(var(--xt-catalog-own-highlight-opacity, 1) * 100%), var(--xt-background, #d6daf0)) !important;
   overflow: hidden;
 }
-.styling-preview[data-highlight-catalog-own="true"] .catalog-thread:has(.yourPost) > .catalog-container,
-.styling-preview[data-highlight-catalog-own="true"] .catalog-thread.yourPost > .catalog-container,
-.styling-preview[data-highlight-catalog-own="true"] .catalog-thread > .catalog-container.yourPost,
-.styling-preview[data-highlight-catalog-own="true"] .catalog-thread:has(.yourPost) .post.catalog-post.yourPost,
-.styling-preview[data-highlight-catalog-own="true"] .catalog-thread.yourPost .post.catalog-post,
-.styling-preview[data-highlight-catalog-own="true"] .catalog-thread > .catalog-container.yourPost .post.catalog-post {
+.styling-preview[data-highlight-catalog-own="true"][data-edge-catalog-own="true"] .catalog-thread:has(.yourPost),
+.styling-preview[data-highlight-catalog-own="true"][data-edge-catalog-own="true"] .catalog-thread.yourPost {
+  border-color: var(--xt-catalog-own-highlight, var(--xt-highlight-own, var(--xt-border-highlight))) !important;
+  border-width: var(--xt-catalog-border-width, 3px) !important;
+}
+.styling-preview[data-highlight-catalog-own="true"]:not([data-edge-catalog-own="true"]) .catalog-thread:has(.yourPost) > .catalog-container,
+.styling-preview[data-highlight-catalog-own="true"]:not([data-edge-catalog-own="true"]) .catalog-thread.yourPost > .catalog-container,
+.styling-preview[data-highlight-catalog-own="true"]:not([data-edge-catalog-own="true"]) .catalog-thread > .catalog-container.yourPost,
+.styling-preview[data-highlight-catalog-own="true"]:not([data-edge-catalog-own="true"]) .catalog-thread:has(.yourPost) .post.catalog-post.yourPost,
+.styling-preview[data-highlight-catalog-own="true"]:not([data-edge-catalog-own="true"]) .catalog-thread.yourPost .post.catalog-post,
+.styling-preview[data-highlight-catalog-own="true"]:not([data-edge-catalog-own="true"]) .catalog-thread > .catalog-container.yourPost .post.catalog-post {
   background: transparent !important;
   border-color: transparent !important;
 }
@@ -5625,12 +5546,16 @@ div[data-checked="false"] > .suboption-list {
 .styling-preview[data-highlight-catalog-own="true"] .catalog-thread > .catalog-container.yourPost .post.catalog-post .deadlink {
   color: var(--xt-catalog-own-dead-link, var(--xt-dead-link-text-color, var(--xt-dead-link))) !important;
 }
-.styling-preview[data-highlight-catalog-watched="true"] .catalog-thread.watched {
+.styling-preview[data-highlight-catalog-watched="true"]:not([data-edge-catalog-watched="true"]) .catalog-thread.watched {
   background: color-mix(in srgb, var(--xt-catalog-watched-highlight, var(--xt-watched-border, rgba(255, 0, 0, .75))) calc(var(--xt-catalog-watched-highlight-opacity, 0.2) * 100%), var(--xt-background, #d6daf0)) !important;
   overflow: hidden;
 }
-.styling-preview[data-highlight-catalog-watched="true"] .catalog-thread.watched > .catalog-container,
-.styling-preview[data-highlight-catalog-watched="true"] .catalog-thread.watched .post.catalog-post {
+.styling-preview[data-highlight-catalog-watched="true"][data-edge-catalog-watched="true"] .catalog-thread.watched {
+  border-color: var(--xt-catalog-watched-highlight, var(--xt-watched-border, rgba(255, 0, 0, .75))) !important;
+  border-width: var(--xt-catalog-border-width, 3px) !important;
+}
+.styling-preview[data-highlight-catalog-watched="true"]:not([data-edge-catalog-watched="true"]) .catalog-thread.watched > .catalog-container,
+.styling-preview[data-highlight-catalog-watched="true"]:not([data-edge-catalog-watched="true"]) .catalog-thread.watched .post.catalog-post {
   background: transparent !important;
   border-color: transparent !important;
 }
@@ -5715,40 +5640,109 @@ div[data-checked="false"] > .suboption-list {
   display: none;
 }
 
-/* StyleChan deferral: hide 4chan XT styling controls that StyleChan owns. */
-.styling-deferred > .styling-site-style,
-.styling-deferred > .styling-text-colors,
-.styling-deferred > .styling-custom-css {
-  display: none;
+/* StyleChan compatibility: each Styling subsection carries a master-switch
+   checkbox in its <summary> title. Disabling one grays its body out and blocks
+   interaction, while the runtime gates remove its effect from the page. The
+   inner controls keep their values so re-enabling restores the look. */
+.styling-section-summary-label {
+  display: inline-flex;
+  align-items: center;
+  gap: .45em;
+  min-width: 0;
 }
+/* The toggle is a <label> wrapping a hidden native checkbox + a custom box that
+   we draw ourselves, so it stays visible even when a host/StyleChan theme zeroes
+   out native checkbox rendering. */
+.styling-section-toggle {
+  flex: 0 0 auto;
+  display: inline-flex;
+  align-items: center;
+  margin: 0;
+  cursor: pointer;
+}
+.styling-section-toggle > input {
+  position: absolute;
+  width: 1px;
+  height: 1px;
+  opacity: 0;
+  pointer-events: none;
+}
+.styling-section-toggle-box {
+  box-sizing: border-box;
+  display: inline-block;
+  width: 15px;
+  height: 15px;
+  border: 1px solid currentColor;
+  border-radius: 3px;
+  opacity: .85;
+  background: transparent;
+  position: relative;
+}
+.styling-section-toggle > input:checked + .styling-section-toggle-box {
+  background: var(--xt-variant-accent, #2d7d46);
+  border-color: var(--xt-variant-accent, #2d7d46);
+  opacity: 1;
+}
+.styling-section-toggle > input:checked + .styling-section-toggle-box::after {
+  content: "";
+  position: absolute;
+  left: 4px;
+  top: 1px;
+  width: 4px;
+  height: 8px;
+  border: solid #fff;
+  border-width: 0 2px 2px 0;
+  transform: rotate(45deg);
+}
+.styling-section-toggle > input:focus-visible + .styling-section-toggle-box {
+  outline: 2px solid var(--xt-variant-accent, #2d7d46);
+  outline-offset: 1px;
+}
+details[data-styling-section].styling-section-off > :not(summary) {
+  opacity: .45;
+  pointer-events: none;
+}
+details[data-styling-section].styling-section-off > summary {
+  opacity: .7;
+}
+
 /* StyleChan injects \`<div id="overlay">\` (same id as ours used to be — we
-   renamed ours to \`xt-settings-overlay\`). Their overlay needs to stack
-   above ours when opened on top from the deferral banner. The QR media
-   preview also uses #overlay but is excluded by its \`.media-preview\` class.
-   \`!important\` is required because StyleChan's own CSS pins their overlay
-   at \`z-index: 99 !important\`. */
+   renamed ours to \`xt-settings-overlay\`). Their overlay needs to stack above
+   ours when opened on top from the StyleChan info box's "Open StyleChan
+   Settings" shortcut. The QR media preview also uses #overlay but is excluded
+   by its \`.media-preview\` class. \`!important\` is required because StyleChan's
+   own CSS pins their overlay at \`z-index: 99 !important\`. */
 body > #overlay:not(.media-preview) {
   z-index: 1003 !important;
 }
-.styling-defer-banner {
-  align-items: center;
+
+/* StyleChan info box: sits at the top of the Styling page with shortcuts and
+   the home-page mirror opt-in. */
+.styling-stylechan-box {
   border: 1px solid rgba(128, 128, 128, .35);
   border-radius: 4px;
   display: flex;
-  flex-wrap: wrap;
-  gap: 10px 14px;
+  flex-direction: column;
+  gap: 8px;
   margin: 0 0 12px;
   padding: 10px 12px;
 }
-.styling-defer-banner-text {
-  flex: 1 1 240px;
+.styling-stylechan-text {
   font-size: 12px;
   line-height: 1.4;
 }
-.styling-defer-open {
+.styling-stylechan-buttons {
+  display: flex;
+  flex-wrap: wrap;
+  gap: 8px;
+}
+.styling-stylechan-buttons > button {
   cursor: pointer;
-  flex: 0 0 auto;
   padding: 6px 12px;
+}
+.styling-stylechan-home {
+  cursor: pointer;
+  font-size: 12px;
 }
 /* Tag the whole settings dialog with a small badge so the user always
    sees which variant they're editing, even when scrolled away from the
@@ -5914,6 +5908,14 @@ body > #overlay:not(.media-preview) {
   border-left: 0;
   margin-left: 0;
   padding-left: 0;
+}
+.section-styling .styling-compact-control {
+  margin: 6px 0 8px;
+}
+.section-styling .styling-compact-control label {
+  align-items: center;
+  display: inline-flex;
+  gap: 8px;
 }
 .section-styling div[data-checked="false"] > .styling-tree {
   display: none;
@@ -8405,7 +8407,7 @@ input[type="checkbox"]:checked ~ .checkbox-letter {
   overflow: hidden;
 }
 .gal-thumbnails {
-  flex: 0 0 150px;
+  flex: 0 0 var(--gal-thumbs-width, 150px);
   overflow-y: auto;
   display: flex;
   flex-direction: column;
@@ -8417,6 +8419,118 @@ input[type="checkbox"]:checked ~ .checkbox-letter {
 .gal-hide-thumbnails .gal-thumbnails {
   display: none;
 }
+.gal-grid-thumbnails:not(.gal-hide-thumbnails):not(.gal-fullscreen-thumbs) .gal-thumbnails {
+  display: grid;
+  grid-template-columns: repeat(var(--gal-cols, 3), 1fr);
+  align-content: start;
+}
+.gal-grid-thumbnails .gal-thumb {
+  display: flex;
+  align-items: center;
+  justify-content: center;
+}
+.gal-grid-thumbnails .gal-thumb img,
+.gal-grid-thumbnails .gal-thumb video {
+  max-width: 100%;
+}
+
+/* Fullscreen thumbnails (Gallery Columns = 0): collapse the inline preview and
+   let the thumbnail grid fill the whole screen, auto-flowing columns to width. */
+.gal-fullscreen-thumbs .gal-viewport {
+  flex: 0 0 0;
+}
+.gal-fullscreen-thumbs .gal-image,
+.gal-fullscreen-thumbs .gal-prev,
+.gal-fullscreen-thumbs .gal-next {
+  display: none;
+}
+.gal-fullscreen-thumbs .gal-thumbnails {
+  flex: 1 1 auto;
+  display: grid;
+  grid-template-columns: repeat(auto-fill, minmax(150px, 1fr));
+  align-content: start;
+  border-left: none;
+}
+.gal-fullscreen-thumbs:not(.gal-lightbox-open) .gal-labels {
+  display: none;
+}
+.gal-fullscreen-thumbs .gal-buttons,
+.gal-fullscreen-thumbs .gal-labels {
+  z-index: 7;
+}
+/* A clicked thumbnail opens as a lightbox layered over the grid. */
+.gal-fullscreen-thumbs.gal-lightbox-open .gal-image {
+  display: flex;
+  position: fixed;
+  inset: 0;
+  /* Override .gal-image's width:1% flex fix so the overlay fills the screen. */
+  width: auto;
+  height: auto;
+  z-index: 5;
+  background: rgba(0,0,0,0.85);
+}
+.gal-fullscreen-thumbs.gal-lightbox-open .gal-prev,
+.gal-fullscreen-thumbs.gal-lightbox-open .gal-next {
+  display: inline-flex;
+  position: fixed;
+  top: 0;
+  bottom: 0;
+  z-index: 6;
+}
+.gal-fullscreen-thumbs.gal-lightbox-open .gal-prev {
+  left: 0;
+}
+.gal-fullscreen-thumbs.gal-lightbox-open .gal-next {
+  right: 0;
+}
+
+/* Thumbnail strip docking — which edge the strip sits on. The default (right)
+   keeps the original row layout; left just swaps the strip ahead of the image;
+   top/bottom turn the gallery into a column so the strip becomes a horizontal
+   band. --gal-thumbs-width is the strip's extent along its docking edge (a width
+   when vertical, a height when horizontal — flex-basis follows the container's
+   main axis, which setLayout() flips for us). */
+:root.gal-thumbs-top #a-gallery,
+:root.gal-thumbs-bottom #a-gallery {
+  flex-direction: column;
+}
+:root.gal-thumbs-left .gal-thumbnails,
+:root.gal-thumbs-top .gal-thumbnails {
+  order: -1;
+}
+/* Divider goes on the edge that faces the image. */
+:root.gal-thumbs-left .gal-thumbnails {
+  border-left: none;
+  border-right: 1px solid #222;
+}
+:root.gal-thumbs-top .gal-thumbnails {
+  border-left: none;
+  border-bottom: 1px solid #222;
+}
+:root.gal-thumbs-bottom .gal-thumbnails {
+  border-left: none;
+  border-top: 1px solid #222;
+}
+/* Horizontal strips (top/bottom): wrap thumbnails across the full screen width
+   and scroll DOWN to reveal more rows — the mirror of the left/right strips,
+   which fix the column count and scroll down. The band is --gal-thumbs-width
+   tall (one row in list mode, the Rows count in grid mode); scroll-snap steps it
+   a row at a time. Excludes the hidden/fullscreen states so their rules win. */
+:root.gal-thumbs-top:not(.gal-fullscreen-thumbs):not(.gal-hide-thumbnails) .gal-thumbnails,
+:root.gal-thumbs-bottom:not(.gal-fullscreen-thumbs):not(.gal-hide-thumbnails) .gal-thumbnails {
+  display: grid;
+  grid-template-columns: repeat(auto-fill, minmax(125px, 1fr));
+  grid-auto-rows: max-content;
+  align-content: start;
+  overflow-x: hidden;
+  overflow-y: auto;
+  scroll-snap-type: y proximity;
+}
+:root.gal-thumbs-top .gal-thumb,
+:root.gal-thumbs-bottom .gal-thumb {
+  scroll-snap-align: start;
+}
+
 .gal-thumb img,
 .gal-thumb video {
   max-width: 125px;
@@ -8549,26 +8663,63 @@ input[type="checkbox"]:checked ~ .checkbox-letter {
 :root.gal-pdf .gal-buttons a:hover {
   color: rgb(204, 204, 204) !important;
 }
+/* The fixed top-right buttons and bottom-right labels sit at a base gap from the
+   viewport edges. The 44px base accounts for the image viewport's vertical
+   scrollbar; fit-height removes it, dropping to 28px. Whichever edge the strip
+   docks to then pushes the controls clear of it by --gal-thumbs-width (0 when
+   hidden, 150px in list mode, cols-driven in grid mode). */
 .gal-buttons,
 .gal-labels {
   position: fixed;
-  right: 195px;
-}
-.gal-hide-thumbnails .gal-buttons,
-.gal-hide-thumbnails .gal-labels {
   right: 44px;
 }
 :root:not(.gal-fit-width):not(.gal-pdf) .gal-labels {
   bottom: 23px !important;
 }
-:root.gal-fit-height:not(.gal-pdf):not(.gal-hide-thumbnails) .gal-buttons,
-:root.gal-fit-height:not(.gal-pdf):not(.gal-hide-thumbnails) .gal-labels {
-  right: 178px !important;
-}
-:root.gal-hide-thumbnails.gal-fit-height:not(.gal-pdf) .gal-buttons,
-:root.gal-hide-thumbnails.gal-fit-height:not(.gal-pdf) .gal-labels {
+:root.gal-fit-height:not(.gal-pdf) .gal-buttons,
+:root.gal-fit-height:not(.gal-pdf) .gal-labels {
   right: 28px !important;
 }
+/* Right-docked strip pushes the right-anchored controls left of it. */
+:root.gal-thumbs-right .gal-buttons,
+:root.gal-thumbs-right .gal-labels {
+  right: calc(44px + var(--gal-thumbs-width, 150px));
+}
+:root.gal-thumbs-right.gal-fit-height:not(.gal-pdf) .gal-buttons,
+:root.gal-thumbs-right.gal-fit-height:not(.gal-pdf) .gal-labels {
+  right: calc(28px + var(--gal-thumbs-width, 150px)) !important;
+}
+/* Top-docked strip pushes the top-anchored buttons below it. */
+:root.gal-thumbs-top .gal-buttons {
+  top: calc(5px + var(--gal-thumbs-width, 150px));
+}
+/* Bottom-docked strip lifts the bottom-anchored labels above it. */
+:root.gal-thumbs-bottom .gal-labels {
+  bottom: calc(23px + var(--gal-thumbs-width, 150px)) !important;
+}
+
+/* Gallery menu — the Grid toggle + track-count row, kept on one line. */
+.gal-grid-entry {
+  display: flex;
+  align-items: center;
+}
+.gal-grid-entry > label {
+  display: inline-flex;
+  align-items: center;
+}
+/* Two digits is plenty — the track count is capped well under 100. */
+.gal-col-input {
+  width: 3.5em;
+}
+/* The position dropdown follows the active theme like the app's other selects,
+   instead of .field's hard-coded white (which left light menu text unreadable). */
+.gal-field,
+.gal-field option {
+  background: var(--xt-background, #fff);
+  color: var(--xt-menu-fg, var(--xt-header-dialog-fg, #333));
+  border-color: var(--xt-border, #ccc);
+}
+
 :root.gallery-open.fixed #header-bar:not(.autohide) {
   visibility: hidden;
 }
@@ -8684,21 +8835,18 @@ div.post {
 :root.scrollbar-markers-over-columns { scrollbar-width: none; }
 :root.scrollbar-markers-over::-webkit-scrollbar,
 :root.scrollbar-markers-over-columns::-webkit-scrollbar { width: 0; height: 0; display: none; }
-/* Reserve the rightmost gutter for our custom scrollbar so the header
-   bar (and its dropdown button) isn't under our track and losing clicks
-   to us. The dropdown menu auto-positions relative to its button, so
-   shifting the header alone is enough. */
-:root.scrollbar-markers-over.fixed #header-bar,
-:root.scrollbar-markers-over #notifications {
-  margin-right: var(--xt-scroll-marker-track, 14px);
-}
-:root.scrollbar-markers-over-columns.fixed #header-bar,
-:root.scrollbar-markers-over-columns #notifications {
-  margin-right: var(--xt-scroll-marker-track, 14px);
-}
+/* Rather than shoving the header bar aside to clear our custom track
+   (which the "beside" modes never do), start the track below a fixed
+   header so it doesn't sit under the header's dropdown button stealing
+   clicks, and so the topmost markers aren't hidden behind the header.
+   The offset is measured in JS (ScrollMarkers.updateHeaderOffset): top
+   header -> --xt-scroll-marker-top, bottom header -> ...-bottom, 0 when
+   the header isn't fixed. */
 :root.scrollbar-markers-over #scroll-markers,
 :root.scrollbar-markers-over-columns #scroll-markers {
   right: 0;
+  top: var(--xt-scroll-marker-top, 0px);
+  height: calc(100vh - var(--xt-scroll-marker-top, 0px) - var(--xt-scroll-marker-bottom, 0px));
   pointer-events: none;
   z-index: 2147483647;
 }
@@ -9395,17 +9543,10 @@ svg.icon {
 
   const CustomCSS = {
     init() {
-      if (Settings.shouldDeferStylingToStylechan()) {
-        if (Conf['Custom CSS']) {
-          Conf['Custom CSS'] = false;
-          $.set('Custom CSS', false);
-        }
-        if (Conf['customCSSHome']) {
-          Conf['customCSSHome'] = false;
-          $.set('customCSSHome', false);
-        }
-        return;
-      }
+      // The Custom CSS section's master switch (only ever off when StyleChan is
+      // installed) gates injection without touching the user's `Custom CSS` /
+      // `usercss` settings, so re-enabling the section restores their CSS.
+      if (!Settings.stylingSectionEnabled('customCSS')) { return; }
       if (!Conf['Custom CSS']) { return; }
       return this.addStyle();
     },
@@ -9426,6 +9567,9 @@ svg.icon {
     },
 
     update() {
+      if (!Settings.stylingSectionEnabled('customCSS') || !Conf['Custom CSS']) {
+        return this.rmStyle();
+      }
       if (!this.style) {
         return this.addStyle();
       }
@@ -13957,10 +14101,30 @@ svg.icon {
       $.rmClass(doc, 'scrollbar-markers-offset', 'scrollbar-markers-offset-single', 'scrollbar-markers-over', 'scrollbar-markers-over-columns');
       $.addClass(doc, `scrollbar-markers-${pos}`);
       ScrollMarkers.updateScrollbarMetrics();
+      ScrollMarkers.updateHeaderOffset();
       if (ScrollMarkers.isOverMode())
         ScrollMarkers.scrollbar.install();
       else
         ScrollMarkers.scrollbar.uninstall();
+    },
+    // In "over" modes our custom track spans the full height at right:0.
+    // A fixed header would otherwise sit on top of the track (eating its
+    // dropdown button's clicks) and hide the topmost markers, so inset the
+    // marker container past the header instead of pushing the header aside.
+    // Top header -> reserve at the top; bottom header -> at the bottom; no
+    // reservation when the header isn't fixed (it scrolls away with content).
+    updateHeaderOffset() {
+      const style = d.documentElement.style;
+      let top = 0, bottom = 0;
+      if (ScrollMarkers.isOverMode() && Conf['Fixed Header'] && Header.bar?.isConnected) {
+        const height = Header.bar.getBoundingClientRect().height || 0;
+        if (Conf['Bottom Header'])
+          bottom = height;
+        else
+          top = height;
+      }
+      style.setProperty('--xt-scroll-marker-top', `${top}px`);
+      style.setProperty('--xt-scroll-marker-bottom', `${bottom}px`);
     },
     measureScrollbarWidth() {
       let width = window.innerWidth - d.documentElement.clientWidth;
@@ -14219,6 +14383,7 @@ svg.icon {
         'Scrollbar Mark Ghost Posts',
         'Scrollbar Mark Unread Line',
         'Unread Line',
+        'stylingSectionScrollbarMarkers',
       ]) {
         $.sync(key, (val) => {
           Conf[key] = val;
@@ -14230,6 +14395,13 @@ svg.icon {
         ScrollMarkers.applyPosition();
         ScrollMarkers.refreshDeferred();
       });
+      // Header geometry feeds the over-mode top/bottom inset.
+      for (const key of ['Fixed Header', 'Bottom Header']) {
+        $.sync(key, (val) => {
+          Conf[key] = val;
+          ScrollMarkers.updateHeaderOffset();
+        });
+      }
       Callbacks.Thread.push({
         name: 'Scroll Markers',
         cb: ScrollMarkers.node,
@@ -14258,7 +14430,10 @@ svg.icon {
       const container = ScrollMarkers.container;
       if (!ScrollMarkers.thread || !container?.parentNode)
         return;
-      if (!Conf['Scrollbar Markers']) {
+      // `stylingSectionScrollbarMarkers` is the Styling page's per-section master
+      // switch (only ever off when StyleChan is installed). Read Conf directly to
+      // avoid a Settings <-> ScrollMarkers import cycle.
+      if (!Conf['Scrollbar Markers'] || Conf['stylingSectionScrollbarMarkers'] === false) {
         ScrollMarkers.hidePreview();
         container.textContent = '';
         container.hidden = true;
@@ -14869,7 +15044,6 @@ svg.icon {
     },
 
     onIndexRefresh(e) {
-      if (e.detail.isCatalog) { return; }
       return (() => {
         const result = [];
         for (var threadID of e.detail.threadIDs) {
@@ -14941,6 +15115,11 @@ svg.icon {
       :
         thread.OP.ID > lastReadPost;
       thread.nodes.root.classList.toggle('unread-thread', hasUnread);
+      thread.nodes.root.classList.toggle('read-thread', !!lastReadPost && !hasUnread);
+      if (thread.catalogView?.nodes.root) {
+        thread.catalogView.nodes.root.classList.toggle('unread-thread', hasUnread);
+        thread.catalogView.nodes.root.classList.toggle('read-thread', !!lastReadPost && !hasUnread);
+      }
 
       let link = UnreadIndex.markReadLink[thread.fullID];
       if (!link) {
@@ -14969,6 +15148,11 @@ svg.icon {
       });
       $.rm(UnreadIndex.hr[thread.fullID]);
       thread.nodes.root.classList.remove('unread-thread');
+      thread.nodes.root.classList.add('read-thread');
+      if (thread.catalogView?.nodes.root) {
+        thread.catalogView.nodes.root.classList.remove('unread-thread');
+        thread.catalogView.nodes.root.classList.add('read-thread');
+      }
       return ThreadWatcher$1.update(g.SITE.ID, thread.board.ID, thread.ID, {
         last: thread.lastPost,
         unread: 0,
@@ -19403,14 +19587,10 @@ svg.icon {
         $.on(images, 'click', () => DownloadAll.start('image'));
         const videos = $.el('a', { href: 'javascript:;', textContent: 'Download videos only' });
         $.on(videos, 'click', () => DownloadAll.start('video'));
-        const zipLabel = UI.checkbox('Download All as ZIP', 'Bundle as ZIP');
-        const zipInput = zipLabel.firstElementChild;
-        $.on(zipInput, 'change', $.cb.checked);
         return [
           { el: all },
           { el: images },
           { el: videos },
-          { el: zipLabel },
         ];
       },
     },
@@ -19457,11 +19637,8 @@ svg.icon {
           '<button type="button" data-filter="image"><span class="da-btn-title">Images</span><span class="da-btn-count">0 files</span><span class="da-btn-size">0 B</span></button>' +
           '<button type="button" data-filter="video"><span class="da-btn-title">Videos</span><span class="da-btn-count">0 files</span><span class="da-btn-size">0 B</span></button>' +
           '</div>' +
-          '<label><input type="checkbox" name="Download All as ZIP"> Bundle as a single ZIP archive</label>' +
+          '<div class="da-zip-note">Downloads are bundled into a single ZIP archive.</div>' +
           '</div>';
-      const zipBox = $('input[name="Download All as ZIP"]', dialog);
-      zipBox.checked = !!Conf['Download All as ZIP'];
-      $.on(zipBox, 'change', $.cb.checked);
       const persistBox = $('input[name="Persistent Download Media"]', dialog);
       persistBox.checked = !!Conf['Persistent Download Media'];
       $.on(persistBox, 'change', $.cb.checked);
@@ -19540,11 +19717,7 @@ svg.icon {
       DownloadAll.busy = true;
       const progress = DownloadAll.makeProgress(items.length);
       const done = () => { DownloadAll.busy = false; progress.close(); };
-      if (Conf['Download All as ZIP']) {
-        DownloadAll.runZip(items, progress, done);
-      } else {
-        DownloadAll.runIndividual(items, progress, done);
-      }
+      DownloadAll.runZip(items, progress, done);
     },
     fetchCatalog(cb) {
       if (DownloadAll.catalogFetching)
@@ -19653,35 +19826,6 @@ svg.icon {
         isCancelled: () => cancelled,
         close: () => notice.close(),
       };
-    },
-    runIndividual(items, progress, done) {
-      let i = 0, failed = 0;
-      const step = () => {
-        if (progress.isCancelled() || i >= items.length) {
-          done();
-          if (!progress.isCancelled()) {
-            new Notice('success', `Saved ${i - failed} file(s)${failed ? `, ${failed} failed` : ''}.`, 5);
-          }
-          return;
-        }
-        const item = items[i++];
-        CrossOrigin.binary(item.url, (data) => {
-          if (!data) {
-            failed++;
-          } else {
-            const blob = new Blob([data]);
-            const a = $.el('a', { href: URL.createObjectURL(blob), download: item.name, hidden: true });
-            $.add(d.body, a);
-            a.click();
-            $.rm(a);
-            setTimeout(() => URL.revokeObjectURL(a.href), 30 * SECOND);
-          }
-          progress.update(i, failed);
-          // Small gap to avoid the browser collapsing/blocking rapid downloads.
-          setTimeout(step, 250);
-        });
-      };
-      step();
     },
     runZip(items, progress, done) {
       const entries = [];
@@ -20231,6 +20375,7 @@ svg.icon {
       if (Conf['Mouse Wheel Volume']) { $.on(nodes.frame, 'wheel', Volume.wheel); }
       $.on(nodes.next,  'click', cb.click);
       $.on(nodes.name,  'click', ImageCommon.download);
+      $.on(nodes.thumbs, 'click', cb.thumbsBlank);
 
       const prev =  $('.gal-prev',  dialog);
       const next =  $('.gal-next',  dialog);
@@ -20260,10 +20405,13 @@ svg.icon {
         nodes.menu.addEntry(entry);
       }
 
+      Gallery.cb.setLayout();
+
       $.on(d, 'keydown', cb.keybinds);
       if (Conf['Keybinds']) { $.off(d, 'keydown', Keybinds.keydown); }
 
       $.on(window, 'resize', Gallery.cb.setHeight);
+      $.on(window, 'resize', Gallery.cb.setLayout);
 
       for (var postThumb of $$(g.SITE.selectors.file.thumb)) {
         var post;
@@ -20465,7 +20613,8 @@ svg.icon {
 
         const cb = (() => { switch (key) {
           case Conf['Close']: case Conf['Open Gallery']:
-            return Gallery.cb.close;
+            return (Gallery.fullscreen && doc.classList.contains('gal-lightbox-open'))
+              ? Gallery.cb.closeLightbox : Gallery.cb.close;
           case Conf['Next Gallery Image']:
             return Gallery.cb.next;
           case Conf['Advance Gallery']:
@@ -20492,8 +20641,13 @@ svg.icon {
 
       open(e) {
         if (e) { e.preventDefault(); }
+        // In fullscreen-thumbnails mode a click opens the image as a lightbox
+        // overlaid on the grid rather than in the (collapsed) inline preview.
+        if (Gallery.fullscreen) { $.addClass(doc, 'gal-lightbox-open'); }
         if (this) { return Gallery.open(this); }
       },
+
+      closeLightbox() { return $.rmClass(doc, 'gal-lightbox-open'); },
 
       image(e) {
         e.preventDefault();
@@ -20520,7 +20674,27 @@ svg.icon {
 
       advance() { if (!Conf['Autoplay'] && Gallery.nodes.current.paused) { return Gallery.nodes.current.play(); } else { return Gallery.cb.next(); } },
       toggle() { return (Gallery.nodes ? Gallery.cb.close : Gallery.build)(); },
-      blank(e) { if (e.target === this) { return Gallery.cb.close(); } },
+      blank(e) {
+        if (e.target !== this) { return; }
+        // Clicking the dimmed area behind a fullscreen lightbox returns to the
+        // grid; everywhere else it closes the gallery.
+        if (Gallery.fullscreen && doc.classList.contains('gal-lightbox-open')) {
+          return Gallery.cb.closeLightbox();
+        }
+        return Gallery.cb.close();
+      },
+
+      // In fullscreen-thumbnails mode, clicking the empty grid background closes
+      // the gallery — but only well below the last image, so a row that holds
+      // images (including its blank/trailing spots) never closes, and a near-miss
+      // just under an image is forgiven by a 70px buffer.
+      thumbsBlank(e) {
+        if (!Gallery.fullscreen || (e.target !== this)) { return; }
+        const last = Gallery.images[Gallery.images.length - 1];
+        if (last && (e.clientY > (last.getBoundingClientRect().bottom + 70))) {
+          return Gallery.cb.close();
+        }
+      },
       toggleSlideshow() {  return Gallery.cb[Gallery.slideshow ? 'stop' : 'start'](); },
 
       download() {
@@ -20572,16 +20746,86 @@ svg.icon {
         }
         delete Gallery.nodes;
         delete Gallery.fileIDs;
+        delete Gallery.colInput;
+        delete Gallery.colLabelText;
+        Gallery.fullscreen = false;
+        $.rmClass(doc, 'gal-lightbox-open');
+        for (var p of Gallery.cb.positions) { $.rmClass(doc, `gal-thumbs-${p}`); }
         doc.style.overflow = '';
 
         $.off(d, 'keydown', Gallery.cb.keybinds);
         if (Conf['Keybinds']) { $.on(d, 'keydown', Keybinds.keydown); }
         $.off(window, 'resize', Gallery.cb.setHeight);
+        $.off(window, 'resize', Gallery.cb.setLayout);
         return clearTimeout(Gallery.timeoutID);
       },
 
       setFitness() {
         return (this.checked ? $.addClass : $.rmClass)(doc, `gal-${this.name.toLowerCase().replace(/\s+/g, '-')}`);
+      },
+
+      positions: ['top', 'bottom', 'left', 'right'],
+
+      // Drive thumbnail-strip extent, column count and dock edge from config, so
+      // the grid, the strip size and the fixed label/button offsets all stay in
+      // sync. The strip never grows past MAX_EXTENT of the relevant viewport
+      // dimension; once a column would cross that line we stop adding columns
+      // rather than squashing the cells. Columns of 0 in grid mode is the special
+      // "fullscreen thumbnails" view (no image preview, lightbox on click).
+      //
+      // --gal-thumbs-width is the strip's extent along whichever edge it docks to:
+      // a width for the left/right (vertical) strips, a height for the top/bottom
+      // (horizontal) ones. Because #a-gallery switches to flex-direction:column
+      // for top/bottom, the same flex-basis variable reads as height there.
+      setLayout() {
+        const THUMB_CELL = 131;           // approx px per thumb incl. padding
+        const MAX_EXTENT = 0.75;          // strip caps at 75% of its docking axis
+        const cols   = Math.max(0, parseInt(Conf['Gallery Columns'], 10) || 0);
+        const hidden = Conf['Hide Thumbnails'];
+        const grid   = Conf['Grid Thumbnails'] && !hidden;
+        const pos    = Gallery.cb.positions.includes(Conf['Gallery Thumbnails Position'])
+          ? Conf['Gallery Thumbnails Position'] : 'right';
+        const horizontal = (pos === 'top') || (pos === 'bottom');
+
+        for (var p of Gallery.cb.positions) { doc.classList.toggle(`gal-thumbs-${p}`, p === pos); }
+
+        // The number means columns for the vertical (left/right) strips and rows
+        // for the horizontal (top/bottom) ones; relabel the field to match.
+        if (Gallery.colLabelText) { Gallery.colLabelText.nodeValue = horizontal ? 'Grid Rows: ' : 'Grid Columns: '; }
+
+        Gallery.fullscreen = grid && (cols === 0);
+        doc.classList.toggle('gal-fullscreen-thumbs', Gallery.fullscreen);
+        if (!Gallery.fullscreen) { doc.classList.remove('gal-lightbox-open'); }
+
+        // Largest column count that keeps the strip within the cap, measured along
+        // the strip's docking axis. Exposed as the input's `max` so the spinner
+        // won't tick past what actually fits.
+        const axis = horizontal ? doc.clientHeight : doc.clientWidth;
+        const maxCols = Math.max(1, Math.floor(((MAX_EXTENT * axis) - 8) / THUMB_CELL));
+        if (Gallery.colInput) { Gallery.colInput.max = maxCols; }
+
+        let effCols = cols, extent;
+        if (hidden || Gallery.fullscreen) {
+          extent = 0;                     // no inline strip (or strip is the whole screen)
+        } else if (grid) {
+          effCols = Math.min(cols, maxCols);
+          extent = (effCols * THUMB_CELL) + 8;
+        } else {
+          extent = 150;
+        }
+        doc.style.setProperty('--gal-cols', effCols || 1);
+        return doc.style.setProperty('--gal-thumbs-width', `${extent}px`);
+      },
+
+      // Keep a typed-in column count within [0, max-that-fits] so the field can't
+      // hold a value larger than the cap allows.
+      clampColumns() {
+        const max = parseInt(this.max, 10);
+        let v = parseInt(this.value, 10);
+        if (isNaN(v)) { return; }
+        v = Math.max(0, v);
+        if (max && (v > max)) { v = max; }
+        this.value = v;
       },
 
       setHeight: debounce(100, function () {
@@ -20639,12 +20883,48 @@ svg.icon {
         if (['Hide Thumbnails', 'Fit Width', 'Fit Height'].includes(name)) { $.on(input, 'change', Gallery.cb.setFitness); }
         $.event('change', null, input);
         $.on(input, 'change', $.cb.checked);
+        if (['Hide Thumbnails'].includes(name)) { $.on(input, 'change', Gallery.cb.setLayout); }
         if (['Hide Thumbnails', 'Fit Width', 'Fit Height', 'Stretch to Fit'].includes(name)) { $.on(input, 'change', Gallery.cb.setHeight); }
         return {el: label};
       },
 
       createSubEntries() {
         const subEntries = (['Hide Thumbnails', 'Fit Width', 'Fit Height', 'Stretch to Fit', 'Scroll to Post'].map((item) => Gallery.menu.createSubEntry(item)));
+
+        // Grid toggle and its track count share one row: [✓] Grid Columns: [N].
+        // The checkbox drives 'Grid Thumbnails'; the number drives 'Gallery Columns',
+        // whose label setLayout() flips between Columns/Rows with the dock edge. The
+        // checkbox and number sit in separate labels so editing one never toggles
+        // the other.
+        const gridRow = $.el('span', {className: 'gal-grid-entry'});
+        const gridCheck = UI.checkbox('Grid Thumbnails', '');
+        const gridInput = gridCheck.firstElementChild;
+        $.on(gridInput, 'change', Gallery.cb.setFitness);
+        $.event('change', null, gridInput);
+        $.on(gridInput, 'change', $.cb.checked);
+        $.on(gridInput, 'change', Gallery.cb.setLayout);
+
+        const colLabel = $.el('label', {title: '0 disables the image preview and shows fullscreen thumbnails.', innerHTML: 'Grid Columns: <input type="number" name="Gallery Columns" min="0" step="1" class="field gal-col-input" title="0 disables the image preview and shows fullscreen thumbnails.">'});
+        const colInput = colLabel.firstElementChild;
+        colInput.value = Math.max(0, parseInt(Conf['Gallery Columns'], 10) || 0);
+        Gallery.colInput = colInput;
+        Gallery.colLabelText = colLabel.firstChild;   // "Grid Columns: " text node, relabelled per dock
+        $.on(colInput, 'change', Gallery.cb.clampColumns);
+        $.on(colInput, 'change', $.cb.value);
+        $.on(colInput, 'change', Gallery.cb.setLayout);
+
+        $.add(gridRow, [gridCheck, colLabel]);
+        subEntries.push({el: gridRow});
+
+        const posOptions = Gallery.cb.positions.map(p =>
+          `<option value="${p}">${p[0].toUpperCase()}${p.slice(1)}</option>`).join('');
+        const posLabel = $.el('label', {innerHTML: `Thumbnails Position: <select name="Gallery Thumbnails Position" class="field gal-field">${posOptions}</select>`});
+        const posInput = posLabel.firstElementChild;
+        posInput.value = Gallery.cb.positions.includes(Conf['Gallery Thumbnails Position'])
+          ? Conf['Gallery Thumbnails Position'] : 'right';
+        $.on(posInput, 'change', $.cb.value);
+        $.on(posInput, 'change', Gallery.cb.setLayout);
+        subEntries.push({el: posLabel});
 
         const delayLabel = $.el('label', {innerHTML: 'Slide Delay: <input type="number" name="Slide Delay" min="0" step="any" class="field">'});
         const delayInput = delayLabel.firstElementChild;
@@ -26918,14 +27198,7 @@ aero|asia|biz|cat|com|coop|dance|info|int|jobs|mobi|moe|museum|name|net|org|post
     binary(url, cb, headers = dict()) {
       // XXX https://forums.lanik.us/viewtopic.php?f=64&t=24173&p=78310
       url = url.replace(/^((?:https?:)?\/\/(?:\w+\.)?(?:4chan|4channel|4cdn)\.org)\/adv\//, '$1//adv/');
-      if (platform === 'crx') {
-        $.eventPageRequest({ type: 'ajax', url, headers, responseType: 'arraybuffer' })
-          .then(({ response, responseHeaderString }) => {
-          if (response)
-            response = new Uint8Array(response);
-          cb(response, responseHeaderString);
-        });
-      } else {
+
         const fallback = function () {
           return $.ajax(url, {
             headers,
@@ -26977,7 +27250,7 @@ aero|asia|biz|cat|com|coop|dance|info|int|jobs|mobi|moe|museum|name|net|org|post
         } catch (error) {
           return fallback();
         }
-      }
+
     },
     file(url, cb) {
       return CrossOrigin.binary(url, function (data, headers) {
@@ -27049,7 +27322,7 @@ aero|asia|biz|cat|com|coop|dance|info|int|jobs|mobi|moe|museum|name|net|org|post
       }
       const req = new CrossOrigin.Request();
       req.onloadend = onloadend;
-      if (platform === 'userscript') {
+
         if (window.GM?.xmlHttpRequest == null && window.GM_xmlhttpRequest == null) {
           return $.ajax(url, options);
         }
@@ -27097,14 +27370,7 @@ aero|asia|biz|cat|com|coop|dance|info|int|jobs|mobi|moe|museum|name|net|org|post
             } catch (error1) { }
           };
         }
-      } else {
-        $.eventPageRequest({ type: 'ajax', url, responseType, headers, timeout }).then((result) => {
-          if (result.status) {
-            $.extend(req, result);
-          }
-          return req.onloadend();
-        });
-      }
+
       return req;
     },
     ajaxPromise(url, options = {}) {
@@ -27119,15 +27385,7 @@ aero|asia|biz|cat|com|coop|dance|info|int|jobs|mobi|moe|museum|name|net|org|post
       });
     },
     permission(cb, cbFail, origins) {
-      if (platform === 'crx') {
-        return $.eventPageRequest({ type: 'permission', origins }).then((result) => {
-          if (result) {
-            return cb();
-          } else {
-            return cbFail();
-          }
-        });
-      }
+
       return cb();
     },
   };
@@ -28735,25 +28993,138 @@ $\
     shouldDeferStylingToStylechan() {
       return Settings.isStylechanInstalled();
     },
-    enforceStylechanStylingDeferral(section, inputs) {
-      if (!Settings.shouldDeferStylingToStylechan())
-        return;
-      const setFalse = (key) => {
-        if (!Conf[key])
-          return;
-        Conf[key] = false;
-        $.set(key, false);
-        const input = inputs?.[key] || (section ? $(`[name="${key}"]`, section) : null);
-        if (input?.type === 'checkbox') {
-          input.checked = false;
-          const container = input.closest('[data-name]');
-          if (container)
-            container.dataset.checked = 'false';
-        }
+    // Maps a Styling subsection id to its master-switch Conf key. The title
+    // checkbox for each section (shown only when StyleChan is installed) flips
+    // the corresponding flag; runtime apply paths read it via
+    // stylingSectionEnabled to gate the section's effect on the page.
+    stylingSectionKeys: {
+      siteStyle: 'stylingSectionSiteStyle',
+      highlights: 'stylingSectionHighlights',
+      scrollbarMarkers: 'stylingSectionScrollbarMarkers',
+      textColors: 'stylingSectionTextColors',
+      customCSS: 'stylingSectionCustomCSS',
+    },
+    // Whether a Styling subsection is active. A pure flag read: works on board
+    // pages, the home page, and the scroll-marker renderer alike. Correctness
+    // after a StyleChan *uninstall* is guaranteed by initStylingSectionDefaults,
+    // which resets every flag to true on board pages when StyleChan is absent —
+    // so a section can never get stuck off with no checkbox to re-enable it.
+    stylingSectionEnabled(id) {
+      return Conf[Settings.stylingSectionKeys[id]] !== false;
+    },
+    // The StyleChan recommendation: hand the sections StyleChan owns (site theme,
+    // text colors, custom CSS) over to it, keep the ones it doesn't (highlight +
+    // scrollbar marker colors) on. Used by the one-time init and the "Apply
+    // recommended settings" button. Does NOT touch any inner section settings.
+    applyRecommendedStylingSections() {
+      const recommended = {
+        stylingSectionSiteStyle: false,
+        stylingSectionTextColors: false,
+        stylingSectionCustomCSS: false,
+        stylingSectionHighlights: true,
+        stylingSectionScrollbarMarkers: true,
       };
-      setFalse('siteStyleHome');
-      setFalse('customCSSHome');
-      setFalse('Custom CSS');
+      for (const [key, val] of Object.entries(recommended)) {
+        Conf[key] = val;
+        $.set(key, val);
+      }
+    },
+    // One-time recommendation + uninstall reset, run from Main.initStyle on board
+    // pages (where StyleChan detection is reliable). On first detection of
+    // StyleChan, hand its owned sections over; never re-applied automatically so
+    // the user's later choices stick. When StyleChan is absent, clear any stale
+    // StyleChan-era state so all sections come back on.
+    initStylingSectionDefaults() {
+      if (Settings.isStylechanInstalled()) {
+        if (!Conf['stylingSectionsInitialized']) {
+          Settings.applyRecommendedStylingSections();
+          Conf['stylingSectionsInitialized'] = true;
+          $.set('stylingSectionsInitialized', true);
+        }
+        return;
+      }
+      const keys = Object.values(Settings.stylingSectionKeys);
+      const dirty = Conf['stylingSectionsInitialized'] || keys.some(k => Conf[k] === false);
+      if (!dirty)
+        return;
+      for (const k of keys) {
+        if (Conf[k] !== true) {
+          Conf[k] = true;
+          $.set(k, true);
+        }
+      }
+      Conf['stylingSectionsInitialized'] = false;
+      $.set('stylingSectionsInitialized', false);
+    },
+    // Inject a master-switch checkbox into each Styling subsection's <summary>.
+    // Toggling it persists the section flag, grays the section out
+    // (`styling-section-off`), and re-applies the runtime gates — all without
+    // touching the inner settings. Returns a function that re-syncs every
+    // checkbox + gray state from Conf (used by "Apply recommended settings").
+    setupStylingSectionToggles(section) {
+      const details = $$('details[data-styling-section]', section);
+      const entries = [];
+      const syncOne = (detail, id, cb) => {
+        const on = Settings.stylingSectionEnabled(id);
+        cb.checked = on;
+        detail.classList.toggle('styling-section-off', !on);
+      };
+      for (const detail of details) {
+        const id = detail.dataset.stylingSection;
+        if (!id || !(id in Settings.stylingSectionKeys))
+          continue;
+        const summary = $('summary', detail);
+        if (!summary)
+          continue;
+        // Wrap the toggle in a <label> with an explicit visual box. Bare native
+        // checkboxes are zeroed out by some host/StyleChan themes; the label's
+        // `.styling-section-toggle-box` is a plain styled element that always
+        // shows the on/off state regardless of native `appearance`.
+        const label = $.el('label', {
+          className: 'styling-section-toggle',
+          title: 'Enable this styling section (off hands it to StyleChan)',
+        });
+        const cb = $.el('input', { type: 'checkbox' });
+        const boxIcon = $.el('span', { className: 'styling-section-toggle-box', 'aria-hidden': 'true' });
+        $.add(label, [cb, boxIcon]);
+        // Stop the click from reaching the <summary>, whose activation behavior
+        // would otherwise expand/collapse the <details> when toggling the box.
+        $.on(label, 'click', e => e.stopPropagation());
+        $.on(cb, 'change', () => {
+          const key = Settings.stylingSectionKeys[id];
+          Conf[key] = cb.checked;
+          $.set(key, cb.checked);
+          detail.classList.toggle('styling-section-off', !cb.checked);
+          Settings.applyStylingSectionRuntime();
+        });
+        // The summary is a `display:flex; justify-content:space-between` row whose
+        // only other items are the title text and the disclosure caret (::after).
+        // Wrap the toggle + title together so they stay grouped at the left and
+        // the caret stays at the right, instead of being scattered three ways.
+        // The title text goes in its own `.styling-section-summary-text` span:
+        // the search highlighter (highlightSettingRow) resets that span's text
+        // instead of the whole summary, so it can't wipe the injected toggle.
+        const titleWrap = $.el('span', { className: 'styling-section-summary-label' });
+        const titleText = $.el('span', { className: 'styling-section-summary-text' });
+        while (summary.firstChild)
+          titleText.appendChild(summary.firstChild);
+        $.add(titleWrap, [label, titleText]);
+        summary.appendChild(titleWrap);
+        syncOne(detail, id, cb);
+        entries.push({ detail, id, cb });
+      }
+      return () => { for (const e of entries)
+        syncOne(e.detail, e.id, e.cb); };
+    },
+    // Re-apply every section gate to the live page + dialog after a toggle. Cheap
+    // and idempotent, so we just refresh all paths rather than tracking which
+    // section changed: CSS vars/classes (highlights, markers, text colors),
+    // the scroll-marker renderer, custom CSS injection, and the site theme.
+    applyStylingSectionRuntime() {
+      Settings.applyStylingVars();
+      $.event('RefreshScrollMarkers');
+      CustomCSS.update();
+      $.event('CustomSiteThemeChanged');
     },
     open(openSection) {
       let dialog, sectionToOpen;
@@ -29123,7 +29494,13 @@ $\
       }
     },
     highlightSettingRow(root, query) {
-      for (const el of $$('.setting-title, .setting-description, .settings-section-header, summary, th, h4', root)) {
+      for (const el of $$('.setting-title, .setting-description, .settings-section-header, .styling-section-summary-text, summary, th, h4', root)) {
+        // Styling summaries carry an injected section toggle plus a dedicated
+        // `.styling-section-summary-text` span for their title. Highlight that
+        // span, not the bare summary — resetting the summary's textContent here
+        // would destroy the toggle (and the title wrapper) on every render.
+        if (el.tagName === 'SUMMARY' && el.querySelector('.styling-section-summary-text'))
+          continue;
         const source = el.dataset.rawText ?? el.textContent ?? '';
         el.dataset.rawText = source;
         if (query) {
@@ -29607,7 +29984,10 @@ Enable it on boards.${location.hostname.split('.')[1]}.org in your browser's pri
         'Scrollbar Marker Position',
         'Highlight Posts Quoting You',
         'Highlight Own Posts',
-        'Highlight Ghost Posts'
+        'Highlight Ghost Posts',
+        'Highlight Own Edge Only',
+        'Highlight You Edge Only',
+        'Highlight Ghost Edge Only'
       ]);
       Settings.renderMainGroups(section, {
         categories: ['Filtering', 'Monitoring', 'Quote Links'],
@@ -29993,37 +30373,57 @@ Enable it on boards.${location.hostname.split('.')[1]}.org in your browser's pri
     styling(section) {
       let input, name;
       $.extend(section, { innerHTML: StylingPage });
-      // When StyleChan is present, replace the conflicting styling controls
-      // with a banner that opens StyleChan's dialog on top of ours. CSS does
-      // the hiding via the `styling-deferred` class on the section root.
-      if (Settings.shouldDeferStylingToStylechan()) {
-        section.classList.add('styling-deferred');
-        const banner = $.el('div', { className: 'styling-defer-banner' });
+      // When StyleChan is present, each Styling subsection gets a master-switch
+      // checkbox in its title (see setupStylingSectionToggles) so the user can
+      // hand individual sections over to StyleChan. We surface a small info box at
+      // the top with shortcuts and the home-page mirror opt-in. Sections are no
+      // longer hidden — the per-section gates remove their effect when toggled off.
+      if (Settings.isStylechanInstalled()) {
+        const refreshToggles = Settings.setupStylingSectionToggles(section);
+        const box = $.el('div', { className: 'styling-stylechan-box' });
         const text = $.el('div', {
-          className: 'styling-defer-banner-text',
-          innerHTML: '<b>StyleChan is managing site themes.</b> '
-            + 'The theme picker has been disabled. '
-            + 'Some 4chan-neXT styling options, including text colors and custom CSS, are hidden while StyleChan is installed. '
-            + 'Highlight colors remain available here. '
-            + 'Uninstall StyleChan to restore the full Styling section.'
+          className: 'styling-stylechan-text',
+          innerHTML: '<b>StyleChan is detected.</b> '
+            + 'Use the checkbox in each section title below to choose what 4chan-neXT styles and what StyleChan owns. '
+            + 'Turning a section off removes its effect from the page without changing the settings inside it.'
         });
-        const button = $.el('button', {
+        const buttons = $.el('div', { className: 'styling-stylechan-buttons' });
+        const openButton = $.el('button', {
           type: 'button',
-          className: 'styling-defer-open',
+          className: 'styling-stylechan-open',
           textContent: 'Open StyleChan Settings',
         });
-        $.on(button, 'click', e => {
+        $.on(openButton, 'click', e => {
           e.preventDefault();
           Settings.openStylechanSettings();
         });
-        $.add(banner, [text, button]);
-        section.insertBefore(banner, section.firstChild);
+        const recommendButton = $.el('button', {
+          type: 'button',
+          className: 'styling-stylechan-recommend',
+          title: 'Turn off the sections StyleChan owns (Site Style, Text Colors, Custom CSS) and keep the others on. Does not change the settings inside any section.',
+          textContent: 'Apply recommended settings',
+        });
+        $.on(recommendButton, 'click', e => {
+          e.preventDefault();
+          Settings.applyRecommendedStylingSections();
+          refreshToggles();
+          Settings.applyStylingSectionRuntime();
+        });
+        $.add(buttons, [openButton, recommendButton]);
+        // Home-page mirror opt-in. The checkbox carries a real `name`, so the
+        // generic input wiring below binds/persists it like any other control.
+        const homeRow = $.el('label', {
+          className: 'styling-stylechan-home',
+          title: "Mirror StyleChan's current theme (and its custom CSS) on the 4chan home page, where StyleChan doesn't run. Captured while you browse a board, so visit one after switching themes.",
+          innerHTML: '<input type="checkbox" name="styleChanThemeHome"> Apply StyleChan\'s theme on home page',
+        });
+        $.add(box, [text, buttons, homeRow]);
+        section.insertBefore(box, section.firstChild);
       }
       const inputs = dict();
       for (input of $$('[name]', section)) {
         inputs[input.name] = input;
       }
-      Settings.enforceStylechanStylingDeferral(section, inputs);
       // Mark the enclosing <details> for every variant-aware input so CSS can
       // label the whole section (Highlight Colors, Scrollbar Markers, Text
       // Colors, Custom CSS, etc.) without decorating each input individually.
@@ -30282,11 +30682,11 @@ Enable it on boards.${location.hostname.split('.')[1]}.org in your browser's pri
           const enabled = catalogEnabled && !!inputs[key]?.checked;
           const controls = key === 'Catalog Highlight Own Posts' ?
             [
-              'Catalog Highlight Own Color', 'Catalog Highlight Own Opacity', 'Catalog Highlight Own Text Auto',
+              'Catalog Highlight Own Color', 'Catalog Highlight Own Opacity', 'Catalog Highlight Own Border Only', 'Catalog Highlight Own Text Auto',
               'Catalog Highlight Own Text Color', 'Catalog Highlight Own Subject Color', 'Catalog Highlight Own Link Color', 'Catalog Highlight Own Quote Color', 'Catalog Highlight Own Dead Link Color',
             ] :
             [
-              'Catalog Highlight Watched Color', 'Catalog Highlight Watched Opacity', 'Catalog Highlight Watched Text Auto',
+              'Catalog Highlight Watched Color', 'Catalog Highlight Watched Opacity', 'Catalog Highlight Watched Border Only', 'Catalog Highlight Watched Text Auto',
               'Catalog Highlight Watched Text Color', 'Catalog Highlight Watched Subject Color', 'Catalog Highlight Watched Link Color', 'Catalog Highlight Watched Quote Color', 'Catalog Highlight Watched Dead Link Color',
             ];
           for (const controlKey of controls) {
@@ -30790,11 +31190,6 @@ Enable it on boards.${location.hostname.split('.')[1]}.org in your browser's pri
       // owns that class for the CSS selectors to match either way.
       const stylingHost = section.closest('.section-styling') || section;
       const updateVariantDecoration = (variant) => {
-        // When deferring to StyleChan, the SFW/NSFW UI is hidden, so the
-        // orange NSFW accent and corner badge would just be noise on the
-        // sections that remain (Highlight Colors, Scrollbar Markers, etc.).
-        if (section.classList.contains('styling-deferred'))
-          return;
         const label = `Editing ${variant.toUpperCase()}`;
         const shortLabel = variant.toUpperCase();
         if (variantBar)
@@ -31051,6 +31446,11 @@ Enable it on boards.${location.hostname.split('.')[1]}.org in your browser's pri
       panel.dataset.highlightGhost = (threadHighlightsEnabled && ghostEnabled) ? 'true' : 'false';
       panel.dataset.highlightCatalogOwn = (catalogHighlightsEnabled && catalogOwnEnabled) ? 'true' : 'false';
       panel.dataset.highlightCatalogWatched = (catalogHighlightsEnabled && catalogWatchedEnabled) ? 'true' : 'false';
+      panel.dataset.edgeOwn = readChecked('Highlight Own Edge Only', true) ? 'true' : 'false';
+      panel.dataset.edgeYou = readChecked('Highlight You Edge Only', true) ? 'true' : 'false';
+      panel.dataset.edgeGhost = readChecked('Highlight Ghost Edge Only', true) ? 'true' : 'false';
+      panel.dataset.edgeCatalogOwn = readChecked('Catalog Highlight Own Border Only', true) ? 'true' : 'false';
+      panel.dataset.edgeCatalogWatched = readChecked('Catalog Highlight Watched Border Only', true) ? 'true' : 'false';
       const background = Settings.resolveCanvasBackgroundStyle();
       for (const previewPane of $$('.styling-preview-thread, .styling-preview-catalog', panel)) {
         Settings.applyBackgroundStyle(previewPane, background);
@@ -31207,6 +31607,7 @@ Enable it on boards.${location.hostname.split('.')[1]}.org in your browser's pri
     STYLE_VAR_NAMES: [
       '--xt-highlight-own', '--xt-highlight-you', '--xt-highlight-ghost',
       '--xt-highlight-own-opacity', '--xt-highlight-you-opacity', '--xt-highlight-ghost-opacity',
+      '--xt-highlight-edge-width', '--xt-catalog-border-width',
       '--xt-catalog-own-highlight', '--xt-catalog-own-highlight-opacity',
       '--xt-catalog-watched-highlight', '--xt-catalog-watched-highlight-opacity',
       '--xt-scroll-marker-own', '--xt-scroll-marker-you', '--xt-scroll-marker-ghost', '--xt-scroll-marker-unread',
@@ -31235,8 +31636,14 @@ Enable it on boards.${location.hostname.split('.')[1]}.org in your browser's pri
           target.style.removeProperty(cssVar);
       };
       const cv = (key) => Settings.styleConf(key, variant);
-      const threadHighlightsEnabled = Conf['Enable Thread Highlights'] !== false;
-      const catalogHighlightsEnabled = Conf['Enable Catalog Highlights'] !== false;
+      // Per-section master switches (only ever off when StyleChan is installed).
+      // When a section is off its whole effect is removed from the page without
+      // touching the inner settings, so flipping it back on restores the look.
+      const highlightsOn = Settings.stylingSectionEnabled('highlights');
+      const markersOn = Settings.stylingSectionEnabled('scrollbarMarkers');
+      const textColorsOn = Settings.stylingSectionEnabled('textColors');
+      const threadHighlightsEnabled = highlightsOn && Conf['Enable Thread Highlights'] !== false;
+      const catalogHighlightsEnabled = highlightsOn && Conf['Enable Catalog Highlights'] !== false;
       const catalogOwnEnabled = catalogHighlightsEnabled && Conf['Catalog Highlight Own Posts'] !== false;
       const catalogWatchedEnabled = catalogHighlightsEnabled && Conf['Catalog Highlight Watched Threads'] !== false;
       if (updateRootClasses) {
@@ -31248,6 +31655,11 @@ Enable it on boards.${location.hostname.split('.')[1]}.org in your browser's pri
         doc.classList.toggle('xt-set-ghost-highlight', threadHighlightsEnabled && !!Conf['Highlight Ghost Posts'] && !!cv('Highlight Ghost Color'));
         doc.classList.toggle('xt-highlight-catalog-own', catalogOwnEnabled);
         doc.classList.toggle('xt-highlight-catalog-watched', catalogWatchedEnabled);
+        doc.classList.toggle('xt-catalog-edge-own', catalogOwnEnabled && !!cv('Catalog Highlight Own Border Only'));
+        doc.classList.toggle('xt-catalog-edge-watched', catalogWatchedEnabled && !!cv('Catalog Highlight Watched Border Only'));
+        doc.classList.toggle('xt-edge-own', highlightsOn && !!Conf['Highlight Own Edge Only']);
+        doc.classList.toggle('xt-edge-you', highlightsOn && !!Conf['Highlight You Edge Only']);
+        doc.classList.toggle('xt-edge-ghost', highlightsOn && !!Conf['Highlight Ghost Edge Only']);
       }
       setVar('--xt-highlight-own', cv('Highlight Own Color'));
       setVar('--xt-highlight-you', cv('Highlight You Color'));
@@ -31255,6 +31667,11 @@ Enable it on boards.${location.hostname.split('.')[1]}.org in your browser's pri
       setVar('--xt-highlight-own-opacity', cv('Highlight Own Opacity') === '' ? '' : String(cv('Highlight Own Opacity')));
       setVar('--xt-highlight-you-opacity', cv('Highlight You Opacity') === '' ? '' : String(cv('Highlight You Opacity')));
       setVar('--xt-highlight-ghost-opacity', cv('Highlight Ghost Opacity') === '' ? '' : String(cv('Highlight Ghost Opacity')));
+      const legacyWidth = Settings.styleConf('Highlight Edge Width', variant);
+      const edgeWidth = parseFloat(String(cv('Thread Highlight Edge Width') || legacyWidth));
+      setVar('--xt-highlight-edge-width', Number.isFinite(edgeWidth) ? `${$.minmax(edgeWidth, 1, 12)}px` : '');
+      const catalogBorderWidth = parseFloat(String(cv('Catalog Highlight Border Width') || legacyWidth));
+      setVar('--xt-catalog-border-width', Number.isFinite(catalogBorderWidth) ? `${$.minmax(catalogBorderWidth, 1, 12)}px` : '');
       setVar('--xt-catalog-own-highlight', catalogOwnEnabled ? cv('Catalog Highlight Own Color') : '');
       setVar('--xt-catalog-own-highlight-opacity', (catalogOwnEnabled && cv('Catalog Highlight Own Opacity') !== '') ? String(cv('Catalog Highlight Own Opacity')) : '');
       setVar('--xt-catalog-watched-highlight', catalogWatchedEnabled ? cv('Catalog Highlight Watched Color') : '');
@@ -31262,21 +31679,27 @@ Enable it on boards.${location.hostname.split('.')[1]}.org in your browser's pri
       const ownMarkerLinked = !!cv('Scroll Marker Own Match Highlight');
       const youMarkerLinked = !!cv('Scroll Marker You Match Highlight');
       const ghostMarkerLinked = !!cv('Scroll Marker Ghost Match Highlight');
-      setVar('--xt-scroll-marker-own', ownMarkerLinked ? cv('Highlight Own Color') : cv('Scroll Marker Own Color'));
-      setVar('--xt-scroll-marker-you', youMarkerLinked ? cv('Highlight You Color') : cv('Scroll Marker You Color'));
-      setVar('--xt-scroll-marker-ghost', ghostMarkerLinked ? cv('Highlight Ghost Color') : cv('Scroll Marker Ghost Color'));
-      setVar('--xt-scroll-marker-unread', cv('Scroll Marker Unread Color'));
-      setVar('--xt-scroll-marker-own-opacity', cv('Scroll Marker Own Opacity') === '' ? '' : String(cv('Scroll Marker Own Opacity')));
-      setVar('--xt-scroll-marker-you-opacity', cv('Scroll Marker You Opacity') === '' ? '' : String(cv('Scroll Marker You Opacity')));
-      setVar('--xt-scroll-marker-ghost-opacity', cv('Scroll Marker Ghost Opacity') === '' ? '' : String(cv('Scroll Marker Ghost Opacity')));
-      setVar('--xt-scroll-marker-unread-opacity', cv('Scroll Marker Unread Opacity') === '' ? '' : String(cv('Scroll Marker Unread Opacity')));
+      // Scrollbar Markers section off ⇒ emit no marker color/opacity vars (the
+      // ScrollMarkers renderer is also gated, so markers vanish entirely).
+      const markerVar = (cssVar, value) => setVar(cssVar, markersOn && value !== '' ? String(value) : '');
+      markerVar('--xt-scroll-marker-own', ownMarkerLinked ? cv('Highlight Own Color') : cv('Scroll Marker Own Color'));
+      markerVar('--xt-scroll-marker-you', youMarkerLinked ? cv('Highlight You Color') : cv('Scroll Marker You Color'));
+      markerVar('--xt-scroll-marker-ghost', ghostMarkerLinked ? cv('Highlight Ghost Color') : cv('Scroll Marker Ghost Color'));
+      markerVar('--xt-scroll-marker-unread', cv('Scroll Marker Unread Color'));
+      markerVar('--xt-scroll-marker-own-opacity', cv('Scroll Marker Own Opacity'));
+      markerVar('--xt-scroll-marker-you-opacity', cv('Scroll Marker You Opacity'));
+      markerVar('--xt-scroll-marker-ghost-opacity', cv('Scroll Marker Ghost Opacity'));
+      markerVar('--xt-scroll-marker-unread-opacity', cv('Scroll Marker Unread Opacity'));
       const baseBackground = Settings.getTextBaseBackground();
       const textColorMode = cv('textColorMode') === 'manual' ? 'manual' : 'auto';
       const autoTextPalette = Settings.autoTextPalette(baseBackground);
-      const textColor = textColorMode === 'auto' ? autoTextPalette.text : cv('Text Color');
-      const linkColor = textColorMode === 'auto' ? autoTextPalette.link : cv('Link Text Color');
-      const quoteColor = textColorMode === 'auto' ? autoTextPalette.quote : cv('Quote Text Color');
-      const deadLinkColor = textColorMode === 'auto' ? autoTextPalette.deadLink : cv('Dead Link Text Color');
+      // Text Colors section off ⇒ no text-color override at all (page falls back
+      // to the theme's native colors; the empty values also flow through to the
+      // highlight-text fallback below, so they stay theme-default too).
+      const textColor = !textColorsOn ? '' : (textColorMode === 'auto' ? autoTextPalette.text : cv('Text Color'));
+      const linkColor = !textColorsOn ? '' : (textColorMode === 'auto' ? autoTextPalette.link : cv('Link Text Color'));
+      const quoteColor = !textColorsOn ? '' : (textColorMode === 'auto' ? autoTextPalette.quote : cv('Quote Text Color'));
+      const deadLinkColor = !textColorsOn ? '' : (textColorMode === 'auto' ? autoTextPalette.deadLink : cv('Dead Link Text Color'));
       const hasAnyTextOverride = !!(textColor || linkColor || quoteColor || deadLinkColor);
       if (updateRootClasses) {
         if (hasAnyTextOverride) {
@@ -32328,16 +32751,22 @@ Enable it on boards.${location.hostname.split('.')[1]}.org in your browser's pri
         'Link Text Color',
         'Quote Text Color',
         'Dead Link Text Color',
+        'Thread Highlight Edge Width',
+        'Catalog Highlight Border Width',
         'Scroll Marker Own Match Highlight',
         'Scroll Marker You Match Highlight',
         'Scroll Marker Ghost Match Highlight',
         'Catalog Highlight Own Posts',
         'Catalog Highlight Watched Threads',
+        'Catalog Highlight Own Border Only',
+        'Catalog Highlight Watched Border Only',
         'Highlight Own Color',
         'Highlight You Color',
         'Highlight Ghost Color',
         'Catalog Highlight Own Color',
         'Catalog Highlight Watched Color',
+        'Catalog Highlight Own Border Only',
+        'Catalog Highlight Watched Border Only',
         'Catalog Highlight Own Text Auto',
         'Catalog Highlight Watched Text Auto',
         'Catalog Highlight Own Text Color',
@@ -32368,6 +32797,9 @@ Enable it on boards.${location.hostname.split('.')[1]}.org in your browser's pri
         'Highlight Own Opacity',
         'Highlight You Opacity',
         'Highlight Ghost Opacity',
+        'Highlight Own Edge Only',
+        'Highlight You Edge Only',
+        'Highlight Ghost Edge Only',
         'Catalog Highlight Own Opacity',
         'Catalog Highlight Watched Opacity',
         'Scroll Marker Own Color',
@@ -32801,6 +33233,22 @@ Enable it on boards.${location.hostname.split('.')[1]}.org in your browser's pri
           set(`${k} SFW`, legacy);
         if (data[`${k} NSFW`] === undefined)
           set(`${k} NSFW`, legacy);
+      }
+      for (const variant of ['SFW', 'NSFW']) {
+        const legacyWidth = data[`Highlight Edge Width ${variant}`] ?? data['Highlight Edge Width'];
+        if (legacyWidth === undefined)
+          continue;
+        if (data[`Thread Highlight Edge Width ${variant}`] === undefined)
+          set(`Thread Highlight Edge Width ${variant}`, legacyWidth);
+        if (data[`Catalog Highlight Border Width ${variant}`] === undefined)
+          set(`Catalog Highlight Border Width ${variant}`, legacyWidth);
+      }
+      // Edge-only highlighting defaults on for fresh installs. Existing users are
+      // upgraded here, so seed it off to preserve their current filled highlights
+      // unless they opt in. Idempotent: only seeds keys not already present.
+      for (const k of ['Highlight Own Edge Only', 'Highlight You Edge Only', 'Highlight Ghost Edge Only']) {
+        if (data[k] === undefined)
+          set(k, false);
       }
       return changes;
     },
@@ -38579,7 +39027,7 @@ Enable it on boards.${location.hostname.split('.')[1]}.org in your browser's pri
       // XXX Firefox reinjects WebExtension content scripts when extension is updated / reloaded.
       try {
         let w = window;
-        if (platform === 'crx') { w = (w.wrappedJSObject || w); }
+
         if (`${meta.name} antidup` in w) { return; }
         w[`${meta.name} antidup`] = true;
       } catch (error) {}
@@ -38782,6 +39230,14 @@ Enable it on boards.${location.hostname.split('.')[1]}.org in your browser's pri
         'Custom CSS': true,
         'usercss SFW': '',
         'usercss NSFW': '',
+        styleChanThemeHome: false,
+        styleChanThemeCSS: '',
+        styleChanVarsCSS: '',
+        // Per-section master switches. The home page can't detect StyleChan
+        // (it doesn't run here), so we read the persisted flags a board visit
+        // synced. Default-true ⇒ non-StyleChan users are unaffected.
+        stylingSectionSiteStyle: true,
+        stylingSectionCustomCSS: true,
       };
       ($.getSync || $.get)(defaults, (items) => {
         // The home page has no board context, so 'auto' falls back to SFW.
@@ -38793,26 +39249,14 @@ Enable it on boards.${location.hostname.split('.')[1]}.org in your browser's pri
           siteStyle = '';
         }
         const normalizedStyle = Main.normalizeSiteStyle(siteStyle);
-        // When StyleChan is running on the home page, skip applying our own
-        // style/theme overrides entirely. StyleChan owns the home page theme
-        // and custom CSS there, and mixing both leaves the page looking scuffed.
-        const deferToStyleChan = !!(d.getElementById('ch4SS') || d.getElementById('StyleChanLink'));
-        // Persistently uncheck the home-page style flags and custom CSS toggle
-        // when deferring so the stored settings match reality and future page
-        // loads skip the work even before StyleChan has injected its marker.
-        if (deferToStyleChan && items.siteStyleHome) {
-          items.siteStyleHome = false;
-          $.set('siteStyleHome', false);
-        }
-        if (deferToStyleChan && items.customCSSHome) {
-          items.customCSSHome = false;
-          $.set('customCSSHome', false);
-        }
-        if (deferToStyleChan && items['Custom CSS']) {
-          items['Custom CSS'] = false;
-          $.set('Custom CSS', false);
-        }
-        if (items.siteStyleHome && normalizedStyle && !deferToStyleChan) {
+        // StyleChan excludes the home page, so it never injects its theme here.
+        // If the user opted in (and we captured a snapshot while they browsed a
+        // board), replay StyleChan's stylesheet on the home page instead of our
+        // own. This takes precedence so the two don't fight over the same page.
+        const useStylechanHome = !!(items.styleChanThemeHome && (items.styleChanThemeCSS || items.styleChanVarsCSS));
+        const siteStyleSectionOn = items.stylingSectionSiteStyle !== false;
+        const customCSSSectionOn = items.stylingSectionCustomCSS !== false;
+        if (items.siteStyleHome && siteStyleSectionOn && normalizedStyle && !useStylechanHome) {
           // Persist 4chan's own theme cookie so future homepage requests render
           // server-side with the right stylesheet.
           Main.setSiteStyleHomeCookie(siteStyle);
@@ -38822,8 +39266,11 @@ Enable it on boards.${location.hostname.split('.')[1]}.org in your browser's pri
           // the chosen theme, so the homepage repaints immediately.
           Main.applyHomePageSiteStyle(siteStyle);
         }
-        if (items.customCSSHome && items['Custom CSS'] && usercss) {
+        if (items.customCSSHome && customCSSSectionOn && items['Custom CSS'] && usercss && !useStylechanHome) {
           Main.installHomePageCustomCSS(usercss);
+        }
+        if (useStylechanHome) {
+          Main.applyStylechanToHome(items.styleChanVarsCSS, items.styleChanThemeCSS);
         }
       });
     },
@@ -38869,6 +39316,68 @@ Enable it on boards.${location.hostname.split('.')[1]}.org in your browser's pri
       });
       $.on(window, 'pageshow', ensure);
       $.on(window, 'load', ensure);
+    },
+
+    // Replay StyleChan's captured stylesheet on the home page. StyleChan splits
+    // its output into `#sc-theme-vars` (the `:root{--sc-*}` color variables) and
+    // `#ch4SS` (the theme rules + the user's per-theme custom CSS, which reference
+    // those variables). We snapshot both on board pages (snapshotStylechanForHome)
+    // and re-inject them here so www.4chan.org matches the StyleChan look.
+    applyStylechanToHome(varsCSS, themeCSS) {
+      const reapply = () => {
+        if (!d.head) return;
+        // Don't reorder once appended: with two styles, both fighting to be the
+        // last child would ping-pong forever under the MutationObserver below.
+        // StyleChan's rules are heavily !important, so source order vs 4chan's
+        // own sheets doesn't matter for them to win.
+        const ensureStyle = (id, css) => {
+          if (!css) return;
+          const el = $.id(id);
+          if (!el || !el.isConnected) {
+            $.add(d.head, $.el('style', { id, textContent: css }));
+          } else if (el.textContent !== css) {
+            el.textContent = css;
+          }
+        };
+        // Variables first (they define what the theme rules consume), then theme.
+        ensureStyle('stylechan-home-vars', varsCSS);
+        ensureStyle('stylechan-home-theme', themeCSS);
+      };
+      $.onExists(doc, 'head', () => {
+        reapply();
+        new MutationObserver(reapply).observe(d.head, { childList: true });
+      });
+      $.on(window, 'pageshow', reapply);
+      $.on(window, 'load', reapply);
+    },
+
+    // Capture StyleChan's injected stylesheet while on a board page (where
+    // StyleChan runs) so the home page bridge can replay it. We can't read
+    // StyleChan's saved config directly — it lives in its own sandboxed GM
+    // storage — but its output is in the shared DOM, and it updates these two
+    // elements in place when the theme changes, so we observe them.
+    snapshotStylechanForHome() {
+      const save = () => {
+        const pairs = [['ch4SS', 'styleChanThemeCSS'], ['sc-theme-vars', 'styleChanVarsCSS']];
+        for (const [id, key] of pairs) {
+          const el = d.getElementById(id);
+          const css = el && el.textContent;
+          if (css && css !== Conf[key]) {
+            Conf[key] = css;
+            $.set(key, css);
+          }
+        }
+      };
+      const watch = (id) => {
+        $.onExists(doc, `#${id}`, (el) => {
+          save();
+          new MutationObserver(save).observe(el, { childList: true, characterData: true, subtree: true });
+        });
+      };
+      save();
+      watch('ch4SS');
+      watch('sc-theme-vars');
+      $.on(window, 'pageshow', save);
     },
 
     upgrade(items) {
@@ -38970,21 +39479,17 @@ Enable it on boards.${location.hostname.split('.')[1]}.org in your browser's pri
     initStyle() {
       if (!Main.isThisPageLegit()) { return; }
       const homeSiteStyle = Settings.styleConf('siteStyle');
-      // When deferring to StyleChan, 4chan XT should not own the home-page
-      // styling or inject its custom CSS at all.
-      if (Settings.shouldDeferStylingToStylechan() && Conf['siteStyleHome']) {
-        Conf['siteStyleHome'] = false;
-        $.set('siteStyleHome', false);
+      // On a board page StyleChan detection is reliable, so this is where we run
+      // the one-time "hand StyleChan-owned sections over" recommendation (and the
+      // reverse reset once StyleChan is uninstalled). The per-section master
+      // switches then gate styling at runtime instead of force-disabling settings.
+      Settings.initStylingSectionDefaults();
+      // While StyleChan is managing this board, capture its injected stylesheet so
+      // the (StyleChan-excluded) home page can mirror it when the user opts in.
+      if (Settings.shouldDeferStylingToStylechan()) {
+        Main.snapshotStylechanForHome();
       }
-      if (Settings.shouldDeferStylingToStylechan() && Conf['customCSSHome']) {
-        Conf['customCSSHome'] = false;
-        $.set('customCSSHome', false);
-      }
-      if (Settings.shouldDeferStylingToStylechan() && Conf['Custom CSS']) {
-        Conf['Custom CSS'] = false;
-        $.set('Custom CSS', false);
-      }
-      if (Conf['siteStyleHome'] && homeSiteStyle) {
+      if (Conf['siteStyleHome'] && Settings.stylingSectionEnabled('siteStyle') && homeSiteStyle) {
         Main.setSiteStyleHomeCookie(homeSiteStyle);
       }
 
@@ -39055,6 +39560,9 @@ Enable it on boards.${location.hostname.split('.')[1]}.org in your browser's pri
       let preferredStyleApplied = false;
       const applyPreferredStyle = function() {
         const activeSiteStyle = Settings.styleConf('siteStyle');
+        // Site Style section off ⇒ don't actively switch the site theme; leave
+        // whatever the page / native extension / StyleChan rendered in place.
+        if (!Settings.stylingSectionEnabled('siteStyle')) { return; }
         if (preferredStyleApplied || g.SITE.software !== 'yotsuba' || !activeSiteStyle) { return; }
         const preferred = activeSiteStyle;
 
@@ -39145,7 +39653,7 @@ Enable it on boards.${location.hostname.split('.')[1]}.org in your browser's pri
             const siteStyleKey = Settings.variantKey('siteStyle');
             Conf[siteStyleKey] = activeStyleTitle;
             $.set(siteStyleKey, activeStyleTitle);
-            if (Conf['siteStyleHome'] && !Settings.shouldDeferStylingToStylechan()) {
+            if (Conf['siteStyleHome'] && Settings.stylingSectionEnabled('siteStyle')) {
               Main.setSiteStyleHomeCookie(activeStyleTitle);
             }
           }
@@ -39205,7 +39713,7 @@ Enable it on boards.${location.hostname.split('.')[1]}.org in your browser's pri
               Conf[siteStyleKey] = selected;
               $.set(siteStyleKey, selected);
             }
-            if (Conf['siteStyleHome'] && !Settings.shouldDeferStylingToStylechan()) {
+            if (Conf['siteStyleHome'] && Settings.stylingSectionEnabled('siteStyle')) {
               Main.setSiteStyleHomeCookie(selected);
             }
           };
