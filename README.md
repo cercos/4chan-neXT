@@ -25,7 +25,9 @@ You will need a userscript manager:
 - Added the ability to re-enable disabled style settings while StyleChan is active.
 - Changed "Download all media" to always bundle downloads as a ZIP archive.
 - Fixed scrollbar marker single mode so the scrollbar no longer pushes the header out of alignment.
-- Fixed edge highlighting.
+- Fixed edge highlighting and auto text for edge highlighting.
+- Fixed attached Thread Watcher dragging so dragging either the Quick Reply or Thread Watcher title bar moves both together; detach now only happens from the attach button.
+
 
 ## Migration from 4chan X / 4chan XT
 

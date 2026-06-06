@@ -2,7 +2,6 @@
 
 ### Unreleased
 
-- Fixed attached Thread Watcher dragging so dragging either the Quick Reply or Thread Watcher title bar moves both together; detach now only happens from the attach button.
 
 ### 1.0.8 (2026-06-05)
 
@@ -12,7 +11,8 @@
 - Added the ability to re-enable disabled style settings while StyleChan is active.
 - Changed "Download all media" to always bundle downloads as a ZIP archive.
 - Fixed scrollbar marker single mode so the scrollbar no longer pushes the header out of alignment.
-- Fixed edge highlighting.
+- Fixed edge highlighting and auto text for edge highlighting.
+- Fixed attached Thread Watcher dragging so dragging either the Quick Reply or Thread Watcher title bar moves both together; detach now only happens from the attach button.
 
 ### 1.0.7 (2026-06-05)
 
