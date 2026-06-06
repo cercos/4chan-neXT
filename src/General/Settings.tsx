@@ -2437,11 +2437,9 @@ Enable it on boards.${location.hostname.split('.')[1]}.org in your browser's pri
     // owns that class for the CSS selectors to match either way.
     const stylingHost = (section.closest('.section-styling') as HTMLElement | null) || section;
     const updateVariantDecoration = (variant: StyleVariant) => {
-      const label = `Editing ${variant.toUpperCase()}`;
       const shortLabel = variant.toUpperCase();
       if (variantBar) variantBar.dataset.editingVariant = variant;
       stylingHost.dataset.editingVariant = variant;
-      stylingHost.dataset.editingVariantLabel = label;
       for (const detail of $$('details[data-variant-aware="true"]', section) as HTMLElement[]) {
         detail.dataset.variantLabel = shortLabel;
       }

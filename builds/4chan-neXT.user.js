@@ -5749,24 +5749,6 @@ body > #overlay:not(.media-preview) {
   cursor: pointer;
   font-size: 12px;
 }
-/* Tag the whole settings dialog with a small badge so the user always
-   sees which variant they're editing, even when scrolled away from the
-   Site Style section. */
-#fourchanx-settings .section-styling[data-editing-variant-label]::before {
-  background: var(--xt-variant-accent, rgba(128, 128, 128, .35));
-  border-radius: 0 0 0 4px;
-  color: #fff;
-  content: attr(data-editing-variant-label);
-  font-size: 10px;
-  font-weight: 700;
-  letter-spacing: .04em;
-  padding: 2px 8px;
-  position: absolute;
-  right: 0;
-  text-transform: uppercase;
-  top: 0;
-  z-index: 1;
-}
 #fourchanx-settings .section-styling {
   position: relative;
 }
@@ -31224,12 +31206,10 @@ Enable it on boards.${location.hostname.split('.')[1]}.org in your browser's pri
       // owns that class for the CSS selectors to match either way.
       const stylingHost = section.closest('.section-styling') || section;
       const updateVariantDecoration = (variant) => {
-        const label = `Editing ${variant.toUpperCase()}`;
         const shortLabel = variant.toUpperCase();
         if (variantBar)
           variantBar.dataset.editingVariant = variant;
         stylingHost.dataset.editingVariant = variant;
-        stylingHost.dataset.editingVariantLabel = label;
         for (const detail of $$('details[data-variant-aware="true"]', section)) {
           detail.dataset.variantLabel = shortLabel;
         }
