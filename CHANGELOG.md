@@ -6,7 +6,7 @@
 - Added gallery grid layout support with updated thumbnail placement.
 - Added the ability to re-enable disabled style settings while StyleChan is active.
 - Fixed scrollbar marker single mode so the scrollbar no longer pushes the header out of alignment.
-- Fixed edge highlighting for scrollbar markers.
+- Fixed edge highlighting.
 
 ### 1.0.7 (2026-06-05)
 
