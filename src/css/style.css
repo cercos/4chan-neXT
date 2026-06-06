@@ -597,6 +597,11 @@ audio.controls-added {
   color: inherit;
   padding: 0;
 }
+/* Row matched only on a hidden field (data-name), so nothing visible got
+   marked; give it a cue so the match isn't a mystery. */
+.settings-search-keyword-match {
+  box-shadow: inset 3px 0 0 rgba(255, 214, 83, .7);
+}
 .sections-list {
   flex: 1;
   display: flex;

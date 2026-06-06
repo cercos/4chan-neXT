@@ -36,6 +36,7 @@ export type StyleVariant = 'sfw' | 'nsfw';
 var Settings = {
   dialog: undefined as HTMLDivElement | undefined,
   searchQuery: '',
+  searchTerms: [] as string[],
   activeSection: null as any,
   renderedSection: null as any,
   rememberLayout: false,
@@ -567,12 +568,22 @@ var Settings = {
 
   onSearchInput() {
     Settings.searchQuery = (this as HTMLInputElement).value.toLowerCase().trim();
+    Settings.searchTerms = Settings.searchQuery ? Settings.searchQuery.split(/\s+/) : [];
     if (Settings.searchQuery) {
       Settings.ensureAllSettingsRendered();
     } else {
       Settings.renderActiveSection();
     }
     Settings.applySearch();
+  },
+
+  // A haystack matches when every search term is found somewhere in it
+  // (order-independent), so multi-word queries no longer need the words to
+  // appear as one contiguous phrase. No terms means no match.
+  matchesQuery(haystack: string) {
+    if (!Settings.searchTerms.length) return false;
+    const text = haystack.toLowerCase();
+    return Settings.searchTerms.every(term => text.indexOf(term) >= 0);
   },
 
   applySearch() {
@@ -586,6 +597,9 @@ var Settings = {
     for (const el of $$('.settings-search-hidden', section)) {
       $.rmClass(el, 'settings-search-hidden');
     }
+    for (const el of $$('.settings-search-keyword-match', section)) {
+      $.rmClass(el, 'settings-search-keyword-match');
+    }
     Settings.highlightSettingRow(section, query);
 
     if (!query) return;
@@ -595,18 +609,20 @@ var Settings = {
     }
 
     for (const row of $$('div[data-name], tr[data-name]', section)) {
-      const settingTitle = `${row.dataset.settingTitle || ''}`.toLowerCase();
-      const settingDescription = `${row.dataset.settingDescription || ''}`.toLowerCase();
-      const settingName = `${row.dataset.name || ''}`.toLowerCase();
-      const fullText = `${settingName} ${settingTitle} ${settingDescription} ${row.textContent || ''}`.toLowerCase();
-      if (fullText.indexOf(query) < 0) continue;
+      const settingTitle = `${row.dataset.settingTitle || ''}`;
+      const settingName = `${row.dataset.name || ''}`;
+      const fullText = `${settingName} ${settingTitle} ${row.dataset.settingDescription || ''} ${row.textContent || ''}`;
+      if (!Settings.matchesQuery(fullText)) continue;
 
       const rowEl = row as HTMLElement;
       Settings.revealSearchMatch(rowEl, section);
+      // The row matched, but the match may be on a hidden field (data-name)
+      // with nothing visible marked; flag it so the match isn't a mystery.
+      rowEl.classList.toggle('settings-search-keyword-match', !rowEl.querySelector('mark'));
 
       // Only reveal descendant rider settings when the setting's title itself
       // matched, to avoid broad description matches expanding unrelated rows.
-      const titleMatched = settingTitle.indexOf(query) >= 0 || settingName.indexOf(query) >= 0;
+      const titleMatched = Settings.matchesQuery(`${settingName} ${settingTitle}`);
       if (!titleMatched) continue;
       for (const sublist of $$('.suboption-list', rowEl)) {
         for (const rider of $$('div[data-name], tr[data-name]', sublist)) {
@@ -616,7 +632,7 @@ var Settings = {
     }
 
     for (const el of $$('summary, th, h4', section)) {
-      if ((el.textContent || '').toLowerCase().indexOf(query) < 0) continue;
+      if (!Settings.matchesQuery(el.textContent || '')) continue;
       Settings.revealSearchMatch(el as HTMLElement, section);
     }
 
@@ -631,12 +647,12 @@ var Settings = {
     }
   },
 
-  matchesSectionTitle(text, query) {
-    const title = (text || '').toLowerCase();
-    if (!title || !query) return false;
-    if (query.includes(' ')) return title.indexOf(query) >= 0;
-    const rx = RegExp(`\\b${Settings.escapeRegExp(query)}\\b`, 'i');
-    return rx.test(text);
+  matchesSectionTitle(text, _query) {
+    if (!text || !Settings.searchTerms.length) return false;
+    // Every term must hit the title as a whole word (order-independent), so a
+    // multi-word query matches regardless of word order.
+    return Settings.searchTerms.every(term =>
+      RegExp(`\\b${Settings.escapeRegExp(term)}\\b`, 'i').test(text));
   },
 
   revealSearchMatch(node, root) {
@@ -659,7 +675,12 @@ var Settings = {
     }
   },
 
-  highlightSettingRow(root, query) {
+  highlightSettingRow(root, _query?) {
+    // Highlight every matching term (order-independent), not just the whole
+    // query as one phrase, so multi-word searches still show what matched.
+    const rx = Settings.searchTerms.length
+      ? RegExp(`(${Settings.searchTerms.map(t => Settings.escapeRegExp(t)).join('|')})`, 'ig')
+      : null;
     for (const el of $$('.setting-title, .setting-description, .settings-section-header, .styling-section-summary-text, summary, th, h4', root)) {
       // Styling summaries carry an injected section toggle plus a dedicated
       // `.styling-section-summary-text` span for their title. Highlight that
@@ -668,8 +689,7 @@ var Settings = {
       if ((el as HTMLElement).tagName === 'SUMMARY' && el.querySelector('.styling-section-summary-text')) continue;
       const source = (el as HTMLElement).dataset.rawText ?? el.textContent ?? '';
       (el as HTMLElement).dataset.rawText = source;
-      if (query) {
-        const rx = RegExp(`(${Settings.escapeRegExp(query)})`, 'ig');
+      if (rx) {
         el.innerHTML = source.replace(rx, '<mark>$1</mark>');
       } else {
         el.textContent = source;

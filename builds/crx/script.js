@@ -4671,6 +4671,11 @@ audio.controls-added {
   color: inherit;
   padding: 0;
 }
+/* Row matched only on a hidden field (data-name), so nothing visible got
+   marked; give it a cue so the match isn't a mystery. */
+.settings-search-keyword-match {
+  box-shadow: inset 3px 0 0 rgba(255, 214, 83, .7);
+}
 .sections-list {
   flex: 1;
   display: flex;
@@ -28609,6 +28614,7 @@ $\
   var Settings = {
     dialog: undefined,
     searchQuery: '',
+    searchTerms: [],
     activeSection: null,
     renderedSection: null,
     rememberLayout: false,
@@ -29138,12 +29144,22 @@ $\
     },
     onSearchInput() {
       Settings.searchQuery = this.value.toLowerCase().trim();
+      Settings.searchTerms = Settings.searchQuery ? Settings.searchQuery.split(/\s+/) : [];
       if (Settings.searchQuery) {
         Settings.ensureAllSettingsRendered();
       } else {
         Settings.renderActiveSection();
       }
       Settings.applySearch();
+    },
+    // A haystack matches when every search term is found somewhere in it
+    // (order-independent), so multi-word queries no longer need the words to
+    // appear as one contiguous phrase. No terms means no match.
+    matchesQuery(haystack) {
+      if (!Settings.searchTerms.length)
+        return false;
+      const text = haystack.toLowerCase();
+      return Settings.searchTerms.every(term => text.indexOf(term) >= 0);
     },
     applySearch() {
       if (!Settings.dialog)
@@ -29157,6 +29173,9 @@ $\
       for (const el of $$('.settings-search-hidden', section)) {
         $.rmClass(el, 'settings-search-hidden');
       }
+      for (const el of $$('.settings-search-keyword-match', section)) {
+        $.rmClass(el, 'settings-search-keyword-match');
+      }
       Settings.highlightSettingRow(section, query);
       if (!query)
         return;
@@ -29164,17 +29183,19 @@ $\
         $.addClass(el, 'settings-search-hidden');
       }
       for (const row of $$('div[data-name], tr[data-name]', section)) {
-        const settingTitle = `${row.dataset.settingTitle || ''}`.toLowerCase();
-        const settingDescription = `${row.dataset.settingDescription || ''}`.toLowerCase();
-        const settingName = `${row.dataset.name || ''}`.toLowerCase();
-        const fullText = `${settingName} ${settingTitle} ${settingDescription} ${row.textContent || ''}`.toLowerCase();
-        if (fullText.indexOf(query) < 0)
+        const settingTitle = `${row.dataset.settingTitle || ''}`;
+        const settingName = `${row.dataset.name || ''}`;
+        const fullText = `${settingName} ${settingTitle} ${row.dataset.settingDescription || ''} ${row.textContent || ''}`;
+        if (!Settings.matchesQuery(fullText))
           continue;
         const rowEl = row;
         Settings.revealSearchMatch(rowEl, section);
+        // The row matched, but the match may be on a hidden field (data-name)
+        // with nothing visible marked; flag it so the match isn't a mystery.
+        rowEl.classList.toggle('settings-search-keyword-match', !rowEl.querySelector('mark'));
         // Only reveal descendant rider settings when the setting's title itself
         // matched, to avoid broad description matches expanding unrelated rows.
-        const titleMatched = settingTitle.indexOf(query) >= 0 || settingName.indexOf(query) >= 0;
+        const titleMatched = Settings.matchesQuery(`${settingName} ${settingTitle}`);
         if (!titleMatched)
           continue;
         for (const sublist of $$('.suboption-list', rowEl)) {
@@ -29184,7 +29205,7 @@ $\
         }
       }
       for (const el of $$('summary, th, h4', section)) {
-        if ((el.textContent || '').toLowerCase().indexOf(query) < 0)
+        if (!Settings.matchesQuery(el.textContent || ''))
           continue;
         Settings.revealSearchMatch(el, section);
       }
@@ -29200,14 +29221,12 @@ $\
         Settings.revealSearchMatch(block, section);
       }
     },
-    matchesSectionTitle(text, query) {
-      const title = (text || '').toLowerCase();
-      if (!title || !query)
+    matchesSectionTitle(text, _query) {
+      if (!text || !Settings.searchTerms.length)
         return false;
-      if (query.includes(' '))
-        return title.indexOf(query) >= 0;
-      const rx = RegExp(`\\b${Settings.escapeRegExp(query)}\\b`, 'i');
-      return rx.test(text);
+      // Every term must hit the title as a whole word (order-independent), so a
+      // multi-word query matches regardless of word order.
+      return Settings.searchTerms.every(term => RegExp(`\\b${Settings.escapeRegExp(term)}\\b`, 'i').test(text));
     },
     revealSearchMatch(node, root) {
       let cur = node;
@@ -29228,7 +29247,12 @@ $\
         cur = cur.parentElement;
       }
     },
-    highlightSettingRow(root, query) {
+    highlightSettingRow(root, _query) {
+      // Highlight every matching term (order-independent), not just the whole
+      // query as one phrase, so multi-word searches still show what matched.
+      const rx = Settings.searchTerms.length
+        ? RegExp(`(${Settings.searchTerms.map(t => Settings.escapeRegExp(t)).join('|')})`, 'ig')
+        : null;
       for (const el of $$('.setting-title, .setting-description, .settings-section-header, .styling-section-summary-text, summary, th, h4', root)) {
         // Styling summaries carry an injected section toggle plus a dedicated
         // `.styling-section-summary-text` span for their title. Highlight that
@@ -29238,8 +29262,7 @@ $\
           continue;
         const source = el.dataset.rawText ?? el.textContent ?? '';
         el.dataset.rawText = source;
-        if (query) {
-          const rx = RegExp(`(${Settings.escapeRegExp(query)})`, 'ig');
+        if (rx) {
           el.innerHTML = source.replace(rx, '<mark>$1</mark>');
         } else {
           el.textContent = source;
