@@ -748,6 +748,18 @@ const Config = {
     'Scroll to Post': [
       true
     ],
+    'Grid Thumbnails': [
+      false,
+      'Lay gallery thumbnails out in a grid instead of a single column.'
+    ],
+    'Gallery Columns': [
+      3,
+      'Number of thumbnail columns to show in grid mode. Columns stop being added once the strip would exceed 75% of the screen width. 0 disables the image preview and shows fullscreen thumbnails (click a thumbnail to open it in a lightbox).'
+    ],
+    'Gallery Thumbnails Position': [
+      'right',
+      'Which edge of the gallery the thumbnail strip docks to: top, bottom, left or right.'
+    ],
     'Slide Delay': [
       6.0
     ]

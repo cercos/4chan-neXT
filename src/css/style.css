@@ -4071,7 +4071,7 @@ input[type="checkbox"]:checked ~ .checkbox-letter {
   overflow: hidden;
 }
 .gal-thumbnails {
-  flex: 0 0 150px;
+  flex: 0 0 var(--gal-thumbs-width, 150px);
   overflow-y: auto;
   display: flex;
   flex-direction: column;
@@ -4083,6 +4083,118 @@ input[type="checkbox"]:checked ~ .checkbox-letter {
 .gal-hide-thumbnails .gal-thumbnails {
   display: none;
 }
+.gal-grid-thumbnails:not(.gal-hide-thumbnails):not(.gal-fullscreen-thumbs) .gal-thumbnails {
+  display: grid;
+  grid-template-columns: repeat(var(--gal-cols, 3), 1fr);
+  align-content: start;
+}
+.gal-grid-thumbnails .gal-thumb {
+  display: flex;
+  align-items: center;
+  justify-content: center;
+}
+.gal-grid-thumbnails .gal-thumb img,
+.gal-grid-thumbnails .gal-thumb video {
+  max-width: 100%;
+}
+
+/* Fullscreen thumbnails (Gallery Columns = 0): collapse the inline preview and
+   let the thumbnail grid fill the whole screen, auto-flowing columns to width. */
+.gal-fullscreen-thumbs .gal-viewport {
+  flex: 0 0 0;
+}
+.gal-fullscreen-thumbs .gal-image,
+.gal-fullscreen-thumbs .gal-prev,
+.gal-fullscreen-thumbs .gal-next {
+  display: none;
+}
+.gal-fullscreen-thumbs .gal-thumbnails {
+  flex: 1 1 auto;
+  display: grid;
+  grid-template-columns: repeat(auto-fill, minmax(150px, 1fr));
+  align-content: start;
+  border-left: none;
+}
+.gal-fullscreen-thumbs:not(.gal-lightbox-open) .gal-labels {
+  display: none;
+}
+.gal-fullscreen-thumbs .gal-buttons,
+.gal-fullscreen-thumbs .gal-labels {
+  z-index: 7;
+}
+/* A clicked thumbnail opens as a lightbox layered over the grid. */
+.gal-fullscreen-thumbs.gal-lightbox-open .gal-image {
+  display: flex;
+  position: fixed;
+  inset: 0;
+  /* Override .gal-image's width:1% flex fix so the overlay fills the screen. */
+  width: auto;
+  height: auto;
+  z-index: 5;
+  background: rgba(0,0,0,0.85);
+}
+.gal-fullscreen-thumbs.gal-lightbox-open .gal-prev,
+.gal-fullscreen-thumbs.gal-lightbox-open .gal-next {
+  display: inline-flex;
+  position: fixed;
+  top: 0;
+  bottom: 0;
+  z-index: 6;
+}
+.gal-fullscreen-thumbs.gal-lightbox-open .gal-prev {
+  left: 0;
+}
+.gal-fullscreen-thumbs.gal-lightbox-open .gal-next {
+  right: 0;
+}
+
+/* Thumbnail strip docking — which edge the strip sits on. The default (right)
+   keeps the original row layout; left just swaps the strip ahead of the image;
+   top/bottom turn the gallery into a column so the strip becomes a horizontal
+   band. --gal-thumbs-width is the strip's extent along its docking edge (a width
+   when vertical, a height when horizontal — flex-basis follows the container's
+   main axis, which setLayout() flips for us). */
+:root.gal-thumbs-top #a-gallery,
+:root.gal-thumbs-bottom #a-gallery {
+  flex-direction: column;
+}
+:root.gal-thumbs-left .gal-thumbnails,
+:root.gal-thumbs-top .gal-thumbnails {
+  order: -1;
+}
+/* Divider goes on the edge that faces the image. */
+:root.gal-thumbs-left .gal-thumbnails {
+  border-left: none;
+  border-right: 1px solid #222;
+}
+:root.gal-thumbs-top .gal-thumbnails {
+  border-left: none;
+  border-bottom: 1px solid #222;
+}
+:root.gal-thumbs-bottom .gal-thumbnails {
+  border-left: none;
+  border-top: 1px solid #222;
+}
+/* Horizontal strips (top/bottom): wrap thumbnails across the full screen width
+   and scroll DOWN to reveal more rows — the mirror of the left/right strips,
+   which fix the column count and scroll down. The band is --gal-thumbs-width
+   tall (one row in list mode, the Rows count in grid mode); scroll-snap steps it
+   a row at a time. Excludes the hidden/fullscreen states so their rules win. */
+:root.gal-thumbs-top:not(.gal-fullscreen-thumbs):not(.gal-hide-thumbnails) .gal-thumbnails,
+:root.gal-thumbs-bottom:not(.gal-fullscreen-thumbs):not(.gal-hide-thumbnails) .gal-thumbnails {
+  display: grid;
+  grid-template-columns: repeat(auto-fill, minmax(125px, 1fr));
+  grid-auto-rows: max-content;
+  align-content: start;
+  overflow-x: hidden;
+  overflow-y: auto;
+  scroll-snap-type: y proximity;
+}
+:root.gal-thumbs-top .gal-thumb,
+:root.gal-thumbs-bottom .gal-thumb {
+  scroll-snap-align: start;
+}
+
 .gal-thumb img,
 .gal-thumb video {
   max-width: 125px;
@@ -4215,25 +4327,39 @@ input[type="checkbox"]:checked ~ .checkbox-letter {
 :root.gal-pdf .gal-buttons a:hover {
   color: rgb(204, 204, 204) !important;
 }
+/* The fixed top-right buttons and bottom-right labels sit at a base gap from the
+   viewport edges. The 44px base accounts for the image viewport's vertical
+   scrollbar; fit-height removes it, dropping to 28px. Whichever edge the strip
+   docks to then pushes the controls clear of it by --gal-thumbs-width (0 when
+   hidden, 150px in list mode, cols-driven in grid mode). */
 .gal-buttons,
 .gal-labels {
   position: fixed;
-  right: 195px;
-}
-.gal-hide-thumbnails .gal-buttons,
-.gal-hide-thumbnails .gal-labels {
   right: 44px;
 }
 :root:not(.gal-fit-width):not(.gal-pdf) .gal-labels {
   bottom: 23px !important;
 }
-:root.gal-fit-height:not(.gal-pdf):not(.gal-hide-thumbnails) .gal-buttons,
-:root.gal-fit-height:not(.gal-pdf):not(.gal-hide-thumbnails) .gal-labels {
-  right: 178px !important;
-}
-:root.gal-hide-thumbnails.gal-fit-height:not(.gal-pdf) .gal-buttons,
-:root.gal-hide-thumbnails.gal-fit-height:not(.gal-pdf) .gal-labels {
+:root.gal-fit-height:not(.gal-pdf) .gal-buttons,
+:root.gal-fit-height:not(.gal-pdf) .gal-labels {
   right: 28px !important;
+}
+/* Right-docked strip pushes the right-anchored controls left of it. */
+:root.gal-thumbs-right .gal-buttons,
+:root.gal-thumbs-right .gal-labels {
+  right: calc(44px + var(--gal-thumbs-width, 150px));
+}
+:root.gal-thumbs-right.gal-fit-height:not(.gal-pdf) .gal-buttons,
+:root.gal-thumbs-right.gal-fit-height:not(.gal-pdf) .gal-labels {
+  right: calc(28px + var(--gal-thumbs-width, 150px)) !important;
+}
+/* Top-docked strip pushes the top-anchored buttons below it. */
+:root.gal-thumbs-top .gal-buttons {
+  top: calc(5px + var(--gal-thumbs-width, 150px));
+}
+/* Bottom-docked strip lifts the bottom-anchored labels above it. */
+:root.gal-thumbs-bottom .gal-labels {
+  bottom: calc(23px + var(--gal-thumbs-width, 150px)) !important;
 }
 :root.gallery-open.fixed #header-bar:not(.autohide) {
   visibility: hidden;

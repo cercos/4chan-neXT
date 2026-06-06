@@ -103,6 +103,7 @@ var Gallery = {
     if (Conf['Mouse Wheel Volume']) { $.on(nodes.frame, 'wheel', Volume.wheel); }
     $.on(nodes.next,  'click', cb.click);
     $.on(nodes.name,  'click', ImageCommon.download);
+    $.on(nodes.thumbs, 'click', cb.thumbsBlank);
 
     const prev =  $('.gal-prev',  dialog);
     const next =  $('.gal-next',  dialog);
@@ -132,10 +133,13 @@ var Gallery = {
       nodes.menu.addEntry(entry);
     }
 
+    Gallery.cb.setLayout();
+
     $.on(d, 'keydown', cb.keybinds);
     if (Conf['Keybinds']) { $.off(d, 'keydown', Keybinds.keydown); }
 
     $.on(window, 'resize', Gallery.cb.setHeight);
+    $.on(window, 'resize', Gallery.cb.setLayout);
 
     for (var postThumb of $$(g.SITE.selectors.file.thumb)) {
       var post;
@@ -337,7 +341,8 @@ var Gallery = {
 
       const cb = (() => { switch (key) {
         case Conf['Close']: case Conf['Open Gallery']:
-          return Gallery.cb.close;
+          return (Gallery.fullscreen && doc.classList.contains('gal-lightbox-open'))
+            ? Gallery.cb.closeLightbox : Gallery.cb.close;
         case Conf['Next Gallery Image']:
           return Gallery.cb.next;
         case Conf['Advance Gallery']:
@@ -364,8 +369,13 @@ var Gallery = {
 
     open(e) {
       if (e) { e.preventDefault(); }
+      // In fullscreen-thumbnails mode a click opens the image as a lightbox
+      // overlaid on the grid rather than in the (collapsed) inline preview.
+      if (Gallery.fullscreen) { $.addClass(doc, 'gal-lightbox-open'); }
       if (this) { return Gallery.open(this); }
     },
+
+    closeLightbox() { return $.rmClass(doc, 'gal-lightbox-open'); },
 
     image(e) {
       e.preventDefault();
@@ -392,7 +402,27 @@ var Gallery = {
 
     advance() { if (!Conf['Autoplay'] && Gallery.nodes.current.paused) { return Gallery.nodes.current.play(); } else { return Gallery.cb.next(); } },
     toggle() { return (Gallery.nodes ? Gallery.cb.close : Gallery.build)(); },
-    blank(e) { if (e.target === this) { return Gallery.cb.close(); } },
+    blank(e) {
+      if (e.target !== this) { return; }
+      // Clicking the dimmed area behind a fullscreen lightbox returns to the
+      // grid; everywhere else it closes the gallery.
+      if (Gallery.fullscreen && doc.classList.contains('gal-lightbox-open')) {
+        return Gallery.cb.closeLightbox();
+      }
+      return Gallery.cb.close();
+    },
+
+    // In fullscreen-thumbnails mode, clicking the empty grid background closes
+    // the gallery — but only well below the last image, so a row that holds
+    // images (including its blank/trailing spots) never closes, and a near-miss
+    // just under an image is forgiven by a 70px buffer.
+    thumbsBlank(e) {
+      if (!Gallery.fullscreen || (e.target !== this)) { return; }
+      const last = Gallery.images[Gallery.images.length - 1];
+      if (last && (e.clientY > (last.getBoundingClientRect().bottom + 70))) {
+        return Gallery.cb.close();
+      }
+    },
     toggleSlideshow() {  return Gallery.cb[Gallery.slideshow ? 'stop' : 'start'](); },
 
     download() {
@@ -444,16 +474,86 @@ var Gallery = {
       }
       delete Gallery.nodes;
       delete Gallery.fileIDs;
+      delete Gallery.colInput;
+      delete Gallery.colLabelText;
+      Gallery.fullscreen = false;
+      $.rmClass(doc, 'gal-lightbox-open');
+      for (var p of Gallery.cb.positions) { $.rmClass(doc, `gal-thumbs-${p}`); }
       doc.style.overflow = '';
 
       $.off(d, 'keydown', Gallery.cb.keybinds);
       if (Conf['Keybinds']) { $.on(d, 'keydown', Keybinds.keydown); }
       $.off(window, 'resize', Gallery.cb.setHeight);
+      $.off(window, 'resize', Gallery.cb.setLayout);
       return clearTimeout(Gallery.timeoutID);
     },
 
     setFitness() {
       return (this.checked ? $.addClass : $.rmClass)(doc, `gal-${this.name.toLowerCase().replace(/\s+/g, '-')}`);
+    },
+
+    positions: ['top', 'bottom', 'left', 'right'],
+
+    // Drive thumbnail-strip extent, column count and dock edge from config, so
+    // the grid, the strip size and the fixed label/button offsets all stay in
+    // sync. The strip never grows past MAX_EXTENT of the relevant viewport
+    // dimension; once a column would cross that line we stop adding columns
+    // rather than squashing the cells. Columns of 0 in grid mode is the special
+    // "fullscreen thumbnails" view (no image preview, lightbox on click).
+    //
+    // --gal-thumbs-width is the strip's extent along whichever edge it docks to:
+    // a width for the left/right (vertical) strips, a height for the top/bottom
+    // (horizontal) ones. Because #a-gallery switches to flex-direction:column
+    // for top/bottom, the same flex-basis variable reads as height there.
+    setLayout() {
+      const THUMB_CELL = 131;           // approx px per thumb incl. padding
+      const MAX_EXTENT = 0.75;          // strip caps at 75% of its docking axis
+      const cols   = Math.max(0, parseInt(Conf['Gallery Columns'], 10) || 0);
+      const hidden = Conf['Hide Thumbnails'];
+      const grid   = Conf['Grid Thumbnails'] && !hidden;
+      const pos    = Gallery.cb.positions.includes(Conf['Gallery Thumbnails Position'])
+        ? Conf['Gallery Thumbnails Position'] : 'right';
+      const horizontal = (pos === 'top') || (pos === 'bottom');
+
+      for (var p of Gallery.cb.positions) { doc.classList.toggle(`gal-thumbs-${p}`, p === pos); }
+
+      // The number means columns for the vertical (left/right) strips and rows
+      // for the horizontal (top/bottom) ones; relabel the field to match.
+      if (Gallery.colLabelText) { Gallery.colLabelText.nodeValue = horizontal ? 'Gallery Rows: ' : 'Gallery Columns: '; }
+
+      Gallery.fullscreen = grid && (cols === 0);
+      doc.classList.toggle('gal-fullscreen-thumbs', Gallery.fullscreen);
+      if (!Gallery.fullscreen) { doc.classList.remove('gal-lightbox-open'); }
+
+      // Largest column count that keeps the strip within the cap, measured along
+      // the strip's docking axis. Exposed as the input's `max` so the spinner
+      // won't tick past what actually fits.
+      const axis = horizontal ? doc.clientHeight : doc.clientWidth;
+      const maxCols = Math.max(1, Math.floor(((MAX_EXTENT * axis) - 8) / THUMB_CELL));
+      if (Gallery.colInput) { Gallery.colInput.max = maxCols; }
+
+      let effCols = cols, extent;
+      if (hidden || Gallery.fullscreen) {
+        extent = 0;                     // no inline strip (or strip is the whole screen)
+      } else if (grid) {
+        effCols = Math.min(cols, maxCols);
+        extent = (effCols * THUMB_CELL) + 8;
+      } else {
+        extent = 150;
+      }
+      doc.style.setProperty('--gal-cols', effCols || 1);
+      return doc.style.setProperty('--gal-thumbs-width', `${extent}px`);
+    },
+
+    // Keep a typed-in column count within [0, max-that-fits] so the field can't
+    // hold a value larger than the cap allows.
+    clampColumns() {
+      const max = parseInt(this.max, 10);
+      let v = parseInt(this.value, 10);
+      if (isNaN(v)) { return; }
+      v = Math.max(0, v);
+      if (max && (v > max)) { v = max; }
+      this.value = v;
     },
 
     setHeight: debounce(100, function () {
@@ -511,12 +611,33 @@ var Gallery = {
       if (['Hide Thumbnails', 'Fit Width', 'Fit Height'].includes(name)) { $.on(input, 'change', Gallery.cb.setFitness); }
       $.event('change', null, input);
       $.on(input, 'change', $.cb.checked);
+      if (['Hide Thumbnails'].includes(name)) { $.on(input, 'change', Gallery.cb.setLayout); }
       if (['Hide Thumbnails', 'Fit Width', 'Fit Height', 'Stretch to Fit'].includes(name)) { $.on(input, 'change', Gallery.cb.setHeight); }
       return {el: label};
     },
 
     createSubEntries() {
-      const subEntries = (['Hide Thumbnails', 'Fit Width', 'Fit Height', 'Stretch to Fit', 'Scroll to Post'].map((item) => Gallery.menu.createSubEntry(item)));
+      const subEntries = (['Hide Thumbnails', 'Grid Thumbnails', 'Fit Width', 'Fit Height', 'Stretch to Fit', 'Scroll to Post'].map((item) => Gallery.menu.createSubEntry(item)));
+
+      const colLabel = $.el('label', {title: '0 disables the image preview and shows fullscreen thumbnails.', innerHTML: 'Gallery Columns: <input type="number" name="Gallery Columns" min="0" step="1" class="field" title="0 disables the image preview and shows fullscreen thumbnails.">'});
+      const colInput = colLabel.firstElementChild;
+      colInput.value = Math.max(0, parseInt(Conf['Gallery Columns'], 10) || 0);
+      Gallery.colInput = colInput;
+      Gallery.colLabelText = colLabel.firstChild;   // "Gallery Columns: " text node, relabelled per dock
+      $.on(colInput, 'change', Gallery.cb.clampColumns);
+      $.on(colInput, 'change', $.cb.value);
+      $.on(colInput, 'change', Gallery.cb.setLayout);
+      subEntries.push({el: colLabel});
+
+      const posOptions = Gallery.cb.positions.map(p =>
+        `<option value="${p}">${p[0].toUpperCase()}${p.slice(1)}</option>`).join('');
+      const posLabel = $.el('label', {innerHTML: `Thumbnails Position: <select name="Gallery Thumbnails Position" class="field">${posOptions}</select>`});
+      const posInput = posLabel.firstElementChild;
+      posInput.value = Gallery.cb.positions.includes(Conf['Gallery Thumbnails Position'])
+        ? Conf['Gallery Thumbnails Position'] : 'right';
+      $.on(posInput, 'change', $.cb.value);
+      $.on(posInput, 'change', Gallery.cb.setLayout);
+      subEntries.push({el: posLabel});
 
       const delayLabel = $.el('label', {innerHTML: 'Slide Delay: <input type="number" name="Slide Delay" min="0" step="any" class="field">'});
       const delayInput = delayLabel.firstElementChild;
