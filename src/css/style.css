@@ -776,12 +776,11 @@ div[data-checked="false"] > .suboption-list {
   border-left: 1px solid;
   border-bottom: 1px solid;
 }
-/* Hide the inline ": description" text — kept in the DOM for search
-   highlighting. Hover descriptions come from native browser tooltips:
-   each row's title attribute is set in Settings.tsx alongside its
-   data-setting-description, which avoids the parent-vs-child overlap
-   that a CSS :hover-based tooltip would cause on nested rows. */
 #fourchanx-settings .description {
+  display: inline;
+  opacity: .72;
+}
+#fourchanx-settings.settings-description-tooltips:not(.settings-searching) .description {
   display: none;
 }
 /* While searching, reveal descriptions so <mark> highlights are visible. */
@@ -1177,18 +1176,18 @@ div[data-checked="false"] > .suboption-list {
   /* Reset any site theme that forces a reply background via !important so the
      preview faithfully shows the configured highlight colors. */
   background-color: var(--xt-post-background, var(--xt-background, transparent)) !important;
-  border-left: var(--xt-highlight-edge-width, 3px) solid transparent !important;
+  border-left: var(--xt-edge-width-ghost, var(--xt-highlight-edge-width, 3px)) solid transparent !important;
 }
 .styling-preview[data-highlight-own="true"] .styling-preview-post.yourPost > .reply {
-  border-left: var(--xt-highlight-edge-width, 3px) dashed color-mix(in srgb, var(--xt-highlight-own, var(--xt-border-highlight)) calc(var(--xt-highlight-own-opacity, 1) * 100%), transparent) !important;
+  border-left: var(--xt-edge-width-own, var(--xt-highlight-edge-width, 3px)) dashed color-mix(in srgb, var(--xt-highlight-own, var(--xt-border-highlight)) calc(var(--xt-highlight-own-opacity, 1) * 100%), transparent) !important;
   background-color: color-mix(in srgb, var(--xt-highlight-own, var(--xt-border-highlight)) calc(var(--xt-highlight-own-opacity, 1) * 100%), var(--xt-post-background, var(--xt-background, transparent))) !important;
 }
 .styling-preview[data-highlight-you="true"] .styling-preview-post.quotesYou > .reply {
-  border-left: var(--xt-highlight-edge-width, 3px) solid color-mix(in srgb, var(--xt-highlight-you, var(--xt-border-highlight)) calc(var(--xt-highlight-you-opacity, 1) * 100%), transparent) !important;
+  border-left: var(--xt-edge-width-you, var(--xt-highlight-edge-width, 3px)) solid color-mix(in srgb, var(--xt-highlight-you, var(--xt-border-highlight)) calc(var(--xt-highlight-you-opacity, 1) * 100%), transparent) !important;
   background-color: color-mix(in srgb, var(--xt-highlight-you, var(--xt-border-highlight)) calc(var(--xt-highlight-you-opacity, 1) * 100%), var(--xt-post-background, var(--xt-background, transparent))) !important;
 }
 .styling-preview[data-highlight-ghost="true"] .styling-preview-post.from-archive > .reply {
-  border-left: var(--xt-highlight-edge-width, 3px) dotted color-mix(in srgb, var(--xt-highlight-ghost, #888) calc(var(--xt-highlight-ghost-opacity, 1) * 100%), transparent) !important;
+  border-left: var(--xt-edge-width-ghost, var(--xt-highlight-edge-width, 3px)) dotted color-mix(in srgb, var(--xt-highlight-ghost, #888) calc(var(--xt-highlight-ghost-opacity, 1) * 100%), transparent) !important;
   background-color: color-mix(in srgb, var(--xt-highlight-ghost, #888) calc(var(--xt-highlight-ghost-opacity, 1) * 100%), var(--xt-post-background, var(--xt-background, transparent))) !important;
 }
 .styling-preview[data-edge-own="true"] .styling-preview-post.yourPost > .reply,
@@ -1245,13 +1244,13 @@ div[data-checked="false"] > .suboption-list {
 }
 .styling-preview[data-highlight-catalog-own="true"]:not([data-edge-catalog-own="true"]) .catalog-thread:has(.yourPost),
 .styling-preview[data-highlight-catalog-own="true"]:not([data-edge-catalog-own="true"]) .catalog-thread.yourPost {
-  background: color-mix(in srgb, var(--xt-catalog-own-highlight, var(--xt-highlight-own)) calc(var(--xt-catalog-own-highlight-opacity, 1) * 100%), var(--xt-background, #d6daf0)) !important;
+  background: color-mix(in srgb, var(--xt-catalog-own-highlight, var(--xt-highlight-own)) calc(var(--xt-catalog-own-highlight-opacity, 1) * 100%), var(--xt-post-background, var(--xt-background, #d6daf0))) !important;
   overflow: hidden;
 }
 .styling-preview[data-highlight-catalog-own="true"][data-edge-catalog-own="true"] .catalog-thread:has(.yourPost),
 .styling-preview[data-highlight-catalog-own="true"][data-edge-catalog-own="true"] .catalog-thread.yourPost {
-  border-color: var(--xt-catalog-own-highlight, var(--xt-highlight-own, var(--xt-border-highlight))) !important;
-  border-width: var(--xt-catalog-border-width, 3px) !important;
+  border-color: color-mix(in srgb, var(--xt-catalog-own-highlight, var(--xt-highlight-own, var(--xt-border-highlight))) calc(var(--xt-catalog-own-highlight-opacity, 1) * 100%), transparent) !important;
+  border-width: var(--xt-catalog-border-width-own, var(--xt-catalog-border-width, 3px)) !important;
 }
 .styling-preview[data-highlight-catalog-own="true"]:not([data-edge-catalog-own="true"]) .catalog-thread:has(.yourPost) > .catalog-container,
 .styling-preview[data-highlight-catalog-own="true"]:not([data-edge-catalog-own="true"]) .catalog-thread.yourPost > .catalog-container,
@@ -1262,69 +1261,69 @@ div[data-checked="false"] > .suboption-list {
   background: transparent !important;
   border-color: transparent !important;
 }
-.styling-preview[data-highlight-catalog-own="true"] .catalog-thread:has(.yourPost) .post.catalog-post.yourPost,
-.styling-preview[data-highlight-catalog-own="true"] .catalog-thread.yourPost .post.catalog-post,
-.styling-preview[data-highlight-catalog-own="true"] .catalog-thread > .catalog-container.yourPost .post.catalog-post {
+.styling-preview[data-highlight-catalog-own="true"][data-text-catalog-own="true"] .catalog-thread:has(.yourPost) .post.catalog-post.yourPost,
+.styling-preview[data-highlight-catalog-own="true"][data-text-catalog-own="true"] .catalog-thread.yourPost .post.catalog-post,
+.styling-preview[data-highlight-catalog-own="true"][data-text-catalog-own="true"] .catalog-thread > .catalog-container.yourPost .post.catalog-post {
   color: var(--xt-catalog-own-text, var(--xt-text-color)) !important;
 }
-.styling-preview[data-highlight-catalog-own="true"] .catalog-thread.yourPost .post.catalog-post .postInfo,
-.styling-preview[data-highlight-catalog-own="true"] .catalog-thread.yourPost .post.catalog-post .postMessage,
-.styling-preview[data-highlight-catalog-own="true"] .catalog-thread.yourPost .post.catalog-post .summary,
-.styling-preview[data-highlight-catalog-own="true"] .catalog-thread.yourPost .post.catalog-post .catalog-stats,
-.styling-preview[data-highlight-catalog-own="true"] .catalog-thread > .catalog-container.yourPost .post.catalog-post .postInfo,
-.styling-preview[data-highlight-catalog-own="true"] .catalog-thread > .catalog-container.yourPost .post.catalog-post .postMessage,
-.styling-preview[data-highlight-catalog-own="true"] .catalog-thread > .catalog-container.yourPost .post.catalog-post .summary,
-.styling-preview[data-highlight-catalog-own="true"] .catalog-thread > .catalog-container.yourPost .post.catalog-post .catalog-stats {
+.styling-preview[data-highlight-catalog-own="true"][data-text-catalog-own="true"] .catalog-thread.yourPost .post.catalog-post .postInfo,
+.styling-preview[data-highlight-catalog-own="true"][data-text-catalog-own="true"] .catalog-thread.yourPost .post.catalog-post .postMessage,
+.styling-preview[data-highlight-catalog-own="true"][data-text-catalog-own="true"] .catalog-thread.yourPost .post.catalog-post .summary,
+.styling-preview[data-highlight-catalog-own="true"][data-text-catalog-own="true"] .catalog-thread.yourPost .post.catalog-post .catalog-stats,
+.styling-preview[data-highlight-catalog-own="true"][data-text-catalog-own="true"] .catalog-thread > .catalog-container.yourPost .post.catalog-post .postInfo,
+.styling-preview[data-highlight-catalog-own="true"][data-text-catalog-own="true"] .catalog-thread > .catalog-container.yourPost .post.catalog-post .postMessage,
+.styling-preview[data-highlight-catalog-own="true"][data-text-catalog-own="true"] .catalog-thread > .catalog-container.yourPost .post.catalog-post .summary,
+.styling-preview[data-highlight-catalog-own="true"][data-text-catalog-own="true"] .catalog-thread > .catalog-container.yourPost .post.catalog-post .catalog-stats {
   color: var(--xt-catalog-own-text, var(--xt-text-color)) !important;
 }
-.styling-preview[data-highlight-catalog-own="true"] .catalog-thread.yourPost .post.catalog-post .subject,
-.styling-preview[data-highlight-catalog-own="true"] .catalog-thread > .catalog-container.yourPost .post.catalog-post .subject {
+.styling-preview[data-highlight-catalog-own="true"][data-text-catalog-own="true"] .catalog-thread.yourPost .post.catalog-post .subject,
+.styling-preview[data-highlight-catalog-own="true"][data-text-catalog-own="true"] .catalog-thread > .catalog-container.yourPost .post.catalog-post .subject {
   color: var(--xt-catalog-own-subject, var(--xt-catalog-own-text, var(--xt-text-color))) !important;
 }
-.styling-preview[data-highlight-catalog-own="true"] .catalog-thread.yourPost .post.catalog-post a,
-.styling-preview[data-highlight-catalog-own="true"] .catalog-thread > .catalog-container.yourPost .post.catalog-post a {
+.styling-preview[data-highlight-catalog-own="true"][data-text-catalog-own="true"] .catalog-thread.yourPost .post.catalog-post a,
+.styling-preview[data-highlight-catalog-own="true"][data-text-catalog-own="true"] .catalog-thread > .catalog-container.yourPost .post.catalog-post a {
   color: var(--xt-catalog-own-link, var(--xt-link-text-color)) !important;
 }
-.styling-preview[data-highlight-catalog-own="true"] .catalog-thread.yourPost .post.catalog-post .quote,
-.styling-preview[data-highlight-catalog-own="true"] .catalog-thread > .catalog-container.yourPost .post.catalog-post .quote {
+.styling-preview[data-highlight-catalog-own="true"][data-text-catalog-own="true"] .catalog-thread.yourPost .post.catalog-post .quote,
+.styling-preview[data-highlight-catalog-own="true"][data-text-catalog-own="true"] .catalog-thread > .catalog-container.yourPost .post.catalog-post .quote {
   color: var(--xt-catalog-own-quote, var(--xt-quote-text-color)) !important;
 }
-.styling-preview[data-highlight-catalog-own="true"] .catalog-thread.yourPost .post.catalog-post .deadlink,
-.styling-preview[data-highlight-catalog-own="true"] .catalog-thread > .catalog-container.yourPost .post.catalog-post .deadlink {
+.styling-preview[data-highlight-catalog-own="true"][data-text-catalog-own="true"] .catalog-thread.yourPost .post.catalog-post .deadlink,
+.styling-preview[data-highlight-catalog-own="true"][data-text-catalog-own="true"] .catalog-thread > .catalog-container.yourPost .post.catalog-post .deadlink {
   color: var(--xt-catalog-own-dead-link, var(--xt-dead-link-text-color, var(--xt-dead-link))) !important;
 }
 .styling-preview[data-highlight-catalog-watched="true"]:not([data-edge-catalog-watched="true"]) .catalog-thread.watched {
-  background: color-mix(in srgb, var(--xt-catalog-watched-highlight, var(--xt-watched-border, rgba(255, 0, 0, .75))) calc(var(--xt-catalog-watched-highlight-opacity, 0.2) * 100%), var(--xt-background, #d6daf0)) !important;
+  background: color-mix(in srgb, var(--xt-catalog-watched-highlight, var(--xt-watched-border, rgba(255, 0, 0, .75))) calc(var(--xt-catalog-watched-highlight-opacity, 0.2) * 100%), var(--xt-post-background, var(--xt-background, #d6daf0))) !important;
   overflow: hidden;
 }
 .styling-preview[data-highlight-catalog-watched="true"][data-edge-catalog-watched="true"] .catalog-thread.watched {
-  border-color: var(--xt-catalog-watched-highlight, var(--xt-watched-border, rgba(255, 0, 0, .75))) !important;
-  border-width: var(--xt-catalog-border-width, 3px) !important;
+  border-color: color-mix(in srgb, var(--xt-catalog-watched-highlight, var(--xt-watched-border, rgba(255, 0, 0, .75))) calc(var(--xt-catalog-watched-highlight-opacity, 0.2) * 100%), transparent) !important;
+  border-width: var(--xt-catalog-border-width-watched, var(--xt-catalog-border-width, 3px)) !important;
 }
 .styling-preview[data-highlight-catalog-watched="true"]:not([data-edge-catalog-watched="true"]) .catalog-thread.watched > .catalog-container,
 .styling-preview[data-highlight-catalog-watched="true"]:not([data-edge-catalog-watched="true"]) .catalog-thread.watched .post.catalog-post {
   background: transparent !important;
   border-color: transparent !important;
 }
-.styling-preview[data-highlight-catalog-watched="true"] .catalog-thread.watched .post.catalog-post {
+.styling-preview[data-highlight-catalog-watched="true"][data-text-catalog-watched="true"] .catalog-thread.watched .post.catalog-post {
   color: var(--xt-catalog-watched-text, var(--xt-text-color)) !important;
 }
-.styling-preview[data-highlight-catalog-watched="true"] .catalog-thread.watched .post.catalog-post .postInfo,
-.styling-preview[data-highlight-catalog-watched="true"] .catalog-thread.watched .post.catalog-post .postMessage,
-.styling-preview[data-highlight-catalog-watched="true"] .catalog-thread.watched .post.catalog-post .summary,
-.styling-preview[data-highlight-catalog-watched="true"] .catalog-thread.watched .post.catalog-post .catalog-stats {
+.styling-preview[data-highlight-catalog-watched="true"][data-text-catalog-watched="true"] .catalog-thread.watched .post.catalog-post .postInfo,
+.styling-preview[data-highlight-catalog-watched="true"][data-text-catalog-watched="true"] .catalog-thread.watched .post.catalog-post .postMessage,
+.styling-preview[data-highlight-catalog-watched="true"][data-text-catalog-watched="true"] .catalog-thread.watched .post.catalog-post .summary,
+.styling-preview[data-highlight-catalog-watched="true"][data-text-catalog-watched="true"] .catalog-thread.watched .post.catalog-post .catalog-stats {
   color: var(--xt-catalog-watched-text, var(--xt-text-color)) !important;
 }
-.styling-preview[data-highlight-catalog-watched="true"] .catalog-thread.watched .post.catalog-post .subject {
+.styling-preview[data-highlight-catalog-watched="true"][data-text-catalog-watched="true"] .catalog-thread.watched .post.catalog-post .subject {
   color: var(--xt-catalog-watched-subject, var(--xt-catalog-watched-text, var(--xt-text-color))) !important;
 }
-.styling-preview[data-highlight-catalog-watched="true"] .catalog-thread.watched .post.catalog-post a {
+.styling-preview[data-highlight-catalog-watched="true"][data-text-catalog-watched="true"] .catalog-thread.watched .post.catalog-post a {
   color: var(--xt-catalog-watched-link, var(--xt-link-text-color)) !important;
 }
-.styling-preview[data-highlight-catalog-watched="true"] .catalog-thread.watched .post.catalog-post .quote {
+.styling-preview[data-highlight-catalog-watched="true"][data-text-catalog-watched="true"] .catalog-thread.watched .post.catalog-post .quote {
   color: var(--xt-catalog-watched-quote, var(--xt-quote-text-color)) !important;
 }
-.styling-preview[data-highlight-catalog-watched="true"] .catalog-thread.watched .post.catalog-post .deadlink {
+.styling-preview[data-highlight-catalog-watched="true"][data-text-catalog-watched="true"] .catalog-thread.watched .post.catalog-post .deadlink {
   color: var(--xt-catalog-watched-dead-link, var(--xt-dead-link-text-color, var(--xt-dead-link))) !important;
 }
 .section-styling .styling-variant-bar {
@@ -1731,6 +1730,207 @@ body > #overlay:not(.media-preview) {
 .section-styling .styling-inline-option[data-color-linked="true"] .styling-inline-controls input[type="color"],
 .section-styling .styling-inline-option[data-color-linked="true"] .styling-inline-controls button[data-clear] {
   opacity: .45;
+}
+
+/* ── Highlights: per-state accordion ────────────────────────────── */
+.section-styling .styling-hl-group {
+  margin: 10px 0 8px;
+}
+.section-styling .styling-hl-grouphead {
+  align-items: center;
+  display: flex;
+  flex-wrap: wrap;
+  gap: 6px 16px;
+  margin: 6px 0;
+}
+.section-styling .styling-hl-master {
+  align-items: center;
+  display: inline-flex;
+  font-weight: 600;
+  gap: 5px;
+}
+.section-styling .styling-hl-width {
+  align-items: center;
+  display: inline-flex;
+  gap: 6px;
+  margin-left: auto;
+  opacity: .85;
+}
+.section-styling .styling-hl-width input[type="range"] {
+  width: 92px;
+}
+.section-styling .styling-hl-acc-item {
+  background: color-mix(in srgb, currentColor 3%, transparent);
+  border: 1px solid color-mix(in srgb, currentColor 20%, transparent);
+  border-radius: 6px;
+  margin: 3px 0;
+  overflow: hidden;
+}
+.section-styling .styling-hl-acc-head {
+  align-items: center;
+  cursor: pointer;
+  display: flex;
+  gap: 8px;
+  padding: 4px 10px;
+  user-select: none;
+}
+.section-styling .styling-hl-acc-item.styling-hl-open .styling-hl-acc-head {
+  background: color-mix(in srgb, currentColor 7%, transparent);
+  border-bottom: 1px solid color-mix(in srgb, currentColor 16%, transparent);
+}
+.section-styling .styling-hl-acc-toggle {
+  align-items: center;
+  display: inline-flex;
+}
+.section-styling .styling-hl-acc-name {
+  align-items: center;
+  display: flex;
+  flex: 1 1 auto;
+  font-weight: 600;
+  gap: 6px;
+  min-width: 0;
+}
+.section-styling .styling-hl-type-note {
+  font-size: 10px;
+  font-weight: 400;
+  opacity: .55;
+}
+.section-styling .styling-hl-acc-chev {
+  background: none;
+  border: 0;
+  color: inherit;
+  cursor: pointer;
+  font-size: 12px;
+  opacity: .55;
+  padding: 0 2px;
+  transition: transform .15s;
+}
+.section-styling .styling-hl-acc-item.styling-hl-open .styling-hl-acc-chev {
+  transform: rotate(90deg);
+}
+.section-styling .styling-hl-acc-body {
+  display: none;
+  padding: 1px 12px 4px;
+}
+.section-styling .styling-hl-acc-item.styling-hl-open .styling-hl-acc-body {
+  display: block;
+}
+.section-styling .styling-hl-sub {
+  border-bottom: 1px solid color-mix(in srgb, currentColor 18%, transparent);
+  font-size: 11px;
+  letter-spacing: .04em;
+  margin: 5px 0 1px;
+  opacity: .6;
+  padding-bottom: 2px;
+  text-transform: uppercase;
+}
+.section-styling .styling-hl-orow {
+  align-items: center;
+  border-bottom: 1px solid color-mix(in srgb, currentColor 8%, transparent);
+  display: flex;
+  gap: 10px;
+  justify-content: space-between;
+  padding: 2px 0;
+}
+.section-styling .styling-hl-orow:last-child {
+  border-bottom: 0;
+}
+.section-styling .styling-hl-olabel {
+  min-width: 0;
+  opacity: .9;
+}
+.section-styling .styling-hl-octl {
+  align-items: center;
+  display: inline-flex;
+  gap: 6px;
+}
+.section-styling .styling-hl-color input[type="color"],
+.section-styling .styling-hl-octl input[type="color"] {
+  background: transparent;
+  border: 1px solid rgba(128, 128, 128, .35);
+  height: 22px;
+  padding: 0;
+  width: 44px;
+}
+.section-styling .styling-hl-octl input[type="range"] {
+  width: 150px;
+}
+.section-styling .styling-hl-widthnum {
+  text-align: right;
+  width: 40px;
+}
+.section-styling .styling-hl-unit {
+  font-size: 11px;
+  opacity: .7;
+}
+.section-styling .styling-hl-valout {
+  font-size: 11px;
+  font-variant-numeric: tabular-nums;
+  min-width: 30px;
+  opacity: .75;
+  text-align: right;
+}
+.section-styling .styling-hl-octl select {
+  max-width: 110px;
+}
+.section-styling .styling-hl-color .styling-color-hex,
+.section-styling .styling-hl-octl .styling-color-hex {
+  font-family: ui-monospace, SFMono-Regular, Menlo, Monaco, Consolas, "Liberation Mono", "Courier New", monospace;
+  font-size: 11px;
+  height: 22px;
+  padding: 1px 4px;
+  text-transform: lowercase;
+  width: 70px;
+}
+.section-styling .styling-color-hex-invalid {
+  border-color: #d33;
+  box-shadow: 0 0 0 1px color-mix(in srgb, #d33 45%, transparent);
+}
+.section-styling .styling-hl-manual {
+  margin: 2px 0 4px;
+}
+.section-styling .styling-hl-manual[hidden] {
+  display: none;
+}
+.section-styling .styling-hl-manual > summary {
+  color: color-mix(in srgb, currentColor 65%, #6cf);
+  cursor: pointer;
+  font-size: 12px;
+  padding: 3px 0;
+}
+.section-styling .styling-hl-manual-row {
+  display: flex;
+  flex-wrap: wrap;
+  gap: 4px 12px;
+  padding: 4px 0 2px 10px;
+}
+.section-styling .styling-hl-manual-row label {
+  align-items: center;
+  display: inline-flex;
+  font-size: 12px;
+  gap: 4px;
+  opacity: .9;
+}
+.section-styling .styling-hl-manual-row input[type="color"] {
+  background: transparent;
+  border: 1px solid rgba(128, 128, 128, .35);
+  height: 22px;
+  padding: 0;
+  width: 34px;
+}
+/* Marker color slaved to its highlight colour → dim the now-inert picker. */
+.section-styling .styling-hl-mkcolor[data-color-linked="true"] input[type="color"],
+.section-styling .styling-hl-mkcolor[data-color-linked="true"] .styling-color-hex {
+  opacity: .45;
+}
+/* Disabled controls (gated by a master/per-row switch) read as muted, and
+   their row label dims with them. */
+.section-styling .styling-hl-acc input:disabled,
+.section-styling .styling-hl-acc select:disabled {
+  opacity: .5;
+}
+.section-styling .styling-hl-orow:has(input:disabled, select:disabled) .styling-hl-olabel {
+  opacity: .4;
 }
 .section-styling .custom-css-controls {
   align-items: center;

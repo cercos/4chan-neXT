@@ -4,6 +4,18 @@ import type SimpleDict from "../classes/SimpleDict";
 import type Post from "../classes/Post";
 import type Thread from "../classes/Thread";
 import type SWTinyboard from "../site/SW.tinyboard";
+import type SWYotsuba from "../site/SW.yotsuba";
+
+// The active site (g.SITE). At runtime it's `Object.create(SW[software])` with
+// `{ID, siteID, software, properties}` mixed in (see Site.set). SWYotsuba is the
+// fuller implementation (superset of the optional site hooks), so we base the
+// shared shape on it plus the runtime-attached fields.
+export type Site = typeof SWYotsuba & Partial<typeof SWTinyboard> & {
+  ID:         string,
+  siteID:     string,
+  software:   string,
+  properties: Record<string, any>,
+};
 
 // interfaces might be incomplete
 export interface BoardConfig {
@@ -30,6 +42,10 @@ export interface BoardConfig {
   country_flags:     number,
   board_flags:       Record<string, string>,
   user_ids?:         number,
+  code_tags?:        1 | 0,
+  math_tags?:        1 | 0,
+  require_subject?:  1 | 0,
+  text_only?:        1 | 0,
 }
 
 export interface Board {
@@ -47,14 +63,15 @@ export const g: {
   VERSION:   string,
   VERSION_DATE: Date,
   NAMESPACE: string,
-  sites:     (typeof SWTinyboard)[],
+  sites:     Site[],
   boardID?:  string,
   boards:    Board[],
   posts?:    SimpleDict<Post>,
   threads?:  SimpleDict<Thread>,
   threadID?: number,
   THREADID?: number,
-  SITE?:     typeof SWTinyboard,
+  threadArchived?: boolean,
+  SITE?:     Site,
   BOARD?:    Board,
   VIEW?:     string,
 } = {

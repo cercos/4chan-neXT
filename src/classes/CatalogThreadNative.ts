@@ -4,6 +4,17 @@ import Board from "./Board";
 import Thread from "./Thread";
 
 export default class CatalogThreadNative {
+  declare nodes: {
+    root: HTMLElement;
+    thumb: HTMLElement;
+  };
+  declare siteID: string;
+  declare boardID: string;
+  declare board: Board;
+  declare ID: number;
+  declare threadID: number;
+  declare thread: Thread;
+
   toString() { return this.ID; }
 
   constructor(root) {

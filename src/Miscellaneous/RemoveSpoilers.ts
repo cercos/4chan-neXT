@@ -10,12 +10,11 @@ import $$ from "../platform/$$";
  */
 var RemoveSpoilers = {
   init() {
-    const mode = Conf['Spoiler Mode'];
-    if (mode === 'reveal') {
+    if (Conf['Reveal Spoilers']) {
       $.addClass(doc, 'reveal-spoilers');
     }
 
-    if (mode !== 'remove') { return; }
+    if (!Conf['Remove Spoilers']) { return; }
 
     Callbacks.Post.push({
       name: 'Reveal Spoilers',

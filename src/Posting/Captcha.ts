@@ -166,6 +166,7 @@ const Captcha = {
       $.on(counter, 'click', this.toggle.bind(this));
       $.on(counter, 'keydown', e => {
         if (Keybinds.keyCode(e) !== 'Space') { return; }
+        if (e.shiftKey) { return; }
         this.toggle();
         e.preventDefault();
         return e.stopPropagation();

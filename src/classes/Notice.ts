@@ -5,7 +5,13 @@ import { SECOND } from "../platform/helpers";
 import Icon from '../Icons/icon';
 
 export default class Notice {
-  constructor(type, content, timeout, onclose) {
+  declare timeout: number;
+  declare onclose: (() => void) | undefined;
+  declare el: HTMLElement;
+  declare closed: boolean;
+  declare timeoutId: ReturnType<typeof setTimeout>;
+
+  constructor(type, content, timeout?, onclose?) {
     this.add = this.add.bind(this);
     this.close = this.close.bind(this);
     this.timeout = timeout;
@@ -13,7 +19,7 @@ export default class Notice {
     this.el = $.el('div', {
       innerHTML: `<a href="javascript:;" class="close" title="Close">${Icon.get('xmark')}</a><div class="message"></div>`
     });
-    this.el.style.opacity = 0;
+    this.el.style.opacity = '0';
     this.setType(type);
     $.on(this.el.firstElementChild, 'click', this.close);
     if (typeof content === 'string') {
@@ -37,7 +43,7 @@ export default class Notice {
     $.off(d, 'visibilitychange', this.add);
     $.add(Header.noticesRoot, this.el);
     this.el.clientHeight; // force reflow
-    this.el.style.opacity = 1;
+    this.el.style.opacity = '1';
     if (this.timeout) { this.timeoutId = setTimeout(this.close, this.timeout * SECOND); }
   }
 

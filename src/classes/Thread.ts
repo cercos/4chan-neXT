@@ -27,7 +27,7 @@ export default class Thread {
   declare lastPost: number;
   declare ipCount: number;
   declare json: any;
-  declare OP: any;
+  declare OP: Post;
   declare catalogView: any
   declare nodes: any
 

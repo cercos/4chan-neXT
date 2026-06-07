@@ -137,11 +137,12 @@ export const parseArchivePost = (data: RawArchivePost) => {
     o.fileDeleted = true;
   } else if (data.media?.media_filename) {
     let { thumb_link } = data.media;
-    // Fix URLs missing origin
-    if (thumb_link?.[0] === '/') { thumb_link = url.split('/', 3).join('/') + thumb_link; }
-    if (!Redirect.securityCheck(thumb_link)) { thumb_link = ''; }
     let media_link = Redirect.to('file', { boardID: o.boardID, filename: data.media.media_orig });
     if (!Redirect.securityCheck(media_link)) { media_link = ''; }
+    // Fix root-relative thumb URLs by prefixing the archive origin (same host the
+    // file is served from). Previously referenced an undefined `url`, throwing.
+    if (thumb_link?.[0] === '/' && media_link) { thumb_link = media_link.split('/', 3).join('/') + thumb_link; }
+    if (!Redirect.securityCheck(thumb_link)) { thumb_link = ''; }
     o.file = {
       name: data.media.media_filename,
       url: media_link ||

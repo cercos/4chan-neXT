@@ -31,6 +31,7 @@ interface FilterObj {
   hide: boolean;
   stub: any;
   hl: string;
+  tile?: boolean;
   top?: boolean;
   noti?: boolean;
   poster?: boolean;
@@ -75,6 +76,7 @@ var Filter = {
       if (key === 'general' && easyLines.length) lines.push(...easyLines);
       for (var line of lines) {
         let hl:       string;
+        let tile =    false;
         let regexp:   RegExp | string;
         let top:      boolean;
         let hide =    true;
@@ -153,6 +155,9 @@ var Filter = {
           const highlightRes = options.match(/(?:^|;)\s*highlight(?::([\w-]+))?/)
           if (highlightRes) {
             hl = highlightRes[1] || 'filter-highlight';
+            // Glow around the whole catalog entry (image + text) instead of
+            // just the thumbnail. Catalog-only; no effect in thread view.
+            tile = /(?:^|;)\s*tile(?:[;:]|$)/.test(options);
             // Put highlighted OP's thread on top of the board page or not.
             // Defaults to on top.
             top = (options.match(/(?:^|;)\s*top:(yes|no)/)?.[1] || 'yes') === 'yes';
@@ -178,7 +183,7 @@ var Filter = {
           : `${key}: ${regexp}`;
 
         const filterObj: FilterObj
-          = { regexp, boards, excludes, mask, hide, stub, hl, top, noti, reason, poster, replies, override, label };
+          = { regexp, boards, excludes, mask, hide, stub, hl, tile, top, noti, reason, poster, replies, override, label };
 
         // Fields that this filter applies to (for 'general' filters)
         if (key === 'general') {
@@ -294,6 +299,10 @@ var Filter = {
           }
           if (filter.hl && !hl?.includes(filter.hl)) {
             (hl || (hl = [])).push(filter.hl);
+          }
+          // `;tile` glows the whole catalog entry instead of the thumbnail.
+          if (filter.hl && filter.tile && !hl.includes('filter-glow-tile')) {
+            hl.push('filter-glow-tile');
           }
           if (filter.override && filter.hl) hlOverride = true;
           if (!top) { ({ top } = filter); }
@@ -448,7 +457,7 @@ var Filter = {
     }
     if (this.file?.thumbLink) {
       $.on(this.file.thumbLink, 'click', (e: MouseEvent) => {
-        if (!e.shiftKey) return;
+        if (!e.shiftKey || !Conf['MD5 Quick Filter in Threads']) return;
         Filter.quickFilterMD5.call(this);
         e.preventDefault();
         e.stopImmediatePropagation();
@@ -607,6 +616,14 @@ var Filter = {
       g.posts.forEach(hideMatchingPost);
     } else {
       hideMatchingPost(origin);
+    }
+
+    if (!Conf['MD5 Quick Filter Notifications']) {
+      // Feedback for when nothing gets hidden.
+      if (post.nodes.post.getBoundingClientRect().height) {
+        new Notice('info', 'MD5 filtered.', 2);
+      }
+      return;
     }
 
     let {notice} = Filter.quickFilterMD5;

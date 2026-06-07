@@ -446,7 +446,8 @@ const CaptchaT = {
       progress.textContent = '';
       return;
     }
-    progress.textContent = `${TCaptcha.taskId + 1}/${tasks.length}`;
+    const current = Math.min(TCaptcha.taskId + 1, tasks.length);
+    progress.textContent = `${current}/${tasks.length}`;
   },
 
   formatDescription(str) {
@@ -526,11 +527,13 @@ const CaptchaT = {
       TCaptcha.setTaskId(nextId);
       this.createImageGrid(TCaptcha);
     } else {
+      TCaptcha.taskId = TCaptcha.tasks.length;
       TCaptcha.setTaskNodeContent('Done.');
       this.setState('complete');
-      this.updateProgress({ taskId: totalTasks, tasks: TCaptcha.tasks });
+      this.updateProgress(TCaptcha);
       this.cachedButtons = [];
       this.currentHighlightIndex = -1;
+      if (Conf['Post on Captcha Completion'] && !QR.cooldown.auto) { QR.submit(); }
     }
   },
 
@@ -540,22 +543,6 @@ const CaptchaT = {
     window.addEventListener('keydown', e => {
       if (!TCaptcha.__fourchanXStackedEnabled) { return; }
       if (!this.nodes?.container || !document.body.contains(this.nodes.container)) { return; }
-
-      if (e.shiftKey && e.code === 'Space') {
-        e.preventDefault();
-        e.stopImmediatePropagation();
-
-        document.querySelector('#notifications .notification.warning a.close')?.closest('.notification')?.remove();
-        this.cachedButtons = (this.cachedButtons || []).filter(btn => document.body.contains(btn));
-
-        if (this.cachedButtons.length > 0) {
-          this.currentHighlightIndex = (this.currentHighlightIndex + 1) % this.cachedButtons.length;
-          this.updateHighlight();
-        } else {
-          TCaptcha.onReloadClick();
-        }
-        return;
-      }
 
       if (e.key === 'Enter' && this.cachedButtons?.length > 0 && this.currentHighlightIndex >= 0) {
         e.preventDefault();
@@ -604,8 +591,15 @@ const CaptchaT = {
         setTaskNodeContent: TCaptcha.setTaskNodeContent,
         buildSliderNode: TCaptcha.buildSliderNode,
         buildNextNode: TCaptcha.buildNextNode,
+        onSliderKeyUp: TCaptcha.onSliderKeyUp,
       };
     }
+
+    const o = TCaptcha.__fourchanXOriginal;
+    TCaptcha.onSliderKeyUp = function(e) {
+      if (e?.shiftKey && ((e.code === 'Space') || (e.keyCode === 32))) { return; }
+      return o.onSliderKeyUp.call(this, e);
+    };
   },
 
   setStacked(enabled, TCaptcha) {
@@ -638,6 +632,10 @@ const CaptchaT = {
         TCaptcha.setTaskNodeContent = o.setTaskNodeContent;
         TCaptcha.buildSliderNode = o.buildSliderNode;
         TCaptcha.buildNextNode = o.buildNextNode;
+        TCaptcha.onSliderKeyUp = function(e) {
+          if (e?.shiftKey && ((e.code === 'Space') || (e.keyCode === 32))) { return; }
+          return o.onSliderKeyUp.call(this, e);
+        };
       }
       TCaptcha.__fourchanXStackedEnabled = false;
       this.cachedButtons = [];

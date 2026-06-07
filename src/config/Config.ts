@@ -14,9 +14,18 @@ const Config = {
         `Link to ${meta.name}'s catalog instead of the native 4chan one.`,
         1
       ],
+      'Index Refresh Notifications': [
+        false,
+        'Show a notice at the top of the page when the index is refreshed.',
+        1
+      ],
       'Follow Cursor': [
         true,
         'Image Hover and Quote Preview move with the mouse cursor.'
+      ],
+      'Settings Descriptions as Tooltips': [
+        false,
+        'Show setting descriptions as browser tooltips instead of inline text.'
       ],
       'Open Threads in New Tab': [
         false,
@@ -58,6 +67,15 @@ const Config = {
         true,
         'Localize and format timestamps. Has more options on the "Advanced" tab.'
       ],
+      'Relative Post Dates': [
+        false,
+        'Display dates like "3 minutes ago". Tooltip shows the timestamp.'
+      ],
+      'Relative Date Title': [
+        false,
+        'Show Relative Post Date only when hovering over dates.',
+        1
+      ],
       'Comment Expansion': [
         true,
         'Expand comments that are too long to display on the index. Not applicable with JSON Index.'
@@ -86,6 +104,15 @@ const Config = {
         true,
         'Allow editing of the board title and subtitle by ctrl/\u2318+clicking them.'
       ],
+      'Persistent Custom Board Titles': [
+        false,
+        'Force custom board titles to be persistent, even if the board titles are updated.',
+        1
+      ],
+      'Show Updated Notifications': [
+        true,
+        `Show notifications when ${meta.name} is successfully updated.`
+      ],
       'Color User IDs': [
         true,
         'Assign unique colors to user IDs on boards that use them'
@@ -93,6 +120,14 @@ const Config = {
       'Count Posts by ID': [
         true,
         'Display number of posts in the thread when hovering over an ID.'
+      ],
+      'Remove Spoilers': [
+        false,
+        'Remove all spoilers in text.'
+      ],
+      'Reveal Spoilers': [
+        false,
+        'Indicate spoilers if Remove Spoilers is enabled, or make the text appear hovered if Remove Spoiler is disabled.'
       ],
       'Normalize URL': [
         true,
@@ -105,6 +140,18 @@ const Config = {
       'Disable Native Extension': [
         true,
         `${meta.name} is NOT designed to work with the native extension.`
+      ],
+      'Enable Native Flash Embedding': [
+        true,
+        'Activate the native extension\'s Flash embedding if the native extension is disabled.'
+      ],
+      'Export History': [
+        true,
+        'Export last read, your posts, etc. when exporting the setting'
+      ],
+      'Ask to Export History': [
+        true,
+        'Ask if history should be exported when settings are exported.'
       ],
       'Scroll Markers': [
         true,
@@ -177,6 +224,21 @@ const Config = {
       'Filter in Native Catalog': [
         true,
         'Apply 4chan X filters in native catalog.',
+        1
+      ],
+      'MD5 Quick Filter Notifications': [
+        true,
+        'Show notification when quick filtering MD5s using the button or keybind.',
+        1
+      ],
+      'MD5 Quick Filter in the Catalog': [
+        true,
+        'Quick filter by MD5 when clicking a thumbnail in the catalog and holding Shift. Disabling falls back on just hiding the thread.',
+        1
+      ],
+      'MD5 Quick Filter in Threads': [
+        true,
+        'Quick filter by MD5 when clicking a thumbnail in a thread while holding shift.',
         1
       ],
       'Recursive Hiding': [
@@ -261,6 +323,26 @@ const Config = {
         false,
         'Replace image and video thumbnails with the original media. Probably will degrade browser performance ;)'
       ],
+      'Replace GIF': [
+        false,
+        'Replace gif thumbnails with the actual image.',
+        1
+      ],
+      'Replace JPG': [
+        false,
+        'Replace jpg thumbnails with the actual image.',
+        1
+      ],
+      'Replace PNG': [
+        false,
+        'Replace png thumbnails with the actual image.',
+        1
+      ],
+      'Replace WEBM': [
+        false,
+        'Replace webm, mp4, and ogv thumbnails with the actual video. Probably will degrade browser performance ;)',
+        1
+      ],
       'Image Prefetching': [
         true,
         'Add a shortcut icon to the header to turn on image preloading.'
@@ -297,6 +379,14 @@ const Config = {
       'Mouse Wheel Volume': [
         true,
         'Adjust volume of videos with the mouse wheel over the thumbnail/filename/gallery.'
+      ],
+      'Loop in New Tab': [
+        true,
+        'Loop videos opened in their own tabs.'
+      ],
+      'Volume in New Tab': [
+        true,
+        `Apply ${meta.name} mute and volume settings to videos opened in their own tabs.`
       ],
       'Enable sound posts': [
         true,
@@ -589,6 +679,31 @@ const Config = {
         true,
         'Remove audio from MP4 and WebM uploads in Quick Reply on boards that do not allow audio.',
         1
+      ],
+      'Strip All Media Metadata': [
+        false,
+        'Strip metadata from all uploaded media in Quick Reply, regardless of type.',
+        1
+      ],
+      'Image Metadata': [
+        true,
+        'Strip metadata from image uploads in Quick Reply when "Strip All Media Metadata" is disabled.',
+        2
+      ],
+      'Video Metadata': [
+        true,
+        'Strip metadata from video uploads in Quick Reply when "Strip All Media Metadata" is disabled.',
+        2
+      ],
+      'Audio Metadata': [
+        false,
+        'Strip metadata from audio uploads in Quick Reply when "Strip All Media Metadata" is disabled.',
+        2
+      ],
+      'Other Metadata': [
+        false,
+        'Strip metadata from non-image/video/audio uploads in Quick Reply when "Strip All Media Metadata" is disabled and supported in-browser.',
+        2
       ],
       'Comment Preview': [
         false,
@@ -962,11 +1077,15 @@ http://eye.swfchan.com/search/?q=%name;types:swf
   // 'auto' applies the SFW or NSFW variant based on the active board's
   // ws_board flag; 'sfw'/'nsfw' force a single variant everywhere.
   sfwNsfwMode: 'auto',
-  textColorMode: 'auto',
+  // 'default' = leave text/link/greentext at the theme's native colors (no
+  // override); 'auto' = compute readable colors from the background; 'manual'
+  // = use the Text/Link/Quote/Dead-link color pickers below.
+  textColorMode: 'default',
   'Text Color': '',
   'Link Text Color': '',
   'Quote Text Color': '',
   'Dead Link Text Color': '',
+  'Scroll Marker Match Highlights': true,
   'Scroll Marker Own Match Highlight': true,
   'Scroll Marker You Match Highlight': true,
   'Scroll Marker Ghost Match Highlight': true,
@@ -976,9 +1095,14 @@ http://eye.swfchan.com/search/?q=%name;types:swf
   'Highlight Own Color':         '',
   'Highlight You Color':         '',
   'Highlight Ghost Color':       '',
+  // Per-highlight text coloring: 'default' = theme colors (no override),
+  // 'auto' = computed for contrast, 'manual' = the color pickers below.
   'Highlight Own Text Auto':     true,
   'Highlight You Text Auto':     true,
   'Highlight Ghost Text Auto':   true,
+  'Highlight Own Text Mode':     'default',
+  'Highlight You Text Mode':     'default',
+  'Highlight Ghost Text Mode':   'default',
   'Highlight Own Text Color':    '',
   'Highlight Own Link Color':    '',
   'Highlight Own Quote Color':   '',
@@ -995,6 +1119,9 @@ http://eye.swfchan.com/search/?q=%name;types:swf
   'Highlight You Opacity':       '',
   'Highlight Ghost Opacity':     '',
   'Thread Highlight Edge Width': 3,
+  'Highlight Own Edge Width':    3,
+  'Highlight You Edge Width':    3,
+  'Highlight Ghost Edge Width':  3,
   'Highlight Own Edge Only':     true,
   'Highlight You Edge Only':     true,
   'Highlight Ghost Edge Only':   true,
@@ -1009,13 +1136,15 @@ http://eye.swfchan.com/search/?q=%name;types:swf
   'Catalog Highlight Watched Opacity': '',
   'Catalog Highlight Watched Border Only': true,
   'Catalog Highlight Border Width': 3,
-  'Catalog Highlight Own Text Auto': true,
+  'Catalog Highlight Own Border Width': 3,
+  'Catalog Highlight Watched Border Width': 3,
+  'Catalog Highlight Own Text Mode': 'default',
   'Catalog Highlight Own Text Color': '',
   'Catalog Highlight Own Subject Color': '',
   'Catalog Highlight Own Link Color': '',
   'Catalog Highlight Own Quote Color': '',
   'Catalog Highlight Own Dead Link Color': '',
-  'Catalog Highlight Watched Text Auto': true,
+  'Catalog Highlight Watched Text Mode': 'default',
   'Catalog Highlight Watched Text Color': '',
   'Catalog Highlight Watched Subject Color': '',
   'Catalog Highlight Watched Link Color': '',
@@ -1429,7 +1558,8 @@ export const styleVariantKeys = [
   'Highlight Own Color', 'Highlight You Color', 'Highlight Ghost Color',
   'Highlight Own Opacity', 'Highlight You Opacity', 'Highlight Ghost Opacity',
   'Thread Highlight Edge Width',
-  'Highlight Own Text Auto', 'Highlight You Text Auto', 'Highlight Ghost Text Auto',
+  'Highlight Own Edge Width', 'Highlight You Edge Width', 'Highlight Ghost Edge Width',
+  'Highlight Own Text Mode', 'Highlight You Text Mode', 'Highlight Ghost Text Mode',
   'Highlight Own Text Color', 'Highlight Own Link Color', 'Highlight Own Quote Color', 'Highlight Own Dead Link Color',
   'Highlight You Text Color', 'Highlight You Link Color', 'Highlight You Quote Color', 'Highlight You Dead Link Color',
   'Highlight Ghost Text Color', 'Highlight Ghost Link Color', 'Highlight Ghost Quote Color', 'Highlight Ghost Dead Link Color',
@@ -1438,9 +1568,10 @@ export const styleVariantKeys = [
   'Catalog Highlight Watched Color', 'Catalog Highlight Watched Opacity',
   'Catalog Highlight Watched Border Only',
   'Catalog Highlight Border Width',
-  'Catalog Highlight Own Text Auto',
+  'Catalog Highlight Own Border Width', 'Catalog Highlight Watched Border Width',
+  'Catalog Highlight Own Text Mode',
   'Catalog Highlight Own Text Color', 'Catalog Highlight Own Subject Color', 'Catalog Highlight Own Link Color', 'Catalog Highlight Own Quote Color', 'Catalog Highlight Own Dead Link Color',
-  'Catalog Highlight Watched Text Auto',
+  'Catalog Highlight Watched Text Mode',
   'Catalog Highlight Watched Text Color', 'Catalog Highlight Watched Subject Color', 'Catalog Highlight Watched Link Color', 'Catalog Highlight Watched Quote Color', 'Catalog Highlight Watched Dead Link Color',
   'Scroll Marker Own Color', 'Scroll Marker You Color', 'Scroll Marker Ghost Color', 'Scroll Marker Unread Color',
   'Scroll Marker Own Opacity', 'Scroll Marker You Opacity', 'Scroll Marker Ghost Opacity', 'Scroll Marker Unread Opacity',

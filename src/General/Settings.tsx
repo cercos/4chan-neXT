@@ -15,6 +15,7 @@ import Keybinds from '../Miscellaneous/Keybinds';
 import Time from '../Miscellaneous/Time';
 import Favicon from '../Monitoring/Favicon';
 import ThreadUpdater from '../Monitoring/ThreadUpdater';
+import ThreadWatcher from '../Monitoring/ThreadWatcher';
 import SoundManager from '../Monitoring/SoundManager';
 import Unread from '../Monitoring/Unread';
 import $$ from '../platform/$$';
@@ -81,6 +82,13 @@ var Settings = {
 
   styleConf<T = any>(key: string, variant?: StyleVariant): T {
     return Conf[Settings.variantKey(key, variant)];
+  },
+
+  // Text-color mode for the global Text Colors picker and each highlight row.
+  // Anything that isn't an explicit 'auto'/'manual' means "use theme defaults"
+  // (no override) — that's the new default and the migration target.
+  resolveTextMode(value: any): 'default' | 'auto' | 'manual' {
+    return value === 'auto' || value === 'manual' ? value : 'default';
   },
 
   styleKeyBase(key: string): string {
@@ -759,6 +767,7 @@ var Settings = {
     Settings.decorateDetailsWithKeys(section, sectionInfo);
     section.scrollTop = 0;
     Settings.renderedSection = sectionInfo;
+    Settings.applyDescriptionMode(section);
     Settings.applySearch();
     $.event('OpenSettings', null, section);
     if (leavingStyling) Settings.stylingEditingVariant = null;
@@ -821,6 +830,36 @@ Enable it on boards.${location.hostname.split('.')[1]}.org in your browser's pri
     return lookup;
   },
 
+  descriptionsAsTooltips() {
+    return Conf['Settings Descriptions as Tooltips'] === true;
+  },
+
+  applyDescriptionMode(root: HTMLElement | Document = Settings.dialog || d) {
+    const settingsWindow = $('#fourchanx-settings', Settings.dialog || d) as HTMLElement | null;
+    const useTooltips = Settings.descriptionsAsTooltips();
+    if (settingsWindow) {
+      settingsWindow.classList.toggle('settings-description-tooltips', useTooltips);
+    }
+    for (const row of $$('[data-setting-description]', root)) {
+      const el = row as HTMLElement;
+      const description = el.dataset.settingDescription || '';
+      if (useTooltips && description) {
+        el.title = description;
+      } else {
+        el.removeAttribute('title');
+      }
+    }
+  },
+
+  registerSettingDescription(row: HTMLElement, description: string) {
+    row.dataset.settingDescription = description;
+    if (Settings.descriptionsAsTooltips() && description) {
+      row.title = description;
+    } else {
+      row.removeAttribute('title');
+    }
+  },
+
   addCheckboxes(root, obj, items, inputs, includeSetting = (_key: string) => true) {
     const containers = [root];
     let count = 0;
@@ -833,11 +872,13 @@ Enable it on boards.${location.hostname.split('.')[1]}.org in your browser's pri
         { innerHTML: `<label><input type="checkbox" name="${key}"><span class="setting-title">${key}</span></label><span class="description">: <span class="setting-description">${description}</span></span>` });
       div.dataset.name = key;
       div.dataset.settingTitle = key;
-      div.dataset.settingDescription = description;
-      if (description) div.title = description;
+      Settings.registerSettingDescription(div, description);
       const input = $('input', div) as HTMLInputElement;
       $.on(input, 'change', $.cb.checked);
       $.on(input, 'change', function() { this.parentNode.parentNode.dataset.checked = this.checked; });
+      if (key === 'Settings Descriptions as Tooltips') {
+        $.on(input, 'change', () => Settings.applyDescriptionMode());
+      }
       if (key === 'Comment Preview') {
         $.on(input, 'change', () => $.event('QRCommentPreviewChanged'));
       }
@@ -1060,8 +1101,9 @@ Enable it on boards.${location.hostname.split('.')[1]}.org in your browser's pri
       categories: [{
         name: 'Miscellaneous',
         subgroups: [
-          ['System', ['JSON Index', `Use ${meta.name} Catalog`, 'Open Threads in New Tab', 'External Catalog', '404 Redirect', 'Archive Report', 'Exempt Archives from Encryption']],
-          ['Compatibility', ['Disable Native Extension']]
+          ['System', ['JSON Index', `Use ${meta.name} Catalog`, 'Index Refresh Notifications', 'Open Threads in New Tab', 'External Catalog', '404 Redirect', 'Archive Report', 'Exempt Archives from Encryption', 'Show Updated Notifications']],
+          ['History', ['Export History', 'Ask to Export History']],
+          ['Compatibility', ['Disable Native Extension', 'Enable Native Flash Embedding']]
         ]
       }],
       includeWarnings: true,
@@ -1126,6 +1168,7 @@ Enable it on boards.${location.hostname.split('.')[1]}.org in your browser's pri
           name: 'Miscellaneous',
           subgroups: [
             ['UI', ['Announcement Hiding', 'Follow Cursor', 'Catalog Links']],
+            ['Settings UI', ['Settings Descriptions as Tooltips']],
             ['Notifications', ['Desktop Notifications', 'Posting Success Notifications']],
             ['Keyboard and Navigation', ['Keybinds', 'Comment Expansion', 'Thread Expansion', 'Index Navigation', 'Reply Navigation', 'Unique ID and Capcode Navigation', 'Normalize URL', 'Disable Autoplaying Sounds']]
           ]
@@ -1160,49 +1203,29 @@ Enable it on boards.${location.hostname.split('.')[1]}.org in your browser's pri
     const fmtGroup = dict();
     for (const key of [
       'Custom Board Titles',
+      'Persistent Custom Board Titles',
       'Color User IDs',
       'Count Posts by ID',
+      'Remove Spoilers',
+      'Reveal Spoilers',
       'Time Formatting',
+      'Relative Post Dates',
+      'Relative Date Title',
       'File Info Formatting',
       'Quote Backlinks',
     ]) {
       if (lookup[key]) fmtGroup[key] = lookup[key];
     }
     Settings.addCheckboxes(fsFmt, fmtGroup, items, inputs);
-    const inlineSelect = (name: string, label: string, description: string, opts: readonly (readonly [string, string])[]) => {
-      const div = $.el('div');
-      div.dataset.name = name;
-      const lblEl = $.el('label');
-      const select = $.el('select', { name }) as HTMLSelectElement;
-      for (const [value, text] of opts) {
-        select.appendChild($.el('option', { value, textContent: text }));
-      }
-      $.add(lblEl, [$.el('span', { textContent: `${label}: ` }), select]);
-      $.add(div, [
-        lblEl,
-        $.el('span', { className: 'description', textContent: `: ${description}` })
-      ]);
-      $.on(select, 'change', $.cb.value);
-      items[name] = Conf[name];
-      inputs[name] = select;
-      $.add(fsFmt, div);
+    const syncRelativeTime = () => {
+      const value = inputs['Relative Post Dates']?.checked
+        ? (inputs['Relative Date Title']?.checked ? 'Hover' : 'Show')
+        : 'No';
+      Conf['RelativeTime'] = value;
+      $.set('RelativeTime', value);
     };
-    inlineSelect('RelativeTime', 'Relative Post Dates',
-      'Display dates like "3 minutes ago" inline, on hover, or both.',
-      [
-        ['No', 'Off'],
-        ['Hover', 'Show on hover'],
-        ['Show', 'Show inline (full date on hover)'],
-        ['Both', 'Show timestamp, then relative'],
-        ['BothRelativeFirst', 'Show relative, then timestamp']
-      ]);
-    inlineSelect('Spoiler Mode', 'Spoilers',
-      'How to display [spoiler] text. "Default" matches the site’s native behavior.',
-      [
-        ['default', 'Default'],
-        ['reveal', 'Reveal on hover'],
-        ['remove', 'Remove entirely']
-      ]);
+    if (inputs['Relative Post Dates']) $.on(inputs['Relative Post Dates'], 'change', syncRelativeTime);
+    if (inputs['Relative Date Title']) $.on(inputs['Relative Date Title'], 'change', syncRelativeTime);
     $.add(section, fsFmt);
 
     const stylingOnlyKeys = new Set([
@@ -1352,8 +1375,7 @@ Enable it on boards.${location.hostname.split('.')[1]}.org in your browser's pri
           { innerHTML: `<label><input type="checkbox" name="${name}">${displayName(name)}</label><span class="thread-watcher-inline-number"><input type="number" name="Thread Watcher Thumbnail Size" min="16" max="160" step="1" class="field thread-watcher-size-input" title="Thumbnail size in pixels"></span><span class="description">: <span class="setting-description">${description}</span></span><span class="thread-watcher-inline-subsetting"><label><input type="checkbox" name="Thread Watcher Thumbnail Hover">Hover Preview</label><span class="thread-watcher-inline-number"><input type="number" name="Thread Watcher Thumbnail Preview Size" min="10" max="99" step="1" class="field thread-watcher-preview-size-input" title="Hover preview size as a percentage">%</span><span class="description">: <span class="setting-description">${hoverDescription}</span></span></span>` });
         div.dataset.name = `${name} Thread Watcher Thumbnail Size Thread Watcher Thumbnail Hover Thread Watcher Thumbnail Preview Size`;
         div.dataset.settingTitle = displayName(name);
-        div.dataset.settingDescription = `${description} ${hoverDescription} Thread Watcher Thumbnail Size Thread Watcher Thumbnail Hover Thread Watcher Thumbnail Preview Size`;
-        if (description) div.title = description;
+        Settings.registerSettingDescription(div, `${description} ${hoverDescription} Thread Watcher Thumbnail Size Thread Watcher Thumbnail Hover Thread Watcher Thumbnail Preview Size`);
 
         const sizeInput = $('input[name="Thread Watcher Thumbnail Size"]', div) as HTMLInputElement;
         const previewToggle = $('input[name="Thread Watcher Thumbnail Hover"]', div) as HTMLInputElement;
@@ -1397,8 +1419,7 @@ Enable it on boards.${location.hostname.split('.')[1]}.org in your browser's pri
           { innerHTML: `<label><input type="checkbox" name="${name}">${displayName(name)}</label><span class="description">: <span class="setting-description">${description}</span></span>` });
         div.dataset.name = name;
         div.dataset.settingTitle = displayName(name);
-        div.dataset.settingDescription = description;
-        if (description) div.title = description;
+        Settings.registerSettingDescription(div, description);
       }
 
       const level = arr[2] || 0;
@@ -1415,8 +1436,7 @@ Enable it on boards.${location.hostname.split('.')[1]}.org in your browser's pri
       { innerHTML: '<label>TW Max H <input type="number" name="Thread Watcher Max Height" min="120" max="999" step="1" class="field thread-watcher-height-input"></label><label class="thread-watcher-inline-number">W <input type="number" name="Thread Watcher Max Width" min="120" max="999" step="1" class="field thread-watcher-width-input"></label><span class="description">: <span class="setting-description">Maximum watched-thread list height and width in pixels.</span></span>' });
     heightDiv.dataset.name = 'Thread Watcher Max Height Thread Watcher Max Width';
     heightDiv.dataset.settingTitle = 'TW Max H/W';
-    heightDiv.dataset.settingDescription = 'Maximum watched-thread list height and width in pixels.';
-    heightDiv.title = 'Maximum watched-thread list height and width in pixels.';
+    Settings.registerSettingDescription(heightDiv, 'Maximum watched-thread list height and width in pixels.');
     const heightInput = $('input[name="Thread Watcher Max Height"]', heightDiv) as HTMLInputElement;
     const widthInput = $('input[name="Thread Watcher Max Width"]', heightDiv) as HTMLInputElement;
     $.on(heightInput, 'change', function() {
@@ -1447,8 +1467,7 @@ Enable it on boards.${location.hostname.split('.')[1]}.org in your browser's pri
       { innerHTML: '<label><input type="checkbox" name="Thread Watcher Attached">Attach to QR</label><label class="thread-watcher-inline-number">at <select name="Thread Watcher Attach Location" class="field thread-watcher-attach-loc"><option value="bottom">bottom</option><option value="top">top</option><option value="left">left</option><option value="right">right</option></select></label><span class="description">: <span class="setting-description">Attach/dock watcher to Quick Reply. Bottom natural (width follows QR); left/right use manual width (height to content, capped by max H). Manual max W/H apply. Drag either title bar to move both; use the attach button to detach.</span></span>' });
     attachDiv.dataset.name = 'Thread Watcher Attached Thread Watcher Attach Location';
     attachDiv.dataset.settingTitle = 'Attach to QR';
-    attachDiv.dataset.settingDescription = 'Attach the thread watcher to the Quick Reply dialog.';
-    attachDiv.title = 'Attach the thread watcher to the Quick Reply dialog.';
+    Settings.registerSettingDescription(attachDiv, 'Attach the thread watcher to the Quick Reply dialog.');
     const attachInput = $('input[name="Thread Watcher Attached"]', attachDiv) as HTMLInputElement;
     const locInput = $('select[name="Thread Watcher Attach Location"]', attachDiv) as HTMLSelectElement;
     $.on(attachInput, 'change', $.cb.checked);
@@ -1513,9 +1532,9 @@ Enable it on boards.${location.hostname.split('.')[1]}.org in your browser's pri
     const lookup = Settings.getMainSettingLookup();
 
     const groups: [string, string[]][] = [
-      ['Image Behavior', ['Image Expansion', 'Image Hover', 'Image Hover in Catalog', 'Replace Thumbnails', 'Restart when Opened']],
+      ['Image Behavior', ['Image Expansion', 'Image Hover', 'Image Hover in Catalog', 'Replace Thumbnails', 'Replace GIF', 'Replace JPG', 'Replace PNG', 'Replace WEBM', 'Restart when Opened']],
       ['Images', ['Gallery', 'Fullscreen Gallery', 'PDF in Gallery', 'Sauce', 'Reveal Spoiler Thumbnails', 'Image Prefetching', 'Fappe Tyme', 'Werk Tyme']],
-      ['Videos', ['WEBM Metadata', 'Autoplay', 'Show Controls', 'Click Passthrough', 'Allow Sound', 'Mouse Wheel Volume', 'Enable sound posts']]
+      ['Videos', ['WEBM Metadata', 'Autoplay', 'Show Controls', 'Click Passthrough', 'Allow Sound', 'Mouse Wheel Volume', 'Loop in New Tab', 'Volume in New Tab', 'Enable sound posts']]
     ];
     for (const [legendTitle, keys] of groups) {
       const fs = $.el('details', { open: true }, { innerHTML: `<summary>${legendTitle}</summary>` });
@@ -1562,6 +1581,8 @@ Enable it on boards.${location.hostname.split('.')[1]}.org in your browser's pri
       innerHTML: `<label><input type="checkbox" name="Comment Preview"><span class="setting-title">Comment Preview</span></label><span class="description">: <span class="setting-description">${Config.main['Posting and Captchas']['Comment Preview'][1]}</span></span>`,
     }) as HTMLDivElement;
     row.dataset.name = 'Comment Preview';
+    row.dataset.settingTitle = 'Comment Preview';
+    Settings.registerSettingDescription(row, String(Config.main['Posting and Captchas']['Comment Preview'][1]));
     const toggle = $('input[name="Comment Preview"]', row) as HTMLInputElement;
     $.on(toggle, 'change', $.cb.checked);
     $.on(toggle, 'change', function() { this.parentNode.parentNode.dataset.checked = this.checked; });
@@ -1570,6 +1591,8 @@ Enable it on boards.${location.hostname.split('.')[1]}.org in your browser's pri
     const sub = $.el('div', { className: 'suboption-list' });
     const positionRow = $.el('div') as HTMLDivElement;
     positionRow.dataset.name = 'Comment Preview Position';
+    positionRow.dataset.settingTitle = 'Preview Position';
+    Settings.registerSettingDescription(positionRow, 'Where the live preview appears relative to the comment box (requires Comment Preview enabled).');
     const label = $.el('label');
     const select = $.el('select', { name: 'Comment Preview Position' }) as HTMLSelectElement;
     for (const [value, text] of [
@@ -1595,8 +1618,7 @@ Enable it on boards.${location.hostname.split('.')[1]}.org in your browser's pri
     }) as HTMLDivElement;
     iconRow.dataset.name = 'Show Comment Preview Header Icon';
     iconRow.dataset.settingTitle = 'Show Header Icon';
-    iconRow.dataset.settingDescription = iconDescription;
-    iconRow.title = iconDescription;
+    Settings.registerSettingDescription(iconRow, iconDescription);
     const iconToggle = $('input[name="Show Comment Preview Header Icon"]', iconRow) as HTMLInputElement;
     $.on(iconToggle, 'change', $.cb.checked);
     $.on(iconToggle, 'change', function() { this.parentNode.parentNode.dataset.checked = this.checked; });
@@ -1720,16 +1742,37 @@ Enable it on boards.${location.hostname.split('.')[1]}.org in your browser's pri
       'Catalog Highlight Own Posts',
       'Catalog Highlight Watched Threads',
     ] as const;
-    const markerColorLinkPairs = [
-      ['Scroll Marker Own Color', 'own', 'Scroll Marker Own Match Highlight'],
-      ['Scroll Marker You Color', 'you', 'Scroll Marker You Match Highlight'],
-      ['Scroll Marker Ghost Color', 'ghost', 'Scroll Marker Ghost Match Highlight'],
+    // Scrollbar markers now live folded into each thread highlight row. Each
+    // entry pairs a marker's enable checkbox with its colour/opacity/match
+    // controls so we can disable + dim them as a unit under the master switch.
+    const markerControlRows = [
+      { type: 'own', onKey: 'Scrollbar Mark Own Posts', colorKey: 'Scroll Marker Own Color', opacityKey: 'Scroll Marker Own Opacity', matchKey: 'Scroll Marker Own Match Highlight' },
+      { type: 'you', onKey: 'Scrollbar Mark Quotes You', colorKey: 'Scroll Marker You Color', opacityKey: 'Scroll Marker You Opacity', matchKey: 'Scroll Marker You Match Highlight' },
+      { type: 'ghost', onKey: 'Scrollbar Mark Ghost Posts', colorKey: 'Scroll Marker Ghost Color', opacityKey: 'Scroll Marker Ghost Opacity', matchKey: 'Scroll Marker Ghost Match Highlight' },
+      { type: 'unread', onKey: 'Scrollbar Mark Unread Line', colorKey: 'Scroll Marker Unread Color', opacityKey: 'Scroll Marker Unread Opacity', matchKey: null },
     ] as const;
-    const markerMatchKeys = new Set(markerColorLinkPairs.map(([, , matchKey]) => matchKey));
+    // Changing any of these re-runs syncMarkerColorControls (master, per-row
+    // enable, and match toggles all change which marker controls are live).
+    const markerToggleKeys = new Set<string>([
+      'Scrollbar Markers',
+      ...markerControlRows.map(r => r.onKey),
+      ...markerControlRows.map(r => r.matchKey).filter((k): k is string => !!k),
+    ]);
+    // Thread highlight rows: each enable checkbox gates its own detail controls,
+    // mirroring syncCatalogHighlightControls for the catalog group.
+    const threadHighlightControlRows = [
+      { onKey: 'Highlight Own Posts', controls: ['Highlight Own Color', 'Highlight Own Opacity', 'Highlight Own Edge Only', 'Highlight Own Edge Width', 'Highlight Own Text Mode', 'Highlight Own Text Color', 'Highlight Own Link Color', 'Highlight Own Quote Color', 'Highlight Own Dead Link Color'] },
+      { onKey: 'Highlight Posts Quoting You', controls: ['Highlight You Color', 'Highlight You Opacity', 'Highlight You Edge Only', 'Highlight You Edge Width', 'Highlight You Text Mode', 'Highlight You Text Color', 'Highlight You Link Color', 'Highlight You Quote Color', 'Highlight You Dead Link Color'] },
+      { onKey: 'Highlight Ghost Posts', controls: ['Highlight Ghost Color', 'Highlight Ghost Opacity', 'Highlight Ghost Edge Only', 'Highlight Ghost Edge Width', 'Highlight Ghost Text Mode', 'Highlight Ghost Text Color', 'Highlight Ghost Link Color', 'Highlight Ghost Quote Color', 'Highlight Ghost Dead Link Color'] },
+    ] as const;
+    const threadHighlightToggleKeys = new Set<string>([
+      'Enable Thread Highlights',
+      ...threadHighlightControlRows.map(r => r.onKey),
+    ]);
     const highlightTextControlGroups = [
       {
         manualGroup: 'own',
-        autoKey: 'Highlight Own Text Auto',
+        modeKey: 'Highlight Own Text Mode',
         colorKey: 'Highlight Own Color',
         opacityKey: 'Highlight Own Opacity',
         edgeKey: 'Highlight Own Edge Only',
@@ -1737,7 +1780,7 @@ Enable it on boards.${location.hostname.split('.')[1]}.org in your browser's pri
       },
       {
         manualGroup: 'you',
-        autoKey: 'Highlight You Text Auto',
+        modeKey: 'Highlight You Text Mode',
         colorKey: 'Highlight You Color',
         opacityKey: 'Highlight You Opacity',
         edgeKey: 'Highlight You Edge Only',
@@ -1745,7 +1788,7 @@ Enable it on boards.${location.hostname.split('.')[1]}.org in your browser's pri
       },
       {
         manualGroup: 'ghost',
-        autoKey: 'Highlight Ghost Text Auto',
+        modeKey: 'Highlight Ghost Text Mode',
         colorKey: 'Highlight Ghost Color',
         opacityKey: 'Highlight Ghost Opacity',
         edgeKey: 'Highlight Ghost Edge Only',
@@ -1753,7 +1796,7 @@ Enable it on boards.${location.hostname.split('.')[1]}.org in your browser's pri
       },
       {
         manualGroup: 'catalog-own',
-        autoKey: 'Catalog Highlight Own Text Auto',
+        modeKey: 'Catalog Highlight Own Text Mode',
         colorKey: 'Catalog Highlight Own Color',
         opacityKey: 'Catalog Highlight Own Opacity',
         edgeKey: 'Catalog Highlight Own Border Only',
@@ -1761,7 +1804,7 @@ Enable it on boards.${location.hostname.split('.')[1]}.org in your browser's pri
       },
       {
         manualGroup: 'catalog-watched',
-        autoKey: 'Catalog Highlight Watched Text Auto',
+        modeKey: 'Catalog Highlight Watched Text Mode',
         colorKey: 'Catalog Highlight Watched Color',
         opacityKey: 'Catalog Highlight Watched Opacity',
         edgeKey: 'Catalog Highlight Watched Border Only',
@@ -1822,6 +1865,12 @@ Enable it on boards.${location.hostname.split('.')[1]}.org in your browser's pri
       Conf[storageKey] = value;
       $.set(storageKey, value);
     };
+    // Resolve a highlight row's text mode, preferring the live <select> value
+    // so the preview reacts before the change is persisted.
+    const groupTextMode = (group: typeof highlightTextControlGroups[number]) => {
+      const el = inputs[group.modeKey] as HTMLSelectElement | null;
+      return Settings.resolveTextMode(el ? el.value : editConf<string>(group.modeKey));
+    };
     const baseTextPalette = (baseBackground: [number, number, number]) => {
       const textColorMode = editConf<string>('textColorMode') === 'manual' ? 'manual' : 'auto';
       const autoTextPalette = Settings.autoTextPalette(baseBackground);
@@ -1838,8 +1887,7 @@ Enable it on boards.${location.hostname.split('.')[1]}.org in your browser's pri
       const basePalette = baseTextPalette(baseBackground);
       const v = editVariant();
       for (const group of highlightTextControlGroups) {
-        const autoToggle = inputs[group.autoKey] as HTMLInputElement | null;
-        if (!autoToggle || !autoToggle.checked) continue;
+        if (groupTextMode(group) !== 'auto') continue;
         const groupBackground = group.manualGroup.startsWith('catalog-') ? baseBackground : postBackground;
         const groupBasePalette = group.manualGroup.startsWith('catalog-')
           ? basePalette
@@ -1871,8 +1919,7 @@ Enable it on boards.${location.hostname.split('.')[1]}.org in your browser's pri
       const groups = targetGroup ? [targetGroup] : highlightTextControlGroups;
       const v = editVariant();
       for (const group of groups) {
-        const autoToggle = inputs[group.autoKey] as HTMLInputElement | null;
-        if (!autoToggle || autoToggle.checked) continue;
+        if (groupTextMode(group) !== 'manual') continue;
         const groupBackground = group.manualGroup.startsWith('catalog-') ? baseBackground : postBackground;
         const groupBasePalette = group.manualGroup.startsWith('catalog-')
           ? basePalette
@@ -1954,11 +2001,11 @@ Enable it on boards.${location.hostname.split('.')[1]}.org in your browser's pri
         const enabled = catalogEnabled && !!inputs[key]?.checked;
         const controls = key === 'Catalog Highlight Own Posts' ?
           [
-            'Catalog Highlight Own Color', 'Catalog Highlight Own Opacity', 'Catalog Highlight Own Border Only', 'Catalog Highlight Own Text Auto',
+            'Catalog Highlight Own Color', 'Catalog Highlight Own Opacity', 'Catalog Highlight Own Border Only', 'Catalog Highlight Own Border Width', 'Catalog Highlight Own Text Mode',
             'Catalog Highlight Own Text Color', 'Catalog Highlight Own Subject Color', 'Catalog Highlight Own Link Color', 'Catalog Highlight Own Quote Color', 'Catalog Highlight Own Dead Link Color',
           ] :
           [
-            'Catalog Highlight Watched Color', 'Catalog Highlight Watched Opacity', 'Catalog Highlight Watched Border Only', 'Catalog Highlight Watched Text Auto',
+            'Catalog Highlight Watched Color', 'Catalog Highlight Watched Opacity', 'Catalog Highlight Watched Border Only', 'Catalog Highlight Watched Border Width', 'Catalog Highlight Watched Text Mode',
             'Catalog Highlight Watched Text Color', 'Catalog Highlight Watched Subject Color', 'Catalog Highlight Watched Link Color', 'Catalog Highlight Watched Quote Color', 'Catalog Highlight Watched Dead Link Color',
           ];
         for (const controlKey of controls) {
@@ -1970,15 +2017,30 @@ Enable it on boards.${location.hostname.split('.')[1]}.org in your browser's pri
     };
     const syncMarkerColorControls = () => {
       Settings.syncLinkedMarkerColors(inputs, editVariant());
-      for (const [key, markerType, matchKey] of markerColorLinkPairs) {
-        const linked = !!inputs[matchKey]?.checked;
-        const colorInput = inputs[key];
-        if (colorInput) colorInput.disabled = linked;
-        const row = $(`[data-marker-color="${markerType}"]`, section) as HTMLElement | null;
-        if (row) {
-          row.dataset.colorLinked = linked ? 'true' : 'false';
-          const clearButton = $(`[data-clear="${key}"]`, row) as HTMLButtonElement | null;
-          if (clearButton) clearButton.disabled = linked;
+      const markersOn = !!inputs['Scrollbar Markers']?.checked;
+      for (const { type, onKey, colorKey, opacityKey, matchKey } of markerControlRows) {
+        const rowOn = markersOn && !!inputs[onKey]?.checked;
+        const matched = !!(matchKey && inputs[matchKey]?.checked);
+        const onInput = inputs[onKey];
+        if (onInput) onInput.disabled = !markersOn;
+        if (matchKey && inputs[matchKey]) inputs[matchKey].disabled = !rowOn;
+        const colorInput = inputs[colorKey];
+        // A matched marker mirrors its highlight colour, so its picker is inert.
+        if (colorInput) colorInput.disabled = !rowOn || matched;
+        const opacityInput = inputs[opacityKey];
+        if (opacityInput) opacityInput.disabled = !rowOn;
+        const cell = $(`[data-marker-color="${type}"]`, section) as HTMLElement | null;
+        if (cell) cell.dataset.colorLinked = matched ? 'true' : 'false';
+      }
+      syncColorHexInputs();
+    };
+    const syncThreadHighlightControls = () => {
+      const masterOn = !!inputs['Enable Thread Highlights']?.checked;
+      for (const { onKey, controls } of threadHighlightControlRows) {
+        const enabled = masterOn && !!inputs[onKey]?.checked;
+        for (const key of controls) {
+          const control = inputs[key];
+          if (control) control.disabled = !enabled;
         }
       }
       syncColorHexInputs();
@@ -1995,15 +2057,14 @@ Enable it on boards.${location.hostname.split('.')[1]}.org in your browser's pri
     };
     const syncHighlightTextControls = () => {
       for (const group of highlightTextControlGroups) {
-        const autoToggle = inputs[group.autoKey] as HTMLInputElement | null;
-        const auto = autoToggle ? autoToggle.checked : true;
+        const manual = groupTextMode(group) === 'manual';
         const manualRoot = $(`[data-highlight-text-manual="${group.manualGroup}"]`, section) as HTMLElement | null;
-        if (manualRoot) manualRoot.hidden = auto;
+        if (manualRoot) manualRoot.hidden = !manual;
         for (const key of group.keys) {
           const colorInput = inputs[key];
-          if (colorInput) colorInput.disabled = auto;
+          if (colorInput) colorInput.disabled = !manual;
           const clearButton = $(`[data-clear="${key}"]`, section) as HTMLButtonElement | null;
-          if (clearButton) clearButton.disabled = auto;
+          if (clearButton) clearButton.disabled = !manual;
         }
       }
     };
@@ -2020,14 +2081,61 @@ Enable it on boards.${location.hostname.split('.')[1]}.org in your browser's pri
       $.on(matchLabel, 'focusin', () => setMatchTargetHighlight(role, true));
       $.on(matchLabel, 'focusout', () => setMatchTargetHighlight(role, false));
     }
+    // Highlight rows are an accordion: one open at a time. Clicks on a row's own
+    // enable checkbox or colour swatch edit in place rather than collapsing it.
+    const accItems = $$('.styling-hl-acc-item', section) as HTMLElement[];
+    for (const head of $$('.styling-hl-acc-head', section) as HTMLElement[]) {
+      $.on(head, 'click', (e: Event) => {
+        const target = e.target as HTMLElement;
+        if (target.closest('.styling-hl-acc-toggle, .styling-hl-color')) return;
+        const item = head.parentElement as HTMLElement;
+        const open = item.classList.contains('styling-hl-open');
+        for (const it of accItems) it.classList.remove('styling-hl-open');
+        if (!open) item.classList.add('styling-hl-open');
+      });
+    }
+    // Per-state width text inputs (px). Text inputs don't get the generic
+    // colour/range apply handler, so wire live apply + clamp here.
+    const widthInputKeys = [
+      'Highlight Own Edge Width', 'Highlight You Edge Width', 'Highlight Ghost Edge Width',
+      'Catalog Highlight Own Border Width', 'Catalog Highlight Watched Border Width',
+    ];
+    for (const key of widthInputKeys) {
+      const inp = inputs[key];
+      if (!inp) continue;
+      const apply = () => { Settings.applyStylingVars(); refreshStylingPreview(); };
+      $.on(inp, 'input', apply);
+      $.on(inp, 'change', () => {
+        let n = parseInt(inp.value, 10);
+        if (!Number.isFinite(n)) n = 3;
+        n = Math.min(12, Math.max(1, n));
+        inp.value = String(n);
+        writeEditConf(key, n);
+        apply();
+      });
+    }
+    // Live value readout next to each opacity slider so the current step shows
+    // while dragging (a native range gives no number).
+    const opacityReadouts: Array<{ range: HTMLInputElement; out: HTMLElement }> = [];
+    const refreshOpacityReadouts = () => {
+      for (const { range, out } of opacityReadouts) out.textContent = range.value;
+    };
+    for (const range of $$('.styling-hl-octl input[type="range"]', section) as HTMLInputElement[]) {
+      const out = $.el('span', { className: 'styling-hl-valout' }) as HTMLElement;
+      range.insertAdjacentElement('afterend', out);
+      const upd = () => { out.textContent = range.value; };
+      $.on(range, 'input', upd);
+      $.on(range, 'change', upd);
+      opacityReadouts.push({ range, out });
+    }
+    refreshOpacityReadouts();
     const refreshUnsetColorInputs = () => {
       for (const key in inputs) {
         const inp = inputs[key];
         if (inp.type !== 'color' || inp.dataset.unset !== '1') continue;
         if (highlightTextKeys.has(key)) {
           const group = highlightTextControlGroups.find(item => item.keys.includes(key as any));
-          const autoToggle = group ? inputs[group.autoKey] : null;
-          if (autoToggle && !autoToggle.checked) continue;
+          if (group && groupTextMode(group) === 'manual') continue;
         }
         Settings.setColorInputValue(inp, key, '');
       }
@@ -2046,13 +2154,14 @@ Enable it on boards.${location.hostname.split('.')[1]}.org in your browser's pri
       });
     }
     for (const group of highlightTextControlGroups) {
-      const autoToggle = inputs[group.autoKey] as HTMLInputElement | null;
-      if (!autoToggle) continue;
-      $.on(autoToggle, 'change', () => {
-        writeEditConf(group.autoKey, !!autoToggle.checked);
-        if (autoToggle.checked) {
+      const modeSelect = inputs[group.modeKey] as HTMLSelectElement | null;
+      if (!modeSelect) continue;
+      $.on(modeSelect, 'change', () => {
+        writeEditConf(group.modeKey, modeSelect.value);
+        const mode = Settings.resolveTextMode(modeSelect.value);
+        if (mode === 'auto') {
           syncAutoHighlightPreviewInputs();
-        } else {
+        } else if (mode === 'manual') {
           seedManualHighlightTextColors(group, true);
         }
         syncHighlightTextControls();
@@ -2088,8 +2197,11 @@ Enable it on boards.${location.hostname.split('.')[1]}.org in your browser's pri
         if (catalogHighlightKeys.includes(name as typeof catalogHighlightKeys[number])) {
           $.on(input, 'change', syncCatalogHighlightControls);
         }
-        if (markerMatchKeys.has(name as typeof markerColorLinkPairs[number][2])) {
+        if (markerToggleKeys.has(name)) {
           $.on(input, 'change', syncMarkerColorControls);
+        }
+        if (threadHighlightToggleKeys.has(name)) {
+          $.on(input, 'change', syncThreadHighlightControls);
         }
         if (name === 'Enable Catalog Highlights') {
           $.on(input, 'change', syncCatalogHighlightControls);
@@ -2153,6 +2265,7 @@ Enable it on boards.${location.hostname.split('.')[1]}.org in your browser's pri
       }
       syncMarkerColorControls();
       syncCatalogHighlightControls();
+      syncThreadHighlightControls();
       syncTextColorControls();
       syncHighlightTextControls();
       seedManualHighlightTextColors();
@@ -2161,6 +2274,7 @@ Enable it on boards.${location.hostname.split('.')[1]}.org in your browser's pri
       refreshUnsetColorInputs();
       Settings.refreshCustomCSSEditor(section);
       syncColorHexInputs();
+      refreshOpacityReadouts();
       refreshStylingPreview();
     };
 
@@ -2717,6 +2831,13 @@ Enable it on boards.${location.hostname.split('.')[1]}.org in your browser's pri
       if (input) return !!input.checked;
       return Conf[name] == null ? fallback : !!Conf[name];
     };
+    const readOpacity = (name: string) => {
+      const input = Settings.dialog ? ($(`[name="${name}"]`, Settings.dialog) as HTMLInputElement | null) : null;
+      const value = input ? input.value : Conf[name];
+      if (value === '' || value == null) return 1;
+      const opacity = parseFloat(String(value));
+      return Number.isFinite(opacity) ? $.minmax(opacity, 0, 1) : 1;
+    };
     const ownEnabled = readChecked('Highlight Own Posts');
     const youEnabled = readChecked('Highlight Posts Quoting You');
     const ghostEnabled = readChecked('Highlight Ghost Posts');
@@ -2736,6 +2857,10 @@ Enable it on boards.${location.hostname.split('.')[1]}.org in your browser's pri
     panel.dataset.edgeGhost = readChecked('Highlight Ghost Edge Only', true) ? 'true' : 'false';
     panel.dataset.edgeCatalogOwn = readChecked('Catalog Highlight Own Border Only', true) ? 'true' : 'false';
     panel.dataset.edgeCatalogWatched = readChecked('Catalog Highlight Watched Border Only', true) ? 'true' : 'false';
+    panel.dataset.textCatalogOwn =
+      (catalogHighlightsEnabled && catalogOwnEnabled && panel.dataset.edgeCatalogOwn !== 'true' && readOpacity('Catalog Highlight Own Opacity') > 0) ? 'true' : 'false';
+    panel.dataset.textCatalogWatched =
+      (catalogHighlightsEnabled && catalogWatchedEnabled && panel.dataset.edgeCatalogWatched !== 'true' && readOpacity('Catalog Highlight Watched Opacity') > 0) ? 'true' : 'false';
 
     const background = Settings.resolveCanvasBackgroundStyle();
     for (const previewPane of $$('.styling-preview-thread, .styling-preview-catalog', panel) as HTMLElement[]) {
@@ -2896,6 +3021,8 @@ Enable it on boards.${location.hostname.split('.')[1]}.org in your browser's pri
     '--xt-highlight-own', '--xt-highlight-you', '--xt-highlight-ghost',
     '--xt-highlight-own-opacity', '--xt-highlight-you-opacity', '--xt-highlight-ghost-opacity',
     '--xt-highlight-edge-width', '--xt-post-background', '--xt-catalog-border-width',
+    '--xt-edge-width-own', '--xt-edge-width-you', '--xt-edge-width-ghost',
+    '--xt-catalog-border-width-own', '--xt-catalog-border-width-watched',
     '--xt-catalog-own-highlight', '--xt-catalog-own-highlight-opacity',
     '--xt-catalog-watched-highlight', '--xt-catalog-watched-highlight-opacity',
     '--xt-scroll-marker-own', '--xt-scroll-marker-you', '--xt-scroll-marker-ghost', '--xt-scroll-marker-unread',
@@ -2966,6 +3093,17 @@ Enable it on boards.${location.hostname.split('.')[1]}.org in your browser's pri
     setVar('--xt-post-background', Settings.getPostBaseBackgroundCSS());
     const catalogBorderWidth = parseFloat(String(cv('Catalog Highlight Border Width') || legacyWidth));
     setVar('--xt-catalog-border-width', Number.isFinite(catalogBorderWidth) ? `${$.minmax(catalogBorderWidth, 1, 12)}px` : '');
+    // Per-state widths. When unset the var is removed so the rule falls back to
+    // the shared --xt-…-width above (the "linked" value), then to 3px.
+    const setWidthVar = (key: string, varName: string) => {
+      const w = parseFloat(String(cv(key)));
+      setVar(varName, Number.isFinite(w) ? `${$.minmax(w, 1, 12)}px` : '');
+    };
+    setWidthVar('Highlight Own Edge Width', '--xt-edge-width-own');
+    setWidthVar('Highlight You Edge Width', '--xt-edge-width-you');
+    setWidthVar('Highlight Ghost Edge Width', '--xt-edge-width-ghost');
+    setWidthVar('Catalog Highlight Own Border Width', '--xt-catalog-border-width-own');
+    setWidthVar('Catalog Highlight Watched Border Width', '--xt-catalog-border-width-watched');
     setVar('--xt-catalog-own-highlight', catalogOwnEnabled ? cv('Catalog Highlight Own Color') : '');
     setVar('--xt-catalog-own-highlight-opacity',
       (catalogOwnEnabled && cv('Catalog Highlight Own Opacity') !== '') ? String(cv('Catalog Highlight Own Opacity')) : '');
@@ -2993,18 +3131,27 @@ Enable it on boards.${location.hostname.split('.')[1]}.org in your browser's pri
 
     const baseBackground = Settings.getTextBaseBackground();
     const postBackground = Settings.getPostBaseBackground();
-    const textColorMode = cv('textColorMode') === 'manual' ? 'manual' : 'auto';
+    const textColorMode = Settings.resolveTextMode(cv('textColorMode'));
     const autoTextPalette = Settings.autoTextPalette(baseBackground);
-    // Text Colors section off ⇒ no text-color override at all (page falls back
-    // to the theme's native colors; the empty values also flow through to the
-    // highlight-text fallback below, so they stay theme-default too).
-    const textColor = !textColorsOn ? '' : (textColorMode === 'auto' ? autoTextPalette.text : cv('Text Color'));
-    const linkColor = !textColorsOn ? '' : (textColorMode === 'auto' ? autoTextPalette.link : cv('Link Text Color'));
-    const quoteColor = !textColorsOn ? '' : (textColorMode === 'auto' ? autoTextPalette.quote : cv('Quote Text Color'));
-    const deadLinkColor = !textColorsOn ? '' : (textColorMode === 'auto' ? autoTextPalette.deadLink : cv('Dead Link Text Color'));
+    // 'default' (and the Text Colors section being off) ⇒ no text-color override
+    // at all: the page keeps the theme's native text/link/greentext, and the
+    // empty values flow through to the highlight-text fallback below so those
+    // stay theme-default too.
+    const textColorsOverride = textColorsOn && textColorMode !== 'default';
+    const textColor = !textColorsOverride ? '' : (textColorMode === 'auto' ? autoTextPalette.text : cv('Text Color'));
+    const linkColor = !textColorsOverride ? '' : (textColorMode === 'auto' ? autoTextPalette.link : cv('Link Text Color'));
+    const quoteColor = !textColorsOverride ? '' : (textColorMode === 'auto' ? autoTextPalette.quote : cv('Quote Text Color'));
+    const deadLinkColor = !textColorsOverride ? '' : (textColorMode === 'auto' ? autoTextPalette.deadLink : cv('Dead Link Text Color'));
     const hasAnyTextOverride = !!(textColor || linkColor || quoteColor || deadLinkColor);
+    // The shared .xt-custom-text-colors class also gates the per-post highlight
+    // text rules, so keep it on when any thread highlight row recolors text even
+    // if the global text mode is Defaults. (Empty global vars stay harmless:
+    // var(--xt-quote-text-color) with no value is an invalid color and ignored.)
+    const anyThreadHighlightText = highlightsOn && [
+      'Highlight Own Text Mode', 'Highlight You Text Mode', 'Highlight Ghost Text Mode',
+    ].some(k => Settings.resolveTextMode(cv(k)) !== 'default');
     if (updateRootClasses) {
-      if (hasAnyTextOverride) {
+      if (hasAnyTextOverride || anyThreadHighlightText) {
         $.addClass(doc, 'xt-custom-text-colors');
       } else {
         $.rmClass(doc, 'xt-custom-text-colors');
@@ -3015,14 +3162,6 @@ Enable it on boards.${location.hostname.split('.')[1]}.org in your browser's pri
     setVar('--xt-quote-text-color', quoteColor || '');
     setVar('--xt-dead-link-text-color', deadLinkColor || '');
 
-    const autoHighlightPalette = (
-      colorKey:
-        | 'Highlight Own Color' | 'Highlight You Color' | 'Highlight Ghost Color'
-        | 'Catalog Highlight Own Color' | 'Catalog Highlight Watched Color',
-      opacityKey:
-        | 'Highlight Own Opacity' | 'Highlight You Opacity' | 'Highlight Ghost Opacity'
-        | 'Catalog Highlight Own Opacity' | 'Catalog Highlight Watched Opacity',
-    ) => Settings.autoHighlightTextPalette(colorKey, opacityKey, baseBackground, variant);
     // Edge/border-only highlights draw just a border and leave the post on its
     // normal background — the highlight color never fills behind the text (see
     // the `:not(.xt-edge-*)` / `:not(.xt-catalog-edge-*)` gating in
@@ -3034,20 +3173,21 @@ Enable it on boards.${location.hostname.split('.')[1]}.org in your browser's pri
     const ghostEdgeOnly = highlightsOn && !!Conf['Highlight Ghost Edge Only'];
     const catalogOwnBorderOnly = catalogOwnEnabled && !!cv('Catalog Highlight Own Border Only');
     const catalogWatchedBorderOnly = catalogWatchedEnabled && !!cv('Catalog Highlight Watched Border Only');
-    const highlightPaletteFor = (
-      edgeOnly: boolean,
-      colorKey:
-        | 'Highlight Own Color' | 'Highlight You Color' | 'Highlight Ghost Color'
-        | 'Catalog Highlight Own Color' | 'Catalog Highlight Watched Color',
+    const highlightOpacity = (
       opacityKey:
         | 'Highlight Own Opacity' | 'Highlight You Opacity' | 'Highlight Ghost Opacity'
         | 'Catalog Highlight Own Opacity' | 'Catalog Highlight Watched Opacity',
-    ) => edgeOnly ? null : autoHighlightPalette(colorKey, opacityKey);
+    ) => {
+      const opacity = cv(opacityKey);
+      if (opacity === '' || opacity == null) return 1;
+      const alpha = parseFloat(String(opacity));
+      return Number.isFinite(alpha) ? $.minmax(alpha, 0, 1) : 1;
+    };
     const withManual = (
       autoPalette: ReturnType<typeof Settings.autoTextPalette> | null,
-      autoKey:
-        | 'Highlight Own Text Auto' | 'Highlight You Text Auto' | 'Highlight Ghost Text Auto'
-        | 'Catalog Highlight Own Text Auto' | 'Catalog Highlight Watched Text Auto',
+      modeKey:
+        | 'Highlight Own Text Mode' | 'Highlight You Text Mode' | 'Highlight Ghost Text Mode'
+        | 'Catalog Highlight Own Text Mode' | 'Catalog Highlight Watched Text Mode',
       textKey:
         | 'Highlight Own Text Color' | 'Highlight You Text Color' | 'Highlight Ghost Text Color'
         | 'Catalog Highlight Own Text Color' | 'Catalog Highlight Watched Text Color',
@@ -3071,7 +3211,11 @@ Enable it on boards.${location.hostname.split('.')[1]}.org in your browser's pri
         quote: quoteColor || '',
         deadLink: deadLinkColor || '',
       };
-      if (cv(autoKey)) return base;
+      const mode = Settings.resolveTextMode(cv(modeKey));
+      // 'default' ⇒ no override; the vars stay unset so the post text falls
+      // back to the theme's native text/link/greentext colors.
+      if (mode === 'default') return null;
+      if (mode === 'auto') return base;
       return {
         text: cv(textKey) || base.text,
         subject: (subjectKey ? cv(subjectKey) : '') || base.subject || base.text,
@@ -3082,7 +3226,7 @@ Enable it on boards.${location.hostname.split('.')[1]}.org in your browser's pri
     };
     const ownPalette = withManual(
       ownEdgeOnly ? null : Settings.autoHighlightTextPalette('Highlight Own Color', 'Highlight Own Opacity', postBackground, variant),
-      'Highlight Own Text Auto',
+      'Highlight Own Text Mode',
       'Highlight Own Text Color',
       null,
       'Highlight Own Link Color',
@@ -3091,7 +3235,7 @@ Enable it on boards.${location.hostname.split('.')[1]}.org in your browser's pri
     );
     const youPalette = withManual(
       youEdgeOnly ? null : Settings.autoHighlightTextPalette('Highlight You Color', 'Highlight You Opacity', postBackground, variant),
-      'Highlight You Text Auto',
+      'Highlight You Text Mode',
       'Highlight You Text Color',
       null,
       'Highlight You Link Color',
@@ -3100,16 +3244,24 @@ Enable it on boards.${location.hostname.split('.')[1]}.org in your browser's pri
     );
     const ghostPalette = withManual(
       ghostEdgeOnly ? null : Settings.autoHighlightTextPalette('Highlight Ghost Color', 'Highlight Ghost Opacity', postBackground, variant),
-      'Highlight Ghost Text Auto',
+      'Highlight Ghost Text Mode',
       'Highlight Ghost Text Color',
       null,
       'Highlight Ghost Link Color',
       'Highlight Ghost Quote Color',
       'Highlight Ghost Dead Link Color',
     );
+    const catalogOwnTextActive = catalogOwnEnabled && !catalogOwnBorderOnly && highlightOpacity('Catalog Highlight Own Opacity') > 0
+      && Settings.resolveTextMode(cv('Catalog Highlight Own Text Mode')) !== 'default';
+    const catalogWatchedTextActive = catalogWatchedEnabled && !catalogWatchedBorderOnly && highlightOpacity('Catalog Highlight Watched Opacity') > 0
+      && Settings.resolveTextMode(cv('Catalog Highlight Watched Text Mode')) !== 'default';
+    if (updateRootClasses) {
+      doc.classList.toggle('xt-catalog-own-text-colors', catalogOwnTextActive);
+      doc.classList.toggle('xt-catalog-watched-text-colors', catalogWatchedTextActive);
+    }
     const catalogOwnPalette = withManual(
-      highlightPaletteFor(catalogOwnBorderOnly, 'Catalog Highlight Own Color', 'Catalog Highlight Own Opacity'),
-      'Catalog Highlight Own Text Auto',
+      catalogOwnTextActive ? Settings.autoHighlightTextPalette('Catalog Highlight Own Color', 'Catalog Highlight Own Opacity', postBackground, variant) : null,
+      'Catalog Highlight Own Text Mode',
       'Catalog Highlight Own Text Color',
       'Catalog Highlight Own Subject Color',
       'Catalog Highlight Own Link Color',
@@ -3117,8 +3269,8 @@ Enable it on boards.${location.hostname.split('.')[1]}.org in your browser's pri
       'Catalog Highlight Own Dead Link Color',
     );
     const catalogWatchedPalette = withManual(
-      highlightPaletteFor(catalogWatchedBorderOnly, 'Catalog Highlight Watched Color', 'Catalog Highlight Watched Opacity'),
-      'Catalog Highlight Watched Text Auto',
+      catalogWatchedTextActive ? Settings.autoHighlightTextPalette('Catalog Highlight Watched Color', 'Catalog Highlight Watched Opacity', postBackground, variant) : null,
+      'Catalog Highlight Watched Text Mode',
       'Catalog Highlight Watched Text Color',
       'Catalog Highlight Watched Subject Color',
       'Catalog Highlight Watched Link Color',
@@ -4123,12 +4275,17 @@ Enable it on boards.${location.hostname.split('.')[1]}.org in your browser's pri
     options['General'] = [
       'JSON Index',
       `Use ${meta.name} Catalog`,
+      'Index Refresh Notifications',
       'Open Threads in New Tab',
       'External Catalog',
       '404 Redirect',
       'Archive Report',
       'Exempt Archives from Encryption',
+      'Show Updated Notifications',
+      'Export History',
+      'Ask to Export History',
       'Disable Native Extension',
+      'Enable Native Flash Embedding',
       ...Object.keys(Config.Index)
     ];
 
@@ -4152,11 +4309,14 @@ Enable it on boards.${location.hostname.split('.')[1]}.org in your browser's pri
 
     options['Threads & Posts'] = [
       'Custom Board Titles',
+      'Persistent Custom Board Titles',
       'Color User IDs',
       'Count Posts by ID',
-      'Spoiler Mode',
+      'Remove Spoilers',
+      'Reveal Spoilers',
       'Time Formatting',
-      'RelativeTime',
+      'Relative Post Dates',
+      'Relative Date Title',
       'File Info Formatting',
       'Quote Backlinks',
       ...keysIn('Filtering').filter(key => !stylingOnlyKeys.includes(key)),
@@ -4206,7 +4366,13 @@ Enable it on boards.${location.hostname.split('.')[1]}.org in your browser's pri
       'Quote Text Color',
       'Dead Link Text Color',
       'Thread Highlight Edge Width',
+      'Highlight Own Edge Width',
+      'Highlight You Edge Width',
+      'Highlight Ghost Edge Width',
       'Catalog Highlight Border Width',
+      'Catalog Highlight Own Border Width',
+      'Catalog Highlight Watched Border Width',
+      'Scroll Marker Match Highlights',
       'Scroll Marker Own Match Highlight',
       'Scroll Marker You Match Highlight',
       'Scroll Marker Ghost Match Highlight',
@@ -4221,8 +4387,8 @@ Enable it on boards.${location.hostname.split('.')[1]}.org in your browser's pri
       'Catalog Highlight Watched Color',
       'Catalog Highlight Own Border Only',
       'Catalog Highlight Watched Border Only',
-      'Catalog Highlight Own Text Auto',
-      'Catalog Highlight Watched Text Auto',
+      'Catalog Highlight Own Text Mode',
+      'Catalog Highlight Watched Text Mode',
       'Catalog Highlight Own Text Color',
       'Catalog Highlight Own Subject Color',
       'Catalog Highlight Own Link Color',
@@ -4236,6 +4402,9 @@ Enable it on boards.${location.hostname.split('.')[1]}.org in your browser's pri
       'Highlight Own Text Auto',
       'Highlight You Text Auto',
       'Highlight Ghost Text Auto',
+      'Highlight Own Text Mode',
+      'Highlight You Text Mode',
+      'Highlight Ghost Text Mode',
       'Highlight Own Text Color',
       'Highlight Own Link Color',
       'Highlight Own Quote Color',
@@ -4331,6 +4500,7 @@ Enable it on boards.${location.hostname.split('.')[1]}.org in your browser's pri
       for (const name of Settings.exportOptionOrder) {
         defaultCheckedOptions[name] = true;
       }
+      defaultCheckedOptions['Watched Threads'] = !!Conf['Export History'];
       Settings.openImpExpPicker({
         title: 'Export Settings',
         action: 'Export',
@@ -4349,6 +4519,9 @@ Enable it on boards.${location.hostname.split('.')[1]}.org in your browser's pri
       if (checkedOptions[option]) out[key] = conf[key];
     }
     const groups = Settings.exportOptionOrder.filter(name => checkedOptions[name]);
+    const exportHistory = !!checkedOptions['Watched Threads'];
+    Conf['Export History'] = exportHistory;
+    $.set('Export History', exportHistory);
     Settings.downloadExport({version: g.VERSION, date: Date.now(), groups, Conf: out});
   },
 
@@ -4735,11 +4908,63 @@ Enable it on boards.${location.hostname.split('.')[1]}.org in your browser's pri
       if (data[`Thread Highlight Edge Width ${variant}`] === undefined) set(`Thread Highlight Edge Width ${variant}`, legacyWidth);
       if (data[`Catalog Highlight Border Width ${variant}`] === undefined) set(`Catalog Highlight Border Width ${variant}`, legacyWidth);
     }
+    // Per-state widths were split out of the single section width; seed each
+    // from the section value so existing looks carry over until customized.
+    for (const variant of ['SFW', 'NSFW']) {
+      const threadShared = data[`Thread Highlight Edge Width ${variant}`] ?? data['Thread Highlight Edge Width'] ?? 3;
+      for (const k of ['Highlight Own Edge Width', 'Highlight You Edge Width', 'Highlight Ghost Edge Width']) {
+        if (data[`${k} ${variant}`] === undefined) set(`${k} ${variant}`, threadShared);
+      }
+      const catalogShared = data[`Catalog Highlight Border Width ${variant}`] ?? data['Catalog Highlight Border Width'] ?? 3;
+      for (const k of ['Catalog Highlight Own Border Width', 'Catalog Highlight Watched Border Width']) {
+        if (data[`${k} ${variant}`] === undefined) set(`${k} ${variant}`, catalogShared);
+      }
+    }
     // Edge-only highlighting defaults on for fresh installs. Existing users are
     // upgraded here, so seed it off to preserve their current filled highlights
     // unless they opt in. Idempotent: only seeds keys not already present.
     for (const k of ['Highlight Own Edge Only', 'Highlight You Edge Only', 'Highlight Ghost Edge Only']) {
       if (data[k] === undefined) set(k, false);
+    }
+    // Highlight text coloring moved from an "Auto text" checkbox to a
+    // Defaults/Auto/Manual dropdown that defaults to Defaults (theme colors).
+    // Preserve users who had set manual highlight text colors by switching
+    // those rows to Manual; everyone else lands on Defaults.
+    const highlightTextTypes: Array<[string, string[]]> = [
+      ['Highlight Own Text Mode', ['Highlight Own Text Color', 'Highlight Own Link Color', 'Highlight Own Quote Color', 'Highlight Own Dead Link Color']],
+      ['Highlight You Text Mode', ['Highlight You Text Color', 'Highlight You Link Color', 'Highlight You Quote Color', 'Highlight You Dead Link Color']],
+      ['Highlight Ghost Text Mode', ['Highlight Ghost Text Color', 'Highlight Ghost Link Color', 'Highlight Ghost Quote Color', 'Highlight Ghost Dead Link Color']],
+      ['Catalog Highlight Own Text Mode', ['Catalog Highlight Own Text Color', 'Catalog Highlight Own Subject Color', 'Catalog Highlight Own Link Color', 'Catalog Highlight Own Quote Color', 'Catalog Highlight Own Dead Link Color']],
+      ['Catalog Highlight Watched Text Mode', ['Catalog Highlight Watched Text Color', 'Catalog Highlight Watched Subject Color', 'Catalog Highlight Watched Link Color', 'Catalog Highlight Watched Quote Color', 'Catalog Highlight Watched Dead Link Color']],
+    ];
+    for (const [legacyKey, modeBase] of [
+      ['Highlight Own Text Auto', 'Highlight Own Text Mode'],
+      ['Highlight You Text Auto', 'Highlight You Text Mode'],
+      ['Highlight Ghost Text Auto', 'Highlight Ghost Text Mode'],
+    ] as const) {
+      if (data[legacyKey] !== undefined && data[modeBase] === undefined) {
+        set(modeBase, data[legacyKey] ? 'auto' : 'manual');
+      }
+    }
+    if (data['Scroll Marker Match Highlights'] !== undefined) {
+      for (const key of [
+        'Scroll Marker Own Match Highlight',
+        'Scroll Marker You Match Highlight',
+        'Scroll Marker Ghost Match Highlight',
+      ]) {
+        if (data[key] === undefined) set(key, !!data['Scroll Marker Match Highlights']);
+      }
+    }
+    for (const variant of ['SFW', 'NSFW']) {
+      for (const [modeBase, colorBases] of highlightTextTypes) {
+        const modeKey = `${modeBase} ${variant}`;
+        if (data[modeKey] !== undefined) continue;
+        const hasManual = colorBases.some(c => {
+          const v = data[`${c} ${variant}`];
+          return typeof v === 'string' && v !== '';
+        });
+        if (hasManual) set(modeKey, 'manual');
+      }
     }
     return changes;
   },

@@ -190,6 +190,7 @@ var Main = {
     }
 
     flatten(null, Config);
+    const legacyReplaceThumbnailKeys = ['Replace GIF', 'Replace JPG', 'Replace PNG', 'Replace WEBM'];
 
     for (var db of DataBoard.keys) {
       Conf[db] = dict();
@@ -202,11 +203,6 @@ var Main = {
     Conf['Index Sort'] = dict();
     for (let i = 0; i < 2; i++) { Conf[`Last Long Reply Thresholds ${i}`] = dict(); }
     Conf['siteProperties'] = dict();
-    const legacyReplaceThumbnailKeys = ['Replace GIF', 'Replace JPG', 'Replace PNG', 'Replace WEBM'];
-    for (const key of legacyReplaceThumbnailKeys) {
-      Conf[key] = false;
-    }
-
     // XXX old key names
     Conf['Except Archives from Encryption'] = false;
     Conf['JSON Navigation'] = true;
@@ -486,9 +482,11 @@ var Main = {
     const changes = Settings.upgrade(items, previousversion);
     items.previousversion = (changes.previousversion = g.VERSION);
     return $.set(changes, function() {
-      const el = $.el('span',
-        { innerHTML: `${meta.name} has been updated to <a href="${meta.changelog}" target="_blank">version ${g.VERSION}</a>.` });
-      return new Notice('info', el, 15);
+      if (items['Show Updated Notifications'] ?? true) {
+        const el = $.el('span',
+          { innerHTML: `${meta.name} has been updated to <a href="${meta.changelog}" target="_blank">version ${g.VERSION}</a>.` });
+        return new Notice('info', el, 15);
+      }
     });
   },
 
@@ -543,10 +541,14 @@ var Main = {
             filename: pathname[pathname.length - 1]
           });
         } else if (video = $('video')) {
-          Volume.setup(video);
-          video.loop = true;
-          video.controls = true;
-          video.play();
+          if (Conf['Volume in New Tab']) {
+            Volume.setup(video);
+          }
+          if (Conf['Loop in New Tab']) {
+            video.loop = true;
+            video.controls = true;
+            video.play();
+          }
         }
       });
       return;
@@ -1280,7 +1282,7 @@ User agent: ${navigator.userAgent}\
     ['Custom CSS',                CustomCSS],
     ['Thread Links',              ThreadLinks],
     ['Linkify',                   Linkify],
-    ['Spoiler Mode',              RemoveSpoilers],
+    ['Reveal Spoilers',           RemoveSpoilers],
     ['Resurrect Quotes',          Quotify],
     ['Fetch Ghost Posts',         GhostPosts],
     ['Filter',                    Filter],

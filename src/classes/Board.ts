@@ -1,5 +1,6 @@
 import BoardConfig from "../General/BoardConfig";
 import { d, g } from "../globals/globals";
+import type { BoardConfig as BoardConfigData } from "../globals/globals";
 import SimpleDict from "./SimpleDict";
 import type Post from "./Post";
 import type Thread from "./Thread";
@@ -15,7 +16,7 @@ export default class Board {
   declare siteID: string;
   declare threads: SimpleDict<Thread>;
   declare posts: SimpleDict<Post>;
-  declare config: any;
+  declare config: BoardConfigData;
 
   toString() { return this.ID; }
 
@@ -31,7 +32,7 @@ export default class Board {
   }
 
   cooldowns() {
-    const c2 = (this.config || {}).cooldowns || {};
+    const c2: Partial<BoardConfigData['cooldowns']> = this.config?.cooldowns ?? {};
     const c = {
       thread: c2.threads || 0,
       reply:  c2.replies || 0,

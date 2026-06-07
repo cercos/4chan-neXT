@@ -69,7 +69,7 @@ var ImageExpand = {
   cb: {
     toggle(e) {
       const post = Get.postFromNode(this);
-      if (e.shiftKey) {
+      if (e.shiftKey && Conf['MD5 Quick Filter in Threads']) {
         Filter.quickFilterMD5.call(post);
         e.preventDefault();
         e.stopImmediatePropagation();

@@ -7,6 +7,15 @@ import Main from "../main/Main";
  * Full docs: https://github.com/decaffeinate/decaffeinate/blob/main/docs/suggestions.md
  */
 export default class Callbacks {
+  declare type: string;
+  declare keys: string[];
+  [name: string]: any;
+
+  static Post: Callbacks;
+  static Thread: Callbacks;
+  static CatalogThread: Callbacks;
+  static CatalogThreadNative: Callbacks;
+
   static initClass() {
     this.Post          = new Callbacks('Post');
     this.Thread        = new Callbacks('Thread');

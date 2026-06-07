@@ -7,6 +7,10 @@ import { g } from "../globals/globals";
  * Full docs: https://github.com/decaffeinate/decaffeinate/blob/main/docs/suggestions.md
  */
 export default class Connection {
+  declare target: Window | HTMLIFrameElement;
+  declare origin: string;
+  declare cb: { [type: string]: (value: any) => void };
+
   constructor(target, origin, cb={}) {
     this.send = this.send.bind(this);
     this.onMessage = this.onMessage.bind(this);

@@ -3,14 +3,26 @@
  * DS102: Remove unnecessary code created because of implicit returns
  * Full docs: https://github.com/decaffeinate/decaffeinate/blob/main/docs/suggestions.md
  */
+interface RALItem {
+  prev: RALItem | null;
+  next: RALItem | null;
+  data: any;
+  ID: string | number;
+}
+
 export default class RandomAccessList {
-  constructor(items) {
+  declare length: number;
+  declare first: RALItem;
+  declare last: RALItem;
+  [ID: string]: any;
+
+  constructor(items?) {
     this.length = 0;
     if (items) { for (var item of items) { this.push(item); } }
   }
 
   push(data) {
-    let item;
+    let item: RALItem;
     let {ID} = data;
     if (!ID) { ID = data.id; }
     if (this[ID]) { return; }

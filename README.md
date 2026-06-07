@@ -71,6 +71,7 @@ Useful build flags:
 
 ## Links
 
+- User Guide: [docs/user-guide.md](./docs/user-guide.md)
 - Changelog: [CHANGELOG.md](./CHANGELOG.md)
 - Issues: https://github.com/cercos/4chan-next/issues
 - Contributing: [CONTRIBUTING.md](./CONTRIBUTING.md)

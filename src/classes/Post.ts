@@ -54,7 +54,7 @@ export default class Post {
   declare nodes:          ReturnType<Post['parseNodes']>;
   declare isDead:         boolean;
   declare isHidden:       boolean;
-  declare clones:         any[];
+  declare clones:         PostClone[];
   declare isRebuilt?:     boolean;
   declare isFetchedQuote: boolean | undefined;
   declare isClone:        boolean | undefined;
@@ -249,7 +249,7 @@ export default class Post {
     //   Preceding and following new lines.
     //   Trailing spaces.
     const bq = this.nodes.commentClean.cloneNode(true);
-    if (Conf['Spoiler Mode'] === 'default') { this.cleanSpoilers(bq); }
+    if (!Conf['Remove Spoilers'] && !Conf['Reveal Spoilers']) { this.cleanSpoilers(bq); }
     g.SITE.cleanCommentDisplay?.(bq);
     return this.nodesToText(bq).trim().replace(/\s+$/gm, '');
   }

@@ -1,0 +1,25 @@
+// Type-checking-only config (NOT used by the rollup build). Run via `npm run typecheck`.
+// Mirrors the base tsconfig (loose: noImplicitAny:false, strict off) but scoped to
+// src/ with skipLibCheck, so it's a clean green/red compile signal — exits 0 today.
+//
+// This is the ratchet for the ongoing `any`-removal work: it catches mistakes on
+// values that DO have real types (wrong field, type incompat, etc.) — exactly what
+// we add when we replace an `any`. It does NOT enforce full strict.
+//
+// NOTE: full `strict` currently surfaces ~3786 errors (dominated by property-access
+// on the decaffeinated object-literal singletons + null-safety), so strict is a
+// large future burndown, not a freebie. noImplicitAny:false is load-bearing here.
+//
+// Scoped to src/ — tools/ has its own tools/tsconfig.json (node16 + @types/node).
+// fbegin.js/fend.js are intentionally-invalid dead build fragments, excluded.
+{
+  "extends": "./tsconfig.json",
+  "compilerOptions": {
+    "skipLibCheck": true
+  },
+  "include": ["src"],
+  "exclude": [
+    "src/meta/fbegin.js",
+    "src/meta/fend.js"
+  ]
+}
