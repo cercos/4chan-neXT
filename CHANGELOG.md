@@ -4,6 +4,9 @@
 
 - Added a "Highlight neXT" settings toggle that marks settings added or changed compared to upstream 4chan-X.
 - Removed the Quick Reply media metadata stripping settings.
+- Fixed Quick Reply comment preview to stay hidden on load when empty (only shows once there is text or a file, or after an explicit preview toggle).
+- Fixed console spam from JSON.parse on non-2xx CrossOrigin responses.
+- Added CSS Custom Highlight API search highlighting for thread index and settings search.
 
 ### 1.1.0 (2026-06-08)
 
