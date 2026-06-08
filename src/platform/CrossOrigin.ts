@@ -171,7 +171,11 @@ var CrossOrigin = {
         onload(xhr) {
           try {
             let response = xhr.responseText;
-            if (responseType === 'json') {
+            // Only attempt JSON parsing on success statuses. Error responses
+            // (401/403/404 etc.) usually carry a plain-text body, so parsing
+            // them throws and spams the console for no gain — the raw text is
+            // kept and callers handle the status code themselves.
+            if (responseType === 'json' && [200, 203, 206, 304].includes(xhr.status)) {
               try {
                 response = JSON.parse(xhr.responseText);
               } catch (error) {
