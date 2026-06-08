@@ -715,6 +715,8 @@ const CaptchaT = {
       style.textContent = `
         #qr.fourchanx-stacked-captcha .captcha-container { width: 100% !important; height: auto !important; min-height: 145px; overflow: visible !important; }
         #qr.fourchanx-stacked-captcha #t-ctrl { flex-wrap: wrap; gap: 4px; align-items: center; }
+        #qr.fourchanx-stacked-captcha .fourchanx-captcha-load-hint.state-complete { flex: 0 0 auto; white-space: nowrap; overflow-wrap: normal; }
+        #qr.fourchanx-stacked-captcha .fourchanx-captcha-load-hint.state-complete .fourchanx-captcha-status-text { white-space: nowrap; overflow-wrap: normal; }
         #qr.fourchanx-stacked-captcha .tcaptcha-image { padding: 0; margin: 3px; border: none; background: none; cursor: pointer !important; }
         #qr.fourchanx-stacked-captcha .tcaptcha-image img { height: 100%; width: 100%; display: block; }
         #qr.fourchanx-stacked-captcha .tcaptcha-image.active { outline: 4px solid var(--xt-variant-accent, #00c06f); outline-offset: -3px; box-shadow: 0 0 10px 2px color-mix(in srgb, var(--xt-variant-accent, #00c06f) 70%, transparent); border-radius: 2px; }

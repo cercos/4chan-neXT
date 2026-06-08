@@ -31,8 +31,22 @@ import Filter from '../Filtering/Filter';
 import QuoteYou from '../Quotelinks/QuoteYou';
 import Index from './Index';
 import BoardConfig from './BoardConfig';
+import nextSettingsDiff from '../config/nextSettingsDiff.json';
 
 export type StyleVariant = 'sfw' | 'nsfw';
+
+// Settings neXT added or changed vs upstream 4chan-X (see
+// tools/gen-next-settings-diff.js). Powers the "Highlight neXT" toggle.
+const NEXT_ADDED = new Set<string>(nextSettingsDiff.added);
+const NEXT_CHANGED = new Set<string>(nextSettingsDiff.changed);
+
+// Classify a single setting key against the neXT diff.
+function nextStatusOf(key: string): '' | 'added' | 'changed' {
+  if (!key) return '';
+  if (NEXT_ADDED.has(key)) return 'added';
+  if (NEXT_CHANGED.has(key)) return 'changed';
+  return '';
+}
 
 var Settings = {
   dialog: undefined as HTMLDivElement | undefined,
@@ -41,6 +55,7 @@ var Settings = {
   activeSection: null as any,
   renderedSection: null as any,
   rememberLayout: false,
+  highlightNext: false,
   savedWindowLayout: '',
   detailsState: dict() as Record<string, boolean>,
   pointerDownInsideDialog: false,
@@ -333,6 +348,7 @@ var Settings = {
     $.on($('.collapse-all', dialog), 'click', e => { e.preventDefault(); Settings.toggleAllDetails(false); });
     $.on($('.move', settingsWindow), 'touchstart mousedown', Settings.prepareDrag);
     $.on($('#settings-remember-layout', dialog), 'change', Settings.onRememberLayoutChange);
+    $.on($('#settings-highlight-next', dialog), 'change', Settings.onHighlightNextChange);
     for (const actionEl of $$('.settings-titlebar-actions > *', settingsWindow)) {
       $.on(actionEl, 'touchstart mousedown', e => e.stopPropagation());
     }
@@ -450,11 +466,16 @@ var Settings = {
     if (!Settings.dialog) return;
     $.get({
       'settings.rememberLayout': false,
+      'settings.highlightNext': false,
       'settings.windowLayout': '',
       'settings.detailsState': dict(),
     }, prefs => {
       if (!Settings.dialog) return;
       Settings.rememberLayout = !!prefs['settings.rememberLayout'];
+      Settings.highlightNext = !!prefs['settings.highlightNext'];
+      const highlightToggle = $('#settings-highlight-next', Settings.dialog) as HTMLInputElement | null;
+      if (highlightToggle) highlightToggle.checked = Settings.highlightNext;
+      Settings.applyNextHighlight();
       Settings.savedWindowLayout = typeof prefs['settings.windowLayout'] === 'string' ? prefs['settings.windowLayout'] : '';
       const detailsState = prefs['settings.detailsState'];
       Settings.detailsState = (detailsState && typeof detailsState === 'object') ? detailsState : dict();
@@ -474,6 +495,51 @@ var Settings = {
         }
       }
     });
+  },
+
+  // Mark each setting row neXT added/changed vs upstream 4chan-X. Runs on every
+  // section render so the CSS-driven highlight is ready the moment it's toggled.
+  // Pick which element to highlight for a setting field. Standard rows wrap the
+  // field in a `[data-name]` div that IS the key — use that (so the badge lands
+  // on its .setting-title). Custom-template controls (Styling/Advanced) and
+  // composite rows have no per-key wrapper; their nearest `[data-name]` is a
+  // group/section, so highlight the field's own `<label>` row instead.
+  nextRowForField(field: HTMLElement): HTMLElement | null {
+    const named = field.closest('[data-name]') as HTMLElement | null;
+    if (named && nextStatusOf(named.dataset.name || '')) return named;
+    return (field.closest('label') as HTMLElement | null) || named;
+  },
+
+  tagNextSettings(root: HTMLElement | null) {
+    if (!root) return;
+    for (const el of $$('[data-next-status]', root) as HTMLElement[]) delete el.dataset.nextStatus;
+    // Standard rows: the wrapper's data-name is exactly one setting key.
+    for (const el of $$('[data-name]', root) as HTMLElement[]) {
+      const status = nextStatusOf(el.dataset.name || '');
+      if (status) el.dataset.nextStatus = status;
+    }
+    // Match each field by its exact `name` attribute, then highlight its row.
+    // Exact matching avoids ambiguity when one key is a word-prefix of another
+    // (e.g. "Comment Preview" vs "Comment Preview Position"). "added" outranks
+    // "changed" when a row mixes both.
+    for (const field of $$('[name]', root) as HTMLElement[]) {
+      const status = nextStatusOf(field.getAttribute('name') || '');
+      if (!status) continue;
+      const row = Settings.nextRowForField(field);
+      if (row && row.dataset.nextStatus !== 'added') row.dataset.nextStatus = status;
+    }
+  },
+
+  applyNextHighlight() {
+    const settingsWindow = $('#fourchanx-settings', Settings.dialog || d) as HTMLElement | null;
+    if (settingsWindow) settingsWindow.classList.toggle('highlight-next-settings', Settings.highlightNext);
+  },
+
+  onHighlightNextChange() {
+    const enabled = (this as HTMLInputElement).checked;
+    Settings.highlightNext = enabled;
+    $.set('settings.highlightNext', enabled);
+    Settings.applyNextHighlight();
   },
 
   onRememberLayoutChange() {
@@ -802,6 +868,7 @@ var Settings = {
     section.className = `section-${sectionInfo.hyphenatedTitle}`;
     sectionInfo.open(section, g);
     Settings.decorateDetailsWithKeys(section, sectionInfo);
+    Settings.tagNextSettings(section);
     section.scrollTop = 0;
     Settings.renderedSection = sectionInfo;
     Settings.applyDescriptionMode(section);

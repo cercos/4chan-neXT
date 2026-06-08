@@ -58,12 +58,12 @@ To migrate settings:
 ## Fork Additions
 
 Recent fork additions include:
-- **Quick Reply and posting:** per-board `Remember QR State` draft restore with attachment persistence, native board-index form hiding, upload progress, thumbnail remove-file-first behavior, image auto-processing, media metadata stripping, audio stripping for boards that disallow audio, stacked TCaptcha editing, and comment preview with a titlebar toggle.
+- **Quick Reply and posting:** per-board `Remember QR State` draft restore with attachment persistence, native board-index form hiding, upload progress, thumbnail remove-file-first behavior, image auto-processing, audio stripping for boards that disallow audio, stacked TCaptcha editing, and comment preview with a titlebar toggle.
 - **Thread Watcher and monitoring:** Quick Reply docking, attach location controls, manual max size controls, OP thumbnails, hover thumbnail previews, mark-all-read and per-thread mark-read icons, detailed thread stats, and replies-to-you state support for watcher links.
 - **Styling and themes:** built-in site themes, SFW/NSFW styling variants, StyleChan section handoff, home-page StyleChan mirroring, theme-aware highlight colors, text color modes, edge/background highlight modes, edge and border styles, catalog own/watched highlights, saved palettes, and a local styling guide.
 - **Scrollbar markers:** own-post, quotes-you, ghost-post, and unread-line markers with per-marker colors, opacity, match-highlight controls, plus beside-scrollbar and IDE-style over-scrollbar layouts.
 - **Filters:** responsive Simple Filters, auto-save, color swatches plus custom CSS classes, combined Simple/Advanced preview, hidden-thread grouping, showing hidden threads with unread replies to you, `highlight:` class lists, and catalog `tile` highlight glow.
-- **Gallery and media:** grid gallery thumbnails, configurable gallery columns and thumbnail dock position, ZIP-based download-all-media support, persistent download dialog behavior, thumbnail replacement controls, and metadata visibility/stripping controls.
+- **Gallery and media:** grid gallery thumbnails, configurable gallery columns and thumbnail dock position, ZIP-based download-all-media support, persistent download dialog behavior, thumbnail replacement controls, and metadata visibility controls.
 - **Linkification:** YouTube -> yewtu.be and X/Twitter -> xcancel link rewriting.
 - **Settings and UI:** faster Settings loading, visible or tooltip descriptions, vertical or horizontal Settings navigation, search-friendly layout, relative post dates, relative-date title mode, and local user/styling docs.
 

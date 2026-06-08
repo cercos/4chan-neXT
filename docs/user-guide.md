@@ -14,12 +14,12 @@ If you use StyleChan, read Styling And Themes before tuning colors. 4chan-neXT d
 
 A settings-level comparison against 4chan XT shows these main 4chan-neXT additions:
 
-- **Quick Reply and posting:** `Remember QR State` draft restore with attachment persistence, native board-index form hiding, upload progress, thumbnail remove-file-first behavior, image auto-processing, media metadata stripping, board-aware video audio stripping, stacked TCaptcha answer editing, and comment preview.
+- **Quick Reply and posting:** `Remember QR State` draft restore with attachment persistence, native board-index form hiding, upload progress, thumbnail remove-file-first behavior, image auto-processing, board-aware video audio stripping, stacked TCaptcha answer editing, and comment preview.
 - **Thread Watcher and monitoring:** Quick Reply docking, attach location controls, manual max size controls, OP thumbnails, hover thumbnail previews, mark-all-read and per-thread mark-read icons, detailed thread stats, and replies-to-you watcher link state.
 - **Styling and themes:** built-in themes, SFW/NSFW styling variants, StyleChan section ownership, home-page StyleChan mirroring, highlight color controls, text color modes, edge/background modes, edge and border styles, catalog own/watched highlights, saved palettes, and local styling docs.
 - **Scrollbar markers:** own-post, quotes-you, ghost-post, and unread-line markers with per-marker colors, opacity, match-highlight controls, plus beside-scrollbar and IDE-style over-scrollbar layouts.
 - **Filters:** responsive Simple Filters, auto-save, color swatches plus custom CSS classes, combined preview, hidden-thread grouping, showing hidden threads with unread replies to you, `highlight:` class lists, and catalog `tile` highlight glow.
-- **Gallery and media:** grid gallery thumbnails, configurable columns and thumbnail dock position, ZIP-based download-all-media support, persistent download dialog behavior, thumbnail replacement controls, and metadata visibility/stripping controls.
+- **Gallery and media:** grid gallery thumbnails, configurable columns and thumbnail dock position, ZIP-based download-all-media support, persistent download dialog behavior, thumbnail replacement controls, and metadata visibility controls.
 - **Linkification and UI:** YouTube -> yewtu.be rewriting, X/Twitter -> xcancel rewriting, visible or tooltip setting descriptions, vertical or horizontal Settings navigation, relative post dates, and relative-date title mode.
 
 ## Settings Window

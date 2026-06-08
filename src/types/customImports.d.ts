@@ -68,3 +68,11 @@ declare module '*/banners.json' {
   const banners: string[];
   export default banners;
 }
+declare module '*/nextSettingsDiff.json' {
+  const diff: {
+    counts: { xt: number, next: number, added: number, changed: number },
+    added: string[],
+    changed: string[],
+  };
+  export default diff;
+}

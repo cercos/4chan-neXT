@@ -1,5 +1,10 @@
 ## 4chan-neXT changelog
 
+### Unreleased
+
+- Added a "Highlight neXT" settings toggle that marks settings added or changed compared to upstream 4chan-X.
+- Removed the Quick Reply media metadata stripping settings.
+
 ### 1.1.0 (2026-06-08)
 
 - Completed the TypeScript migration using decaffeinate, custom codemods, `@rollup/plugin-typescript`, and custom Rollup transformers.

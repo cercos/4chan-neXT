@@ -146,6 +146,7 @@
     "build:all": "node ./tools/build-all.js",
     "removebuild": "node ./tools/remove-build-changes.js",
     "removebuild:all": "node ./tools/remove-build-changes.js --all",
-    "serve:8123": "http-server . -p 8123 -c-1"
+    "serve:8123": "http-server . -p 8123 -c-1",
+    "gen:next-diff": "node ./tools/gen-next-settings-diff.js"
   }
 }

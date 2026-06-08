@@ -23,10 +23,6 @@ const Config = {
         true,
         'Image Hover and Quote Preview move with the mouse cursor.'
       ],
-      'Settings Descriptions as Tooltips': [
-        false,
-        'Show setting descriptions as browser tooltips instead of inline text.'
-      ],
       'Open Threads in New Tab': [
         false,
         `Make links to threads in the index / ${meta.name} catalog open in a new tab.`
@@ -66,15 +62,6 @@ const Config = {
       'Time Formatting': [
         true,
         'Localize and format timestamps. Has more options on the "Advanced" tab.'
-      ],
-      'Relative Post Dates': [
-        false,
-        'Display dates like "3 minutes ago". Tooltip shows the timestamp.'
-      ],
-      'Relative Date Title': [
-        false,
-        'Show Relative Post Date only when hovering over dates.',
-        1
       ],
       'Comment Expansion': [
         true,
@@ -145,9 +132,18 @@ const Config = {
         true,
         'Activate the native extension\'s Flash embedding if the native extension is disabled.'
       ],
+      'Export History': [
+        true,
+        'Export last read, your posts, etc. when exporting the setting'
+      ],
+      'Ask to Export History': [
+        true,
+        'Ask if history should be exported when settings are exported.'
+      ],
       'Scroll Markers': [
         true,
-        'Mark your posts and replies to them on the scroll bar.'
+        'Mark your posts and replies to them on the scroll bar. Relies on the "Highlight Posts Quoting You" and ' +
+          '"Highlight Own Posts" settings'
       ],
     },
 
@@ -186,16 +182,6 @@ const Config = {
         false,
         'Embed content in a frame that remains in place when the page is scrolled.',
         2
-      ],
-      'Convert X to xcancel': [
-        false,
-        'Rewrite twitter.com / x.com links to xcancel.com so clicks open the privacy front-end instead.',
-        1
-      ],
-      'Convert YouTube to yewtu.be': [
-        false,
-        'Rewrite youtube.com / youtu.be links to yewtu.be so clicks open the privacy front-end instead.',
-        1
       ],
     },
 
@@ -253,14 +239,6 @@ const Config = {
         true,
         'Show the reason the post was hidden in the stub. If disabled, you can hover over the stub to see the reason.'
       ],
-      'Show Threads With Yous': [
-        false,
-        'Show hidden threads on the index/catalog when they have unread replies quoting you. They re-hide once the (You) is read.'
-      ],
-      'Group Hidden Threads By Filter': [
-        false,
-        'When showing hidden threads in catalog mode, group them under a header for the filter rule that hid them, with a separate "Manually hidden" section.'
-      ],
     },
 
     'Images and Videos': {
@@ -279,15 +257,6 @@ const Config = {
       'Gallery': [
         true,
         'Adds a simple and cute image gallery. Has more options in the gallery menu.'
-      ],
-      'Download All Media': [
-        true,
-        'Adds a header shortcut and menu entry to download all images/videos in the current thread/index.'
-      ],
-      'Persistent Download Media': [
-        false,
-        'Keep the "Download all media" dialog open across page loads.',
-        1
       ],
       'Fullscreen Gallery': [
         false,
@@ -311,29 +280,21 @@ const Config = {
         false,
         'Replace spoiler thumbnails with the original image.'
       ],
-      'Replace Thumbnails': [
-        false,
-        'Replace image and video thumbnails with the original media. Probably will degrade browser performance ;)'
-      ],
       'Replace GIF': [
         false,
-        'Replace gif thumbnails with the actual image.',
-        1
+        'Replace gif thumbnails with the actual image.'
       ],
       'Replace JPG': [
         false,
-        'Replace jpg thumbnails with the actual image.',
-        1
+        'Replace jpg thumbnails with the actual image.'
       ],
       'Replace PNG': [
         false,
-        'Replace png thumbnails with the actual image.',
-        1
+        'Replace png thumbnails with the actual image.'
       ],
       'Replace WEBM': [
         false,
-        'Replace webm, mp4, and ogv thumbnails with the actual video. Probably will degrade browser performance ;)',
-        1
+        'Replace webm, mp4, and ogv thumbnails with the actual video. Probably will degrade browser performance ;)'
       ],
       'Image Prefetching': [
         true,
@@ -436,7 +397,7 @@ const Config = {
     'Monitoring': {
       'Thread Updater': [
         true,
-        'Fetch and insert new replies. Quick toggles in the header menu; more options in Threads & Posts → Updater & Cooldown; sounds in Advanced → Thread updater sound.'
+        'Fetch and insert new replies. Has more options in the header menu and the "Advanced" tab.'
       ],
       'Unread Count': [
         true,
@@ -515,16 +476,6 @@ const Config = {
         'The thread watcher will be visible when the page is loaded.',
         1
       ],
-      'Thread Watcher Attached': [
-        false,
-        'Attach the thread watcher to the Quick Reply (at the location below). Drag either title bar to move both dialogs; use the attach button to detach.',
-        2
-      ],
-      'Thread Watcher Attach Location': [
-        'bottom',
-        'Position to attach the thread watcher relative to the Quick Reply dialog (bottom/top: width follows QR; left/right: width uses manual max W, height sizes to content).',
-        2
-      ],
       'Mark New IPs': [
         false,
         'Label each post from a new IP with the thread\'s current IP count.'
@@ -536,40 +487,6 @@ const Config = {
       'Prune All Threads': [
         false,
         'Activate Reply Pruning by default in all threads.',
-        1
-      ],
-      'Detailed Thread Stats': [
-        true,
-        'Display page / purge position and unique IP count in the thread stats.',
-        1
-      ],
-      'Scrollbar Markers': [
-        true,
-        'Show colored markers along the right edge of the page for tracked posts. Uses the highlight colors from the Style settings.'
-      ],
-      'Scrollbar Mark Own Posts': [
-        true,
-        'Mark your own posts in the scrollbar.',
-        1
-      ],
-      'Scrollbar Mark Quotes You': [
-        true,
-        'Mark posts that quote you in the scrollbar.',
-        1
-      ],
-      'Scrollbar Mark Ghost Posts': [
-        true,
-        'Mark deleted (ghost) posts in the scrollbar.',
-        1
-      ],
-      'Scrollbar Mark Unread Line': [
-        true,
-        'Mark the unread line position in the scrollbar.',
-        1
-      ],
-      'Scrollbar Marker Position': [
-        'offset',
-        'Where markers are drawn: beside the scrollbar (single or 3 columns) or over a custom scrollbar in IDE-style (single or 3 columns).',
         1
       ]
     },
@@ -604,16 +521,6 @@ const Config = {
         'Remember the spoiler state, instead of resetting after posting.',
         1
       ],
-      'Remember QR State': [
-        false,
-        'Auto-save your Quick Reply (per board) so it survives a refresh, close or crash, including all queued posts and their attachments (images and videos, up to ~100 MB per board). Restores into an empty Quick Reply when you return to the board; cleared after you post.',
-        1
-      ],
-      'QR Thumbnail Remove File First': [
-        true,
-        'In Quick Reply thumbnails, first click on Remove clears the file, second click removes the post. Disable for single-click post removal.',
-        1
-      ],
       'Randomize Filename': [
         false,
         'Set the filename to a random timestamp within the past year. Disabled on /f/.',
@@ -622,11 +529,6 @@ const Config = {
       'Show New Thread Option in Threads': [
         true,
         'Show the option to post a new / different thread from inside a thread.',
-        1
-      ],
-      'Hide Original Post Form': [
-        true,
-        'Hide the native post form that sits at the top of board index pages by default, like on threads. Use the "Original Form" link or "Start a Thread" to show it.',
         1
       ],
       'Show Upload Progress': [
@@ -660,33 +562,9 @@ const Config = {
           '<a href="https://github.com/TuxedoTako/4chan-xt/issues/132">this LibreWolf bug</a>',
         1
       ],
-      'Auto-process Images': [
-        true,
-        'Automatically convert unsupported image formats and resize oversized image uploads in Quick Reply.',
-        1
-      ],
-      'Strip Video Audio': [
-        true,
-        'Remove audio from MP4 and WebM uploads in Quick Reply on boards that do not allow audio.',
-        1
-      ],
-      'Comment Preview': [
-        false,
-        'Add a toggle below the Quick Reply comment box to switch between editing and a preview of how the post will render on the current board (greentext, quotes, [spoiler]/[code]/[math]/sjis when supported).',
-        1
-      ],
-      'Show Comment Preview Header Icon': [
-        true,
-        'Show the comment preview toggle icon in the Quick Reply titlebar.',
-        2
-      ],
       'Force Noscript Captcha': [
         false,
         'Use the non-Javascript fallback captcha even if Javascript is enabled.'
-      ],
-      'Stacked TCaptcha': [
-        false,
-        'Show 4chan\'s TCaptcha as a stacked image grid in Quick Reply instead of the default slider/next UI.'
       ],
       'Pass Link': [
         false,
@@ -741,10 +619,6 @@ const Config = {
         true,
         'Link dead quotes to the archives, and support inlining/previewing of archive links like quote links.'
       ],
-      'Fetch Ghost Posts': [
-        false,
-        'When opening a thread, fetch deleted posts from the configured archive and insert them inline. Requires Resurrect Quotes and a Foolfuuka archive for the board.'
-      ],
       'Remember Your Posts': [
         true,
         'Remember your posting history.'
@@ -762,11 +636,6 @@ const Config = {
       'Highlight Own Posts': [
         true,
         'Highlights own posts.',
-        1
-      ],
-      'Highlight Ghost Posts': [
-        true,
-        'Highlights deleted posts that have been restored from an archive.',
         1
       ],
       'Mark OP Quotes': [
@@ -835,37 +704,12 @@ const Config = {
     'Scroll to Post': [
       true
     ],
-    'Grid Thumbnails': [
-      false,
-      'Lay gallery thumbnails out in a grid instead of a single column.'
-    ],
-    'Gallery Columns': [
-      3,
-      'Number of thumbnail columns to show in grid mode. Columns stop being added once the strip would exceed 75% of the screen width. 0 disables the image preview and shows fullscreen thumbnails (click a thumbnail to open it in a lightbox).'
-    ],
-    'Gallery Thumbnails Position': [
-      'right',
-      'Which edge of the gallery the thumbnail strip docks to: top, bottom, left or right.'
-    ],
     'Slide Delay': [
       6.0
     ]
   },
 
   'Default Volume': 1.0,
-  'Thread Watcher Thumbnail Size': 40,
-  'Thread Watcher Thumbnail Preview Size': 40,
-  'Thread Watcher Max Height': 210,
-  'Thread Watcher Max Width': 250,
-  'Thread Watcher Sort': 'manual',
-  'Thread Watcher Attached': false,
-  'Thread Watcher Attach Location': 'bottom',
-  'Thread Title': 'excerpt',
-  'Unread Title Count': 'always',
-  'Comment Preview Position': 'below',
-  'Show Comment Preview Header Icon': true,
-  'Spoiler Mode': 'default',
-  'Settings Menu Layout': 'vertical',
 
   threadWatcher: {
     'Current Board': [
@@ -896,25 +740,9 @@ const Config = {
       true,
       'Show number of unread posts in watched threads.'
     ],
-    'Show Mark All Read Icon': [
-      true,
-      'Show the mark-all-read icon in the thread watcher header.'
-    ],
-    'Show Mark Thread Read Icons': [
-      false,
-      'Show a per-thread mark-as-read icon in each watched thread entry.'
-    ],
     'Show Site Prefix': [
       true,
       'When multiple sites are shown in the thread watcher, add a prefix to board names to distinguish them.'
-    ],
-    'Show OP Thumbnails': [
-      false,
-      'Show OP thumbnails in watched thread entries.'
-    ],
-    'Thread Watcher Thumbnail Hover': [
-      false,
-      'Show a larger OP thumbnail preview when hovering watched-thread thumbnails.'
     ],
     'Require OP Quote Link': [
       false,
@@ -985,8 +813,6 @@ const Config = {
     MD5: ''
   },
 
-  easyFilters: '',
-
   sauces: `\
 # Known filename formats:
 https://www.pixiv.net/member_illust.php?mode=medium&illust_id=%$1;regexp:/^(\\d+)_p\\d+/
@@ -1004,7 +830,7 @@ https://yandex.com/images/search?rpt=imageview&url=%IMG
 
 # Specialized reverse image search:
 //iqdb.org/?url=%IMG
-https://trace.moe/?auto&url=%IMG;text:trace
+https://trace.moe/?auto&url=%IMG;text:wait
 #//3d.iqdb.org/?url=%IMG
 #//saucenao.com/search.php?url=%IMG
 
@@ -1026,124 +852,6 @@ http://eye.swfchan.com/search/?q=%name;types:swf
   },
 
   'Custom CSS': true,
-  customCSSHome: false,
-  siteStyle: '',
-  siteStyleHome: false,
-  // StyleChan bridge: when StyleChan is managing site themes (it excludes the
-  // 4chan home page), this opt-in replays StyleChan's injected stylesheet on the
-  // home page. styleChanThemeCSS / styleChanVarsCSS hold the snapshot captured
-  // on board pages (where StyleChan runs) so the home page can reuse it.
-  styleChanThemeHome: false,
-  styleChanThemeCSS: '',
-  styleChanVarsCSS: '',
-  // Per-section master switches for the Styling page. Each gates one Styling
-  // subsection (Site Style, Highlight Colors, Scrollbar Markers, Text Colors,
-  // Custom CSS) at runtime *without* touching the section's inner settings, so
-  // toggling a section off and back on restores the user's prior config. The
-  // title checkboxes that flip these only appear when StyleChan is installed;
-  // defaults are all-on so non-StyleChan users see no behavior change.
-  // `stylingSectionsInitialized` guards the one-time recommendation that
-  // disables StyleChan-owned sections the first time StyleChan is detected.
-  stylingSectionSiteStyle: true,
-  stylingSectionHighlights: true,
-  stylingSectionScrollbarMarkers: true,
-  stylingSectionTextColors: true,
-  stylingSectionCustomCSS: true,
-  stylingSectionsInitialized: false,
-  customSiteThemes: [],
-  savedHighlightPalettes: [],
-  // 'auto' applies the SFW or NSFW variant based on the active board's
-  // ws_board flag; 'sfw'/'nsfw' force a single variant everywhere.
-  sfwNsfwMode: 'auto',
-  // 'default' = leave text/link/greentext at the theme's native colors (no
-  // override); 'auto' = compute readable colors from the background; 'manual'
-  // = use the Text/Link/Quote/Dead-link color pickers below.
-  textColorMode: 'default',
-  'Text Color': '',
-  'Link Text Color': '',
-  'Quote Text Color': '',
-  'Dead Link Text Color': '',
-  'Scroll Marker Match Highlights': true,
-  'Scroll Marker Own Match Highlight': true,
-  'Scroll Marker You Match Highlight': true,
-  'Scroll Marker Ghost Match Highlight': true,
-
-  // Styling — highlight background colors and per-marker scroll colors.
-  // Empty string = use the stylesheet default for the active theme.
-  'Highlight Own Color':         '',
-  'Highlight You Color':         '',
-  'Highlight Ghost Color':       '',
-  // Per-highlight text coloring: 'default' = theme colors (no override),
-  // 'auto' = computed for contrast, 'manual' = the color pickers below.
-  'Highlight Own Text Auto':     true,
-  'Highlight You Text Auto':     true,
-  'Highlight Ghost Text Auto':   true,
-  'Highlight Own Text Mode':     'default',
-  'Highlight You Text Mode':     'default',
-  'Highlight Ghost Text Mode':   'default',
-  'Highlight Own Text Color':    '',
-  'Highlight Own Link Color':    '',
-  'Highlight Own Quote Color':   '',
-  'Highlight Own Dead Link Color': '',
-  'Highlight You Text Color':    '',
-  'Highlight You Link Color':    '',
-  'Highlight You Quote Color':   '',
-  'Highlight You Dead Link Color': '',
-  'Highlight Ghost Text Color':  '',
-  'Highlight Ghost Link Color':  '',
-  'Highlight Ghost Quote Color': '',
-  'Highlight Ghost Dead Link Color': '',
-  'Highlight Own Opacity':       '',
-  'Highlight You Opacity':       '',
-  'Highlight Ghost Opacity':     '',
-  'Thread Highlight Edge Width': 3,
-  'Highlight Own Edge Width':    3,
-  'Highlight You Edge Width':    3,
-  'Highlight Ghost Edge Width':  3,
-  // Border style of the colored left edge. Defaults preserve the classic XT
-  // look (you: solid, own: dashed, ghost: dotted).
-  'Highlight Own Border Style':  'dashed',
-  'Highlight You Border Style':  'dashed',
-  'Highlight Ghost Border Style':'dotted',
-  'Highlight Own Background':     false,
-  'Highlight You Background':     false,
-  'Highlight Ghost Background':   false,
-  'Enable Thread Highlights':    true,
-  'Enable Catalog Highlights':   false,
-  'Catalog Highlight Own Posts': true,
-  'Catalog Highlight Watched Threads': true,
-  'Catalog Highlight Own Color': '',
-  'Catalog Highlight Own Opacity': '',
-  'Catalog Highlight Own Background': false,
-  'Catalog Highlight Watched Color': '',
-  'Catalog Highlight Watched Opacity': '',
-  'Catalog Highlight Watched Background': false,
-  'Catalog Highlight Border Width': 2,
-  'Catalog Highlight Own Border Width': 2,
-  'Catalog Highlight Watched Border Width': 2,
-  'Catalog Highlight Own Border Style': 'solid',
-  'Catalog Highlight Watched Border Style': 'solid',
-  'Catalog Highlight Own Text Mode': 'default',
-  'Catalog Highlight Own Text Color': '',
-  'Catalog Highlight Own Subject Color': '',
-  'Catalog Highlight Own Link Color': '',
-  'Catalog Highlight Own Quote Color': '',
-  'Catalog Highlight Own Dead Link Color': '',
-  'Catalog Highlight Watched Text Mode': 'default',
-  'Catalog Highlight Watched Text Color': '',
-  'Catalog Highlight Watched Subject Color': '',
-  'Catalog Highlight Watched Link Color': '',
-  'Catalog Highlight Watched Quote Color': '',
-  'Catalog Highlight Watched Dead Link Color': '',
-  'Scroll Marker Own Color':     '',
-  'Scroll Marker You Color':     '',
-  'Scroll Marker Ghost Color':   '',
-  'Scroll Marker Unread Color':  '',
-  'Scroll Marker Own Opacity':   '',
-  'Scroll Marker You Opacity':   '',
-  'Scroll Marker Ghost Opacity': '',
-  'Scroll Marker Unread Opacity': '',
-  'Scrollbar Marker Position': 'offset',
 
   Index: {
     'Index Mode': 'paged',
@@ -1284,10 +992,6 @@ current-archive-text:"Archive"]
       'w',
       'Watch thread.'
     ],
-    'Watch (catalog click)': [
-      'Ctrl+Shift',
-      'Modifier keys to hold while clicking a catalog thread to watch/unwatch it. Leave empty to disable.'
-    ],
     'Update': [
       'r',
       'Update the thread / refresh the index.'
@@ -1352,10 +1056,6 @@ current-archive-text:"Archive"]
     'Download Gallery Image': [
       'Shift+j',
       'Download current image in gallery.'
-    ],
-    'Download all media': [
-      'Shift+d',
-      'Download all media in the current thread/index.'
     ],
     'fappeTyme': [
       'f',
@@ -1506,8 +1206,7 @@ current-archive-text:"Archive"]
     'thread-stats.position':   'bottom: 0px; right: 0px;',
     'updater.position':        'bottom: 0px; left: 0px;',
     'thread-watcher.position': 'top: 50px; left: 0px;',
-    'qr.position':             'top: 50px; right: 0px;',
-    'download-all-picker.position': 'top: 100px; right: 60px;'
+    'qr.position':             'top: 50px; right: 0px;'
   },
 
   fourchanImageHost: 'i.4cdn.org',
@@ -1527,47 +1226,5 @@ current-archive-text:"Archive"]
 
   beepSource: '',
   beepVolume: 1,
-  soundLibrary: [[]],
-  boardSounds: [{}],
-  defaultSoundId: '',
 };
-
-// Visual styling settings get separate SFW and NSFW values so the user can
-// keep two color/theme palettes and have the right one applied based on the
-// active board's worksafe flag (or a forced override).
-export const styleVariantKeys = [
-  'siteStyle',
-  'usercss',
-  'textColorMode',
-  'Text Color', 'Link Text Color', 'Quote Text Color', 'Dead Link Text Color',
-  'Highlight Own Color', 'Highlight You Color', 'Highlight Ghost Color',
-  'Highlight Own Opacity', 'Highlight You Opacity', 'Highlight Ghost Opacity',
-  'Thread Highlight Edge Width',
-  'Highlight Own Edge Width', 'Highlight You Edge Width', 'Highlight Ghost Edge Width',
-  'Highlight Own Border Style', 'Highlight You Border Style', 'Highlight Ghost Border Style',
-  'Highlight Own Text Mode', 'Highlight You Text Mode', 'Highlight Ghost Text Mode',
-  'Highlight Own Text Color', 'Highlight Own Link Color', 'Highlight Own Quote Color', 'Highlight Own Dead Link Color',
-  'Highlight You Text Color', 'Highlight You Link Color', 'Highlight You Quote Color', 'Highlight You Dead Link Color',
-  'Highlight Ghost Text Color', 'Highlight Ghost Link Color', 'Highlight Ghost Quote Color', 'Highlight Ghost Dead Link Color',
-  'Catalog Highlight Own Color', 'Catalog Highlight Own Opacity',
-  'Catalog Highlight Own Background',
-  'Catalog Highlight Watched Color', 'Catalog Highlight Watched Opacity',
-  'Catalog Highlight Watched Background',
-  'Catalog Highlight Border Width',
-  'Catalog Highlight Own Border Width', 'Catalog Highlight Watched Border Width',
-  'Catalog Highlight Own Border Style', 'Catalog Highlight Watched Border Style',
-  'Catalog Highlight Own Text Mode',
-  'Catalog Highlight Own Text Color', 'Catalog Highlight Own Subject Color', 'Catalog Highlight Own Link Color', 'Catalog Highlight Own Quote Color', 'Catalog Highlight Own Dead Link Color',
-  'Catalog Highlight Watched Text Mode',
-  'Catalog Highlight Watched Text Color', 'Catalog Highlight Watched Subject Color', 'Catalog Highlight Watched Link Color', 'Catalog Highlight Watched Quote Color', 'Catalog Highlight Watched Dead Link Color',
-  'Scroll Marker Own Color', 'Scroll Marker You Color', 'Scroll Marker Ghost Color', 'Scroll Marker Unread Color',
-  'Scroll Marker Own Opacity', 'Scroll Marker You Opacity', 'Scroll Marker Ghost Opacity', 'Scroll Marker Unread Opacity',
-  'Scroll Marker Own Match Highlight', 'Scroll Marker You Match Highlight', 'Scroll Marker Ghost Match Highlight',
-];
-
-for (const k of styleVariantKeys) {
-  Config[`${k} SFW`] = Config[k];
-  Config[`${k} NSFW`] = Config[k];
-}
-
 export default Config;

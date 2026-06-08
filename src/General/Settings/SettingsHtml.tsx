@@ -25,6 +25,10 @@ const settingsHtml = <div id="fourchanx-settings" class="dialog">
       <a href="#" class="export">Export</a>
       <a href="#" class="import">Import</a>
       <a href="#" class="reset">Reset Settings</a>
+      <label class="highlight-next-toggle" title={`Highlight settings ${meta.name} added or changed compared to 4chan-X. Added settings are marked green; changed defaults are marked amber.`}>
+        <input id="settings-highlight-next" type="checkbox" autocomplete="off" />
+        <span>Highlight neXT</span>
+      </label>
       <label class="remember-layout-toggle" title="Remember dialog layout and section collapse state">
         <input id="settings-remember-layout" type="checkbox" autocomplete="off" />
         <span>Remember layout</span>

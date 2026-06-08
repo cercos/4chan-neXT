@@ -535,6 +535,76 @@ audio.controls-added {
 .remember-layout-toggle input {
   margin: 0;
 }
+.highlight-next-toggle {
+  align-items: center;
+  cursor: pointer;
+  display: inline-flex;
+  gap: 4px;
+  opacity: .85;
+  user-select: none;
+}
+.highlight-next-toggle:hover {
+  opacity: 1;
+}
+.highlight-next-toggle > span {
+  white-space: nowrap;
+}
+.highlight-next-toggle input {
+  margin: 0;
+}
+/* "Highlight neXT" — settings neXT added (green) or changed the default of
+   (amber). The left bar is an inset box-shadow (no layout shift), so it works
+   on plain rows, suboptions, and bare <label> controls alike. Intentionally
+   does NOT set padding so it never fights the .suboption-list indent. */
+#fourchanx-settings.highlight-next-settings [data-next-status] {
+  border-radius: 2px;
+}
+/* Alpha is high enough to read clearly on the dark dialog base (a faint tint
+   only showed on lighter/checked rows, which looked inconsistent). The
+   #fourchanx-settings prefix raises specificity above per-section/theme rules. */
+#fourchanx-settings.highlight-next-settings [data-next-status="added"] {
+  background: rgba(63, 185, 80, .24);
+  box-shadow: inset 4px 0 0 #3fb950;
+}
+#fourchanx-settings.highlight-next-settings [data-next-status="changed"] {
+  background: rgba(210, 153, 34, .26);
+  box-shadow: inset 4px 0 0 #d29922;
+}
+/* Badge anchors, covering every row shape:
+   - .setting-title::after            -> standard checkbox rows
+   - label[data-next-status]::after   -> bare-label Styling/Advanced controls
+   - > label > span:first-child::after -> select rows (addSelectRows: label is
+     "<span>Label: </span><select>"; checkbox labels start with <input>, so
+     their span is not :first-child and never double-badges). */
+.highlight-next-settings [data-next-status] .setting-title::after,
+.highlight-next-settings label[data-next-status]::after,
+.highlight-next-settings [data-next-status] > label > span:first-child::after {
+  display: inline-block;
+  margin-left: 6px;
+  padding: 0 5px;
+  border-radius: 8px;
+  font-size: 9px;
+  font-weight: 700;
+  letter-spacing: .04em;
+  line-height: 14px;
+  text-transform: uppercase;
+  vertical-align: middle;
+  white-space: nowrap;
+}
+.highlight-next-settings [data-next-status="added"] .setting-title::after,
+.highlight-next-settings label[data-next-status="added"]::after,
+.highlight-next-settings [data-next-status="added"] > label > span:first-child::after {
+  content: 'neXT';
+  color: #fff;
+  background: #3fb950;
+}
+.highlight-next-settings [data-next-status="changed"] .setting-title::after,
+.highlight-next-settings label[data-next-status="changed"]::after,
+.highlight-next-settings [data-next-status="changed"] > label > span:first-child::after {
+  content: 'changed';
+  color: #1a1a1a;
+  background: #d29922;
+}
 #fourchanx-settings > .settings-body {
   flex: 1;
   min-height: 0;
