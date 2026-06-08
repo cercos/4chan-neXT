@@ -4145,6 +4145,14 @@ body:not(.board_f) #qr select[name="filetag"],
 }
 .postContainer.qr-preview-post > .reply {
   border: 1px dashed rgba(120, 120, 120, 0.55);
+  /* Edge highlight: make the live preview clearly stand out from real posts.
+     Applies to BOTH the stitched in-thread preview and the floating preview
+     (the floating post shell carries the same .qr-preview-post class), so the
+     highlight stays visible in the float too. Themeable via --xt-qr-preview-accent. */
+  border-left: 3px solid var(--xt-qr-preview-accent, #ff8c00);
+  box-shadow:
+    inset 0 0 0 1px rgba(255, 140, 0, 0.30),
+    0 0 7px rgba(255, 140, 0, 0.30);
   background-image: repeating-linear-gradient(
     135deg,
     transparent,

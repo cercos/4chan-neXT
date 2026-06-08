@@ -113,6 +113,13 @@ var QR = {
   metadataStrippedFlag: '__4chanXTMetadataStripped',
   commentPreviewInputBound: false,
 
+  // When true, the preview is allowed to show even with an empty body.
+  // Set only by an explicit eye-toggle click (so clicking the eye "pops up" an
+  // empty preview), and reset when the preview is turned off. Automatic re-applies
+  // (QR open, thread change, posts inserted, etc.) leave it false, so the preview
+  // does not appear on its own until the user actually enters text/a file.
+  previewForceShow: false,
+
   // Page-stitched literal preview post (when style = 'thread')
   previewPost: null as HTMLDivElement | null,
 
@@ -424,6 +431,8 @@ var QR = {
     e.preventDefault();
     Conf['Comment Preview'] = !Conf['Comment Preview'];
     $.set('Comment Preview', Conf['Comment Preview']);
+    // An explicit click is the one case where we let the preview pop up empty.
+    QR.previewForceShow = !!Conf['Comment Preview'];
     QR.applyCommentPreviewSettings();
     return $.event('QRCommentPreviewChanged');
   },
@@ -515,6 +524,21 @@ var QR = {
     return false;
   },
 
+  // Is there anything worth previewing yet? (comment body text or an attached file)
+  previewHasContent(): boolean {
+    if ((QR.nodes?.com?.value || '').trim()) return true;
+    const sel: any = QR.selected;
+    if (sel && (sel.file || sel.pendingFile)) return true;
+    return false;
+  },
+
+  // Gate that decides whether the (thread or floating) preview should actually be
+  // rendered right now. The preview only auto-appears once there's content; it may
+  // appear empty only right after an explicit eye-toggle click (previewForceShow).
+  previewShouldRender(): boolean {
+    return QR.previewForceShow === true || QR.previewHasContent();
+  },
+
   refreshCommentPreview() {
     const wantThread = QR.usingThreadPreview();
     const wantFloat = QR.usingFloatingPreview();
@@ -539,6 +563,8 @@ var QR = {
     if (!QR.nodes?.el || !QR.nodes?.com) return;
     const { classList } = QR.nodes.el;
     const enabled = !!Conf['Comment Preview'];
+    // The empty-preview allowance never survives the preview being turned off.
+    if (!enabled) QR.previewForceShow = false;
     const configured = QR.getPreviewStyle();
     const canThread = QR.canActuallyShowThreadPreview();
     // "In the thread" (inline) only when the user selected it *and* we can actually
@@ -698,6 +724,13 @@ var QR = {
 
   updateThreadPreviewPost() {
     if (!QR.shouldShowThreadPreview()) {
+      QR.removeThreadPreviewPost();
+      return;
+    }
+
+    // Don't auto-pop an empty preview: only render once there's content
+    // (or right after an explicit eye-toggle click).
+    if (!QR.previewShouldRender()) {
       QR.removeThreadPreviewPost();
       return;
     }
@@ -893,6 +926,13 @@ var QR = {
 
   updateFloatingPreview() {
     if (!QR.usingFloatingPreview()) {
+      QR.removeFloatingPreview();
+      return;
+    }
+
+    // Don't auto-pop an empty preview: only render once there's content
+    // (or right after an explicit eye-toggle click).
+    if (!QR.previewShouldRender()) {
       QR.removeFloatingPreview();
       return;
     }
