@@ -276,6 +276,11 @@ var ThreadWatcher = {
     ThreadWatcher._lastAttachedW = null;
     if (ThreadWatcher.attached()) {
       ThreadWatcher.positionIfAttached(true);
+      // On refresh the QR's position can settle a frame or two after creation. The QR
+      // ResizeObserver catches size changes but not position settling, which otherwise
+      // leaves a one-time gap until the user moves the QR. Re-run once layout settles.
+      requestAnimationFrame(() => ThreadWatcher.positionIfAttached(true));
+      setTimeout(() => ThreadWatcher.positionIfAttached(true), 100);
     }
     if (QR.nodes?.el) {
       ThreadWatcher.onQRDialogCreation();
@@ -1270,14 +1275,17 @@ var ThreadWatcher = {
       dialog.style.bottom = '';
     } else if (loc === 'top') {
       // Use bottom positioning so we don't need to measure our own height (avoids sync layout after width set).
+      // clientHeight (not innerHeight) excludes any horizontal scrollbar, matching getBoundingClientRect.
       dialog.style.left = `${qrRect.left}px`;
-      dialog.style.bottom = `${window.innerHeight - qrRect.top}px`;
+      dialog.style.bottom = `${d.documentElement.clientHeight - qrRect.top}px`;
       dialog.style.top = '';
       dialog.style.right = '';
     } else if (loc === 'left') {
       // Use right positioning + explicit width so watcher extends leftward; no own-size read needed.
+      // clientWidth (not innerWidth) excludes the vertical scrollbar; innerWidth would leave a
+      // persistent scrollbar-wide gap since CSS `right` is measured from the scrollbar-excluded edge.
       dialog.style.top = `${qrRect.top}px`;
-      dialog.style.right = `${window.innerWidth - qrRect.left}px`;
+      dialog.style.right = `${d.documentElement.clientWidth - qrRect.left}px`;
       dialog.style.left = '';
       dialog.style.bottom = '';
     } else if (loc === 'right') {

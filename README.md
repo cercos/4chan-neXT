@@ -17,16 +17,27 @@ You will need a userscript manager:
 
 ## Latest Version
 
-`1.0.8` (2026-06-05)
+`1.1.0` (2026-06-08)
 
-- Added a setting to show or hide the Quick Reply preview button.
-- Added gallery grid layout support with updated thumbnail placement.
-- Added border highlighting for catalog threads.
-- Added the ability to re-enable disabled style settings while StyleChan is active.
-- Changed "Download all media" to always bundle downloads as a ZIP archive.
-- Fixed scrollbar marker single mode so the scrollbar no longer pushes the header out of alignment.
-- Fixed edge highlighting and auto text for edge highlighting.
-- Fixed attached Thread Watcher dragging so dragging either the Quick Reply or Thread Watcher title bar moves both together; detach now only happens from the attach button.
+- Completed the TypeScript migration using decaffeinate, custom codemods, `@rollup/plugin-typescript`, and custom Rollup transformers.
+- Added back legacy 4chan XT settings.
+- Fixed Shift+Space triggering captcha.
+- Post on captcha completion now works with new captcha.
+- Added the ability to edit captcha answers in stacked captcha.
+- Changed settings descriptions to always show, with a toggle for tooltip descriptions.
+- Tweaked the Styling settings page layout.
+- Fixed Quick Reply comment preview quote text coloring.
+- Fixed Quick Reply comment preview links, cross-board quote links, programmatic quote insertion refreshes, and `[math]` / `[eqn]` preview rendering.
+- Added `Remember QR State`, a per-board Quick Reply draft system that restores all queued posts and attachments after refreshes, closes, and crashes.
+- Added an option to hide the native board-index post form by default; the existing Original Form toggle can still show it.
+- Fixed the `/pol/` Quick Reply flag selector to use the existing board flag CSS instead of duplicating sprite offsets.
+- Added a Settings Window navigation layout option for switching between the vertical sidebar and horizontal titlebar navigation.
+- Added local styling hooks, styling guide, and user guide documentation, with README and Settings links.
+- Made the colored left edge the default highlight style; the per-row "Edge only" / "Border only" checkboxes are now a single "Highlight background" opt-in.
+- Turning on "Highlight background" now hides the edge, so lowering opacity no longer shows the edge bleeding through the fill.
+- Simple Filters now highlight with a color swatch and/or a custom CSS class instead of a plain class text field; the `highlight:` filter option now accepts a comma-separated list of classes.
+- Set a minimum size on the Settings window so the Simple Filters table no longer breaks when the window is shrunk.
+- Shortened the Quick Reply titlebar label to "QR" and tightened titlebar icon spacing.
 
 
 ## Migration from 4chan X / 4chan XT

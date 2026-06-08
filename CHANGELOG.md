@@ -1,6 +1,6 @@
 ## 4chan-neXT changelog
 
-### Unreleased
+### 1.1.0 (2026-06-08)
 
 - Completed the TypeScript migration using decaffeinate, custom codemods, `@rollup/plugin-typescript`, and custom Rollup transformers.
 - Added back legacy 4chan XT settings.
@@ -17,10 +17,12 @@
 - Added a Settings Window navigation layout option for switching between the vertical sidebar and horizontal titlebar navigation.
 - Added a styling hooks reference (`docs/styling-hooks.md`) listing the highlight classes and CSS variables for custom CSS/userstyles.
 - Added a local styling guide (`docs/styling-guide.md`) and pointed Styling settings / README links at it.
+- Added a local user guide (`docs/user-guide.md`) and linked it from README and the Settings footer.
 - Made the colored left edge the default highlight style; the per-row "Edge only" / "Border only" checkboxes are now a single "Highlight background" opt-in. Existing setups are migrated so filled highlights are preserved.
 - Turning on "Highlight background" now hides the edge (the two are mutually exclusive), so lowering opacity no longer shows the edge bleeding through the fill.
 - Simple Filters now highlight with a color swatch and/or a custom CSS class (applied together) instead of a plain class text field; an "apply color" toggle falls back to the theme default. The `highlight:` filter option now accepts a comma-separated list of classes.
 - Set a minimum size on the Settings window so the Simple Filters table no longer breaks when the window is shrunk.
+- Shortened the Quick Reply titlebar label to "QR" and tightened titlebar icon spacing.
 
 ### 1.0.8 (2026-06-05)
 

@@ -1,6 +1,6 @@
 // ==UserScript==
 // @name         4chan-neXT
-// @version      1.0.8
+// @version      1.1.0
 // @minGMVer     1.14
 // @minFFVer     78
 // @namespace    4chan-neXT
@@ -203,8 +203,8 @@
   'use strict';
 
   var version = {
-    "version": "1.0.8",
-    "date": "2026-06-05T00:00:00Z"
+    "version": "1.1.0",
+    "date": "2026-06-08T00:00:00Z"
   }
   ;
 
@@ -218,7 +218,8 @@
    "faq": "https://github.com/cercos/4chan-next/wiki/Frequently-Asked-Questions",
    "upstreamFaq": "https://github.com/ccd0/4chan-x/wiki/Frequently-Asked-Questions",
    "captchaFAQ": "https://github.com/ccd0/4chan-x/wiki/Captcha-FAQ",
-   "cssGuide": "https://github.com/ccd0/4chan-x/wiki/Styling-Guide",
+   "cssGuide": "https://github.com/cercos/4chan-next/blob/project-neXT/docs/styling-guide.md",
+   "userGuide": "https://github.com/cercos/4chan-next/blob/project-neXT/docs/user-guide.md",
    "license": "https://github.com/cercos/4chan-next/blob/project-neXT/LICENSE",
    "changelog": "https://github.com/cercos/4chan-next/blob/project-neXT/CHANGELOG.md",
    "issues": "https://github.com/cercos/4chan-next/issues",
@@ -277,31 +278,34 @@
 
   class Callbacks {
     static initClass() {
-      this.Post          = new Callbacks('Post');
-      this.Thread        = new Callbacks('Thread');
+      this.Post = new Callbacks('Post');
+      this.Thread = new Callbacks('Thread');
       this.CatalogThread = new Callbacks('Catalog Thread');
       this.CatalogThreadNative = new Callbacks('Catalog Thread');
     }
-
     constructor(type) {
       this.type = type;
       this.keys = [];
     }
-
-    push({name, cb}) {
-      if (!this[name]) { this.keys.push(name); }
+    push({ name, cb }) {
+      if (!this[name]) {
+        this.keys.push(name);
+      }
       return this[name] = cb;
     }
-
-    execute(node, keys=this.keys, force=false) {
+    execute(node, keys = this.keys, force = false) {
       let errors;
-      if (node.callbacksExecuted && !force) { return; }
+      if (node.callbacksExecuted && !force) {
+        return;
+      }
       node.callbacksExecuted = true;
       for (var name of keys) {
         try {
           this[name]?.call(node);
         } catch (err) {
-          if (!errors) { errors = []; }
+          if (!errors) {
+            errors = [];
+          }
           errors.push({
             message: ['"', name, '" crashed on node ', this.type, ' No.', node.ID, ' (', node.board, ').'].join(''),
             error: err,
@@ -309,8 +313,9 @@
           });
         }
       }
-
-      if (errors) { return Main.handleErrors(errors); }
+      if (errors) {
+        return Main.handleErrors(errors);
+      }
     }
   }
   Callbacks.initClass();
@@ -350,9 +355,18 @@ div.boardTitle {
           `Link to ${meta.name}'s catalog instead of the native 4chan one.`,
           1
         ],
+        'Index Refresh Notifications': [
+          false,
+          'Show a notice at the top of the page when the index is refreshed.',
+          1
+        ],
         'Follow Cursor': [
           true,
           'Image Hover and Quote Preview move with the mouse cursor.'
+        ],
+        'Settings Descriptions as Tooltips': [
+          false,
+          'Show setting descriptions as browser tooltips instead of inline text.'
         ],
         'Open Threads in New Tab': [
           false,
@@ -394,6 +408,15 @@ div.boardTitle {
           true,
           'Localize and format timestamps. Has more options on the "Advanced" tab.'
         ],
+        'Relative Post Dates': [
+          false,
+          'Display dates like "3 minutes ago". Tooltip shows the timestamp.'
+        ],
+        'Relative Date Title': [
+          false,
+          'Show Relative Post Date only when hovering over dates.',
+          1
+        ],
         'Comment Expansion': [
           true,
           'Expand comments that are too long to display on the index. Not applicable with JSON Index.'
@@ -422,6 +445,15 @@ div.boardTitle {
           true,
           'Allow editing of the board title and subtitle by ctrl/\u2318+clicking them.'
         ],
+        'Persistent Custom Board Titles': [
+          false,
+          'Force custom board titles to be persistent, even if the board titles are updated.',
+          1
+        ],
+        'Show Updated Notifications': [
+          true,
+          `Show notifications when ${meta.name} is successfully updated.`
+        ],
         'Color User IDs': [
           true,
           'Assign unique colors to user IDs on boards that use them'
@@ -429,6 +461,14 @@ div.boardTitle {
         'Count Posts by ID': [
           true,
           'Display number of posts in the thread when hovering over an ID.'
+        ],
+        'Remove Spoilers': [
+          false,
+          'Remove all spoilers in text.'
+        ],
+        'Reveal Spoilers': [
+          false,
+          'Indicate spoilers if Remove Spoilers is enabled, or make the text appear hovered if Remove Spoiler is disabled.'
         ],
         'Normalize URL': [
           true,
@@ -442,12 +482,15 @@ div.boardTitle {
           true,
           `${meta.name} is NOT designed to work with the native extension.`
         ],
+        'Enable Native Flash Embedding': [
+          true,
+          'Activate the native extension\'s Flash embedding if the native extension is disabled.'
+        ],
         'Scroll Markers': [
           true,
           'Mark your posts and replies to them on the scroll bar.'
         ],
       },
-
       'Linkification': {
         'Linkify': [
           true,
@@ -495,7 +538,6 @@ div.boardTitle {
           1
         ],
       },
-
       'Filtering': {
         'Anonymize': [
           false,
@@ -513,6 +555,21 @@ div.boardTitle {
         'Filter in Native Catalog': [
           true,
           'Apply 4chan X filters in native catalog.',
+          1
+        ],
+        'MD5 Quick Filter Notifications': [
+          true,
+          'Show notification when quick filtering MD5s using the button or keybind.',
+          1
+        ],
+        'MD5 Quick Filter in the Catalog': [
+          true,
+          'Quick filter by MD5 when clicking a thumbnail in the catalog and holding Shift. Disabling falls back on just hiding the thread.',
+          1
+        ],
+        'MD5 Quick Filter in Threads': [
+          true,
+          'Quick filter by MD5 when clicking a thumbnail in a thread while holding shift.',
           1
         ],
         'Recursive Hiding': [
@@ -544,7 +601,6 @@ div.boardTitle {
           'When showing hidden threads in catalog mode, group them under a header for the filter rule that hid them, with a separate "Manually hidden" section.'
         ],
       },
-
       'Images and Videos': {
         'Image Expansion': [
           true,
@@ -597,6 +653,26 @@ div.boardTitle {
           false,
           'Replace image and video thumbnails with the original media. Probably will degrade browser performance ;)'
         ],
+        'Replace GIF': [
+          false,
+          'Replace gif thumbnails with the actual image.',
+          1
+        ],
+        'Replace JPG': [
+          false,
+          'Replace jpg thumbnails with the actual image.',
+          1
+        ],
+        'Replace PNG': [
+          false,
+          'Replace png thumbnails with the actual image.',
+          1
+        ],
+        'Replace WEBM': [
+          false,
+          'Replace webm, mp4, and ogv thumbnails with the actual video. Probably will degrade browser performance ;)',
+          1
+        ],
         'Image Prefetching': [
           true,
           'Add a shortcut icon to the header to turn on image preloading.'
@@ -634,12 +710,19 @@ div.boardTitle {
           true,
           'Adjust volume of videos with the mouse wheel over the thumbnail/filename/gallery.'
         ],
+        'Loop in New Tab': [
+          true,
+          'Loop videos opened in their own tabs.'
+        ],
+        'Volume in New Tab': [
+          true,
+          `Apply ${meta.name} mute and volume settings to videos opened in their own tabs.`
+        ],
         'Enable sound posts': [
           true,
           'Enable loading audio from [sound=] file names. This audio is fetched from third parties.'
         ],
       },
-
       'Menu': {
         'Menu': [
           true,
@@ -686,7 +769,6 @@ div.boardTitle {
           1
         ]
       },
-
       'Monitoring': {
         'Thread Updater': [
           true,
@@ -827,7 +909,6 @@ div.boardTitle {
           1
         ]
       },
-
       'Posting and Captchas': {
         'Quick Reply': [
           true,
@@ -858,6 +939,11 @@ div.boardTitle {
           'Remember the spoiler state, instead of resetting after posting.',
           1
         ],
+        'Remember QR State': [
+          false,
+          'Auto-save your Quick Reply (per board) so it survives a refresh, close or crash, including all queued posts and their attachments (images and videos, up to ~100 MB per board). Restores into an empty Quick Reply when you return to the board; cleared after you post.',
+          1
+        ],
         'QR Thumbnail Remove File First': [
           true,
           'In Quick Reply thumbnails, first click on Remove clears the file, second click removes the post. Disable for single-click post removal.',
@@ -871,6 +957,11 @@ div.boardTitle {
         'Show New Thread Option in Threads': [
           true,
           'Show the option to post a new / different thread from inside a thread.',
+          1
+        ],
+        'Hide Original Post Form': [
+          true,
+          'Hide the native post form that sits at the top of board index pages by default, like on threads. Use the "Original Form" link or "Start a Thread" to show it.',
           1
         ],
         'Show Upload Progress': [
@@ -904,6 +995,51 @@ div.boardTitle {
             '<a href="https://github.com/TuxedoTako/4chan-xt/issues/132">this LibreWolf bug</a>',
           1
         ],
+        'Auto-process Images': [
+          true,
+          'Automatically convert unsupported image formats and resize oversized image uploads in Quick Reply.',
+          1
+        ],
+        'Strip Video Audio': [
+          true,
+          'Remove audio from MP4 and WebM uploads in Quick Reply on boards that do not allow audio.',
+          1
+        ],
+        'Strip All Media Metadata': [
+          false,
+          'Strip metadata from all uploaded media in Quick Reply, regardless of type.',
+          1
+        ],
+        'Image Metadata': [
+          true,
+          'Strip metadata from image uploads in Quick Reply when "Strip All Media Metadata" is disabled.',
+          2
+        ],
+        'Video Metadata': [
+          true,
+          'Strip metadata from video uploads in Quick Reply when "Strip All Media Metadata" is disabled.',
+          2
+        ],
+        'Audio Metadata': [
+          false,
+          'Strip metadata from audio uploads in Quick Reply when "Strip All Media Metadata" is disabled.',
+          2
+        ],
+        'Other Metadata': [
+          false,
+          'Strip metadata from non-image/video/audio uploads in Quick Reply when "Strip All Media Metadata" is disabled and supported in-browser.',
+          2
+        ],
+        'Comment Preview': [
+          false,
+          'Add a toggle below the Quick Reply comment box to switch between editing and a preview of how the post will render on the current board (greentext, quotes, [spoiler]/[code]/[math]/sjis when supported).',
+          1
+        ],
+        'Show Comment Preview Header Icon': [
+          true,
+          'Show the comment preview toggle icon in the Quick Reply titlebar.',
+          2
+        ],
         'Force Noscript Captcha': [
           false,
           'Use the non-Javascript fallback captcha even if Javascript is enabled.'
@@ -915,29 +1051,8 @@ div.boardTitle {
         'Pass Link': [
           false,
           'Add a 4chan Pass login link to the bottom of the page.'
-        ],
-        'Auto-process Images': [
-          true,
-          'Automatically convert unsupported image formats and resize oversized image uploads in Quick Reply.',
-          1
-        ],
-        'Strip Video Audio': [
-          true,
-          'Remove audio from MP4 and WebM uploads in Quick Reply on boards that do not allow audio.',
-          1
-        ],
-        'Comment Preview': [
-          false,
-          'Add a toggle below the Quick Reply comment box to switch between editing and a preview of how the post will render on the current board (greentext, quotes, [spoiler]/[code]/[math]/sjis when supported).',
-          1
-        ],
-        'Show Comment Preview Header Icon': [
-          true,
-          'Show the comment preview toggle icon in the Quick Reply titlebar.',
-          2
         ]
       },
-
       'Quote Links': {
         'Quote Backlinks': [
           true,
@@ -1027,7 +1142,6 @@ div.boardTitle {
         ]
       }
     },
-
     imageExpansion: {
       'Fit width': [
         true,
@@ -1062,12 +1176,11 @@ div.boardTitle {
         'Advance to next post when contracting an expanded image.'
       ]
     },
-
     gallery: {
       'Hide Thumbnails': [
         false
       ],
-      'Fit Width': [ // 'Fit width' (lowercase W) belongs to Image Expansion. Engine limitations, heh.
+      'Fit Width': [
         true
       ],
       'Fit Height': [
@@ -1095,7 +1208,6 @@ div.boardTitle {
         6.0
       ]
     },
-
     'Default Volume': 1.0,
     'Thread Watcher Thumbnail Size': 40,
     'Thread Watcher Thumbnail Preview Size': 40,
@@ -1109,7 +1221,7 @@ div.boardTitle {
     'Comment Preview Position': 'below',
     'Show Comment Preview Header Icon': true,
     'Spoiler Mode': 'default',
-
+    'Settings Menu Layout': 'vertical',
     threadWatcher: {
       'Current Board': [
         false,
@@ -1164,49 +1276,39 @@ div.boardTitle {
         'For purposes of thread watcher highlighting, only consider posts with a quote link to the OP as replies to the OP.'
       ]
     },
-
     filter: {
       general: '',
-
       postID: `\
 # Highlight dubs on [s4s]:
 #/(\\d)\\1$/;highlight;top:no;boards:s4s\
 `,
-
       name: `\
 # Filter any namefags:
 #/^(?!Anonymous$)/\
 `,
-
       uniqueID: `\
 # Filter a specific ID:
 #/Txhvk1Tl/\
 `,
-
       tripcode: `\
 # Filter any tripfag
 #/^!/\
 `,
-
       capcode: `\
 # Set a custom class for mods:
 #/Mod$/;highlight:mod;op:yes
 # Set a custom class for admins:
 #/Admin$/;highlight:admin;op:yes\
 `,
-
       pass: `\
 # Filter anyone using since4pass:
 #/./\
 `,
-
       email: '',
-
       subject: `\
 # Filter Generals on /v/:
 #/general/i;boards:v;op:only\
 `,
-
       comment: `\
 # Filter Stallman copypasta on /g/:
 #/what you\'re refer+ing to as linux/i;boards:g
@@ -1215,21 +1317,16 @@ div.boardTitle {
 # Filter posts like T H I S / H / I / S:
 #/^>?\\s?\\w\\s?(\\w)\\s?(\\w)\\s?(\\w).*$[\\s>]+\\1[\\s>]+\\2[\\s>]+\\3/im\
 `,
-
       flag: '',
       filename: '',
       dimensions: `\
 # Highlight potential wallpapers:
 #/1920x1080/;op:yes;highlight;top:no;boards:w,wg\
 `,
-
       filesize: '',
-
       MD5: ''
     },
-
     easyFilters: '',
-
     sauces: `\
 # Known filename formats:
 https://www.pixiv.net/member_illust.php?mode=medium&illust_id=%$1;regexp:/^(\\d+)_p\\d+/
@@ -1263,11 +1360,9 @@ http://eye.swfchan.com/search/?q=%name;types:swf
 #//imgops.com/start?url=%URL;types:gif,jpg,png
 #//www.gif-explode.com/%URL;types:gif\
 `,
-
     FappeT: {
-      werk:  false
+      werk: false
     },
-
     'Custom CSS': true,
     customCSSHome: false,
     siteStyle: '',
@@ -1298,109 +1393,124 @@ http://eye.swfchan.com/search/?q=%name;types:swf
     // 'auto' applies the SFW or NSFW variant based on the active board's
     // ws_board flag; 'sfw'/'nsfw' force a single variant everywhere.
     sfwNsfwMode: 'auto',
-    textColorMode: 'auto',
+    // 'default' = leave text/link/greentext at the theme's native colors (no
+    // override); 'auto' = compute readable colors from the background; 'manual'
+    // = use the Text/Link/Quote/Dead-link color pickers below.
+    textColorMode: 'default',
     'Text Color': '',
     'Link Text Color': '',
     'Quote Text Color': '',
     'Dead Link Text Color': '',
+    'Scroll Marker Match Highlights': true,
     'Scroll Marker Own Match Highlight': true,
     'Scroll Marker You Match Highlight': true,
     'Scroll Marker Ghost Match Highlight': true,
-
     // Styling — highlight background colors and per-marker scroll colors.
     // Empty string = use the stylesheet default for the active theme.
-    'Highlight Own Color':         '',
-    'Highlight You Color':         '',
-    'Highlight Ghost Color':       '',
-    'Highlight Own Text Auto':     true,
-    'Highlight You Text Auto':     true,
-    'Highlight Ghost Text Auto':   true,
-    'Highlight Own Text Color':    '',
-    'Highlight Own Link Color':    '',
-    'Highlight Own Quote Color':   '',
+    'Highlight Own Color': '',
+    'Highlight You Color': '',
+    'Highlight Ghost Color': '',
+    // Per-highlight text coloring: 'default' = theme colors (no override),
+    // 'auto' = computed for contrast, 'manual' = the color pickers below.
+    'Highlight Own Text Auto': true,
+    'Highlight You Text Auto': true,
+    'Highlight Ghost Text Auto': true,
+    'Highlight Own Text Mode': 'default',
+    'Highlight You Text Mode': 'default',
+    'Highlight Ghost Text Mode': 'default',
+    'Highlight Own Text Color': '',
+    'Highlight Own Link Color': '',
+    'Highlight Own Quote Color': '',
     'Highlight Own Dead Link Color': '',
-    'Highlight You Text Color':    '',
-    'Highlight You Link Color':    '',
-    'Highlight You Quote Color':   '',
+    'Highlight You Text Color': '',
+    'Highlight You Link Color': '',
+    'Highlight You Quote Color': '',
     'Highlight You Dead Link Color': '',
-    'Highlight Ghost Text Color':  '',
-    'Highlight Ghost Link Color':  '',
+    'Highlight Ghost Text Color': '',
+    'Highlight Ghost Link Color': '',
     'Highlight Ghost Quote Color': '',
     'Highlight Ghost Dead Link Color': '',
-    'Highlight Own Opacity':       '',
-    'Highlight You Opacity':       '',
-    'Highlight Ghost Opacity':     '',
+    'Highlight Own Opacity': '',
+    'Highlight You Opacity': '',
+    'Highlight Ghost Opacity': '',
     'Thread Highlight Edge Width': 3,
-    'Highlight Own Edge Only':     true,
-    'Highlight You Edge Only':     true,
-    'Highlight Ghost Edge Only':   true,
-    'Enable Thread Highlights':    true,
-    'Enable Catalog Highlights':   true,
+    'Highlight Own Edge Width': 3,
+    'Highlight You Edge Width': 3,
+    'Highlight Ghost Edge Width': 3,
+    // Border style of the colored left edge. Defaults preserve the classic XT
+    // look (you: solid, own: dashed, ghost: dotted).
+    'Highlight Own Border Style': 'dashed',
+    'Highlight You Border Style': 'dashed',
+    'Highlight Ghost Border Style': 'dotted',
+    'Highlight Own Background': false,
+    'Highlight You Background': false,
+    'Highlight Ghost Background': false,
+    'Enable Thread Highlights': true,
+    'Enable Catalog Highlights': false,
     'Catalog Highlight Own Posts': true,
     'Catalog Highlight Watched Threads': true,
     'Catalog Highlight Own Color': '',
     'Catalog Highlight Own Opacity': '',
-    'Catalog Highlight Own Border Only': true,
+    'Catalog Highlight Own Background': false,
     'Catalog Highlight Watched Color': '',
     'Catalog Highlight Watched Opacity': '',
-    'Catalog Highlight Watched Border Only': true,
-    'Catalog Highlight Border Width': 3,
-    'Catalog Highlight Own Text Auto': true,
+    'Catalog Highlight Watched Background': false,
+    'Catalog Highlight Border Width': 2,
+    'Catalog Highlight Own Border Width': 2,
+    'Catalog Highlight Watched Border Width': 2,
+    'Catalog Highlight Own Border Style': 'solid',
+    'Catalog Highlight Watched Border Style': 'solid',
+    'Catalog Highlight Own Text Mode': 'default',
     'Catalog Highlight Own Text Color': '',
     'Catalog Highlight Own Subject Color': '',
     'Catalog Highlight Own Link Color': '',
     'Catalog Highlight Own Quote Color': '',
     'Catalog Highlight Own Dead Link Color': '',
-    'Catalog Highlight Watched Text Auto': true,
+    'Catalog Highlight Watched Text Mode': 'default',
     'Catalog Highlight Watched Text Color': '',
     'Catalog Highlight Watched Subject Color': '',
     'Catalog Highlight Watched Link Color': '',
     'Catalog Highlight Watched Quote Color': '',
     'Catalog Highlight Watched Dead Link Color': '',
-    'Scroll Marker Own Color':     '',
-    'Scroll Marker You Color':     '',
-    'Scroll Marker Ghost Color':   '',
-    'Scroll Marker Unread Color':  '',
-    'Scroll Marker Own Opacity':   '',
-    'Scroll Marker You Opacity':   '',
+    'Scroll Marker Own Color': '',
+    'Scroll Marker You Color': '',
+    'Scroll Marker Ghost Color': '',
+    'Scroll Marker Unread Color': '',
+    'Scroll Marker Own Opacity': '',
+    'Scroll Marker You Opacity': '',
     'Scroll Marker Ghost Opacity': '',
     'Scroll Marker Unread Opacity': '',
     'Scrollbar Marker Position': 'offset',
-
     Index: {
       'Index Mode': 'paged',
       'Previous Index Mode': 'paged',
       'Index Size': 'small',
-      'Show Replies':          [true,  'Show replies in the index, and also in the catalog if "Catalog hover expand" is checked.'],
-      'Catalog Hover Expand':  [false, 'Expand the comment and show more details when you hover over a thread in the catalog.'],
-      'Catalog Hover Toggle':  [true,  'Turn "Catalog hover expand" on and off by clicking in the catalog.'],
-      'Pin Watched Threads':   [false, 'Move watched threads to the start of the index.'],
-      'Anchor Hidden Threads': [true,  'Move hidden threads to the end of the index.'],
-      'Refreshed Navigation':  [false, 'Refresh index when navigating through pages.']
+      'Show Replies': [true, 'Show replies in the index, and also in the catalog if "Catalog hover expand" is checked.'],
+      'Catalog Hover Expand': [false, 'Expand the comment and show more details when you hover over a thread in the catalog.'],
+      'Catalog Hover Toggle': [true, 'Turn "Catalog hover expand" on and off by clicking in the catalog.'],
+      'Pin Watched Threads': [false, 'Move watched threads to the start of the index.'],
+      'Anchor Hidden Threads': [true, 'Move hidden threads to the end of the index.'],
+      'Refreshed Navigation': [false, 'Refresh index when navigating through pages.']
     },
-
     Header: {
-      'Fixed Header':               true,
-      'Header auto-hide':           false,
+      'Fixed Header': true,
+      'Header auto-hide': false,
       'Header auto-hide on scroll': false,
-      'Bottom Header':              false,
-      'Centered links':             false,
-      'Header catalog links':       false,
-      'Bottom Board List':          true,
-      'Shortcut Icons':             true,
-      'Custom Board Navigation':    true
+      'Bottom Header': false,
+      'Centered links': false,
+      'Header catalog links': false,
+      'Bottom Board List': true,
+      'Shortcut Icons': true,
+      'Custom Board Navigation': true
     },
-
     archives: {
-      archiveLists:      'https://4chenz.github.io/archives.json/archives.json',
-      lastarchivecheck:  0,
+      archiveLists: 'https://4chenz.github.io/archives.json/archives.json',
+      lastarchivecheck: 0,
       archiveAutoUpdate: true
     },
-
     externalCatalogURLs: `\
 //catalog.neet.tv/%board/;boards:4chan.org:3,a,adv,an,asp,biz,c,cgl,ck,cm,co,diy,f,fa,fit,g,gd,his,i,int,jp,k,lgbt,lit,m,mlp,mu,n,news,o,out,p,po,pol,s4s,sci,sp,tg,toy,trv,tv,v,vg,vip,vp,vr,w,wg,wsg,wsr,x\
 `,
-
     boardnav: `\
 [ toggle-all ]
 [current-index-text:"Index"
@@ -1409,32 +1519,22 @@ current-expired-text:"Expired"
 current-archive-text:"Archive"]
 [external-text:"FAQ","${meta.faq}"]\
 `,
-
     QR: {
       'QR.personas': `\
 #options:"sage";boards:jp;always\
 `,
       sjisPreview: false
     },
-
     jsWhitelist: '',
-
     captchaLanguage: '',
-
     time: '%m/%d/%y(%a)%H:%M:%S',
     timeLocale: '',
     RelativeTime: 'Hover',
-
     backlink: '>>%id',
-
     pastedname: 'file',
-
     fileInfo: '%l %d (%p%s, %r%g)',
-
     favicon: 'ferongr',
-
     usercss: userCss,
-
     hotkeys: {
       // QR & Options
       'Toggle board list': [
@@ -1469,7 +1569,7 @@ current-archive-text:"Archive"]
         'Alt+c',
         'Insert code tags.'
       ],
-      'Eqn tags':  [
+      'Eqn tags': [
         'Alt+e',
         'Insert eqn tags.'
       ],
@@ -1679,7 +1779,6 @@ current-archive-text:"Archive"]
         'Scroll to the next post that quotes you.'
       ]
     },
-
     updater: {
       checkbox: {
         'Beep': [
@@ -1713,47 +1812,34 @@ current-archive-text:"Archive"]
       },
       'Interval': 5
     },
-
     customCooldown: 0,
     customCooldownEnabled: true,
-
     'Thread Quotes': false,
-
     'Max Replies': 1000,
-
     'Autohiding Scrollbar': false,
-
     position: {
-      'embedding.position':      'top: 50px; right: 0px;',
-      'thread-stats.position':   'bottom: 0px; right: 0px;',
-      'updater.position':        'bottom: 0px; left: 0px;',
+      'embedding.position': 'top: 50px; right: 0px;',
+      'thread-stats.position': 'bottom: 0px; right: 0px;',
+      'updater.position': 'bottom: 0px; left: 0px;',
       'thread-watcher.position': 'top: 50px; left: 0px;',
-      'qr.position':             'top: 50px; right: 0px;',
+      'qr.position': 'top: 50px; right: 0px;',
       'download-all-picker.position': 'top: 100px; right: 60px;'
     },
-
     fourchanImageHost: 'i.4cdn.org',
-
     hiddenPSAList: [{}],
-
     knownBanners: banners.join(','),
-
     passMessageClosed: false,
-
     'PSAseen': [[]],
-
     XEmbedder: 'fxt',
     fxtLang: '',
     fxtUrl: 'https://api.fxtwitter.com',
     fxtMaxReplies: 5,
-
     beepSource: '',
     beepVolume: 1,
     soundLibrary: [[]],
     boardSounds: [{}],
     defaultSoundId: '',
   };
-
   // Visual styling settings get separate SFW and NSFW values so the user can
   // keep two color/theme palettes and have the right one applied based on the
   // active board's worksafe flag (or a forced override).
@@ -1765,24 +1851,27 @@ current-archive-text:"Archive"]
     'Highlight Own Color', 'Highlight You Color', 'Highlight Ghost Color',
     'Highlight Own Opacity', 'Highlight You Opacity', 'Highlight Ghost Opacity',
     'Thread Highlight Edge Width',
-    'Highlight Own Text Auto', 'Highlight You Text Auto', 'Highlight Ghost Text Auto',
+    'Highlight Own Edge Width', 'Highlight You Edge Width', 'Highlight Ghost Edge Width',
+    'Highlight Own Border Style', 'Highlight You Border Style', 'Highlight Ghost Border Style',
+    'Highlight Own Text Mode', 'Highlight You Text Mode', 'Highlight Ghost Text Mode',
     'Highlight Own Text Color', 'Highlight Own Link Color', 'Highlight Own Quote Color', 'Highlight Own Dead Link Color',
     'Highlight You Text Color', 'Highlight You Link Color', 'Highlight You Quote Color', 'Highlight You Dead Link Color',
     'Highlight Ghost Text Color', 'Highlight Ghost Link Color', 'Highlight Ghost Quote Color', 'Highlight Ghost Dead Link Color',
     'Catalog Highlight Own Color', 'Catalog Highlight Own Opacity',
-    'Catalog Highlight Own Border Only',
+    'Catalog Highlight Own Background',
     'Catalog Highlight Watched Color', 'Catalog Highlight Watched Opacity',
-    'Catalog Highlight Watched Border Only',
+    'Catalog Highlight Watched Background',
     'Catalog Highlight Border Width',
-    'Catalog Highlight Own Text Auto',
+    'Catalog Highlight Own Border Width', 'Catalog Highlight Watched Border Width',
+    'Catalog Highlight Own Border Style', 'Catalog Highlight Watched Border Style',
+    'Catalog Highlight Own Text Mode',
     'Catalog Highlight Own Text Color', 'Catalog Highlight Own Subject Color', 'Catalog Highlight Own Link Color', 'Catalog Highlight Own Quote Color', 'Catalog Highlight Own Dead Link Color',
-    'Catalog Highlight Watched Text Auto',
+    'Catalog Highlight Watched Text Mode',
     'Catalog Highlight Watched Text Color', 'Catalog Highlight Watched Subject Color', 'Catalog Highlight Watched Link Color', 'Catalog Highlight Watched Quote Color', 'Catalog Highlight Watched Dead Link Color',
     'Scroll Marker Own Color', 'Scroll Marker You Color', 'Scroll Marker Ghost Color', 'Scroll Marker Unread Color',
     'Scroll Marker Own Opacity', 'Scroll Marker You Opacity', 'Scroll Marker Ghost Opacity', 'Scroll Marker Unread Opacity',
     'Scroll Marker Own Match Highlight', 'Scroll Marker You Match Highlight', 'Scroll Marker Ghost Match Highlight',
   ];
-
   for (const k of styleVariantKeys) {
     Config[`${k} SFW`] = Config[k];
     Config[`${k} NSFW`] = Config[k];
@@ -1899,19 +1988,83 @@ current-archive-text:"Archive"]
     },
     fourChanMathjaxListener: () => {
       window.addEventListener('mathjax', function (e) {
-        if (window.MathJax) {
-          window.MathJax.Hub.Queue(['Typeset', window.MathJax.Hub, e.target]);
-        } else {
-          if (!document.querySelector('script[src^="//cdn.mathjax.org/"]')) { // don't load MathJax if already loading
-            window.loadMathJax();
-            window.loadMathJax = function () { };
+        const target = e.target;
+        const scriptURL = 'https://cdnjs.cloudflare.com/ajax/libs/mathjax/2.7.9/MathJax.js?config=TeX-AMS_HTML-full';
+        const scriptSelector = 'script[src^="https://cdnjs.cloudflare.com/ajax/libs/mathjax/2.7.9/MathJax.js"]';
+        const queueTypeset = () => {
+          if (!window.MathJax?.Hub)
+            return false;
+          window.MathJax.Hub.Queue(['Typeset', window.MathJax.Hub, target]);
+          return true;
+        };
+        if (queueTypeset())
+          return;
+        if (!document.querySelector(scriptSelector)) {
+          if (!document.getElementById('fourchanx-mathjax-config')) {
+            const config = document.createElement('script');
+            config.id = 'fourchanx-mathjax-config';
+            config.type = 'text/x-mathjax-config';
+            config.text = "MathJax.Hub.Config({extensions:['Safe.js'],tex2jax:{processRefs:false,processEnvironments:false,preview:'none',inlineMath:[['[math]','[/math]']],displayMath:[['[eqn]','[/eqn]']]},Safe:{allow:{URLs:'none',classes:'none',cssIDs:'none',styles:'none',fontsize:'none',require:'none'}},displayAlign:'left',messageStyle:'none'});";
+            document.head.appendChild(config);
           }
-          // 4chan only handles post comments on MathJax load; anything else (e.g. the QR preview) must be queued explicitly.
-          if (!e.target.classList.contains('postMessage')) {
-            document.querySelector('script[src^="//cdn.mathjax.org/"]').addEventListener('load', () => window.MathJax.Hub.Queue(['Typeset', window.MathJax.Hub, e.target]), false);
-          }
+          const script = document.createElement('script');
+          script.src = scriptURL;
+          document.head.appendChild(script);
         }
+        const script = document.querySelector(scriptSelector);
+        if (script) {
+          script.addEventListener('load', () => { queueTypeset(); }, false);
+        }
+        let tries = 0;
+        const timer = window.setInterval(() => {
+          if (queueTypeset() || ++tries > 200) {
+            window.clearInterval(timer);
+          }
+        }, 50);
       }, false);
+    },
+    typesetMathjax: ({ id }) => {
+      const target = document.getElementById(id);
+      if (!target)
+        return;
+      const scriptURL = 'https://cdnjs.cloudflare.com/ajax/libs/mathjax/2.7.9/MathJax.js?config=TeX-AMS_HTML-full';
+      const scriptSelector = 'script[src^="https://cdnjs.cloudflare.com/ajax/libs/mathjax/2.7.9/MathJax.js"]';
+      const queueTypeset = () => {
+        if (!window.MathJax?.Hub)
+          return false;
+        window.MathJax.Hub.Queue(['Typeset', window.MathJax.Hub, target], () => {
+          if (!target.querySelector('.MathJax, .MathJax_Display'))
+            return;
+          for (const fallback of target.querySelectorAll('.qr-math-fallback')) {
+            fallback.remove();
+          }
+        });
+        return true;
+      };
+      if (queueTypeset())
+        return;
+      if (!document.querySelector(scriptSelector)) {
+        if (!document.getElementById('fourchanx-mathjax-config')) {
+          const config = document.createElement('script');
+          config.id = 'fourchanx-mathjax-config';
+          config.type = 'text/x-mathjax-config';
+          config.text = "MathJax.Hub.Config({extensions:['Safe.js'],tex2jax:{processRefs:false,processEnvironments:false,preview:'none',inlineMath:[['[math]','[/math]']],displayMath:[['[eqn]','[/eqn]']]},Safe:{allow:{URLs:'none',classes:'none',cssIDs:'none',styles:'none',fontsize:'none',require:'none'}},displayAlign:'left',messageStyle:'none'});";
+          document.head.appendChild(config);
+        }
+        const script = document.createElement('script');
+        script.src = scriptURL;
+        document.head.appendChild(script);
+      }
+      const script = document.querySelector(scriptSelector);
+      if (script) {
+        script.addEventListener('load', () => { queueTypeset(); }, false);
+      }
+      let tries = 0;
+      const timer = window.setInterval(() => {
+        if (queueTypeset() || ++tries > 200) {
+          window.clearInterval(timer);
+        }
+      }, 50);
     },
     disable4chanIdHl: () => {
       window.clickable_ids = false;
@@ -2267,6 +2420,18 @@ current-archive-text:"Archive"]
     $.onExists(doc, test, () => $.add(d.head, style));
     return style;
   };
+  // A per-session nonce so the extension's own injected scripts can run under the
+  // restrictive CSP added by the "Enforce JS whitelist" feature. Generated once and
+  // cached, so $.addCSP and $.global always agree on the value regardless of call order.
+  let cspNonce = null;
+  $.getCSPNonce = function () {
+    if (cspNonce == null) {
+      const bytes = new Uint8Array(16);
+      (self.crypto || window.crypto).getRandomValues(bytes);
+      cspNonce = btoa(String.fromCharCode(...bytes));
+    }
+    return cspNonce;
+  };
   $.addCSP = function (policy) {
     const meta = $.el('meta', {
       httpEquiv: 'Content-Security-Policy',
@@ -2340,6 +2505,17 @@ current-archive-text:"Archive"]
       el.removeEventListener(event, handler, false);
     }
   };
+  // Many legacy UI controls are anchors with `href="javascript:;"` plus a click
+  // listener. Under 4chan's strict CSP, letting that inert URL navigate still logs
+  // a violation after the listener runs. Block only no-op JS URLs; real site links
+  // such as `javascript:quote(...)` are intentionally left alone.
+  d.addEventListener('click', function (e) {
+    const anchor = e.target?.closest?.('a[href]');
+    const href = anchor?.getAttribute('href') || '';
+    if (/^javascript:\s*;?\s*$/i.test(href)) {
+      e.preventDefault();
+    }
+  }, true);
   $.one = function (el, events, handler) {
     var cb = function (e) {
       $.off(el, events, cb);
@@ -2445,6 +2621,8 @@ current-archive-text:"Archive"]
     } else {
       if (doc) {
         const script = $.el('script', { textContent: `(${PageContextFunctions[fn]})(document.currentScript.dataset);` });
+        // Allow this script through the extension's own whitelist CSP (no-op if no CSP is set).
+        script.nonce = $.getCSPNonce();
         if (data) {
           $.extend(script.dataset, data);
         }
@@ -2768,28 +2946,37 @@ current-archive-text:"Archive"]
       }
     },
     threadExcerpt(thread) {
-      const {OP} = thread;
-      const excerpt = (`/${decodeURIComponent(thread.board.ID)}/ - `) + (
-        OP.info.subject?.trim() ||
+      const { OP } = thread;
+      const excerpt = (`/${decodeURIComponent(thread.board.ID)}/ - `) + (OP.info.subject?.trim() ||
         OP.commentDisplay().replace(/\n+/g, ' // ') ||
         OP.file?.name ||
         `No.${OP}`);
-      if (excerpt.length > 73) { return `${excerpt.slice(0, 70)}...`; }
+      if (excerpt.length > 73) {
+        return `${excerpt.slice(0, 70)}...`;
+      }
       return excerpt;
     },
     threadFromRoot(root) {
-      if (root == null) { return null; }
-      const {board} = root.dataset;
+      if (root == null) {
+        return null;
+      }
+      const { board } = root.dataset;
       return g.threads.get(`${board ? encodeURIComponent(board) : g.BOARD.ID}.${root.id.match(/\d*$/)[0]}`);
     },
     threadFromNode(node) {
       return Get.threadFromRoot($.x(`ancestor-or-self::${g.SITE.xpath.thread}`, node));
     },
     postFromRoot(root) {
-      if (root == null) { return null; }
-      const post  = g.posts.get(root.dataset.fullID);
+      if (root == null) {
+        return null;
+      }
+      const post = g.posts.get(root.dataset.fullID);
       const index = root.dataset.clone;
-      if (index) { return post.clones[+index]; } else { return post; }
+      if (index) {
+        return post.clones[+index];
+      } else {
+        return post;
+      }
     },
     postFromNode(root) {
       return Get.postFromRoot($.x(`ancestor-or-self::${g.SITE.xpath.postContainer}[1]`, root));
@@ -2797,52 +2984,60 @@ current-archive-text:"Archive"]
     postDataFromLink(link) {
       let boardID, postID, threadID;
       if (link.dataset.postID) { // resurrected quote
-        ({boardID, threadID, postID} = link.dataset);
-        if (!threadID) { threadID = 0; }
+        ({ boardID, threadID, postID } = link.dataset);
+        if (!threadID) {
+          threadID = 0;
+        }
       } else {
         const match = link.href.match(g.SITE.regexp.quotelink);
         [boardID, threadID, postID] = match.slice(1);
-        if (!postID) { postID = threadID; }
+        if (!postID) {
+          postID = threadID;
+        }
       }
       return {
         boardID,
         threadID: +threadID,
-        postID:   +postID
+        postID: +postID
       };
     },
     allQuotelinksLinkingTo(post) {
       // Get quotelinks & backlinks linking to the given post.
       const quotelinks = [];
-      const {posts} = g;
-      const {fullID} = post;
-      const handleQuotes = function(qPost, type) {
+      const { posts } = g;
+      const { fullID } = post;
+      const handleQuotes = function (qPost, type) {
         quotelinks.push(...(qPost.nodes[type] || []));
-        for (var clone of qPost.clones) { quotelinks.push(...(clone.nodes[type] || [])); }
+        for (var clone of qPost.clones) {
+          quotelinks.push(...(clone.nodes[type] || []));
+        }
       };
       // First:
       //   In every posts,
       //   if it did quote this post,
       //   get all their backlinks.
-      posts.forEach(function(qPost) {
+      posts.forEach(function (qPost) {
         if (qPost.quotes.includes(fullID)) {
           return handleQuotes(qPost, 'quotelinks');
         }
       });
-
       // Second:
       //   If we have quote backlinks:
       //   in all posts this post quoted
       //   and their clones,
       //   get all of their backlinks.
       if (Conf['Quote Backlinks']) {
-        for (var quote of post.quotes) { var qPost;
-        if ((qPost = posts.get(quote))) { handleQuotes(qPost, 'backlinks'); } }
+        for (var quote of post.quotes) {
+          var qPost;
+          if ((qPost = posts.get(quote))) {
+            handleQuotes(qPost, 'backlinks');
+          }
+        }
       }
-
       // Third:
       //   Filter out irrelevant quotelinks.
-      return quotelinks.filter(function(quotelink) {
-        const {boardID, postID} = Get.postDataFromLink(quotelink);
+      return quotelinks.filter(function (quotelink) {
+        const { boardID, postID } = Get.postDataFromLink(quotelink);
         return (boardID === post.board.ID) && (postID === post.ID);
       });
     }
@@ -2910,14 +3105,11 @@ current-archive-text:"Archive"]
       h("span", { class: "settings-titlebar-actions" },
         h("a", { href: "#", class: "expand-all", title: "Expand all sections" }, "Expand all"),
         h("a", { href: "#", class: "collapse-all", title: "Collapse all sections" }, "Collapse all"),
-        h("label", { class: "remember-layout-toggle", title: "Remember dialog layout and section collapse state" },
-          h("input", { id: "settings-remember-layout", type: "checkbox", autocomplete: "off" }),
-          h("span", null, "Remember layout")),
         h("a", { href: "#", class: "close", title: "Close" }, "\u2715"))),
     h("div", { class: "settings-body" },
       h("nav", null,
         h("div", { class: "settings-search" },
-          h("input", { type: "search", class: "field", placeholder: "Search settings", autocomplete: "off" })),
+          h("input", { type: "search", class: "field", placeholder: "Search", autocomplete: "off" })),
         h("div", { class: "sections-list" })),
       h("div", { class: "section-container" },
         h("section", null))),
@@ -2926,11 +3118,15 @@ current-archive-text:"Archive"]
         h("a", { href: "#", class: "export" }, "Export"),
         h("a", { href: "#", class: "import" }, "Import"),
         h("a", { href: "#", class: "reset" }, "Reset Settings"),
+        h("label", { class: "remember-layout-toggle", title: "Remember dialog layout and section collapse state" },
+          h("input", { id: "settings-remember-layout", type: "checkbox", autocomplete: "off" }),
+          h("span", null, "Remember layout")),
         h("input", { type: "file", hidden: true, accept: ".json,application/json" })),
       h("p", { class: "imp-exp-result warning" }),
       h("div", { class: "credits" },
         h("a", { href: meta.page, target: "_blank" }, meta.name),
         h("a", { href: meta.changelog, target: "_blank" }, g.VERSION),
+        h("a", { href: meta.userGuide, target: "_blank" }, "User Guide"),
         h("a", { href: meta.issues, target: "_blank" }, "Issues"))));
 
   var FilterGuidePage = `<div class="warning"><code>Filter</code> is disabled.</div>
@@ -2973,6 +3169,10 @@ current-archive-text:"Archive"]
   <li>
     Highlight instead of hiding. You can specify a class name to use with a userstyle.<br>
     For example: <code>highlight;</code> or <code>highlight:wallpaper;</code>.
+  </li>
+  <li>
+    Glow the whole catalog entry (thumbnail and text) instead of just the thumbnail. Only affects highlight rules in the catalog; ignored in thread view.<br>
+    For example: <code>/4chan X/i;highlight;tile</code>.
   </li>
   <li>
     Highlighted OPs will have their threads put on top of the board index by default.<br>
@@ -3280,27 +3480,16 @@ current-archive-text:"Archive"]
   </select>
 <div></div>`;
 
-  var SimpleFiltersPage = `<table class="easy-filters-table">
-  <thead>
-    <tr>
-      <th>On</th>
-      <th>Pattern</th>
-      <th>Boards</th>
-      <th>Type</th>
-      <th>Color</th>
-      <th>Auto</th>
-      <th>Hide</th>
-      <th title="Whitelist: matching highlight prevents this thread from being hidden by other rules">Override</th>
-      <th>Del</th>
-    </tr>
-  </thead>
-  <tbody></tbody>
-</table>
-<div class="easy-filters-controls">
+  var SimpleFiltersPage = `<div class="easy-filters-controls">
   <button class="easy-filter-add" type="button">Add</button>
-  <button class="easy-filter-save" type="button">Save</button>
+  <span class="easy-filter-layout" role="group" aria-label="Layout">
+    <button class="easy-filter-layout-btn" data-layout="auto" type="button">Auto</button>
+    <button class="easy-filter-layout-btn" data-layout="grid" type="button">Grid</button>
+    <button class="easy-filter-layout-btn" data-layout="list" type="button">List</button>
+  </span>
   <span class="easy-filter-status"></span>
-</div>`;
+</div>
+<div class="easy-filters-list layout-list"></div>`;
 
   var StylingPage = `<details open class="styling-site-style" data-styling-section="siteStyle">
   <summary>Site Style</summary>
@@ -3335,115 +3524,143 @@ current-archive-text:"Archive"]
 </details>
 
 <details open data-styling-section="highlights">
-  <summary>Highlight Colors</summary>
-  <p>Choose highlight colors for thread and catalog states.</p>
-  <div data-name="Highlight Colors">
-    <div class="styling-tree">
-      <div data-name="Thread Highlights">
-        <label><input type="checkbox" name="Enable Thread Highlights"> Threads</label>
-        <p class="styling-compact-control">
-          <label title="Width for thread edge-only highlights.">
-            Edge width
-            <input type="range" name="Thread Highlight Edge Width" min="1" max="8" step="1">
-          </label>
-        </p>
-        <div class="styling-tree">
-          <div class="styling-inline-option" data-highlight-row="own">
-            <label><input type="checkbox" name="Highlight Own Posts"> Your post</label>
-            <span class="styling-inline-controls styling-highlight-controls">
-              <input type="color" name="Highlight Own Color" title="Highlight background color">
-              <span class="styling-highlight-manual" data-highlight-text-manual="own">
-                <input type="color" name="Highlight Own Text Color" title="Text color">
-                <input type="color" name="Highlight Own Link Color" title="Link color">
-                <input type="color" name="Highlight Own Quote Color" title="Quote color">
-                <input type="color" name="Highlight Own Dead Link Color" title="Dead link color">
-              </span>
-              <label class="styling-inline-toggle" title="Automatically choose readable text colors for this highlight"><input type="checkbox" name="Highlight Own Text Auto"> Auto text</label>
-              <label class="styling-inline-toggle" title="Show only the colored left edge, no background fill (classic XT look)"><input type="checkbox" name="Highlight Own Edge Only"> Edge only</label>
-              <input type="range" name="Highlight Own Opacity" min="0" max="1" step="0.05" title="Highlight opacity">
-            </span>
-          </div>
-          <div class="styling-inline-option" data-highlight-row="you">
-            <label><input type="checkbox" name="Highlight Posts Quoting You"> Quotes you</label>
-            <span class="styling-inline-controls styling-highlight-controls">
-              <input type="color" name="Highlight You Color" title="Highlight background color">
-              <span class="styling-highlight-manual" data-highlight-text-manual="you">
-                <input type="color" name="Highlight You Text Color" title="Text color">
-                <input type="color" name="Highlight You Link Color" title="Link color">
-                <input type="color" name="Highlight You Quote Color" title="Quote color">
-                <input type="color" name="Highlight You Dead Link Color" title="Dead link color">
-              </span>
-              <label class="styling-inline-toggle" title="Automatically choose readable text colors for this highlight"><input type="checkbox" name="Highlight You Text Auto"> Auto text</label>
-              <label class="styling-inline-toggle" title="Show only the colored left edge, no background fill (classic XT look)"><input type="checkbox" name="Highlight You Edge Only"> Edge only</label>
-              <input type="range" name="Highlight You Opacity" min="0" max="1" step="0.05" title="Highlight opacity">
-            </span>
-          </div>
-          <div class="styling-inline-option" data-highlight-row="ghost">
-            <label><input type="checkbox" name="Highlight Ghost Posts"> Ghost post</label>
-            <span class="styling-inline-controls styling-highlight-controls">
-              <input type="color" name="Highlight Ghost Color" title="Highlight background color">
-              <span class="styling-highlight-manual" data-highlight-text-manual="ghost">
-                <input type="color" name="Highlight Ghost Text Color" title="Text color">
-                <input type="color" name="Highlight Ghost Link Color" title="Link color">
-                <input type="color" name="Highlight Ghost Quote Color" title="Quote color">
-                <input type="color" name="Highlight Ghost Dead Link Color" title="Dead link color">
-              </span>
-              <label class="styling-inline-toggle" title="Automatically choose readable text colors for this highlight"><input type="checkbox" name="Highlight Ghost Text Auto"> Auto text</label>
-              <label class="styling-inline-toggle" title="Show only the colored left edge, no background fill (classic XT look)"><input type="checkbox" name="Highlight Ghost Edge Only"> Edge only</label>
-              <input type="range" name="Highlight Ghost Opacity" min="0" max="1" step="0.05" title="Highlight opacity">
-            </span>
-          </div>
+  <summary>Highlights</summary>
+  <div class="styling-highlight-intro">
+    <p>Each row is one highlight state. Click a row to open its colors and scrollbar marker; only one stays open at a time. The master toggles turn whole groups on or off.</p>
+    <button type="button" id="styling-open-preview" title="Open a live preview of post highlight states">Preview states</button>
+  </div>
+  <div id="styling-preview-anchor"></div>
+
+  <div data-name="Thread Highlights" class="styling-hl-group styling-hl-group-thread">
+    <div class="styling-hl-grouphead">
+      <label class="styling-hl-master" title="Master switch for all in-thread post highlights."><input type="checkbox" name="Enable Thread Highlights"> Thread highlights</label>
+      <label class="styling-hl-master" title="Master switch for all scrollbar markers."><input type="checkbox" name="Scrollbar Markers"> Scrollbar markers</label>
+    </div>
+    <div class="styling-hl-acc">
+
+      <div class="styling-hl-acc-item" data-highlight-row="own">
+        <div class="styling-hl-acc-head">
+          <span class="styling-hl-acc-name">Your post</span>
+          <span class="styling-hl-mkheadslot" data-mk-headslot="own"></span>
+          <span class="styling-hl-color"><input type="color" name="Highlight Own Color" title="Highlight background color"></span>
+          <button type="button" class="styling-hl-acc-chev" aria-label="Expand row">&#9656;</button>
+        </div>
+        <div class="styling-hl-acc-body">
+          <label class="styling-hl-sub styling-hl-subtoggle" title="Highlight your own posts"><input type="checkbox" name="Highlight Own Posts"><span class="styling-hl-sub-text">Highlight</span></label>
+          <div class="styling-hl-orow"><span class="styling-hl-olabel">Text colors</span><span class="styling-hl-octl"><span class="styling-hl-inlinecolors" data-highlight-text-manual="own" hidden><input type="color" name="Highlight Own Text Color" title="Text color"><input type="color" name="Highlight Own Link Color" title="Link color"><input type="color" name="Highlight Own Quote Color" title="Quote color"><input type="color" name="Highlight Own Dead Link Color" title="Dead link color"></span><select name="Highlight Own Text Mode" title="Defaults: keep the theme's colors; Auto: pick readable colors; Manual: choose your own"><option value="default">Defaults</option><option value="auto">Auto</option><option value="manual">Manual</option></select></span></div>
+          <div class="styling-hl-orow"><span class="styling-hl-olabel" title="Fill the whole post background instead of just the colored left edge (the edge always shows; off is the classic XT look)">Highlight background</span><span class="styling-hl-octl"><input type="checkbox" name="Highlight Own Background"></span></div>
+          <div class="styling-hl-orow"><span class="styling-hl-olabel" title="Width of the colored left edge">Edge width</span><span class="styling-hl-octl"><input type="number" min="1" max="12" step="1" class="field styling-hl-widthnum" name="Highlight Own Edge Width"><span class="styling-hl-unit">px</span></span></div>
+          <div class="styling-hl-orow"><span class="styling-hl-olabel" title="CSS border style for the colored left edge">Edge style</span><span class="styling-hl-octl"><select name="Highlight Own Border Style"><option value="solid">Solid</option><option value="dashed">Dashed</option><option value="dotted">Dotted</option><option value="double">Double</option><option value="groove">Groove</option><option value="ridge">Ridge</option><option value="inset">Inset</option><option value="outset">Outset</option></select></span></div>
+          <div class="styling-hl-orow"><span class="styling-hl-olabel">Opacity</span><span class="styling-hl-octl"><input type="range" name="Highlight Own Opacity" min="0" max="1" step="0.05" title="Highlight opacity"></span></div>
+          <label class="styling-hl-sub styling-hl-subtoggle" title="Show a scrollbar marker for your own posts"><input type="checkbox" name="Scrollbar Mark Own Posts"><span class="styling-hl-sub-text">Scrollbar marker</span></label>
+          <div class="styling-hl-orow"><span class="styling-hl-olabel">Match highlight color</span><span class="styling-hl-octl"><label class="styling-hl-matchlab" data-match-target="own" title="Match this marker color to the highlight color."><input type="checkbox" name="Scroll Marker Own Match Highlight"></label></span></div>
+          <div class="styling-hl-orow"><span class="styling-hl-olabel">Marker color</span><span class="styling-hl-octl styling-hl-mkbodyslot" data-mk-bodyslot="own"><span class="styling-hl-color styling-hl-mkcolor" data-marker-color="own"><input type="color" name="Scroll Marker Own Color" title="Scrollbar marker color"></span></span></div>
+          <div class="styling-hl-orow"><span class="styling-hl-olabel">Marker opacity</span><span class="styling-hl-octl"><input type="range" name="Scroll Marker Own Opacity" min="0" max="1" step="0.05" title="Scrollbar marker opacity"></span></div>
         </div>
       </div>
-      <div data-name="Catalog Highlights">
-        <label><input type="checkbox" name="Enable Catalog Highlights"> Catalog</label>
-        <p class="styling-compact-control">
-          <label title="Width for catalog border-only highlights.">
-            Border width
-            <input type="range" name="Catalog Highlight Border Width" min="1" max="8" step="1">
-          </label>
-        </p>
-        <div class="styling-tree">
-          <div class="styling-inline-option">
-            <label><input type="checkbox" name="Catalog Highlight Own Posts"> Your post</label>
-            <span class="styling-inline-controls styling-highlight-controls">
-              <input type="color" name="Catalog Highlight Own Color" title="Catalog your-post highlight color">
-              <span class="styling-highlight-manual" data-highlight-text-manual="catalog-own">
-                <input type="color" name="Catalog Highlight Own Text Color" title="Text color">
-                <input type="color" name="Catalog Highlight Own Subject Color" title="Subject color">
-                <input type="color" name="Catalog Highlight Own Link Color" title="Link color">
-                <input type="color" name="Catalog Highlight Own Quote Color" title="Quote color">
-                <input type="color" name="Catalog Highlight Own Dead Link Color" title="Dead link color">
-              </span>
-              <label class="styling-inline-toggle" title="Automatically choose readable text colors for this highlight"><input type="checkbox" name="Catalog Highlight Own Text Auto"> Auto text</label>
-              <label class="styling-inline-toggle" title="Show only a colored border around the catalog tile, no background fill"><input type="checkbox" name="Catalog Highlight Own Border Only"> Border only</label>
-              <input type="range" name="Catalog Highlight Own Opacity" min="0" max="1" step="0.05" title="Highlight opacity">
-            </span>
-          </div>
-          <div class="styling-inline-option">
-            <label><input type="checkbox" name="Catalog Highlight Watched Threads"> Watched thread</label>
-            <span class="styling-inline-controls styling-highlight-controls">
-              <input type="color" name="Catalog Highlight Watched Color" title="Catalog watched-thread highlight color">
-              <span class="styling-highlight-manual" data-highlight-text-manual="catalog-watched">
-                <input type="color" name="Catalog Highlight Watched Text Color" title="Text color">
-                <input type="color" name="Catalog Highlight Watched Subject Color" title="Subject color">
-                <input type="color" name="Catalog Highlight Watched Link Color" title="Link color">
-                <input type="color" name="Catalog Highlight Watched Quote Color" title="Quote color">
-                <input type="color" name="Catalog Highlight Watched Dead Link Color" title="Dead link color">
-              </span>
-              <label class="styling-inline-toggle" title="Automatically choose readable text colors for this highlight"><input type="checkbox" name="Catalog Highlight Watched Text Auto"> Auto text</label>
-              <label class="styling-inline-toggle" title="Show only a colored border around the catalog tile, no background fill"><input type="checkbox" name="Catalog Highlight Watched Border Only"> Border only</label>
-              <input type="range" name="Catalog Highlight Watched Opacity" min="0" max="1" step="0.05" title="Highlight opacity">
-            </span>
-          </div>
+
+      <div class="styling-hl-acc-item" data-highlight-row="you">
+        <div class="styling-hl-acc-head">
+          <span class="styling-hl-acc-name">Quotes you</span>
+          <span class="styling-hl-mkheadslot" data-mk-headslot="you"></span>
+          <span class="styling-hl-color"><input type="color" name="Highlight You Color" title="Highlight background color"></span>
+          <button type="button" class="styling-hl-acc-chev" aria-label="Expand row">&#9656;</button>
+        </div>
+        <div class="styling-hl-acc-body">
+          <label class="styling-hl-sub styling-hl-subtoggle" title="Highlight posts that quote you"><input type="checkbox" name="Highlight Posts Quoting You"><span class="styling-hl-sub-text">Highlight</span></label>
+          <div class="styling-hl-orow"><span class="styling-hl-olabel">Text colors</span><span class="styling-hl-octl"><span class="styling-hl-inlinecolors" data-highlight-text-manual="you" hidden><input type="color" name="Highlight You Text Color" title="Text color"><input type="color" name="Highlight You Link Color" title="Link color"><input type="color" name="Highlight You Quote Color" title="Quote color"><input type="color" name="Highlight You Dead Link Color" title="Dead link color"></span><select name="Highlight You Text Mode" title="Defaults: keep the theme's colors; Auto: pick readable colors; Manual: choose your own"><option value="default">Defaults</option><option value="auto">Auto</option><option value="manual">Manual</option></select></span></div>
+          <div class="styling-hl-orow"><span class="styling-hl-olabel" title="Fill the whole post background instead of just the colored left edge (the edge always shows; off is the classic XT look)">Highlight background</span><span class="styling-hl-octl"><input type="checkbox" name="Highlight You Background"></span></div>
+          <div class="styling-hl-orow"><span class="styling-hl-olabel" title="Width of the colored left edge">Edge width</span><span class="styling-hl-octl"><input type="number" min="1" max="12" step="1" class="field styling-hl-widthnum" name="Highlight You Edge Width"><span class="styling-hl-unit">px</span></span></div>
+          <div class="styling-hl-orow"><span class="styling-hl-olabel" title="CSS border style for the colored left edge">Edge style</span><span class="styling-hl-octl"><select name="Highlight You Border Style"><option value="solid">Solid</option><option value="dashed">Dashed</option><option value="dotted">Dotted</option><option value="double">Double</option><option value="groove">Groove</option><option value="ridge">Ridge</option><option value="inset">Inset</option><option value="outset">Outset</option></select></span></div>
+          <div class="styling-hl-orow"><span class="styling-hl-olabel">Opacity</span><span class="styling-hl-octl"><input type="range" name="Highlight You Opacity" min="0" max="1" step="0.05" title="Highlight opacity"></span></div>
+          <label class="styling-hl-sub styling-hl-subtoggle" title="Show a scrollbar marker for posts that quote you"><input type="checkbox" name="Scrollbar Mark Quotes You"><span class="styling-hl-sub-text">Scrollbar marker</span></label>
+          <div class="styling-hl-orow"><span class="styling-hl-olabel">Match highlight color</span><span class="styling-hl-octl"><label class="styling-hl-matchlab" data-match-target="you" title="Match this marker color to the highlight color."><input type="checkbox" name="Scroll Marker You Match Highlight"></label></span></div>
+          <div class="styling-hl-orow"><span class="styling-hl-olabel">Marker color</span><span class="styling-hl-octl styling-hl-mkbodyslot" data-mk-bodyslot="you"><span class="styling-hl-color styling-hl-mkcolor" data-marker-color="you"><input type="color" name="Scroll Marker You Color" title="Scrollbar marker color"></span></span></div>
+          <div class="styling-hl-orow"><span class="styling-hl-olabel">Marker opacity</span><span class="styling-hl-octl"><input type="range" name="Scroll Marker You Opacity" min="0" max="1" step="0.05" title="Scrollbar marker opacity"></span></div>
         </div>
       </div>
+
+      <div class="styling-hl-acc-item" data-highlight-row="ghost">
+        <div class="styling-hl-acc-head">
+          <span class="styling-hl-acc-name">Ghost post</span>
+          <span class="styling-hl-mkheadslot" data-mk-headslot="ghost"></span>
+          <span class="styling-hl-color"><input type="color" name="Highlight Ghost Color" title="Highlight background color"></span>
+          <button type="button" class="styling-hl-acc-chev" aria-label="Expand row">&#9656;</button>
+        </div>
+        <div class="styling-hl-acc-body">
+          <label class="styling-hl-sub styling-hl-subtoggle" title="Highlight restored (ghost) posts"><input type="checkbox" name="Highlight Ghost Posts"><span class="styling-hl-sub-text">Highlight</span></label>
+          <div class="styling-hl-orow"><span class="styling-hl-olabel">Text colors</span><span class="styling-hl-octl"><span class="styling-hl-inlinecolors" data-highlight-text-manual="ghost" hidden><input type="color" name="Highlight Ghost Text Color" title="Text color"><input type="color" name="Highlight Ghost Link Color" title="Link color"><input type="color" name="Highlight Ghost Quote Color" title="Quote color"><input type="color" name="Highlight Ghost Dead Link Color" title="Dead link color"></span><select name="Highlight Ghost Text Mode" title="Defaults: keep the theme's colors; Auto: pick readable colors; Manual: choose your own"><option value="default">Defaults</option><option value="auto">Auto</option><option value="manual">Manual</option></select></span></div>
+          <div class="styling-hl-orow"><span class="styling-hl-olabel" title="Fill the whole post background instead of just the colored left edge (the edge always shows; off is the classic XT look)">Highlight background</span><span class="styling-hl-octl"><input type="checkbox" name="Highlight Ghost Background"></span></div>
+          <div class="styling-hl-orow"><span class="styling-hl-olabel" title="Width of the colored left edge">Edge width</span><span class="styling-hl-octl"><input type="number" min="1" max="12" step="1" class="field styling-hl-widthnum" name="Highlight Ghost Edge Width"><span class="styling-hl-unit">px</span></span></div>
+          <div class="styling-hl-orow"><span class="styling-hl-olabel" title="CSS border style for the colored left edge">Edge style</span><span class="styling-hl-octl"><select name="Highlight Ghost Border Style"><option value="solid">Solid</option><option value="dashed">Dashed</option><option value="dotted">Dotted</option><option value="double">Double</option><option value="groove">Groove</option><option value="ridge">Ridge</option><option value="inset">Inset</option><option value="outset">Outset</option></select></span></div>
+          <div class="styling-hl-orow"><span class="styling-hl-olabel">Opacity</span><span class="styling-hl-octl"><input type="range" name="Highlight Ghost Opacity" min="0" max="1" step="0.05" title="Highlight opacity"></span></div>
+          <label class="styling-hl-sub styling-hl-subtoggle" title="Show a scrollbar marker for restored (ghost) posts"><input type="checkbox" name="Scrollbar Mark Ghost Posts"><span class="styling-hl-sub-text">Scrollbar marker</span></label>
+          <div class="styling-hl-orow"><span class="styling-hl-olabel">Match highlight color</span><span class="styling-hl-octl"><label class="styling-hl-matchlab" data-match-target="ghost" title="Match this marker color to the highlight color."><input type="checkbox" name="Scroll Marker Ghost Match Highlight"></label></span></div>
+          <div class="styling-hl-orow"><span class="styling-hl-olabel">Marker color</span><span class="styling-hl-octl styling-hl-mkbodyslot" data-mk-bodyslot="ghost"><span class="styling-hl-color styling-hl-mkcolor" data-marker-color="ghost"><input type="color" name="Scroll Marker Ghost Color" title="Scrollbar marker color"></span></span></div>
+          <div class="styling-hl-orow"><span class="styling-hl-olabel">Marker opacity</span><span class="styling-hl-octl"><input type="range" name="Scroll Marker Ghost Opacity" min="0" max="1" step="0.05" title="Scrollbar marker opacity"></span></div>
+        </div>
+      </div>
+
+      <div class="styling-hl-acc-item styling-hl-acc-item-markeronly">
+        <div class="styling-hl-acc-head">
+          <span class="styling-hl-acc-name">Unread line <span class="styling-hl-type-note">scrollbar only</span></span>
+          <span class="styling-hl-color styling-hl-mkcolor" data-marker-color="unread"><input type="color" name="Scroll Marker Unread Color" title="Scrollbar marker color"></span>
+          <button type="button" class="styling-hl-acc-chev" aria-label="Expand row">&#9656;</button>
+        </div>
+        <div class="styling-hl-acc-body">
+          <label class="styling-hl-sub styling-hl-subtoggle" title="Show a scrollbar marker for the unread line"><input type="checkbox" name="Scrollbar Mark Unread Line"><span class="styling-hl-sub-text">Scrollbar marker</span></label>
+          <div class="styling-hl-orow"><span class="styling-hl-olabel">Opacity</span><span class="styling-hl-octl"><input type="range" name="Scroll Marker Unread Opacity" min="0" max="1" step="0.05" title="Scrollbar marker opacity"></span></div>
+        </div>
+      </div>
+
     </div>
   </div>
+
+  <div data-name="Catalog Highlights" class="styling-hl-group styling-hl-group-catalog">
+    <div class="styling-hl-grouphead">
+      <label class="styling-hl-master" title="Master switch for all catalog tile highlights."><input type="checkbox" name="Enable Catalog Highlights"> Catalog highlights</label>
+    </div>
+    <div class="styling-hl-acc">
+
+      <div class="styling-hl-acc-item" data-highlight-row="catalog-own">
+        <div class="styling-hl-acc-head">
+          <span class="styling-hl-acc-name">Your post</span>
+          <span class="styling-hl-color"><input type="color" name="Catalog Highlight Own Color" title="Catalog your-post highlight color"></span>
+          <button type="button" class="styling-hl-acc-chev" aria-label="Expand row">&#9656;</button>
+        </div>
+        <div class="styling-hl-acc-body">
+          <label class="styling-hl-sub styling-hl-subtoggle" title="Highlight your own posts in the catalog"><input type="checkbox" name="Catalog Highlight Own Posts"><span class="styling-hl-sub-text">Highlight</span></label>
+          <div class="styling-hl-orow"><span class="styling-hl-olabel">Text colors</span><span class="styling-hl-octl"><span class="styling-hl-inlinecolors" data-highlight-text-manual="catalog-own" hidden><input type="color" name="Catalog Highlight Own Text Color" title="Text color"><input type="color" name="Catalog Highlight Own Subject Color" title="Subject color"><input type="color" name="Catalog Highlight Own Link Color" title="Link color"><input type="color" name="Catalog Highlight Own Quote Color" title="Quote color"><input type="color" name="Catalog Highlight Own Dead Link Color" title="Dead link color"></span><select name="Catalog Highlight Own Text Mode" title="Defaults: keep the theme's colors; Auto: pick readable colors; Manual: choose your own"><option value="default">Defaults</option><option value="auto">Auto</option><option value="manual">Manual</option></select></span></div>
+          <div class="styling-hl-orow"><span class="styling-hl-olabel" title="Fill the whole catalog tile background instead of just the colored border (the border always shows)">Highlight background</span><span class="styling-hl-octl"><input type="checkbox" name="Catalog Highlight Own Background"></span></div>
+          <div class="styling-hl-orow"><span class="styling-hl-olabel" title="Width of the colored border">Border width</span><span class="styling-hl-octl"><input type="number" min="1" max="12" step="1" class="field styling-hl-widthnum" name="Catalog Highlight Own Border Width"><span class="styling-hl-unit">px</span></span></div>
+          <div class="styling-hl-orow"><span class="styling-hl-olabel" title="CSS border style for the colored border">Border style</span><span class="styling-hl-octl"><select name="Catalog Highlight Own Border Style"><option value="solid">Solid</option><option value="dashed">Dashed</option><option value="dotted">Dotted</option><option value="double">Double</option><option value="groove">Groove</option><option value="ridge">Ridge</option><option value="inset">Inset</option><option value="outset">Outset</option></select></span></div>
+          <div class="styling-hl-orow"><span class="styling-hl-olabel">Opacity</span><span class="styling-hl-octl"><input type="range" name="Catalog Highlight Own Opacity" min="0" max="1" step="0.05" title="Highlight opacity"></span></div>
+        </div>
+      </div>
+
+      <div class="styling-hl-acc-item" data-highlight-row="catalog-watched">
+        <div class="styling-hl-acc-head">
+          <span class="styling-hl-acc-name">Watched thread</span>
+          <span class="styling-hl-color"><input type="color" name="Catalog Highlight Watched Color" title="Catalog watched-thread highlight color"></span>
+          <button type="button" class="styling-hl-acc-chev" aria-label="Expand row">&#9656;</button>
+        </div>
+        <div class="styling-hl-acc-body">
+          <label class="styling-hl-sub styling-hl-subtoggle" title="Highlight watched threads in the catalog"><input type="checkbox" name="Catalog Highlight Watched Threads"><span class="styling-hl-sub-text">Highlight</span></label>
+          <div class="styling-hl-orow"><span class="styling-hl-olabel">Text colors</span><span class="styling-hl-octl"><span class="styling-hl-inlinecolors" data-highlight-text-manual="catalog-watched" hidden><input type="color" name="Catalog Highlight Watched Text Color" title="Text color"><input type="color" name="Catalog Highlight Watched Subject Color" title="Subject color"><input type="color" name="Catalog Highlight Watched Link Color" title="Link color"><input type="color" name="Catalog Highlight Watched Quote Color" title="Quote color"><input type="color" name="Catalog Highlight Watched Dead Link Color" title="Dead link color"></span><select name="Catalog Highlight Watched Text Mode" title="Defaults: keep the theme's colors; Auto: pick readable colors; Manual: choose your own"><option value="default">Defaults</option><option value="auto">Auto</option><option value="manual">Manual</option></select></span></div>
+          <div class="styling-hl-orow"><span class="styling-hl-olabel" title="Fill the whole catalog tile background instead of just the colored border (the border always shows)">Highlight background</span><span class="styling-hl-octl"><input type="checkbox" name="Catalog Highlight Watched Background"></span></div>
+          <div class="styling-hl-orow"><span class="styling-hl-olabel" title="Width of the colored border">Border width</span><span class="styling-hl-octl"><input type="number" min="1" max="12" step="1" class="field styling-hl-widthnum" name="Catalog Highlight Watched Border Width"><span class="styling-hl-unit">px</span></span></div>
+          <div class="styling-hl-orow"><span class="styling-hl-olabel" title="CSS border style for the colored border">Border style</span><span class="styling-hl-octl"><select name="Catalog Highlight Watched Border Style"><option value="solid">Solid</option><option value="dashed">Dashed</option><option value="dotted">Dotted</option><option value="double">Double</option><option value="groove">Groove</option><option value="ridge">Ridge</option><option value="inset">Inset</option><option value="outset">Outset</option></select></span></div>
+          <div class="styling-hl-orow"><span class="styling-hl-olabel">Opacity</span><span class="styling-hl-octl"><input type="range" name="Catalog Highlight Watched Opacity" min="0" max="1" step="0.05" title="Highlight opacity"></span></div>
+        </div>
+      </div>
+
+    </div>
+  </div>
+
   <div class="styling-actions">
+    <button type="button" id="styling-use-theme-defaults" title="Reset highlight colors and modes to the active theme defaults">Use theme defaults</button>
     <button type="button" id="styling-suggest-palettes" title="Show suggested highlight palettes for the current theme">Suggest palettes</button>
     <button type="button" id="styling-randomize" title="Generate random highlight colors that contrast with the page background">Randomize</button>
-    <button type="button" id="styling-open-preview" title="Open a live preview of post highlight states">Preview states</button>
   </div>
   <div id="styling-palette-suggestions" class="styling-palette-suggestions" hidden></div>
   <div class="styling-saved-palettes">
@@ -3455,57 +3672,18 @@ current-archive-text:"Archive"]
   </div>
 </details>
 
-<details open data-styling-section="scrollbarMarkers">
-  <summary>Scrollbar Markers</summary>
-  <div data-name="Scrollbar Markers">
-    <label><input type="checkbox" name="Scrollbar Markers"> Scrollbar markers</label>
-    <div class="styling-tree">
-      <div class="styling-inline-option" data-marker-color="own">
-        <label><input type="checkbox" name="Scrollbar Mark Own Posts"> Your posts</label>
-        <span class="styling-inline-controls">
-          <label class="styling-inline-toggle" data-match-target="own" title="Match this marker color to the corresponding highlight color."><input type="checkbox" name="Scroll Marker Own Match Highlight">Match</label>
-          <input type="color" name="Scroll Marker Own Color">
-          <input type="range" name="Scroll Marker Own Opacity" min="0" max="1" step="0.05">
-        </span>
-      </div>
-      <div class="styling-inline-option" data-marker-color="you">
-        <label><input type="checkbox" name="Scrollbar Mark Quotes You"> Quotes you</label>
-        <span class="styling-inline-controls">
-          <label class="styling-inline-toggle" data-match-target="you" title="Match this marker color to the corresponding highlight color."><input type="checkbox" name="Scroll Marker You Match Highlight">Match</label>
-          <input type="color" name="Scroll Marker You Color">
-          <input type="range" name="Scroll Marker You Opacity" min="0" max="1" step="0.05">
-        </span>
-      </div>
-      <div class="styling-inline-option" data-marker-color="ghost">
-        <label><input type="checkbox" name="Scrollbar Mark Ghost Posts"> Ghost posts</label>
-        <span class="styling-inline-controls">
-          <label class="styling-inline-toggle" data-match-target="ghost" title="Match this marker color to the corresponding highlight color."><input type="checkbox" name="Scroll Marker Ghost Match Highlight">Match</label>
-          <input type="color" name="Scroll Marker Ghost Color">
-          <input type="range" name="Scroll Marker Ghost Opacity" min="0" max="1" step="0.05">
-        </span>
-      </div>
-      <div class="styling-inline-option" data-marker-color="unread">
-        <label><input type="checkbox" name="Scrollbar Mark Unread Line"> Unread line</label>
-        <span class="styling-inline-controls">
-          <input type="color" name="Scroll Marker Unread Color">
-          <input type="range" name="Scroll Marker Unread Opacity" min="0" max="1" step="0.05">
-        </span>
-      </div>
-    </div>
-  </div>
-</details>
-
 <details open class="styling-text-colors" data-styling-section="textColors">
   <summary>Text Colors</summary>
   <div class="styling-theme-row">
     <label>Mode:
       <select name="textColorMode">
+        <option value="default">Defaults</option>
         <option value="auto">Auto</option>
         <option value="manual">Manual</option>
       </select>
     </label>
   </div>
-  <p>Auto chooses readable text/link colors from the active page background. Switch to Manual to set your own values.</p>
+  <p>Defaults keeps the theme's own text, link and greentext colors. Auto chooses readable text/link colors from the active page background. Switch to Manual to set your own values.</p>
   <div id="styling-text-color-manual" class="styling-tree">
     <div class="styling-inline-option">
       <label>Text</label>
@@ -3544,7 +3722,7 @@ current-archive-text:"Archive"]
     <label><input type="checkbox" name="Custom CSS"> Enable Custom CSS</label>
     <label><input type="checkbox" name="customCSSHome"> Load on home page</label>
   </div>
-  <div>For more information about customizing 4chan X&#039;s CSS, see the <a href="https://github.com/ccd0/4chan-x/wiki/Styling-Guide" target="_blank">styling guide</a>.</div>
+  <div>For more information about customizing 4chan-neXT&#039;s CSS, see the <a href="https://github.com/cercos/4chan-next/blob/project-neXT/docs/styling-guide.md" target="_blank">styling guide</a>.</div>
   <div class="custom-css-controls">
     <label>Syntax theme:
       <select id="custom-css-theme">
@@ -3566,15 +3744,15 @@ current-archive-text:"Archive"]
 
   var ImageHost = {
     init() {
-      if ((!(this.useFaster = /\S/.test(Conf['fourchanImageHost']))) || (g.SITE.software !== 'yotsuba') || !['index', 'thread'].includes(g.VIEW)) { return; }
+      if ((!(this.useFaster = /\S/.test(Conf['fourchanImageHost']))) || (g.SITE.software !== 'yotsuba') || !['index', 'thread'].includes(g.VIEW)) {
+        return;
+      }
       return Callbacks.Post.push({
         name: 'Image Host Rewriting',
-        cb:   this.node
+        cb: this.node
       });
     },
-
     suggestions: ['i.4cdn.org', 'is2.4chan.org'],
-
     host() {
       return Conf['fourchanImageHost'].trim() || 'i.4cdn.org';
     },
@@ -3587,25 +3765,28 @@ current-archive-text:"Archive"]
     test(hostname) {
       return (hostname === 'i.4cdn.org') || ImageHost.regex.test(hostname);
     },
-
     regex: /^is\d*\.4chan(?:nel)?\.org$/,
-
     node() {
-      if (this.isClone) { return; }
+      if (this.isClone) {
+        return;
+      }
       const host = ImageHost.host();
       if (this.file && ImageHost.test(this.file.url.split('/')[2]) && !/\.swf$/.test(this.file.url)) {
         this.file.link.hostname = host;
-        if (this.file.thumbLink) { this.file.thumbLink.hostname = host; }
+        if (this.file.thumbLink) {
+          this.file.thumbLink.hostname = host;
+        }
         this.file.url = this.file.link.href;
       }
       return ImageHost.fixLinks($$('a', this.nodes.comment));
     },
-
     fixLinks(links) {
       for (var link of links) {
         if (ImageHost.test(link.hostname) && !/\.swf$/.test(link.pathname)) {
           var host = ImageHost.host();
-          if (link.hostname !== host) { link.hostname = host; }
+          if (link.hostname !== host) {
+            link.hostname = host;
+          }
         }
       }
     }
@@ -3616,6 +3797,12 @@ current-archive-text:"Archive"]
   --xt-border: #B7C5D9;
   --xt-border-field-focus: #98E;
   --xt-border-highlight: rgba(221, 0, 0, .8);
+  /* Highlight accents — tuned to this theme's red (matches --xt-border-highlight)
+     so the catalog glow/watched edge don't fall back to brighter pure #F00. */
+  --xt-filter-highlight: rgba(221, 0, 0, .5);
+  --xt-highlight-shadow: rgba(221, 0, 0, .5);
+  --xt-highlight-side-arrow: rgba(221, 0, 0, .8);
+  --xt-watched-border: rgb(221, 0, 0);
   --xt-header-dialog-bg: rgba(214, 218, 240, 0.98);
   --xt-notification-size: 11pt;
   --xt-header-dialog-fg: #89A;
@@ -3640,6 +3827,12 @@ current-archive-text:"Archive"]
   --xt-border: #D9BFB7;
   --xt-border-field-focus: #EA8;
   --xt-border-highlight: rgba(221, 0, 0, .8);
+  /* Highlight accents — tuned to this theme's red (matches --xt-border-highlight)
+     so the catalog glow/watched edge don't fall back to brighter pure #F00. */
+  --xt-filter-highlight: rgba(221, 0, 0, .5);
+  --xt-highlight-shadow: rgba(221, 0, 0, .5);
+  --xt-highlight-side-arrow: rgba(221, 0, 0, .8);
+  --xt-watched-border: rgb(221, 0, 0);
   --xt-notification-size: 11pt;
   --xt-header-dialog-fg: #B86;
   --xt-dead-link: #00E;
@@ -3713,11 +3906,11 @@ current-archive-text:"Archive"]
 }
 
 /* 4chan style fixes */
-:root:not(.oneechan).highlight-you .quotesYou$site$highlightable$reply {
-  border-left: var(--xt-highlight-edge-width, 3px) solid var(--xt-border-highlight) !important;
+:root:not(.oneechan).highlight-you.xt-edge-you .quotesYou$site$highlightable$reply {
+  border-left: var(--xt-edge-width-you, var(--xt-highlight-edge-width, 3px)) var(--xt-edge-style-you, solid) var(--xt-border-highlight) !important;
 }
-:root:not(.oneechan).highlight-own .yourPost$site$highlightable$reply {
-  border-left: var(--xt-highlight-edge-width, 3px) dashed var(--xt-border-highlight) !important;
+:root:not(.oneechan).highlight-own.xt-edge-own .yourPost$site$highlightable$reply {
+  border-left: var(--xt-edge-width-own, var(--xt-highlight-edge-width, 3px)) var(--xt-edge-style-own, dashed) var(--xt-border-highlight) !important;
 }
 
 /* Header */
@@ -3777,6 +3970,7 @@ current-archive-text:"Archive"]
   color: var(--xt-link-text-color);
 }
 :root.xt-custom-text-colors .post .quote,
+:root.xt-custom-text-colors #qr-com-preview .quote,
 :root.xt-custom-text-colors #arc-list .quote {
   color: var(--xt-quote-text-color) !important;
 }
@@ -3921,61 +4115,62 @@ current-archive-text:"Archive"]
 .qphl {
   outline: 2px solid var(--xt-qphl, rgba(216, 94, 49, .8));
 }
-/* The colored left border is always applied when a post is highlighted. The
-   translucent background fill is gated on :not(.xt-edge-*) so that "edge only"
-   mode leaves the post's own background completely untouched (the original XT
-   look) — we never set a background value in that case, so the theme's normal
-   reply background shows and the post matches its neighbours. */
-:root.highlight-you .quotesYou$site$highlightable$op,
-:root.highlight-you .quotesYou$site$highlightable$reply {
-  border-left: var(--xt-highlight-edge-width, 3px) solid var(--xt-highlight-you, var(--xt-border-highlight));
+/* Highlight opacity is an overlay strength over the normal post background.
+   At zero opacity the fill and edge both become visually normal posts instead
+   of revealing a native/lower-priority highlight underneath.
+   Edge and fill are mutually exclusive: the colored edge only draws in edge mode
+   (.xt-edge-*), the fill only in background mode (:not(.xt-edge-*)). Otherwise a
+   lowered-opacity fill would let the edge bleed through as a second layer. */
+:root.highlight-you.xt-edge-you .quotesYou$site$highlightable$op,
+:root.highlight-you.xt-edge-you .quotesYou$site$highlightable$reply {
+  border-left: var(--xt-edge-width-you, var(--xt-highlight-edge-width, 3px)) var(--xt-edge-style-you, solid) color-mix(in srgb, var(--xt-highlight-you, var(--xt-border-highlight)) calc(var(--xt-highlight-you-opacity, 1) * 100%), transparent);
 }
 :root.highlight-you:not(.xt-edge-you) .quotesYou$site$highlightable$op,
 :root.highlight-you:not(.xt-edge-you) .quotesYou$site$highlightable$reply {
-  background-color: color-mix(in srgb, var(--xt-highlight-you, transparent) calc(var(--xt-highlight-you-opacity, 1) * 100%), transparent);
+  background-color: color-mix(in srgb, var(--xt-highlight-you, var(--xt-border-highlight)) calc(var(--xt-highlight-you-opacity, 1) * 100%), var(--xt-post-background, var(--xt-background, transparent)));
 }
-:root.highlight-own .yourPost$site$highlightable$op,
-:root.highlight-own .yourPost$site$highlightable$reply {
-  border-left: var(--xt-highlight-edge-width, 3px) dashed var(--xt-highlight-own, var(--xt-border-highlight));
+:root.highlight-own.xt-edge-own .yourPost$site$highlightable$op,
+:root.highlight-own.xt-edge-own .yourPost$site$highlightable$reply {
+  border-left: var(--xt-edge-width-own, var(--xt-highlight-edge-width, 3px)) var(--xt-edge-style-own, dashed) color-mix(in srgb, var(--xt-highlight-own, var(--xt-border-highlight)) calc(var(--xt-highlight-own-opacity, 1) * 100%), transparent);
 }
 :root.highlight-own:not(.xt-edge-own) .yourPost$site$highlightable$op,
 :root.highlight-own:not(.xt-edge-own) .yourPost$site$highlightable$reply {
-  background-color: color-mix(in srgb, var(--xt-highlight-own, transparent) calc(var(--xt-highlight-own-opacity, 1) * 100%), transparent);
+  background-color: color-mix(in srgb, var(--xt-highlight-own, var(--xt-border-highlight)) calc(var(--xt-highlight-own-opacity, 1) * 100%), var(--xt-post-background, var(--xt-background, transparent)));
 }
-:root.highlight-ghost .from-archive$site$highlightable$op,
-:root.highlight-ghost .from-archive$site$highlightable$reply {
-  border-left: var(--xt-highlight-edge-width, 3px) dotted var(--xt-highlight-ghost, #888);
+:root.highlight-ghost.xt-edge-ghost .from-archive$site$highlightable$op,
+:root.highlight-ghost.xt-edge-ghost .from-archive$site$highlightable$reply {
+  border-left: var(--xt-edge-width-ghost, var(--xt-highlight-edge-width, 3px)) var(--xt-edge-style-ghost, dotted) color-mix(in srgb, var(--xt-highlight-ghost, #888) calc(var(--xt-highlight-ghost-opacity, 1) * 100%), transparent);
 }
 :root.highlight-ghost:not(.xt-edge-ghost) .from-archive$site$highlightable$op,
 :root.highlight-ghost:not(.xt-edge-ghost) .from-archive$site$highlightable$reply {
-  background-color: color-mix(in srgb, var(--xt-highlight-ghost, transparent) calc(var(--xt-highlight-ghost-opacity, 1) * 100%), transparent);
+  background-color: color-mix(in srgb, var(--xt-highlight-ghost, #888) calc(var(--xt-highlight-ghost-opacity, 1) * 100%), var(--xt-post-background, var(--xt-background, transparent)));
 }
 /* When a highlight color is explicitly configured, force it with !important so
    custom site themes that use \`!important\` on \`.reply\` can't suppress it. The
    background fill stays gated on :not(.xt-edge-*) for the same reason as above. */
-:root.xt-set-you-highlight.highlight-you .quotesYou$site$highlightable$op,
-:root.xt-set-you-highlight.highlight-you .quotesYou$site$highlightable$reply {
-  border-left: var(--xt-highlight-edge-width, 3px) solid var(--xt-highlight-you) !important;
+:root.xt-set-you-highlight.highlight-you.xt-edge-you .quotesYou$site$highlightable$op,
+:root.xt-set-you-highlight.highlight-you.xt-edge-you .quotesYou$site$highlightable$reply {
+  border-left: var(--xt-edge-width-you, var(--xt-highlight-edge-width, 3px)) var(--xt-edge-style-you, solid) color-mix(in srgb, var(--xt-highlight-you) calc(var(--xt-highlight-you-opacity, 1) * 100%), transparent) !important;
 }
 :root.xt-set-you-highlight.highlight-you:not(.xt-edge-you) .quotesYou$site$highlightable$op,
 :root.xt-set-you-highlight.highlight-you:not(.xt-edge-you) .quotesYou$site$highlightable$reply {
-  background-color: color-mix(in srgb, var(--xt-highlight-you) calc(var(--xt-highlight-you-opacity, 1) * 100%), transparent) !important;
+  background-color: color-mix(in srgb, var(--xt-highlight-you) calc(var(--xt-highlight-you-opacity, 1) * 100%), var(--xt-post-background, var(--xt-background, transparent))) !important;
 }
-:root.xt-set-own-highlight.highlight-own .yourPost$site$highlightable$op,
-:root.xt-set-own-highlight.highlight-own .yourPost$site$highlightable$reply {
-  border-left: var(--xt-highlight-edge-width, 3px) dashed var(--xt-highlight-own) !important;
+:root.xt-set-own-highlight.highlight-own.xt-edge-own .yourPost$site$highlightable$op,
+:root.xt-set-own-highlight.highlight-own.xt-edge-own .yourPost$site$highlightable$reply {
+  border-left: var(--xt-edge-width-own, var(--xt-highlight-edge-width, 3px)) var(--xt-edge-style-own, dashed) color-mix(in srgb, var(--xt-highlight-own) calc(var(--xt-highlight-own-opacity, 1) * 100%), transparent) !important;
 }
 :root.xt-set-own-highlight.highlight-own:not(.xt-edge-own) .yourPost$site$highlightable$op,
 :root.xt-set-own-highlight.highlight-own:not(.xt-edge-own) .yourPost$site$highlightable$reply {
-  background-color: color-mix(in srgb, var(--xt-highlight-own) calc(var(--xt-highlight-own-opacity, 1) * 100%), transparent) !important;
+  background-color: color-mix(in srgb, var(--xt-highlight-own) calc(var(--xt-highlight-own-opacity, 1) * 100%), var(--xt-post-background, var(--xt-background, transparent))) !important;
 }
-:root.xt-set-ghost-highlight.highlight-ghost .from-archive$site$highlightable$op,
-:root.xt-set-ghost-highlight.highlight-ghost .from-archive$site$highlightable$reply {
-  border-left: var(--xt-highlight-edge-width, 3px) dotted var(--xt-highlight-ghost) !important;
+:root.xt-set-ghost-highlight.highlight-ghost.xt-edge-ghost .from-archive$site$highlightable$op,
+:root.xt-set-ghost-highlight.highlight-ghost.xt-edge-ghost .from-archive$site$highlightable$reply {
+  border-left: var(--xt-edge-width-ghost, var(--xt-highlight-edge-width, 3px)) var(--xt-edge-style-ghost, dotted) color-mix(in srgb, var(--xt-highlight-ghost) calc(var(--xt-highlight-ghost-opacity, 1) * 100%), transparent) !important;
 }
 :root.xt-set-ghost-highlight.highlight-ghost:not(.xt-edge-ghost) .from-archive$site$highlightable$op,
 :root.xt-set-ghost-highlight.highlight-ghost:not(.xt-edge-ghost) .from-archive$site$highlightable$reply {
-  background-color: color-mix(in srgb, var(--xt-highlight-ghost) calc(var(--xt-highlight-ghost-opacity, 1) * 100%), transparent) !important;
+  background-color: color-mix(in srgb, var(--xt-highlight-ghost) calc(var(--xt-highlight-ghost-opacity, 1) * 100%), var(--xt-post-background, var(--xt-background, transparent))) !important;
 }
 .filter-highlight$site$highlightable$op,
 .filter-highlight$site$highlightable$reply {
@@ -3987,26 +4182,31 @@ current-archive-text:"Archive"]
   color: var(--xt-highlight-side-arrow, rgba(221, 0, 0, .8));
 }
 
-:root:not(.werkTyme):not(.catalog-mode) .catalog-thread.filter-highlight .catalog-thumb,
+/* eX-faithful glow on the catalog thumbnail. Applies in the index Catalog
+   view (.catalog-mode) too — eX never excluded it; an earlier neXT build
+   flat-filled the whole tile there instead, which read as boxy. */
+:root:not(.werkTyme) .catalog-thread.filter-highlight:not(.filter-glow-tile) .catalog-thumb,
 :root.werkTyme .catalog-thread.filter-highlight:not(:hover),
 :root.werkTyme:not(.catalog-hover-expand) .catalog-thread.filter-highlight,
 :root.werkTyme.catalog-hover-expand .catalog-thread.filter-highlight > .catalog-container:hover > .catalog-post,
-:root.catalog $site$catalog$thread.filter-highlight$site$highlightable$catalog {
+:root.catalog $site$catalog$thread.filter-highlight:not(.filter-glow-tile)$site$highlightable$catalog {
   box-shadow: 0 0 3px 3px var(--xt-highlight-shadow, rgba(255, 0, 0, .5));
 }
-:root.catalog-mode .catalog-thread.filter-highlight,
-:root.catalog-mode .catalog-thread > .catalog-container.filter-highlight {
-  background: var(--xt-filter-highlight, rgba(221, 0, 0, .5)) !important;
+/* Per-filter \`;tile\` keyword: glow around the whole catalog entry (image +
+   text) instead of just the thumbnail. Filter.ts adds .filter-glow-tile. */
+:root:not(.werkTyme) .catalog-thread.filter-highlight.filter-glow-tile {
+  box-shadow: 0 0 3px 3px var(--xt-highlight-shadow, rgba(255, 0, 0, .5));
 }
 /* Tint the catalog tile (.catalog-thread), not .catalog-post — post negative margins bleed upward. */
 :root.xt-highlight-catalog-own:not(.xt-catalog-edge-own) .catalog-thread:has(.yourPost),
 :root.xt-highlight-catalog-own:not(.xt-catalog-edge-own) .catalog-thread.yourPost {
-  background: color-mix(in srgb, var(--xt-catalog-own-highlight, var(--xt-highlight-own)) calc(var(--xt-catalog-own-highlight-opacity, 1) * 100%), var(--xt-background, #d6daf0)) !important;
+  background: color-mix(in srgb, var(--xt-catalog-own-highlight, var(--xt-highlight-own)) calc(var(--xt-catalog-own-highlight-opacity, 1) * 100%), var(--xt-post-background, var(--xt-background, #d6daf0))) !important;
 }
 :root.xt-highlight-catalog-own.xt-catalog-edge-own .catalog-thread:has(.yourPost),
 :root.xt-highlight-catalog-own.xt-catalog-edge-own .catalog-thread.yourPost {
-  border-color: var(--xt-catalog-own-highlight, var(--xt-highlight-own, var(--xt-border-highlight))) !important;
-  border-width: var(--xt-catalog-border-width, 3px) !important;
+  border-color: color-mix(in srgb, var(--xt-catalog-own-highlight, var(--xt-highlight-own, var(--xt-border-highlight))) calc(var(--xt-catalog-own-highlight-opacity, 1) * 100%), transparent) !important;
+  border-style: var(--xt-catalog-border-style-own, solid) !important;
+  border-width: var(--xt-catalog-border-width-own, var(--xt-catalog-border-width, 3px)) !important;
 }
 :root:not(.catalog-hover-expand).xt-highlight-catalog-own .catalog-thread:has(.yourPost),
 :root:not(.catalog-hover-expand).xt-highlight-catalog-own .catalog-thread.yourPost {
@@ -4021,46 +4221,46 @@ current-archive-text:"Archive"]
   background: transparent !important;
   border-color: transparent !important;
 }
-:root.xt-highlight-catalog-own .catalog-thread:has(.yourPost) .post.catalog-post.yourPost,
-:root.xt-highlight-catalog-own .catalog-thread.yourPost .post.catalog-post,
-:root.xt-highlight-catalog-own .catalog-thread > .catalog-container.yourPost .post.catalog-post {
+:root.xt-highlight-catalog-own.xt-catalog-own-text-colors .catalog-thread:has(.yourPost) .post.catalog-post.yourPost,
+:root.xt-highlight-catalog-own.xt-catalog-own-text-colors .catalog-thread.yourPost .post.catalog-post,
+:root.xt-highlight-catalog-own.xt-catalog-own-text-colors .catalog-thread > .catalog-container.yourPost .post.catalog-post {
   color: var(--xt-catalog-own-text, var(--xt-text-color)) !important;
 }
-:root.xt-highlight-catalog-own .catalog-thread:has(.yourPost) .post.catalog-post.yourPost .postInfo,
-:root.xt-highlight-catalog-own .catalog-thread:has(.yourPost) .post.catalog-post.yourPost .postMessage,
-:root.xt-highlight-catalog-own .catalog-thread:has(.yourPost) .post.catalog-post.yourPost .summary,
-:root.xt-highlight-catalog-own .catalog-thread:has(.yourPost) .post.catalog-post.yourPost .fileText,
-:root.xt-highlight-catalog-own .catalog-thread:has(.yourPost) .post.catalog-post.yourPost .catalog-stats,
-:root.xt-highlight-catalog-own .catalog-thread.yourPost .post.catalog-post .postInfo,
-:root.xt-highlight-catalog-own .catalog-thread.yourPost .post.catalog-post .postMessage,
-:root.xt-highlight-catalog-own .catalog-thread.yourPost .post.catalog-post .summary,
-:root.xt-highlight-catalog-own .catalog-thread.yourPost .post.catalog-post .fileText,
-:root.xt-highlight-catalog-own .catalog-thread.yourPost .post.catalog-post .catalog-stats,
-:root.xt-highlight-catalog-own .catalog-thread > .catalog-container.yourPost .post.catalog-post .postInfo,
-:root.xt-highlight-catalog-own .catalog-thread > .catalog-container.yourPost .post.catalog-post .postMessage,
-:root.xt-highlight-catalog-own .catalog-thread > .catalog-container.yourPost .post.catalog-post .summary,
-:root.xt-highlight-catalog-own .catalog-thread > .catalog-container.yourPost .post.catalog-post .fileText,
-:root.xt-highlight-catalog-own .catalog-thread > .catalog-container.yourPost .post.catalog-post .catalog-stats {
+:root.xt-highlight-catalog-own.xt-catalog-own-text-colors .catalog-thread:has(.yourPost) .post.catalog-post.yourPost .postInfo,
+:root.xt-highlight-catalog-own.xt-catalog-own-text-colors .catalog-thread:has(.yourPost) .post.catalog-post.yourPost .postMessage,
+:root.xt-highlight-catalog-own.xt-catalog-own-text-colors .catalog-thread:has(.yourPost) .post.catalog-post.yourPost .summary,
+:root.xt-highlight-catalog-own.xt-catalog-own-text-colors .catalog-thread:has(.yourPost) .post.catalog-post.yourPost .fileText,
+:root.xt-highlight-catalog-own.xt-catalog-own-text-colors .catalog-thread:has(.yourPost) .post.catalog-post.yourPost .catalog-stats,
+:root.xt-highlight-catalog-own.xt-catalog-own-text-colors .catalog-thread.yourPost .post.catalog-post .postInfo,
+:root.xt-highlight-catalog-own.xt-catalog-own-text-colors .catalog-thread.yourPost .post.catalog-post .postMessage,
+:root.xt-highlight-catalog-own.xt-catalog-own-text-colors .catalog-thread.yourPost .post.catalog-post .summary,
+:root.xt-highlight-catalog-own.xt-catalog-own-text-colors .catalog-thread.yourPost .post.catalog-post .fileText,
+:root.xt-highlight-catalog-own.xt-catalog-own-text-colors .catalog-thread.yourPost .post.catalog-post .catalog-stats,
+:root.xt-highlight-catalog-own.xt-catalog-own-text-colors .catalog-thread > .catalog-container.yourPost .post.catalog-post .postInfo,
+:root.xt-highlight-catalog-own.xt-catalog-own-text-colors .catalog-thread > .catalog-container.yourPost .post.catalog-post .postMessage,
+:root.xt-highlight-catalog-own.xt-catalog-own-text-colors .catalog-thread > .catalog-container.yourPost .post.catalog-post .summary,
+:root.xt-highlight-catalog-own.xt-catalog-own-text-colors .catalog-thread > .catalog-container.yourPost .post.catalog-post .fileText,
+:root.xt-highlight-catalog-own.xt-catalog-own-text-colors .catalog-thread > .catalog-container.yourPost .post.catalog-post .catalog-stats {
   color: var(--xt-catalog-own-text, var(--xt-text-color)) !important;
 }
-:root.xt-highlight-catalog-own .catalog-thread:has(.yourPost) .post.catalog-post.yourPost a,
-:root.xt-highlight-catalog-own .catalog-thread.yourPost .post.catalog-post a,
-:root.xt-highlight-catalog-own .catalog-thread > .catalog-container.yourPost .post.catalog-post a {
+:root.xt-highlight-catalog-own.xt-catalog-own-text-colors .catalog-thread:has(.yourPost) .post.catalog-post.yourPost a,
+:root.xt-highlight-catalog-own.xt-catalog-own-text-colors .catalog-thread.yourPost .post.catalog-post a,
+:root.xt-highlight-catalog-own.xt-catalog-own-text-colors .catalog-thread > .catalog-container.yourPost .post.catalog-post a {
   color: var(--xt-catalog-own-link, var(--xt-link-text-color)) !important;
 }
-:root.xt-highlight-catalog-own .catalog-thread:has(.yourPost) .post.catalog-post.yourPost .quote,
-:root.xt-highlight-catalog-own .catalog-thread.yourPost .post.catalog-post .quote,
-:root.xt-highlight-catalog-own .catalog-thread > .catalog-container.yourPost .post.catalog-post .quote {
+:root.xt-highlight-catalog-own.xt-catalog-own-text-colors .catalog-thread:has(.yourPost) .post.catalog-post.yourPost .quote,
+:root.xt-highlight-catalog-own.xt-catalog-own-text-colors .catalog-thread.yourPost .post.catalog-post .quote,
+:root.xt-highlight-catalog-own.xt-catalog-own-text-colors .catalog-thread > .catalog-container.yourPost .post.catalog-post .quote {
   color: var(--xt-catalog-own-quote, var(--xt-quote-text-color)) !important;
 }
-:root.xt-highlight-catalog-own .catalog-thread:has(.yourPost) .post.catalog-post.yourPost .subject,
-:root.xt-highlight-catalog-own .catalog-thread.yourPost .post.catalog-post .subject,
-:root.xt-highlight-catalog-own .catalog-thread > .catalog-container.yourPost .post.catalog-post .subject {
+:root.xt-highlight-catalog-own.xt-catalog-own-text-colors .catalog-thread:has(.yourPost) .post.catalog-post.yourPost .subject,
+:root.xt-highlight-catalog-own.xt-catalog-own-text-colors .catalog-thread.yourPost .post.catalog-post .subject,
+:root.xt-highlight-catalog-own.xt-catalog-own-text-colors .catalog-thread > .catalog-container.yourPost .post.catalog-post .subject {
   color: var(--xt-catalog-own-subject, var(--xt-catalog-own-text, var(--xt-text-color))) !important;
 }
-:root.xt-highlight-catalog-own .catalog-thread:has(.yourPost) .post.catalog-post.yourPost .deadlink,
-:root.xt-highlight-catalog-own .catalog-thread.yourPost .post.catalog-post .deadlink,
-:root.xt-highlight-catalog-own .catalog-thread > .catalog-container.yourPost .post.catalog-post .deadlink {
+:root.xt-highlight-catalog-own.xt-catalog-own-text-colors .catalog-thread:has(.yourPost) .post.catalog-post.yourPost .deadlink,
+:root.xt-highlight-catalog-own.xt-catalog-own-text-colors .catalog-thread.yourPost .post.catalog-post .deadlink,
+:root.xt-highlight-catalog-own.xt-catalog-own-text-colors .catalog-thread > .catalog-container.yourPost .post.catalog-post .deadlink {
   color: var(--xt-catalog-own-dead-link, var(--xt-dead-link-text-color, var(--xt-dead-link))) !important;
 }
 :root.xt-highlight-catalog-own:not(.xt-catalog-edge-own) .catalog-thread:has(.yourPost) .post.catalog-post.yourPost > *,
@@ -4072,11 +4272,12 @@ current-archive-text:"Archive"]
   background: transparent !important;
 }
 :root.xt-highlight-catalog-watched:not(.xt-catalog-edge-watched) .catalog-thread.watched:not(:has(.yourPost)) {
-  background: color-mix(in srgb, var(--xt-catalog-watched-highlight, var(--xt-watched-border, rgba(255, 0, 0, .75))) calc(var(--xt-catalog-watched-highlight-opacity, 0.2) * 100%), var(--xt-background, #d6daf0)) !important;
+  background: color-mix(in srgb, var(--xt-catalog-watched-highlight, var(--xt-watched-border, rgba(255, 0, 0, .75))) calc(var(--xt-catalog-watched-highlight-opacity, 0.2) * 100%), var(--xt-post-background, var(--xt-background, #d6daf0))) !important;
 }
 :root.xt-highlight-catalog-watched.xt-catalog-edge-watched .catalog-thread.watched:not(:has(.yourPost)) {
-  border-color: var(--xt-catalog-watched-highlight, var(--xt-watched-border, rgba(255, 0, 0, .75))) !important;
-  border-width: var(--xt-catalog-border-width, 3px) !important;
+  border-color: color-mix(in srgb, var(--xt-catalog-watched-highlight, var(--xt-watched-border, rgba(255, 0, 0, .75))) calc(var(--xt-catalog-watched-highlight-opacity, 0.2) * 100%), transparent) !important;
+  border-style: var(--xt-catalog-border-style-watched, solid) !important;
+  border-width: var(--xt-catalog-border-width-watched, var(--xt-catalog-border-width, 3px)) !important;
 }
 :root:not(.catalog-hover-expand).xt-highlight-catalog-watched .catalog-thread.watched:not(:has(.yourPost)) {
   overflow: hidden;
@@ -4086,26 +4287,26 @@ current-archive-text:"Archive"]
   background: transparent !important;
   border-color: transparent !important;
 }
-:root.xt-highlight-catalog-watched .catalog-thread.watched:not(:has(.yourPost)) .post.catalog-post {
+:root.xt-highlight-catalog-watched.xt-catalog-watched-text-colors .catalog-thread.watched:not(:has(.yourPost)) .post.catalog-post {
   color: var(--xt-catalog-watched-text, var(--xt-text-color)) !important;
 }
-:root.xt-highlight-catalog-watched .catalog-thread.watched:not(:has(.yourPost)) .post.catalog-post .postInfo,
-:root.xt-highlight-catalog-watched .catalog-thread.watched:not(:has(.yourPost)) .post.catalog-post .postMessage,
-:root.xt-highlight-catalog-watched .catalog-thread.watched:not(:has(.yourPost)) .post.catalog-post .summary,
-:root.xt-highlight-catalog-watched .catalog-thread.watched:not(:has(.yourPost)) .post.catalog-post .fileText,
-:root.xt-highlight-catalog-watched .catalog-thread.watched:not(:has(.yourPost)) .post.catalog-post .catalog-stats {
+:root.xt-highlight-catalog-watched.xt-catalog-watched-text-colors .catalog-thread.watched:not(:has(.yourPost)) .post.catalog-post .postInfo,
+:root.xt-highlight-catalog-watched.xt-catalog-watched-text-colors .catalog-thread.watched:not(:has(.yourPost)) .post.catalog-post .postMessage,
+:root.xt-highlight-catalog-watched.xt-catalog-watched-text-colors .catalog-thread.watched:not(:has(.yourPost)) .post.catalog-post .summary,
+:root.xt-highlight-catalog-watched.xt-catalog-watched-text-colors .catalog-thread.watched:not(:has(.yourPost)) .post.catalog-post .fileText,
+:root.xt-highlight-catalog-watched.xt-catalog-watched-text-colors .catalog-thread.watched:not(:has(.yourPost)) .post.catalog-post .catalog-stats {
   color: var(--xt-catalog-watched-text, var(--xt-text-color)) !important;
 }
-:root.xt-highlight-catalog-watched .catalog-thread.watched:not(:has(.yourPost)) .post.catalog-post a {
+:root.xt-highlight-catalog-watched.xt-catalog-watched-text-colors .catalog-thread.watched:not(:has(.yourPost)) .post.catalog-post a {
   color: var(--xt-catalog-watched-link, var(--xt-link-text-color)) !important;
 }
-:root.xt-highlight-catalog-watched .catalog-thread.watched:not(:has(.yourPost)) .post.catalog-post .quote {
+:root.xt-highlight-catalog-watched.xt-catalog-watched-text-colors .catalog-thread.watched:not(:has(.yourPost)) .post.catalog-post .quote {
   color: var(--xt-catalog-watched-quote, var(--xt-quote-text-color)) !important;
 }
-:root.xt-highlight-catalog-watched .catalog-thread.watched:not(:has(.yourPost)) .post.catalog-post .subject {
+:root.xt-highlight-catalog-watched.xt-catalog-watched-text-colors .catalog-thread.watched:not(:has(.yourPost)) .post.catalog-post .subject {
   color: var(--xt-catalog-watched-subject, var(--xt-catalog-watched-text, var(--xt-text-color))) !important;
 }
-:root.xt-highlight-catalog-watched .catalog-thread.watched:not(:has(.yourPost)) .post.catalog-post .deadlink {
+:root.xt-highlight-catalog-watched.xt-catalog-watched-text-colors .catalog-thread.watched:not(:has(.yourPost)) .post.catalog-post .deadlink {
   color: var(--xt-catalog-watched-dead-link, var(--xt-dead-link-text-color, var(--xt-dead-link))) !important;
 }
 :root.xt-highlight-catalog-watched:not(.xt-catalog-edge-watched) .catalog-thread.watched:not(:has(.yourPost)) .post.catalog-post > *,
@@ -4142,8 +4343,15 @@ current-archive-text:"Archive"]
   --xt-border: #CCC;
   --xt-border-field-focus: #EA8;
   --xt-border-highlight: rgba(221, 0, 0, .8);
+  /* Highlight accents — tuned to this theme's red (matches --xt-border-highlight)
+     so the catalog glow/watched edge don't fall back to brighter pure #F00. */
+  --xt-filter-highlight: rgba(221, 0, 0, .5);
+  --xt-highlight-shadow: rgba(221, 0, 0, .5);
+  --xt-highlight-side-arrow: rgba(221, 0, 0, .8);
+  --xt-watched-border: rgb(221, 0, 0);
   --xt-header-dialog-bg: rgba(221, 221, 221, 0.98);
   --xt-header-dialog-fg: #333;
+  --xt-quote-color: #C0E17A;
   --xt-dead-link: #F60;
   --xt-qr-link-border: rgb(206, 206, 206) rgb(206, 206, 206) rgb(191, 191, 191);
   --xt-qr-bg: linear-gradient(#ECECEC, #DDD) repeat scroll 0% 0% transparent;
@@ -4199,6 +4407,7 @@ current-archive-text:"Archive"]
   --xt-header-dialog-bg: rgba(23, 21, 38, 0.98);
   --xt-header-dialog-fg: #C49756;
   --xt-header-link: #FE9600;
+  --xt-quote-color: #634C2C;
   --xt-dead-link: #FE9600;
   --xt-qr-link-border: rgb(8, 6, 23) rgb(8, 6, 23) rgb(0, 0, 8);
   --xt-qr-bg: linear-gradient(#262435, #171526) repeat scroll 0% 0% transparent;
@@ -4735,10 +4944,13 @@ audio.controls-added {
   box-shadow: 0 0 15px rgba(0, 0, 0, .15);
   height: 600px;
   max-height: 100%;
-  min-height: 360px;
-  width: 900px;
+  /* The Simple Filters page used to be a wide table that forced a ~975px minimum.
+     It is now a responsive tile grid (see .easy-filters-list) that collapses to a
+     single column, so the window can shrink to a phone-friendly floor. */
+  min-height: 480px;
+  width: 1000px;
   max-width: 100%;
-  min-width: 520px;
+  min-width: 360px;
   margin: auto;
   padding: 0;
   display: flex;
@@ -4773,7 +4985,7 @@ audio.controls-added {
   opacity: 1;
   text-decoration: underline;
 }
-.settings-titlebar-actions .remember-layout-toggle {
+.remember-layout-toggle {
   align-items: center;
   cursor: pointer;
   display: inline-flex;
@@ -4781,13 +4993,13 @@ audio.controls-added {
   opacity: .85;
   user-select: none;
 }
-.settings-titlebar-actions .remember-layout-toggle:hover {
+.remember-layout-toggle:hover {
   opacity: 1;
 }
-.settings-titlebar-actions .remember-layout-toggle > span {
+.remember-layout-toggle > span {
   white-space: nowrap;
 }
-.settings-titlebar-actions .remember-layout-toggle input {
+.remember-layout-toggle input {
   margin: 0;
 }
 #fourchanx-settings > .settings-body {
@@ -4801,9 +5013,10 @@ audio.controls-added {
   padding: 8px;
   display: flex;
   flex-direction: column;
-  flex: 0 0 auto;
-  min-width: 148px;
-  max-width: 220px;
+  flex: 0 0 max-content;
+  min-width: 0;
+  max-width: 180px;
+  width: max-content;
 }
 #fourchanx-settings > .settings-body > nav a {
   text-decoration: none;
@@ -4813,7 +5026,21 @@ audio.controls-added {
 }
 #fourchanx-settings > .settings-body > nav .settings-search input {
   box-sizing: border-box;
-  width: 100%;
+  max-width: 100%;
+  width: 15ch;
+}
+/* The .field defaults (white bg, #CCC border) are built for light pages and
+   read as a harsh bright-white box on dark themes. The styling section already
+   gives its own fields a subtle, theme-adaptive frame; do the same for every
+   other plain .field in the settings dialog (search box, board nav, filters,
+   thread-watcher inputs, …) so the whole dialog is consistent. The styling
+   section's special fields are excluded so their bespoke rules — including the
+   red invalid-hex border — keep winning. */
+#fourchanx-settings .field:not(.styling-color-hex):not(.styling-saved-palette-name):not(.styling-hl-widthnum):not(.custom-css-textarea) {
+  background-color: transparent;
+  border-color: rgba(128, 128, 128, .45);
+  border-radius: 3px;
+  color: inherit;
 }
 #fourchanx-settings .close {
   text-decoration: none;
@@ -4883,6 +5110,39 @@ audio.controls-added {
 .tab-selected {
   background: rgba(128, 128, 128, .18);
   font-weight: 700;
+}
+/* Horizontal navigation layout: the search box and section links are moved
+   into the titlebar (in place of the title) and the left sidebar is hidden. */
+#fourchanx-settings.settings-nav-horizontal .settings-titlebar {
+  flex-wrap: wrap;
+  gap: 4px 10px;
+}
+#fourchanx-settings.settings-nav-horizontal .settings-title {
+  display: none;
+}
+#fourchanx-settings.settings-nav-horizontal .settings-titlebar > .settings-search {
+  margin: 0;
+}
+#fourchanx-settings.settings-nav-horizontal .settings-titlebar > .settings-search input {
+  box-sizing: border-box;
+  width: 15ch;
+}
+#fourchanx-settings.settings-nav-horizontal .settings-titlebar > .sections-list {
+  flex: 1 1 auto;
+  flex-direction: row;
+  flex-wrap: wrap;
+  align-items: center;
+  gap: 0;
+  overflow: visible;
+}
+#fourchanx-settings.settings-nav-horizontal .settings-titlebar > .sections-list > a {
+  padding: 3px 7px;
+}
+#fourchanx-settings.settings-nav-horizontal .settings-titlebar > .sections-list > a + a {
+  border-left: 1px solid rgba(128, 128, 128, .4);
+}
+#fourchanx-settings.settings-nav-horizontal > .settings-body > nav {
+  display: none;
 }
 .settings-footer {
   border-top: 1px solid rgba(128, 128, 128, .25);
@@ -5034,12 +5294,11 @@ div[data-checked="false"] > .suboption-list {
   border-left: 1px solid;
   border-bottom: 1px solid;
 }
-/* Hide the inline ": description" text — kept in the DOM for search
-   highlighting. Hover descriptions come from native browser tooltips:
-   each row's title attribute is set in Settings.tsx alongside its
-   data-setting-description, which avoids the parent-vs-child overlap
-   that a CSS :hover-based tooltip would cause on nested rows. */
 #fourchanx-settings .description {
+  display: inline;
+  opacity: .72;
+}
+#fourchanx-settings.settings-description-tooltips:not(.settings-searching) .description {
   display: none;
 }
 /* While searching, reveal descriptions so <mark> highlights are visible. */
@@ -5175,44 +5434,141 @@ div[data-checked="false"] > .suboption-list {
 .section-filters .filter-stat-more {
   opacity: .8;
 }
-.section-filters .easy-filters-table {
-  width: 100%;
-  border-collapse: separate;
-  border-spacing: 4px;
+/* Filter rules share one tile DOM rendered in two layouts:
+   - "list" = inline rows (fields side by side, one rule per line) — the classic form.
+   - "grid" = vertical cards (label left / value right) flowed into responsive columns.
+   "auto" is not its own layout: easyFilters() resolves the container to .layout-list
+   when the settings dialog is at least ~1000px wide and .layout-grid below that,
+   re-evaluating on resize. layout-grid auto-fits its column count to the width. */
+.section-filters .easy-filters-list {
+  gap: 8px;
 }
-.section-filters th,
-.section-filters td {
-  padding: 0;
-  text-align: left;
-  vertical-align: middle;
+.section-filters .easy-filter-tile {
+  box-sizing: border-box;
+  border: 1px solid rgba(128, 128, 128, .3);
+  border-radius: 5px;
+  padding: 6px 8px;
+  display: flex;
+  gap: 6px;
 }
-.section-filters .easy-filter-enabled,
-.section-filters .easy-filter-auto,
-.section-filters .easy-filter-hide,
-.section-filters .easy-filter-override {
-  display: block;
-  margin: auto;
+.section-filters .easy-filter-on {
+  display: inline-flex;
+  align-items: center;
+  gap: 4px;
 }
-.section-filters .easy-filter-pattern {
-  min-width: 200px;
+.section-filters .easy-filter-field {
+  display: flex;
+  align-items: center;
+  gap: 5px;
 }
-.section-filters .easy-filter-boards {
-  min-width: 96px;
+.section-filters .easy-filter-field > span {
+  flex: 0 0 auto;
+  opacity: .85;
 }
-.section-filters .easy-filter-color {
+
+/* Card (vertical) layout — "grid", and "auto" when a row would wrap. */
+.section-filters .easy-filters-list.layout-grid {
+  display: grid;
+  grid-template-columns: repeat(auto-fill, minmax(240px, 1fr));
+}
+.section-filters .layout-grid .easy-filter-tile {
+  flex-direction: column;
+}
+.section-filters .layout-grid .easy-filter-tile-head {
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+}
+.section-filters .layout-grid .easy-filter-field {
+  justify-content: space-between;
+}
+.section-filters .layout-grid .easy-filter-field .field {
+  flex: 1 1 auto;
+  min-width: 0;
+}
+
+/* Row (inline) layout — "list", and "auto" while the row fits on one line. */
+.section-filters .easy-filters-list.layout-list {
+  display: flex;
+  flex-direction: column;
+}
+.section-filters .layout-list .easy-filter-tile {
+  flex-direction: row;
+  flex-wrap: wrap;
+  align-items: center;
+  gap: 10px;
+}
+.section-filters .layout-list .easy-filter-tile-head {
+  display: contents;
+}
+.section-filters .layout-list .easy-filter-remove {
+  order: 1;
+  margin-left: auto;
+}
+.section-filters .layout-list .easy-filter-field {
+  width: auto;
+}
+.section-filters .layout-list .easy-filter-pattern {
+  width: 160px;
+}
+.section-filters .layout-list .easy-filter-boards {
+  width: 112px;
+}
+.section-filters .layout-list .easy-filter-type {
+  width: 132px;
+}
+.section-filters .layout-list .easy-filter-class {
   width: 84px;
 }
-.section-filters .easy-filter-remove {
-  min-width: 26px;
+.section-filters .easy-filter-color-cell {
+  align-items: center;
+  display: inline-flex;
+  gap: 4px;
+}
+.section-filters .easy-filter-class {
+  min-width: 90px;
+  width: 100%;
+}
+.section-filters .easy-filter-color {
+  width: 34px;
   height: 24px;
-  line-height: 20px;
+  padding: 0;
+  border: 1px solid rgba(128, 128, 128, .4);
+  border-radius: 3px;
+  background: none;
+  cursor: pointer;
+  vertical-align: middle;
+}
+.section-filters .easy-filter-color::-webkit-color-swatch-wrapper {
+  padding: 2px;
+}
+.section-filters .easy-filter-color::-webkit-color-swatch,
+.section-filters .easy-filter-color::-moz-color-swatch {
+  border: none;
+  border-radius: 2px;
+}
+.section-filters .easy-filter-color:disabled {
+  opacity: .4;
+  cursor: default;
+}
+.section-filters .easy-filter-remove {
+  font-size: 13px;
+  height: 20px;
+  line-height: 16px;
+  min-width: 20px;
+  padding: 0;
   text-align: center;
+  width: 20px;
 }
 .section-filters .easy-filters-controls {
-  margin-top: 6px;
+  margin-bottom: 8px;
 }
-.section-filters .easy-filter-save {
-  margin-left: 6px;
+.section-filters .easy-filter-layout {
+  margin-left: 10px;
+}
+.section-filters .easy-filter-layout-btn.selected {
+  font-weight: 700;
+  text-decoration: underline;
 }
 .section-filters .easy-filter-status {
   margin-left: 8px;
@@ -5250,6 +5606,22 @@ div[data-checked="false"] > .suboption-list {
   display: flex;
   flex-wrap: wrap;
   gap: 8px;
+}
+.section-styling .styling-highlight-intro {
+  align-items: start;
+  display: grid;
+  gap: 8px 12px;
+  grid-template-columns: minmax(0, 1fr) auto;
+}
+.section-styling .styling-highlight-intro > p {
+  margin: 0;
+}
+.section-styling #styling-open-preview {
+  justify-self: end;
+  white-space: nowrap;
+}
+#styling-preview-anchor {
+  height: 0;
 }
 .section-styling .styling-palette-suggestions {
   margin-top: 8px;
@@ -5329,36 +5701,81 @@ div[data-checked="false"] > .suboption-list {
   background: color-mix(in srgb, currentColor 8%, transparent);
 }
 .styling-preview {
-  width: min(960px, 92vw);
-  max-height: 85vh;
+  box-sizing: border-box;
+  box-shadow: 0 0 18px rgba(0, 0, 0, .25);
+  display: flex;
+  flex-direction: column;
+  max-width: 96vw;
+  min-height: 260px;
+  min-width: min(420px, 96vw);
+  overflow: hidden;
+  padding: 0;
+  position: absolute;
+  resize: both;
+  z-index: 2;
+}
+.styling-preview-attached {
+  resize: vertical;
+}
+.styling-preview-detached {
+  max-height: min(85vh, 640px);
+}
+.styling-preview-titlebar {
+  align-items: center;
+  border-bottom: 1px solid rgba(128, 128, 128, .25);
+  box-sizing: border-box;
+  cursor: move;
+  display: flex;
+  flex: 0 0 auto;
+  justify-content: space-between;
+  padding: 6px 8px;
+}
+.styling-preview-title {
+  font-weight: 700;
+}
+.styling-preview-titlebar-actions {
+  align-items: center;
+  display: inline-flex;
+  gap: 4px;
+  margin-left: auto;
+}
+.styling-preview-attach {
+  align-items: center;
+  display: inline-flex;
+  justify-content: center;
+  min-height: 18px;
+  min-width: 18px;
+  opacity: .7;
+  padding: 2px 4px;
+  text-decoration: none;
+}
+.styling-preview-attach:hover,
+.styling-preview-attach.attached {
+  opacity: 1;
+}
+.styling-preview-close {
+  margin: 0;
+  padding: 2px 4px;
+  text-decoration: none;
+}
+.styling-preview-layout {
+  align-items: start;
+  /* Cover the whole sample area with the board's current background so the previews
+     sit on the real page colour instead of the dialog's grey chrome. */
+  background: var(--xt-background, Canvas);
+  display: grid;
+  flex: 1 1 auto;
+  gap: 12px;
+  grid-template-columns: minmax(360px, max-content) max-content;
   overflow: auto;
   padding: 10px 12px;
 }
-.styling-preview-dock {
-  margin-top: 10px;
-  width: auto;
-  max-height: none;
-  transition: max-height 150ms ease, opacity 120ms ease;
-}
-.styling-preview-dock[data-collapsed="true"] {
-  max-height: 0;
-  opacity: 0;
-  overflow: hidden;
-  padding: 0 12px;
-  margin: 0;
-  border-width: 0;
-}
 .styling-preview-thread {
   background: transparent;
-  border: 1px solid rgba(128, 128, 128, .35);
+  border: 0;
   margin: 0;
   padding: 8px;
-}
-.styling-preview-layout {
-  display: grid;
-  grid-template-columns: minmax(520px, 1fr) minmax(350px, 360px);
-  gap: 10px;
-  align-items: start;
+  width: fit-content;
 }
 .styling-preview-thread > .thread {
   display: block;
@@ -5368,20 +5785,32 @@ div[data-checked="false"] > .suboption-list {
 }
 .styling-preview-catalog {
   background: transparent;
-  border: 1px solid rgba(128, 128, 128, .35);
+  border: 0;
+  display: flex;
+  flex-wrap: nowrap;
+  gap: 8px;
   margin: 0;
+  min-width: 0;
   padding: 8px;
-  min-width: 350px;
-  text-align: left;
+  /* Catalog entries center their subject/text like the real catalog does. */
+  text-align: center;
+  width: fit-content;
 }
 .styling-preview-catalog > .catalog-thread {
-  margin: 2px;
-  vertical-align: top;
+  flex: 0 0 165px;
+  height: 225px;
+  margin: 0;
+  width: 165px;
 }
-.styling-preview-catalog::after {
-  content: "";
-  display: block;
-  clear: both;
+.styling-preview-catalog .catalog-thumb {
+  height: auto !important;
+  max-height: 92px;
+  max-width: 118px;
+  width: auto !important;
+}
+.styling-preview-catalog .catalog-post > .postMessage {
+  max-height: 4.5em;
+  overflow: hidden;
 }
 .styling-preview-post {
   border: none;
@@ -5399,17 +5828,36 @@ div[data-checked="false"] > .suboption-list {
   margin-bottom: 0;
 }
 .styling-preview-post > .reply {
-  display: block;
-  max-width: min(100%, 960px);
+  display: inline-block;
+  max-width: min(100%, 860px);
+  width: auto;
 }
 .styling-preview-post .sideArrows {
   display: inline-block;
   float: left;
   margin-right: 4px;
 }
-@media (max-width: 1200px) {
+@media (max-width: 700px) {
+  .styling-preview {
+    min-width: 0;
+    width: 96vw !important;
+  }
   .styling-preview-layout {
+    display: block;
+  }
+  .styling-preview-catalog {
+    flex-wrap: wrap;
+    min-width: 0;
+  }
+  .styling-preview-catalog > .catalog-thread {
+    flex-basis: 140px;
+    width: 140px;
+  }
+  .section-styling .styling-highlight-intro {
     grid-template-columns: 1fr;
+  }
+  .section-styling #styling-open-preview {
+    justify-self: start;
   }
 }
 .styling-preview-post .postInfo,
@@ -5422,8 +5870,12 @@ div[data-checked="false"] > .suboption-list {
 .styling-preview-post a {
   color: var(--xt-link-text-color);
 }
-.styling-preview-post .quote {
-  color: var(--xt-quote-text-color) !important;
+/* Greentext: custom override if set, else the theme's quote colour, else native
+   4chan green. Without the theme/native fallback an unset --xt-quote-text-color
+   made the whole declaration invalid, so greentext fell back to plain text colour. */
+.styling-preview-post .quote,
+.styling-preview-catalog .quote {
+  color: var(--xt-quote-text-color, var(--xt-quote-color, #789922)) !important;
 }
 .styling-preview-post .backlink.deadlink,
 .styling-preview-post .quotelink.deadlink {
@@ -5434,30 +5886,44 @@ div[data-checked="false"] > .suboption-list {
 .styling-preview-post.from-archive > .reply {
   /* Reset any site theme that forces a reply background via !important so the
      preview faithfully shows the configured highlight colors. */
-  background-color: transparent !important;
+  background-color: var(--xt-post-background, var(--xt-background, transparent)) !important;
   border-left: var(--xt-highlight-edge-width, 3px) solid transparent !important;
 }
+/* Highlight on → background fill. Edge and fill are mutually exclusive, so the
+   colored edge (and a reset of the fill) is layered on top only in edge mode
+   ([data-edge-*="true"]); otherwise a lowered-opacity fill would show the edge
+   bleeding through. Mirrors the real highlight rules in variableBase.css. */
 .styling-preview[data-highlight-own="true"] .styling-preview-post.yourPost > .reply {
-  border-left: var(--xt-highlight-edge-width, 3px) dashed var(--xt-highlight-own, var(--xt-border-highlight)) !important;
-  background-color: color-mix(in srgb, var(--xt-highlight-own, transparent) calc(var(--xt-highlight-own-opacity, 1) * 100%), transparent) !important;
+  background-color: color-mix(in srgb, var(--xt-highlight-own, var(--xt-border-highlight)) calc(var(--xt-highlight-own-opacity, 1) * 100%), var(--xt-post-background, var(--xt-background, transparent))) !important;
 }
 .styling-preview[data-highlight-you="true"] .styling-preview-post.quotesYou > .reply {
-  border-left: var(--xt-highlight-edge-width, 3px) solid var(--xt-highlight-you, var(--xt-border-highlight)) !important;
-  background-color: color-mix(in srgb, var(--xt-highlight-you, transparent) calc(var(--xt-highlight-you-opacity, 1) * 100%), transparent) !important;
+  background-color: color-mix(in srgb, var(--xt-highlight-you, var(--xt-border-highlight)) calc(var(--xt-highlight-you-opacity, 1) * 100%), var(--xt-post-background, var(--xt-background, transparent))) !important;
 }
 .styling-preview[data-highlight-ghost="true"] .styling-preview-post.from-archive > .reply {
-  border-left: var(--xt-highlight-edge-width, 3px) dotted var(--xt-highlight-ghost, #888) !important;
-  background-color: color-mix(in srgb, var(--xt-highlight-ghost, transparent) calc(var(--xt-highlight-ghost-opacity, 1) * 100%), transparent) !important;
+  background-color: color-mix(in srgb, var(--xt-highlight-ghost, #888) calc(var(--xt-highlight-ghost-opacity, 1) * 100%), var(--xt-post-background, var(--xt-background, transparent))) !important;
 }
-.styling-preview[data-edge-own="true"] .styling-preview-post.yourPost > .reply,
-.styling-preview[data-edge-you="true"] .styling-preview-post.quotesYou > .reply,
-.styling-preview[data-edge-ghost="true"] .styling-preview-post.from-archive > .reply {
-  background-color: transparent !important;
+.styling-preview[data-highlight-own="true"][data-edge-own="true"] .styling-preview-post.yourPost > .reply {
+  border-left: var(--xt-edge-width-own, var(--xt-highlight-edge-width, 3px)) var(--xt-edge-style-own, dashed) color-mix(in srgb, var(--xt-highlight-own, var(--xt-border-highlight)) calc(var(--xt-highlight-own-opacity, 1) * 100%), transparent) !important;
+  background-color: var(--xt-post-background, var(--xt-background, transparent)) !important;
+}
+.styling-preview[data-highlight-you="true"][data-edge-you="true"] .styling-preview-post.quotesYou > .reply {
+  border-left: var(--xt-edge-width-you, var(--xt-highlight-edge-width, 3px)) var(--xt-edge-style-you, solid) color-mix(in srgb, var(--xt-highlight-you, var(--xt-border-highlight)) calc(var(--xt-highlight-you-opacity, 1) * 100%), transparent) !important;
+  background-color: var(--xt-post-background, var(--xt-background, transparent)) !important;
+}
+.styling-preview[data-highlight-ghost="true"][data-edge-ghost="true"] .styling-preview-post.from-archive > .reply {
+  border-left: var(--xt-edge-width-ghost, var(--xt-highlight-edge-width, 3px)) var(--xt-edge-style-ghost, dotted) color-mix(in srgb, var(--xt-highlight-ghost, #888) calc(var(--xt-highlight-ghost-opacity, 1) * 100%), transparent) !important;
+  background-color: var(--xt-post-background, var(--xt-background, transparent)) !important;
 }
 .styling-preview[data-highlight-own="false"] .styling-preview-post.yourPost > .reply,
 .styling-preview[data-highlight-you="false"] .styling-preview-post.quotesYou > .reply,
 .styling-preview[data-highlight-ghost="false"] .styling-preview-post.from-archive > .reply {
   opacity: .6;
+}
+.styling-preview .styling-preview-post.filter-highlight > .reply {
+  box-shadow: inset 5px 0 var(--xt-filter-highlight, rgba(221, 0, 0, .5));
+}
+.styling-preview .styling-preview-post.filter-highlight > .sideArrows {
+  color: var(--xt-highlight-side-arrow, rgba(221, 0, 0, .8));
 }
 .styling-preview .styling-preview-post.yourPost .postInfo,
 .styling-preview .styling-preview-post.yourPost .postMessage {
@@ -5467,7 +5933,7 @@ div[data-checked="false"] > .suboption-list {
   color: var(--xt-highlight-own-link, var(--xt-link-text-color)) !important;
 }
 .styling-preview .styling-preview-post.yourPost .quote {
-  color: var(--xt-highlight-own-quote, var(--xt-quote-text-color)) !important;
+  color: var(--xt-highlight-own-quote, var(--xt-quote-text-color, var(--xt-quote-color, #789922))) !important;
 }
 .styling-preview .styling-preview-post.yourPost .backlink.deadlink,
 .styling-preview .styling-preview-post.yourPost .quotelink.deadlink {
@@ -5481,7 +5947,7 @@ div[data-checked="false"] > .suboption-list {
   color: var(--xt-highlight-you-link, var(--xt-link-text-color)) !important;
 }
 .styling-preview .styling-preview-post.quotesYou .quote {
-  color: var(--xt-highlight-you-quote, var(--xt-quote-text-color)) !important;
+  color: var(--xt-highlight-you-quote, var(--xt-quote-text-color, var(--xt-quote-color, #789922))) !important;
 }
 .styling-preview .styling-preview-post.quotesYou .backlink.deadlink,
 .styling-preview .styling-preview-post.quotesYou .quotelink.deadlink {
@@ -5495,7 +5961,7 @@ div[data-checked="false"] > .suboption-list {
   color: var(--xt-highlight-ghost-link, var(--xt-link-text-color)) !important;
 }
 .styling-preview .styling-preview-post.from-archive .quote {
-  color: var(--xt-highlight-ghost-quote, var(--xt-quote-text-color)) !important;
+  color: var(--xt-highlight-ghost-quote, var(--xt-quote-text-color, var(--xt-quote-color, #789922))) !important;
 }
 .styling-preview .styling-preview-post.from-archive .backlink.deadlink,
 .styling-preview .styling-preview-post.from-archive .quotelink.deadlink {
@@ -5503,13 +5969,14 @@ div[data-checked="false"] > .suboption-list {
 }
 .styling-preview[data-highlight-catalog-own="true"]:not([data-edge-catalog-own="true"]) .catalog-thread:has(.yourPost),
 .styling-preview[data-highlight-catalog-own="true"]:not([data-edge-catalog-own="true"]) .catalog-thread.yourPost {
-  background: color-mix(in srgb, var(--xt-catalog-own-highlight, var(--xt-highlight-own)) calc(var(--xt-catalog-own-highlight-opacity, 1) * 100%), var(--xt-background, #d6daf0)) !important;
+  background: color-mix(in srgb, var(--xt-catalog-own-highlight, var(--xt-highlight-own)) calc(var(--xt-catalog-own-highlight-opacity, 1) * 100%), var(--xt-post-background, var(--xt-background, #d6daf0))) !important;
   overflow: hidden;
 }
 .styling-preview[data-highlight-catalog-own="true"][data-edge-catalog-own="true"] .catalog-thread:has(.yourPost),
 .styling-preview[data-highlight-catalog-own="true"][data-edge-catalog-own="true"] .catalog-thread.yourPost {
-  border-color: var(--xt-catalog-own-highlight, var(--xt-highlight-own, var(--xt-border-highlight))) !important;
-  border-width: var(--xt-catalog-border-width, 3px) !important;
+  border-color: color-mix(in srgb, var(--xt-catalog-own-highlight, var(--xt-highlight-own, var(--xt-border-highlight))) calc(var(--xt-catalog-own-highlight-opacity, 1) * 100%), transparent) !important;
+  border-style: var(--xt-catalog-border-style-own, solid) !important;
+  border-width: var(--xt-catalog-border-width-own, var(--xt-catalog-border-width, 3px)) !important;
 }
 .styling-preview[data-highlight-catalog-own="true"]:not([data-edge-catalog-own="true"]) .catalog-thread:has(.yourPost) > .catalog-container,
 .styling-preview[data-highlight-catalog-own="true"]:not([data-edge-catalog-own="true"]) .catalog-thread.yourPost > .catalog-container,
@@ -5520,70 +5987,75 @@ div[data-checked="false"] > .suboption-list {
   background: transparent !important;
   border-color: transparent !important;
 }
-.styling-preview[data-highlight-catalog-own="true"] .catalog-thread:has(.yourPost) .post.catalog-post.yourPost,
-.styling-preview[data-highlight-catalog-own="true"] .catalog-thread.yourPost .post.catalog-post,
-.styling-preview[data-highlight-catalog-own="true"] .catalog-thread > .catalog-container.yourPost .post.catalog-post {
+.styling-preview[data-highlight-catalog-own="true"][data-text-catalog-own="true"] .catalog-thread:has(.yourPost) .post.catalog-post.yourPost,
+.styling-preview[data-highlight-catalog-own="true"][data-text-catalog-own="true"] .catalog-thread.yourPost .post.catalog-post,
+.styling-preview[data-highlight-catalog-own="true"][data-text-catalog-own="true"] .catalog-thread > .catalog-container.yourPost .post.catalog-post {
   color: var(--xt-catalog-own-text, var(--xt-text-color)) !important;
 }
-.styling-preview[data-highlight-catalog-own="true"] .catalog-thread.yourPost .post.catalog-post .postInfo,
-.styling-preview[data-highlight-catalog-own="true"] .catalog-thread.yourPost .post.catalog-post .postMessage,
-.styling-preview[data-highlight-catalog-own="true"] .catalog-thread.yourPost .post.catalog-post .summary,
-.styling-preview[data-highlight-catalog-own="true"] .catalog-thread.yourPost .post.catalog-post .catalog-stats,
-.styling-preview[data-highlight-catalog-own="true"] .catalog-thread > .catalog-container.yourPost .post.catalog-post .postInfo,
-.styling-preview[data-highlight-catalog-own="true"] .catalog-thread > .catalog-container.yourPost .post.catalog-post .postMessage,
-.styling-preview[data-highlight-catalog-own="true"] .catalog-thread > .catalog-container.yourPost .post.catalog-post .summary,
-.styling-preview[data-highlight-catalog-own="true"] .catalog-thread > .catalog-container.yourPost .post.catalog-post .catalog-stats {
+.styling-preview[data-highlight-catalog-own="true"][data-text-catalog-own="true"] .catalog-thread.yourPost .post.catalog-post .postInfo,
+.styling-preview[data-highlight-catalog-own="true"][data-text-catalog-own="true"] .catalog-thread.yourPost .post.catalog-post .postMessage,
+.styling-preview[data-highlight-catalog-own="true"][data-text-catalog-own="true"] .catalog-thread.yourPost .post.catalog-post .summary,
+.styling-preview[data-highlight-catalog-own="true"][data-text-catalog-own="true"] .catalog-thread.yourPost .post.catalog-post .catalog-stats,
+.styling-preview[data-highlight-catalog-own="true"][data-text-catalog-own="true"] .catalog-thread > .catalog-container.yourPost .post.catalog-post .postInfo,
+.styling-preview[data-highlight-catalog-own="true"][data-text-catalog-own="true"] .catalog-thread > .catalog-container.yourPost .post.catalog-post .postMessage,
+.styling-preview[data-highlight-catalog-own="true"][data-text-catalog-own="true"] .catalog-thread > .catalog-container.yourPost .post.catalog-post .summary,
+.styling-preview[data-highlight-catalog-own="true"][data-text-catalog-own="true"] .catalog-thread > .catalog-container.yourPost .post.catalog-post .catalog-stats {
   color: var(--xt-catalog-own-text, var(--xt-text-color)) !important;
 }
-.styling-preview[data-highlight-catalog-own="true"] .catalog-thread.yourPost .post.catalog-post .subject,
-.styling-preview[data-highlight-catalog-own="true"] .catalog-thread > .catalog-container.yourPost .post.catalog-post .subject {
+.styling-preview[data-highlight-catalog-own="true"][data-text-catalog-own="true"] .catalog-thread.yourPost .post.catalog-post .subject,
+.styling-preview[data-highlight-catalog-own="true"][data-text-catalog-own="true"] .catalog-thread > .catalog-container.yourPost .post.catalog-post .subject {
   color: var(--xt-catalog-own-subject, var(--xt-catalog-own-text, var(--xt-text-color))) !important;
 }
-.styling-preview[data-highlight-catalog-own="true"] .catalog-thread.yourPost .post.catalog-post a,
-.styling-preview[data-highlight-catalog-own="true"] .catalog-thread > .catalog-container.yourPost .post.catalog-post a {
+.styling-preview[data-highlight-catalog-own="true"][data-text-catalog-own="true"] .catalog-thread.yourPost .post.catalog-post a,
+.styling-preview[data-highlight-catalog-own="true"][data-text-catalog-own="true"] .catalog-thread > .catalog-container.yourPost .post.catalog-post a {
   color: var(--xt-catalog-own-link, var(--xt-link-text-color)) !important;
 }
-.styling-preview[data-highlight-catalog-own="true"] .catalog-thread.yourPost .post.catalog-post .quote,
-.styling-preview[data-highlight-catalog-own="true"] .catalog-thread > .catalog-container.yourPost .post.catalog-post .quote {
+.styling-preview[data-highlight-catalog-own="true"][data-text-catalog-own="true"] .catalog-thread.yourPost .post.catalog-post .quote,
+.styling-preview[data-highlight-catalog-own="true"][data-text-catalog-own="true"] .catalog-thread > .catalog-container.yourPost .post.catalog-post .quote {
   color: var(--xt-catalog-own-quote, var(--xt-quote-text-color)) !important;
 }
-.styling-preview[data-highlight-catalog-own="true"] .catalog-thread.yourPost .post.catalog-post .deadlink,
-.styling-preview[data-highlight-catalog-own="true"] .catalog-thread > .catalog-container.yourPost .post.catalog-post .deadlink {
+.styling-preview[data-highlight-catalog-own="true"][data-text-catalog-own="true"] .catalog-thread.yourPost .post.catalog-post .deadlink,
+.styling-preview[data-highlight-catalog-own="true"][data-text-catalog-own="true"] .catalog-thread > .catalog-container.yourPost .post.catalog-post .deadlink {
   color: var(--xt-catalog-own-dead-link, var(--xt-dead-link-text-color, var(--xt-dead-link))) !important;
 }
 .styling-preview[data-highlight-catalog-watched="true"]:not([data-edge-catalog-watched="true"]) .catalog-thread.watched {
-  background: color-mix(in srgb, var(--xt-catalog-watched-highlight, var(--xt-watched-border, rgba(255, 0, 0, .75))) calc(var(--xt-catalog-watched-highlight-opacity, 0.2) * 100%), var(--xt-background, #d6daf0)) !important;
+  background: color-mix(in srgb, var(--xt-catalog-watched-highlight, var(--xt-watched-border, rgba(255, 0, 0, .75))) calc(var(--xt-catalog-watched-highlight-opacity, 0.2) * 100%), var(--xt-post-background, var(--xt-background, #d6daf0))) !important;
   overflow: hidden;
 }
 .styling-preview[data-highlight-catalog-watched="true"][data-edge-catalog-watched="true"] .catalog-thread.watched {
-  border-color: var(--xt-catalog-watched-highlight, var(--xt-watched-border, rgba(255, 0, 0, .75))) !important;
-  border-width: var(--xt-catalog-border-width, 3px) !important;
+  border-color: color-mix(in srgb, var(--xt-catalog-watched-highlight, var(--xt-watched-border, rgba(255, 0, 0, .75))) calc(var(--xt-catalog-watched-highlight-opacity, 0.2) * 100%), transparent) !important;
+  border-style: var(--xt-catalog-border-style-watched, solid) !important;
+  border-width: var(--xt-catalog-border-width-watched, var(--xt-catalog-border-width, 3px)) !important;
 }
 .styling-preview[data-highlight-catalog-watched="true"]:not([data-edge-catalog-watched="true"]) .catalog-thread.watched > .catalog-container,
 .styling-preview[data-highlight-catalog-watched="true"]:not([data-edge-catalog-watched="true"]) .catalog-thread.watched .post.catalog-post {
   background: transparent !important;
   border-color: transparent !important;
 }
-.styling-preview[data-highlight-catalog-watched="true"] .catalog-thread.watched .post.catalog-post {
+.styling-preview[data-highlight-catalog-watched="true"][data-text-catalog-watched="true"] .catalog-thread.watched .post.catalog-post {
   color: var(--xt-catalog-watched-text, var(--xt-text-color)) !important;
 }
-.styling-preview[data-highlight-catalog-watched="true"] .catalog-thread.watched .post.catalog-post .postInfo,
-.styling-preview[data-highlight-catalog-watched="true"] .catalog-thread.watched .post.catalog-post .postMessage,
-.styling-preview[data-highlight-catalog-watched="true"] .catalog-thread.watched .post.catalog-post .summary,
-.styling-preview[data-highlight-catalog-watched="true"] .catalog-thread.watched .post.catalog-post .catalog-stats {
+.styling-preview[data-highlight-catalog-watched="true"][data-text-catalog-watched="true"] .catalog-thread.watched .post.catalog-post .postInfo,
+.styling-preview[data-highlight-catalog-watched="true"][data-text-catalog-watched="true"] .catalog-thread.watched .post.catalog-post .postMessage,
+.styling-preview[data-highlight-catalog-watched="true"][data-text-catalog-watched="true"] .catalog-thread.watched .post.catalog-post .summary,
+.styling-preview[data-highlight-catalog-watched="true"][data-text-catalog-watched="true"] .catalog-thread.watched .post.catalog-post .catalog-stats {
   color: var(--xt-catalog-watched-text, var(--xt-text-color)) !important;
 }
-.styling-preview[data-highlight-catalog-watched="true"] .catalog-thread.watched .post.catalog-post .subject {
+.styling-preview[data-highlight-catalog-watched="true"][data-text-catalog-watched="true"] .catalog-thread.watched .post.catalog-post .subject {
   color: var(--xt-catalog-watched-subject, var(--xt-catalog-watched-text, var(--xt-text-color))) !important;
 }
-.styling-preview[data-highlight-catalog-watched="true"] .catalog-thread.watched .post.catalog-post a {
+.styling-preview[data-highlight-catalog-watched="true"][data-text-catalog-watched="true"] .catalog-thread.watched .post.catalog-post a {
   color: var(--xt-catalog-watched-link, var(--xt-link-text-color)) !important;
 }
-.styling-preview[data-highlight-catalog-watched="true"] .catalog-thread.watched .post.catalog-post .quote {
+.styling-preview[data-highlight-catalog-watched="true"][data-text-catalog-watched="true"] .catalog-thread.watched .post.catalog-post .quote {
   color: var(--xt-catalog-watched-quote, var(--xt-quote-text-color)) !important;
 }
-.styling-preview[data-highlight-catalog-watched="true"] .catalog-thread.watched .post.catalog-post .deadlink {
+.styling-preview[data-highlight-catalog-watched="true"][data-text-catalog-watched="true"] .catalog-thread.watched .post.catalog-post .deadlink {
   color: var(--xt-catalog-watched-dead-link, var(--xt-dead-link-text-color, var(--xt-dead-link))) !important;
+}
+.styling-preview .catalog-thread.filter-highlight:not(.filter-glow-tile) .catalog-thumb,
+.styling-preview .catalog-thread.filter-highlight.filter-glow-tile {
+  box-shadow: 0 0 3px 3px var(--xt-highlight-shadow, rgba(255, 0, 0, .5));
 }
 .section-styling .styling-variant-bar {
   align-items: center;
@@ -5594,7 +6066,6 @@ div[data-checked="false"] > .suboption-list {
   margin: 0 0 10px;
   padding: 6px 8px 8px;
   position: relative;
-  border-left: 4px solid var(--xt-variant-accent, rgba(128, 128, 128, .4));
 }
 /* SFW is treated as the default/regular style — no accent. Only NSFW
    gets the colored treatment so the user gets a visual warning when
@@ -5757,14 +6228,11 @@ body > #overlay:not(.media-preview) {
 }
 
 /* Mark each <details> section that contains variant-aware controls without
-   turning the whole Styling page into a stack of warning boxes. The left
-   accent and compact summary badge make the affected sections scannable
-   after switching SFW/NSFW tabs. */
-#fourchanx-settings .section-styling details[data-variant-aware="true"] {
-  border-left: 3px solid var(--xt-variant-accent, rgba(128, 128, 128, .35));
-  transition: border-left-color .15s ease;
-}
-#fourchanx-settings .section-styling details[data-variant-aware="true"] > summary::after {
+   turning the whole Styling page into a stack of warning boxes. The compact
+   summary badge keeps the affected sections scannable after switching
+   SFW/NSFW tabs. Keep it off summary::after; that pseudo-element is reserved
+   for the shared details disclosure arrow. */
+#fourchanx-settings .section-styling details[data-variant-aware="true"] > summary .styling-section-summary-text::after {
   background: color-mix(in srgb, var(--xt-variant-accent, currentColor) 16%, transparent);
   border: 1px solid color-mix(in srgb, var(--xt-variant-accent, currentColor) 45%, transparent);
   border-radius: 3px;
@@ -5959,6 +6427,40 @@ body > #overlay:not(.media-preview) {
   border: 1px solid rgba(128, 128, 128, .35);
   background: transparent;
 }
+/* Match the theme picker's subtle, theme-adaptive frame for the styling section's
+   bright text/number inputs (hex fields, palette name, width boxes) instead of the
+   stark white .field box, so they're easier on the eyes. Placed before the
+   .styling-color-hex-invalid rules so the red invalid border still wins. */
+.section-styling .styling-color-hex,
+.section-styling .styling-saved-palette-name,
+.section-styling .styling-hl-widthnum {
+  background: transparent;
+  border: 1px solid rgba(128, 128, 128, .45);
+  border-radius: 3px;
+  color: inherit;
+}
+/* Bring the styling section's native dropdowns in line with the same subtle,
+   theme-adaptive frame (they previously rendered with the browser's stark
+   default control, clashing with the theme picker and hex/name fields). */
+.section-styling .styling-variant-mode select,
+.section-styling .styling-theme-row select,
+.section-styling .styling-hl-octl select,
+.section-styling .custom-css-controls select {
+  background: transparent;
+  border: 1px solid rgba(128, 128, 128, .45);
+  border-radius: 3px;
+  color: inherit;
+  padding: 2px 6px;
+}
+/* Keep the popped-open option list readable: an inherited light text colour
+   would otherwise sit on the browser's default light popup on dark themes. */
+.section-styling .styling-variant-mode select option,
+.section-styling .styling-theme-row select option,
+.section-styling .styling-hl-octl select option,
+.section-styling .custom-css-controls select option {
+  background: var(--xt-dialog-bg, var(--background, Canvas));
+  color: inherit;
+}
 .section-styling .styling-inline-controls .styling-color-hex {
   font-family: ui-monospace, SFMono-Regular, Menlo, Monaco, Consolas, "Liberation Mono", "Courier New", monospace;
   font-size: 11px;
@@ -5989,6 +6491,255 @@ body > #overlay:not(.media-preview) {
 .section-styling .styling-inline-option[data-color-linked="true"] .styling-inline-controls input[type="color"],
 .section-styling .styling-inline-option[data-color-linked="true"] .styling-inline-controls button[data-clear] {
   opacity: .45;
+}
+
+/* ── Highlights: per-state accordion ────────────────────────────── */
+.section-styling .styling-hl-group {
+  margin: 10px 0 8px;
+}
+.section-styling .styling-hl-grouphead {
+  align-items: center;
+  display: flex;
+  flex-wrap: wrap;
+  gap: 6px 16px;
+  margin: 6px 0;
+}
+#fourchanx-settings .section-styling .styling-hl-master {
+  align-items: center;
+  display: inline-flex;
+  font-weight: 600;
+  gap: 5px;
+  line-height: 16px;
+  min-height: 18px;
+  white-space: nowrap;
+}
+#fourchanx-settings .section-styling .styling-hl-master input[type="checkbox"] {
+  align-self: center;
+  display: block;
+  flex: none;
+  margin: 0;
+  position: relative;
+  top: 1px;
+}
+.section-styling .styling-hl-width {
+  align-items: center;
+  display: inline-flex;
+  gap: 6px;
+  margin-left: auto;
+  opacity: .85;
+}
+.section-styling .styling-hl-width input[type="range"] {
+  width: 92px;
+}
+.section-styling .styling-hl-acc-item {
+  background: color-mix(in srgb, currentColor 3%, transparent);
+  border: 1px solid color-mix(in srgb, currentColor 20%, transparent);
+  border-radius: 6px;
+  margin: 3px 0;
+  overflow: hidden;
+}
+.section-styling .styling-hl-acc-head {
+  align-items: center;
+  cursor: pointer;
+  display: flex;
+  gap: 8px;
+  padding: 4px 10px;
+  user-select: none;
+}
+.section-styling .styling-hl-acc-head:hover {
+  background: color-mix(in srgb, currentColor 10%, transparent);
+}
+.section-styling .styling-hl-acc-item.styling-hl-open .styling-hl-acc-head {
+  background: color-mix(in srgb, currentColor 7%, transparent);
+  border-bottom: 1px solid color-mix(in srgb, currentColor 16%, transparent);
+}
+.section-styling .styling-hl-acc-item.styling-hl-open .styling-hl-acc-head:hover {
+  background: color-mix(in srgb, currentColor 12%, transparent);
+}
+.section-styling .styling-hl-acc-name {
+  align-items: center;
+  display: flex;
+  flex: 1 1 auto;
+  font-weight: 600;
+  gap: 6px;
+  min-width: 0;
+}
+.section-styling .styling-hl-type-note {
+  font-size: 10px;
+  font-weight: 400;
+  opacity: .55;
+}
+.section-styling .styling-hl-acc-chev {
+  background: none;
+  border: 0;
+  color: inherit;
+  cursor: pointer;
+  font-size: 12px;
+  opacity: .55;
+  padding: 0 2px;
+  transition: transform .15s;
+}
+.section-styling .styling-hl-acc-item.styling-hl-open .styling-hl-acc-chev {
+  transform: rotate(90deg);
+}
+.section-styling .styling-hl-acc-body {
+  display: none;
+  padding: 1px 12px 4px;
+}
+.section-styling .styling-hl-acc-item.styling-hl-open .styling-hl-acc-body {
+  display: block;
+}
+/* ID prefix beats \`#fourchanx-settings label { display: inline }\`, so the
+   subsection label lays out as a full-width flex row and keeps its full-width
+   underline. */
+#fourchanx-settings .section-styling .styling-hl-sub {
+  align-items: center;
+  border-bottom: 1px solid color-mix(in srgb, currentColor 18%, transparent);
+  box-sizing: border-box;
+  display: flex;
+  font-size: 11px;
+  gap: 6px;
+  letter-spacing: .04em;
+  line-height: 16px;
+  margin: 5px 0 1px;
+  min-height: 21px;
+  padding: 2px 0;
+}
+/* A subsection header doubling as its on/off toggle: the checkbox sits inline
+   with the (dimmed, uppercase) section label and stays at full opacity. */
+.section-styling .styling-hl-subtoggle {
+  cursor: pointer;
+}
+.section-styling .styling-hl-subtoggle input[type="checkbox"] {
+  align-self: center;
+  display: block;
+  flex: none;
+  margin: 0;
+  position: relative;
+  top: 1px;
+}
+.section-styling .styling-hl-sub-text {
+  align-items: center;
+  display: inline-flex;
+  line-height: 16px;
+  min-height: 16px;
+  opacity: .6;
+  text-transform: uppercase;
+}
+.section-styling .styling-hl-orow {
+  align-items: center;
+  border-bottom: 1px solid color-mix(in srgb, currentColor 8%, transparent);
+  display: flex;
+  gap: 10px;
+  justify-content: space-between;
+  padding: 2px 0;
+}
+.section-styling .styling-hl-orow:last-child {
+  border-bottom: 0;
+}
+/* Subtle per-setting hover so the row under the cursor reads as a unit. The
+   negative margin + matching padding lets the tint reach the body's edges
+   instead of sitting inset within its horizontal padding. */
+.section-styling .styling-hl-orow:hover {
+  background: color-mix(in srgb, currentColor 6%, transparent);
+  border-radius: 4px;
+  margin: 0 -8px;
+  padding: 2px 8px;
+}
+.section-styling .styling-hl-olabel {
+  min-width: 0;
+  opacity: .9;
+}
+.section-styling .styling-hl-octl {
+  align-items: center;
+  display: inline-flex;
+  gap: 6px;
+}
+/* Header colour swatch + hex field: line them up on a shared centre line
+   instead of letting them fall to the text baseline. */
+.section-styling .styling-hl-color {
+  align-items: center;
+  display: inline-flex;
+  gap: 6px;
+}
+/* Slot that receives a row's marker swatch while collapsed. display:contents so
+   the moved-in swatch joins the header flex line directly, and an empty slot
+   (swatch currently in the body) adds no stray gap. */
+.section-styling .styling-hl-mkheadslot {
+  display: contents;
+}
+.section-styling .styling-hl-color input[type="color"],
+.section-styling .styling-hl-octl input[type="color"] {
+  background: transparent;
+  border: 1px solid rgba(128, 128, 128, .35);
+  height: 22px;
+  padding: 0;
+  width: 44px;
+}
+.section-styling .styling-hl-octl input[type="range"] {
+  width: 150px;
+}
+.section-styling .styling-hl-widthnum {
+  text-align: right;
+  width: 56px;
+}
+.section-styling .styling-hl-unit {
+  font-size: 11px;
+  opacity: .7;
+}
+.section-styling .styling-hl-valout {
+  font-size: 11px;
+  font-variant-numeric: tabular-nums;
+  min-width: 30px;
+  opacity: .75;
+  text-align: right;
+}
+.section-styling .styling-hl-octl select {
+  max-width: 110px;
+}
+.section-styling .styling-hl-color .styling-color-hex,
+.section-styling .styling-hl-octl .styling-color-hex {
+  font-family: ui-monospace, SFMono-Regular, Menlo, Monaco, Consolas, "Liberation Mono", "Courier New", monospace;
+  font-size: 11px;
+  height: 22px;
+  padding: 1px 4px;
+  text-transform: lowercase;
+  width: 70px;
+}
+.section-styling .styling-color-hex-invalid {
+  border-color: #d33;
+  box-shadow: 0 0 0 1px color-mix(in srgb, #d33 45%, transparent);
+}
+/* Manual highlight text colours sit inline, just left of the mode dropdown,
+   and only appear when the row's text mode is "Manual" (toggled via [hidden]). */
+.section-styling .styling-hl-inlinecolors {
+  align-items: center;
+  display: inline-flex;
+  gap: 3px;
+}
+.section-styling .styling-hl-inlinecolors[hidden] {
+  display: none;
+}
+.section-styling .styling-hl-inlinecolors input[type="color"] {
+  background: transparent;
+  border: 1px solid rgba(128, 128, 128, .35);
+  height: 22px;
+  padding: 0;
+  width: 24px;
+}
+/* Marker color slaved to its highlight colour → dim the now-inert picker. */
+.section-styling .styling-hl-mkcolor[data-color-linked="true"] input[type="color"],
+.section-styling .styling-hl-mkcolor[data-color-linked="true"] .styling-color-hex {
+  opacity: .45;
+}
+/* Disabled controls (gated by a master/per-row switch) read as muted, and
+   their row label dims with them. */
+.section-styling .styling-hl-acc input:disabled,
+.section-styling .styling-hl-acc select:disabled {
+  opacity: .5;
+}
+.section-styling .styling-hl-orow:has(input:disabled, select:disabled) .styling-hl-olabel {
+  opacity: .4;
 }
 .section-styling .custom-css-controls {
   align-items: center;
@@ -7510,14 +8261,19 @@ $site$thread[hidden] + hr {
 }
 
 /* QR */
-:root.hide-original-post-form #togglePostFormLink,
 #qr.autohide:not(.focus):not(:hover):not(:active) > form,
 :root.thread-view #qr:not(.show-new-thread-option) select[data-name="thread"],
 #file-n-submit:not(.has-file) #qr-filerm {
   display: none;
 }
-:root.hide-original-post-form #postForm {
+/* Own the native post form's visibility outright: !important beats 4chan core's
+   inline display toggle so the "Original Form" link (which flips
+   .show-original-post-form) stays authoritative. */
+:root.hide-original-post-form:not(.show-original-post-form) #postForm {
   display: none !important;
+}
+:root.hide-original-post-form.show-original-post-form #postForm {
+  display: table !important;
 }
 #qr select,
 #qr-filename-container > a,
@@ -7663,12 +8419,13 @@ select.flagSelector {
   font-weight: 600;
 }
 .flagSelector-icon {
-  background-image: url('//s.4cdn.org/image/flags/pol/flags.png?2');
-  background-repeat: no-repeat;
-  background-position: -200px -200px;
+  align-self: center;
   display: inline-block;
   flex: none;
   height: 11px;
+  margin: 0;
+  position: static;
+  top: auto;
   width: 16px;
 }
 .flagSelector-icon-empty {
@@ -7677,31 +8434,6 @@ select.flagSelector {
 .flagSelector-label {
   line-height: 1.25;
 }
-.flagSelector-icon.bfl-ac { background-position: 0 0 }
-.flagSelector-icon.bfl-an { background-position: -16px 0 }
-.flagSelector-icon.bfl-bl { background-position: -32px 0 }
-.flagSelector-icon.bfl-cf { background-position: -48px 0 }
-.flagSelector-icon.bfl-cm { background-position: -64px 0 }
-.flagSelector-icon.bfl-ct { background-position: 0 -12px }
-.flagSelector-icon.bfl-dm { background-position: -16px -12px }
-.flagSelector-icon.bfl-eu { background-position: -32px -12px }
-.flagSelector-icon.bfl-fc { background-position: -48px -12px }
-.flagSelector-icon.bfl-gn { background-position: -64px -12px }
-.flagSelector-icon.bfl-gy { background-position: 0 -24px }
-.flagSelector-icon.bfl-jh { background-position: -16px -24px }
-.flagSelector-icon.bfl-kn { background-position: -32px -24px }
-.flagSelector-icon.bfl-mf { background-position: -48px -24px }
-.flagSelector-icon.bfl-mz { background-position: -64px -24px }
-.flagSelector-icon.bfl-nb { background-position: 0 -36px }
-.flagSelector-icon.bfl-nt { background-position: -16px -36px }
-.flagSelector-icon.bfl-nz { background-position: -32px -36px }
-.flagSelector-icon.bfl-pc { background-position: -48px -36px }
-.flagSelector-icon.bfl-pr { background-position: -64px -36px }
-.flagSelector-icon.bfl-re { background-position: 0 -48px }
-.flagSelector-icon.bfl-tm { background-position: -16px -48px }
-.flagSelector-icon.bfl-tr { background-position: -32px -48px }
-.flagSelector-icon.bfl-un { background-position: -48px -48px }
-.flagSelector-icon.bfl-wp { background-position: -64px -48px }
 #qr.forced-anon :is(input[data-name="name"]:not(.force-show), input[data-name="sub"]:not(.force-show)),
 #qr.reply-to-thread input[data-name="sub"]:not(.force-show),
 body:not(.board_f) #qr select[name="filetag"],
@@ -7731,6 +8463,9 @@ body:not(.board_f) #qr select[name="filetag"],
 #qr-com-preview pre.prettyprint {
   white-space: pre-wrap;
   margin: 0;
+}
+#qr-com-preview .quote {
+  color: var(--xt-qr-com-preview-quote-color, var(--xt-quote-color, #789922));
 }
 #qr.has-com-preview.com-preview-below .textarea {
   flex-direction: column;
@@ -7818,12 +8553,13 @@ input.field.tripped:not(:hover):not(:focus) {
   cursor: pointer;
   display: inline-flex;
   font: inherit;
-  height: 1.2em;
+  height: 18px;
   justify-content: center;
   line-height: inherit;
-  margin: 0 4px;
+  margin: 0 1px;
   opacity: .45;
-  padding: 0 2px;
+  padding: 0;
+  width: 18px;
 }
 #qr-preview-toggle > .icon {
   display: block;
@@ -7835,13 +8571,27 @@ input.field.tripped:not(:hover):not(:focus) {
 #qr-preview-toggle:focus {
   opacity: 1;
 }
+/* The clear-draft trash is a raw emoji <a>, so it rides high on the text
+   baseline; flex-center it like the preview toggle / close so it sits on the
+   same vertical line. Scoped to :not([hidden]) so it stays hidden when the JS
+   toggles its \`hidden\` property and no draft exists. */
+#qr > .move .qr-clear-draft:not([hidden]) {
+  align-items: center;
+  display: inline-flex;
+  height: 18px;
+  justify-content: center;
+  line-height: 1;
+  margin: 0 1px;
+  text-decoration: none;
+  width: 18px;
+}
 #qr > .move select[data-name="thread"] {
   margin-left: auto;
   min-height: 20px;
-  padding: 1px 18px 1px 4px;
+  padding: 1px 14px 1px 3px;
 }
 #qr > .move .close {
-  margin-left: 6px;
+  margin-left: 3px;
   display: inline-flex;
   align-items: center;
   justify-content: center;
@@ -7952,9 +8702,23 @@ input.field.tripped:not(:hover):not(:focus) {
   color: inherit !important;
   -webkit-text-fill-color: currentColor !important;
 }
+/* The native TCaptcha root is a bare <div> (its className is wiped to "") inside
+   .captcha-root, carrying an INLINE light background (rgb(238,238,238)). Target
+   it structurally so the missing class doesn't matter, and use !important so it
+   beats the inline style. Only background-COLOR is cleared, so #t-task's captcha
+   background-image is preserved and the themed QR background shows through. */
+#qr.captcha-t .captcha-root > div,
+#qr.captcha-t .captcha-root > div * {
+  background-color: transparent !important;
+}
+/* Buttons follow the theme: built from the adaptive text color (currentColor)
+   so they read correctly on both light and dark themes with no per-theme rule. */
 #qr.captcha-t :is(#t-load, #t-next) {
-  background-color: #d8dde3;
-  border: 1px solid #9ea7b3;
+  background-color: color-mix(in srgb, currentColor 14%, transparent) !important;
+  border: 1px solid color-mix(in srgb, currentColor 38%, transparent);
+}
+#qr.captcha-t :is(#t-load, #t-next):hover:not(:disabled) {
+  background-color: color-mix(in srgb, currentColor 22%, transparent) !important;
 }
 #qr.captcha-t :is(#t-load, #t-next):disabled {
   opacity: .6;
@@ -8746,7 +9510,10 @@ div.post {
   top: 0;
   height: 100vh;
   pointer-events: none;
-  z-index: 2147483646;
+  /* Sit above page content but below floating widgets (QR z-index 20,
+     thread-watcher 5/10, float updater/stats 40, etc.) so the marker
+     strip never covers them where they overlap the right edge. */
+  z-index: 4;
   background: transparent;
   box-sizing: border-box;
 }
@@ -8835,7 +9602,7 @@ div.post {
   top: var(--xt-scroll-marker-top, 0px);
   height: calc(100vh - var(--xt-scroll-marker-top, 0px) - var(--xt-scroll-marker-bottom, 0px));
   pointer-events: none;
-  z-index: 2147483647;
+  z-index: 4;
 }
 :root.scrollbar-markers-over #scroll-markers {
   width: var(--xt-scroll-marker-track, 14px);
@@ -8987,6 +9754,7 @@ div.post {
   --xt-header-dialog-bg: rgba(40,42,46,0.9);
   --xt-header-dialog-fg: #C5C8C6;
   --xt-header-link: #81A2BE;
+  --xt-quote-color: #B5BD68;
   --xt-dead-link: #81A2BE;
   --xt-inline: rgba(0, 0, 0, .14);
   --xt-qr-preview-bg: rgba(255, 255, 255, .15);
@@ -9168,9 +9936,16 @@ div.post {
   --xt-border: #B7C5D9;
   --xt-border-field-focus: #98E;
   --xt-border-highlight: rgba(221, 0, 0, .8);
+  /* Highlight accents — tuned to this theme's red (matches --xt-border-highlight)
+     so the catalog glow/watched edge don't fall back to brighter pure #F00. */
+  --xt-filter-highlight: rgba(221, 0, 0, .5);
+  --xt-highlight-shadow: rgba(221, 0, 0, .5);
+  --xt-highlight-side-arrow: rgba(221, 0, 0, .8);
+  --xt-watched-border: rgb(221, 0, 0);
   --xt-header-dialog-bg: rgba(214,218,240,0.98);
   --xt-header-dialog-fg: #89A;
   --xt-header-link: #34345C;
+  --xt-quote-color: #789922;
   --xt-dead-link: #34345C;
   --xt-qr-link-border: rgb(199, 203, 225) rgb(199, 203, 225) rgb(184, 188, 210);
   --xt-qr-bg: linear-gradient(#E5E9FF, #D6DAF0) repeat scroll 0% 0% transparent;
@@ -9184,9 +9959,16 @@ div.post {
   --xt-border: #D9BFB7;
   --xt-border-field-focus: #EA8;
   --xt-border-highlight: rgba(221, 0, 0, .8);
+  /* Highlight accents — tuned to this theme's red (matches --xt-border-highlight)
+     so the catalog glow/watched edge don't fall back to brighter pure #F00. */
+  --xt-filter-highlight: rgba(221, 0, 0, .5);
+  --xt-highlight-shadow: rgba(221, 0, 0, .5);
+  --xt-highlight-side-arrow: rgba(221, 0, 0, .8);
+  --xt-watched-border: rgb(221, 0, 0);
   --xt-header-dialog-bg: rgba(240,224,214,0.98);
   --xt-header-dialog-fg: #B86;
   --xt-header-link: #800000;
+  --xt-quote-color: #789922;
   --xt-dead-link: #00E;
   --xt-qr-link-border: rgb(225, 209, 199) rgb(225, 209, 199) rgb(210, 194, 184);
   --xt-qr-bg: linear-gradient(#FFEFE5, #F0E0D6) repeat scroll 0% 0% transparent;
@@ -9533,26 +10315,26 @@ svg.icon {
       // The Custom CSS section's master switch (only ever off when StyleChan is
       // installed) gates injection without touching the user's `Custom CSS` /
       // `usercss` settings, so re-enabling the section restores their CSS.
-      if (!Settings.stylingSectionEnabled('customCSS')) { return; }
-      if (!Conf['Custom CSS']) { return; }
+      if (!Settings.stylingSectionEnabled('customCSS')) {
+        return;
+      }
+      if (!Conf['Custom CSS']) {
+        return;
+      }
       return this.addStyle();
     },
-
     currentCSS() {
       return Settings.styleConf('usercss') || '';
     },
-
     addStyle() {
       return this.style = $.addStyle(CSS.sub(this.currentCSS()), 'custom-css', '#fourchanx-css');
     },
-
     rmStyle() {
       if (this.style) {
         $.rm(this.style);
         return delete this.style;
       }
     },
-
     update() {
       if (!Settings.stylingSectionEnabled('customCSS') || !Conf['Custom CSS']) {
         return this.rmStyle();
@@ -9719,9 +10501,10 @@ svg.icon {
   var QuickReplyPage = `<div class="move">
   <label>
     <input type="checkbox" id="autohide" title="Auto-hide">
-    Quick Reply
+    QR
   </label>
   <button type="button" id="qr-preview-toggle" title="Toggle comment preview"></button>
+  <a href="javascript:;" class="qr-clear-draft" title="Discard saved draft for this board" hidden>🗑︎</a>
   <select data-name="thread" title="Create a new thread / Reply">
     <option value="new">New thread</option>
   </select>
@@ -9738,8 +10521,8 @@ svg.icon {
   <div class="textarea">
     <textarea data-name="com" placeholder="Comment" class="field"></textarea>
     <span id="char-count"></span>
-    <div id="tex-preview"></div>
-    <div id="qr-com-preview"></div>
+    <div id="tex-preview" class="postMessage"></div>
+    <div id="qr-com-preview" class="postMessage"></div>
   </div>
   <div id="dump-list-container">
     <div id="dump-list"></div>
@@ -9873,7 +10656,6 @@ svg.icon {
     init() {
       return $.asap((() => d.head && (Favicon.el = $('link[rel="shortcut icon"]', d.head))), Favicon.initAsap);
     },
-
     set(status) {
       Favicon.status = status;
       if (Favicon.el) {
@@ -9882,18 +10664,16 @@ svg.icon {
         return $.add(d.head, Favicon.el);
       }
     },
-
     initAsap() {
       Favicon.el.type = 'image/x-icon';
-      const {href}          = Favicon.el;
-      Favicon.isSFW   = /ws\.ico$/.test(href);
+      const { href } = Favicon.el;
+      Favicon.isSFW = /ws\.ico$/.test(href);
       Favicon.default = href;
       Favicon.switch();
       if (Favicon.status) {
         return Favicon.set(Favicon.status);
       }
     },
-
     switch() {
       let items = {
         ferongr: [
@@ -9946,43 +10726,39 @@ svg.icon {
         ]
       };
       items = $.getOwn(items, Conf['favicon']);
-
       const f = Favicon;
       const t = 'data:image/png;base64,';
       let i = 0;
       while (items[i]) {
         items[i] = t + items[i++];
       }
-
       [f.unreadDead, f.unreadDeadY, f.unreadSFW, f.unreadSFWY, f.unreadNSFW, f.unreadNSFWY] = items;
       return f.update();
     },
-
     update() {
       if (this.isSFW) {
-        this.unread  = this.unreadSFW;
+        this.unread = this.unreadSFW;
         return this.unreadY = this.unreadSFWY;
       } else {
-        this.unread  = this.unreadNSFW;
+        this.unread = this.unreadNSFW;
         return this.unreadY = this.unreadNSFWY;
       }
     },
-
-    SFW:   '//s.4cdn.org/image/favicon-ws.ico',
-    NSFW:  '//s.4cdn.org/image/favicon.ico',
+    SFW: '//s.4cdn.org/image/favicon-ws.ico',
+    NSFW: '//s.4cdn.org/image/favicon.ico',
     dead: `data:image/gif;base64,${dead}`,
     logo: `data:image/png;base64,${empty}`,
   };
 
   const CaptchaReplace = {
     init() {
-      if ((g.SITE.software !== 'yotsuba') || (d.cookie.indexOf('pass_enabled=1') >= 0)) { return; }
-
+      if ((g.SITE.software !== 'yotsuba') || (d.cookie.indexOf('pass_enabled=1') >= 0)) {
+        return;
+      }
       if (Conf['Force Noscript Captcha'] && Main.jsEnabled) {
         $.ready(this.noscript);
         return;
       }
-
       if (Conf['captchaLanguage'].trim()) {
         if (['boards.4chan.org', 'boards.4channel.org'].includes(location.hostname)) {
           $.onExists(doc, '#captchaFormPart', node => $.onExists(node, 'iframe[src^="https://www.google.com/recaptcha/"]', this.iframe));
@@ -9991,15 +10767,15 @@ svg.icon {
         }
       }
     },
-
     noscript() {
       let noscript, original, toggle;
-      if (!((original = $('#g-recaptcha')) && (noscript = $('noscript', original.parentNode)))) { return; }
-      const span = $.el('span',
-        {id: 'captcha-forced-noscript'});
+      if (!((original = $('#g-recaptcha')) && (noscript = $('noscript', original.parentNode)))) {
+        return;
+      }
+      const span = $.el('span', { id: 'captcha-forced-noscript' });
       $.replace(noscript, span);
       $.rm(original);
-      const insert = function() {
+      const insert = function () {
         span.innerHTML = noscript.textContent;
         this.iframe($('iframe[src^="https://www.google.com/recaptcha/"]', span));
       };
@@ -10009,44 +10785,45 @@ svg.icon {
         insert();
       }
     },
-
     iframe(iframe) {
       let lang;
       if (lang = Conf['captchaLanguage'].trim()) {
         const src = /[?&]hl=/.test(iframe.src) ?
           iframe.src.replace(/([?&]hl=)[^&]*/, '$1' + encodeURIComponent(lang))
-        :
-          iframe.src + `&hl=${encodeURIComponent(lang)}`;
-        if (iframe.src !== src) { iframe.src = src; }
+          :
+            iframe.src + `&hl=${encodeURIComponent(lang)}`;
+        if (iframe.src !== src) {
+          iframe.src = src;
+        }
       }
     }
   };
 
   const getTCaptcha = () => window.TCaptcha || window.wrappedJSObject?.TCaptcha || (typeof unsafeWindow !== 'undefined' ? unsafeWindow.TCaptcha : undefined);
-
   const CaptchaT = {
     init() {
-      if (d.cookie.indexOf('pass_enabled=1') >= 0) { return; }
-      if (!(this.isEnabled = !!$('#t-root') || !$.id('postForm'))) { return; }
-
-      const root = $.el('div', {className: 'captcha-root'});
-      this.nodes = {root};
-
+      if (d.cookie.indexOf('pass_enabled=1') >= 0) {
+        return;
+      }
+      if (!(this.isEnabled = !!$('#t-root') || !$.id('postForm'))) {
+        return;
+      }
+      const root = $.el('div', { className: 'captcha-root' });
+      this.nodes = { root };
       $.addClass(QR.nodes.el, 'has-captcha', 'captcha-t');
       $.after(QR.nodes.com.parentNode, root);
     },
-
-    moreNeeded() {},
-
+    moreNeeded() { },
     getThread() {
       return {
         boardID: g.BOARD.ID,
         threadID: QR.posts[0].thread === 'new' ? '0' : ('' + QR.posts[0].thread),
       };
     },
-
     setup(focus) {
-      if (!this.isEnabled) { return; }
+      if (!this.isEnabled) {
+        return;
+      }
       const TCaptcha = getTCaptcha();
       if (!TCaptcha?.init) {
         QR.error('Captcha unavailable. Reload the page and try again.');
@@ -10054,14 +10831,13 @@ svg.icon {
       }
       this.patchFormatter(TCaptcha);
       this.setStacked(!!Conf['Stacked TCaptcha'], TCaptcha);
-
       if (!this.nodes.container) {
-        this.nodes.container = $.el('div', {className: 'captcha-container'});
+        this.nodes.container = $.el('div', { className: 'captcha-container' });
         $.prepend(this.nodes.root, this.nodes.container);
         this.currentThread = this.getThread();
         TCaptcha.init(this.nodes.container, this.currentThread.boardID, +this.currentThread.threadID);
         this.setStacked(!!Conf['Stacked TCaptcha'], TCaptcha);
-        TCaptcha.setErrorCb?.(() => {});
+        TCaptcha.setErrorCb?.(() => { });
         if (Conf['Auto-load captcha']) {
           TCaptcha.load(this.currentThread.boardID, this.currentThread.threadID);
           this.setState('loading');
@@ -10070,62 +10846,72 @@ svg.icon {
         $('#t-load', this.nodes.container)?.click();
         this.setState('loading');
       }
-
       this.ensureLoadButtonHook();
       this.ensureStatusNode();
       this.ensureProgressNode();
+      this.ensureCrumbsNode();
       if (!this.cachedButtons?.length) {
         this.setState('idle');
         this.updateProgress();
       }
       this.startThemeObservers();
       this.applyAdaptiveTextColors();
-
-      if (focus) { $('#t-resp')?.focus(); }
+      if (focus) {
+        $('#t-resp')?.focus();
+      }
     },
-
     destroy() {
-      if (!this.isEnabled || !this.nodes.container) { return; }
+      if (!this.isEnabled || !this.nodes.container) {
+        return;
+      }
       getTCaptcha()?.destroy?.();
       $.rm(this.nodes.container);
       delete this.nodes.container;
       this.cachedButtons = [];
       this.currentHighlightIndex = -1;
+      this.answerHistory = [];
+      this.editingIndex = null;
       this.stopThemeObservers();
       this.setState('idle');
     },
-
     updateThread() {
-      if (!this.isEnabled) { return; }
-      const {boardID, threadID} = (this.currentThread || {});
+      if (!this.isEnabled) {
+        return;
+      }
+      const { boardID, threadID } = (this.currentThread || {});
       const next = this.getThread();
       if ((next.boardID !== boardID) || (next.threadID !== threadID)) {
         this.destroy();
         this.setup();
       }
     },
-
     parseCssColor(value) {
       const match = /rgba?\(([^)]+)\)/i.exec(value || '');
-      if (!match) { return null; }
+      if (!match) {
+        return null;
+      }
       const parts = match[1].split(',').map(part => part.trim());
-      if (parts.length < 3) { return null; }
+      if (parts.length < 3) {
+        return null;
+      }
       const r = Number(parts[0]);
       const g = Number(parts[1]);
       const b = Number(parts[2]);
       const a = parts[3] == null ? 1 : Number(parts[3]);
-      if ([r, g, b, a].some(Number.isNaN)) { return null; }
+      if ([r, g, b, a].some(Number.isNaN)) {
+        return null;
+      }
       return { r, g, b, a };
     },
-
     getBackgroundColor(node) {
       for (let el = node; el; el = el.parentElement) {
         const color = this.parseCssColor(getComputedStyle(el).backgroundColor);
-        if (color && color.a > 0) { return color; }
+        if (color && color.a > 0) {
+          return color;
+        }
       }
       return { r: 255, g: 255, b: 255, a: 1 };
     },
-
     luminance({ r, g, b }) {
       const toLinear = channel => {
         const c = channel / 255;
@@ -10133,56 +10919,54 @@ svg.icon {
       };
       return 0.2126 * toLinear(r) + 0.7152 * toLinear(g) + 0.0722 * toLinear(b);
     },
-
     contrast(a, b) {
       const la = this.luminance(a);
       const lb = this.luminance(b);
       const [max, min] = la > lb ? [la, lb] : [lb, la];
       return (max + 0.05) / (min + 0.05);
     },
-
     pickReadableTextColor(node) {
       const bg = this.getBackgroundColor(node);
       const light = { r: 245, g: 245, b: 245 };
       const dark = { r: 17, g: 17, b: 17 };
       return this.contrast(light, bg) >= this.contrast(dark, bg) ? 'rgb(245, 245, 245)' : 'rgb(17, 17, 17)';
     },
-
     applyAdaptiveTextColors() {
       const container = this.nodes?.container;
-      if (!container) { return; }
-
+      if (!container) {
+        return;
+      }
       for (const el of container.querySelectorAll('#t-load, #t-next')) {
         const color = this.pickReadableTextColor(el);
         el.style.setProperty('color', color, 'important');
         el.style.setProperty('-webkit-text-fill-color', color, 'important');
       }
-
-      for (const el of container.querySelectorAll('#t-msg, #t-desc, #t-task, .fourchanx-captcha-load-hint, .fourchanx-captcha-status-text, .fourchanx-captcha-progress')) {
+      for (const el of container.querySelectorAll('#t-msg, #t-desc, #t-task, .fourchanx-captcha-load-hint, .fourchanx-captcha-status-text, .fourchanx-captcha-progress, .fourchanx-captcha-crumb')) {
         const color = this.pickReadableTextColor(el);
         el.style.setProperty('color', color, 'important');
         el.style.setProperty('-webkit-text-fill-color', color, 'important');
       }
     },
-
     scheduleAdaptiveTextColors() {
-      if (this.adaptiveColorRaf) { return; }
+      if (this.adaptiveColorRaf) {
+        return;
+      }
       this.adaptiveColorRaf = requestAnimationFrame(() => {
         this.adaptiveColorRaf = 0;
         this.applyAdaptiveTextColors();
       });
       // Theme scripts often update classes first, then apply final CSS a tick later.
       // Run a short settle burst so contrast is correct on the first click.
-      this.themeSettleTimers ||= [];
+      this.themeSettleTimers || (this.themeSettleTimers = []);
       for (const delay of [0, 40, 120]) {
         this.themeSettleTimers.push(setTimeout(() => this.applyAdaptiveTextColors(), delay));
       }
     },
-
     startThemeObservers() {
-      if (this.themeObserver) { return; }
+      if (this.themeObserver) {
+        return;
+      }
       const onChange = () => this.scheduleAdaptiveTextColors();
-
       this.themeObserver = new MutationObserver(onChange);
       this.themeObserver.observe(document.documentElement, {
         attributes: true,
@@ -10194,21 +10978,18 @@ svg.icon {
           attributeFilter: ['class', 'style']
         });
       }
-
       this.headObserver = new MutationObserver(onChange);
       this.headObserver.observe(document.head, {
         childList: true,
         subtree: true,
         characterData: true
       });
-
       this.prefersDarkQuery = window.matchMedia?.('(prefers-color-scheme: dark)');
       if (this.prefersDarkQuery?.addEventListener) {
         this.prefersDarkListener = onChange;
         this.prefersDarkQuery.addEventListener('change', this.prefersDarkListener);
       }
     },
-
     stopThemeObservers() {
       this.themeObserver?.disconnect();
       this.themeObserver = null;
@@ -10230,21 +11011,21 @@ svg.icon {
         this.themeSettleTimers = [];
       }
     },
-
     getOne() {
-      if (!this.nodes.container) { return null; }
-
+      if (!this.nodes.container) {
+        return null;
+      }
       const response = $(`[name='t-response']`, this.nodes.container)?.value?.trim();
       const challenge = $(`[name='t-challenge']`, this.nodes.container)?.value?.trim();
-
       if (response) {
-        if (!challenge) { return null; }
+        if (!challenge) {
+          return null;
+        }
         return {
           't-response': response,
           't-challenge': challenge,
         };
       }
-
       let isVerificationNotRequired = false;
       for (const el of this.nodes.container.querySelectorAll('#t-msg, #t-task, #t-desc, .fourchanx-captcha-load-hint, .fourchanx-captcha-status-text')) {
         if (/Verification not required/i.test(el.textContent || '')) {
@@ -10252,16 +11033,15 @@ svg.icon {
           break;
         }
       }
-      if (!isVerificationNotRequired || !challenge) { return null; }
-
+      if (!isVerificationNotRequired || !challenge) {
+        return null;
+      }
       // Keep the challenge token for "verification not required" submissions.
       return {
         't-response': '',
         't-challenge': challenge,
       };
-
     },
-
     setUsed() {
       if (this.isEnabled && this.nodes.container) {
         getTCaptcha()?.clearChallenge?.();
@@ -10269,31 +11049,36 @@ svg.icon {
         this.updateProgress();
       }
     },
-
     forceLoad() {
-      if (!this.isEnabled || !this.nodes.container) { return; }
+      if (!this.isEnabled || !this.nodes.container) {
+        return;
+      }
       const TCaptcha = getTCaptcha();
-      if (!TCaptcha?.load) { return; }
+      if (!TCaptcha?.load) {
+        return;
+      }
       this.currentThread = this.getThread();
       TCaptcha.saveTicket?.(false);
       TCaptcha.clearChallenge?.();
       TCaptcha.load(this.currentThread.boardID, this.currentThread.threadID);
       this.setState('loading');
     },
-
     occupied() {
       return !!this.nodes.container;
     },
-
     setState(state) {
       const root = $('#qr');
-      if (!root) { return; }
+      if (!root) {
+        return;
+      }
       for (const name of ['idle', 'loading', 'ready', 'complete', 'failed', 'expired']) {
         root.classList.remove(`captcha-t-state-${name}`);
       }
       root.classList.add(`captcha-t-state-${state}`);
       const container = this.nodes?.container;
-      if (!container) { return; }
+      if (!container) {
+        return;
+      }
       const borderColors = {
         idle: '#8ca0b5',
         loading: '#6f93b8',
@@ -10317,45 +11102,51 @@ svg.icon {
       }[state] || '', state);
       this.applyAdaptiveTextColors();
     },
-
     ensureLoadButtonHook() {
       const container = this.nodes?.container;
-      if (!container) { return; }
+      if (!container) {
+        return;
+      }
       const loadButton = $('#t-load', container);
-      if (!loadButton || loadButton.dataset.fourchanxHooked) { return; }
+      if (!loadButton || loadButton.dataset.fourchanxHooked) {
+        return;
+      }
       loadButton.addEventListener('click', () => this.setState('loading'));
       loadButton.dataset.fourchanxHooked = '1';
     },
-
     ensureStatusNode() {
       const container = this.nodes?.container;
-      if (!container) { return; }
+      if (!container) {
+        return;
+      }
       const ctrl = $('#t-ctrl', container);
       const loadButton = $('#t-load', container);
-      if (!ctrl || !loadButton || $('.fourchanx-captcha-load-hint', ctrl)) { return; }
+      if (!ctrl || !loadButton || $('.fourchanx-captcha-load-hint', ctrl)) {
+        return;
+      }
       const hint = $.el('span', {
         className: 'fourchanx-captcha-load-hint'
       });
       loadButton.after(hint);
     },
-
     setStatusMessage(text, state = 'idle') {
       const container = this.nodes?.container;
-      if (!container) { return; }
+      if (!container) {
+        return;
+      }
       const statusNode = $('.fourchanx-captcha-load-hint', container);
-      if (!statusNode) { return; }
+      if (!statusNode) {
+        return;
+      }
       for (const name of ['idle', 'loading', 'ready', 'complete', 'failed', 'expired']) {
         statusNode.classList.remove(`state-${name}`);
       }
-
       if (!text) {
         statusNode.replaceChildren();
         return;
       }
-
       statusNode.classList.add(`state-${state}`);
       statusNode.replaceChildren();
-
       const iconByState = {
         complete: '✓',
         failed: '✕',
@@ -10369,7 +11160,6 @@ svg.icon {
           title: this.plainStatusMessage(text)
         }));
       }
-
       const message = $.el('span', {
         className: 'fourchanx-captcha-status-text'
       });
@@ -10377,30 +11167,27 @@ svg.icon {
       statusNode.appendChild(message);
       this.applyAdaptiveTextColors();
     },
-
     decodeStatusMessage(text) {
       const decoder = document.createElement('textarea');
       decoder.innerHTML = `${text || ''}`;
       return decoder.value;
     },
-
     plainStatusMessage(text) {
       const html = document.createElement('div');
       html.innerHTML = this.decodeStatusMessage(text);
       return html.textContent || '';
     },
-
     appendStatusMessage(parent, text) {
       const html = document.createElement('div');
       html.innerHTML = this.decodeStatusMessage(text);
-
       const appendSafe = node => {
         if (node.nodeType === Node.TEXT_NODE) {
           parent.appendChild(document.createTextNode(node.textContent || ''));
           return;
         }
-        if (node.nodeType !== Node.ELEMENT_NODE) { return; }
-
+        if (node.nodeType !== Node.ELEMENT_NODE) {
+          return;
+        }
         if (node.localName === 'a') {
           const href = node.getAttribute('href') || '';
           if (/^https?:\/\//i.test(href)) {
@@ -10413,24 +11200,28 @@ svg.icon {
             return;
           }
         }
-
         parent.appendChild(document.createTextNode(node.textContent || ''));
       };
-
       for (const node of Array.from(html.childNodes)) {
         appendSafe(node);
       }
     },
-
     messageStateFromText(text) {
       const plain = this.plainStatusMessage(text).toLowerCase();
-      if (/expired/.test(plain)) { return 'expired'; }
-      if (/done|verification not required/.test(plain)) { return 'complete'; }
-      if (/error|failed|couldn\'t|mistyped|malfunctioned/.test(plain)) { return 'failed'; }
-      if (/loading/.test(plain)) { return 'loading'; }
+      if (/expired/.test(plain)) {
+        return 'expired';
+      }
+      if (/done|verification not required/.test(plain)) {
+        return 'complete';
+      }
+      if (/error|failed|couldn\'t|mistyped|malfunctioned/.test(plain)) {
+        return 'failed';
+      }
+      if (/loading/.test(plain)) {
+        return 'loading';
+      }
       return 'idle';
     },
-
     formatTaskMessage(text, state) {
       const icon = {
         loading: '◔',
@@ -10442,57 +11233,69 @@ svg.icon {
       return `<div id="t-desc" class="tcaptcha-message state-${state}">` +
         `<span class="tcaptcha-message-icon" aria-hidden="true">${icon}</span>` +
         `<span class="tcaptcha-message-text">${text || ''}</span>` +
-      `</div>`;
+        `</div>`;
     },
-
     ensureProgressNode() {
       const container = this.nodes?.container;
-      if (!container) { return; }
+      if (!container) {
+        return;
+      }
       const ctrl = $('#t-ctrl', container);
-      if (!ctrl || $('.fourchanx-captcha-progress', ctrl)) { return; }
+      if (!ctrl || $('.fourchanx-captcha-progress', ctrl)) {
+        return;
+      }
       const progress = $.el('span', {
         className: 'fourchanx-captcha-progress'
       });
       $.add(ctrl, progress);
     },
-
     updateProgress(TCaptcha) {
       const container = this.nodes?.container;
-      if (!container) { return; }
+      if (!container) {
+        return;
+      }
       const progress = $('.fourchanx-captcha-progress', container);
-      if (!progress) { return; }
+      if (!progress) {
+        return;
+      }
       const tasks = TCaptcha?.tasks;
       if (!tasks?.length || !isFinite(TCaptcha?.taskId)) {
         progress.textContent = '';
         return;
       }
-      progress.textContent = `${TCaptcha.taskId + 1}/${tasks.length}`;
+      const current = Math.min(TCaptcha.taskId + 1, tasks.length);
+      progress.textContent = `${current}/${tasks.length}`;
     },
-
     formatDescription(str) {
-      if (!str) { return ''; }
+      if (!str) {
+        return '';
+      }
       return str
         .replace(/Use the scroll bar below to\s*|,\s*then click next\.?/gi, '')
         .replace(/(?:^|>)\s*([a-z])/i, m => m.toUpperCase()) + '.';
     },
-
     updateHighlight() {
-      this.cachedButtons ||= [];
+      this.cachedButtons || (this.cachedButtons = []);
       this.cachedButtons.forEach((btn, index) => {
         const isActive = index === this.currentHighlightIndex;
         btn.classList.toggle('active', isActive);
         if (isActive) {
-          btn.scrollIntoView({block: 'nearest'});
+          btn.scrollIntoView({ block: 'nearest' });
         }
       });
     },
-
     initializeEventHandler(container, TCaptcha) {
-      if (!container || container.dataset.hasFourChanXStackedClick) { return; }
+      if (!container || container.dataset.hasFourChanXStackedClick) {
+        return;
+      }
       container.addEventListener('click', e => {
-        if (!(e.target instanceof Element)) { return; }
+        if (!(e.target instanceof Element)) {
+          return;
+        }
         const button = e.target.closest('.tcaptcha-image');
-        if (!button || !this.cachedButtons?.length) { return; }
+        if (!button || !this.cachedButtons?.length) {
+          return;
+        }
         const index = this.cachedButtons.indexOf(button);
         if (index !== -1) {
           this.submitCaptchaAnswer(index, TCaptcha);
@@ -10500,17 +11303,16 @@ svg.icon {
       });
       container.dataset.hasFourChanXStackedClick = '1';
     },
-
     createImageGrid(TCaptcha) {
       const container = $('#t-task', this.nodes.container);
       const task = TCaptcha.getCurrentTask?.();
-      if (!TCaptcha.node || !container || !task) { return; }
+      if (!TCaptcha.node || !container || !task) {
+        return;
+      }
       this.setState('ready');
       this.updateProgress(TCaptcha);
-
       TCaptcha.node.style.height = 'auto';
       TCaptcha.node.style.overflow = 'visible';
-
       let descriptionHTML = '';
       if (task.img) {
         descriptionHTML = `<div id="t-desc"><img src="data:image/png;base64,${task.img}" alt=""></div>`;
@@ -10519,104 +11321,259 @@ svg.icon {
       } else {
         descriptionHTML = '<div id="t-desc"></div>';
       }
-
-      const imageHTMLs = (task.items || []).map(bitmap =>
-        `<button type="button" class="tcaptcha-image">
-        <img src="data:image/png;base64,${bitmap}" alt="">
-      </button>`
-      ).join('');
-
+      const imageHTMLs = (task.items || []).map(bitmap => `<button type="button" class="tcaptcha-image">
+    <img src="data:image/png;base64,${bitmap}" alt="">
+   </button>`).join('');
       container.innerHTML = descriptionHTML + imageHTMLs;
-
       this.cachedButtons = Array.from(container.querySelectorAll('.tcaptcha-image'));
       this.currentHighlightIndex = -1;
       this.initializeEventHandler(container, TCaptcha);
       TCaptcha.taskNode = container;
+      this.ensureCrumbsNode();
+      this.renderCrumbs(TCaptcha);
       this.applyAdaptiveTextColors();
     },
-
     submitCaptchaAnswer(imageNumber, TCaptcha) {
-      if (!TCaptcha?.respNode || !TCaptcha.tasks || imageNumber < 0) { return; }
-      const totalTasks = TCaptcha.tasks.length - 1;
-      if (totalTasks < 0) { return; }
-
-      TCaptcha.respNode.value += imageNumber;
+      if (!TCaptcha?.respNode || !TCaptcha.tasks || imageNumber < 0) {
+        return;
+      }
+      const lastIndex = TCaptcha.tasks.length - 1;
+      if (lastIndex < 0) {
+        return;
+      }
+      // Store the pick per-task (not by blind concatenation) so any one answer
+      // can be re-edited later, then rebuild the response string from truth.
+      (this.answerHistory || (this.answerHistory = []))[TCaptcha.taskId] = imageNumber;
+      TCaptcha.respNode.value = this.answerHistory.join('');
+      // Re-editing a single step: apply it, then go to review only if every task
+      // is now answered, otherwise resume at the next unanswered task.
+      if (this.editingIndex != null) {
+        this.closeEdit(TCaptcha);
+        return;
+      }
       const nextId = TCaptcha.taskId + 1;
-      if (nextId <= totalTasks) {
+      if (nextId <= lastIndex) {
         TCaptcha.setTaskId(nextId);
         this.createImageGrid(TCaptcha);
-      } else {
+      } else if (Conf['Post on Captcha Completion'] && !QR.cooldown.auto) {
+        TCaptcha.taskId = TCaptcha.tasks.length;
         TCaptcha.setTaskNodeContent('Done.');
         this.setState('complete');
-        this.updateProgress({ taskId: totalTasks, tasks: TCaptcha.tasks });
+        this.updateProgress(TCaptcha);
         this.cachedButtons = [];
         this.currentHighlightIndex = -1;
+        QR.submit();
+      } else {
+        // Land on an editable review screen instead of a dead-end "Done."
+        this.showReview(TCaptcha);
       }
     },
-
+    answeredCount() {
+      const h = this.answerHistory || [];
+      let n = 0;
+      while (n < h.length && h[n] != null) {
+        n++;
+      }
+      return n;
+    },
+    // Pick the best image to represent a task as a chip: the challenge image,
+    // else the reference image embedded in the prompt, else the picked tile.
+    taskChipImage(task, selectedIndex) {
+      if (!task) {
+        return null;
+      }
+      if (task.img) {
+        return `data:image/png;base64,${task.img}`;
+      }
+      if (typeof task.str === 'string' && /<img/i.test(task.str)) {
+        const re = /<img[^>]*\bsrc\s*=\s*["']([^"']+)["']/gi;
+        let match, last = null;
+        while ((match = re.exec(task.str))) {
+          last = match[1];
+        }
+        if (last) {
+          return last;
+        }
+      }
+      const bitmap = selectedIndex != null ? task.items?.[selectedIndex] : null;
+      return bitmap ? `data:image/png;base64,${bitmap}` : null;
+    },
+    editAnswer(index, TCaptcha) {
+      if (!TCaptcha?.tasks || this.answerHistory?.[index] == null) {
+        return;
+      }
+      // Toggle: clicking the chip you're already editing closes it again.
+      if (this.editingIndex === index) {
+        this.closeEdit(TCaptcha);
+        return;
+      }
+      this.editingIndex = index;
+      TCaptcha.setTaskId(index);
+      this.createImageGrid(TCaptcha);
+      // Highlight the tile previously chosen for this task.
+      this.currentHighlightIndex = this.answerHistory[index];
+      this.updateHighlight();
+      this.renderCrumbs(TCaptcha);
+    },
+    // Leave edit mode: show review if every task is answered, else resume solving.
+    closeEdit(TCaptcha) {
+      this.editingIndex = null;
+      const answered = this.answeredCount();
+      if (answered > TCaptcha.tasks.length - 1) {
+        this.showReview(TCaptcha);
+      } else {
+        TCaptcha.setTaskId(answered);
+        this.createImageGrid(TCaptcha);
+      }
+    },
+    showReview(TCaptcha) {
+      if (!TCaptcha?.tasks?.length) {
+        return;
+      }
+      TCaptcha.taskId = TCaptcha.tasks.length;
+      this.editingIndex = null;
+      this.cachedButtons = [];
+      this.currentHighlightIndex = -1;
+      this.setState('complete');
+      const taskNode = $('#t-task', this.nodes.container);
+      if (taskNode) {
+        taskNode.innerHTML = '';
+      }
+      this.setStatusMessage('Click an image to edit, or post.', 'complete');
+      this.updateProgress(TCaptcha);
+      this.ensureCrumbsNode();
+      this.renderCrumbs(TCaptcha);
+      this.applyAdaptiveTextColors();
+    },
+    ensureCrumbsNode() {
+      const container = this.nodes?.container;
+      if (!container) {
+        return;
+      }
+      const ctrl = $('#t-ctrl', container);
+      if (!ctrl || $('.fourchanx-captcha-crumbs', ctrl)) {
+        return;
+      }
+      $.add(ctrl, $.el('span', { className: 'fourchanx-captcha-crumbs' }));
+    },
+    renderCrumbs(TCaptcha) {
+      const container = this.nodes?.container;
+      if (!container) {
+        return;
+      }
+      const crumbs = $('.fourchanx-captcha-crumbs', container);
+      if (!crumbs) {
+        return;
+      }
+      crumbs.replaceChildren();
+      const history = this.answerHistory || [];
+      const answeredCount = this.answeredCount();
+      const tasksLen = TCaptcha?.tasks?.length || 0;
+      if (!answeredCount || !tasksLen) {
+        return;
+      }
+      // Show a chip per answered task, plus the one currently being solved.
+      const upTo = Math.min(Math.max(answeredCount - 1, TCaptcha.taskId), tasksLen - 1);
+      for (let i = 0; i <= upTo; i++) {
+        const answered = history[i] != null;
+        const chip = $.el('button', {
+          type: 'button',
+          className: 'fourchanx-captcha-crumb',
+        });
+        // Represent the task with its challenge/reference image; fall back to the
+        // step number (e.g. the step still being solved, or if no image exists).
+        const src = this.taskChipImage(TCaptcha.tasks?.[i], answered ? history[i] : null);
+        if (src) {
+          chip.appendChild($.el('img', { src, alt: '' }));
+        } else {
+          chip.textContent = `${i + 1}`;
+          chip.classList.add('numbered');
+        }
+        if (i === this.editingIndex) {
+          chip.classList.add('editing');
+          chip.title = `Click to stop editing answer ${i + 1}`;
+          chip.addEventListener('click', () => this.editAnswer(i, TCaptcha));
+        } else if (this.editingIndex == null && i === TCaptcha.taskId && !answered) {
+          chip.classList.add('current');
+          chip.title = `Solving step ${i + 1}`;
+        } else if (answered) {
+          chip.title = `Click to change answer ${i + 1}`;
+          chip.addEventListener('click', () => this.editAnswer(i, TCaptcha));
+        }
+        crumbs.appendChild(chip);
+      }
+    },
     installStackedKeyHandler(TCaptcha) {
-      if (this.keyHandlerInstalled) { return; }
+      if (this.keyHandlerInstalled) {
+        return;
+      }
       this.keyHandlerInstalled = true;
       window.addEventListener('keydown', e => {
-        if (!TCaptcha.__fourchanXStackedEnabled) { return; }
-        if (!this.nodes?.container || !document.body.contains(this.nodes.container)) { return; }
-
-        if (e.shiftKey && e.code === 'Space') {
-          e.preventDefault();
-          e.stopImmediatePropagation();
-
-          document.querySelector('#notifications .notification.warning a.close')?.closest('.notification')?.remove();
-          this.cachedButtons = (this.cachedButtons || []).filter(btn => document.body.contains(btn));
-
-          if (this.cachedButtons.length > 0) {
-            this.currentHighlightIndex = (this.currentHighlightIndex + 1) % this.cachedButtons.length;
-            this.updateHighlight();
-          } else {
-            TCaptcha.onReloadClick();
-          }
+        if (!TCaptcha.__fourchanXStackedEnabled) {
           return;
         }
-
+        if (!this.nodes?.container || !document.body.contains(this.nodes.container)) {
+          return;
+        }
         if (e.key === 'Enter' && this.cachedButtons?.length > 0 && this.currentHighlightIndex >= 0) {
           e.preventDefault();
           e.stopImmediatePropagation();
           this.submitCaptchaAnswer(this.currentHighlightIndex, TCaptcha);
+          return;
+        }
+        // Backspace steps back to re-edit the previous answer — but never while
+        // the user is typing in the comment box or any other field.
+        const ae = document.activeElement;
+        const typing = ae && (ae.tagName === 'INPUT' || ae.tagName === 'TEXTAREA' || ae.isContentEditable);
+        if (!typing && e.key === 'Backspace' && this.answerHistory?.length) {
+          const ref = this.editingIndex != null ? this.editingIndex : TCaptcha.taskId;
+          const target = ref - 1;
+          if (target >= 0 && this.answerHistory[target] != null) {
+            e.preventDefault();
+            e.stopImmediatePropagation();
+            this.editAnswer(target, TCaptcha);
+          }
         }
       }, true);
     },
-
     patchFormatter(TCaptcha) {
-      if (this.formatterPatched) { return; }
+      if (this.formatterPatched) {
+        return;
+      }
       this.formatterPatched = true;
-
       const styleID = 'fourchanx-tcaptcha-formatter-style';
       if (!document.getElementById(styleID)) {
         const style = document.createElement('style');
         style.id = styleID;
         style.textContent = `
-        #qr.fourchanx-stacked-captcha .captcha-container { width: 100% !important; height: auto !important; min-height: 145px; overflow: visible !important; }
-        #qr.fourchanx-stacked-captcha #t-ctrl { flex-wrap: wrap; gap: 4px; align-items: center; }
-        #qr.fourchanx-stacked-captcha .tcaptcha-image { padding: 0; margin: 3px; border: none; background: none; cursor: pointer !important; }
-        #qr.fourchanx-stacked-captcha .tcaptcha-image img { height: 100%; width: 100%; display: block; }
-        #qr.fourchanx-stacked-captcha .tcaptcha-image.active { outline: 3px solid #00c06f; }
-        #qr.fourchanx-stacked-captcha #t-desc { white-space: pre-line; text-align: center; font-size: 14px; user-select: none; width: 100%; }
-        #qr.fourchanx-stacked-captcha #t-desc.tcaptcha-message { padding-bottom: 15px; box-sizing: border-box; display: inline-flex; align-items: center; justify-content: center; gap: 6px; }
-        #qr.fourchanx-stacked-captcha #t-desc.tcaptcha-message .tcaptcha-message-icon { display: inline-flex; align-items: center; justify-content: center; width: 1.2em; height: 1.2em; border: 2px solid currentColor; border-radius: 50%; font-weight: bold; font-size: 11px; line-height: 1; box-sizing: border-box; }
-        #qr.fourchanx-stacked-captcha #t-desc.tcaptcha-message.state-complete .tcaptcha-message-icon { color: #2c9c47; }
-        #qr.fourchanx-stacked-captcha #t-desc.tcaptcha-message.state-failed .tcaptcha-message-icon { color: #cf4a4a; }
-        #qr.fourchanx-stacked-captcha #t-desc.tcaptcha-message.state-expired .tcaptcha-message-icon { color: #c38c2f; }
-        #qr.fourchanx-stacked-captcha #t-desc.tcaptcha-message.state-loading .tcaptcha-message-icon { color: #4f7eaa; }
-        #qr.fourchanx-stacked-captcha #t-desc.tcaptcha-message.state-idle .tcaptcha-message-icon { color: #6f7c8f; }
-        #qr.fourchanx-stacked-captcha #t-desc img { margin: 3px !important; max-width: 100%; height: auto; }
-        #qr.fourchanx-stacked-captcha #t-task { display: flex; flex-wrap: wrap; gap: 3px; width: 100%; justify-content: center; margin: 0 auto; overflow: auto; max-height: 70vh; padding: 0 !important; height: auto !important; white-space: normal !important; align-items: normal !important; scrollbar-gutter: stable; overflow-x: hidden; box-sizing: border-box; }
-        #qr.fourchanx-stacked-captcha #t-load { cursor: pointer !important; min-height: 24px; padding: 0 8px; }
-        #qr.fourchanx-stacked-captcha #t-next { display: none !important; }
-        #qr.fourchanx-stacked-captcha .fourchanx-captcha-progress { margin-left: auto; font-weight: bold; min-width: 3em; text-align: right; }
-        #qr.fourchanx-stacked-captcha #t-slider { display: none !important; }
-      `;
+    #qr.fourchanx-stacked-captcha .captcha-container { width: 100% !important; height: auto !important; min-height: 145px; overflow: visible !important; }
+    #qr.fourchanx-stacked-captcha #t-ctrl { flex-wrap: wrap; gap: 4px; align-items: center; }
+    #qr.fourchanx-stacked-captcha .tcaptcha-image { padding: 0; margin: 3px; border: none; background: none; cursor: pointer !important; }
+    #qr.fourchanx-stacked-captcha .tcaptcha-image img { height: 100%; width: 100%; display: block; }
+    #qr.fourchanx-stacked-captcha .tcaptcha-image.active { outline: 4px solid var(--xt-variant-accent, #00c06f); outline-offset: -3px; box-shadow: 0 0 10px 2px color-mix(in srgb, var(--xt-variant-accent, #00c06f) 70%, transparent); border-radius: 2px; }
+    #qr.fourchanx-stacked-captcha #t-desc { white-space: pre-line; text-align: center; font-size: 14px; user-select: none; width: 100%; }
+    #qr.fourchanx-stacked-captcha #t-desc.tcaptcha-message { padding-bottom: 15px; box-sizing: border-box; display: inline-flex; align-items: center; justify-content: center; gap: 6px; }
+    #qr.fourchanx-stacked-captcha #t-desc.tcaptcha-message .tcaptcha-message-icon { display: inline-flex; align-items: center; justify-content: center; width: 1.2em; height: 1.2em; border: 2px solid currentColor; border-radius: 50%; font-weight: bold; font-size: 11px; line-height: 1; box-sizing: border-box; }
+    #qr.fourchanx-stacked-captcha #t-desc.tcaptcha-message.state-complete .tcaptcha-message-icon { color: #2c9c47; }
+    #qr.fourchanx-stacked-captcha #t-desc.tcaptcha-message.state-failed .tcaptcha-message-icon { color: #cf4a4a; }
+    #qr.fourchanx-stacked-captcha #t-desc.tcaptcha-message.state-expired .tcaptcha-message-icon { color: #c38c2f; }
+    #qr.fourchanx-stacked-captcha #t-desc.tcaptcha-message.state-loading .tcaptcha-message-icon { color: #4f7eaa; }
+    #qr.fourchanx-stacked-captcha #t-desc.tcaptcha-message.state-idle .tcaptcha-message-icon { color: #6f7c8f; }
+    #qr.fourchanx-stacked-captcha #t-desc img { margin: 3px !important; max-width: 100%; height: auto; }
+    #qr.fourchanx-stacked-captcha #t-task { display: flex; flex-wrap: wrap; gap: 3px; width: 100%; justify-content: center; margin: 0 auto; overflow: auto; max-height: 70vh; padding: 0 !important; height: auto !important; white-space: normal !important; align-items: normal !important; scrollbar-gutter: stable; overflow-x: hidden; box-sizing: border-box; }
+    #qr.fourchanx-stacked-captcha #t-load { cursor: pointer !important; min-height: 24px; padding: 0 8px; }
+    #qr.fourchanx-stacked-captcha #t-next { display: none !important; }
+    #qr.fourchanx-stacked-captcha .fourchanx-captcha-progress { margin-left: auto; font-weight: bold; min-width: 3em; text-align: right; }
+    #qr.fourchanx-stacked-captcha #t-slider { display: none !important; }
+    #qr.fourchanx-stacked-captcha .fourchanx-captcha-crumbs { display: flex; flex-wrap: wrap; gap: 5px; justify-content: center; align-items: center; flex: 1 0 100%; margin: 5px 0 0; }
+    #qr.fourchanx-stacked-captcha .fourchanx-captcha-crumb { width: 40px; height: 40px; padding: 0; border: 1px solid currentColor; border-radius: 3px; background: none; cursor: pointer; font-size: 13px; line-height: 1; font-weight: bold; opacity: .7; box-sizing: border-box; overflow: hidden; display: inline-flex; align-items: center; justify-content: center; }
+    #qr.fourchanx-stacked-captcha .fourchanx-captcha-crumb img { width: 100%; height: 100%; object-fit: cover; display: block; }
+    #qr.fourchanx-stacked-captcha .fourchanx-captcha-crumb:hover { opacity: 1; }
+    #qr.fourchanx-stacked-captcha .fourchanx-captcha-crumb.current { opacity: 1; outline: 2px solid var(--xt-variant-accent, #00c06f); cursor: default; }
+    #qr.fourchanx-stacked-captcha .fourchanx-captcha-crumb.editing { opacity: 1; outline: 3px solid var(--xt-variant-accent, #00c06f); outline-offset: -1px; box-shadow: 0 0 6px color-mix(in srgb, var(--xt-variant-accent, #00c06f) 70%, transparent); }
+   `;
         document.head.appendChild(style);
       }
-
       if (!TCaptcha.__fourchanXOriginal) {
         TCaptcha.__fourchanXOriginal = {
           setChallenge: TCaptcha.setChallenge,
@@ -10624,13 +11581,22 @@ svg.icon {
           setTaskNodeContent: TCaptcha.setTaskNodeContent,
           buildSliderNode: TCaptcha.buildSliderNode,
           buildNextNode: TCaptcha.buildNextNode,
+          onSliderKeyUp: TCaptcha.onSliderKeyUp,
         };
       }
+      const o = TCaptcha.__fourchanXOriginal;
+      TCaptcha.onSliderKeyUp = function (e) {
+        if (e?.shiftKey && ((e.code === 'Space') || (e.keyCode === 32))) {
+          return;
+        }
+        return o.onSliderKeyUp.call(this, e);
+      };
     },
-
     setStacked(enabled, TCaptcha) {
       const root = $('#qr');
-      if (!root) { return; }
+      if (!root) {
+        return;
+      }
       root.classList.toggle('fourchanx-stacked-captcha', enabled);
       if (TCaptcha.node) {
         if (enabled) {
@@ -10650,7 +11616,7 @@ svg.icon {
           TCaptcha.taskNode.style.alignItems = 'center';
         }
       }
-        if (!enabled) {
+      if (!enabled) {
         if (TCaptcha.__fourchanXOriginal) {
           const o = TCaptcha.__fourchanXOriginal;
           TCaptcha.setChallenge = o.setChallenge;
@@ -10658,6 +11624,12 @@ svg.icon {
           TCaptcha.setTaskNodeContent = o.setTaskNodeContent;
           TCaptcha.buildSliderNode = o.buildSliderNode;
           TCaptcha.buildNextNode = o.buildNextNode;
+          TCaptcha.onSliderKeyUp = function (e) {
+            if (e?.shiftKey && ((e.code === 'Space') || (e.keyCode === 32))) {
+              return;
+            }
+            return o.onSliderKeyUp.call(this, e);
+          };
         }
         TCaptcha.__fourchanXStackedEnabled = false;
         this.cachedButtons = [];
@@ -10665,46 +11637,55 @@ svg.icon {
         this.updateProgress();
         return;
       }
-      if (TCaptcha.__fourchanXStackedEnabled) { return; }
+      if (TCaptcha.__fourchanXStackedEnabled) {
+        return;
+      }
       TCaptcha.__fourchanXStackedEnabled = true;
       this.installStackedKeyHandler(TCaptcha);
-
       const o = TCaptcha.__fourchanXOriginal;
-      TCaptcha.setChallenge = function(challenge) {
-        if (!challenge?.tasks) { return o.setChallenge.call(this, challenge); }
+      TCaptcha.setChallenge = function (challenge) {
+        if (!challenge?.tasks) {
+          return o.setChallenge.call(this, challenge);
+        }
         this.challengeIdNode.value = challenge.challenge;
         this.respNode.value = '';
+        CaptchaT.answerHistory = [];
+        CaptchaT.editingIndex = null;
         this.tasks = challenge.tasks;
         this.setTaskId(0);
         CaptchaT.createImageGrid(this);
       };
-      TCaptcha.setTaskId = function(index) {
+      TCaptcha.setTaskId = function (index) {
         this.taskId = index;
         CaptchaT.setState('ready');
         CaptchaT.updateProgress(this);
       };
-      TCaptcha.setTaskNodeContent = function(text) {
+      TCaptcha.setTaskNodeContent = function (text) {
         const container = $('#t-task', CaptchaT.nodes.container);
         const state = CaptchaT.messageStateFromText(text);
         CaptchaT.setState(state);
-        if (container) { container.innerHTML = ''; }
+        if (container) {
+          container.innerHTML = '';
+        }
         CaptchaT.setStatusMessage(text, state);
         CaptchaT.cachedButtons = [];
         CaptchaT.currentHighlightIndex = -1;
+        CaptchaT.answerHistory = [];
+        CaptchaT.editingIndex = null;
+        CaptchaT.renderCrumbs(this);
         CaptchaT.updateProgress();
       };
-      TCaptcha.buildSliderNode = function() {
+      TCaptcha.buildSliderNode = function () {
         const slider = document.createElement('span');
         slider.id = 't-slider';
         slider.hidden = true;
         return slider;
       };
-      TCaptcha.buildNextNode = function() {
+      TCaptcha.buildNextNode = function () {
         const next = document.createElement('span');
         next.id = 't-next';
         return next;
       };
-
       if (TCaptcha.tasks?.length) {
         this.createImageGrid(TCaptcha);
       } else {
@@ -11153,53 +12134,49 @@ svg.icon {
 
   class CatalogThread {
     toString() { return this.ID; }
-
     constructor(root, thread) {
       this.thread = thread;
-      this.ID    = this.thread.ID;
+      this.ID = this.thread.ID;
       this.board = this.thread.board;
-      const {post} = this.thread.OP.nodes;
+      const { post } = this.thread.OP.nodes;
       this.nodes = {
         root,
-        thumb:     $('.catalog-thumb', post),
-        icons:     $('.catalog-icons', post),
-        postCount: $('.post-count',    post),
-        fileCount: $('.file-count',    post),
-        pageCount: $('.page-count',    post),
-        replies:   null
+        thumb: $('.catalog-thumb', post),
+        icons: $('.catalog-icons', post),
+        postCount: $('.post-count', post),
+        fileCount: $('.file-count', post),
+        pageCount: $('.page-count', post),
+        replies: null
       };
       this.thread.catalogView = this;
     }
   }
 
-  const dialog = function(id, properties) {
+  const dialog = function (id, properties) {
     const el = $.el('div', {
       className: 'dialog',
       id
-    }
-    );
+    });
     $.extend(el, properties);
     el.style.cssText = Conf[`${id}.position`];
-
     const move = $('.move', el);
     $.on(move, 'touchstart mousedown', dragstart);
     for (var child of move.children) {
-      if (!child.tagName) { continue; }
+      if (!child.tagName) {
+        continue;
+      }
       $.on(child, 'touchstart mousedown', e => e.stopPropagation());
     }
-
     return el;
   };
-
-  var Menu$1 = (function() {
+  var Menu$1 = (function () {
     let currentMenu = undefined;
     let lastToggledButton = undefined;
     Menu$1 = class Menu {
       static initClass() {
-        currentMenu       = null;
+        currentMenu = null;
         lastToggledButton = null;
       }
-
       constructor(type) {
         // XXX AddMenuEntry event is deprecated
         this.setPosition = this.setPosition.bind(this);
@@ -11208,97 +12185,90 @@ svg.icon {
         this.onFocus = this.onFocus.bind(this);
         this.addEntry = this.addEntry.bind(this);
         this.type = type;
-        $.on(d, 'AddMenuEntry', ({detail}) => {
-          if (detail.type !== this.type) { return; }
+        $.on(d, 'AddMenuEntry', ({ detail }) => {
+          if (detail.type !== this.type) {
+            return;
+          }
           delete detail.open;
           return this.addEntry(detail);
         });
         this.entries = [];
       }
-
       makeMenu() {
         const menu = $.el('div', {
           className: 'dialog',
-          id:        'menu',
-          tabIndex:  0
-        }
-        );
+          id: 'menu',
+          tabIndex: 0
+        });
         menu.dataset.type = this.type;
         $.on(menu, 'click', e => e.stopPropagation());
         $.on(menu, 'keydown', this.keybinds);
         return menu;
       }
-
       toggle(e, button, data) {
         e.preventDefault();
         e.stopPropagation();
-
         if (currentMenu) {
           // Close if it's already opened.
           // Reopen if we clicked on another button.
           const previousButton = lastToggledButton;
           currentMenu.close();
-          if (previousButton === button) { return; }
+          if (previousButton === button) {
+            return;
+          }
         }
-
-        if (!this.entries.length) { return; }
+        if (!this.entries.length) {
+          return;
+        }
         return this.open(button, data);
       }
-
       open(button, data) {
         let entry;
         const menu = (this.menu = this.makeMenu());
-        currentMenu       = this;
+        currentMenu = this;
         lastToggledButton = button;
-
         this.entries.sort((first, second) => first.order - second.order);
-
         for (entry of this.entries) {
           this.insertEntry(entry, menu, data);
         }
-
         $.addClass(lastToggledButton, 'active');
-
         $.on(d, 'click CloseMenu', this.close);
         $.on(d, 'scroll', this.setPosition);
         $.on(window, 'resize', this.setPosition);
         // Append to body so the menu escapes any ancestor stacking context
         // (e.g. #thread-watcher's position:fixed/z-index:5).
         $.add(d.body, menu);
-
         this.setPosition();
-
         entry = $('.entry', menu);
         // We've removed flexbox, so we don't use order anymore.
         // while prevEntry = @findNextEntry entry, -1
         //   entry = prevEntry
         this.focus(entry);
-
         return menu.focus();
       }
-
       setPosition() {
-        const mRect   = this.menu.getBoundingClientRect();
-        const bRect   = lastToggledButton.getBoundingClientRect();
+        const mRect = this.menu.getBoundingClientRect();
+        const bRect = lastToggledButton.getBoundingClientRect();
         const cHeight = doc.clientHeight;
-        const cWidth  = doc.clientWidth;
+        const cWidth = doc.clientWidth;
         const [top, bottom] = (bRect.top + bRect.height + mRect.height) < cHeight ?
           [`${bRect.bottom}px`, '']
-        :
-          ['', `${cHeight - bRect.top}px`];
+          :
+            ['', `${cHeight - bRect.top}px`];
         const [left, right] = (bRect.left + mRect.width) < cWidth ?
           [`${bRect.left}px`, '']
-        :
-          ['', `${cWidth - bRect.right}px`];
-        $.extend(this.menu.style, {top, right, bottom, left});
+          :
+            ['', `${cWidth - bRect.right}px`];
+        $.extend(this.menu.style, { top, right, bottom, left });
         return this.menu.classList.toggle('left', right);
       }
-
       insertEntry(entry, parent, data) {
         let submenu;
         if (typeof entry.open === 'function') {
           try {
-            if (!entry.open(data)) { return; }
+            if (!entry.open(data)) {
+              return;
+            }
           } catch (err) {
             Main.handleErrors({
               message: `Error in building the ${this.type} menu.`,
@@ -11308,37 +12278,34 @@ svg.icon {
           }
         }
         $.add(parent, entry.el);
-
-        if (!entry.subEntries) { return; }
+        if (!entry.subEntries) {
+          return;
+        }
         if (submenu = $('.submenu', entry.el)) {
           // Reset sub menu, remove irrelevant entries.
           $.rm(submenu);
         }
-        submenu = $.el('div',
-          {className: 'dialog submenu'});
+        submenu = $.el('div', { className: 'dialog submenu' });
         for (var subEntry of entry.subEntries) {
           this.insertEntry(subEntry, submenu, data);
         }
         $.add(entry.el, submenu);
       }
-
       close() {
         $.rm(this.menu);
         delete this.menu;
         $.rmClass(lastToggledButton, 'active');
-        currentMenu       = null;
+        currentMenu = null;
         lastToggledButton = null;
         $.off(d, 'click scroll CloseMenu', this.close);
         $.off(d, 'scroll', this.setPosition);
         return $.off(window, 'resize', this.setPosition);
       }
-
       findNextEntry(entry, direction) {
         const entries = [...entry.parentNode.children];
         entries.sort((first, second) => first.style.order - second.style.order);
         return entries[entries.indexOf(entry) + direction];
       }
-
       keybinds(e) {
         let subEntry;
         let next, submenu;
@@ -11346,13 +12313,13 @@ svg.icon {
         while ((subEntry = $('.focused', entry))) {
           entry = subEntry;
         }
-
         switch (e.keyCode) {
           case 27: // Esc
             lastToggledButton.focus();
             this.close();
             break;
-          case 13: case 32: // Enter, Space
+          case 13:
+          case 32: // Enter, Space
             entry.click();
             break;
           case 38: // Up
@@ -11382,16 +12349,13 @@ svg.icon {
           default:
             return;
         }
-
         e.preventDefault();
         return e.stopPropagation();
       }
-
       onFocus(e) {
         e.stopPropagation();
         return this.focus(e.target);
       }
-
       focus(entry) {
         let focused, submenu;
         while ((focused = $.x('parent::*/child::*[contains(@class,"focused")]', entry))) {
@@ -11401,46 +12365,45 @@ svg.icon {
           $.rmClass(focused, 'focused');
         }
         $.addClass(entry, 'focused');
-
         // Submenu positioning.
-        if (!(submenu = $('.submenu', entry))) { return; }
-        const sRect   = submenu.getBoundingClientRect();
-        const eRect   = entry.getBoundingClientRect();
+        if (!(submenu = $('.submenu', entry))) {
+          return;
+        }
+        const sRect = submenu.getBoundingClientRect();
+        const eRect = entry.getBoundingClientRect();
         const cHeight = doc.clientHeight;
-        const cWidth  = doc.clientWidth;
+        const cWidth = doc.clientWidth;
         const [top, bottom] = (eRect.top + sRect.height) < cHeight ?
           ['0px', 'auto']
-        :
-          ['auto', '0px'];
+          :
+            ['auto', '0px'];
         const [left, right] = (eRect.right + sRect.width) < (cWidth - 150) ?
           ['100%', 'auto']
-        :
-          ['auto', '100%'];
-        const {style} = submenu;
-        style.top    = top;
+          :
+            ['auto', '100%'];
+        const { style } = submenu;
+        style.top = top;
         style.bottom = bottom;
-        style.left   = left;
-        return style.right  = right;
+        style.left = left;
+        return style.right = right;
       }
-
       addEntry(entry) {
         this.parseEntry(entry);
         return this.entries.push(entry);
       }
-
       parseEntry(entry) {
-        const {el, subEntries} = entry;
+        const { el, subEntries } = entry;
         $.addClass(el, 'entry');
         $.on(el, 'focus mouseover', this.onFocus);
         el.style.order = entry.order || 100;
-        if (!subEntries) { return; }
+        if (!subEntries) {
+          return;
+        }
         $.addClass(el, 'has-submenu');
         for (var subEntry of subEntries) {
           this.parseEntry(subEntry);
         }
-        const span = $.el('span',
-          {className: 'menu-indicator'}
-        );
+        const span = $.el('span', { className: 'menu-indicator' });
         Icon.set(span, 'caretRight');
         $.add(el, span);
       }
@@ -11448,10 +12411,11 @@ svg.icon {
     Menu$1.initClass();
     return Menu$1;
   })();
-
   var dragstart = function (e) {
     let isTouching;
-    if ((e.type === 'mousedown') && (e.button !== 0)) { return; } // not LMB
+    if ((e.type === 'mousedown') && (e.button !== 0)) {
+      return;
+    } // not LMB
     // prevent text selection
     e.preventDefault();
     if (isTouching = e.type === 'touchstart') {
@@ -11469,40 +12433,37 @@ svg.icon {
     }
     const rect = el.getBoundingClientRect();
     const screenHeight = doc.clientHeight;
-    const screenWidth  = doc.clientWidth;
+    const screenWidth = doc.clientWidth;
     const o = {
-      id:     el.id,
-      style:  el.style,
-      dx:     e.clientX - rect.left,
-      dy:     e.clientY - rect.top,
+      id: el.id,
+      style: el.style,
+      dx: e.clientX - rect.left,
+      dy: e.clientY - rect.top,
       height: screenHeight - rect.height,
-      width:  screenWidth  - rect.width,
+      width: screenWidth - rect.width,
       screenHeight,
       screenWidth,
       isTouching
     };
-
     [o.topBorder, o.bottomBorder] = Conf['Header auto-hide'] || !Conf['Fixed Header'] ?
       [0, 0]
-    : Conf['Bottom Header'] ?
-      [0, Header.bar.getBoundingClientRect().height]
-    :
-      [Header.bar.getBoundingClientRect().height, 0];
-
+      : Conf['Bottom Header'] ?
+        [0, Header.bar.getBoundingClientRect().height]
+        :
+          [Header.bar.getBoundingClientRect().height, 0];
     if (isTouching) {
       o.identifier = e.identifier;
       o.move = touchmove.bind(o);
-      o.up   = touchend.bind(o);
+      o.up = touchend.bind(o);
       $.on(d, 'touchmove', o.move);
       return $.on(d, 'touchend touchcancel', o.up);
     } else { // mousedown
       o.move = drag.bind(o);
-      o.up   = dragend.bind(o);
+      o.up = dragend.bind(o);
       $.on(d, 'mousemove', o.move);
-      return $.on(d, 'mouseup',   o.up);
+      return $.on(d, 'mouseup', o.up);
     }
   };
-
   var touchmove = function (e) {
     for (var touch of e.changedTouches) {
       if (touch.identifier === this.identifier) {
@@ -11511,47 +12472,39 @@ svg.icon {
       }
     }
   };
-
   var drag = function (e) {
-    const {clientX, clientY} = e;
-
+    const { clientX, clientY } = e;
     let left = clientX - this.dx;
     left = left < 10 ?
       0
-    : (this.width - left) < 10 ?
-      ''
-    :
-      ((left / this.screenWidth) * 100) + '%';
-
+      : (this.width - left) < 10 ?
+        ''
+        :
+          ((left / this.screenWidth) * 100) + '%';
     let top = clientY - this.dy;
     top = top < (10 + this.topBorder) ?
       this.topBorder + 'px'
-    : (this.height - top) < (10 + this.bottomBorder) ?
-      ''
-    :
-      ((top / this.screenHeight) * 100) + '%';
-
+      : (this.height - top) < (10 + this.bottomBorder) ?
+        ''
+        :
+          ((top / this.screenHeight) * 100) + '%';
     const right = left === '' ?
       0
-    :
-      '';
-
+      :
+        '';
     const bottom = top === '' ?
       this.bottomBorder + 'px'
-    :
-      '';
-
-    const {style} = this;
-    style.left   = left;
-    style.right  = right;
-    style.top    = top;
+      :
+        '';
+    const { style } = this;
+    style.left = left;
+    style.right = right;
+    style.top = top;
     style.bottom = bottom;
-
     if (this.id === 'qr') {
-      $.event('4chanXQRMove');  // attached watcher listens directly for tight following (no rAF lag)
+      $.event('4chanXQRMove'); // attached watcher listens directly for tight following (no rAF lag)
     }
   };
-
   var touchend = function (e) {
     for (var touch of e.changedTouches) {
       if (touch.identifier === this.identifier) {
@@ -11560,35 +12513,39 @@ svg.icon {
       }
     }
   };
-
   var dragend = function () {
     if (this.isTouching) {
       $.off(d, 'touchmove', this.move);
       $.off(d, 'touchend touchcancel', this.up);
     } else { // mouseup
       $.off(d, 'mousemove', this.move);
-      $.off(d, 'mouseup',   this.up);
+      $.off(d, 'mouseup', this.up);
     }
-    if (this.id === 'thread-watcher' && Conf['Thread Watcher Attached']) { return; }
+    if (this.id === 'thread-watcher' && Conf['Thread Watcher Attached']) {
+      return;
+    }
     if (this.style.length === 2) { // assume only left or right and top or bottom
       $.set(`${this.id}.position`, this.style.cssText);
     } else { // only include position data.
       const { left, right, top, bottom } = this.style;
       let position = '';
-      if (left) position += `left:${left};`;
-      if (right) position += `right:${right};`;
-      if (top) position += `top:${top};`;
-      if (bottom) position += `bottom:${bottom};`;
+      if (left)
+        position += `left:${left};`;
+      if (right)
+        position += `right:${right};`;
+      if (top)
+        position += `top:${top};`;
+      if (bottom)
+        position += `bottom:${bottom};`;
       $.set(`${this.id}.position`, position);
     }
     if (this.id === 'thread-watcher') {
-      $.event('4chanXDragend', {id: this.id});
+      $.event('4chanXDragend', { id: this.id });
     }
     if (this.id === 'qr') {
       $.event('4chanXQRMove');
     }
   };
-
   const hoverstart = function ({ root, el, latestEvent, endEvents, height, width, cb, noRemove }) {
     const rect = root.getBoundingClientRect();
     const o = {
@@ -11600,81 +12557,86 @@ svg.icon {
       endEvents,
       latestEvent,
       clientHeight: doc.clientHeight,
-      clientWidth:  doc.clientWidth,
+      clientWidth: doc.clientWidth,
       height,
       width,
       noRemove,
       clientX: (rect.left + rect.right) / 2,
       clientY: (rect.top + rect.bottom) / 2
     };
-    o.hover    = hover.bind(o);
+    o.hover = hover.bind(o);
     o.hoverend = hoverend.bind(o);
-
     o.hover(o.latestEvent);
-    new MutationObserver(function() {
-      if (el.parentNode) { return o.hover(o.latestEvent); }
-    }).observe(el, {childList: true});
-
-    $.on(root, endEvents,   o.hoverend);
+    new MutationObserver(function () {
+      if (el.parentNode) {
+        return o.hover(o.latestEvent);
+      }
+    }).observe(el, { childList: true });
+    $.on(root, endEvents, o.hoverend);
     if ($.x('ancestor::div[contains(@class,"inline")][1]', root)) {
-      $.on(d,    'keydown',   o.hoverend);
+      $.on(d, 'keydown', o.hoverend);
     }
     $.on(root, 'mousemove', o.hover);
-
     // Workaround for https://bugzilla.mozilla.org/show_bug.cgi?id=674955
-    o.workaround = function(e) { if (!root.contains(e.target)) { return o.hoverend(e); } };
-    return $.on(doc,  'mousemove', o.workaround);
+    o.workaround = function (e) { if (!root.contains(e.target)) {
+      return o.hoverend(e);
+    } };
+    return $.on(doc, 'mousemove', o.workaround);
   };
-
   hoverstart.padding = 25;
-
   var hover = function (e) {
     this.latestEvent = e;
     const height = (this.height || this.el.offsetHeight) + hoverstart.padding;
-    const width  = (this.width  || this.el.offsetWidth);
-    const {clientX, clientY} = Conf['Follow Cursor'] ? e : this;
-
+    const width = (this.width || this.el.offsetWidth);
+    const { clientX, clientY } = Conf['Follow Cursor'] ? e : this;
     const top = this.isImage ?
       Math.max(0, (clientY * (this.clientHeight - height)) / this.clientHeight)
-    :
-      Math.max(0, Math.min(this.clientHeight - height, clientY - 120));
-
+      :
+        Math.max(0, Math.min(this.clientHeight - height, clientY - 120));
     let threshold = this.clientWidth / 2;
-    if (!this.isImage) { threshold = Math.max(threshold, this.clientWidth - 400); }
+    if (!this.isImage) {
+      threshold = Math.max(threshold, this.clientWidth - 400);
+    }
     let marginX = (clientX <= threshold ? clientX : this.clientWidth - clientX) + 45;
-    if (this.isImage) { marginX = Math.min(marginX, this.clientWidth - width); }
+    if (this.isImage) {
+      marginX = Math.min(marginX, this.clientWidth - width);
+    }
     marginX += 'px';
     const [left, right] = clientX <= threshold ? [marginX, ''] : ['', marginX];
-
-    const {style} = this;
-    style.top   = top + 'px';
-    style.left  = left;
+    const { style } = this;
+    style.top = top + 'px';
+    style.left = left;
     return style.right = right;
   };
-
   var hoverend = function (e) {
-    if (((e.type === 'keydown') && (e.keyCode !== 13)) || (e.target.nodeName === "TEXTAREA")) { return; }
-    if (!this.noRemove) { $.rm(this.el); }
-    $.off(this.root, this.endEvents,  this.hoverend);
-    $.off(d,     'keydown',   this.hoverend);
+    if (((e.type === 'keydown') && (e.keyCode !== 13)) || (e.target.nodeName === "TEXTAREA")) {
+      return;
+    }
+    if (!this.noRemove) {
+      $.rm(this.el);
+    }
+    $.off(this.root, this.endEvents, this.hoverend);
+    $.off(d, 'keydown', this.hoverend);
     $.off(this.root, 'mousemove', this.hover);
     // Workaround for https://bugzilla.mozilla.org/show_bug.cgi?id=674955
-    $.off(doc,   'mousemove', this.workaround);
-    if (this.cb) { return this.cb.call(this); }
+    $.off(doc, 'mousemove', this.workaround);
+    if (this.cb) {
+      return this.cb.call(this);
+    }
   };
-
   const checkbox = function (name, text, checked) {
-    if (checked == null) { checked = Conf[name]; }
+    if (checked == null) {
+      checked = Conf[name];
+    }
     const label = $.el('label');
-    const input = $.el('input', {type: 'checkbox', name, checked});
+    const input = $.el('input', { type: 'checkbox', name, checked });
     $.add(label, [input, $.tn(` ${text}`)]);
     return label;
   };
-
   const UI = {
     dialog,
     Menu: Menu$1,
-    hover:    hoverstart,
+    hover: hoverstart,
     checkbox
   };
 
@@ -11682,44 +12644,40 @@ svg.icon {
     init() {
       switch (g.VIEW) {
         case 'index':
-          if (!Conf['Index Navigation']) { return; }
+          if (!Conf['Index Navigation']) {
+            return;
+          }
           break;
         case 'thread':
-          if (!Conf['Reply Navigation']) { return; }
+          if (!Conf['Reply Navigation']) {
+            return;
+          }
           break;
         default:
           return;
       }
-
-      const span = $.el('span',
-        {id: 'navlinks'});
+      const span = $.el('span', { id: 'navlinks' });
       const prev = $.el('a', {
         textContent: '▲',
         className: 'navlinks-navlink navlink-prev',
         href: 'javascript:;'
-      }
-      );
+      });
       const next = $.el('a', {
         textContent: '▼',
         className: 'navlinks-navlink navlink-next',
         href: 'javascript:;'
-      }
-      );
-
+      });
       Icon.set(prev, 'arrowUpLong');
       Icon.set(next, 'arrowDownLong');
-
       $.on(prev, 'click', this.prev);
       $.on(next, 'click', this.next);
-
       $.add(span, [prev, $.tn(' '), next]);
-      var append = function() {
+      var append = function () {
         $.off(d, '4chanXInitFinished', append);
         return $.add(d.body, span);
       };
       return $.on(d, '4chanXInitFinished', append);
     },
-
     prev() {
       if (g.VIEW === 'thread') {
         return window.scrollTo(0, 0);
@@ -11727,7 +12685,6 @@ svg.icon {
         return Nav.scroll(-1);
       }
     },
-
     next() {
       if (g.VIEW === 'thread') {
         return window.scrollTo(0, d.body.scrollHeight);
@@ -11735,47 +12692,54 @@ svg.icon {
         return Nav.scroll(+1);
       }
     },
-
     getThread() {
-      if (g.VIEW === 'thread') { return g.threads.get(`${g.BOARD}.${g.THREADID}`).nodes.root; }
-      if ($.hasClass(doc, 'catalog-mode')) { return; }
+      if (g.VIEW === 'thread') {
+        return g.threads.get(`${g.BOARD}.${g.THREADID}`).nodes.root;
+      }
+      if ($.hasClass(doc, 'catalog-mode')) {
+        return;
+      }
       for (var threadRoot of $$(g.SITE.selectors.thread)) {
         var thread = Get.threadFromRoot(threadRoot);
-        if (thread.isHidden && !thread.stub) { continue; }
+        if (thread.isHidden && !thread.stub) {
+          continue;
+        }
         if (Header.getTopOf(threadRoot) >= -threadRoot.getBoundingClientRect().height) { // not scrolled past
           return threadRoot;
         }
       }
     },
-
     scroll(delta) {
       let next;
       d.activeElement?.blur();
       let thread = Nav.getThread();
-      if (!thread) { return; }
+      if (!thread) {
+        return;
+      }
       const axis = delta === +1 ?
         'following'
-      :
-        'preceding';
+        :
+          'preceding';
       if (next = $.x(`${axis}-sibling::${g.SITE.xpath.thread}[not(@hidden)][1]`, thread)) {
         // Unless we're not at the beginning of the current thread,
         // and thus wanting to move to beginning,
         // or we're above the first thread and don't want to skip it.
         const top = Header.getTopOf(thread);
-        if (((delta === +1) && (top < 5)) || ((delta === -1) && (top > -5))) { thread = next; }
+        if (((delta === +1) && (top < 5)) || ((delta === -1) && (top > -5))) {
+          thread = next;
+        }
       }
       // Add extra space to the end of the page if necessary so that all threads can be selected by keybinds.
       const extra = (Header.getTopOf(thread) + doc.clientHeight) - d.body.getBoundingClientRect().bottom;
-      if (extra > 0) { d.body.style.marginBottom = `${extra}px`; }
-
+      if (extra > 0) {
+        d.body.style.marginBottom = `${extra}px`;
+      }
       Header.scrollTo(thread);
-
       if ((extra > 0) && !Nav.haveExtra) {
         Nav.haveExtra = true;
         return $.on(d, 'scroll', Nav.removeExtra);
       }
     },
-
     removeExtra() {
       const extra = doc.clientHeight - d.body.getBoundingClientRect().bottom;
       if (extra > 0) {
@@ -11791,62 +12755,54 @@ svg.icon {
   var Volume = {
     init() {
       if (!['index', 'thread'].includes(g.VIEW) ||
-        (!Conf['Image Expansion'] && !Conf['Image Hover'] && !Conf['Image Hover in Catalog'] && !Conf['Gallery'])) { return; }
-
-      $.sync('Allow Sound', function(x) {
+        (!Conf['Image Expansion'] && !Conf['Image Hover'] && !Conf['Image Hover in Catalog'] && !Conf['Gallery'])) {
+        return;
+      }
+      $.sync('Allow Sound', function (x) {
         Conf['Allow Sound'] = x;
-        if (Volume.inputs) Volume.inputs.unmute.checked = x;
+        if (Volume.inputs)
+          Volume.inputs.unmute.checked = x;
       });
-
-      $.sync('Default Volume', function(x) {
+      $.sync('Default Volume', function (x) {
         Conf['Default Volume'] = x;
-        if (Volume.inputs) Volume.inputs.volume.value = x;
+        if (Volume.inputs)
+          Volume.inputs.volume.value = x;
       });
-
       if (Conf['Mouse Wheel Volume']) {
         Callbacks.Post.push({
           name: 'Mouse Wheel Volume',
-          cb:   this.node
+          cb: this.node
         });
       }
-
-      if (g.SITE.noAudio?.(g.BOARD)) { return; }
-
+      if (g.SITE.noAudio?.(g.BOARD)) {
+        return;
+      }
       if (Conf['Mouse Wheel Volume']) {
         Callbacks.CatalogThread.push({
           name: 'Mouse Wheel Volume',
-          cb:   this.catalogNode
+          cb: this.catalogNode
         });
       }
-
       const unmuteEntry = UI.checkbox('Allow Sound', 'Allow Sound');
       unmuteEntry.title = Config.main['Images and Videos']['Allow Sound'][1];
-
-      const volumeEntry = $.el('label',
-        {title: 'Default volume for videos.'});
-      $.extend(volumeEntry,
-        {innerHTML: "<input name=\"Default Volume\" type=\"range\" min=\"0\" max=\"1\" step=\"0.01\" value=\"" + E(Conf["Default Volume"]) + "\"> Volume"});
-
+      const volumeEntry = $.el('label', { title: 'Default volume for videos.' });
+      $.extend(volumeEntry, { innerHTML: "<input name=\"Default Volume\" type=\"range\" min=\"0\" max=\"1\" step=\"0.01\" value=\"" + E(Conf["Default Volume"]) + "\"> Volume" });
       this.inputs = {
         unmute: unmuteEntry.firstElementChild,
         volume: volumeEntry.firstElementChild
       };
-
       $.on(this.inputs.unmute, 'change', $.cb.checked);
       $.on(this.inputs.volume, 'change', $.cb.value);
-
-      Header.menu.addEntry({el: unmuteEntry, order: 200});
-      return Header.menu.addEntry({el: volumeEntry, order: 201});
+      Header.menu.addEntry({ el: unmuteEntry, order: 200 });
+      return Header.menu.addEntry({ el: volumeEntry, order: 201 });
     },
-
     setup(video) {
-      video.muted  = !Conf['Allow Sound'];
+      video.muted = !Conf['Allow Sound'];
       video.volume = Conf['Default Volume'];
       return $.on(video, 'volumechange', Volume.change);
     },
-
     change() {
-      const {muted, volume} = this;
+      const { muted, volume } = this;
       const items = {
         'Allow Sound': !muted,
         'Default Volume': volume
@@ -11864,31 +12820,44 @@ svg.icon {
         return Volume.inputs.volume.value = volume;
       }
     },
-
     node() {
-      if (g.SITE.noAudio?.(this.board)) { return; }
+      if (g.SITE.noAudio?.(this.board)) {
+        return;
+      }
       for (var file of this.files) {
         if (file.isVideo) {
-          if (file.thumb) { $.on(file.thumb, 'wheel', Volume.wheel.bind(Header.hover)); }
+          if (file.thumb) {
+            $.on(file.thumb, 'wheel', Volume.wheel.bind(Header.hover));
+          }
           $.on(($('.file-info', file.text) || file.link), 'wheel', Volume.wheel.bind(file.thumbLink));
         }
       }
     },
-
     catalogNode() {
       const file = this.thread.OP.files[0];
-      if (!file?.isVideo) { return; }
+      if (!file?.isVideo) {
+        return;
+      }
       return $.on(this.nodes.thumb, 'wheel', Volume.wheel.bind(Header.hover));
     },
-
     wheel(e) {
       let el;
-      if (e.shiftKey || e.altKey || e.ctrlKey || e.metaKey) { return; }
-      if (!(el = $('video:not([data-md5])', this))) { return; }
-      if (el.muted || !$.hasAudio(el)) { return; }
+      if (e.shiftKey || e.altKey || e.ctrlKey || e.metaKey) {
+        return;
+      }
+      if (!(el = $('video:not([data-md5])', this))) {
+        return;
+      }
+      if (el.muted || !$.hasAudio(el)) {
+        return;
+      }
       let volume = el.volume + 0.1;
-      if (e.deltaY < 0) { volume *= 1.1; }
-      if (e.deltaY > 0) { volume /= 1.1; }
+      if (e.deltaY < 0) {
+        volume *= 1.1;
+      }
+      if (e.deltaY > 0) {
+        volume /= 1.1;
+      }
       el.volume = $.minmax(volume - 0.1, 0, 1);
       return e.preventDefault();
     }
@@ -11972,7 +12941,7 @@ svg.icon {
     cb: {
       toggle(e) {
         const post = Get.postFromNode(this);
-        if (e.shiftKey) {
+        if (e.shiftKey && Conf['MD5 Quick Filter in Threads']) {
           Filter.quickFilterMD5.call(post);
           e.preventDefault();
           e.stopImmediatePropagation();
@@ -12466,7 +13435,7 @@ svg.icon {
       //   Preceding and following new lines.
       //   Trailing spaces.
       const bq = this.nodes.commentClean.cloneNode(true);
-      if (Conf['Spoiler Mode'] === 'default') {
+      if (!Conf['Remove Spoilers'] && !Conf['Reveal Spoilers']) {
         this.cleanSpoilers(bq);
       }
       g.SITE.cleanCommentDisplay?.(bq);
@@ -12777,20 +13746,19 @@ svg.icon {
 
   var BoardConfig = {
     cbs: [],
-
     init() {
       let middle;
-      if (g.SITE.software !== 'yotsuba') { return; }
+      if (g.SITE.software !== 'yotsuba') {
+        return;
+      }
       const now = Date.now();
       if (now - (2 * HOUR) >= ((middle = Conf['boardConfig'].lastChecked || 0)) || middle > now) {
-        return $.ajax(`${location.protocol}//a.4cdn.org/boards.json`,
-          {onloadend: this.load});
+        return $.ajax(`${location.protocol}//a.4cdn.org/boards.json`, { onloadend: this.load });
       } else {
-        const {boards} = Conf['boardConfig'];
+        const { boards } = Conf['boardConfig'];
         return this.set(boards);
       }
     },
-
     load() {
       let boards;
       if ((this.status === 200) && this.response && this.response.boards) {
@@ -12798,19 +13766,20 @@ svg.icon {
         for (var board of this.response.boards) {
           boards[board.board] = board;
         }
-        $.set('boardConfig', {boards, lastChecked: Date.now()});
+        $.set('boardConfig', { boards, lastChecked: Date.now() });
       } else {
-        ({boards} = Conf['boardConfig']);
-        const err = (() => { switch (this.status) {
-          case 0:   return 'Connection Error';
-          case 200: return 'Invalid Data';
-          default:          return `Error ${this.statusText} (${this.status})`;
-        } })();
+        ({ boards } = Conf['boardConfig']);
+        const err = (() => {
+          switch (this.status) {
+            case 0: return 'Connection Error';
+            case 200: return 'Invalid Data';
+            default: return `Error ${this.statusText} (${this.status})`;
+          }
+        })();
         new Notice('warning', `Failed to load board configuration. ${err}`, 20);
       }
       return BoardConfig.set(boards);
     },
-
     set(boards) {
       this.boards = boards;
       for (var ID in g.boards) {
@@ -12821,7 +13790,6 @@ svg.icon {
         $.queueTask(cb);
       }
     },
-
     ready(cb) {
       if (this.boards) {
         return cb();
@@ -12829,7 +13797,6 @@ svg.icon {
         return this.cbs.push(cb);
       }
     },
-
     sfwBoards(sfw) {
       return (() => {
         const result = [];
@@ -12843,28 +13810,25 @@ svg.icon {
         return result;
       })();
     },
-
     isSFW(board) {
       return !!(this.boards || Conf['boardConfig'].boards)[board]?.ws_board;
     },
-
     domain(board) {
       // return `boards.${BoardConfig.isSFW(board) ? '4channel' : '4chan'}.org`;
       return 'boards.4chan.org';
     },
-
     isArchived(board) {
       // assume archive exists if no data available to prevent cleaning of archived threads
       const data = (this.boards || Conf['boardConfig'].boards)[board];
       return !data || data.is_archived;
     },
-
     noAudio(boardID) {
-      if (g.SITE.software !== 'yotsuba') { return false; }
+      if (g.SITE.software !== 'yotsuba') {
+        return false;
+      }
       const boards = this.boards || Conf['boardConfig'].boards;
       return boards && boards[boardID] && !boards[boardID].webm_audio;
     },
-
     title(boardID) {
       return (this.boards || Conf['boardConfig'].boards)?.[boardID]?.title || '';
     }
@@ -12872,28 +13836,24 @@ svg.icon {
 
   var Menu = {
     init() {
-      if (!['index', 'thread'].includes(g.VIEW) || !Conf['Menu']) { return; }
-
+      if (!['index', 'thread'].includes(g.VIEW) || !Conf['Menu']) {
+        return;
+      }
       this.button = $.el('a', {
         className: 'menu-button',
-        href:      'javascript:;'
-      }
-      );
-
+        href: 'javascript:;'
+      });
       Icon.set(this.button, 'caretDown');
-
       this.menu = new UI.Menu('post');
       Callbacks.Post.push({
         name: 'Menu',
-        cb:   this.node
+        cb: this.node
       });
-
       return Callbacks.CatalogThread.push({
         name: 'Menu',
-        cb:   this.catalogNode
+        cb: this.catalogNode
       });
     },
-
     node() {
       if (this.isClone) {
         const button = $('.menu-button', this.nodes.info);
@@ -12904,14 +13864,14 @@ svg.icon {
       }
       return $.add(this.nodes.info, Menu.makeButton(this));
     },
-
     catalogNode() {
       return $.after(this.nodes.icons, Menu.makeButton(this.thread.OP));
     },
-
     makeButton(post, button) {
-      if (!button) { button = Menu.button.cloneNode(true); }
-      $.on(button, 'click', function(e) {
+      if (!button) {
+        button = Menu.button.cloneNode(true);
+      }
+      $.on(button, 'click', function (e) {
         return Menu.menu.toggle(e, this, post);
       });
       return button;
@@ -13484,7 +14444,7 @@ svg.icon {
       g.boards[this] = this;
     }
     cooldowns() {
-      const c2 = (this.config || {}).cooldowns || {};
+      const c2 = this.config?.cooldowns ?? {};
       const c = {
         thread: c2.threads || 0,
         reply: c2.replies || 0,
@@ -13504,7 +14464,9 @@ svg.icon {
   const PostRedirect = {
     init() {
       return $.on(d, 'QRPostSuccessful', e => {
-        if (!e.detail.redirect) { return; }
+        if (!e.detail.redirect) {
+          return;
+        }
         this.event = e;
         this.delays = 0;
         return $.queueTask(() => {
@@ -13514,15 +14476,17 @@ svg.icon {
         });
       });
     },
-
     delays: 0,
-
     delay() {
-      if (!this.event) { return null; }
+      if (!this.event) {
+        return null;
+      }
       const e = this.event;
       this.delays++;
       return () => {
-        if (e !== this.event) { return; }
+        if (e !== this.event) {
+          return;
+        }
         this.delays--;
         if (this.delays === 0) {
           return location.href = e.detail.redirect;
@@ -13533,28 +14497,25 @@ svg.icon {
 
   var ExpandComment = {
     init() {
-      if ((g.VIEW !== 'index') || !Conf['Comment Expansion'] || Conf['JSON Index']) { return; }
-
+      if ((g.VIEW !== 'index') || !Conf['Comment Expansion'] || Conf['JSON Index']) {
+        return;
+      }
       return Callbacks.Post.push({
         name: 'Comment Expansion',
-        cb:   this.node
+        cb: this.node
       });
     },
-
     node() {
       let a;
       if (a = $('.abbr > a:not([onclick])', this.nodes.comment)) {
         return $.on(a, 'click', ExpandComment.cb);
       }
     },
-
     callbacks: [],
-
     cb(e) {
       e.preventDefault();
       return ExpandComment.expand(Get.postFromNode(this));
     },
-
     expand(post) {
       let a;
       if (post.nodes.longComment && !post.nodes.longComment.parentNode) {
@@ -13562,53 +14523,54 @@ svg.icon {
         post.nodes.comment = post.nodes.longComment;
         return;
       }
-      if (!(a = $('.abbr > a', post.nodes.comment))) { return; }
+      if (!(a = $('.abbr > a', post.nodes.comment))) {
+        return;
+      }
       a.textContent = `Post No.${post} Loading...`;
-      return $.cache(g.SITE.urls.threadJSON({boardID: post.boardID, threadID: post.threadID}), function() { return ExpandComment.parse(this, a, post); });
+      return $.cache(g.SITE.urls.threadJSON({ boardID: post.boardID, threadID: post.threadID }), function () { return ExpandComment.parse(this, a, post); });
     },
-
     contract(post) {
-      if (!post.nodes.shortComment) { return; }
+      if (!post.nodes.shortComment) {
+        return;
+      }
       const a = $('.abbr > a', post.nodes.shortComment);
       a.textContent = 'here';
       $.replace(post.nodes.longComment, post.nodes.shortComment);
       return post.nodes.comment = post.nodes.shortComment;
     },
-
     parse(req, a, post) {
       let postObj, spoilerRange;
-      const {status} = req;
+      const { status } = req;
       if (![200, 304].includes(status)) {
         a.textContent = status ? `Error ${req.statusText} (${status})` : 'Connection Error';
         return;
       }
-
-      const {
-        posts
-      } = req.response;
+      const { posts } = req.response;
       if (spoilerRange = posts[0].custom_spoiler) {
         g.SITE.Build.spoilerRange[g.BOARD] = spoilerRange;
       }
-
       for (postObj of posts) {
-        if (postObj.no === post.ID) { break; }
+        if (postObj.no === post.ID) {
+          break;
+        }
       }
       if (postObj.no !== post.ID) {
         a.textContent = `Post No.${post} not found.`;
         return;
       }
-
-      const {comment} = post.nodes;
+      const { comment } = post.nodes;
       const clone = comment.cloneNode(false);
       clone.innerHTML = postObj.com;
       // Fix pathnames
       for (var quote of $$('.quotelink', clone)) {
         var href = quote.getAttribute('href');
-        if (href[0] === '/') { continue; } // Cross-board quote, or board link
+        if (href[0] === '/') {
+          continue;
+        } // Cross-board quote, or board link
         if (href[0] === '#') {
-          quote.href = `${a.pathname.split(/\/+/).splice(0,4).join('/')}${href}`;
+          quote.href = `${a.pathname.split(/\/+/).splice(0, 4).join('/')}${href}`;
         } else {
-          quote.href = `${a.pathname.split(/\/+/).splice(0,3).join('/')}/${href}`;
+          quote.href = `${a.pathname.split(/\/+/).splice(0, 3).join('/')}/${href}`;
         }
       }
       post.nodes.shortComment = comment;
@@ -13616,7 +14578,6 @@ svg.icon {
       post.nodes.comment = (post.nodes.longComment = clone);
       post.parseComment();
       post.parseQuotes();
-
       for (var callback of ExpandComment.callbacks) {
         callback.call(post);
       }
@@ -13626,15 +14587,22 @@ svg.icon {
   class RandomAccessList {
     constructor(items) {
       this.length = 0;
-      if (items) { for (var item of items) { this.push(item); } }
+      if (items) {
+        for (var item of items) {
+          this.push(item);
+        }
+      }
     }
-
     push(data) {
       let item;
-      let {ID} = data;
-      if (!ID) { ID = data.id; }
-      if (this[ID]) { return; }
-      const {last} = this;
+      let { ID } = data;
+      if (!ID) {
+        ID = data.id;
+      }
+      if (this[ID]) {
+        return;
+      }
+      const { last } = this;
       this[ID] = (item = {
         prev: last,
         next: null,
@@ -13644,17 +14612,16 @@ svg.icon {
       item.prev = last;
       this.last = last ?
         (last.next = item)
-      :
-        (this.first = item);
+        :
+          (this.first = item);
       return this.length++;
     }
-
     before(root, item) {
-      if ((item.next === root) || (item === root)) { return; }
-
+      if ((item.next === root) || (item === root)) {
+        return;
+      }
       this.rmi(item);
-
-      const {prev} = root;
+      const { prev } = root;
       root.prev = item;
       item.next = root;
       item.prev = prev;
@@ -13664,13 +14631,12 @@ svg.icon {
         return this.first = item;
       }
     }
-
     after(root, item) {
-      if ((item.prev === root) || (item === root)) { return; }
-
+      if ((item.prev === root) || (item === root)) {
+        return;
+      }
       this.rmi(item);
-
-      const {next} = root;
+      const { next } = root;
       root.next = item;
       item.prev = root;
       item.next = next;
@@ -13680,12 +14646,13 @@ svg.icon {
         return this.last = item;
       }
     }
-
     prepend(item) {
-      const {first} = this;
-      if ((item === first) || !this[item.ID]) { return; }
+      const { first } = this;
+      if ((item === first) || !this[item.ID]) {
+        return;
+      }
       this.rmi(item);
-      item.next  = first;
+      item.next = first;
       if (first) {
         first.prev = item;
       } else {
@@ -13694,30 +14661,30 @@ svg.icon {
       this.first = item;
       return delete item.prev;
     }
-
     shift() {
       return this.rm(this.first.ID);
     }
-
     order() {
       let item;
       const order = [(item = this.first)];
-      while ((item = item.next)) { order.push(item); }
+      while ((item = item.next)) {
+        order.push(item);
+      }
       return order;
     }
-
     rm(ID) {
       const item = this[ID];
-      if (!item) { return; }
+      if (!item) {
+        return;
+      }
       delete this[ID];
       this.length--;
       this.rmi(item);
       delete item.next;
       return delete item.prev;
     }
-
     rmi(item) {
-      const {prev, next} = item;
+      const { prev, next } = item;
       if (prev) {
         prev.next = next;
       } else {
@@ -13733,89 +14700,94 @@ svg.icon {
 
   var Unread = {
     init() {
-      if ((g.VIEW !== 'thread') || (
-        !Conf['Unread Count'] &&
+      if ((g.VIEW !== 'thread') || (!Conf['Unread Count'] &&
         !Conf['Unread Favicon'] &&
         !Conf['Unread Line'] &&
         !Conf['Remember Last Read Post'] &&
         !Conf['Desktop Notifications'] &&
         !Conf['Quote Threading'] &&
         !Conf['Beep'] &&
-        !Conf['Beep Quoting You']
-      )) { return; }
-
+        !Conf['Beep Quoting You'])) {
+        return;
+      }
       if (Conf['Remember Last Read Post']) {
         $.sync('Remember Last Read Post', enabled => Conf['Remember Last Read Post'] = enabled);
         this.db = new DataBoard('lastReadPosts', this.sync);
       }
-
       this.hr = $.el('hr', {
         id: 'unread-line',
         className: 'unread-line'
-      }
-      );
+      });
       this.posts = new Set();
       this.postsQuotingYou = new Set();
       this.order = new RandomAccessList();
       this.position = null;
-
       Callbacks.Thread.push({
         name: 'Unread',
-        cb:   this.node
+        cb: this.node
       });
-
       return Callbacks.Post.push({
         name: 'Unread',
-        cb:   this.addPost
+        cb: this.addPost
       });
     },
-
     node() {
       Unread.thread = this;
-      Unread.title  = d.title;
+      Unread.title = d.title;
       Unread.lastReadPost = Unread.db?.get({
         boardID: this.board.ID,
         threadID: this.ID
       }) || 0;
       Unread.readCount = 0;
-      for (var ID of this.posts.keys) { if (+ID <= Unread.lastReadPost) { Unread.readCount++; } }
+      for (var ID of this.posts.keys) {
+        if (+ID <= Unread.lastReadPost) {
+          Unread.readCount++;
+        }
+      }
       $.one(d, '4chanXInitFinished', Unread.ready);
-      $.on(d, 'PostsInserted',      Unread.onUpdate);
-      $.on(d, 'ThreadUpdate',       function(e) { if (e.detail[404]) { return Unread.update(); } });
+      $.on(d, 'PostsInserted', Unread.onUpdate);
+      $.on(d, 'ThreadUpdate', function (e) { if (e.detail[404]) {
+        return Unread.update();
+      } });
       const resetLink = $.el('a', {
         href: 'javascript:;',
         className: 'unread-reset',
         textContent: 'Mark all unread'
-      }
-      );
+      });
       $.on(resetLink, 'click', Unread.reset);
       return Header.menu.addEntry({
         el: resetLink,
         order: 70
       });
     },
-
     ready() {
-      if (Conf['Remember Last Read Post'] && Conf['Scroll to Last Read Post']) { Unread.scroll(); }
+      if (Conf['Remember Last Read Post'] && Conf['Scroll to Last Read Post']) {
+        Unread.scroll();
+      }
       Unread.setLine(true);
       Unread.read();
       Unread.update();
       $.on(d, 'scroll visibilitychange', Unread.read);
-      if (Conf['Unread Line']) { return $.on(d, 'visibilitychange',        Unread.setLine); }
+      if (Conf['Unread Line']) {
+        return $.on(d, 'visibilitychange', Unread.setLine);
+      }
     },
-
     positionPrev() {
-      if (Unread.position) { return Unread.position.prev; } else { return Unread.order.last; }
+      if (Unread.position) {
+        return Unread.position.prev;
+      } else {
+        return Unread.order.last;
+      }
     },
-
     scroll() {
       // Let the header's onload callback handle it.
       let hash;
-      if ((hash = location.hash.match(/\d+/)) && hash[0] in Unread.thread.posts) { return; }
-
+      if ((hash = location.hash.match(/\d+/)) && hash[0] in Unread.thread.posts) {
+        return;
+      }
       let position = Unread.positionPrev();
       while (position) {
-        var {bottom} = position.data.nodes;
+        var { bottom } = position.data.nodes;
         if (!bottom.getBoundingClientRect().height) {
           // Don't try to scroll to posts with display: none
           position = position.prev;
@@ -13825,10 +14797,10 @@ svg.icon {
         }
       }
     },
-
     reset() {
-      if (Unread.lastReadPost == null) { return; }
-
+      if (Unread.lastReadPost == null) {
+        return;
+      }
       Unread.posts = new Set();
       Unread.postsQuotingYou = new Set();
       Unread.order = new RandomAccessList();
@@ -13836,56 +14808,57 @@ svg.icon {
       Unread.lastReadPost = 0;
       Unread.readCount = 0;
       Unread.thread.posts.forEach(post => Unread.addPost.call(post));
-
       $.forceSync('Remember Last Read Post');
       if (Conf['Remember Last Read Post'] && (!Unread.thread.isDead || Unread.thread.isArchived)) {
         Unread.db.set({
-          boardID:  Unread.thread.board.ID,
+          boardID: Unread.thread.board.ID,
           threadID: Unread.thread.ID,
-          val:      0
+          val: 0
         });
       }
-
       Unread.updatePosition();
       Unread.setLine();
       return Unread.update();
     },
-
     sync() {
-      if (Unread.lastReadPost == null) { return; }
+      if (Unread.lastReadPost == null) {
+        return;
+      }
       const lastReadPost = Unread.db.get({
         boardID: Unread.thread.board.ID,
         threadID: Unread.thread.ID,
         defaultValue: 0
       });
-      if (Unread.lastReadPost >= lastReadPost) { return; }
+      if (Unread.lastReadPost >= lastReadPost) {
+        return;
+      }
       Unread.lastReadPost = lastReadPost;
-
       const postIDs = Unread.thread.posts.keys;
       for (let i = Unread.readCount, end = postIDs.length; i < end; i++) {
         var ID = +postIDs[i];
         if (!Unread.thread.posts.get(ID).isFetchedQuote) {
-          if (ID > Unread.lastReadPost) { break; }
+          if (ID > Unread.lastReadPost) {
+            break;
+          }
           Unread.posts.delete(ID);
           Unread.postsQuotingYou.delete(ID);
         }
         Unread.readCount++;
       }
-
       Unread.updatePosition();
       Unread.setLine();
       return Unread.update();
     },
-
     addPost() {
-      if (this.isFetchedQuote || this.isClone) return;
+      if (this.isFetchedQuote || this.isClone)
+        return;
       Unread.order.push(this);
-      if ((this.ID <= Unread.lastReadPost) || this.isHidden || QuoteYou.isYou(this)) return;
+      if ((this.ID <= Unread.lastReadPost) || this.isHidden || QuoteYou.isYou(this))
+        return;
       Unread.posts.add((Unread.posts.last = this.ID));
       Unread.addPostQuotingYou(this);
       return Unread.position != null ? Unread.position : (Unread.position = Unread.order[this.ID]);
     },
-
     addPostQuotingYou(post) {
       for (var quotelink of post.nodes.quotelinks) {
         if (QuoteYou.db?.get(Get.postDataFromLink(quotelink))) {
@@ -13895,105 +14868,115 @@ svg.icon {
         }
       }
     },
-
-    openNotification(post, predicate=' replied to you') {
+    openNotification(post, predicate = ' replied to you') {
       const isQuotingYou = predicate === ' replied to you';
       if ((isQuotingYou && Conf['Beep Quoting You']) || (!isQuotingYou && Conf['Beep'])) {
         $.event('PlayUpdaterSound', { post, predicate });
       }
-      if (!Header.areNotificationsEnabled) { return; }
+      if (!Header.areNotificationsEnabled) {
+        return;
+      }
       const notif = new Notification(`${post.info.nameBlock}${predicate}`, {
         body: post.commentDisplay(),
         icon: Favicon.logo
-      }
-      );
-      notif.onclick = function() {
+      });
+      notif.onclick = function () {
         Header.scrollToIfNeeded(post.nodes.bottom, true);
         return window.focus();
       };
-      return notif.onshow = () => setTimeout(() => notif.close()
-      , 7 * SECOND);
+      return notif.onshow = () => setTimeout(() => notif.close(), 7 * SECOND);
     },
-
     onUpdate() {
-      return $.queueTask(function() { // ThreadUpdater may scroll immediately after inserting posts
+      return $.queueTask(function () {
         Unread.setLine();
         Unread.read();
         return Unread.update();
       });
     },
-
     readSinglePost(post) {
-      const {ID} = post;
-      if (!Unread.posts.has(ID)) { return; }
+      const { ID } = post;
+      if (!Unread.posts.has(ID)) {
+        return;
+      }
       Unread.posts.delete(ID);
       Unread.postsQuotingYou.delete(ID);
       Unread.updatePosition();
       Unread.saveLastReadPost();
       return Unread.update();
     },
-
-    read: debounce(100, function(e) {
+    read: debounce(100, function (e) {
       // Update the lastReadPost when hidden posts are added to the thread.
       if (!Unread.posts.size && (Unread.readCount !== Unread.thread.posts.keys.length)) {
         Unread.saveLastReadPost();
       }
-
-      if (d.hidden || !Unread.posts.size) { return; }
-
+      if (d.hidden || !Unread.posts.size) {
+        return;
+      }
       let count = 0;
       while (Unread.position) {
-        var {ID, data} = Unread.position;
-        var {bottom} = data.nodes;
+        var { ID, data } = Unread.position;
+        var { bottom } = data.nodes;
         if (!!bottom.getBoundingClientRect().height && // post has been hidden
-          (Header.getBottomOf(bottom) <= -1)) { break; }                      // post is completely read
+          (Header.getBottomOf(bottom) <= -1)) {
+          break;
+        } // post is completely read
         count++;
         Unread.posts.delete(ID);
         Unread.postsQuotingYou.delete(ID);
         Unread.position = Unread.position.next;
       }
-
-      if (!count) { return; }
+      if (!count) {
+        return;
+      }
       Unread.updatePosition();
       Unread.saveLastReadPost();
-      if (e) { return Unread.update(); }
+      if (e) {
+        return Unread.update();
+      }
     }),
-
     updatePosition() {
       while (Unread.position && !Unread.posts.has(Unread.position.ID)) {
         Unread.position = Unread.position.next;
       }
     },
-
-    saveLastReadPost: debounce(2 * SECOND, function() {
+    saveLastReadPost: debounce(2 * SECOND, function () {
       let ID;
       $.forceSync('Remember Last Read Post');
-      if (!Conf['Remember Last Read Post'] || !Unread.db) { return; }
+      if (!Conf['Remember Last Read Post'] || !Unread.db) {
+        return;
+      }
       const postIDs = Unread.thread.posts.keys;
       for (let i = Unread.readCount, end = postIDs.length; i < end; i++) {
         ID = +postIDs[i];
         if (!Unread.thread.posts.get(ID).isFetchedQuote) {
-          if (Unread.posts.has(ID)) { break; }
+          if (Unread.posts.has(ID)) {
+            break;
+          }
           Unread.lastReadPost = ID;
         }
         Unread.readCount++;
       }
-      if (Unread.thread.isDead && !Unread.thread.isArchived) { return; }
+      if (Unread.thread.isDead && !Unread.thread.isArchived) {
+        return;
+      }
       return Unread.db.set({
-        boardID:  Unread.thread.board.ID,
+        boardID: Unread.thread.board.ID,
         threadID: Unread.thread.ID,
-        val:      Unread.lastReadPost
+        val: Unread.lastReadPost
       });
     }),
-
     setLine(force) {
-      if (!Conf['Unread Line']) { return; }
+      if (!Conf['Unread Line']) {
+        return;
+      }
       if (Unread.hr.hidden || d.hidden || (force === true)) {
         const oldPosition = Unread.linePosition;
         if (Unread.linePosition = Unread.positionPrev()) {
           if (Unread.linePosition !== oldPosition) {
             let node = Unread.linePosition.data.nodes.bottom;
-            if (node.nextSibling?.tagName === 'BR') { node = node.nextSibling; }
+            if (node.nextSibling?.tagName === 'BR') {
+              node = node.nextSibling;
+            }
             $.after(node, Unread.hr);
           }
         } else {
@@ -14002,38 +14985,30 @@ svg.icon {
       }
       return Unread.hr.hidden = Unread.linePosition === Unread.order.last;
     },
-
     update() {
       const count = Unread.posts.size;
       const countQuotingYou = Unread.postsQuotingYou.size;
-
       if (Conf['Unread Count']) {
         const titleQuotingYou = Conf['Quoted Title'] && countQuotingYou ? '(!) ' : '';
         const titleCount = count || !Conf['Hide Unread Count at (0)'] ? `(${count}) ` : '';
         const titleDead = Unread.thread.isDead ?
           Unread.title.replace('-', (Unread.thread.isArchived ? '- Archived -' : '- 404 -'))
-        :
-          Unread.title;
+          :
+            Unread.title;
         d.title = `${titleQuotingYou}${titleCount}${titleDead}`;
       }
-
       Unread.saveThreadWatcherCount();
-
       if (Conf['Unread Favicon'] && (g.SITE.software === 'yotsuba')) {
-        const {isDead} = Unread.thread;
-        return Favicon.set((
-          countQuotingYou ?
-            (isDead ? 'unreadDeadY' : 'unreadY')
+        const { isDead } = Unread.thread;
+        return Favicon.set((countQuotingYou ?
+          (isDead ? 'unreadDeadY' : 'unreadY')
           : count ?
             (isDead ? 'unreadDead' : 'unread')
-          :
-            (isDead ? 'dead' : 'default')
-        )
-        );
+            :
+              (isDead ? 'dead' : 'default')));
       }
     },
-
-    saveThreadWatcherCount: debounce(2 * SECOND, function() {
+    saveThreadWatcherCount: debounce(2 * SECOND, function () {
       $.forceSync('Remember Last Read Post');
       if (Conf['Remember Last Read Post'] && (!Unread.thread.isDead || Unread.thread.isArchived)) {
         let posts;
@@ -14050,14 +15025,13 @@ svg.icon {
             }
           }
         }
-        return ThreadWatcher$1.update(g.SITE.ID, Unread.thread.board.ID, Unread.thread.ID, {
+        return ThreadWatcher.update(g.SITE.ID, Unread.thread.board.ID, Unread.thread.ID, {
           last: Unread.thread.lastPost,
           isDead: Unread.thread.isDead,
           isArchived: Unread.thread.isArchived,
           unread: Unread.posts.size,
           quotingYou: (quotingYou.last || 0)
-        }
-        );
+        });
       }
     })
   };
@@ -14679,85 +15653,79 @@ svg.icon {
 
   var QuoteYou = {
     init() {
-      if (!Conf['Remember Your Posts']) { return; }
-
+      if (!Conf['Remember Your Posts']) {
+        return;
+      }
       this.db = new DataBoard('yourPosts');
       $.sync('Remember Your Posts', enabled => Conf['Remember Your Posts'] = enabled);
-      $.on(d, 'QRPostSuccessful', function(e) {
+      $.on(d, 'QRPostSuccessful', function (e) {
         const cb = PostRedirect.delay();
-        return $.get('Remember Your Posts', Conf['Remember Your Posts'], function(items) {
-          if (!items['Remember Your Posts']) { return; }
-          const {boardID, threadID, postID} = e.detail;
-          return QuoteYou.db.set({boardID, threadID, postID, val: true}, cb);
+        return $.get('Remember Your Posts', Conf['Remember Your Posts'], function (items) {
+          if (!items['Remember Your Posts']) {
+            return;
+          }
+          const { boardID, threadID, postID } = e.detail;
+          return QuoteYou.db.set({ boardID, threadID, postID, val: true }, cb);
         });
       });
-
-      if (!['index', 'thread', 'archive'].includes(g.VIEW)) { return; }
-
+      if (!['index', 'thread', 'archive'].includes(g.VIEW)) {
+        return;
+      }
       if ((Conf['Enable Thread Highlights'] !== false) && Conf['Highlight Own Posts']) {
         $.addClass(doc, 'highlight-own');
       }
-
       if ((Conf['Enable Thread Highlights'] !== false) && Conf['Highlight Posts Quoting You']) {
         $.addClass(doc, 'highlight-you');
       }
-
       if ((Conf['Enable Thread Highlights'] !== false) && Conf['Highlight Ghost Posts']) {
         $.addClass(doc, 'highlight-ghost');
       }
-
       if (Conf['Comment Expansion']) {
         ExpandComment.callbacks.push(this.node);
       }
-
       // \u00A0 is nbsp
       this.mark = $.el('span', {
         textContent: '\u00A0(You)',
-        className:   'qmark-you'
-      }
-      );
+        className: 'qmark-you'
+      });
       Callbacks.Post.push({
         name: 'Mark Quotes of You',
-        cb:   this.node
+        cb: this.node
       });
-
       QuoteYou.menu.init();
     },
-
     isYou(post) {
       return !!QuoteYou.db?.get({
-        boardID:  post.boardID,
+        boardID: post.boardID,
         threadID: post.threadID,
-        postID:   post.ID
+        postID: post.ID
       });
     },
-
     node() {
-      if (this.isClone) { return; }
-
+      if (this.isClone) {
+        return;
+      }
       if (QuoteYou.isYou(this)) {
         $.addClass(this.nodes.root, 'yourPost');
         ScrollMarkers.markScroll();
       }
-
       // Stop there if there's no quotes in that post.
-      if (!this.quotes.length) { return; }
-
+      if (!this.quotes.length) {
+        return;
+      }
       for (var quotelink of this.nodes.quotelinks) {
         if (QuoteYou.db.get(Get.postDataFromLink(quotelink))) {
-          if (Conf['Mark Quotes of You']) { $.add(quotelink, QuoteYou.mark.cloneNode(true)); }
+          if (Conf['Mark Quotes of You']) {
+            $.add(quotelink, QuoteYou.mark.cloneNode(true));
+          }
           $.addClass(quotelink, 'you');
           $.addClass(this.nodes.root, 'quotesYou');
         }
       }
     },
-
     menu: {
       init() {
-        const label = $.el('label',
-          {className: 'toggle-you'}
-        ,
-          {innerHTML: '<input type="checkbox"> You'});
+        const label = $.el('label', { className: 'toggle-you' }, { innerHTML: '<input type="checkbox"> You' });
         const input = $('input', label);
         $.on(input, 'change', QuoteYou.menu.toggle);
         Menu.menu?.addEntry({
@@ -14770,10 +15738,9 @@ svg.icon {
           }
         });
       },
-
       toggle() {
-        const {post} = QuoteYou.menu;
-        const data = {boardID: post.board.ID, threadID: post.thread.ID, postID: post.ID, val: true};
+        const { post } = QuoteYou.menu;
+        const data = { boardID: post.board.ID, threadID: post.thread.ID, postID: post.ID, val: true };
         if (this.checked) {
           QuoteYou.db.set(data);
         } else {
@@ -14784,7 +15751,9 @@ svg.icon {
         }
         for (var quotelink of Get.allQuotelinksLinkingTo(post)) {
           if (this.checked) {
-            if (Conf['Mark Quotes of You']) { $.add(quotelink, QuoteYou.mark.cloneNode(true)); }
+            if (Conf['Mark Quotes of You']) {
+              $.add(quotelink, QuoteYou.mark.cloneNode(true));
+            }
           } else {
             $.rm($('.qmark-you', quotelink));
           }
@@ -14797,34 +15766,34 @@ svg.icon {
         ScrollMarkers.markScroll();
       }
     },
-
     cb: {
       seek(type) {
         let highlighted, post;
         let result;
-        const {highlight} = g.SITE.classes;
-        if (highlighted = $(`.${highlight}`)) { $.rmClass(highlighted, highlight); }
-
+        const { highlight } = g.SITE.classes;
+        if (highlighted = $(`.${highlight}`)) {
+          $.rmClass(highlighted, highlight);
+        }
         if (!QuoteYou.lastRead || !doc.contains(QuoteYou.lastRead) || !$.hasClass(QuoteYou.lastRead, 'quotesYou')) {
           if (!(post = (QuoteYou.lastRead = $('.quotesYou')))) {
             new Notice('warning', 'No posts are currently quoting you, loser.', 20);
             return;
           }
-          if (QuoteYou.cb.scroll(post)) { return; }
+          if (QuoteYou.cb.scroll(post)) {
+            return;
+          }
         } else {
           post = QuoteYou.lastRead;
         }
-
         const str = `${type}::div[contains(@class,'quotesYou')]`;
-
         while (post = (result = $.X(str, post)).snapshotItem(type === 'preceding' ? result.snapshotLength - 1 : 0)) {
-          if (QuoteYou.cb.scroll(post)) { return; }
+          if (QuoteYou.cb.scroll(post)) {
+            return;
+          }
         }
-
         const posts = $$('.quotesYou');
         return QuoteYou.cb.scroll(posts[type === 'following' ? 0 : posts.length - 1]);
       },
-
       scroll(root) {
         const post = Get.postFromRoot(root);
         if (!post.nodes.post.getBoundingClientRect().height) {
@@ -14836,7 +15805,9 @@ svg.icon {
           if (post.isReply) {
             const sel = `${g.SITE.selectors.postContainer}${g.SITE.selectors.highlightable.reply}`;
             let node = post.nodes.root;
-            if (!node.matches(sel)) { node = $(sel, node); }
+            if (!node.matches(sel)) {
+              node = $(sel, node);
+            }
             $.addClass(node, g.SITE.classes.highlight);
           }
           return true;
@@ -14848,7 +15819,9 @@ svg.icon {
   var ExpandThread = {
     statuses: dict(),
     init() {
-      if (!((g.VIEW === 'index') && Conf['Thread Expansion'])) { return; }
+      if (!((g.VIEW === 'index') && Conf['Thread Expansion'])) {
+        return;
+      }
       if (Conf['JSON Index']) {
         $.on(d, 'IndexRefreshInternal', this.onIndexRefresh);
       } else {
@@ -14858,18 +15831,20 @@ svg.icon {
         });
       }
     },
-
     setButton(thread) {
-      if (!thread.nodes.root) return;
+      if (!thread.nodes.root)
+        return;
       const a = $('a.summary', thread.nodes.root);
-      if (!a) return;
+      if (!a)
+        return;
       a.textContent = g.SITE.Build.summaryText('+', ...a.textContent.match(/\d+/g));
       a.style.cursor = 'pointer';
       $.on(a, 'click', ExpandThread.cbToggle);
     },
-
     disconnect(refresh) {
-      if ((g.VIEW === 'thread') || !Conf['Thread Expansion']) { return; }
+      if ((g.VIEW === 'thread') || !Conf['Thread Expansion']) {
+        return;
+      }
       for (var threadID in ExpandThread.statuses) {
         var oldReq;
         var status = ExpandThread.statuses[threadID];
@@ -14879,54 +15854,56 @@ svg.icon {
         }
         delete ExpandThread.statuses[threadID];
       }
-
-      if (!refresh) $.off(d, 'IndexRefreshInternal', this.onIndexRefresh);
+      if (!refresh)
+        $.off(d, 'IndexRefreshInternal', this.onIndexRefresh);
     },
-
     onIndexRefresh() {
       ExpandThread.disconnect(true);
       g.BOARD.threads.forEach(thread => ExpandThread.setButton(thread));
     },
-
     cbToggle(e) {
-      if ($.modifiedClick(e)) { return; }
+      if ($.modifiedClick(e)) {
+        return;
+      }
       e.preventDefault();
       ExpandThread.toggle(Get.threadFromNode(this));
     },
-
     cbToggleBottom(e) {
-      if ($.modifiedClick(e)) { return; }
+      if ($.modifiedClick(e)) {
+        return;
+      }
       e.preventDefault();
       const thread = Get.threadFromNode(this);
       $.rm(this); // remove before fixing bottom of thread position
-      const {bottom} = thread.nodes.root.getBoundingClientRect();
+      const { bottom } = thread.nodes.root.getBoundingClientRect();
       ExpandThread.toggle(thread);
       return window.scrollBy(0, (thread.nodes.root.getBoundingClientRect().bottom - bottom));
     },
-
     toggle(thread) {
-      if (!thread.nodes.root) return;
+      if (!thread.nodes.root)
+        return;
       const a = $('a.summary', thread.nodes.root);
-      if (!a) return;
+      if (!a)
+        return;
       if (thread.ID in ExpandThread.statuses) {
         ExpandThread.contract(thread, a, thread.nodes.root);
       } else {
         ExpandThread.expand(thread, a);
       }
     },
-
     expand(thread, a) {
       let status;
       ExpandThread.statuses[thread] = (status = {});
       a.textContent = g.SITE.Build.summaryText('...', ...a.textContent.match(/\d+/g));
-      status.req = $.cache(g.SITE.urls.threadJSON({boardID: thread.board.ID, threadID: thread.ID}), function() {
-        if (this !== status.req) { return; } // aborted
+      status.req = $.cache(g.SITE.urls.threadJSON({ boardID: thread.board.ID, threadID: thread.ID }), function () {
+        if (this !== status.req) {
+          return;
+        } // aborted
         delete status.req;
         ExpandThread.parse(this, thread, a);
       });
       status.numReplies = $$(g.SITE.selectors.replyOriginal, thread.nodes.root).length;
     },
-
     contract(thread, a, threadRoot) {
       let oldReq;
       const status = ExpandThread.statuses[thread];
@@ -14934,20 +15911,29 @@ svg.icon {
       if (oldReq = status.req) {
         delete status.req;
         oldReq.abort();
-        if (a) { a.textContent = g.SITE.Build.summaryText('+', ...a.textContent.match(/\d+/g)); }
+        if (a) {
+          a.textContent = g.SITE.Build.summaryText('+', ...a.textContent.match(/\d+/g));
+        }
         return;
       }
-
       let replies = $$('.thread > .replyContainer', threadRoot);
-      if (status.numReplies) { replies = replies.slice(0, (-status.numReplies)); }
+      if (status.numReplies) {
+        replies = replies.slice(0, (-status.numReplies));
+      }
       let postsCount = 0;
       let filesCount = 0;
       for (var reply of replies) {
         // rm clones
-        if (Conf['Quote Inlining']) { var inlined;
-        while ((inlined = $('.inlined', reply))) { inlined.click(); } }
+        if (Conf['Quote Inlining']) {
+          var inlined;
+          while ((inlined = $('.inlined', reply))) {
+            inlined.click();
+          }
+        }
         postsCount++;
-        if ('file' in Get.postFromRoot(reply)) { filesCount++; }
+        if ('file' in Get.postFromRoot(reply)) {
+          filesCount++;
+        }
         $.rm(reply);
       }
       if (Index.enabled) { // otherwise handled by Main.addPosts
@@ -14956,41 +15942,42 @@ svg.icon {
       a.textContent = g.SITE.Build.summaryText('+', postsCount, filesCount);
       $.rm($('.summary-bottom', threadRoot));
     },
-
     parse(req, thread, a) {
       let root;
       if (![200, 304].includes(req.status)) {
         a.textContent = req.status ? `Error ${req.statusText} (${req.status})` : 'Connection Error';
         return;
       }
-
       g.SITE.Build.spoilerRange[thread.board] = req.response.posts[0].custom_spoiler;
-
-      const posts      = [];
-      const postsRoot  = [];
+      const posts = [];
+      const postsRoot = [];
       let filesCount = 0;
       for (var postData of req.response.posts) {
         var post;
-        if (postData.no === thread.ID) { continue; }
+        if (postData.no === thread.ID) {
+          continue;
+        }
         if ((post = thread.posts.get(postData.no)) && !post.isFetchedQuote) {
-          if ('file' in post) { filesCount++; }
-          ({root} = post.nodes);
+          if ('file' in post) {
+            filesCount++;
+          }
+          ({ root } = post.nodes);
           postsRoot.push(root);
           continue;
         }
         root = g.SITE.Build.postFromObject(postData, thread.board.ID);
         post = new Post(root, thread, thread.board);
-        if ('file' in post) { filesCount++; }
+        if ('file' in post) {
+          filesCount++;
+        }
         posts.push(post);
         postsRoot.push(root);
       }
       Main.callbackNodes('Post', posts);
       $.after(a, postsRoot);
       $.event('PostsInserted', null, a.parentNode);
-
-      const postsCount    = postsRoot.length;
+      const postsCount = postsRoot.length;
       a.textContent = g.SITE.Build.summaryText('-', postsCount, filesCount);
-
       if (root) {
         const a2 = a.cloneNode(true);
         a2.classList.add('summary-bottom');
@@ -15002,24 +15989,21 @@ svg.icon {
 
   var UnreadIndex = {
     lastReadPost: dict(),
-    hr:           dict(),
+    hr: dict(),
     markReadLink: dict(),
-
     init() {
-      if ((g.VIEW !== 'index') || !Conf['Remember Last Read Post'] || !Conf['Unread Line in Index']) { return; }
-
+      if ((g.VIEW !== 'index') || !Conf['Remember Last Read Post'] || !Conf['Unread Line in Index']) {
+        return;
+      }
       this.enabled = true;
       this.db = new DataBoard('lastReadPosts', this.sync);
-
       Callbacks.Thread.push({
         name: 'Unread Line in Index',
-        cb:   this.node
+        cb: this.node
       });
-
       $.on(d, 'IndexRefreshInternal', this.onIndexRefresh);
       return $.on(d, 'PostsInserted PostsRemoved', this.onPostsInserted);
     },
-
     node() {
       UnreadIndex.lastReadPost[this.fullID] = UnreadIndex.db.get({
         boardID: this.board.ID,
@@ -15029,7 +16013,6 @@ svg.icon {
         return UnreadIndex.update(this);
       }
     },
-
     onIndexRefresh(e) {
       return (() => {
         const result = [];
@@ -15040,20 +16023,22 @@ svg.icon {
         return result;
       })();
     },
-
     onPostsInserted(e) {
-      if (e.target === Index.root) { return; } // onIndexRefresh handles this case
+      if (e.target === Index.root) {
+        return;
+      } // onIndexRefresh handles this case
       const thread = Get.threadFromNode(e.target);
-      if (!thread || (thread.nodes.root !== e.target)) { return; }
+      if (!thread || (thread.nodes.root !== e.target)) {
+        return;
+      }
       const wasVisible = !!UnreadIndex.hr[thread.fullID]?.parentNode;
       UnreadIndex.update(thread);
       if (Conf['Scroll to Last Read Post'] && (e.type === 'PostsInserted') && !wasVisible && !!UnreadIndex.hr[thread.fullID]?.parentNode) {
         return Header.scrollToIfNeeded(UnreadIndex.hr[thread.fullID], true);
       }
     },
-
     sync() {
-      return g.threads.forEach(function(thread) {
+      return g.threads.forEach(function (thread) {
         const lastReadPost = UnreadIndex.db.get({
           boardID: thread.board.ID,
           threadID: thread.ID
@@ -15066,14 +16051,13 @@ svg.icon {
         }
       });
     },
-
     update(thread) {
       let divider;
       const lastReadPost = UnreadIndex.lastReadPost[thread.fullID];
       let repliesShown = 0;
       let repliesRead = 0;
       let firstUnread = null;
-      thread.posts.forEach(function(post) {
+      thread.posts.forEach(function (post) {
         if (post.isReply && thread.nodes.root.contains(post.nodes.root)) {
           repliesShown++;
           if (post.ID <= lastReadPost) {
@@ -15083,39 +16067,34 @@ svg.icon {
           }
         }
       });
-
       let hr = UnreadIndex.hr[thread.fullID];
       if (firstUnread && (repliesRead || ((lastReadPost === thread.OP.ID) && (!$(g.SITE.selectors.summary, thread.nodes.root) || thread.ID in ExpandThread.statuses)))) {
         if (!hr) {
-          hr = (UnreadIndex.hr[thread.fullID] = $.el('hr',
-            {className: 'unread-line'}));
+          hr = (UnreadIndex.hr[thread.fullID] = $.el('hr', { className: 'unread-line' }));
         }
         $.before(firstUnread.nodes.root, hr);
       } else {
         $.rm(hr);
       }
-
       const hasUnread = repliesShown ?
         firstUnread || !repliesRead
-      : Index.enabled ?
-        thread.lastPost > lastReadPost
-      :
-        thread.OP.ID > lastReadPost;
+        : Index.enabled ?
+          thread.lastPost > lastReadPost
+          :
+            thread.OP.ID > lastReadPost;
       thread.nodes.root.classList.toggle('unread-thread', hasUnread);
       thread.nodes.root.classList.toggle('read-thread', !!lastReadPost && !hasUnread);
       if (thread.catalogView?.nodes.root) {
         thread.catalogView.nodes.root.classList.toggle('unread-thread', hasUnread);
         thread.catalogView.nodes.root.classList.toggle('read-thread', !!lastReadPost && !hasUnread);
       }
-
       let link = UnreadIndex.markReadLink[thread.fullID];
       if (!link) {
         link = (UnreadIndex.markReadLink[thread.fullID] = $.el('a', {
           className: 'unread-mark-read brackets-wrap',
           href: 'javascript:;',
           textContent: 'Mark Read'
-        }
-        ));
+        }));
         $.on(link, 'click', UnreadIndex.markRead);
       }
       if (divider = $(g.SITE.selectors.threadDivider, thread.nodes.root)) { // divider inside thread as in Tinyboard
@@ -15124,14 +16103,13 @@ svg.icon {
         return $.add(thread.nodes.root, link);
       }
     },
-
     markRead() {
       const thread = Get.threadFromNode(this);
       UnreadIndex.lastReadPost[thread.fullID] = thread.lastPost;
       UnreadIndex.db.set({
-        boardID:  thread.board.ID,
+        boardID: thread.board.ID,
         threadID: thread.ID,
-        val:      thread.lastPost
+        val: thread.lastPost
       });
       $.rm(UnreadIndex.hr[thread.fullID]);
       thread.nodes.root.classList.remove('unread-thread');
@@ -15140,34 +16118,33 @@ svg.icon {
         thread.catalogView.nodes.root.classList.remove('unread-thread');
         thread.catalogView.nodes.root.classList.add('read-thread');
       }
-      return ThreadWatcher$1.update(g.SITE.ID, thread.board.ID, thread.ID, {
+      return ThreadWatcher.update(g.SITE.ID, thread.board.ID, thread.ID, {
         last: thread.lastPost,
         unread: 0,
         quotingYou: 0
-      }
-      );
+      });
     }
   };
 
-  var ThreadWatcher$1 = {
+  var ThreadWatcher = {
     drag: {
       start(e) {
-        if (ThreadWatcher$1.sortMode() !== 'manual') {
+        if (ThreadWatcher.sortMode() !== 'manual') {
           e.preventDefault();
           return;
         }
-        ThreadWatcher$1.draggingLine = this;
+        ThreadWatcher.draggingLine = this;
         this.classList.add('drag');
         if (e.dataTransfer) {
           e.dataTransfer.effectAllowed = 'move';
-          e.dataTransfer.setData('text/plain', ThreadWatcher$1.keyFromLine(this));
+          e.dataTransfer.setData('text/plain', ThreadWatcher.keyFromLine(this));
         }
       },
       end() {
-        ThreadWatcher$1.clearDragState();
+        ThreadWatcher.clearDragState();
       },
       enter() {
-        if (ThreadWatcher$1.draggingLine && ThreadWatcher$1.draggingLine !== this) {
+        if (ThreadWatcher.draggingLine && ThreadWatcher.draggingLine !== this) {
           this.classList.add('over');
         }
       },
@@ -15175,37 +16152,38 @@ svg.icon {
         this.classList.remove('over');
       },
       over(e) {
-        if (ThreadWatcher$1.draggingLine && ThreadWatcher$1.draggingLine !== this) {
+        if (ThreadWatcher.draggingLine && ThreadWatcher.draggingLine !== this) {
           e.preventDefault();
           e.dataTransfer.dropEffect = 'move';
         }
       },
       drop(e) {
-        if (!ThreadWatcher$1.draggingLine || ThreadWatcher$1.draggingLine === this) { return; }
+        if (!ThreadWatcher.draggingLine || ThreadWatcher.draggingLine === this) {
+          return;
+        }
         e.preventDefault();
         this.classList.remove('over');
-        const { before } = ThreadWatcher$1.dropPosition(this, e);
-        ThreadWatcher$1.reorderInDOM(ThreadWatcher$1.draggingLine, this, before);
-        ThreadWatcher$1.clearDragState();
+        const { before } = ThreadWatcher.dropPosition(this, e);
+        ThreadWatcher.reorderInDOM(ThreadWatcher.draggingLine, this, before);
+        ThreadWatcher.clearDragState();
       }
     },
-
     init() {
       let sc;
-      if (!(this.enabled = Conf['Thread Watcher'])) { return; }
-
+      if (!(this.enabled = Conf['Thread Watcher'])) {
+        return;
+      }
       this.shortcut = (sc = $.el('a', {
-        id:    'watcher-link',
+        id: 'watcher-link',
         title: 'Thread Watcher',
-        href:  'javascript:;',
+        href: 'javascript:;',
       }));
       Icon.set(this.shortcut, 'eye', 'Watcher');
-
-      this.db     = new DataBoard('watchedThreads', this.refresh, true);
-      this.dbLM   = new DataBoard('watcherLastModified', null, true);
+      this.db = new DataBoard('watchedThreads', this.refresh, true);
+      this.dbLM = new DataBoard('watcherLastModified', null, true);
       this.dialog = UI.dialog('thread-watcher', { innerHTML: ThreadWatcherPage });
       this.status = $('#watcher-status', this.dialog);
-      this.list   = this.dialog.lastElementChild;
+      this.list = this.dialog.lastElementChild;
       this.refreshButton = $('.refresh', this.dialog);
       this.markReadButton = $('.mark-read', this.dialog);
       this.menuButton = $('.menu-button', this.dialog);
@@ -15213,7 +16191,6 @@ svg.icon {
       this.attachButton = $('.attach', this.dialog);
       this.unreaddb = Unread.db || UnreadIndex.db || new DataBoard('lastReadPosts');
       this.unreadEnabled = Conf['Remember Last Read Post'];
-
       Icon.set(this.refreshButton, 'refresh');
       Icon.set(this.markReadButton, 'check');
       Icon.set(this.menuButton, 'caretDown');
@@ -15221,8 +16198,7 @@ svg.icon {
       if (this.attachButton) {
         Icon.set(this.attachButton, 'link');
       }
-
-      $.on(d, 'QRPostSuccessful',   this.cb.post);
+      $.on(d, 'QRPostSuccessful', this.cb.post);
       $.on(sc, 'click', this.toggleWatcher);
       $.on(this.refreshButton, 'click', this.buttonFetchAll);
       $.on(this.markReadButton, 'click', this.cb.markAllRead);
@@ -15230,25 +16206,24 @@ svg.icon {
       if (this.attachButton) {
         $.on(this.attachButton, 'click', this.toggleAttach);
       }
-      $.on(window, 'resize scroll', () => ThreadWatcher$1.positionThumbnailHover(ThreadWatcher$1.hoveredThumbnail));
-      $.on(this.list, 'scroll', () => ThreadWatcher$1.positionThumbnailHover(ThreadWatcher$1.hoveredThumbnail));
-
+      $.on(window, 'resize scroll', () => ThreadWatcher.positionThumbnailHover(ThreadWatcher.hoveredThumbnail));
+      $.on(this.list, 'scroll', () => ThreadWatcher.positionThumbnailHover(ThreadWatcher.hoveredThumbnail));
       this.menu.addHeaderMenuEntry();
-      $.on(d, 'QRDialogCreation', ThreadWatcher$1.onQRDialogCreation);
+      $.on(d, 'QRDialogCreation', ThreadWatcher.onQRDialogCreation);
       $.on(d, '4chanXQRMove', () => {
-        if (ThreadWatcher$1.attached()) {
+        if (ThreadWatcher.attached()) {
           // Direct for tight sync during QR drag (mousemove rate); rAF would add visible lag/glitch to follower.
-          ThreadWatcher$1._doPositionAttached();
+          ThreadWatcher._doPositionAttached();
         }
       });
-      $.on(window, 'resize', () => { if (ThreadWatcher$1.attached()) ThreadWatcher$1.positionIfAttached(); });
+      $.on(window, 'resize', () => { if (ThreadWatcher.attached())
+        ThreadWatcher.positionIfAttached(); });
       $.on(d, '4chanXDragend', (e) => {
         if (e.detail?.id === 'thread-watcher') {
-          ThreadWatcher$1.updateAttachButton();
+          ThreadWatcher.updateAttachButton();
         }
       });
       $.onExists(doc, 'body', this.addDialog);
-
       switch (g.VIEW) {
         case 'index':
           $.on(d, 'IndexUpdate', this.cb.onIndexUpdate);
@@ -15257,94 +16232,90 @@ svg.icon {
           $.on(d, 'ThreadUpdate', this.cb.onThreadRefresh);
           break;
       }
-
       if (Conf['Fixed Thread Watcher']) {
         $.addClass(doc, 'fixed-watcher');
       }
       if (!Conf['Persistent Thread Watcher']) {
-        $.addClass(ThreadWatcher$1.shortcut, 'disabled');
+        $.addClass(ThreadWatcher.shortcut, 'disabled');
         this.dialog.hidden = true;
       }
-
-      Header.addShortcut('watcher', sc, 510,);
-
-      ThreadWatcher$1.initLastModified();
-      ThreadWatcher$1.fetchAuto();
-      $.on(window, 'visibilitychange focus', () => $.queueTask(ThreadWatcher$1.fetchAuto));
-
+      Header.addShortcut('watcher', sc, 510);
+      ThreadWatcher.initLastModified();
+      ThreadWatcher.fetchAuto();
+      $.on(window, 'visibilitychange focus', () => $.queueTask(ThreadWatcher.fetchAuto));
       $.sync('Thread Watcher Attached', (val) => {
         Conf['Thread Watcher Attached'] = !!val;
-        ThreadWatcher$1.updateAttachButton();
+        ThreadWatcher.updateAttachButton();
         if (val) {
-          ThreadWatcher$1.positionIfAttached(true);
-        } else if (ThreadWatcher$1.dialog) {
-          ThreadWatcher$1.restorePosition();
+          ThreadWatcher.positionIfAttached(true);
+        } else if (ThreadWatcher.dialog) {
+          ThreadWatcher.restorePosition();
         }
       });
       $.sync('Thread Watcher Attach Location', (val) => {
         Conf['Thread Watcher Attach Location'] = val || 'bottom';
-        if (ThreadWatcher$1.attached()) {
+        if (ThreadWatcher.attached()) {
           // Force re-compute size targets (sides no longer match height).
-          ThreadWatcher$1._lastAttachedW = null;
-          ThreadWatcher$1._doPositionAttached();
+          ThreadWatcher._lastAttachedW = null;
+          ThreadWatcher._doPositionAttached();
         }
       });
-
       if (Conf['Menu'] && Index.enabled) {
         Menu.menu.addEntry({
           el: $.el('a', {
-            href:      'javascript:;',
+            href: 'javascript:;',
             className: 'has-shortcut-text'
-          }
-          , {innerHTML: '<span></span><span class="shortcut-text"></span>'}),
+          }, { innerHTML: '<span></span><span class="shortcut-text"></span>' }),
           order: 6,
-          open({thread}) {
-            if (Conf['Index Mode'] !== 'catalog') { return false; }
-            this.el.firstElementChild.textContent = ThreadWatcher$1.isWatched(thread) ?
+          open({ thread }) {
+            if (Conf['Index Mode'] !== 'catalog') {
+              return false;
+            }
+            this.el.firstElementChild.textContent = ThreadWatcher.isWatched(thread) ?
               'Unwatch'
-            :
-              'Watch';
+              :
+                'Watch';
             const mods = Conf['Watch (catalog click)'];
             this.el.lastElementChild.textContent = mods ? `${mods}+click` : '';
-            if (this.cb) { $.off(this.el, 'click', this.cb); }
-            this.cb = function() {
+            if (this.cb) {
+              $.off(this.el, 'click', this.cb);
+            }
+            this.cb = function () {
               $.event('CloseMenu');
-              return ThreadWatcher$1.toggle(thread, true);
+              return ThreadWatcher.toggle(thread, true);
             };
             $.on(this.el, 'click', this.cb);
             return true;
           }
         });
       }
-
-      if (!['index', 'thread'].includes(g.VIEW)) { return; }
-
+      if (!['index', 'thread'].includes(g.VIEW)) {
+        return;
+      }
       Callbacks.Post.push({
         name: 'Thread Watcher',
-        cb:   this.node
+        cb: this.node
       });
       return Callbacks.CatalogThread.push({
         name: 'Thread Watcher',
-        cb:   this.catalogNode
+        cb: this.catalogNode
       });
     },
-
     isWatched(thread) {
-      return !!ThreadWatcher$1.db?.get({boardID: thread.board.ID, threadID: thread.ID});
+      return !!ThreadWatcher.db?.get({ boardID: thread.board.ID, threadID: thread.ID });
     },
-
     isWatchedRaw(boardID, threadID) {
-      return !!ThreadWatcher$1.db?.get({boardID, threadID});
+      return !!ThreadWatcher.db?.get({ boardID, threadID });
     },
-
     setToggler(toggler, isWatched) {
       toggler.classList.toggle('watched', isWatched);
       return toggler.title = `${isWatched ? 'Unwatch' : 'Watch'} Thread`;
     },
-
     node() {
       let toggler;
-      if (this.isReply) { return; }
+      if (this.isReply) {
+        return;
+      }
       if (this.isClone) {
         toggler = $('.watch-thread-link', this.nodes.info);
       } else {
@@ -15358,125 +16329,150 @@ svg.icon {
       const siteID = g.SITE.ID;
       const boardID = this.board.ID;
       const threadID = this.thread.ID;
-      const data = ThreadWatcher$1.db.get({siteID, boardID, threadID});
-      ThreadWatcher$1.setToggler(toggler, !!data);
-      $.on(toggler, 'click', ThreadWatcher$1.cb.toggle);
+      const data = ThreadWatcher.db.get({ siteID, boardID, threadID });
+      ThreadWatcher.setToggler(toggler, !!data);
+      $.on(toggler, 'click', ThreadWatcher.cb.toggle);
       // Add missing excerpt for threads added by Auto Watch
       if (data && (data.excerpt == null)) {
         return $.queueTask(() => {
-          return ThreadWatcher$1.update(siteID, boardID, threadID, {excerpt: Get.threadExcerpt(this.thread)});
-      });
+          return ThreadWatcher.update(siteID, boardID, threadID, { excerpt: Get.threadExcerpt(this.thread) });
+        });
       }
     },
-
     catalogNode() {
-      if (ThreadWatcher$1.isWatched(this.thread)) { $.addClass(this.nodes.root, 'watched'); }
+      if (ThreadWatcher.isWatched(this.thread)) {
+        $.addClass(this.nodes.root, 'watched');
+      }
       return $.on(this.nodes.root, 'mousedown click', e => {
-        if (e.button !== 0) return;
+        if (e.button !== 0)
+          return;
         const wanted = Conf['Watch (catalog click)'];
-        if (!wanted) return;
+        if (!wanted)
+          return;
         const got = [];
-        if (e.altKey)   { got.push('Alt'); }
-        if (e.ctrlKey)  { got.push('Ctrl'); }
-        if (e.metaKey)  { got.push('Meta'); }
-        if (e.shiftKey) { got.push('Shift'); }
-        if (got.join('+') !== wanted) return;
-        if (e.type === 'click') ThreadWatcher$1.toggle(this.thread, true);
+        if (e.altKey) {
+          got.push('Alt');
+        }
+        if (e.ctrlKey) {
+          got.push('Ctrl');
+        }
+        if (e.metaKey) {
+          got.push('Meta');
+        }
+        if (e.shiftKey) {
+          got.push('Shift');
+        }
+        if (got.join('+') !== wanted)
+          return;
+        if (e.type === 'click')
+          ThreadWatcher.toggle(this.thread, true);
         return e.preventDefault();
       });
     }, // Also on mousedown to prevent highlighting thumbnail in Firefox.
-
     addDialog() {
-      if (!Main.isThisPageLegit()) { return; }
-      ThreadWatcher$1.applyLayout();
-      ThreadWatcher$1.build();
-      ThreadWatcher$1.updateAttachButton();
-      ThreadWatcher$1._lastAttachedW = null;
-      if (ThreadWatcher$1.attached()) {
-        ThreadWatcher$1.positionIfAttached(true);
+      if (!Main.isThisPageLegit()) {
+        return;
+      }
+      ThreadWatcher.applyLayout();
+      ThreadWatcher.build();
+      ThreadWatcher.updateAttachButton();
+      ThreadWatcher._lastAttachedW = null;
+      if (ThreadWatcher.attached()) {
+        ThreadWatcher.positionIfAttached(true);
+        // On refresh the QR's position can settle a frame or two after creation. The QR
+        // ResizeObserver catches size changes but not position settling, which otherwise
+        // leaves a one-time gap until the user moves the QR. Re-run once layout settles.
+        requestAnimationFrame(() => ThreadWatcher.positionIfAttached(true));
+        setTimeout(() => ThreadWatcher.positionIfAttached(true), 100);
       }
       if (QR.nodes?.el) {
-        ThreadWatcher$1.onQRDialogCreation();
+        ThreadWatcher.onQRDialogCreation();
       }
-      return $.prepend(d.body, ThreadWatcher$1.dialog);
+      return $.prepend(d.body, ThreadWatcher.dialog);
     },
-
     toggleWatcher() {
-      $.toggleClass(ThreadWatcher$1.shortcut, 'disabled');
-      const hidden = (ThreadWatcher$1.dialog.hidden = !ThreadWatcher$1.dialog.hidden);
+      $.toggleClass(ThreadWatcher.shortcut, 'disabled');
+      const hidden = (ThreadWatcher.dialog.hidden = !ThreadWatcher.dialog.hidden);
       if (hidden) {
-        ThreadWatcher$1.hideThumbnailHover();
+        ThreadWatcher.hideThumbnailHover();
       }
       return hidden;
     },
-
     cb: {
       openAll() {
-        if ($.hasClass(this, 'disabled')) return;
-        for (var a of $$('a.watcher-link', ThreadWatcher$1.list)) {
+        if ($.hasClass(this, 'disabled'))
+          return;
+        for (var a of $$('a.watcher-link', ThreadWatcher.list)) {
           $.open(a.href);
         }
         $.event('CloseMenu');
       },
       openUnread() {
-        if ($.hasClass(this, 'disabled')) return;
-        for (var a of $$('.replies-unread > a.watcher-link', ThreadWatcher$1.list)) {
+        if ($.hasClass(this, 'disabled'))
+          return;
+        for (var a of $$('.replies-unread > a.watcher-link', ThreadWatcher.list)) {
           $.open(a.href);
         }
         $.event('CloseMenu');
       },
       openDeads() {
-        if ($.hasClass(this, 'disabled')) return;
-        for (var a of $$('.dead-thread.replies-unread > a.watcher-link', ThreadWatcher$1.list)) {
+        if ($.hasClass(this, 'disabled'))
+          return;
+        for (var a of $$('.dead-thread.replies-unread > a.watcher-link', ThreadWatcher.list)) {
           $.open(a.href);
         }
         $.event('CloseMenu');
       },
       clear() {
-        if (!confirm("Delete ALL threads from watcher?")) return;
-        const ref = ThreadWatcher$1.getAll();
+        if (!confirm("Delete ALL threads from watcher?"))
+          return;
+        const ref = ThreadWatcher.getAll();
         for (let i = 0, len = ref.length; i < len; i++) {
           const { siteID, boardID, threadID } = ref[i];
-          ThreadWatcher$1.db.delete({ siteID, boardID, threadID });
+          ThreadWatcher.db.delete({ siteID, boardID, threadID });
         }
-        ThreadWatcher$1.refresh(true);
+        ThreadWatcher.refresh(true);
         $.event('CloseMenu');
       },
       pruneDeads() {
-        if ($.hasClass(this, 'disabled')) return;
-        for (var {siteID, boardID, threadID, data} of ThreadWatcher$1.getAll()) {
+        if ($.hasClass(this, 'disabled'))
+          return;
+        for (var { siteID, boardID, threadID, data } of ThreadWatcher.getAll()) {
           if (data.isDead) {
-            ThreadWatcher$1.db.delete({siteID, boardID, threadID});
+            ThreadWatcher.db.delete({ siteID, boardID, threadID });
           }
         }
-        ThreadWatcher$1.refresh(true);
+        ThreadWatcher.refresh(true);
         $.event('CloseMenu');
       },
       pruneReadDeads() {
-        if ($.hasClass(this, 'disabled')) return;
-        for (var { siteID, boardID, threadID, data } of ThreadWatcher$1.getAll()) {
+        if ($.hasClass(this, 'disabled'))
+          return;
+        for (var { siteID, boardID, threadID, data } of ThreadWatcher.getAll()) {
           if (data.isDead && !data.unread) {
-            ThreadWatcher$1.db.delete({ siteID, boardID, threadID });
+            ThreadWatcher.db.delete({ siteID, boardID, threadID });
           }
         }
-        ThreadWatcher$1.refresh(true);
+        ThreadWatcher.refresh(true);
         $.event('CloseMenu');
       },
       dismiss() {
-        for (var {siteID, boardID, threadID, data} of ThreadWatcher$1.getAll()) {
+        for (var { siteID, boardID, threadID, data } of ThreadWatcher.getAll()) {
           if (data.quotingYou) {
-            ThreadWatcher$1.update(siteID, boardID, threadID, {dismiss: data.quotingYou || 0, yousCount: 0});
+            ThreadWatcher.update(siteID, boardID, threadID, { dismiss: data.quotingYou || 0, yousCount: 0 });
           }
         }
         $.event('CloseMenu');
       },
       markAllRead() {
-        if ($.hasClass(this, 'disabled') || !ThreadWatcher$1.unreadEnabled) { return; }
-        for (var {siteID, boardID, threadID, data} of ThreadWatcher$1.getAll()) {
+        if ($.hasClass(this, 'disabled') || !ThreadWatcher.unreadEnabled) {
+          return;
+        }
+        for (var { siteID, boardID, threadID, data } of ThreadWatcher.getAll()) {
           if (data.last != null) {
-            ThreadWatcher$1.unreaddb.set({siteID, boardID, threadID, val: data.last});
+            ThreadWatcher.unreaddb.set({ siteID, boardID, threadID, val: data.last });
           }
-          ThreadWatcher$1.update(siteID, boardID, threadID, {
+          ThreadWatcher.update(siteID, boardID, threadID, {
             unread: 0,
             quotingYou: 0,
             yousCount: 0,
@@ -15485,17 +16481,23 @@ svg.icon {
         }
       },
       markRead() {
-        if ($.hasClass(this, 'disabled') || !ThreadWatcher$1.unreadEnabled) { return; }
-        const line = this.parentNode;
-        if (!line) { return; }
-        const {siteID} = line.dataset;
-        const [boardID, threadID] = line.dataset.fullID.split('.');
-        const data = ThreadWatcher$1.db?.get({siteID, boardID, threadID: +threadID});
-        if (!data) { return; }
-        if (data.last != null) {
-          ThreadWatcher$1.unreaddb.set({siteID, boardID, threadID: +threadID, val: data.last});
+        if ($.hasClass(this, 'disabled') || !ThreadWatcher.unreadEnabled) {
+          return;
         }
-        ThreadWatcher$1.update(siteID, boardID, +threadID, {
+        const line = this.parentNode;
+        if (!line) {
+          return;
+        }
+        const { siteID } = line.dataset;
+        const [boardID, threadID] = line.dataset.fullID.split('.');
+        const data = ThreadWatcher.db?.get({ siteID, boardID, threadID: +threadID });
+        if (!data) {
+          return;
+        }
+        if (data.last != null) {
+          ThreadWatcher.unreaddb.set({ siteID, boardID, threadID: +threadID, val: data.last });
+        }
+        ThreadWatcher.update(siteID, boardID, +threadID, {
           unread: 0,
           quotingYou: 0,
           yousCount: 0,
@@ -15503,84 +16505,88 @@ svg.icon {
         });
       },
       thumbnailHoverIn() {
-        ThreadWatcher$1.showThumbnailHover(this);
+        ThreadWatcher.showThumbnailHover(this);
       },
       thumbnailHoverMove() {
-        if (ThreadWatcher$1.hoveredThumbnail === this) {
-          ThreadWatcher$1.positionThumbnailHover(this);
+        if (ThreadWatcher.hoveredThumbnail === this) {
+          ThreadWatcher.positionThumbnailHover(this);
         }
       },
       thumbnailHoverOut() {
-        if (ThreadWatcher$1.hoveredThumbnail === this) {
-          ThreadWatcher$1.hideThumbnailHover();
+        if (ThreadWatcher.hoveredThumbnail === this) {
+          ThreadWatcher.hideThumbnailHover();
         }
       },
       toggle() {
-        const {thread} = Get.postFromNode(this);
-        ThreadWatcher$1.toggle(thread, true);
+        const { thread } = Get.postFromNode(this);
+        ThreadWatcher.toggle(thread, true);
       },
       rm() {
-        const {siteID} = this.parentNode.dataset;
+        const { siteID } = this.parentNode.dataset;
         const [boardID, threadID] = this.parentNode.dataset.fullID.split('.');
-        ThreadWatcher$1.rm(siteID, boardID, +threadID, undefined, true);
+        ThreadWatcher.rm(siteID, boardID, +threadID, undefined, true);
       },
       post(e) {
-        const {boardID, threadID, postID} = e.detail;
+        const { boardID, threadID, postID } = e.detail;
         const cb = PostRedirect.delay();
         if (postID === threadID) {
           if (Conf['Auto Watch']) {
-            ThreadWatcher$1.addRaw(boardID, threadID, {}, cb, true);
+            ThreadWatcher.addRaw(boardID, threadID, {}, cb, true);
           }
         } else if (Conf['Auto Watch Reply']) {
-          ThreadWatcher$1.add(
-            (g.threads.get(boardID + '.' + threadID) || new Thread(threadID, g.boards[boardID] || new Board(boardID))),
-            cb, true);
+          ThreadWatcher.add((g.threads.get(boardID + '.' + threadID) || new Thread(threadID, g.boards[boardID] || new Board(boardID))), cb, true);
         }
       },
       onIndexUpdate(e) {
-        const {db}    = ThreadWatcher$1;
-        const siteID  = g.SITE.ID;
+        const { db } = ThreadWatcher;
+        const siteID = g.SITE.ID;
         const boardID = g.BOARD.ID;
         let nKilled = 0;
         for (var threadID in db.data[siteID].boards[boardID]) {
           // Don't prune threads that have yet to appear in index.
           var data = db.data[siteID].boards[boardID][threadID];
           if (!data?.isDead && !e.detail.threads.includes(`${boardID}.${threadID}`)) {
-            if (!e.detail.threads.some(fullID => +fullID.split('.')[1] > threadID)) { continue; }
+            if (!e.detail.threads.some(fullID => +fullID.split('.')[1] > threadID)) {
+              continue;
+            }
             if (Conf['Auto Prune'] || !(data && (typeof data === 'object'))) { // corrupt data
-              db.delete({boardID, threadID});
+              db.delete({ boardID, threadID });
               nKilled++;
             } else {
-              ThreadWatcher$1.fetchStatus({siteID, boardID, threadID, data});
+              ThreadWatcher.fetchStatus({ siteID, boardID, threadID, data });
             }
           }
         }
-        if (nKilled) { return ThreadWatcher$1.refresh(); }
+        if (nKilled) {
+          return ThreadWatcher.refresh();
+        }
       },
       onThreadRefresh(e) {
         const thread = g.threads.get(e.detail.threadID);
-        if (!e.detail[404] || !ThreadWatcher$1.isWatched(thread)) { return; }
+        if (!e.detail[404] || !ThreadWatcher.isWatched(thread)) {
+          return;
+        }
         // Update dead status.
-        return ThreadWatcher$1.add(thread);
+        return ThreadWatcher.add(thread);
       }
     },
-
     requests: [],
-    fetched:  0,
-
-    fetch(url, {siteID, force}, args, cb) {
-      if (ThreadWatcher$1.requests.length === 0) {
-        ThreadWatcher$1.status.textContent = '...';
-        $.addClass(ThreadWatcher$1.refreshButton, 'spin');
+    fetched: 0,
+    fetch(url, { siteID, force }, args, cb) {
+      if (ThreadWatcher.requests.length === 0) {
+        ThreadWatcher.status.textContent = '...';
+        $.addClass(ThreadWatcher.refreshButton, 'spin');
       }
-      const onloadend = function() {
-        if (this.finished) { return; }
+      const onloadend = function () {
+        if (this.finished) {
+          return;
+        }
         this.finished = true;
-        ThreadWatcher$1.fetched++;
-        if (ThreadWatcher$1.fetched === ThreadWatcher$1.requests.length) {
-          ThreadWatcher$1.clearRequests();
+        ThreadWatcher.fetched++;
+        if (ThreadWatcher.fetched === ThreadWatcher.requests.length) {
+          ThreadWatcher.clearRequests();
         } else {
-          ThreadWatcher$1.status.textContent = `${Math.round((ThreadWatcher$1.fetched / ThreadWatcher$1.requests.length) * 100)}%`;
+          ThreadWatcher.status.textContent = `${Math.round((ThreadWatcher.fetched / ThreadWatcher.requests.length) * 100)}%`;
         }
         return cb.apply(this, args);
       };
@@ -15588,131 +16594,137 @@ svg.icon {
       if (force) {
         delete $.lastModified.ThreadWatcher?.[url];
       }
-      const req = $.whenModified(
-        url,
-        'ThreadWatcher',
-        onloadend,
-        { timeout: MINUTE, ajax }
-      );
-      return ThreadWatcher$1.requests.push(req);
+      const req = $.whenModified(url, 'ThreadWatcher', onloadend, { timeout: MINUTE, ajax });
+      return ThreadWatcher.requests.push(req);
     },
-
     clearRequests() {
-      ThreadWatcher$1.requests = [];
-      ThreadWatcher$1.fetched = 0;
-      ThreadWatcher$1.status.textContent = '';
-      return $.rmClass(ThreadWatcher$1.refreshButton, 'spin');
+      ThreadWatcher.requests = [];
+      ThreadWatcher.fetched = 0;
+      ThreadWatcher.status.textContent = '';
+      return $.rmClass(ThreadWatcher.refreshButton, 'spin');
     },
-
     abort() {
-      delete ThreadWatcher$1.syncing;
-      for (var req of ThreadWatcher$1.requests) {
+      delete ThreadWatcher.syncing;
+      for (var req of ThreadWatcher.requests) {
         if (!req.finished) {
           req.finished = true;
           req.abort();
         }
       }
-      return ThreadWatcher$1.clearRequests();
+      return ThreadWatcher.clearRequests();
     },
-
     initLastModified() {
       const lm = ($.lastModified['ThreadWatcher'] || ($.lastModified['ThreadWatcher'] = dict()));
-      for (var siteID in ThreadWatcher$1.dbLM.data) {
-        var boards = ThreadWatcher$1.dbLM.data[siteID];
+      for (var siteID in ThreadWatcher.dbLM.data) {
+        var boards = ThreadWatcher.dbLM.data[siteID];
         for (var boardID in boards.boards) {
           var data = boards.boards[boardID];
-          if (ThreadWatcher$1.db.get({siteID, boardID})) {
+          if (ThreadWatcher.db.get({ siteID, boardID })) {
             for (var url in data) {
               var date = data[url];
               lm[url] = date;
             }
           } else {
-            ThreadWatcher$1.dbLM.delete({siteID, boardID});
+            ThreadWatcher.dbLM.delete({ siteID, boardID });
           }
         }
       }
     },
-
     fetchAuto() {
       let middle;
-      clearTimeout(ThreadWatcher$1.timeout);
-      if (!Conf['Auto Update Thread Watcher']) { return; }
-      const {db} = ThreadWatcher$1;
-      const interval = Conf['Show Page'] || (ThreadWatcher$1.unreadEnabled && Conf['Show Unread Count']) ? 5 * MINUTE : 2 * HOUR;
+      clearTimeout(ThreadWatcher.timeout);
+      if (!Conf['Auto Update Thread Watcher']) {
+        return;
+      }
+      const { db } = ThreadWatcher;
+      const interval = Conf['Show Page'] || (ThreadWatcher.unreadEnabled && Conf['Show Unread Count']) ? 5 * MINUTE : 2 * HOUR;
       const now = Date.now();
       if ((now - interval >= ((middle = db.data.lastChecked || 0)) || middle > now) && !d.hidden && !!d.hasFocus()) {
-        ThreadWatcher$1.fetchAllStatus(interval);
+        ThreadWatcher.fetchAllStatus(interval);
       }
-      return ThreadWatcher$1.timeout = setTimeout(ThreadWatcher$1.fetchAuto, interval);
+      return ThreadWatcher.timeout = setTimeout(ThreadWatcher.fetchAuto, interval);
     },
-
     buttonFetchAll() {
-      if (ThreadWatcher$1.syncing || ThreadWatcher$1.requests.length) {
-        return ThreadWatcher$1.abort();
+      if (ThreadWatcher.syncing || ThreadWatcher.requests.length) {
+        return ThreadWatcher.abort();
       } else {
-        return ThreadWatcher$1.fetchAllStatus();
+        return ThreadWatcher.fetchAllStatus();
       }
     },
-
-    fetchAllStatus(interval=0) {
-      ThreadWatcher$1.status.textContent = '...';
-      $.addClass(ThreadWatcher$1.refreshButton, 'spin');
-      ThreadWatcher$1.syncing = true;
-      const dbs = [ThreadWatcher$1.db, ThreadWatcher$1.unreaddb, QuoteYou.db].filter(x => x);
+    fetchAllStatus(interval = 0) {
+      ThreadWatcher.status.textContent = '...';
+      $.addClass(ThreadWatcher.refreshButton, 'spin');
+      ThreadWatcher.syncing = true;
+      const dbs = [ThreadWatcher.db, ThreadWatcher.unreaddb, QuoteYou.db].filter(x => x);
       let n = 0;
-      return dbs.map((dbi) =>
-        dbi.forceSync(function() {
-          if ((++n) === dbs.length) {
-            let middle;
-            if (!ThreadWatcher$1.syncing) { return; } // aborted
-            delete ThreadWatcher$1.syncing;
-            if (0 > (middle = Date.now() - (ThreadWatcher$1.db.data.lastChecked || 0)) || middle >= interval) { // not checked in another tab
-              // XXX On vichan boards, last_modified field of threads.json does not account for sage posts.
-              // Occasionally check replies field of catalog.json to find these posts.
-              let middle1;
-              const {db} = ThreadWatcher$1;
-              const now = Date.now();
-              const deep = !(now - (2 * HOUR) < ((middle1 = db.data.lastChecked2 || 0)) && middle1 <= now);
-              const boards = ThreadWatcher$1.getAll(true);
-              for (var board of boards) {
-                ThreadWatcher$1.fetchBoard(board, deep);
-              }
-              db.setLastChecked();
-              if (deep) { db.setLastChecked('lastChecked2'); }
+      return dbs.map((dbi) => dbi.forceSync(function () {
+        if ((++n) === dbs.length) {
+          let middle;
+          if (!ThreadWatcher.syncing) {
+            return;
+          } // aborted
+          delete ThreadWatcher.syncing;
+          if (0 > (middle = Date.now() - (ThreadWatcher.db.data.lastChecked || 0)) || middle >= interval) { // not checked in another tab
+            // XXX On vichan boards, last_modified field of threads.json does not account for sage posts.
+            // Occasionally check replies field of catalog.json to find these posts.
+            let middle1;
+            const { db } = ThreadWatcher;
+            const now = Date.now();
+            const deep = !(now - (2 * HOUR) < ((middle1 = db.data.lastChecked2 || 0)) && middle1 <= now);
+            const boards = ThreadWatcher.getAll(true);
+            for (var board of boards) {
+              ThreadWatcher.fetchBoard(board, deep);
             }
-            if (ThreadWatcher$1.fetched === ThreadWatcher$1.requests.length) {
-              return ThreadWatcher$1.clearRequests();
+            db.setLastChecked();
+            if (deep) {
+              db.setLastChecked('lastChecked2');
             }
           }
-        }));
+          if (ThreadWatcher.fetched === ThreadWatcher.requests.length) {
+            return ThreadWatcher.clearRequests();
+          }
+        }
+      }));
     },
-
     fetchBoard(board, deep) {
-      if (!board.some(thread => !thread.data.isDead)) { return; }
+      if (!board.some(thread => !thread.data.isDead)) {
+        return;
+      }
       let force = false;
       for (var thread of board) {
-        var {data} = thread;
+        var { data } = thread;
         if (!data.isDead && (data.last !== -1)) {
-          if (Conf['Show Page'] && (data.page == null)) { force = true; }
-          if ((data.modified == null)) { force = (thread.force = true); }
-          if (ThreadWatcher$1.showThumbnails() && !data.thumbURL) { force = (thread.force = true); }
+          if (Conf['Show Page'] && (data.page == null)) {
+            force = true;
+          }
+          if ((data.modified == null)) {
+            force = (thread.force = true);
+          }
+          if (ThreadWatcher.showThumbnails() && !data.thumbURL) {
+            force = (thread.force = true);
+          }
         }
       }
-      const {siteID, boardID} = board[0];
+      const { siteID, boardID } = board[0];
       const site = g.sites[siteID];
-      if (!site) { return; }
+      if (!site) {
+        return;
+      }
       const urlF = deep && site.threadModTimeIgnoresSage ? 'catalogJSON' : 'threadsListJSON';
-      const url = site.urls[urlF]?.({siteID, boardID});
-      if (!url) { return; }
-      return ThreadWatcher$1.fetch(url, {siteID, force}, [board, url], ThreadWatcher$1.parseBoard);
+      const url = site.urls[urlF]?.({ siteID, boardID });
+      if (!url) {
+        return;
+      }
+      return ThreadWatcher.fetch(url, { siteID, force }, [board, url], ThreadWatcher.parseBoard);
     },
-
     parseBoard(board, url) {
       let page, thread;
-      if (this.status !== 200) { return; }
-      const {siteID, boardID} = board[0];
+      if (this.status !== 200) {
+        return;
+      }
+      const { siteID, boardID } = board[0];
       const lmDate = this.getResponseHeader('Last-Modified');
-      ThreadWatcher$1.dbLM.extend({siteID, boardID, val: $.item(url, lmDate)});
+      ThreadWatcher.dbLM.extend({ siteID, boardID, val: $.item(url, lmDate) });
       const threads = dict();
       let pageLength = 0;
       let nThreads = 0;
@@ -15736,72 +16748,78 @@ svg.icon {
         }
       } catch (error) {
         for (thread of board) {
-          ThreadWatcher$1.fetchStatus(thread);
+          ThreadWatcher.fetchStatus(thread);
         }
       }
       for (thread of board) {
-        var {threadID, data} = thread;
+        var { threadID, data } = thread;
         if (threads[threadID]) {
           var index, modified, replies;
-          ({page, index, modified, replies} = threads[threadID]);
+          ({ page, index, modified, replies } = threads[threadID]);
           if (Conf['Show Page']) {
-            var lastPage = g.sites[siteID].isPrunedByAge?.({siteID, boardID}) ?
+            var lastPage = g.sites[siteID].isPrunedByAge?.({ siteID, boardID }) ?
               threadID === oldest
-            :
-              index >= (nThreads - pageLength);
-            ThreadWatcher$1.update(siteID, boardID, threadID, {page, lastPage});
+              :
+                index >= (nThreads - pageLength);
+            ThreadWatcher.update(siteID, boardID, threadID, { page, lastPage });
           }
-          if (ThreadWatcher$1.unreadEnabled && Conf['Show Unread Count']) {
+          if (ThreadWatcher.unreadEnabled && Conf['Show Unread Count']) {
             if ((modified !== data.modified) || ((replies != null) && (replies !== data.replies))) {
               (thread.newData || (thread.newData = {})).modified = modified;
-              ThreadWatcher$1.fetchStatus(thread);
+              ThreadWatcher.fetchStatus(thread);
             }
           }
-          if (ThreadWatcher$1.showThumbnails() && !data.thumbURL) {
-            ThreadWatcher$1.fetchStatus(thread);
+          if (ThreadWatcher.showThumbnails() && !data.thumbURL) {
+            ThreadWatcher.fetchStatus(thread);
           }
         } else {
-          ThreadWatcher$1.fetchStatus(thread);
+          ThreadWatcher.fetchStatus(thread);
         }
       }
     },
-
     fetchStatus(thread) {
-      const {siteID, boardID, threadID, data, force} = thread;
-      const url = g.sites[siteID]?.urls.threadJSON?.({siteID, boardID, threadID});
-      if (!url) { return; }
-      if (data.isDead && !force) { return; }
-      if (data.last === -1) { return; } // 404 or no JSON API
-      return ThreadWatcher$1.fetch(url, {siteID, force}, [thread], ThreadWatcher$1.parseStatus);
+      const { siteID, boardID, threadID, data, force } = thread;
+      const url = g.sites[siteID]?.urls.threadJSON?.({ siteID, boardID, threadID });
+      if (!url) {
+        return;
+      }
+      if (data.isDead && !force) {
+        return;
+      }
+      if (data.last === -1) {
+        return;
+      } // 404 or no JSON API
+      return ThreadWatcher.fetch(url, { siteID, force }, [thread], ThreadWatcher.parseStatus);
     },
-
     parseStatus(thread, isArchiveURL) {
       let isDead, last;
-      let {siteID, boardID, threadID, data, newData, force} = thread;
+      let { siteID, boardID, threadID, data, newData, force } = thread;
       const site = g.sites[siteID];
       if ((this.status === 200) && this.response) {
         let isArchived;
-        last = this.response.posts[this.response.posts.length-1].no;
-        const replies = this.response.posts.length-1;
+        last = this.response.posts[this.response.posts.length - 1].no;
+        const replies = this.response.posts.length - 1;
         isDead = (isArchived = !!(this.response.posts[0].archived || isArchiveURL));
-        const thumbURL = ThreadWatcher$1.getOPThumbURL({siteID, boardID, postObj: this.response.posts[0]});
+        const thumbURL = ThreadWatcher.getOPThumbURL({ siteID, boardID, postObj: this.response.posts[0] });
         if (isDead && Conf['Auto Prune']) {
-          ThreadWatcher$1.rm(siteID, boardID, threadID);
+          ThreadWatcher.rm(siteID, boardID, threadID);
           return;
         }
-
-        if ((last === data.last) && (isDead === data.isDead) && (isArchived === data.isArchived) && (!thumbURL || thumbURL === data.thumbURL)) { return; }
-
-        const lastReadPost = ThreadWatcher$1.unreaddb.get({siteID, boardID, threadID, defaultValue: 0});
+        if ((last === data.last) && (isDead === data.isDead) && (isArchived === data.isArchived) && (!thumbURL || thumbURL === data.thumbURL)) {
+          return;
+        }
+        const lastReadPost = ThreadWatcher.unreaddb.get({ siteID, boardID, threadID, defaultValue: 0 });
         let unread = data.unread || 0;
         let quotingYou = data.quotingYou || 0;
         let yousCount = data.yousCount || 0;
-        const youOP = !!QuoteYou.db?.get({siteID, boardID, threadID, postID: threadID});
-
+        const youOP = !!QuoteYou.db?.get({ siteID, boardID, threadID, postID: threadID });
         for (var postObj of this.response.posts) {
-          if ((postObj.no <= (data.last || 0)) || (postObj.no <= lastReadPost)) { continue; }
-          if (QuoteYou.db?.get({siteID, boardID, threadID, postID: postObj.no})) { continue; }
-
+          if ((postObj.no <= (data.last || 0)) || (postObj.no <= lastReadPost)) {
+            continue;
+          }
+          if (QuoteYou.db?.get({ siteID, boardID, threadID, postID: postObj.no })) {
+            continue;
+          }
           var quotesYou = false;
           if (!Conf['Require OP Quote Link'] && youOP) {
             quotesYou = true;
@@ -15812,65 +16830,78 @@ svg.icon {
             while (match = regexp.exec(postObj.com)) {
               if (QuoteYou.db.get({
                 siteID,
-                boardID:  match[1] ? encodeURIComponent(match[1]) : boardID,
+                boardID: match[1] ? encodeURIComponent(match[1]) : boardID,
                 threadID: match[2] || threadID,
-                postID:   match[3] || match[2] || threadID
+                postID: match[3] || match[2] || threadID
               })) {
                 quotesYou = true;
                 break;
               }
             }
           }
-
           if (!unread || (!quotingYou && quotesYou)) {
-            if (Filter.isHidden(site.Build.parseJSON(postObj, {siteID, boardID}))) { continue; }
+            if (Filter.isHidden(site.Build.parseJSON(postObj, { siteID, boardID }))) {
+              continue;
+            }
           }
-
           unread++;
-          if (quotesYou) { quotingYou = postObj.no; yousCount++; }
+          if (quotesYou) {
+            quotingYou = postObj.no;
+            yousCount++;
+          }
         }
-
-        if (!newData) { newData = {}; }
+        if (!newData) {
+          newData = {};
+        }
         if ((thumbURL != null) && (thumbURL !== data.thumbURL)) {
           newData.thumbURL = thumbURL;
         }
-        $.extend(newData, {last, replies, isDead, isArchived, unread, quotingYou, yousCount});
-        return ThreadWatcher$1.update(siteID, boardID, threadID, newData);
-
+        $.extend(newData, { last, replies, isDead, isArchived, unread, quotingYou, yousCount });
+        return ThreadWatcher.update(siteID, boardID, threadID, newData);
       } else if (this.status === 404) {
-        const archiveURL = g.sites[siteID]?.urls.archivedThreadJSON?.({siteID, boardID, threadID});
+        const archiveURL = g.sites[siteID]?.urls.archivedThreadJSON?.({ siteID, boardID, threadID });
         if (!isArchiveURL && archiveURL) {
-          return ThreadWatcher$1.fetch(archiveURL, {siteID, force}, [thread, true], ThreadWatcher$1.parseStatus);
+          return ThreadWatcher.fetch(archiveURL, { siteID, force }, [thread, true], ThreadWatcher.parseStatus);
         } else if (site.mayLackJSON && (data.last == null)) {
-          return ThreadWatcher$1.update(siteID, boardID, threadID, {last: -1});
+          return ThreadWatcher.update(siteID, boardID, threadID, { last: -1 });
         } else {
-          return ThreadWatcher$1.update(siteID, boardID, threadID, {isDead: true});
+          return ThreadWatcher.update(siteID, boardID, threadID, { isDead: true });
         }
       }
     },
-
-    getOPThumbURL({siteID, boardID, thread, postObj}) {
-      if (thread?.OP?.file?.thumbURL) { return thread.OP.file.thumbURL; }
-      if (!postObj) { return; }
+    getOPThumbURL({ siteID, boardID, thread, postObj }) {
+      if (thread?.OP?.file?.thumbURL) {
+        return thread.OP.file.thumbURL;
+      }
+      if (!postObj) {
+        return;
+      }
       const site = g.sites[siteID];
       if (site?.Build?.parseJSON) {
         try {
-          const post = site.Build.parseJSON(postObj, {siteID, boardID});
-          if (post?.file?.thumbURL) { return post.file.thumbURL; }
-        } catch (err) {}
+          const post = site.Build.parseJSON(postObj, { siteID, boardID });
+          if (post?.file?.thumbURL) {
+            return post.file.thumbURL;
+          }
+        } catch (err) { }
       }
       if ((postObj.tim != null) && site?.urls?.thumb) {
-        return site.urls.thumb({siteID, boardID}, `${postObj.tim}s.jpg`);
+        return site.urls.thumb({ siteID, boardID }, `${postObj.tim}s.jpg`);
       }
     },
-
     sortComparators: {
       manual(a, b) {
         const ao = a.data.order;
         const bo = b.data.order;
-        if ((ao == null) && (bo == null)) { return 0; }
-        if (ao == null) { return 1; }
-        if (bo == null) { return -1; }
+        if ((ao == null) && (bo == null)) {
+          return 0;
+        }
+        if (ao == null) {
+          return 1;
+        }
+        if (bo == null) {
+          return -1;
+        }
         return ao - bo;
       },
       'date-added': (a, b) => (b.data.addedAt || 0) - (a.data.addedAt || 0),
@@ -15879,35 +16910,42 @@ svg.icon {
       unread: (a, b) => (b.data.unread || 0) - (a.data.unread || 0),
       activity: (a, b) => (b.data.modified || 0) - (a.data.modified || 0),
       yous(a, b) {
-        const ay = ThreadWatcher$1.activeYous(a.data);
-        const by = ThreadWatcher$1.activeYous(b.data);
-        if (ay !== by) { return by - ay; }
+        const ay = ThreadWatcher.activeYous(a.data);
+        const by = ThreadWatcher.activeYous(b.data);
+        if (ay !== by) {
+          return by - ay;
+        }
         return (b.data.addedAt || 0) - (a.data.addedAt || 0);
       },
       board(a, b) {
         const sa = `${a.siteID}/${a.boardID}`;
         const sb = `${b.siteID}/${b.boardID}`;
-        if (sa < sb) { return -1; }
-        if (sa > sb) { return 1; }
+        if (sa < sb) {
+          return -1;
+        }
+        if (sa > sb) {
+          return 1;
+        }
         return (a.data.order || 0) - (b.data.order || 0);
       }
     },
-
     sortMode() {
       const mode = Conf['Thread Watcher Sort'] || 'manual';
-      return ThreadWatcher$1.sortComparators[mode] ? mode : 'manual';
+      return ThreadWatcher.sortComparators[mode] ? mode : 'manual';
     },
-
     activeYous(data) {
-      if (!data) { return 0; }
-      if ((data.quotingYou || 0) <= (data.dismiss || 0)) { return 0; }
+      if (!data) {
+        return 0;
+      }
+      if ((data.quotingYou || 0) <= (data.dismiss || 0)) {
+        return 0;
+      }
       return data.yousCount || 1;
     },
-
     getAll(groupByBoard) {
       const all = [];
-      for (var siteID in ThreadWatcher$1.db.data) {
-        var boards = ThreadWatcher$1.db.data[siteID];
+      for (var siteID in ThreadWatcher.db.data) {
+        var boards = ThreadWatcher.db.data[siteID];
         for (var boardID in boards.boards) {
           var cont;
           var threads = boards.boards[boardID];
@@ -15920,17 +16958,16 @@ svg.icon {
           for (var threadID in threads) {
             var data = threads[threadID];
             if (data && (typeof data === 'object')) {
-              (groupByBoard ? cont : all).push({siteID, boardID, threadID, data});
+              (groupByBoard ? cont : all).push({ siteID, boardID, threadID, data });
             }
           }
         }
       }
       if (!groupByBoard) {
-        all.sort(ThreadWatcher$1.sortComparators[ThreadWatcher$1.sortMode()]);
+        all.sort(ThreadWatcher.sortComparators[ThreadWatcher.sortMode()]);
       }
       return all;
     },
-
     makeLine(siteID, boardID, threadID, data) {
       let page;
       const x = $.el('a', {
@@ -15939,38 +16976,38 @@ svg.icon {
         draggable: false
       });
       Icon.set(x, 'xmark');
-      $.on(x, 'click', ThreadWatcher$1.cb.rm);
-
-      let {excerpt, isArchived} = data;
-      if (!excerpt) { excerpt = `/${boardID}/ - No.${threadID}`; }
-      if (Conf['Show Site Prefix']) { excerpt = ThreadWatcher$1.prefixes[siteID] + excerpt; }
-
+      $.on(x, 'click', ThreadWatcher.cb.rm);
+      let { excerpt, isArchived } = data;
+      if (!excerpt) {
+        excerpt = `/${boardID}/ - No.${threadID}`;
+      }
+      if (Conf['Show Site Prefix']) {
+        excerpt = ThreadWatcher.prefixes[siteID] + excerpt;
+      }
       const link = $.el('a', {
-        href: g.sites[siteID]?.urls.thread({siteID, boardID, threadID}, isArchived) || '',
+        href: g.sites[siteID]?.urls.thread({ siteID, boardID, threadID }, isArchived) || '',
         title: excerpt,
         className: 'watcher-link',
         draggable: false
       });
-
-      if (ThreadWatcher$1.showThumbnails()) {
+      if (ThreadWatcher.showThumbnails()) {
         const thumb = data.thumbURL ?
           $.el('img', {
             src: data.thumbURL,
             alt: '',
             className: 'watcher-thumb'
           })
-        :
-          $.el('span', {
-            className: 'watcher-thumb watcher-thumb-missing'
-          });
+          :
+            $.el('span', {
+              className: 'watcher-thumb watcher-thumb-missing'
+            });
         if (Conf['Thread Watcher Thumbnail Hover'] && thumb.nodeName === 'IMG') {
-          $.on(thumb, 'mouseover', ThreadWatcher$1.cb.thumbnailHoverIn);
-          $.on(thumb, 'mousemove', ThreadWatcher$1.cb.thumbnailHoverMove);
-          $.on(thumb, 'mouseout', ThreadWatcher$1.cb.thumbnailHoverOut);
+          $.on(thumb, 'mouseover', ThreadWatcher.cb.thumbnailHoverIn);
+          $.on(thumb, 'mousemove', ThreadWatcher.cb.thumbnailHoverMove);
+          $.on(thumb, 'mouseout', ThreadWatcher.cb.thumbnailHoverOut);
         }
         $.add(link, thumb);
       }
-
       if (Conf['Show Page'] && (data.page != null)) {
         page = $.el('span', {
           textContent: `[${data.page}]`,
@@ -15978,131 +17015,144 @@ svg.icon {
         });
         $.add(link, page);
       }
-
-      if (ThreadWatcher$1.unreadEnabled && Conf['Show Unread Count'] && (data.unread != null)) {
+      if (ThreadWatcher.unreadEnabled && Conf['Show Unread Count'] && (data.unread != null)) {
         const count = $.el('span', {
           textContent: `(${data.unread})`,
           className: 'watcher-unread'
         });
         $.add(link, count);
       }
-
       const title = $.el('span', {
         textContent: excerpt,
         className: 'watcher-title'
       });
       $.add(link, title);
-
-      const div = $.el('div', { draggable: ThreadWatcher$1.sortMode() === 'manual' });
+      const div = $.el('div', { draggable: ThreadWatcher.sortMode() === 'manual' });
       const fullID = `${boardID}.${threadID}`;
       div.dataset.fullID = fullID;
       div.dataset.siteID = siteID;
-      if ((g.VIEW === 'thread') && (fullID === `${g.BOARD}.${g.THREADID}`)) { $.addClass(div, 'current'); }
-      if (data.isDead) { $.addClass(div, 'dead-thread'); }
-      if (Conf['Show Page']) {
-        if (data.lastPage) { $.addClass(div, 'last-page'); }
-        if (data.page != null) { div.dataset.page = data.page; }
+      if ((g.VIEW === 'thread') && (fullID === `${g.BOARD}.${g.THREADID}`)) {
+        $.addClass(div, 'current');
       }
-      if (ThreadWatcher$1.unreadEnabled && Conf['Show Unread Count']) {
-        if (data.unread === 0) { $.addClass(div, 'replies-read'); }
-        if (data.unread) { $.addClass(div, 'replies-unread'); }
-        if ((data.quotingYou || 0) > (data.dismiss || 0)) { $.addClass(div, 'replies-quoting-you'); }
+      if (data.isDead) {
+        $.addClass(div, 'dead-thread');
+      }
+      if (Conf['Show Page']) {
+        if (data.lastPage) {
+          $.addClass(div, 'last-page');
+        }
+        if (data.page != null) {
+          div.dataset.page = data.page;
+        }
+      }
+      if (ThreadWatcher.unreadEnabled && Conf['Show Unread Count']) {
+        if (data.unread === 0) {
+          $.addClass(div, 'replies-read');
+        }
+        if (data.unread) {
+          $.addClass(div, 'replies-unread');
+        }
+        if ((data.quotingYou || 0) > (data.dismiss || 0)) {
+          $.addClass(div, 'replies-quoting-you');
+        }
       }
       for (var event of ['start', 'end', 'enter', 'leave', 'over']) {
-        $.on(div, `drag${event}`, ThreadWatcher$1.drag[event]);
+        $.on(div, `drag${event}`, ThreadWatcher.drag[event]);
       }
-      $.on(div, 'drop', ThreadWatcher$1.drag.drop);
+      $.on(div, 'drop', ThreadWatcher.drag.drop);
       const nodes = [x, link];
       if (Conf['Show Mark Thread Read Icons']) {
         const markRead = $.el('a', {
           href: 'javascript:;',
           className: 'watcher-mark-read',
           draggable: false,
-          title: ThreadWatcher$1.unreadEnabled ?
+          title: ThreadWatcher.unreadEnabled ?
             'Mark this watched thread as read'
-          :
-            'Mark read is unavailable because Remember Last Read Post is disabled.'
+            :
+              'Mark read is unavailable because Remember Last Read Post is disabled.'
         });
         Icon.set(markRead, 'check');
-        if (!ThreadWatcher$1.unreadEnabled || (!data.unread && !((data.quotingYou || 0) > (data.dismiss || 0)))) {
+        if (!ThreadWatcher.unreadEnabled || (!data.unread && !((data.quotingYou || 0) > (data.dismiss || 0)))) {
           $.addClass(markRead, 'disabled');
         }
         $.on(markRead, 'mousedown pointerdown', e => e.stopPropagation());
-        $.on(markRead, 'click', ThreadWatcher$1.cb.markRead);
+        $.on(markRead, 'click', ThreadWatcher.cb.markRead);
         nodes.push(markRead);
       }
       $.add(div, nodes);
       return div;
     },
-
     keyFromLine(line) {
       return `${line.dataset.siteID}/${line.dataset.fullID}`;
     },
-
-    threadKey({siteID, boardID, threadID}) {
+    threadKey({ siteID, boardID, threadID }) {
       return `${siteID}/${boardID}.${threadID}`;
     },
-
     dropPosition(line, e) {
       const rect = line.getBoundingClientRect();
       return { before: e.clientY < rect.top + (rect.height / 2) };
     },
-
     clearDragState() {
-      if (ThreadWatcher$1.draggingLine) {
-        ThreadWatcher$1.draggingLine.classList.remove('drag');
+      if (ThreadWatcher.draggingLine) {
+        ThreadWatcher.draggingLine.classList.remove('drag');
       }
-      ThreadWatcher$1.draggingLine = null;
-      for (const line of $$('#watched-threads > div', ThreadWatcher$1.list)) {
+      ThreadWatcher.draggingLine = null;
+      for (const line of $$('#watched-threads > div', ThreadWatcher.list)) {
         line.classList.remove('over');
         delete line.dataset.dropBefore;
       }
     },
-
     reorderInDOM(sourceLine, targetLine, before) {
-      if (!sourceLine || !targetLine || sourceLine === targetLine) { return; }
-      const list = ThreadWatcher$1.list;
-      if (!list) { return; }
+      if (!sourceLine || !targetLine || sourceLine === targetLine) {
+        return;
+      }
+      const list = ThreadWatcher.list;
+      if (!list) {
+        return;
+      }
       if (before) {
         list.insertBefore(sourceLine, targetLine);
       } else {
         list.insertBefore(sourceLine, targetLine.nextSibling);
       }
-      ThreadWatcher$1.persistOrderFromDOM();
-      ThreadWatcher$1.refreshIcon();
+      ThreadWatcher.persistOrderFromDOM();
+      ThreadWatcher.refreshIcon();
     },
-
     persistOrder(threads) {
       if (!threads) {
-        threads = ThreadWatcher$1.getAll(false, true);
+        threads = ThreadWatcher.getAll(false, true);
       }
       for (let i = 0; i < threads.length; i++) {
         const thread = threads[i];
         const order = i + 1;
-        if (thread.data.order === order) { continue; }
+        if (thread.data.order === order) {
+          continue;
+        }
         thread.data.order = order;
-        ThreadWatcher$1.db.extend({siteID: thread.siteID, boardID: thread.boardID, threadID: +thread.threadID, val: {order}});
+        ThreadWatcher.db.extend({ siteID: thread.siteID, boardID: thread.boardID, threadID: +thread.threadID, val: { order } });
       }
     },
-
     persistOrderFromDOM() {
-      const lines = $$('#watched-threads > div', ThreadWatcher$1.list);
+      const lines = $$('#watched-threads > div', ThreadWatcher.list);
       for (let i = 0; i < lines.length; i++) {
         const line = lines[i];
         const siteID = line.dataset.siteID;
         const [boardID, threadID] = line.dataset.fullID.split('.');
         const order = i + 1;
-        const data = ThreadWatcher$1.db.get({siteID, boardID, threadID});
-        if (!data || data.order === order) { continue; }
+        const data = ThreadWatcher.db.get({ siteID, boardID, threadID });
+        if (!data || data.order === order) {
+          continue;
+        }
         data.order = order;
-        ThreadWatcher$1.db.extend({siteID, boardID, threadID: +threadID, val: {order}});
+        ThreadWatcher.db.extend({ siteID, boardID, threadID: +threadID, val: { order } });
       }
     },
-
     setPrefixes(threads) {
       const prefixes = dict();
-      for (var {siteID} of threads) {
-        if (siteID in prefixes) { continue; }
+      for (var { siteID } of threads) {
+        if (siteID in prefixes) {
+          continue;
+        }
         var len = 0;
         var prefix = '';
         var conflicts = Object.keys(prefixes);
@@ -16121,240 +17171,253 @@ svg.icon {
         }
         prefixes[siteID] = prefix;
       }
-      return ThreadWatcher$1.prefixes = prefixes;
+      return ThreadWatcher.prefixes = prefixes;
     },
-
     build() {
-      ThreadWatcher$1.applyLayout();
-      ThreadWatcher$1.hideThumbnailHover();
+      ThreadWatcher.applyLayout();
+      ThreadWatcher.hideThumbnailHover();
       const nodes = [];
-      const threads = ThreadWatcher$1.getAll();
-      ThreadWatcher$1.setPrefixes(threads);
-      for (var {siteID, boardID, threadID, data} of threads) {
+      const threads = ThreadWatcher.getAll();
+      ThreadWatcher.setPrefixes(threads);
+      for (var { siteID, boardID, threadID, data } of threads) {
         // Add missing excerpt for threads added by Auto Watch
         var thread;
         if ((data.excerpt == null) && (siteID === g.SITE.ID) && (thread = g.threads.get(`${boardID}.${threadID}`)) && thread.OP) {
-          ThreadWatcher$1.db.extend({boardID, threadID, val: {excerpt: Get.threadExcerpt(thread)}});
+          ThreadWatcher.db.extend({ boardID, threadID, val: { excerpt: Get.threadExcerpt(thread) } });
         }
         if ((data.thumbURL == null) && (siteID === g.SITE.ID) && (thread = g.threads.get(`${boardID}.${threadID}`)) && thread.OP?.file?.thumbURL) {
-          ThreadWatcher$1.db.extend({boardID, threadID, val: {thumbURL: thread.OP.file.thumbURL}});
+          ThreadWatcher.db.extend({ boardID, threadID, val: { thumbURL: thread.OP.file.thumbURL } });
           data.thumbURL = thread.OP.file.thumbURL;
         }
-        nodes.push(ThreadWatcher$1.makeLine(siteID, boardID, threadID, data));
+        nodes.push(ThreadWatcher.makeLine(siteID, boardID, threadID, data));
       }
-      const {list} = ThreadWatcher$1;
+      const { list } = ThreadWatcher;
       $.rmAll(list);
       $.add(list, nodes);
-
-      const ret = ThreadWatcher$1.refreshIcon();
-      if (ThreadWatcher$1.attached()) { ThreadWatcher$1.positionIfAttached(true); }
+      const ret = ThreadWatcher.refreshIcon();
+      if (ThreadWatcher.attached()) {
+        ThreadWatcher.positionIfAttached(true);
+      }
       return ret;
     },
-
     refresh(manual) {
-      ThreadWatcher$1.build();
-
-      g.threads.forEach(function(thread) {
-        const isWatched = ThreadWatcher$1.isWatched(thread);
+      ThreadWatcher.build();
+      g.threads.forEach(function (thread) {
+        const isWatched = ThreadWatcher.isWatched(thread);
         if (thread.OP) {
           for (var post of [thread.OP, ...thread.OP.clones]) {
             var toggler;
             if (toggler = $('.watch-thread-link', post.nodes.info)) {
-              ThreadWatcher$1.setToggler(toggler, isWatched);
+              ThreadWatcher.setToggler(toggler, isWatched);
             }
           }
         }
-        if (thread.catalogView) { return thread.catalogView.nodes.root.classList.toggle('watched', isWatched); }
+        if (thread.catalogView) {
+          return thread.catalogView.nodes.root.classList.toggle('watched', isWatched);
+        }
       });
-
       if (Conf['Pin Watched Threads']) {
-        return $.event('SortIndex', {deferred: !(manual && Conf['Index Mode'] === 'catalog')});
+        return $.event('SortIndex', { deferred: !(manual && Conf['Index Mode'] === 'catalog') });
       }
     },
-
     refreshIcon() {
       for (var className of ['replies-unread', 'replies-quoting-you']) {
-        ThreadWatcher$1.shortcut.classList.toggle(className, !!$(`.${className}`, ThreadWatcher$1.dialog));
+        ThreadWatcher.shortcut.classList.toggle(className, !!$(`.${className}`, ThreadWatcher.dialog));
       }
-      if (ThreadWatcher$1.markReadButton) {
-        const hasUnread = !!$('.replies-unread, .replies-quoting-you', ThreadWatcher$1.list);
-        ThreadWatcher$1.markReadButton.classList.toggle('disabled', !ThreadWatcher$1.unreadEnabled || !hasUnread);
-        ThreadWatcher$1.markReadButton.title = !ThreadWatcher$1.unreadEnabled ?
+      if (ThreadWatcher.markReadButton) {
+        const hasUnread = !!$('.replies-unread, .replies-quoting-you', ThreadWatcher.list);
+        ThreadWatcher.markReadButton.classList.toggle('disabled', !ThreadWatcher.unreadEnabled || !hasUnread);
+        ThreadWatcher.markReadButton.title = !ThreadWatcher.unreadEnabled ?
           'Mark all read is unavailable because Remember Last Read Post is disabled.'
-        : hasUnread ?
-          'Mark all watched threads as read'
-        :
-          'No unread watched threads';
+          : hasUnread ?
+            'Mark all watched threads as read'
+            :
+              'No unread watched threads';
       }
     },
-
     ensureThumbnailHover() {
-      if (ThreadWatcher$1.thumbnailHover) { return ThreadWatcher$1.thumbnailHover; }
+      if (ThreadWatcher.thumbnailHover) {
+        return ThreadWatcher.thumbnailHover;
+      }
       const hover = $.el('img', {
         id: 'tw-ihover',
         alt: ''
       });
       hover.hidden = true;
       $.add(Header.hover, hover);
-      return (ThreadWatcher$1.thumbnailHover = hover);
+      return (ThreadWatcher.thumbnailHover = hover);
     },
-
     hideThumbnailHover() {
-      const hover = ThreadWatcher$1.thumbnailHover;
-      if (!hover) { return; }
+      const hover = ThreadWatcher.thumbnailHover;
+      if (!hover) {
+        return;
+      }
       hover.hidden = true;
       hover.removeAttribute('src');
       hover.removeAttribute('style');
-      delete ThreadWatcher$1.hoveredThumbnail;
+      delete ThreadWatcher.hoveredThumbnail;
     },
-
     showThumbnailHover(thumb) {
-      if (!Conf['Thread Watcher Thumbnail Hover'] || !thumb?.src) { return; }
-      if (!doc.contains(thumb)) { return; }
-      const hover = ThreadWatcher$1.ensureThumbnailHover();
+      if (!Conf['Thread Watcher Thumbnail Hover'] || !thumb?.src) {
+        return;
+      }
+      if (!doc.contains(thumb)) {
+        return;
+      }
+      const hover = ThreadWatcher.ensureThumbnailHover();
       hover.hidden = false;
       hover.src = thumb.src;
-      ThreadWatcher$1.hoveredThumbnail = thumb;
-      ThreadWatcher$1.positionThumbnailHover(thumb);
+      ThreadWatcher.hoveredThumbnail = thumb;
+      ThreadWatcher.positionThumbnailHover(thumb);
       if (!hover.complete) {
-        const onLoad = function() {
+        const onLoad = function () {
           $.off(hover, 'load', onLoad);
-          if (ThreadWatcher$1.hoveredThumbnail === thumb) {
-            ThreadWatcher$1.positionThumbnailHover(thumb);
+          if (ThreadWatcher.hoveredThumbnail === thumb) {
+            ThreadWatcher.positionThumbnailHover(thumb);
           }
         };
         $.on(hover, 'load', onLoad);
       }
     },
-
     positionThumbnailHover(thumb) {
-      const hover = ThreadWatcher$1.thumbnailHover;
-      if (!hover || hover.hidden || !thumb || !ThreadWatcher$1.dialog) { return; }
-      if (!doc.contains(thumb)) {
-        ThreadWatcher$1.hideThumbnailHover();
+      const hover = ThreadWatcher.thumbnailHover;
+      if (!hover || hover.hidden || !thumb || !ThreadWatcher.dialog) {
         return;
       }
-      const dialogRect = ThreadWatcher$1.dialog.getBoundingClientRect();
+      if (!doc.contains(thumb)) {
+        ThreadWatcher.hideThumbnailHover();
+        return;
+      }
+      const dialogRect = ThreadWatcher.dialog.getBoundingClientRect();
       const thumbRect = thumb.getBoundingClientRect();
       const gap = 8;
       const viewportPadding = 8;
       const availableWidth = dialogRect.left - gap - viewportPadding;
       if (availableWidth < 80) {
-        ThreadWatcher$1.hideThumbnailHover();
+        ThreadWatcher.hideThumbnailHover();
         return;
       }
-      const targetWidth = Math.max(80, Math.floor((availableWidth * ThreadWatcher$1.thumbnailPreviewSize()) / 99));
+      const targetWidth = Math.max(80, Math.floor((availableWidth * ThreadWatcher.thumbnailPreviewSize()) / 99));
       hover.style.width = `${targetWidth}px`;
       hover.style.maxWidth = `${targetWidth}px`;
       hover.style.maxHeight = `${Math.max(120, doc.clientHeight - (viewportPadding * 2))}px`;
       const width = hover.offsetWidth;
       const height = hover.offsetHeight;
       let left = dialogRect.left - gap - width;
-      if (left < viewportPadding) { left = viewportPadding; }
+      if (left < viewportPadding) {
+        left = viewportPadding;
+      }
       let top = thumbRect.top + ((thumbRect.height - height) / 2);
       top = Math.max(viewportPadding, Math.min(doc.clientHeight - height - viewportPadding, top));
       hover.style.left = `${left}px`;
       hover.style.top = `${top}px`;
     },
-
     showThumbnails() {
       return Conf['Show OP Thumbnails'];
     },
-
     thumbnailSize() {
       let size = parseInt(Conf['Thread Watcher Thumbnail Size'], 10);
-      if (isNaN(size)) { size = 40; }
+      if (isNaN(size)) {
+        size = 40;
+      }
       return Math.max(16, Math.min(160, size));
     },
-
     thumbnailPreviewSize() {
       let size = parseInt(Conf['Thread Watcher Thumbnail Preview Size'], 10);
-      if (isNaN(size)) { size = 40; }
+      if (isNaN(size)) {
+        size = 40;
+      }
       return Math.max(10, Math.min(99, size));
     },
-
     maxHeight() {
       let height = parseInt(Conf['Thread Watcher Max Height'], 10);
-      if (isNaN(height)) { height = 210; }
+      if (isNaN(height)) {
+        height = 210;
+      }
       return Math.max(120, Math.min(999, height));
     },
-
     maxWidth() {
       let width = parseInt(Conf['Thread Watcher Max Width'], 10);
-      if (isNaN(width)) { width = 250; }
+      if (isNaN(width)) {
+        width = 250;
+      }
       return Math.max(120, Math.min(999, width));
     },
-
     applyLayout() {
-      if (!ThreadWatcher$1.dialog) { return; }
-      ThreadWatcher$1.dialog.style.setProperty('--watcher-thumb-size', `${ThreadWatcher$1.thumbnailSize()}px`);
-      ThreadWatcher$1.dialog.style.setProperty('--watcher-max-height', `${ThreadWatcher$1.maxHeight()}px`);
-      ThreadWatcher$1.dialog.style.setProperty('--watcher-max-width', `${ThreadWatcher$1.maxWidth()}px`);
-      if (ThreadWatcher$1.markReadButton) {
-        ThreadWatcher$1.markReadButton.hidden = !Conf['Show Mark All Read Icon'];
+      if (!ThreadWatcher.dialog) {
+        return;
+      }
+      ThreadWatcher.dialog.style.setProperty('--watcher-thumb-size', `${ThreadWatcher.thumbnailSize()}px`);
+      ThreadWatcher.dialog.style.setProperty('--watcher-max-height', `${ThreadWatcher.maxHeight()}px`);
+      ThreadWatcher.dialog.style.setProperty('--watcher-max-width', `${ThreadWatcher.maxWidth()}px`);
+      if (ThreadWatcher.markReadButton) {
+        ThreadWatcher.markReadButton.hidden = !Conf['Show Mark All Read Icon'];
       }
     },
-
     attached() {
       return !!Conf['Thread Watcher Attached'];
     },
-
     attachLocation() {
       let loc = Conf['Thread Watcher Attach Location'];
-      if (!['bottom', 'top', 'left', 'right'].includes(loc)) { loc = 'bottom'; }
+      if (!['bottom', 'top', 'left', 'right'].includes(loc)) {
+        loc = 'bottom';
+      }
       return loc;
     },
-
     updateAttachButton() {
-      const btn = ThreadWatcher$1.attachButton;
-      if (!btn) { return; }
-      const isAttached = ThreadWatcher$1.attached();
+      const btn = ThreadWatcher.attachButton;
+      if (!btn) {
+        return;
+      }
+      const isAttached = ThreadWatcher.attached();
       btn.classList.toggle('attached', isAttached);
       btn.title = isAttached ? 'Detach from Quick Reply' : 'Attach to Quick Reply';
     },
-
     toggleAttach() {
-      const val = !ThreadWatcher$1.attached();
+      const val = !ThreadWatcher.attached();
       $.set('Thread Watcher Attached', val);
       Conf['Thread Watcher Attached'] = val;
-      ThreadWatcher$1.updateAttachButton();
+      ThreadWatcher.updateAttachButton();
       if (val) {
-        ThreadWatcher$1.positionIfAttached(true);
+        ThreadWatcher.positionIfAttached(true);
       } else {
-        ThreadWatcher$1.restorePosition();
+        ThreadWatcher.restorePosition();
       }
     },
-
     _posRaf: null,
-
     positionIfAttached(immediate = false) {
-      if (!ThreadWatcher$1.dialog || !ThreadWatcher$1.attached()) { return; }
+      if (!ThreadWatcher.dialog || !ThreadWatcher.attached()) {
+        return;
+      }
       const qr = QR?.nodes?.el;
       if (!qr || qr.hidden) {
-        ThreadWatcher$1.restorePosition();
+        ThreadWatcher.restorePosition();
         return;
       }
       if (immediate) {
-        if (ThreadWatcher$1._posRaf) {
-          cancelAnimationFrame(ThreadWatcher$1._posRaf);
-          ThreadWatcher$1._posRaf = null;
+        if (ThreadWatcher._posRaf) {
+          cancelAnimationFrame(ThreadWatcher._posRaf);
+          ThreadWatcher._posRaf = null;
         }
-        ThreadWatcher$1._doPositionAttached();
+        ThreadWatcher._doPositionAttached();
         return;
       }
-      if (ThreadWatcher$1._posRaf) { return; }
-      ThreadWatcher$1._posRaf = requestAnimationFrame(() => {
-        ThreadWatcher$1._posRaf = null;
-        ThreadWatcher$1._doPositionAttached();
+      if (ThreadWatcher._posRaf) {
+        return;
+      }
+      ThreadWatcher._posRaf = requestAnimationFrame(() => {
+        ThreadWatcher._posRaf = null;
+        ThreadWatcher._doPositionAttached();
       });
     },
-
     _doPositionAttached() {
-      const dialog = ThreadWatcher$1.dialog;
-      if (!dialog) { return; }
+      const dialog = ThreadWatcher.dialog;
+      if (!dialog) {
+        return;
+      }
       const qr = QR?.nodes?.el;
       if (!qr || qr.hidden) {
-        ThreadWatcher$1.restorePosition();
+        ThreadWatcher.restorePosition();
         return;
       }
       if (!dialog.classList.contains('watcher-attached')) {
@@ -16364,22 +17427,20 @@ svg.icon {
         dialog.style.position = 'fixed';
       }
       const qrRect = qr.getBoundingClientRect();
-      const loc = ThreadWatcher$1.attachLocation();
+      const loc = ThreadWatcher.attachLocation();
       let targetW = Math.round(qrRect.width);
       if (loc === 'left' || loc === 'right') {
-        targetW = ThreadWatcher$1.maxWidth();
+        targetW = ThreadWatcher.maxWidth();
       }
-
       // Only rewrite size styles (and trigger inner layout + applyLayout) on actual change.
       // This avoids heavy reflow/jank on every frame during QR *position* drags (width unchanged).
       // Width changes (QR resize) will still update live but only do the expensive work when needed.
       let sizeChanged = false;
-      if (ThreadWatcher$1._lastAttachedW !== targetW) {
+      if (ThreadWatcher._lastAttachedW !== targetW) {
         dialog.style.width = `${targetW}px`;
-        ThreadWatcher$1._lastAttachedW = targetW;
+        ThreadWatcher._lastAttachedW = targetW;
         sizeChanged = true;
       }
-
       // Position updates are cheap (fixed element move); always apply for smooth following.
       if (loc === 'bottom') {
         dialog.style.left = `${qrRect.left}px`;
@@ -16388,14 +17449,17 @@ svg.icon {
         dialog.style.bottom = '';
       } else if (loc === 'top') {
         // Use bottom positioning so we don't need to measure our own height (avoids sync layout after width set).
+        // clientHeight (not innerHeight) excludes any horizontal scrollbar, matching getBoundingClientRect.
         dialog.style.left = `${qrRect.left}px`;
-        dialog.style.bottom = `${window.innerHeight - qrRect.top}px`;
+        dialog.style.bottom = `${d.documentElement.clientHeight - qrRect.top}px`;
         dialog.style.top = '';
         dialog.style.right = '';
       } else if (loc === 'left') {
         // Use right positioning + explicit width so watcher extends leftward; no own-size read needed.
+        // clientWidth (not innerWidth) excludes the vertical scrollbar; innerWidth would leave a
+        // persistent scrollbar-wide gap since CSS `right` is measured from the scrollbar-excluded edge.
         dialog.style.top = `${qrRect.top}px`;
-        dialog.style.right = `${window.innerWidth - qrRect.left}px`;
+        dialog.style.right = `${d.documentElement.clientWidth - qrRect.left}px`;
         dialog.style.left = '';
         dialog.style.bottom = '';
       } else if (loc === 'right') {
@@ -16404,13 +17468,12 @@ svg.icon {
         dialog.style.right = '';
         dialog.style.bottom = '';
       }
-
       if (sizeChanged) {
         if (loc === 'left' || loc === 'right') {
-          ThreadWatcher$1.applyLayout();
+          ThreadWatcher.applyLayout();
           // Sides: width set to manual max W; height sizes to content (capped by manual --max-height via applyLayout).
         } else {
-          ThreadWatcher$1.applyLayout();
+          ThreadWatcher.applyLayout();
           // When vertically attached (bottom/top), fill the list content to the followed QR width
           // (instead of being capped by the manual "max W" setting). The manual value from settings
           // is still the default for standalone (non-attached) watcher and "still works" if you
@@ -16419,12 +17482,13 @@ svg.icon {
         }
       }
     },
-
     restorePosition() {
-      const dialog = ThreadWatcher$1.dialog;
-      if (!dialog) { return; }
+      const dialog = ThreadWatcher.dialog;
+      if (!dialog) {
+        return;
+      }
       dialog.classList.remove('watcher-attached');
-      ThreadWatcher$1._lastAttachedW = null;
+      ThreadWatcher._lastAttachedW = null;
       const saved = Conf['thread-watcher.position'] || '';
       if (saved) {
         dialog.style.cssText = saved;
@@ -16434,19 +17498,22 @@ svg.icon {
       dialog.style.width = '';
       dialog.style.height = '';
       dialog.style.position = Conf['Fixed Thread Watcher'] ? 'fixed' : 'absolute';
-      ThreadWatcher$1.applyLayout();
+      ThreadWatcher.applyLayout();
     },
-
     onQRDialogCreation() {
       const qr = QR?.nodes?.el;
-      if (!qr) { return; }
-      if (ThreadWatcher$1._qrObs) {
-        try { ThreadWatcher$1._qrObs.disconnect(); } catch (e) {}
+      if (!qr) {
+        return;
+      }
+      if (ThreadWatcher._qrObs) {
+        try {
+          ThreadWatcher._qrObs.disconnect();
+        } catch (e) { }
       }
       const schedule = () => {
-        if (ThreadWatcher$1.attached()) {
+        if (ThreadWatcher.attached()) {
           // Direct for resize following (avoids rAF frame of lag between QR size change and watcher width update).
-          ThreadWatcher$1._doPositionAttached();
+          ThreadWatcher._doPositionAttached();
         }
       };
       let ro = null;
@@ -16458,18 +17525,23 @@ svg.icon {
       // Do NOT observe 'style' — drag updates fire too often and cause jank/lag when attached.
       // ResizeObserver covers size (e.g. QR textarea resize); we call _do direct from RO/MO and 4chanXQRMove.
       mo.observe(qr, { attributes: true, attributeFilter: ['hidden', 'class'] });
-      ThreadWatcher$1._qrObs = {
+      ThreadWatcher._qrObs = {
         ro, mo,
-        disconnect() { try { ro?.disconnect(); } catch(e){} try { mo.disconnect(); } catch(e){} }
+        disconnect() { try {
+          ro?.disconnect();
+        } catch (e) { } try {
+          mo.disconnect();
+        } catch (e) { } }
       };
       schedule();
     },
-
     update(siteID, boardID, threadID, newData) {
       let data, key, line, val;
-      if (!(data = ThreadWatcher$1.db?.get({siteID, boardID, threadID}))) { return; }
+      if (!(data = ThreadWatcher.db?.get({ siteID, boardID, threadID }))) {
+        return;
+      }
       if (newData.isDead && Conf['Auto Prune']) {
-        ThreadWatcher$1.rm(siteID, boardID, threadID);
+        ThreadWatcher.rm(siteID, boardID, threadID);
         return;
       }
       if (newData.isDead || (newData.last === -1)) {
@@ -16483,64 +17555,75 @@ svg.icon {
         newData.modified = undefined;
       }
       let n = 0;
-      for (key in newData) { val = newData[key]; if (data[key] !== val) { n++; } }
-      if (!n) { return; }
-      ThreadWatcher$1.db.extend({siteID, boardID, threadID, val: newData});
-      if (ThreadWatcher$1.sortMode() !== 'manual') {
-        return ThreadWatcher$1.refresh();
+      for (key in newData) {
+        val = newData[key];
+        if (data[key] !== val) {
+          n++;
+        }
       }
-      if (line = $(`#watched-threads > [data-site-i-d='${siteID}'][data-full-i-d='${boardID}.${threadID}']`, ThreadWatcher$1.dialog)) {
-        const newLine = ThreadWatcher$1.makeLine(siteID, boardID, threadID, data);
+      if (!n) {
+        return;
+      }
+      ThreadWatcher.db.extend({ siteID, boardID, threadID, val: newData });
+      if (ThreadWatcher.sortMode() !== 'manual') {
+        return ThreadWatcher.refresh();
+      }
+      if (line = $(`#watched-threads > [data-site-i-d='${siteID}'][data-full-i-d='${boardID}.${threadID}']`, ThreadWatcher.dialog)) {
+        const newLine = ThreadWatcher.makeLine(siteID, boardID, threadID, data);
         $.replace(line, newLine);
-        return ThreadWatcher$1.refreshIcon();
+        return ThreadWatcher.refreshIcon();
       } else {
-        return ThreadWatcher$1.refresh();
+        return ThreadWatcher.refresh();
       }
     },
-
     set404(boardID, threadID, cb) {
       let data;
-      if (!(data = ThreadWatcher$1.db?.get({boardID, threadID}))) { return cb(); }
-      if (Conf['Auto Prune']) {
-        ThreadWatcher$1.db.delete({boardID, threadID});
+      if (!(data = ThreadWatcher.db?.get({ boardID, threadID }))) {
         return cb();
       }
-      if (data.isDead && !((data.isArchived != null) || (data.page != null) || (data.lastPage != null) || (data.unread != null) || (data.quotingYou != null))) { return cb(); }
-      return ThreadWatcher$1.db.extend({boardID, threadID, val: {isDead: true, isArchived: undefined, page: undefined, lastPage: undefined, unread: undefined, quotingYou: undefined}}, cb);
+      if (Conf['Auto Prune']) {
+        ThreadWatcher.db.delete({ boardID, threadID });
+        return cb();
+      }
+      if (data.isDead && !((data.isArchived != null) || (data.page != null) || (data.lastPage != null) || (data.unread != null) || (data.quotingYou != null))) {
+        return cb();
+      }
+      return ThreadWatcher.db.extend({ boardID, threadID, val: { isDead: true, isArchived: undefined, page: undefined, lastPage: undefined, unread: undefined, quotingYou: undefined } }, cb);
     },
-
     toggle(thread, manual) {
-      const siteID   = g.SITE.ID;
-      const boardID  = thread.board.ID;
+      const siteID = g.SITE.ID;
+      const boardID = thread.board.ID;
       const threadID = thread.ID;
-      if (ThreadWatcher$1.db.get({boardID, threadID})) {
-        return ThreadWatcher$1.rm(siteID, boardID, threadID, undefined, manual);
+      if (ThreadWatcher.db.get({ boardID, threadID })) {
+        return ThreadWatcher.rm(siteID, boardID, threadID, undefined, manual);
       } else {
-        return ThreadWatcher$1.add(thread, undefined, manual);
+        return ThreadWatcher.add(thread, undefined, manual);
       }
     },
-
     add(thread, cb, manual) {
-      const data     = {};
-      const siteID   = g.SITE.ID;
-      const boardID  = thread.board.ID;
+      const data = {};
+      const siteID = g.SITE.ID;
+      const boardID = thread.board.ID;
       const threadID = thread.ID;
       if (thread.isDead) {
-        if (Conf['Auto Prune'] && ThreadWatcher$1.db.get({boardID, threadID})) {
-          ThreadWatcher$1.rm(siteID, boardID, threadID, cb);
+        if (Conf['Auto Prune'] && ThreadWatcher.db.get({ boardID, threadID })) {
+          ThreadWatcher.rm(siteID, boardID, threadID, cb);
           return;
         }
         data.isDead = true;
       }
-      if (thread.OP) { data.excerpt = Get.threadExcerpt(thread); }
-      if (thread.OP?.file?.thumbURL) { data.thumbURL = thread.OP.file.thumbURL; }
-      return ThreadWatcher$1.addRaw(boardID, threadID, data, cb, manual);
+      if (thread.OP) {
+        data.excerpt = Get.threadExcerpt(thread);
+      }
+      if (thread.OP?.file?.thumbURL) {
+        data.thumbURL = thread.OP.file.thumbURL;
+      }
+      return ThreadWatcher.addRaw(boardID, threadID, data, cb, manual);
     },
-
     addRaw(boardID, threadID, data, cb, manual) {
-      const oldData = ThreadWatcher$1.db.get({ boardID, threadID, defaultValue: dict() });
+      const oldData = ThreadWatcher.db.get({ boardID, threadID, defaultValue: dict() });
       if (oldData.order == null) {
-        oldData.order = ThreadWatcher$1.getAll().length;
+        oldData.order = ThreadWatcher.getAll().length;
       }
       if (oldData.addedAt == null) {
         oldData.addedAt = Date.now();
@@ -16548,163 +17631,163 @@ svg.icon {
       delete oldData.last;
       delete oldData.modified;
       $.extend(oldData, data);
-      ThreadWatcher$1.db.set({boardID, threadID, val: oldData}, cb);
-      ThreadWatcher$1.refresh(manual);
-      const thread = {siteID: g.SITE.ID, boardID, threadID, data, force: true};
+      ThreadWatcher.db.set({ boardID, threadID, val: oldData }, cb);
+      ThreadWatcher.refresh(manual);
+      const thread = { siteID: g.SITE.ID, boardID, threadID, data, force: true };
       if (Conf['Show Page'] && !data.isDead) {
-        return ThreadWatcher$1.fetchBoard([thread]);
-      } else if (ThreadWatcher$1.unreadEnabled && Conf['Show Unread Count']) {
-        return ThreadWatcher$1.fetchStatus(thread);
+        return ThreadWatcher.fetchBoard([thread]);
+      } else if (ThreadWatcher.unreadEnabled && Conf['Show Unread Count']) {
+        return ThreadWatcher.fetchStatus(thread);
       }
     },
-
     rm(siteID, boardID, threadID, cb, manual) {
-      ThreadWatcher$1.db.delete({siteID, boardID, threadID}, cb);
-      return ThreadWatcher$1.refresh(manual);
+      ThreadWatcher.db.delete({ siteID, boardID, threadID }, cb);
+      return ThreadWatcher.refresh(manual);
     },
-
     menu: {
       init() {
-        if (!Conf['Thread Watcher']) { return; }
+        if (!Conf['Thread Watcher']) {
+          return;
+        }
         const menu = (this.menu = new UI.Menu('thread watcher'));
-        $.on($('.menu-button', ThreadWatcher$1.dialog), 'click', function(e) {
-          return menu.toggle(e, this, ThreadWatcher$1);
+        $.on($('.menu-button', ThreadWatcher.dialog), 'click', function (e) {
+          return menu.toggle(e, this, ThreadWatcher);
         });
         return this.addMenuEntries();
       },
-
       addHeaderMenuEntry() {
-        if (g.VIEW !== 'thread') { return; }
-        const entryEl = $.el('a',
-          {href: 'javascript:;'});
+        if (g.VIEW !== 'thread') {
+          return;
+        }
+        const entryEl = $.el('a', { href: 'javascript:;' });
         Header.menu.addEntry({
           el: entryEl,
           order: 60,
           open() {
-            const [addClass, rmClass, text] = !!ThreadWatcher$1.db.get({boardID: g.BOARD.ID, threadID: g.THREADID}) ?
+            const [addClass, rmClass, text] = !!ThreadWatcher.db.get({ boardID: g.BOARD.ID, threadID: g.THREADID }) ?
               ['unwatch-thread', 'watch-thread', 'Unwatch thread']
-            :
-              ['watch-thread', 'unwatch-thread', 'Watch thread'];
+              :
+                ['watch-thread', 'unwatch-thread', 'Watch thread'];
             $.addClass(entryEl, addClass);
             $.rmClass(entryEl, rmClass);
             entryEl.textContent = text;
             return true;
           }
         });
-        return $.on(entryEl, 'click', () => ThreadWatcher$1.toggle(g.threads.get(`${g.BOARD}.${g.THREADID}`), true));
+        return $.on(entryEl, 'click', () => ThreadWatcher.toggle(g.threads.get(`${g.BOARD}.${g.THREADID}`), true));
       },
-
       addMenuEntries() {
         const toggleDisabledDead = function () {
-          this.el.classList.toggle('disabled', !$('.dead-thread', ThreadWatcher$1.list));
+          this.el.classList.toggle('disabled', !$('.dead-thread', ThreadWatcher.list));
           return true;
         };
-
         const entries = [
           // `Open all` entry
           {
             text: 'Open all threads',
-            cb: ThreadWatcher$1.cb.openAll,
+            cb: ThreadWatcher.cb.openAll,
             open() {
-              this.el.classList.toggle('disabled', !ThreadWatcher$1.list.firstElementChild);
+              this.el.classList.toggle('disabled', !ThreadWatcher.list.firstElementChild);
               return true;
             }
           },
           {
             text: 'Clear all threads',
-            cb: ThreadWatcher$1.cb.clear,
+            cb: ThreadWatcher.cb.clear,
             open() {
-              this.el.classList.toggle('disabled', !ThreadWatcher$1.list.firstElementChild);
+              this.el.classList.toggle('disabled', !ThreadWatcher.list.firstElementChild);
               return true;
             }
           },
           // `Open Unread` entry
           {
             text: 'Open unread threads',
-            cb: ThreadWatcher$1.cb.openUnread,
+            cb: ThreadWatcher.cb.openUnread,
             open() {
-              this.el.classList.toggle('disabled', !$('.replies-unread', ThreadWatcher$1.list));
+              this.el.classList.toggle('disabled', !$('.replies-unread', ThreadWatcher.list));
               return true;
             }
           },
           // `Open unread dead threads` entry
           {
             text: 'Open unread dead threads',
-            cb: ThreadWatcher$1.cb.openDeads,
+            cb: ThreadWatcher.cb.openDeads,
             open: toggleDisabledDead,
           },
           // `Prune all dead threads` entry
           {
             text: 'Prune all dead threads',
-            cb: ThreadWatcher$1.cb.pruneDeads,
+            cb: ThreadWatcher.cb.pruneDeads,
             open: toggleDisabledDead,
           },
           // `Prune read dead threads` entry
           {
             text: 'Prune read dead threads',
-            cb: ThreadWatcher$1.cb.pruneReadDeads,
+            cb: ThreadWatcher.cb.pruneReadDeads,
             open: toggleDisabledDead,
           },
           // `Dismiss posts quoting you` entry
           {
             text: 'Dismiss posts quoting you',
             title: 'Unhighlight the thread watcher icon and threads until there are new replies quoting you.',
-            cb: ThreadWatcher$1.cb.dismiss,
+            cb: ThreadWatcher.cb.dismiss,
             open() {
-              this.el.classList.toggle('disabled', !$.hasClass(ThreadWatcher$1.shortcut, 'replies-quoting-you'));
+              this.el.classList.toggle('disabled', !$.hasClass(ThreadWatcher.shortcut, 'replies-quoting-you'));
               return true;
             }
           },
           {
             text: 'Max H/W',
             open() {
-              this.el.innerHTML = `Max H <input type="number" value="${ThreadWatcher$1.maxHeight()}" min="120" max="999" class="field" style="width:4.2em"> W<input type="number" value="${ThreadWatcher$1.maxWidth()}" min="120" max="999" class="field" style="width:4.2em">`;
+              this.el.innerHTML = `Max H <input type="number" value="${ThreadWatcher.maxHeight()}" min="120" max="999" class="field" style="width:4.2em"> W<input type="number" value="${ThreadWatcher.maxWidth()}" min="120" max="999" class="field" style="width:4.2em">`;
               const [heightInput, widthInput] = $$('input', this.el);
               for (const input of [heightInput, widthInput]) {
                 $.on(input, 'click', e => e.stopPropagation());
                 $.on(input, 'mousedown', e => e.stopPropagation());
                 $.on(input, 'pointerdown', e => e.stopPropagation());
               }
-              $.on(heightInput, 'change', function() {
+              $.on(heightInput, 'change', function () {
                 let height = parseInt(this.value, 10);
-                if (isNaN(height)) { height = 210; }
+                if (isNaN(height)) {
+                  height = 210;
+                }
                 height = Math.max(120, Math.min(999, height));
                 this.value = `${height}`;
                 $.set('Thread Watcher Max Height', height);
                 Conf['Thread Watcher Max Height'] = height;
-                ThreadWatcher$1.applyLayout();
+                ThreadWatcher.applyLayout();
               });
-              $.on(widthInput, 'change', function() {
+              $.on(widthInput, 'change', function () {
                 let width = parseInt(this.value, 10);
-                if (isNaN(width)) { width = 250; }
+                if (isNaN(width)) {
+                  width = 250;
+                }
                 width = Math.max(120, Math.min(999, width));
                 this.value = `${width}`;
                 $.set('Thread Watcher Max Width', width);
                 Conf['Thread Watcher Max Width'] = width;
-                ThreadWatcher$1.applyLayout();
+                ThreadWatcher.applyLayout();
               });
               return true;
             }
           },
         ];
-
-        for (var {text, title, cb, open} of entries) {
+        for (var { text, title, cb, open } of entries) {
           var entry = {
             el: $.el('a', {
               textContent: text,
               href: 'javascript:;'
             })
           };
-          if (title) { entry.el.title = title; }
+          if (title) {
+            entry.el.title = title;
+          }
           $.on(entry.el, 'click', cb);
           entry.open = open.bind(entry);
           this.menu.addEntry(entry);
         }
-
         this.addSortEntry();
-
         this.addAttachLocationEntry();
-
         // Settings checkbox entries, grouped into submenus to save vertical space:
         const automationNames = ['Auto Update Thread Watcher', 'Auto Watch', 'Auto Watch Reply', 'Auto Prune'];
         const displayNames = ['Show Page', 'Show Unread Count', 'Show Mark All Read Icon', 'Show Mark Thread Read Icons', 'Show Site Prefix'];
@@ -16714,26 +17797,23 @@ svg.icon {
         const makeCheckboxes = names => names
           .filter(name => Config.threadWatcher[name])
           .map(name => this.makeCheckbox(name, Config.threadWatcher[name][1]));
-
         this.menu.addEntry({
-          el: $.el('a', {href: 'javascript:;', textContent: 'Auto'}),
+          el: $.el('a', { href: 'javascript:;', textContent: 'Auto' }),
           subEntries: makeCheckboxes(automationNames)
         });
         this.menu.addEntry({
-          el: $.el('a', {href: 'javascript:;', textContent: 'Display'}),
+          el: $.el('a', { href: 'javascript:;', textContent: 'Display' }),
           subEntries: makeCheckboxes(displayNames)
         });
-
         // Remaining standalone checkboxes (e.g. Current Board, Require OP Quote Link):
         for (var name in Config.threadWatcher) {
-          if (grouped.has(name)) { continue; }
+          if (grouped.has(name)) {
+            continue;
+          }
           this.menu.addEntry(this.makeCheckbox(name, Config.threadWatcher[name][1]));
         }
-
         this.addThumbnailControls();
-
       },
-
       makeCheckbox(name, desc) {
         const label = ({
           'Show Mark All Read Icon': 'Mark All Read Icon',
@@ -16745,7 +17825,7 @@ svg.icon {
         };
         entry.el.title = desc;
         const input = entry.el.firstElementChild;
-        if ((name === 'Show Unread Count') && !ThreadWatcher$1.unreadEnabled) {
+        if ((name === 'Show Unread Count') && !ThreadWatcher.unreadEnabled) {
           input.disabled = true;
           $.addClass(entry.el, 'disabled');
           entry.el.title += '\n[Remember Last Read Post is disabled.]';
@@ -16755,22 +17835,21 @@ svg.icon {
         $.on(entry.el, 'click', e => e.stopPropagation());
         $.on(input, 'change', $.cb.checked);
         if (['Current Board', 'Show Page', 'Show Unread Count', 'Show Mark All Read Icon', 'Show Site Prefix', 'Show Mark Thread Read Icons'].includes(name))
-          $.on(input, 'change', () => ThreadWatcher$1.refresh());
+          $.on(input, 'change', () => ThreadWatcher.refresh());
         if (['Show Page', 'Show Unread Count', 'Auto Update Thread Watcher'].includes(name))
-          $.on(input, 'change', ThreadWatcher$1.fetchAuto);
+          $.on(input, 'change', ThreadWatcher.fetchAuto);
         return entry;
       },
-
       addSortEntry() {
         const sortOptions = [
-          ['manual',      'Manual (drag)'],
-          ['yous',        '(You)s'],
-          ['date-added',  'Date added'],
+          ['manual', 'Manual (drag)'],
+          ['yous', '(You)s'],
+          ['date-added', 'Date added'],
           ['thread-date', 'Thread date'],
-          ['replies',     'Reply count'],
-          ['unread',      'Unread count'],
-          ['activity',    'Last activity'],
-          ['board',       'Board'],
+          ['replies', 'Reply count'],
+          ['unread', 'Unread count'],
+          ['activity', 'Last activity'],
+          ['board', 'Board'],
         ];
         const subEntries = [];
         sortOptions.forEach(([value, label]) => {
@@ -16782,15 +17861,17 @@ svg.icon {
           const labelEl = $('.watcher-sort-label', el);
           labelEl.textContent = label;
           const updateCheck = () => {
-            check.textContent = ThreadWatcher$1.sortMode() === value ? '✓' : '';
+            check.textContent = ThreadWatcher.sortMode() === value ? '✓' : '';
           };
           $.on(el, 'mousedown', e => e.stopPropagation());
-          $.on(el, 'click', function(e) {
+          $.on(el, 'click', function (e) {
             e.stopPropagation();
             $.set('Thread Watcher Sort', value);
             Conf['Thread Watcher Sort'] = value;
-            ThreadWatcher$1.refresh();
-            for (const entry of subEntries) { entry.updateCheck(); }
+            ThreadWatcher.refresh();
+            for (const entry of subEntries) {
+              entry.updateCheck();
+            }
           });
           subEntries.push({
             el,
@@ -16809,18 +17890,17 @@ svg.icon {
           order: 50,
           subEntries,
           open() {
-            this.el.classList.toggle('disabled', !ThreadWatcher$1.list.firstElementChild);
+            this.el.classList.toggle('disabled', !ThreadWatcher.list.firstElementChild);
             return true;
           }
         });
       },
-
       addAttachLocationEntry() {
         const locOptions = [
           ['bottom', 'Bottom (QR width)'],
-          ['top',    'Top (QR width)'],
-          ['left',   'Left (manual W, auto H)'],
-          ['right',  'Right (manual W, auto H)'],
+          ['top', 'Top (QR width)'],
+          ['left', 'Left (manual W, auto H)'],
+          ['right', 'Right (manual W, auto H)'],
         ];
         const subEntries = [];
         locOptions.forEach(([value, label]) => {
@@ -16832,15 +17912,15 @@ svg.icon {
           const labelEl = $('.watcher-loc-label', el);
           labelEl.textContent = label;
           const updateCheck = () => {
-            check.textContent = ThreadWatcher$1.attachLocation() === value ? '✓' : '';
+            check.textContent = ThreadWatcher.attachLocation() === value ? '✓' : '';
           };
           $.on(el, 'mousedown', e => e.stopPropagation());
-          $.on(el, 'click', function(e) {
+          $.on(el, 'click', function (e) {
             e.stopPropagation();
             $.set('Thread Watcher Attach Location', value);
             Conf['Thread Watcher Attach Location'] = value;
-            if (ThreadWatcher$1.attached()) {
-              ThreadWatcher$1.positionIfAttached(true);
+            if (ThreadWatcher.attached()) {
+              ThreadWatcher.positionIfAttached(true);
             }
             subEntries.forEach(s => s.updateCheck && s.updateCheck());
           });
@@ -16865,7 +17945,6 @@ svg.icon {
           }
         });
       },
-
       addThumbnailControls() {
         const entry = {
           type: 'thread watcher',
@@ -16874,7 +17953,7 @@ svg.icon {
             href: 'javascript:;'
           }),
           open() {
-            this.el.innerHTML = `<span style="display:inline-flex;align-items:center;gap:4px;"><label style="display:inline-flex;align-items:center;gap:4px;"><input type="checkbox"${Conf['Show OP Thumbnails'] ? ' checked' : ''}>Thumbnails</label><input type="number" value="${ThreadWatcher$1.thumbnailSize()}" min="16" max="160" class="field" style="width:3.2em"></span><br><span style="display:inline-flex;align-items:center;gap:4px;"><label style="display:inline-flex;align-items:center;gap:4px;"><input type="checkbox"${Conf['Thread Watcher Thumbnail Hover'] ? ' checked' : ''}>Hover Preview</label><input type="number" value="${ThreadWatcher$1.thumbnailPreviewSize()}" min="10" max="99" class="field" style="width:3.2em"><span>%</span></span>`;
+            this.el.innerHTML = `<span style="display:inline-flex;align-items:center;gap:4px;"><label style="display:inline-flex;align-items:center;gap:4px;"><input type="checkbox"${Conf['Show OP Thumbnails'] ? ' checked' : ''}>Thumbnails</label><input type="number" value="${ThreadWatcher.thumbnailSize()}" min="16" max="160" class="field" style="width:3.2em"></span><br><span style="display:inline-flex;align-items:center;gap:4px;"><label style="display:inline-flex;align-items:center;gap:4px;"><input type="checkbox"${Conf['Thread Watcher Thumbnail Hover'] ? ' checked' : ''}>Hover Preview</label><input type="number" value="${ThreadWatcher.thumbnailPreviewSize()}" min="10" max="99" class="field" style="width:3.2em"><span>%</span></span>`;
             const [thumbToggle, previewToggle] = $$('input[type="checkbox"]', this.el);
             const [sizeInput, previewSizeInput] = $$('input[type="number"]', this.el);
             for (const input of [thumbToggle, previewToggle, sizeInput, previewSizeInput]) {
@@ -16882,43 +17961,47 @@ svg.icon {
               $.on(input, 'mousedown', e => e.stopPropagation());
               $.on(input, 'pointerdown', e => e.stopPropagation());
             }
-            $.on(thumbToggle, 'change', function() {
+            $.on(thumbToggle, 'change', function () {
               $.set('Show OP Thumbnails', this.checked);
               Conf['Show OP Thumbnails'] = this.checked;
               if (!this.checked) {
-                ThreadWatcher$1.hideThumbnailHover();
+                ThreadWatcher.hideThumbnailHover();
               }
               if (this.checked) {
-                ThreadWatcher$1.fetchAllStatus();
+                ThreadWatcher.fetchAllStatus();
               }
-              ThreadWatcher$1.refresh();
+              ThreadWatcher.refresh();
             });
-            $.on(previewToggle, 'change', function() {
+            $.on(previewToggle, 'change', function () {
               $.set('Thread Watcher Thumbnail Hover', this.checked);
               Conf['Thread Watcher Thumbnail Hover'] = this.checked;
               if (!this.checked) {
-                ThreadWatcher$1.hideThumbnailHover();
+                ThreadWatcher.hideThumbnailHover();
               }
-              ThreadWatcher$1.refresh();
+              ThreadWatcher.refresh();
             });
-            $.on(sizeInput, 'change', function() {
+            $.on(sizeInput, 'change', function () {
               let size = parseInt(this.value, 10);
-              if (isNaN(size)) { size = 40; }
+              if (isNaN(size)) {
+                size = 40;
+              }
               size = Math.max(16, Math.min(160, size));
               this.value = `${size}`;
               $.set('Thread Watcher Thumbnail Size', size);
               Conf['Thread Watcher Thumbnail Size'] = size;
-              ThreadWatcher$1.applyLayout();
-              ThreadWatcher$1.refresh();
+              ThreadWatcher.applyLayout();
+              ThreadWatcher.refresh();
             });
-            $.on(previewSizeInput, 'change', function() {
+            $.on(previewSizeInput, 'change', function () {
               let size = parseInt(this.value, 10);
-              if (isNaN(size)) { size = 40; }
+              if (isNaN(size)) {
+                size = 40;
+              }
               size = Math.max(10, Math.min(99, size));
               this.value = `${size}`;
               $.set('Thread Watcher Thumbnail Preview Size', size);
               Conf['Thread Watcher Thumbnail Preview Size'] = size;
-              ThreadWatcher$1.positionThumbnailHover(ThreadWatcher$1.hoveredThumbnail);
+              ThreadWatcher.positionThumbnailHover(ThreadWatcher.hoveredThumbnail);
             });
             return true;
           }
@@ -16989,16 +18072,17 @@ svg.icon {
       o.fileDeleted = true;
     } else if (data.media?.media_filename) {
       let { thumb_link } = data.media;
-      // Fix URLs missing origin
-      if (thumb_link?.[0] === '/') {
-        thumb_link = url.split('/', 3).join('/') + thumb_link;
-      }
-      if (!Redirect.securityCheck(thumb_link)) {
-        thumb_link = '';
-      }
       let media_link = Redirect.to('file', { boardID: o.boardID, filename: data.media.media_orig });
       if (!Redirect.securityCheck(media_link)) {
         media_link = '';
+      }
+      // Fix root-relative thumb URLs by prefixing the archive origin (same host the
+      // file is served from). Previously referenced an undefined `url`, throwing.
+      if (thumb_link?.[0] === '/' && media_link) {
+        thumb_link = media_link.split('/', 3).join('/') + thumb_link;
+      }
+      if (!Redirect.securityCheck(thumb_link)) {
+        thumb_link = '';
       }
       o.file = {
         name: data.media.media_filename,
@@ -17040,54 +18124,43 @@ svg.icon {
 
   var ReplyPruning = {
     init() {
-      if ((g.VIEW !== 'thread') || !Conf['Reply Pruning']) { return; }
-
-      this.container = $.frag();
-
-      this.summary = $.el('span', {
-        hidden:    true,
-        className: 'summary'
+      if ((g.VIEW !== 'thread') || !Conf['Reply Pruning']) {
+        return;
       }
-      );
+      this.container = $.frag();
+      this.summary = $.el('span', {
+        hidden: true,
+        className: 'summary'
+      });
       this.summary.style.cursor = 'pointer';
       $.on(this.summary, 'click', () => {
         this.inputs.enabled.checked = !this.inputs.enabled.checked;
         return $.event('change', null, this.inputs.enabled);
       });
-
       const label = UI.checkbox('Prune Replies', 'Show Last', Conf['Prune All Threads']);
-      const el = $.el('span',
-        {title: 'Maximum number of replies to show.'}
-      ,
-        {innerHTML: " <input type=\"number\" name=\"Max Replies\" min=\"0\" step=\"1\" value=\"" + E(Conf["Max Replies"]) + "\" class=\"field\">"});
+      const el = $.el('span', { title: 'Maximum number of replies to show.' }, { innerHTML: " <input type=\"number\" name=\"Max Replies\" min=\"0\" step=\"1\" value=\"" + E(Conf["Max Replies"]) + "\" class=\"field\">" });
       $.prepend(el, label);
-
       this.inputs = {
         enabled: label.firstElementChild,
         replies: el.lastElementChild
       };
-
       this.setEnabled.call(this.inputs.enabled);
       $.on(this.inputs.enabled, 'change', this.setEnabled);
       $.on(this.inputs.replies, 'change', $.cb.value);
-
       Header.menu.addEntry({
         el,
         order: 190
       });
-
       return Callbacks.Thread.push({
         name: 'Reply Pruning',
-        cb:   this.node
+        cb: this.node
       });
     },
-
     position: 0,
     hidden: 0,
     hiddenFiles: 0,
     total: 0,
     totalFiles: 0,
-
     setEnabled() {
       const other = QuoteThreading.input;
       if (this.checked && other?.checked) {
@@ -17096,18 +18169,15 @@ svg.icon {
       }
       return ReplyPruning.active = this.checked;
     },
-
     showIfHidden(id) {
       if (ReplyPruning.container && $(`#${id}`, ReplyPruning.container)) {
         ReplyPruning.inputs.enabled.checked = false;
         return $.event('change', null, ReplyPruning.inputs.enabled);
       }
     },
-
     node() {
       let middle;
       ReplyPruning.thread = this;
-
       if (this.isSticky) {
         ReplyPruning.active = (ReplyPruning.inputs.enabled.checked = true);
         if (QuoteThreading.input) {
@@ -17115,86 +18185,85 @@ svg.icon {
           Conf['Thread Quotes'] = (QuoteThreading.input.checked = false);
         }
       }
-
-      this.posts.forEach(function(post) {
+      this.posts.forEach(function (post) {
         if (post.isReply) {
           ReplyPruning.total++;
-          if (post.file) { return ReplyPruning.totalFiles++; }
+          if (post.file) {
+            return ReplyPruning.totalFiles++;
+          }
         }
       });
-
       // If we're linked to a post that we would hide, don't hide the posts in the first place.
-      if (
-        ReplyPruning.active &&
+      if (ReplyPruning.active &&
         /^#p\d+$/.test(location.hash) &&
-        (1 <= (middle = this.posts.keys.indexOf(location.hash.slice(2))) && middle < 1 + Math.max(ReplyPruning.total - +Conf["Max Replies"], 0))
-      ) {
+        (1 <= (middle = this.posts.keys.indexOf(location.hash.slice(2))) && middle < 1 + Math.max(ReplyPruning.total - +Conf["Max Replies"], 0))) {
         ReplyPruning.active = (ReplyPruning.inputs.enabled.checked = false);
       }
-
       $.after(this.OP.nodes.root, ReplyPruning.summary);
-
       $.on(ReplyPruning.inputs.enabled, 'change', ReplyPruning.update);
       $.on(ReplyPruning.inputs.replies, 'change', ReplyPruning.update);
       $.on(d, 'ThreadUpdate', ReplyPruning.updateCount);
       $.on(d, 'ThreadUpdate', ReplyPruning.update);
-
       return ReplyPruning.update();
     },
-
     updateCount(e) {
-      if (e.detail[404]) { return; }
+      if (e.detail[404]) {
+        return;
+      }
       for (var fullID of e.detail.newPosts) {
         ReplyPruning.total++;
-        if (g.posts.get(fullID).file) { ReplyPruning.totalFiles++; }
+        if (g.posts.get(fullID).file) {
+          ReplyPruning.totalFiles++;
+        }
       }
     },
-
     update() {
       let boardTop, node, post;
       const hidden1 = ReplyPruning.hidden;
       const hidden2 = ReplyPruning.active ?
         Math.max(ReplyPruning.total - +Conf["Max Replies"], 0)
-      :
-        0;
-
+        :
+          0;
       // Record position from bottom of document
       const oldPos = d.body.clientHeight - window.scrollY;
-
-      const {posts} = ReplyPruning.thread;
-
+      const { posts } = ReplyPruning.thread;
       if (ReplyPruning.hidden < hidden2) {
         while ((ReplyPruning.hidden < hidden2) && (ReplyPruning.position < posts.keys.length)) {
           post = posts.get(posts.keys[ReplyPruning.position++]);
           if (post.isReply && !post.isFetchedQuote) {
-            while ((node = ReplyPruning.summary.nextSibling) && (node !== post.nodes.root)) { $.add(ReplyPruning.container, node); }
+            while ((node = ReplyPruning.summary.nextSibling) && (node !== post.nodes.root)) {
+              $.add(ReplyPruning.container, node);
+            }
             $.add(ReplyPruning.container, post.nodes.root);
             ReplyPruning.hidden++;
-            if (post.file) { ReplyPruning.hiddenFiles++; }
+            if (post.file) {
+              ReplyPruning.hiddenFiles++;
+            }
           }
         }
-
       } else if (ReplyPruning.hidden > hidden2) {
         const frag = $.frag();
         while ((ReplyPruning.hidden > hidden2) && (ReplyPruning.position > 0)) {
           post = posts.get(posts.keys[--ReplyPruning.position]);
           if (post.isReply && !post.isFetchedQuote) {
-            while ((node = ReplyPruning.container.lastChild) && (node !== post.nodes.root)) { $.prepend(frag, node); }
+            while ((node = ReplyPruning.container.lastChild) && (node !== post.nodes.root)) {
+              $.prepend(frag, node);
+            }
             $.prepend(frag, post.nodes.root);
             ReplyPruning.hidden--;
-            if (post.file) { ReplyPruning.hiddenFiles--; }
+            if (post.file) {
+              ReplyPruning.hiddenFiles--;
+            }
           }
         }
         $.after(ReplyPruning.summary, frag);
         $.event('PostsInserted', null, ReplyPruning.summary.parentNode);
       }
-
       ReplyPruning.summary.textContent = ReplyPruning.active ?
         g.SITE.Build.summaryText('+', ReplyPruning.hidden, ReplyPruning.hiddenFiles)
-      :
-        g.SITE.Build.summaryText('-', ReplyPruning.total, ReplyPruning.totalFiles);
+        :
+          g.SITE.Build.summaryText('-', ReplyPruning.total, ReplyPruning.totalFiles);
       ReplyPruning.summary.hidden = (ReplyPruning.total <= +Conf["Max Replies"]);
-
       // Maintain position in thread when posts are added/removed above
       if ((hidden1 !== hidden2) && ((boardTop = Header.getTopOf($('.board'))) < 0)) {
         return window.scrollBy(0, Math.max(d.body.clientHeight - oldPos, window.scrollY + boardTop) - window.scrollY);
@@ -17690,49 +18759,44 @@ svg.icon {
 
   var QuotePreview = {
     init() {
-      if (!Conf['Quote Previewing']) { return; }
-
+      if (!Conf['Quote Previewing']) {
+        return;
+      }
       if (g.VIEW === 'archive') {
-        $.on(d, 'mouseover', function(e) {
+        $.on(d, 'mouseover', function (e) {
           if ((e.target.nodeName === 'A') && $.hasClass(e.target, 'quotelink')) {
             return QuotePreview.mouseover.call(e.target, e);
           }
         });
       }
-
-      if (!['index', 'thread'].includes(g.VIEW)) { return; }
-
+      if (!['index', 'thread'].includes(g.VIEW)) {
+        return;
+      }
       if (Conf['Comment Expansion']) {
         ExpandComment.callbacks.push(this.node);
       }
-
       return Callbacks.Post.push({
         name: 'Quote Previewing',
-        cb:   this.node
+        cb: this.node
       });
     },
-
     node() {
       for (var link of this.nodes.quotelinks.concat([...this.nodes.backlinks], this.nodes.archivelinks)) {
         $.on(link, 'mouseover', QuotePreview.mouseover);
       }
     },
-
     mouseover(e) {
       let origin;
-      if (($.hasClass(this, 'inlined') && !$.hasClass(doc, 'catalog-mode')) || !d.contains(this)) { return; }
-
-      const {boardID, threadID, postID} = Get.postDataFromLink(this);
-
+      if (($.hasClass(this, 'inlined') && !$.hasClass(doc, 'catalog-mode')) || !d.contains(this)) {
+        return;
+      }
+      const { boardID, threadID, postID } = Get.postDataFromLink(this);
       const qp = $.el('div', {
         id: 'qp',
         className: 'dialog'
-      }
-      );
-
+      });
       $.add(Header.hover, qp);
       new Fetcher(boardID, threadID, postID, qp, Get.postFromNode(this));
-
       UI.hover({
         root: this,
         el: qp,
@@ -17740,7 +18804,6 @@ svg.icon {
         endEvents: 'mouseout click',
         cb: QuotePreview.mouseout
       });
-
       if (Conf['Quote Highlighting'] && (origin = g.posts.get(`${boardID}.${postID}`))) {
         const posts = [origin].concat(origin.clones);
         // Remove the clone that's in the qp from the array.
@@ -17750,19 +18813,19 @@ svg.icon {
         }
       }
     },
-
     mouseout() {
       // Stop if it only contains text.
       let root;
-      if (!(root = this.el.firstElementChild)) { return; }
-
+      if (!(root = this.el.firstElementChild)) {
+        return;
+      }
       $.event('PostsRemoved', null, Header.hover);
-
       const clone = Get.postFromRoot(root);
-      let post  = clone.origin;
+      let post = clone.origin;
       post.rmClone(root.dataset.clone);
-
-      if (!Conf['Quote Highlighting']) { return; }
+      if (!Conf['Quote Highlighting']) {
+        return;
+      }
       for (post of [post].concat(post.clones)) {
         $.rmClass(post.nodes.post, 'qphl');
       }
@@ -17825,50 +18888,43 @@ svg.icon {
   var Index = {
     showHiddenThreads: false,
     changed: {},
-
-    enabledOn({siteID, boardID}) {
+    enabledOn({ siteID, boardID }) {
       return Conf['JSON Index'] && (g.sites[siteID].software === 'yotsuba') && (boardID !== 'f');
     },
-
     init() {
       let input, inputs, name;
-      if (g.VIEW !== 'index') { return; }
-
+      if (g.VIEW !== 'index') {
+        return;
+      }
       // For IndexRefresh events
       $.one(d, '4chanXInitFinished', this.cb.initFinished);
       $.on(d, 'PostsInserted', this.cb.postsInserted);
-
-      if (!this.enabledOn(g.BOARD)) { return; }
-
+      if (!this.enabledOn(g.BOARD)) {
+        return;
+      }
       this.enabled = true;
-
       Callbacks.Post.push({
         name: 'Index Page Numbers',
-        cb:   this.node
+        cb: this.node
       });
       Callbacks.CatalogThread.push({
         name: 'Catalog Features',
-        cb:   this.catalogNode
+        cb: this.catalogNode
       });
-
       this.search = history.state?.searched || '';
       if (history.state?.mode) {
         Conf['Index Mode'] = history.state?.mode;
       }
       this.currentSort = history.state?.sort;
-      if (!this.currentSort) { this.currentSort = typeof Conf['Index Sort'] === 'object' ? (
-          Conf['Index Sort'][g.BOARD.ID] || 'bump'
-        ) : (
-          Conf['Index Sort']
-        ); }
+      if (!this.currentSort) {
+        this.currentSort = typeof Conf['Index Sort'] === 'object' ? (Conf['Index Sort'][g.BOARD.ID] || 'bump') : (Conf['Index Sort']);
+      }
       this.currentPage = this.getCurrentPage();
       this.processHash();
-
       $.addClass(doc, 'index-loading', `${Conf['Index Mode'].replace(/\ /g, '-')}-mode`);
       $.on(window, 'popstate', this.cb.popstate);
       $.on(d, 'scroll', this.scroll);
       $.on(d, 'SortIndex', this.cb.resort);
-
       // Header refresh button
       this.button = $.el('a', {
         title: 'Refresh',
@@ -17880,7 +18936,6 @@ svg.icon {
         Index.update();
       });
       Header.addShortcut('index-refresh', this.button, 590);
-
       // Header "Index Navigation" submenu
       const entries = [];
       this.inputs = (inputs = dict());
@@ -17889,7 +18944,7 @@ svg.icon {
         if (arr instanceof Array) {
           var label = UI.checkbox(name, `${name[0]}${name.slice(1).toLowerCase()}`);
           label.title = arr[1];
-          entries.push({el: label});
+          entries.push({ el: label });
           input = label.firstChild;
           $.on(input, 'change', $.cb.checked);
           inputs[name] = input;
@@ -17899,51 +18954,45 @@ svg.icon {
       $.on(inputs['Catalog Hover Expand'], 'change', this.cb.hover);
       $.on(inputs['Pin Watched Threads'], 'change', this.cb.resort);
       $.on(inputs['Anchor Hidden Threads'], 'change', this.cb.resort);
-
-      const watchSettings = function(e) {
+      const watchSettings = function (e) {
         if (input = $.getOwn(inputs, e.target.name)) {
           input.checked = e.target.checked;
           return $.event('change', null, input);
         }
       };
       $.on(d, 'OpenSettings', () => $.on($.id('fourchanx-settings'), 'change', watchSettings));
-
       const sortEntry = UI.checkbox('Per-Board Sort Type', 'Per-board sort type', (typeof Conf['Index Sort'] === 'object'));
       sortEntry.title = 'Set the sorting order of each board independently.';
       $.on(sortEntry.firstChild, 'change', this.cb.perBoardSort);
-      entries.splice(3, 0, {el: sortEntry});
-
+      entries.splice(3, 0, { el: sortEntry });
       Header.menu.addEntry({
-        el: $.el('span',
-          {textContent: 'Index Navigation'}),
+        el: $.el('span', { textContent: 'Index Navigation' }),
         order: 100,
         subEntries: entries
       });
-
       // Navigation links at top of index
-      this.navLinks = $.el('div', {className: 'navLinks json-index'});
-      $.extend(this.navLinks, {innerHTML: NavLinksPage});
+      this.navLinks = $.el('div', { className: 'navLinks json-index' });
+      $.extend(this.navLinks, { innerHTML: NavLinksPage });
       $('.cataloglink a', this.navLinks).href = CatalogLinks.catalog();
-      if (!BoardConfig.isArchived(g.BOARD.ID)) { $('.archlistlink', this.navLinks).hidden = true; }
+      if (!BoardConfig.isArchived(g.BOARD.ID)) {
+        $('.archlistlink', this.navLinks).hidden = true;
+      }
       $.on($('#index-last-refresh a', this.navLinks), 'click', this.cb.refreshFront);
-
       // Search field
       this.searchInput = $('#index-search', this.navLinks);
       this.setupSearch();
       $.on(this.searchInput, 'input', this.onSearchInput);
       $.on($('#index-search-clear', this.navLinks), 'click', this.clearSearch);
       Icon.set($('#index-search-clear', this.navLinks), 'xmark');
-
       // Hidden threads toggle
       this.hideLabel = $('#hidden-label', this.navLinks);
       $.on($('#hidden-toggle a', this.navLinks), 'click', this.cb.toggleHiddenThreads);
-
       // Drop-down menus and reverse sort toggle
-      this.selectRev   = $('#index-rev',  this.navLinks);
-      this.selectMode  = $('#index-mode', this.navLinks);
-      this.selectSort  = $('#index-sort', this.navLinks);
-      this.selectSize  = $('#index-size', this.navLinks);
-      $.on(this.selectRev,  'change', this.cb.sort);
+      this.selectRev = $('#index-rev', this.navLinks);
+      this.selectMode = $('#index-mode', this.navLinks);
+      this.selectSort = $('#index-sort', this.navLinks);
+      this.selectSize = $('#index-size', this.navLinks);
+      $.on(this.selectRev, 'change', this.cb.sort);
       $.on(this.selectMode, 'change', this.cb.mode);
       $.on(this.selectSort, 'change', this.cb.sort);
       $.on(this.selectSize, 'change', $.cb.value);
@@ -17952,8 +19001,7 @@ svg.icon {
         select.value = Conf[select.name];
       }
       this.selectRev.checked = /-rev$/.test(Index.currentSort);
-      this.selectSort.value  = Index.currentSort.replace(/-rev$/, '');
-
+      this.selectSort.value = Index.currentSort.replace(/-rev$/, '');
       // Last Long Reply options
       this.lastLongOptions = $('#lastlong-options', this.navLinks);
       this.lastLongInputs = $$('input', this.lastLongOptions);
@@ -17966,28 +19014,23 @@ svg.icon {
         input.value = (this.lastLongThresholds[i] =
           typeof tRaw === 'object' ? (tRaw[g.BOARD.ID] ?? 100) : tRaw);
       }
-
       // Thread container
-      this.root = $.el('div', {className: 'board json-index'});
+      this.root = $.el('div', { className: 'board json-index' });
       $.on(this.root, 'click', this.cb.hoverToggle);
       this.cb.size();
       this.cb.hover();
-
       // Page list
-      this.pagelist = $.el('div', {className: 'pagelist json-index'});
-      $.extend(this.pagelist, {innerHTML: PageList});
+      this.pagelist = $.el('div', { className: 'pagelist json-index' });
+      $.extend(this.pagelist, { innerHTML: PageList });
       $('.cataloglink a', this.pagelist).href = CatalogLinks.catalog();
       $.on(this.pagelist, 'click', this.cb.pageNav);
-
       this.update(true);
-
       $.onExists(doc, 'title + *', () => d.title = d.title.replace(/\ -\ Page\ \d+/, ''));
-
-      $.onExists(doc, '.board > .thread > .postContainer, .board + *', function() {
+      $.onExists(doc, '.board > .thread > .postContainer, .board + *', function () {
         let el;
         g.SITE.Build.hat = $('.board > .thread > img:first-child');
         if (g.SITE.Build.hat) {
-          g.BOARD.threads.forEach(function(thread) {
+          g.BOARD.threads.forEach(function (thread) {
             if (thread.nodes.root) {
               return $.prepend(thread.nodes.root, g.SITE.Build.hat.cloneNode(false));
             }
@@ -17995,7 +19038,6 @@ svg.icon {
           $.addClass(doc, 'hats-enabled');
           $.addStyle(`.catalog-thread::after {background-image: url(${g.SITE.Build.hat.src});}`);
         }
-
         const board = $('.board');
         $.replace(board, Index.root);
         if (Index.loaded) {
@@ -18010,18 +19052,20 @@ svg.icon {
         //   Does not work on Firefox unfortunately. bugzil.la/939713
         try {
           d.implementation.createDocument(null, null, null).appendChild(board);
-        } catch (error) {}
-
-        for (el of $$('.navLinks')) { $.rm(el); }
+        } catch (error) { }
+        for (el of $$('.navLinks')) {
+          $.rm(el);
+        }
         $.rm($.id('ctrl-top'));
         const topNavPos = $.id('delform').previousElementSibling;
         $.before(topNavPos, $.el('hr'));
         $.before(topNavPos, Index.navLinks);
         const timeEl = $('#index-last-refresh time', Index.navLinks);
-        if (timeEl.dataset.utc) { return RelativeDates.update(timeEl); }
+        if (timeEl.dataset.utc) {
+          return RelativeDates.update(timeEl);
+        }
       });
-
-      return Main.ready(function() {
+      return Main.ready(function () {
         let pagelist;
         if (pagelist = $('.pagelist')) {
           $.replace(pagelist, Index.pagelist);
@@ -18029,48 +19073,55 @@ svg.icon {
         return $.rmClass(doc, 'index-loading');
       });
     },
-
     scroll() {
-      if (Index.req || !Index.liveThreadData || (Conf['Index Mode'] !== 'infinite') || (window.scrollY <= (doc.scrollHeight - (300 + window.innerHeight)))) { return; }
-      if (Index.pageNum == null) { Index.pageNum = Index.currentPage; } // Avoid having to pushState to keep track of the current page
-
+      if (Index.req || !Index.liveThreadData || (Conf['Index Mode'] !== 'infinite') || (window.scrollY <= (doc.scrollHeight - (300 + window.innerHeight)))) {
+        return;
+      }
+      if (Index.pageNum == null) {
+        Index.pageNum = Index.currentPage;
+      } // Avoid having to pushState to keep track of the current page
       const pageNum = ++Index.pageNum;
-      if (pageNum > Index.pagesNum) { return Index.endNotice(); }
-
+      if (pageNum > Index.pagesNum) {
+        return Index.endNotice();
+      }
       const threadIDs = Index.threadsOnPage(pageNum);
       return Index.buildStructure(threadIDs);
     },
-
-    endNotice: (function() {
+    endNotice: (function () {
       let notify = false;
       const reset = () => notify = false;
-      return function() {
-        if (notify) { return; }
+      return function () {
+        if (notify) {
+          return;
+        }
         notify = true;
         new Notice('info', "Last page reached.", 2);
         return setTimeout(reset, 3 * SECOND);
       };
     })(),
-
     menu: {
       init() {
-        if ((g.VIEW !== 'index') || !Conf['Menu'] || !Conf['Thread Hiding Link'] || !Index.enabledOn(g.BOARD)) { return; }
-
+        if ((g.VIEW !== 'index') || !Conf['Menu'] || !Conf['Thread Hiding Link'] || !Index.enabledOn(g.BOARD)) {
+          return;
+        }
         return Menu.menu.addEntry({
           el: $.el('a', {
-            href:      'javascript:;',
+            href: 'javascript:;',
             className: 'has-shortcut-text'
-          }
-          , {innerHTML: "<span></span><span class=\"shortcut-text\">Shift+click</span>"}),
+          }, { innerHTML: "<span></span><span class=\"shortcut-text\">Shift+click</span>" }),
           order: 20,
-          open({thread}) {
-            if (Conf['Index Mode'] !== 'catalog') { return false; }
+          open({ thread }) {
+            if (Conf['Index Mode'] !== 'catalog') {
+              return false;
+            }
             this.el.firstElementChild.textContent = thread.isHidden ?
               'Unhide'
-            :
-              'Hide';
-            if (this.cb) { $.off(this.el, 'click', this.cb); }
-            this.cb = function() {
+              :
+                'Hide';
+            if (this.cb) {
+              $.off(this.el, 'click', this.cb);
+            }
+            this.cb = function () {
               $.event('CloseMenu');
               return Index.toggleHide(thread);
             };
@@ -18080,91 +19131,93 @@ svg.icon {
         });
       }
     },
-
     node() {
-      if (this.isReply || this.isClone || (Index.threadPosition[this.ID] == null)) { return; }
+      if (this.isReply || this.isClone || (Index.threadPosition[this.ID] == null)) {
+        return;
+      }
       return this.thread.setPage(Math.floor(Index.threadPosition[this.ID] / Index.threadsNumPerPage) + 1);
     },
-
     catalogNode() {
       return $.on(this.nodes.root, 'click', e => {
-        if ((e.button !== 0) || !e.shiftKey) return;
+        if ((e.button !== 0) || !e.shiftKey)
+          return;
         e.preventDefault();
         getSelection().removeAllRanges();
-        if (e.target.classList.contains('catalog-thumb')) {
+        if (e.target.classList.contains('catalog-thumb') && Conf['MD5 Quick Filter in the Catalog']) {
           Filter.quickFilterMD5.call(this.thread.OP);
         } else {
           Index.toggleHide(this.thread);
         }
       });
     },
-
     toggleHide(thread) {
       if (Index.showHiddenThreads) {
         ThreadHiding.show(thread);
-        if (!ThreadHiding.db.get({boardID: thread.board.ID, threadID: thread.ID})) { return; }
+        if (!ThreadHiding.db.get({ boardID: thread.board.ID, threadID: thread.ID })) {
+          return;
+        }
         // Don't save when un-hiding filtered threads.
       } else {
         ThreadHiding.hide(thread);
       }
       return ThreadHiding.saveHiddenState(thread);
     },
-
     cycleSortType() {
       let i;
       const types = Index.selectSort.options.filter(option => !option.disabled);
       for (i = 0; i < types.length; i++) {
         var type = types[i];
-        if (type.selected) { break; }
+        if (type.selected) {
+          break;
+        }
       }
       types[(i + 1) % types.length].selected = true;
       return $.event('change', null, Index.selectSort);
     },
-
     cb: {
       initFinished() {
         Index.initFinishedFired = true;
         return $.queueTask(() => Index.cb.postsInserted());
       },
-
       postsInserted() {
-        if (!Index.initFinishedFired) { return; }
+        if (!Index.initFinishedFired) {
+          return;
+        }
         let n = 0;
-        g.posts.forEach(function(post) {
+        g.posts.forEach(function (post) {
           if (!post.isFetchedQuote && !post.indexRefreshSeen && doc.contains(post.nodes.root)) {
             post.indexRefreshSeen = true;
             return n++;
           }
         });
-        if (n) { return $.event('IndexRefresh'); }
+        if (n) {
+          return $.event('IndexRefresh');
+        }
       },
-
       toggleHiddenThreads(e) {
         e?.preventDefault();
         $('#hidden-toggle a', Index.navLinks).textContent = (Index.showHiddenThreads = !Index.showHiddenThreads) ?
           'Hide'
-        :
-          'Show';
+          :
+            'Show';
         Index.sort();
         return Index.buildIndex();
       },
-
       mode() {
-        Index.pushState({mode: this.value});
+        Index.pushState({ mode: this.value });
         return Index.pageLoad(false);
       },
-
       sort() {
         const value = Index.selectRev.checked ? Index.selectSort.value + "-rev" : Index.selectSort.value;
-        Index.pushState({sort: value});
+        Index.pushState({ sort: value });
         return Index.pageLoad(false);
       },
-
       resort(e) {
         Index.changed.order = true;
-        if (!e?.detail?.deferred) { return Index.pageLoad(false); }
+        if (!e?.detail?.deferred) {
+          return Index.pageLoad(false);
+        }
       },
-
       perBoardSort() {
         Conf['Index Sort'] = this.checked ? dict() : '';
         Index.saveSort();
@@ -18173,7 +19226,6 @@ svg.icon {
           Index.saveLastLongThresholds(i);
         }
       },
-
       lastLongThresholds() {
         const i = [...this.parentNode.children].indexOf(this);
         const value = +this.value;
@@ -18186,29 +19238,27 @@ svg.icon {
         Index.changed.order = true;
         return Index.pageLoad(false);
       },
-
       size(e) {
         if (Conf['Index Mode'] !== 'catalog') {
           $.rmClass(Index.root, 'catalog-small');
           $.rmClass(Index.root, 'catalog-large');
         } else if (Conf['Index Size'] === 'small') {
           $.addClass(Index.root, 'catalog-small');
-          $.rmClass(Index.root,  'catalog-large');
+          $.rmClass(Index.root, 'catalog-large');
         } else {
           $.addClass(Index.root, 'catalog-large');
-          $.rmClass(Index.root,  'catalog-small');
+          $.rmClass(Index.root, 'catalog-small');
         }
-        if (e) { return Index.buildIndex(); }
+        if (e) {
+          return Index.buildIndex();
+        }
       },
-
       replies() {
         return Index.buildIndex();
       },
-
       hover() {
         return doc.classList.toggle('catalog-hover-expand', Conf['Catalog Hover Expand']);
       },
-
       hoverToggle(e) {
         if (Conf['Catalog Hover Toggle'] && $.hasClass(doc, 'catalog-mode') && !$.modifiedClick(e) && !$.x('ancestor-or-self::a', e.target)) {
           let thread;
@@ -18221,12 +19271,11 @@ svg.icon {
           }
         }
       },
-
       popstate(e) {
         if (e?.state) {
-          const {searched, mode, sort} = e.state;
+          const { searched, mode, sort } = e.state;
           const page = Index.getCurrentPage();
-          Index.setState({search: searched, mode, sort, page});
+          Index.setState({ search: searched, mode, sort, page });
           return Index.pageLoad(false);
         } else {
           // page load or hash change
@@ -18238,10 +19287,11 @@ svg.icon {
           }
         }
       },
-
       pageNav(e) {
         let a;
-        if ($.modifiedClick(e)) { return; }
+        if ($.modifiedClick(e)) {
+          return;
+        }
         switch (e.target.nodeName) {
           case 'BUTTON':
             e.target.blur();
@@ -18253,80 +19303,75 @@ svg.icon {
           default:
             return;
         }
-        if (a.textContent === 'Catalog') { return; }
+        if (a.textContent === 'Catalog') {
+          return;
+        }
         e.preventDefault();
         return Index.userPageNav(+a.pathname.split(/\/+/)[2] || 1);
       },
-
       refreshFront(e) {
         e?.preventDefault();
-        Index.pushState({page: 1});
+        Index.pushState({ page: 1 });
         return Index.update();
       },
-
       catalogReplies() {
         if (Conf['Show Replies'] && $.hasClass(doc, 'catalog-hover-expand') && !this.catalogView.nodes.replies) {
           return Index.buildCatalogReplies(this);
         }
       },
-
       hoverAdjust() {
         // Prevent hovered catalog threads from going offscreen.
         let x;
-        if (!$.hasClass(doc, 'catalog-hover-expand')) { return; }
+        if (!$.hasClass(doc, 'catalog-hover-expand')) {
+          return;
+        }
         const rect = this.post.getBoundingClientRect();
         if (x = $.minmax(0, -rect.left, doc.clientWidth - rect.right)) {
-          const {style} = this.post;
+          const { style } = this.post;
           style.left = `${x}px`;
           style.right = `${-x}px`;
           return $.one(this.root, 'mouseleave', () => style.left = (style.right = null));
         }
       }
     },
-
     scrollToIndex() {
       // Scroll to navlinks, or top of board if navlinks are hidden.
       return Header.scrollToIfNeeded((Index.navLinks.getBoundingClientRect().height ? Index.navLinks : Index.root));
     },
-
     getCurrentPage() {
       return +window.location.pathname.split(/\/+/)[2] || 1;
     },
-
     userPageNav(page) {
-      Index.pushState({page});
+      Index.pushState({ page });
       if (Conf['Refreshed Navigation']) {
         return Index.update();
       } else {
         return Index.pageLoad();
       }
     },
-
     hashCommands: {
       mode: {
-        'paged':         'paged',
+        'paged': 'paged',
         'infinite-scrolling': 'infinite',
-        'infinite':      'infinite',
-        'all-threads':   'all pages',
-        'all-pages':     'all pages',
-        'catalog':       'catalog'
+        'infinite': 'infinite',
+        'all-threads': 'all pages',
+        'all-pages': 'all pages',
+        'catalog': 'catalog'
       },
       sort: {
-        'bump-order':        'bump',
-        'last-reply':        'lastreply',
-        'last-long-reply':   'lastlong',
-        'creation-date':     'birth',
-        'reply-count':       'replycount',
-        'file-count':        'filecount',
-        'posts-per-minute':  'activity'
+        'bump-order': 'bump',
+        'last-reply': 'lastreply',
+        'last-long-reply': 'lastlong',
+        'creation-date': 'birth',
+        'reply-count': 'replycount',
+        'file-count': 'filecount',
+        'posts-per-minute': 'activity'
       }
     },
-
     processHash() {
       // XXX https://bugzilla.mozilla.org/show_bug.cgi?id=483304
       let hash = location.href.match(/#.*/)?.[0] || '';
-      const state =
-        {replace: true};
+      const state = { replace: true };
       const commands = hash.slice(1).split('/');
       const leftover = [];
       for (var command of commands) {
@@ -18338,7 +19383,9 @@ svg.icon {
           state.page = 1;
         } else if (sort = $.getOwn(Index.hashCommands.sort, command.replace(/-rev$/, ''))) {
           state.sort = sort;
-          if (/-rev$/.test(command)) { state.sort += '-rev'; }
+          if (/-rev$/.test(command)) {
+            state.sort += '-rev';
+          }
         } else if (/^s=/.test(command)) {
           state.search = decodeURIComponent(command.slice(2)).replace(/\+/g, ' ').trim();
         } else {
@@ -18346,13 +19393,14 @@ svg.icon {
         }
       }
       hash = leftover.join('/');
-      if (hash) { state.hash = `#${hash}`; }
+      if (hash) {
+        state.hash = `#${hash}`;
+      }
       Index.pushState(state);
       return commands.length - leftover.length;
     },
-
     pushState(state) {
-      let {search, hash, replace} = state;
+      let { search, hash, replace } = state;
       let pageBeforeSearch = history.state?.oldpage;
       if ((search != null) && (search !== Index.search)) {
         state.page = search ? 1 : (pageBeforeSearch || 1);
@@ -18364,17 +19412,17 @@ svg.icon {
       }
       Index.setState(state);
       const pathname = Index.currentPage === 1 ? `/${g.BOARD}/` : `/${g.BOARD}/${Index.currentPage}`;
-      if (!hash) { hash = ''; }
-      return history[replace ? 'replaceState' : 'pushState']({
-        mode:     Conf['Index Mode'],
-        sort:     Index.currentSort,
-        searched: Index.search,
-        oldpage:  pageBeforeSearch
+      if (!hash) {
+        hash = '';
       }
-      , '', `${location.protocol}//${location.host}${pathname}${hash}`);
+      return history[replace ? 'replaceState' : 'pushState']({
+        mode: Conf['Index Mode'],
+        sort: Index.currentSort,
+        searched: Index.search,
+        oldpage: pageBeforeSearch
+      }, '', `${location.protocol}//${location.host}${pathname}${hash}`);
     },
-
-    setState({search, mode, sort, page, hash}) {
+    setState({ search, mode, sort, page, hash }) {
       if ((search != null) && (search !== Index.search)) {
         Index.changed.search = true;
         Index.search = search;
@@ -18393,7 +19441,9 @@ svg.icon {
         Index.currentSort = sort;
         Index.saveSort();
       }
-      if (['all pages', 'catalog'].includes(Conf['Index Mode'])) { page = 1; }
+      if (['all pages', 'catalog'].includes(Conf['Index Mode'])) {
+        page = 1;
+      }
       if ((page != null) && (page !== Index.currentPage)) {
         Index.changed.page = true;
         Index.currentPage = page;
@@ -18402,7 +19452,6 @@ svg.icon {
         return Index.changed.hash = true;
       }
     },
-
     savePerBoard(key, value) {
       if (typeof Conf[key] === 'object') {
         Conf[key][g.BOARD.ID] = value;
@@ -18411,31 +19460,49 @@ svg.icon {
       }
       return $.set(key, Conf[key]);
     },
-
     saveSort() {
       return Index.savePerBoard('Index Sort', Index.currentSort);
     },
-
     saveLastLongThresholds(i) {
       return Index.savePerBoard(`Last Long Reply Thresholds ${i}`, Index.lastLongThresholds[i]);
     },
-
-    pageLoad(scroll=true) {
-      if (!Index.liveThreadData) { return; }
-      let {threads, order, search, mode, sort, page, hash} = Index.changed;
-      if (!threads) { threads = search; }
-      if (!order) { order = sort; }
-      if (threads || order) { Index.sort(); }
-      if (threads) { Index.buildPagelist(); }
-      if (search) { Index.setupSearch(); }
-      if (mode) { Index.setupMode(); }
-      if (sort) { Index.setupSort(); }
-      if (threads || mode || page || order) { Index.buildIndex(); }
-      if (threads || page) { Index.setPage(); }
-      if (scroll && !hash) { Index.scrollToIndex(); }
+    pageLoad(scroll = true) {
+      if (!Index.liveThreadData) {
+        return;
+      }
+      let { threads, order, search, mode, sort, page, hash } = Index.changed;
+      if (!threads) {
+        threads = search;
+      }
+      if (!order) {
+        order = sort;
+      }
+      if (threads || order) {
+        Index.sort();
+      }
+      if (threads) {
+        Index.buildPagelist();
+      }
+      if (search) {
+        Index.setupSearch();
+      }
+      if (mode) {
+        Index.setupMode();
+      }
+      if (sort) {
+        Index.setupSort();
+      }
+      if (threads || mode || page || order) {
+        Index.buildIndex();
+      }
+      if (threads || page) {
+        Index.setPage();
+      }
+      if (scroll && !hash) {
+        Index.scrollToIndex();
+      }
       return Index.changed = {};
     },
-
     setupMode() {
       for (var mode of ['paged', 'infinite', 'all pages', 'catalog']) {
         $[mode === Conf['Index Mode'] ? 'addClass' : 'rmClass'](doc, `${mode.replace(/\ /g, '-')}-mode`);
@@ -18445,13 +19512,11 @@ svg.icon {
       Index.showHiddenThreads = false;
       return $('#hidden-toggle a', Index.navLinks).textContent = 'Show';
     },
-
     setupSort() {
       Index.selectRev.checked = /-rev$/.test(Index.currentSort);
-      Index.selectSort.value  = Index.currentSort.replace(/-rev$/, '');
+      Index.selectSort.value = Index.currentSort.replace(/-rev$/, '');
       return Index.lastLongOptions.hidden = (Index.selectSort.value !== 'lastlong');
     },
-
     getPagesNum() {
       if (Index.search) {
         return Math.ceil(Index.sortedThreadIDs.length / Index.threadsNumPerPage);
@@ -18459,11 +19524,9 @@ svg.icon {
         return Index.pagesNum;
       }
     },
-
     getMaxPageNum() {
       return Math.max(1, Index.getPagesNum());
     },
-
     buildPagelist() {
       const pagesRoot = $('.pages', Index.pagelist);
       const maxPageNum = Index.getMaxPageNum();
@@ -18473,29 +19536,30 @@ svg.icon {
           var a = $.el('a', {
             textContent: i,
             href: i === 1 ? './' : i
-          }
-          );
+          });
           nodes.push($.tn('['), a, $.tn('] '));
         }
         $.rmAll(pagesRoot);
         return $.add(pagesRoot, nodes);
       }
     },
-
     setPage() {
       let a, strong;
-      const pageNum    = Index.currentPage;
+      const pageNum = Index.currentPage;
       const maxPageNum = Index.getMaxPageNum();
-      const pagesRoot  = $('.pages', Index.pagelist);
-
+      const pagesRoot = $('.pages', Index.pagelist);
       // Previous/Next buttons
       const prev = pagesRoot.previousElementSibling?.firstElementChild;
       const next = pagesRoot.nextElementSibling?.firstElementChild;
-      const setNav = function(link, href, disabled) {
-        if (!link) { return; }
+      const setNav = function (link, href, disabled) {
+        if (!link) {
+          return;
+        }
         link.href = href === 1 ? './' : href;
         const button = link.firstElementChild;
-        if (button) { button.disabled = disabled; }
+        if (button) {
+          button.disabled = disabled;
+        }
         if (disabled) {
           link.setAttribute('aria-disabled', 'true');
         } else {
@@ -18506,23 +19570,24 @@ svg.icon {
       setNav(prev, href, href === pageNum);
       href = Math.min(pageNum + 1, maxPageNum);
       setNav(next, href, href === pageNum);
-
       // <strong> current page
       if (strong = $('strong', pagesRoot)) {
-        if (+strong.textContent === pageNum) { return; }
+        if (+strong.textContent === pageNum) {
+          return;
+        }
         $.replace(strong, strong.firstChild);
       } else {
         strong = $.el('strong');
       }
-
       if (a = pagesRoot.children[pageNum - 1]) {
         $.before(a, strong);
         return $.add(strong, a);
       }
     },
-
     updateHideLabel() {
-      if (!Index.hideLabel) { return; }
+      if (!Index.hideLabel) {
+        return;
+      }
       let hiddenCount = 0;
       for (var threadID of Index.liveThreadIDs) {
         if (Index.isHidden(threadID)) {
@@ -18531,52 +19596,57 @@ svg.icon {
       }
       if (!hiddenCount) {
         Index.hideLabel.hidden = true;
-        if (Index.showHiddenThreads) { Index.cb.toggleHiddenThreads(); }
+        if (Index.showHiddenThreads) {
+          Index.cb.toggleHiddenThreads();
+        }
         return;
       }
       Index.hideLabel.hidden = false;
       return $('#hidden-count', Index.navLinks).textContent = hiddenCount === 1 ?
         '1 hidden thread'
-      :
-        `${hiddenCount} hidden threads`;
+        :
+          `${hiddenCount} hidden threads`;
     },
-
     update(firstTime) {
       let oldReq;
       if (oldReq = Index.req) {
         delete Index.req;
         oldReq.abort();
       }
-
-      // Display notice if Index Refresh is taking too long
-      if (!Index.nTimeout) { Index.nTimeout = setTimeout(() => Index.notice || (Index.notice = new Notice('info', 'Refreshing index... (disable JSON Index if this takes too long)'))
-      , 3 * SECOND); }
-
+      if (Conf['Index Refresh Notifications']) {
+        // Optional notification for manual refreshes.
+        if (!Index.notice) {
+          Index.notice = new Notice('info', 'Refreshing index...');
+        }
+        if (!Index.nTimeout) {
+          Index.nTimeout = setTimeout(() => {
+            if (Index.notice) {
+              Index.notice.el.lastElementChild.textContent += ' (disable JSON Index if this takes too long)';
+            }
+          }, 3 * SECOND);
+        }
+      }
       // Hard refresh in case of incomplete page load.
       if (!firstTime && (d.readyState !== 'loading') && !$('.board + *')) {
         location.reload();
         return;
       }
-
-      Index.req = $.whenModified(
-        g.SITE.urls.catalogJSON({boardID: g.BOARD.ID}),
-        'Index',
-        Index.load
-      );
+      Index.req = $.whenModified(g.SITE.urls.catalogJSON({ boardID: g.BOARD.ID }), 'Index', Index.load);
       return $.addClass(Index.button, 'spin');
     },
-
     load() {
       let err;
-      if (this !== Index.req) { return; } // aborted
-
+      if (this !== Index.req) {
+        return;
+      } // aborted
       $.rmClass(Index.button, 'spin');
-      const {notice, nTimeout} = Index;
-      if (nTimeout) { clearTimeout(nTimeout); }
+      const { notice, nTimeout } = Index;
+      if (nTimeout) {
+        clearTimeout(nTimeout);
+      }
       delete Index.nTimeout;
       delete Index.req;
       delete Index.notice;
-
       if (![200, 304].includes(this.status)) {
         err = `Index refresh failed. ${this.status ? `Error ${this.statusText} (${this.status})` : 'Connection Error'}`;
         if (notice) {
@@ -18588,7 +19658,6 @@ svg.icon {
         }
         return;
       }
-
       try {
         if (this.status === 200) {
           Index.parse(this.response);
@@ -18607,33 +19676,35 @@ svg.icon {
         }
         return;
       }
-
       if (notice) {
-        notice.close();
+        if (Conf['Index Refresh Notifications']) {
+          notice.setType('success');
+          notice.el.lastElementChild.textContent = 'Index refreshed!';
+          setTimeout(notice.close, SECOND);
+        } else {
+          notice.close();
+        }
       }
-
       const timeEl = $('#index-last-refresh time', Index.navLinks);
       timeEl.dataset.utc = Date.parse(this.getResponseHeader('Last-Modified'));
       return RelativeDates.update(timeEl);
     },
-
     parse(pages) {
       $.cleanCache(url => /^https?:\/\/a\.4cdn\.org\//.test(url));
       Index.parseThreadList(pages);
       Index.changed.threads = true;
       return Index.pageLoad();
     },
-
     parseThreadList(pages) {
-      Index.pagesNum          = pages.length;
+      Index.pagesNum = pages.length;
       Index.threadsNumPerPage = pages[0]?.threads.length || 1;
-      Index.liveThreadData    = pages.reduce(((arr, next) => arr.concat(next.threads)), []);
-      Index.liveThreadIDs     = Index.liveThreadData.map(data => data.no);
-      Index.liveThreadDict    = dict();
-      Index.threadPosition    = dict();
-      Index.parsedThreads     = dict();
-      Index.replyData         = dict();
-      Index.threadsWithYous   = dict();
+      Index.liveThreadData = pages.reduce(((arr, next) => arr.concat(next.threads)), []);
+      Index.liveThreadIDs = Index.liveThreadData.map(data => data.no);
+      Index.liveThreadDict = dict();
+      Index.threadPosition = dict();
+      Index.parsedThreads = dict();
+      Index.replyData = dict();
+      Index.threadsWithYous = dict();
       for (let i = 0; i < Index.liveThreadData.length; i++) {
         var obj, results;
         var data = Index.liveThreadData[i];
@@ -18641,7 +19712,7 @@ svg.icon {
         Index.threadPosition[data.no] = i;
         Index.parsedThreads[data.no] = (obj = g.SITE.Build.parseJSON(data, g.BOARD));
         results = Filter.test(obj);
-        obj.isOnTop  = results.top;
+        obj.isOnTop = results.top;
         obj.isHidden = results.hide || ThreadHiding.isHidden(obj.boardID, obj.threadID);
         if (obj.isHidden && Conf['Show Threads With Yous']) {
           Index.threadsWithYous[data.no] = Index.threadHasUnreadYous(data.no);
@@ -18655,13 +19726,13 @@ svg.icon {
       if (Index.liveThreadData[0]) {
         g.SITE.Build.spoilerRange[g.BOARD.ID] = Index.liveThreadData[0].custom_spoiler;
       }
-      g.BOARD.threads.forEach(function(thread) {
-        if (!Index.liveThreadIDs.includes(thread.ID)) { return thread.collect(); }
+      g.BOARD.threads.forEach(function (thread) {
+        if (!Index.liveThreadIDs.includes(thread.ID)) {
+          return thread.collect();
+        }
       });
-      $.event('IndexUpdate',
-        {threads: ((Index.liveThreadIDs.map((ID) => `${g.BOARD}.${ID}`)))});
+      $.event('IndexUpdate', { threads: ((Index.liveThreadIDs.map((ID) => `${g.BOARD}.${ID}`))) });
     },
-
     isHidden(threadID) {
       let thread;
       if ((thread = g.BOARD.threads.get(threadID)) && thread.OP && !thread.OP.isFetchedQuote) {
@@ -18670,22 +19741,24 @@ svg.icon {
         return Index.parsedThreads[threadID].isHidden;
       }
     },
-
     isHiddenReply(threadID, replyData) {
       return PostHiding.isHidden(g.BOARD.ID, threadID, replyData.no) || Filter.isHidden(g.SITE.Build.parseJSON(replyData, g.BOARD));
     },
-
     threadHasUnreadYous(threadID) {
-      if (!Conf['Show Threads With Yous'] || !QuoteYou.db) { return false; }
+      if (!Conf['Show Threads With Yous'] || !QuoteYou.db) {
+        return false;
+      }
       const cached = Index.threadsWithYous?.[threadID];
-      if (cached != null) { return cached; }
+      if (cached != null) {
+        return cached;
+      }
       const threadData = Index.liveThreadDict?.[threadID];
-      if (!threadData?.last_replies?.length) { return false; }
-
+      if (!threadData?.last_replies?.length) {
+        return false;
+      }
       if (!Index.lastReadPostsDB) {
         Index.lastReadPostsDB = new DataBoard('lastReadPosts');
       }
-
       const boardID = g.BOARD.ID;
       const siteID = g.SITE.ID;
       const lastReadPost = Index.lastReadPostsDB.get({
@@ -18700,32 +19773,36 @@ svg.icon {
         threadID,
         postID: threadID
       });
-
       for (var reply of threadData.last_replies) {
         const postID = reply.no;
-        if (postID <= lastReadPost) { continue; }
-        if (QuoteYou.db.get({siteID, boardID, threadID, postID})) { continue; }
-        if (youOP) { return Index.threadsWithYous[threadID] = true; }
-        if (!reply.com) { continue; }
-
+        if (postID <= lastReadPost) {
+          continue;
+        }
+        if (QuoteYou.db.get({ siteID, boardID, threadID, postID })) {
+          continue;
+        }
+        if (youOP) {
+          return Index.threadsWithYous[threadID] = true;
+        }
+        if (!reply.com) {
+          continue;
+        }
         const regexp = g.SITE.regexp.quotelinkHTML;
         regexp.lastIndex = 0;
         let match;
         while (match = regexp.exec(reply.com)) {
           if (QuoteYou.db.get({
             siteID,
-            boardID:  match[1] ? encodeURIComponent(match[1]) : boardID,
+            boardID: match[1] ? encodeURIComponent(match[1]) : boardID,
             threadID: match[2] || threadID,
-            postID:   match[3] || match[2] || threadID
+            postID: match[3] || match[2] || threadID
           })) {
             return Index.threadsWithYous[threadID] = true;
           }
         }
       }
-
       return Index.threadsWithYous[threadID] = false;
     },
-
     showThreadInCatalog(threadID) {
       const hidden = Index.isHidden(threadID);
       if (Index.showHiddenThreads) {
@@ -18733,23 +19810,21 @@ svg.icon {
       }
       return !hidden || Index.threadHasUnreadYous(threadID);
     },
-
     buildThreads(threadIDs, isCatalog, withReplies) {
       let errors;
-      const threads    = [];
+      const threads = [];
       const newThreads = [];
-      let newPosts   = [];
+      let newPosts = [];
       for (var ID of threadIDs) {
         var opRoot, thread;
         try {
           var OP;
           var threadData = Index.liveThreadDict[ID];
-
           if (thread = g.BOARD.threads.get(ID)) {
             var isStale = (thread.json !== threadData) && (JSON.stringify(thread.json) !== JSON.stringify(threadData));
             if (isStale) {
-              thread.setCount('post', threadData.replies + 1,                threadData.bumplimit);
-              thread.setCount('file', threadData.images  + !!threadData.ext, threadData.imagelimit);
+              thread.setCount('post', threadData.replies + 1, threadData.bumplimit);
+              thread.setCount('file', threadData.images + !!threadData.ext, threadData.imagelimit);
               thread.setStatus('Sticky', !!threadData.sticky);
               thread.setStatus('Closed', !!threadData.closed);
             }
@@ -18762,10 +19837,11 @@ svg.icon {
             newThreads.push(thread);
           }
           var lastPost = threadData.last_replies && threadData.last_replies.length ? threadData.last_replies[threadData.last_replies.length - 1].no : ID;
-          if (lastPost > thread.lastPost) { thread.lastPost = lastPost; }
+          if (lastPost > thread.lastPost) {
+            thread.lastPost = lastPost;
+          }
           thread.json = threadData;
           threads.push(thread);
-
           if ((OP = thread.OP) && !OP.isFetchedQuote) {
             OP.setCatalogOP(isCatalog);
             thread.setPage(Math.floor(Index.threadPosition[ID] / Index.threadsNumPerPage) + 1);
@@ -18776,13 +19852,14 @@ svg.icon {
             OP.filterResults = obj.filterResults;
             newPosts.push(OP);
           }
-
           if (!isCatalog || !thread.nodes.root) {
             g.SITE.Build.thread(thread, threadData, withReplies);
           }
         } catch (err) {
           // Skip posts that we failed to parse.
-          if (!errors) { errors = []; }
+          if (!errors) {
+            errors = [];
+          }
           errors.push({
             message: `Parsing of Thread No.${thread} failed. Thread will be skipped.`,
             error: err,
@@ -18790,26 +19867,26 @@ svg.icon {
           });
         }
       }
-      if (errors) { Main.handleErrors(errors); }
-
+      if (errors) {
+        Main.handleErrors(errors);
+      }
       if (withReplies) {
         newPosts = newPosts.concat(Index.buildReplies(threads));
       }
-
       Main.callbackNodes('Thread', newThreads);
-      Main.callbackNodes('Post',   newPosts);
+      Main.callbackNodes('Post', newPosts);
       Index.updateHideLabel();
-      $.event('IndexRefreshInternal', {threadIDs: (threads.map((t) => t.fullID)), isCatalog});
-
+      $.event('IndexRefreshInternal', { threadIDs: (threads.map((t) => t.fullID)), isCatalog });
       return threads;
     },
-
     buildReplies(threads) {
       let errors;
       const posts = [];
       for (var thread of threads) {
         var lastReplies;
-        if (!(lastReplies = Index.liveThreadDict[thread.ID].last_replies)) { continue; }
+        if (!(lastReplies = Index.liveThreadDict[thread.ID].last_replies)) {
+          continue;
+        }
         var nodes = [];
         for (var data of lastReplies) {
           var node, post;
@@ -18822,7 +19899,9 @@ svg.icon {
             posts.push(new Post(node, thread, thread.board));
           } catch (err) {
             // Skip posts that we failed to parse.
-            if (!errors) { errors = []; }
+            if (!errors) {
+              errors = [];
+            }
             errors.push({
               message: `Parsing of Post No.${data.no} failed. Post will be skipped.`,
               error: err,
@@ -18832,16 +19911,16 @@ svg.icon {
         }
         $.add(thread.nodes.root, nodes);
       }
-
-      if (errors) { Main.handleErrors(errors); }
+      if (errors) {
+        Main.handleErrors(errors);
+      }
       return posts;
     },
-
     buildCatalogViews(threads) {
       const catalogThreads = [];
       for (var thread of threads) {
         if (!thread.catalogView) {
-          var {ID} = thread;
+          var { ID } = thread;
           var page = Math.floor(Index.threadPosition[ID] / Index.threadsNumPerPage) + 1;
           var root = g.SITE.Build.catalogThread(thread, Index.liveThreadDict[ID], page);
           catalogThreads.push(new CatalogThread(root, thread));
@@ -18849,78 +19928,90 @@ svg.icon {
       }
       Main.callbackNodes('CatalogThread', catalogThreads);
     },
-
     sizeCatalogViews(threads) {
       // XXX When browsers support CSS3 attr(), use it instead.
       const size = Conf['Index Size'] === 'small' ? 150 : 250;
       for (var thread of threads) {
-        var {thumb} = thread.catalogView.nodes;
-        var {width, height} = thumb.dataset;
-        if (!width) { continue; }
+        var { thumb } = thread.catalogView.nodes;
+        var { width, height } = thumb.dataset;
+        if (!width) {
+          continue;
+        }
         var ratio = size / Math.max(width, height);
-        thumb.style.width  = (width  * ratio) + 'px';
+        thumb.style.width = (width * ratio) + 'px';
         thumb.style.height = (height * ratio) + 'px';
       }
     },
-
     buildCatalogReplies(thread) {
       let lastReplies;
-      const {nodes} = thread.catalogView;
-      if (!(lastReplies = Index.liveThreadDict[thread.ID].last_replies)) { return; }
-
+      const { nodes } = thread.catalogView;
+      if (!(lastReplies = Index.liveThreadDict[thread.ID].last_replies)) {
+        return;
+      }
       const replies = [];
       for (var data of lastReplies) {
-        if (Index.isHiddenReply(thread.ID, data)) { continue; }
+        if (Index.isHiddenReply(thread.ID, data)) {
+          continue;
+        }
         var reply = g.SITE.Build.catalogReply(thread, data);
         RelativeDates.update($('time', reply));
         $.on($('.catalog-reply-preview', reply), 'mouseover', QuotePreview.mouseover);
         replies.push(reply);
       }
-
-      nodes.replies = $.el('div', {className: 'catalog-replies'});
+      nodes.replies = $.el('div', { className: 'catalog-replies' });
       $.add(nodes.replies, replies);
       $.add(thread.OP.nodes.post, nodes.replies);
     },
-
     sort() {
       let threadIDs;
-      const {liveThreadIDs, liveThreadData} = Index;
-      if (!liveThreadData) { return; }
-      const tmp_time = new Date().getTime()/1000;
+      const { liveThreadIDs, liveThreadData } = Index;
+      if (!liveThreadData) {
+        return;
+      }
+      const tmp_time = new Date().getTime() / 1000;
       const sortType = Index.currentSort.replace(/-rev$/, '');
-      Index.sortedThreadIDs = (() => { switch (sortType) {
-        case 'lastreply': case 'lastlong':
-          var repliesAvailable = liveThreadData.some(thread => thread.last_replies?.length);
-          var lastlong = function(thread) {
-            if (!repliesAvailable) {
-              return thread.last_modified;
-            }
-            const iterable = thread.last_replies || [];
-            for (let i = iterable.length - 1; i >= 0; i--) {
-              var r = iterable[i];
-              if (Index.isHiddenReply(thread.no, r)) { continue; }
-              if (sortType === 'lastreply') {
-                return r;
+      Index.sortedThreadIDs = (() => {
+        switch (sortType) {
+          case 'lastreply':
+          case 'lastlong':
+            var repliesAvailable = liveThreadData.some(thread => thread.last_replies?.length);
+            var lastlong = function (thread) {
+              if (!repliesAvailable) {
+                return thread.last_modified;
               }
-              var len = r.com ? g.SITE.Build.parseComment(r.com).replace(/[^a-z]/ig, '').length : 0;
-              if (len >= Index.lastLongThresholds[+!!r.ext]) {
-                return r;
+              const iterable = thread.last_replies || [];
+              for (let i = iterable.length - 1; i >= 0; i--) {
+                var r = iterable[i];
+                if (Index.isHiddenReply(thread.no, r)) {
+                  continue;
+                }
+                if (sortType === 'lastreply') {
+                  return r;
+                }
+                var len = r.com ? g.SITE.Build.parseComment(r.com).replace(/[^a-z]/ig, '').length : 0;
+                if (len >= Index.lastLongThresholds[+!!r.ext]) {
+                  return r;
+                }
               }
+              if (thread.omitted_posts && thread.last_replies?.length) {
+                return thread.last_replies[0];
+              } else {
+                return thread;
+              }
+            };
+            var lastlongD = dict();
+            for (var thread of liveThreadData) {
+              lastlongD[thread.no] = lastlong(thread).no;
             }
-            if (thread.omitted_posts && thread.last_replies?.length) { return thread.last_replies[0]; } else { return thread; }
-          };
-          var lastlongD = dict();
-          for (var thread of liveThreadData) {
-            lastlongD[thread.no] = lastlong(thread).no;
-          }
-          return [...liveThreadData].sort((a, b) => lastlongD[b.no] - lastlongD[a.no]).map(post => post.no);
-        case 'bump':       return liveThreadIDs;
-        case 'birth':      return [...liveThreadIDs ].sort((a, b) => b - a);
-        case 'replycount': return [...liveThreadData].sort((a, b) => b.replies - a.replies).map(post => post.no);
-        case 'filecount':  return [...liveThreadData].sort((a, b) => b.images  - a.images).map(post => post.no);
-        case 'activity':   return [...liveThreadData].sort((a, b) => ((tmp_time-a.time)/(a.replies+1)) - ((tmp_time-b.time)/(b.replies+1))).map(post => post.no);
-        default: return liveThreadIDs;
-      } })();
+            return [...liveThreadData].sort((a, b) => lastlongD[b.no] - lastlongD[a.no]).map(post => post.no);
+          case 'bump': return liveThreadIDs;
+          case 'birth': return [...liveThreadIDs].sort((a, b) => b - a);
+          case 'replycount': return [...liveThreadData].sort((a, b) => b.replies - a.replies).map(post => post.no);
+          case 'filecount': return [...liveThreadData].sort((a, b) => b.images - a.images).map(post => post.no);
+          case 'activity': return [...liveThreadData].sort((a, b) => ((tmp_time - a.time) / (a.replies + 1)) - ((tmp_time - b.time) / (b.replies + 1))).map(post => post.no);
+          default: return liveThreadIDs;
+        }
+      })();
       if (/-rev$/.test(Index.currentSort)) {
         Index.sortedThreadIDs.reverse();
       }
@@ -18930,23 +20021,25 @@ svg.icon {
       // Sticky threads
       Index.sortOnTop(obj => obj.isSticky);
       // Highlighted threads
-      Index.sortOnTop(obj => obj.isOnTop || (Conf['Pin Watched Threads'] && ThreadWatcher$1.isWatchedRaw(obj.boardID, obj.threadID)));
+      Index.sortOnTop(obj => obj.isOnTop || (Conf['Pin Watched Threads'] && ThreadWatcher.isWatchedRaw(obj.boardID, obj.threadID)));
       // Non-hidden threads
-      if (Conf['Anchor Hidden Threads']) { return Index.sortOnTop(obj => !Index.isHidden(obj.threadID)); }
+      if (Conf['Anchor Hidden Threads']) {
+        return Index.sortOnTop(obj => !Index.isHidden(obj.threadID));
+      }
     },
-
     sortOnTop(match) {
-      const topThreads    = [];
+      const topThreads = [];
       const bottomThreads = [];
       for (var ID of Index.sortedThreadIDs) {
         (match(Index.parsedThreads[ID]) ? topThreads : bottomThreads).push(ID);
       }
       return Index.sortedThreadIDs = topThreads.concat(bottomThreads);
     },
-
     buildIndex() {
       let threadIDs;
-      if (!Index.liveThreadData) { return; }
+      if (!Index.liveThreadData) {
+        return;
+      }
       switch (Conf['Index Mode']) {
         case 'all pages':
           threadIDs = Index.sortedThreadIDs;
@@ -18969,13 +20062,11 @@ svg.icon {
         Index.buildStructure(threadIDs);
       }
     },
-
     threadsOnPage(pageNum) {
       const nodesPerPage = Index.threadsNumPerPage;
       const offset = nodesPerPage * (pageNum - 1);
-      return Index.sortedThreadIDs.slice(offset ,  offset + nodesPerPage);
+      return Index.sortedThreadIDs.slice(offset, offset + nodesPerPage);
     },
-
     buildStructure(threadIDs) {
       const threads = Index.buildThreads(threadIDs, false, Conf['Show Replies']);
       Index.showHiddenThreadsWithYousInIndex(threads);
@@ -18989,24 +20080,28 @@ svg.icon {
       }
       Index.loaded = true;
     },
-
     showHiddenThreadsWithYousInIndex(threads) {
-      if (Conf['Index Mode'] === 'catalog' || !Conf['Show Threads With Yous']) { return; }
+      if (Conf['Index Mode'] === 'catalog' || !Conf['Show Threads With Yous']) {
+        return;
+      }
       for (var thread of threads) {
-        if (!thread.isHidden || !Index.threadHasUnreadYous(thread.ID)) { continue; }
+        if (!thread.isHidden || !Index.threadHasUnreadYous(thread.ID)) {
+          continue;
+        }
         if (thread.stub && thread.nodes.root.contains(thread.stub)) {
           $.rm(thread.stub);
         }
         thread.nodes.root.hidden = false;
       }
     },
-
     buildCatalog(threadIDs) {
       let i = 0;
       const n = threadIDs.length;
       let node0 = null;
-      var fn = function() {
-        if (node0 && !node0.parentNode) { return; } // Index.root cleared
+      var fn = function () {
+        if (node0 && !node0.parentNode) {
+          return;
+        } // Index.root cleared
         const j = (i > 0) && Index.root.parentNode ? n : i + 30;
         node0 = Index.buildCatalogPart(threadIDs.slice(i, j))[0];
         i = j;
@@ -19022,27 +20117,28 @@ svg.icon {
       };
       fn();
     },
-
     groupHiddenCatalogThreads(threadIDs) {
-      if (!Conf['Group Hidden Threads By Filter']) { return; }
+      if (!Conf['Group Hidden Threads By Filter']) {
+        return;
+      }
       const hiddenThreadIDs = threadIDs.filter(ID => Index.isHidden(ID));
-      if (!hiddenThreadIDs.length) { return; }
-
+      if (!hiddenThreadIDs.length) {
+        return;
+      }
       const groupedThreads = new Map();
       const manualHiddenThreads = [];
       const hiddenNodes = [];
-
       for (var threadID of hiddenThreadIDs) {
         const node = $.id(`t${threadID}`);
-        if (!node || (node.parentNode !== Index.root)) { continue; }
+        if (!node || (node.parentNode !== Index.root)) {
+          continue;
+        }
         hiddenNodes.push(node);
         Index.clearHiddenFilterValueFromCatalogThread(node);
-
-        if (ThreadHiding.db?.get({boardID: g.BOARD.ID, threadID})) {
+        if (ThreadHiding.db?.get({ boardID: g.BOARD.ID, threadID })) {
           manualHiddenThreads.push(node);
           continue;
         }
-
         const reason = (Index.parsedThreads[threadID]?.filterResults?.reasons?.[0] || 'Filtered').trim();
         const parsed = Index.parseHiddenFilterReason(reason);
         const key = parsed.key;
@@ -19056,12 +20152,12 @@ svg.icon {
         }
         group.nodes.push(node);
       }
-
-      if (!hiddenNodes.length) { return; }
+      if (!hiddenNodes.length) {
+        return;
+      }
       for (var hiddenNode of hiddenNodes) {
         $.rm(hiddenNode);
       }
-
       const frag = d.createDocumentFragment();
       for (const [, group] of groupedThreads) {
         frag.appendChild($.el('div', {
@@ -19079,7 +20175,6 @@ svg.icon {
       }
       Index.root.appendChild(frag);
     },
-
     parseHiddenFilterReason(reason) {
       const match = reason.match(/^Filtered\s+([A-Za-z0-9_]+)\s+(.+)$/);
       if (!match) {
@@ -19105,7 +20200,6 @@ svg.icon {
       }
       return { key: `Filtered ${type}`, label: `Filtered ${type}`, value };
     },
-
     applyHiddenFilterValueToCatalogThread(node, label, value) {
       // keep one tooltip and one compact value row per card
       const valueLine = label === 'Filtered MD5' ? value : `${label}: ${value}`;
@@ -19114,27 +20208,30 @@ svg.icon {
         link.title = valueLine;
         link.dataset.hiddenFilterMatch = valueLine;
       }
-
       const old = $('.catalog-group-match', node);
-      if (old) { $.rm(old); }
+      if (old) {
+        $.rm(old);
+      }
       const stats = $('.catalog-stats', node);
-      if (!stats) { return; }
+      if (!stats) {
+        return;
+      }
       $.add(stats, $.el('span', {
         className: 'catalog-group-match',
         textContent: valueLine
       }));
     },
-
     clearHiddenFilterValueFromCatalogThread(node) {
       const old = $('.catalog-group-match', node);
-      if (old) { $.rm(old); }
+      if (old) {
+        $.rm(old);
+      }
       const link = $('.catalog-link', node);
       if (link?.dataset.hiddenFilterMatch) {
         delete link.dataset.hiddenFilterMatch;
         link.removeAttribute('title');
       }
     },
-
     buildCatalogPart(threadIDs) {
       const threads = Index.buildThreads(threadIDs, true);
       Index.buildCatalogViews(threads);
@@ -19151,14 +20248,12 @@ svg.icon {
       $.add(Index.root, nodes);
       return nodes;
     },
-
     clearSearch(e) {
       e?.preventDefault();
       Index.searchInput.value = '';
       Index.onSearchInput();
       return Index.searchInput.focus();
     },
-
     setupSearch() {
       Index.searchInput.value = Index.search;
       if (Index.search) {
@@ -19168,17 +20263,17 @@ svg.icon {
         return Index.searchInput.removeAttribute('data-searching');
       }
     },
-
     onSearchInput() {
       const search = Index.searchInput.value.trim();
-      if (search === Index.search) { return; }
+      if (search === Index.search) {
+        return;
+      }
       Index.pushState({
         search,
         replace: !!search === !!Index.search
       });
       return Index.pageLoad(false);
     },
-
     querySearch(query) {
       let keywords, match;
       if (match = query.match(/^([\w+]+):\/(.*)\/(\w*)$/)) {
@@ -19190,21 +20285,30 @@ svg.icon {
         }
         return Index.sortedThreadIDs.filter(ID => regexp.test(Filter.values(match[1], Index.parsedThreads[ID]).join('\n')));
       }
-      if (!(keywords = query.toLowerCase().match(/\S+/g))) { return; }
+      if (!(keywords = query.toLowerCase().match(/\S+/g))) {
+        return;
+      }
       return Index.sortedThreadIDs.filter(ID => Index.searchMatch(Index.parsedThreads[ID], keywords));
     },
-
     searchMatch(obj, keywords) {
-      const {info, file} = obj;
-      if (info.comment == null) { info.comment = g.SITE.Build.parseComment(info.commentHTML.innerHTML); }
+      const { info, file } = obj;
+      if (info.comment == null) {
+        info.comment = g.SITE.Build.parseComment(info.commentHTML.innerHTML);
+      }
       let text = [];
       for (var key of ['comment', 'subject', 'name', 'tripcode']) {
-        if (key in info) { text.push(info[key]); }
+        if (key in info) {
+          text.push(info[key]);
+        }
       }
-      if (file) { text.push(file.name); }
+      if (file) {
+        text.push(file.name);
+      }
       text = text.join(' ').toLowerCase();
       for (var keyword of keywords) {
-        if (-1 === text.indexOf(keyword)) { return false; }
+        if (-1 === text.indexOf(keyword)) {
+          return false;
+        }
       }
       return true;
     }
@@ -19212,9 +20316,13 @@ svg.icon {
 
   var ThreadHiding = {
     init() {
-      if (!['index', 'catalog'].includes(g.VIEW) || (!Conf['Thread Hiding Buttons'] && !(Conf['Menu'] && Conf['Thread Hiding Link']) && !Conf['JSON Index'])) { return; }
+      if (!['index', 'catalog'].includes(g.VIEW) || (!Conf['Thread Hiding Buttons'] && !(Conf['Menu'] && Conf['Thread Hiding Link']) && !Conf['JSON Index'])) {
+        return;
+      }
       this.db = new DataBoard('hiddenThreads');
-      if (g.VIEW === 'catalog') { return this.catalogWatch(); }
+      if (g.VIEW === 'catalog') {
+        return this.catalogWatch();
+      }
       this.catalogSet(g.BOARD);
       $.on(d, 'IndexRefreshInternal', this.onIndexRefresh);
       if (Conf['Thread Hiding Buttons']) {
@@ -19222,22 +20330,26 @@ svg.icon {
       }
       return Callbacks.Post.push({
         name: 'Thread Hiding',
-        cb:   this.node
+        cb: this.node
       });
     },
-
     catalogSet(board) {
-      if (!$.hasStorage || (g.SITE.software !== 'yotsuba')) { return; }
+      if (!$.hasStorage || (g.SITE.software !== 'yotsuba')) {
+        return;
+      }
       const hiddenThreads = ThreadHiding.db.get({
         boardID: board.ID,
         defaultValue: dict()
       });
-      for (var threadID in hiddenThreads) { hiddenThreads[threadID] = true; }
+      for (var threadID in hiddenThreads) {
+        hiddenThreads[threadID] = true;
+      }
       return localStorage.setItem(`4chan-hide-t-${board}`, JSON.stringify(hiddenThreads));
     },
-
     catalogWatch() {
-      if (!$.hasStorage || (g.SITE.software !== 'yotsuba')) { return; }
+      if (!$.hasStorage || (g.SITE.software !== 'yotsuba')) {
+        return;
+      }
       this.hiddenThreads = JSON.parse(localStorage.getItem(`4chan-hide-t-${g.BOARD}`)) || {};
       return Main.ready(() => // 4chan's catalog sets the style to "display: none;" when hiding or unhiding a thread.
       new MutationObserver(ThreadHiding.catalogSave).observe($.id('threads'), {
@@ -19246,98 +20358,88 @@ svg.icon {
         attributeFilter: ['style']
       }));
     },
-
     catalogSave() {
       let threadID;
       const hiddenThreads2 = JSON.parse(localStorage.getItem(`4chan-hide-t-${g.BOARD}`)) || {};
       for (threadID in hiddenThreads2) {
         if (!$.hasOwn(ThreadHiding.hiddenThreads, threadID)) {
           ThreadHiding.db.set({
-            boardID:  g.BOARD.ID,
+            boardID: g.BOARD.ID,
             threadID,
-            val:      {makeStub: Conf['Stubs']}});
+            val: { makeStub: Conf['Stubs'] }
+          });
         }
       }
       for (threadID in ThreadHiding.hiddenThreads) {
         if (!$.hasOwn(hiddenThreads2, threadID)) {
           ThreadHiding.db.delete({
-            boardID:  g.BOARD.ID,
+            boardID: g.BOARD.ID,
             threadID
           });
         }
       }
       return ThreadHiding.hiddenThreads = hiddenThreads2;
     },
-
     isHidden(boardID, threadID) {
-      return !!(ThreadHiding.db && ThreadHiding.db.get({boardID, threadID}));
+      return !!(ThreadHiding.db && ThreadHiding.db.get({ boardID, threadID }));
     },
-
     node() {
       let data;
-      if (this.isReply || this.isClone || this.isFetchedQuote) { return; }
-
+      if (this.isReply || this.isClone || this.isFetchedQuote) {
+        return;
+      }
       if (Conf['Thread Hiding Buttons']) {
         $.prepend(this.nodes.root, ThreadHiding.makeButton(this.thread, 'hide'));
       }
-
-      if (data = ThreadHiding.db.get({boardID: this.board.ID, threadID: this.ID})) {
+      if (data = ThreadHiding.db.get({ boardID: this.board.ID, threadID: this.ID })) {
         ThreadHiding.hide(this.thread, data.makeStub, 'Hidden manually');
       }
     },
-
     onIndexRefresh() {
-      return g.BOARD.threads.forEach(function(thread) {
-        const {root} = thread.nodes;
+      return g.BOARD.threads.forEach(function (thread) {
+        const { root } = thread.nodes;
         if (thread.isHidden && thread.stub && !root.contains(thread.stub)) {
           ThreadHiding.makeStub(thread, root);
         }
       });
     },
-
     menu: {
       init() {
-        if ((g.VIEW !== 'index') || !Conf['Menu'] || !Conf['Thread Hiding Link']) { return; }
-
+        if ((g.VIEW !== 'index') || !Conf['Menu'] || !Conf['Thread Hiding Link']) {
+          return;
+        }
         let div = $.el('div', {
           className: 'hide-thread-link',
           textContent: 'Hide'
-        }
-        );
-
+        });
         const apply = $.el('a', {
           textContent: 'Apply',
           href: 'javascript:;'
-        }
-        );
+        });
         $.on(apply, 'click', ThreadHiding.menu.hide);
-
         const makeStub = UI.checkbox('Stubs', 'Make stub');
-
         Menu.menu.addEntry({
           el: div,
           order: 20,
-          open({thread, isReply}) {
+          open({ thread, isReply }) {
             if (isReply || thread.isHidden || (Conf['JSON Index'] && (Conf['Index Mode'] === 'catalog'))) {
               return false;
             }
             ThreadHiding.menu.thread = thread;
             return true;
           },
-          subEntries: [{el: apply}, {el: makeStub}]});
-
+          subEntries: [{ el: apply }, { el: makeStub }]
+        });
         div = $.el('a', {
           className: 'show-thread-link',
           textContent: 'Show',
           href: 'javascript:;'
-        }
-        );
+        });
         $.on(div, 'click', ThreadHiding.menu.show);
-
         Menu.menu.addEntry({
           el: div,
           order: 20,
-          open({thread, isReply}) {
+          open({ thread, isReply }) {
             if (isReply || !thread.isHidden || (Conf['JSON Index'] && (Conf['Index Mode'] === 'catalog'))) {
               return false;
             }
@@ -19345,18 +20447,15 @@ svg.icon {
             return true;
           }
         });
-
         const hideStubLink = $.el('a', {
           textContent: 'Hide stub',
           href: 'javascript:;'
-        }
-        );
+        });
         $.on(hideStubLink, 'click', ThreadHiding.menu.hideStub);
-
         return Menu.menu.addEntry({
           el: hideStubLink,
           order: 15,
-          open({thread, isReply}) {
+          open({ thread, isReply }) {
             if (isReply || !thread.isHidden || (Conf['JSON Index'] && (Conf['Index Mode'] === 'catalog'))) {
               return false;
             }
@@ -19364,38 +20463,34 @@ svg.icon {
           }
         });
       },
-
       hide() {
         const makeStub = $('input', this.parentNode).checked;
-        const {thread} = ThreadHiding.menu;
+        const { thread } = ThreadHiding.menu;
         ThreadHiding.hide(thread, makeStub, 'Hidden manually');
         ThreadHiding.saveHiddenState(thread, makeStub);
         return $.event('CloseMenu');
       },
-
       show() {
-        const {thread} = ThreadHiding.menu;
+        const { thread } = ThreadHiding.menu;
         ThreadHiding.show(thread);
         ThreadHiding.saveHiddenState(thread);
         return $.event('CloseMenu');
       },
-
       hideStub() {
-        const {thread} = ThreadHiding.menu;
+        const { thread } = ThreadHiding.menu;
         ThreadHiding.show(thread);
         ThreadHiding.hide(thread, false);
         ThreadHiding.saveHiddenState(thread, false);
         $.event('CloseMenu');
       }
     },
-
     makeButton(thread, type) {
       const span = $.el('span', {
         className: 'stub-icon',
       });
       const a = $.el('a', {
         className: `${type}-post-button ${type}-thread-button`,
-        href:      'javascript:;'
+        href: 'javascript:;'
       });
       Icon.set(span, type === 'hide' ? 'squareMinus' : 'squarePlus');
       $.add(a, span);
@@ -19403,15 +20498,14 @@ svg.icon {
       $.on(a, 'click', ThreadHiding.toggle);
       return a;
     },
-
     makeStub(thread, root, reason) {
       let summary, threadDivider;
-      let numReplies  = $$(g.SITE.selectors.replyOriginal, root).length;
-      if (summary = $(g.SITE.selectors.summary, root)) { numReplies += +summary.textContent.match(/\d+/); }
-
+      let numReplies = $$(g.SITE.selectors.replyOriginal, root).length;
+      if (summary = $(g.SITE.selectors.summary, root)) {
+        numReplies += +summary.textContent.match(/\d+/);
+      }
       const a = ThreadHiding.makeButton(thread, 'show');
       const { nameBlock, subject } = thread.OP.info;
-
       if (subject) {
         $.add(a, $.el('span', {
           className: 'stub-subject',
@@ -19426,47 +20520,43 @@ svg.icon {
         className: 'stub-replies',
         textContent: `(${numReplies} repl${numReplies === 1 ? 'y' : 'ies'})`
       }));
-
       let reasons = thread.OP.filterResults?.reasons || [];
-      if (reason) reasons = [...reasons, reason];
-
+      if (reason)
+        reasons = [...reasons, reason];
       if (Conf['Filter Reason'] && reasons.length) {
         const reasonsSpan = $.el('span', { className: 'stub-reasons' });
         $.add(reasonsSpan, reasons.map(re => $.el('span', { className: 'stub-reason', textContent: re })));
         a.appendChild(reasonsSpan);
       }
-
-      thread.stub = $.el('div', {className: 'stub'});
-
+      thread.stub = $.el('div', { className: 'stub' });
       if (Conf['Menu']) {
         $.add(thread.stub, [a, Menu.makeButton(thread.OP)]);
       } else {
         $.add(thread.stub, a);
       }
-      if (!Conf['Filter Reason'] && reasons) thread.stub.title = reasons.join(' & ');
+      if (!Conf['Filter Reason'] && reasons)
+        thread.stub.title = reasons.join(' & ');
       $.prepend(root, thread.stub);
-
       // Prevent hiding of thread divider on sites that put it inside the thread
       if (threadDivider = $(g.SITE.selectors.threadDivider, root)) {
         return $.addClass(threadDivider, 'threadDivider');
       }
     },
-
     saveHiddenState(thread, makeStub) {
       if (thread.isHidden) {
         ThreadHiding.db.set({
-          boardID:  thread.board.ID,
+          boardID: thread.board.ID,
           threadID: thread.ID,
-          val: {makeStub}});
+          val: { makeStub }
+        });
       } else {
         ThreadHiding.db.delete({
-          boardID:  thread.board.ID,
+          boardID: thread.board.ID,
           threadID: thread.ID
         });
       }
       return ThreadHiding.catalogSet(thread.board);
     },
-
     toggle(thread) {
       if (!(thread instanceof Thread)) {
         thread = g.threads.get(this.dataset.fullID);
@@ -19478,9 +20568,10 @@ svg.icon {
       }
       return ThreadHiding.saveHiddenState(thread);
     },
-
-    hide(thread, makeStub=Conf['Stubs'], reason) {
-      if (thread.isHidden) { return; }
+    hide(thread, makeStub = Conf['Stubs'], reason) {
+      if (thread.isHidden) {
+        return;
+      }
       const threadRoot = thread.nodes.root;
       thread.isHidden = true;
       Index.updateHideLabel();
@@ -19488,12 +20579,11 @@ svg.icon {
         $.rm(thread.catalogView.nodes.root);
         $.event('PostsRemoved', null, Index.root);
       }
-
-      if (!makeStub) { return threadRoot.hidden = true; }
-
+      if (!makeStub) {
+        return threadRoot.hidden = true;
+      }
       ThreadHiding.makeStub(thread, threadRoot, reason);
     },
-
     show(thread) {
       if (thread.stub) {
         $.rm(thread.stub);
@@ -19504,13 +20594,11 @@ svg.icon {
       Index.updateHideLabel();
       if (thread.catalogView && Conf['Index Mode'] === 'catalog') {
         const { root } = thread.catalogView.nodes;
-
         if (Index.showHiddenThreads) {
           $.rm(root);
           $.event('PostsRemoved', null, Index.root);
         } else {
           let i = Index.sortedThreadIDs.indexOf(thread.ID) - 1;
-
           while (true) {
             if (i < 0) {
               $('.board').insertAdjacentElement('afterbegin', root);
@@ -19523,7 +20611,6 @@ svg.icon {
             }
             --i;
           }
-
           $.event('PostsInserted', null, Index.root);
         }
       }
@@ -20008,36 +21095,34 @@ svg.icon {
 
   var FappeTyme = {
     init() {
-      if ((!Conf['Fappe Tyme'] && !Conf['Werk Tyme']) || !['index', 'thread', 'archive'].includes(g.VIEW)) { return; }
-
+      if ((!Conf['Fappe Tyme'] && !Conf['Werk Tyme']) || !['index', 'thread', 'archive'].includes(g.VIEW)) {
+        return;
+      }
       this.nodes = {};
       this.enabled = {
         fappe: false,
-        werk:  Conf['werk']
+        werk: Conf['werk']
       };
-
       for (var type of ["Fappe", "Werk"]) {
         if (Conf[`${type} Tyme`]) {
           var lc = type.toLowerCase();
           var el = UI.checkbox(lc, `${type} Tyme`, false);
           el.title = `${type} Tyme`;
-
           this.nodes[lc] = el.firstElementChild;
-          if (Conf[lc]) { this.set(lc, true); }
+          if (Conf[lc]) {
+            this.set(lc, true);
+          }
           $.on(this.nodes[lc], 'change', this.toggle.bind(this, lc));
-
           Header.menu.addEntry({
             el,
             order: 97
           });
-
           var indicator = $.el('span', {
             className: 'indicator',
             textContent: type[0],
             title: `${type} Tyme active`
-          }
-          );
-          $.on(indicator, 'click', function() {
+          });
+          $.on(indicator, 'click', function () {
             const check = $.getOwn(FappeTyme.nodes, this.parentNode.id.replace('shortcut-', ''));
             check.checked = !check.checked;
             return $.event('change', null, check);
@@ -20045,45 +21130,41 @@ svg.icon {
           Header.addShortcut(lc, indicator, 410);
         }
       }
-
       if (Conf['Werk Tyme']) {
         $.sync('werk', this.set.bind(this, 'werk'));
       }
-
       Callbacks.Post.push({
         name: 'Fappe Tyme',
-        cb:   this.node
+        cb: this.node
       });
-
       return Callbacks.CatalogThread.push({
         name: 'Werk Tyme',
-        cb:   this.catalogNode
+        cb: this.catalogNode
       });
     },
-
     node() {
       return this.nodes.root.classList.toggle('noFile', !this.files.length);
     },
-
     catalogNode() {
       const file = this.thread.OP.files[0];
-      if (!file) { return; }
+      if (!file) {
+        return;
+      }
       const filename = $.el('div', {
         textContent: file.name,
-        className:   'werkTyme-filename'
-      }
-      );
+        className: 'werkTyme-filename'
+      });
       return $.add(this.nodes.thumb.parentNode, filename);
     },
-
     set(type, enabled) {
       this.enabled[type] = (this.nodes[type].checked = enabled);
       return $[`${enabled ? 'add' : 'rm'}Class`](doc, `${type}Tyme`);
     },
-
     toggle(type) {
       this.set(type, !this.enabled[type]);
-      if (type === 'werk') { return $.cb.checked.call(this.nodes[type]); }
+      if (type === 'werk') {
+        return $.cb.checked.call(this.nodes[type]);
+      }
     }
   };
 
@@ -20112,9 +21193,10 @@ svg.icon {
   var Sauce = {
     init() {
       let link;
-      if (!['index', 'thread'].includes(g.VIEW) || !Conf['Sauce']) { return; }
+      if (!['index', 'thread'].includes(g.VIEW) || !Conf['Sauce']) {
+        return;
+      }
       $.addClass(doc, 'show-sauce');
-
       const links = [];
       for (link of Conf['sauces'].split('\n')) {
         var linkData;
@@ -20122,22 +21204,23 @@ svg.icon {
           links.push(linkData);
         }
       }
-      if (!links.length) { return; }
-
-      this.links = links;
-      this.link  = $.el('a', {
-        target:    '_blank',
-        className: 'sauce'
+      if (!links.length) {
+        return;
       }
-      );
+      this.links = links;
+      this.link = $.el('a', {
+        target: '_blank',
+        className: 'sauce'
+      });
       return Callbacks.Post.push({
         name: 'Sauce',
-        cb:   this.node
+        cb: this.node
       });
     },
-
     parseLink(link) {
-      if (!(link = link.trim())) { return null; }
+      if (!(link = link.trim())) {
+        return null;
+      }
       const parts = dict();
       const iterable = link.split(/;(?=(?:text|boards|types|regexp|sandbox):?)/);
       for (let i = 0; i < iterable.length; i++) {
@@ -20149,7 +21232,9 @@ svg.icon {
           parts[m[1]] = m[2];
         }
       }
-      if (!parts['text']) { parts['text'] = parts['url'].match(/(\w+)\.\w+\//)?.[1] || '?'; }
+      if (!parts['text']) {
+        parts['text'] = parts['url'].match(/(\w+)\.\w+\//)?.[1] || '?';
+      }
       // Normalize legacy default trace.moe label.
       if ((parts['text'] || '').trim().toLowerCase() === 'wait' && /(?:^|\/\/)trace\.moe\//i.test(parts['url'] || '')) {
         parts['text'] = 'trace';
@@ -20178,23 +21263,28 @@ svg.icon {
       }
       return parts;
     },
-
     createSauceLink(link, post, file) {
       let a, matches, needle;
       const ext = file.url.match(/[^.]*$/)[0];
       const parts = dict();
       $.extend(parts, link);
-
-      if (!!parts['boards'] && !parts['boards'][`${post.siteID}/${post.boardID}`] && !parts['boards'][`${post.siteID}/*`]) { return null; }
-      if (!!parts['types']  && (needle = ext, !parts['types'].split(',').includes(needle))) { return null; }
-      if (!!parts['regexp'] && (!(matches = file.name.match(parts['regexp'])))) { return null; }
-
+      if (!!parts['boards'] && !parts['boards'][`${post.siteID}/${post.boardID}`] && !parts['boards'][`${post.siteID}/*`]) {
+        return null;
+      }
+      if (!!parts['types'] && (needle = ext, !parts['types'].split(',').includes(needle))) {
+        return null;
+      }
+      if (!!parts['regexp'] && (!(matches = file.name.match(parts['regexp'])))) {
+        return null;
+      }
       const missing = [];
       for (var key of ['url', 'text']) {
-        parts[key] = parts[key].replace(/%(T?URL|IMG|[sh]?MD5|board|name|%|semi|\$\d+)/g, function(orig, parameter) {
+        parts[key] = parts[key].replace(/%(T?URL|IMG|[sh]?MD5|board|name|%|semi|\$\d+)/g, function (orig, parameter) {
           let type;
           if (parameter[0] === '$') {
-            if (!matches) { return orig; }
+            if (!matches) {
+              return orig;
+            }
             type = matches[parameter.slice(1)] || '';
           } else {
             type = Sauce.formatters[parameter](post, file, ext);
@@ -20203,37 +21293,39 @@ svg.icon {
               return '';
             }
           }
-
           if ((key === 'url') && !['%', 'semi'].includes(parameter)) {
-            if (/^javascript:/i.test(parts['url'])) { type = JSON.stringify(type); }
+            if (/^javascript:/i.test(parts['url'])) {
+              type = JSON.stringify(type);
+            }
             type = encodeURIComponent(type);
           }
           return type;
         });
       }
-
       if (g.SITE.areMD5sDeferred?.(post.board) && missing.length && !missing.filter(x => !/^.?MD5$/.test(x)).length) {
         a = Sauce.link.cloneNode(false);
         a.dataset.skip = '1';
         return a;
       }
-
-      if (missing.length) { return null; }
-
+      if (missing.length) {
+        return null;
+      }
       a = Sauce.link.cloneNode(false);
       a.href = parts['url'];
       a.textContent = parts['text'];
-      if (/^javascript:/i.test(parts['url'])) { a.removeAttribute('target'); }
+      if (/^javascript:/i.test(parts['url'])) {
+        a.removeAttribute('target');
+      }
       return a;
     },
-
     node() {
-      if (this.isClone) { return; }
+      if (this.isClone) {
+        return;
+      }
       for (var file of this.files) {
         Sauce.file(this, file);
       }
     },
-
     file(post, file) {
       let link, node;
       const nodes = [];
@@ -20241,13 +21333,14 @@ svg.icon {
       for (link of Sauce.links) {
         if (node = Sauce.createSauceLink(link, post, file)) {
           nodes.push($.tn(' '), node);
-          if (node.dataset.skip) { skipped.push([link, node]); }
+          if (node.dataset.skip) {
+            skipped.push([link, node]);
+          }
         }
       }
       $.add(file.text, nodes);
-
       if (skipped.length) {
-        var observer = new MutationObserver(function() {
+        var observer = new MutationObserver(function () {
           if (file.text.dataset.md5) {
             for ([link, node] of skipped) {
               var node2;
@@ -20258,19 +21351,22 @@ svg.icon {
             return observer.disconnect();
           }
         });
-        return observer.observe(file.text, {attributes: true});
+        return observer.observe(file.text, { attributes: true });
       }
     },
-
     formatters: {
       TURL(post, file) { return file.thumbURL; },
       URL(post, file) { return file.url; },
-      IMG(post, file, ext) { if (['gif', 'jpg', 'jpeg', 'png'].includes(ext)) { return file.url; } else { return file.thumbURL; } },
+      IMG(post, file, ext) { if (['gif', 'jpg', 'jpeg', 'png'].includes(ext)) {
+        return file.url;
+      } else {
+        return file.thumbURL;
+      } },
       MD5(post, file) { return file.MD5; },
-      sMD5(post, file) { return file.MD5?.replace(/[+/=]/g, c => ({'+': '-', '/': '_', '=': ''})[c]); },
+      sMD5(post, file) { return file.MD5?.replace(/[+/=]/g, c => ({ '+': '-', '/': '_', '=': '' })[c]); },
       hMD5(post, file) {
         if (file.MD5) {
-          return Array.from(atob(file.MD5), c => c.charCodeAt(0).toString(16).padStart(2,'0')).join('');
+          return Array.from(atob(file.MD5), c => c.charCodeAt(0).toString(16).padStart(2, '0')).join('');
         }
       },
       board(post) { return post.board.ID; },
@@ -20282,26 +21378,22 @@ svg.icon {
 
   var Gallery = {
     init() {
-      if (!(this.enabled = Conf['Gallery'] && ['index', 'thread'].includes(g.VIEW))) { return; }
-
+      if (!(this.enabled = Conf['Gallery'] && ['index', 'thread'].includes(g.VIEW))) {
+        return;
+      }
       this.delay = Conf['Slide Delay'];
-
       const el = $.el('a', {
         href: 'javascript:;',
         title: 'Gallery',
       });
       Icon.set(el, 'image', 'Gallery');
-
       $.on(el, 'click', this.cb.toggle);
-
       Header.addShortcut('gallery', el, 530);
-
       return Callbacks.Post.push({
         name: 'Gallery',
-        cb:   this.node
+        cb: this.node
       });
     },
-
     node() {
       return (() => {
         const result = [];
@@ -20311,7 +21403,6 @@ svg.icon {
               Gallery.generateThumb(this, file);
               Gallery.nodes.total.textContent = Gallery.images.length;
             }
-
             if (!Conf['Image Expansion'] && ((g.SITE.software !== 'tinyboard') || !Main.jsEnabled)) {
               result.push($.on(file.thumbLink, 'click', Gallery.cb.image));
             } else {
@@ -20322,87 +21413,79 @@ svg.icon {
         return result;
       })();
     },
-
     build(image) {
       let dialog, thumb;
-      const {cb} = Gallery;
-
+      const { cb } = Gallery;
       if (Conf['Fullscreen Gallery']) {
         $.one(d, 'fullscreenchange mozfullscreenchange webkitfullscreenchange', () => $.on(d, 'fullscreenchange mozfullscreenchange webkitfullscreenchange', cb.close));
         doc.mozRequestFullScreen?.();
         doc.webkitRequestFullScreen?.(Element.ALLOW_KEYBOARD_INPUT);
       }
-
-      Gallery.images  = [];
+      Gallery.images = [];
       const nodes = (Gallery.nodes = {});
       Gallery.fileIDs = dict();
       Gallery.slideshow = false;
-
-      nodes.el = (dialog = $.el('div',
-        {id: 'a-gallery'}));
-      $.extend(dialog, {innerHTML: galleryPage });
-
+      nodes.el = (dialog = $.el('div', { id: 'a-gallery' }));
+      $.extend(dialog, { innerHTML: galleryPage });
       const object = {
         buttons: '.gal-buttons',
-        frame:   '.gal-image',
-        name:    '.gal-name',
-        count:   '.count',
-        total:   '.total',
-        sauce:   '.gal-sauce',
-        thumbs:  '.gal-thumbnails',
-        next:    '.gal-image a',
+        frame: '.gal-image',
+        name: '.gal-name',
+        count: '.count',
+        total: '.total',
+        sauce: '.gal-sauce',
+        thumbs: '.gal-thumbnails',
+        next: '.gal-image a',
         current: '.gal-image img'
       };
-      for (var key in object) { var value = object[key]; nodes[key] = $(value, dialog); }
-
+      for (var key in object) {
+        var value = object[key];
+        nodes[key] = $(value, dialog);
+      }
       const menuButton = $('.menu-button', dialog);
       nodes.menu = new UI.Menu('gallery');
-
       $.on(nodes.frame, 'click', cb.blank);
-      if (Conf['Mouse Wheel Volume']) { $.on(nodes.frame, 'wheel', Volume.wheel); }
-      $.on(nodes.next,  'click', cb.click);
-      $.on(nodes.name,  'click', ImageCommon.download);
+      if (Conf['Mouse Wheel Volume']) {
+        $.on(nodes.frame, 'wheel', Volume.wheel);
+      }
+      $.on(nodes.next, 'click', cb.click);
+      $.on(nodes.name, 'click', ImageCommon.download);
       $.on(nodes.thumbs, 'click', cb.thumbsBlank);
-
-      const prev =  $('.gal-prev',  dialog);
-      const next =  $('.gal-next',  dialog);
+      const prev = $('.gal-prev', dialog);
+      const next = $('.gal-next', dialog);
       const start = $('.gal-start', dialog);
-      const stop =  $('.gal-stop',  dialog);
+      const stop = $('.gal-stop', dialog);
       const close = $('.gal-close', dialog);
-
-      $.on(prev,  'click', cb.prev);
-      $.on(next,  'click', cb.next);
+      $.on(prev, 'click', cb.prev);
+      $.on(next, 'click', cb.next);
       $.on(start, 'click', cb.start);
-      $.on(stop,  'click', cb.stop);
+      $.on(stop, 'click', cb.stop);
       $.on(close, 'click', cb.close);
-
-      $.on(menuButton, 'click', function(e) {
+      $.on(menuButton, 'click', function (e) {
         return nodes.menu.toggle(e, this, g);
       });
-
       Icon.set(menuButton, 'caretDown');
       Icon.set(start, 'play');
       Icon.set(stop, 'stop');
       Icon.set(close, 'xmark');
       Icon.set(prev, 'caretLeft');
       Icon.set(next, 'caretRight');
-
       for (var entry of Gallery.menu.createSubEntries()) {
         entry.order = 0;
         nodes.menu.addEntry(entry);
       }
-
       Gallery.cb.setLayout();
-
       $.on(d, 'keydown', cb.keybinds);
-      if (Conf['Keybinds']) { $.off(d, 'keydown', Keybinds.keydown); }
-
+      if (Conf['Keybinds']) {
+        $.off(d, 'keydown', Keybinds.keydown);
+      }
       $.on(window, 'resize', Gallery.cb.setHeight);
       $.on(window, 'resize', Gallery.cb.setLayout);
-
       for (var postThumb of $$(g.SITE.selectors.file.thumb)) {
         var post;
-        if (!(post = Get.postFromNode(postThumb))) { continue; }
+        if (!(post = Get.postFromNode(postThumb))) {
+          continue;
+        }
         for (var file of post.files) {
           if (file.thumb) {
             Gallery.generateThumb(post, file);
@@ -20417,100 +21500,97 @@ svg.icon {
         }
       }
       $.addClass(doc, 'gallery-open');
-
       $.add(d.body, dialog);
-
       nodes.thumbs.scrollTop = 0;
       nodes.current.parentElement.scrollTop = 0;
-
-      if (image) { thumb = $(`[href='${image.href}']`, nodes.thumbs); }
-      if (!thumb) { thumb = Gallery.images[Gallery.images.length-1]; }
-      if (thumb) { Gallery.open(thumb); }
-
+      if (image) {
+        thumb = $(`[href='${image.href}']`, nodes.thumbs);
+      }
+      if (!thumb) {
+        thumb = Gallery.images[Gallery.images.length - 1];
+      }
+      if (thumb) {
+        Gallery.open(thumb);
+      }
       doc.style.overflow = 'hidden';
       return nodes.total.textContent = Gallery.images.length;
     },
-
     generateThumb(post, file) {
-      if (post.isClone || post.isHidden) { return; }
-      if (!file || !file.thumb || (!file.isImage && !file.isVideo && !Conf['PDF in Gallery'])) { return; }
-      if (Gallery.fileIDs[`${post.fullID}.${file.index}`]) { return; }
-
+      if (post.isClone || post.isHidden) {
+        return;
+      }
+      if (!file || !file.thumb || (!file.isImage && !file.isVideo && !Conf['PDF in Gallery'])) {
+        return;
+      }
+      if (Gallery.fileIDs[`${post.fullID}.${file.index}`]) {
+        return;
+      }
       Gallery.fileIDs[`${post.fullID}.${file.index}`] = true;
-
       const thumb = $.el('a', {
         className: 'gal-thumb',
-        href:      file.url,
-        target:    '_blank',
-        title:     file.name
-      }
-      );
-
-      thumb.dataset.id   = Gallery.images.length;
+        href: file.url,
+        target: '_blank',
+        title: file.name
+      });
+      thumb.dataset.id = Gallery.images.length;
       thumb.dataset.post = post.fullID;
       thumb.dataset.file = file.index;
-
       const thumbImg = file.thumb.cloneNode(false);
       thumbImg.style.cssText = '';
       $.add(thumb, thumbImg);
-
       $.on(thumb, 'click', Gallery.cb.open);
-
       Gallery.images.push(thumb);
       return $.add(Gallery.nodes.thumbs, thumb);
     },
-
     load(thumb, errorCB) {
       const ext = thumb.href.match(/\w*$/);
-      const elType = $.getOwn({'webm': 'video', 'mp4': 'video', 'ogv': 'video', 'pdf': 'iframe'}, ext) || 'img';
+      const elType = $.getOwn({ 'webm': 'video', 'mp4': 'video', 'ogv': 'video', 'pdf': 'iframe' }, ext) || 'img';
       const file = $.el(elType);
       $.extend(file.dataset, thumb.dataset);
       $.on(file, 'error', errorCB);
       file.src = thumb.href;
       return file;
     },
-
     open(thumb) {
       let el, file, post;
-      const {nodes} = Gallery;
+      const { nodes } = Gallery;
       const oldID = +nodes.current.dataset.id;
       const newID = +thumb.dataset.id;
-
       // Highlight, center selected thumbnail
-      if (el = Gallery.images[oldID]) { $.rmClass(el,    'gal-highlight'); }
+      if (el = Gallery.images[oldID]) {
+        $.rmClass(el, 'gal-highlight');
+      }
       $.addClass(thumb, 'gal-highlight');
-      nodes.thumbs.scrollTop = (thumb.offsetTop + (thumb.offsetHeight/2)) - (nodes.thumbs.clientHeight/2);
-
+      nodes.thumbs.scrollTop = (thumb.offsetTop + (thumb.offsetHeight / 2)) - (nodes.thumbs.clientHeight / 2);
       // Load image or use preloaded image
-      if (Gallery.cache?.dataset.id === (''+newID)) {
+      if (Gallery.cache?.dataset.id === ('' + newID)) {
         file = Gallery.cache;
         $.off(file, 'error', Gallery.cacheError);
         $.on(file, 'error', Gallery.error);
       } else {
         file = Gallery.load(thumb, Gallery.error);
       }
-
       // Replace old image with new one
       $.off(nodes.current, 'error', Gallery.error);
       ImageCommon.pause(nodes.current);
       $.replace(nodes.current, file);
       nodes.current = file;
-
       if (file.nodeName === 'VIDEO') {
         file.loop = true;
         Volume.setup(file);
-        if (Conf['Autoplay']) { file.play(); }
-        if (Conf['Show Controls']) file.controls = true;
+        if (Conf['Autoplay']) {
+          file.play();
+        }
+        if (Conf['Show Controls'])
+          file.controls = true;
       }
-
       doc.classList.toggle('gal-pdf', file.nodeName === 'IFRAME');
       Gallery.cb.setHeight();
       nodes.count.textContent = +thumb.dataset.id + 1;
-      nodes.name.download     = (nodes.name.textContent = thumb.title);
-      nodes.name.href         = thumb.href;
-      nodes.frame.scrollTop   = 0;
+      nodes.name.download = (nodes.name.textContent = thumb.title);
+      nodes.name.href = thumb.href;
+      nodes.frame.scrollTop = 0;
       nodes.next.focus();
-
       // Set sauce links
       $.rmAll(nodes.sauce);
       if (Conf['Sauce'] && Sauce.links && (post = g.posts.get(file.dataset.post))) {
@@ -20523,68 +21603,67 @@ svg.icon {
         }
         $.add(nodes.sauce, sauces);
       }
-
       // Continue slideshow if moving forward, stop otherwise
-      if (Gallery.slideshow && ((newID > oldID) || ((oldID === (Gallery.images.length-1)) && (newID === 0)))) {
+      if (Gallery.slideshow && ((newID > oldID) || ((oldID === (Gallery.images.length - 1)) && (newID === 0)))) {
         Gallery.setupTimer();
       } else {
         Gallery.cb.stop();
       }
-
       // Scroll to post
       if (Conf['Scroll to Post'] && (post = g.posts.get(file.dataset.post))) {
         Header.scrollTo(post.nodes.root);
       }
-
       // Preload next image
       if (isNaN(oldID) || (newID === ((oldID + 1) % Gallery.images.length))) {
         return Gallery.cache = Gallery.load(Gallery.images[(newID + 1) % Gallery.images.length], Gallery.cacheError);
       }
     },
-
     error() {
       if (this.error?.code === MediaError.MEDIA_ERR_DECODE) {
         return new Notice('error', 'Corrupt or unplayable video', 30);
       }
-      if (ImageCommon.isFromArchive(this)) { return; }
+      if (ImageCommon.isFromArchive(this)) {
+        return;
+      }
       const post = g.posts.get(this.dataset.post);
       const file = post.files[+this.dataset.file];
       return ImageCommon.error(this, post, file, null, url => {
-        if (!url) { return; }
+        if (!url) {
+          return;
+        }
         Gallery.images[+this.dataset.id].href = url;
-        if (Gallery.nodes.current === this) { return this.src = url; }
+        if (Gallery.nodes.current === this) {
+          return this.src = url;
+        }
       });
     },
-
     cacheError() {
       return delete Gallery.cache;
     },
-
     cleanupTimer() {
       clearTimeout(Gallery.timeoutID);
-      const {current} = Gallery.nodes;
+      const { current } = Gallery.nodes;
       $.off(current, 'canplaythrough load', Gallery.startTimer);
       return $.off(current, 'ended', Gallery.cb.next);
     },
-
     startTimer() {
       return Gallery.timeoutID = setTimeout(Gallery.checkTimer, Gallery.delay * SECOND);
     },
-
     setupTimer() {
       Gallery.cleanupTimer();
-      const {current} = Gallery.nodes;
+      const { current } = Gallery.nodes;
       const isVideo = current.nodeName === 'VIDEO';
-      if (isVideo) { current.play(); }
+      if (isVideo) {
+        current.play();
+      }
       if ((isVideo ? current.readyState >= 4 : current.complete) || (current.nodeName === 'IFRAME')) {
         return Gallery.startTimer();
       } else {
         return $.on(current, (isVideo ? 'canplaythrough' : 'load'), Gallery.startTimer);
       }
     },
-
     checkTimer() {
-      const {current} = Gallery.nodes;
+      const { current } = Gallery.nodes;
       if ((current.nodeName === 'VIDEO') && !current.paused) {
         $.on(current, 'ended', Gallery.cb.next);
         return current.loop = false;
@@ -20592,77 +21671,85 @@ svg.icon {
         return Gallery.cb.next();
       }
     },
-
     cb: {
       keybinds(e) {
         let key;
-        if (!(key = Keybinds.keyCode(e))) { return; }
-
-        const cb = (() => { switch (key) {
-          case Conf['Close']: case Conf['Open Gallery']:
-            return (Gallery.fullscreen && doc.classList.contains('gal-lightbox-open'))
-              ? Gallery.cb.closeLightbox : Gallery.cb.close;
-          case Conf['Next Gallery Image']:
-            return Gallery.cb.next;
-          case Conf['Advance Gallery']:
-            return Gallery.cb.advance;
-          case Conf['Previous Gallery Image']:
-            return Gallery.cb.prev;
-          case Conf['Pause']:
-            return Gallery.cb.pause;
-          case Conf['Slideshow']:
-            return Gallery.cb.toggleSlideshow;
-          case Conf['Rotate image anticlockwise']:
-            return Gallery.cb.rotateLeft;
-          case Conf['Rotate image clockwise']:
-            return Gallery.cb.rotateRight;
-          case Conf['Download Gallery Image']:
-            return Gallery.cb.download;
-        } })();
-
-        if (!cb) { return; }
+        if (!(key = Keybinds.keyCode(e))) {
+          return;
+        }
+        const cb = (() => {
+          switch (key) {
+            case Conf['Close']:
+            case Conf['Open Gallery']:
+              return (Gallery.fullscreen && doc.classList.contains('gal-lightbox-open'))
+                ? Gallery.cb.closeLightbox : Gallery.cb.close;
+            case Conf['Next Gallery Image']:
+              return Gallery.cb.next;
+            case Conf['Advance Gallery']:
+              return Gallery.cb.advance;
+            case Conf['Previous Gallery Image']:
+              return Gallery.cb.prev;
+            case Conf['Pause']:
+              return Gallery.cb.pause;
+            case Conf['Slideshow']:
+              return Gallery.cb.toggleSlideshow;
+            case Conf['Rotate image anticlockwise']:
+              return Gallery.cb.rotateLeft;
+            case Conf['Rotate image clockwise']:
+              return Gallery.cb.rotateRight;
+            case Conf['Download Gallery Image']:
+              return Gallery.cb.download;
+          }
+        })();
+        if (!cb) {
+          return;
+        }
         e.stopPropagation();
         e.preventDefault();
         return cb();
       },
-
       open(e) {
-        if (e) { e.preventDefault(); }
+        if (e) {
+          e.preventDefault();
+        }
         // In fullscreen-thumbnails mode a click opens the image as a lightbox
         // overlaid on the grid rather than in the (collapsed) inline preview.
-        if (Gallery.fullscreen) { $.addClass(doc, 'gal-lightbox-open'); }
-        if (this) { return Gallery.open(this); }
+        if (Gallery.fullscreen) {
+          $.addClass(doc, 'gal-lightbox-open');
+        }
+        if (this) {
+          return Gallery.open(this);
+        }
       },
-
       closeLightbox() { return $.rmClass(doc, 'gal-lightbox-open'); },
-
       image(e) {
         e.preventDefault();
         e.stopPropagation();
         return Gallery.build(this);
       },
-
       prev() {
-        return Gallery.cb.open.call(
-          Gallery.images[+Gallery.nodes.current.dataset.id - 1] || Gallery.images[Gallery.images.length - 1]
-        );
+        return Gallery.cb.open.call(Gallery.images[+Gallery.nodes.current.dataset.id - 1] || Gallery.images[Gallery.images.length - 1]);
       },
       next() {
-        return Gallery.cb.open.call(
-          Gallery.images[+Gallery.nodes.current.dataset.id + 1] || Gallery.images[0]
-        );
+        return Gallery.cb.open.call(Gallery.images[+Gallery.nodes.current.dataset.id + 1] || Gallery.images[0]);
       },
-
       click(e) {
-        if (ImageCommon.onControls(e)) { return; }
+        if (ImageCommon.onControls(e)) {
+          return;
+        }
         e.preventDefault();
         return Gallery.cb.advance();
       },
-
-      advance() { if (!Conf['Autoplay'] && Gallery.nodes.current.paused) { return Gallery.nodes.current.play(); } else { return Gallery.cb.next(); } },
+      advance() { if (!Conf['Autoplay'] && Gallery.nodes.current.paused) {
+        return Gallery.nodes.current.play();
+      } else {
+        return Gallery.cb.next();
+      } },
       toggle() { return (Gallery.nodes ? Gallery.cb.close : Gallery.build)(); },
       blank(e) {
-        if (e.target !== this) { return; }
+        if (e.target !== this) {
+          return;
+        }
         // Clicking the dimmed area behind a fullscreen lightbox returns to the
         // grid; everywhere else it closes the gallery.
         if (Gallery.fullscreen && doc.classList.contains('gal-lightbox-open')) {
@@ -20670,57 +21757,59 @@ svg.icon {
         }
         return Gallery.cb.close();
       },
-
       // In fullscreen-thumbnails mode, clicking the empty grid background closes
       // the gallery — but only well below the last image, so a row that holds
       // images (including its blank/trailing spots) never closes, and a near-miss
       // just under an image is forgiven by a 70px buffer.
       thumbsBlank(e) {
-        if (!Gallery.fullscreen || (e.target !== this)) { return; }
+        if (!Gallery.fullscreen || (e.target !== this)) {
+          return;
+        }
         const last = Gallery.images[Gallery.images.length - 1];
         if (last && (e.clientY > (last.getBoundingClientRect().bottom + 70))) {
           return Gallery.cb.close();
         }
       },
-      toggleSlideshow() {  return Gallery.cb[Gallery.slideshow ? 'stop' : 'start'](); },
-
+      toggleSlideshow() { return Gallery.cb[Gallery.slideshow ? 'stop' : 'start'](); },
       download() {
         const name = $('.gal-name');
         return name.click();
       },
-
       pause() {
         Gallery.cb.stop();
-        const {current} = Gallery.nodes;
-        if (current.nodeName === 'VIDEO') { return current[current.paused ? 'play' : 'pause'](); }
+        const { current } = Gallery.nodes;
+        if (current.nodeName === 'VIDEO') {
+          return current[current.paused ? 'play' : 'pause']();
+        }
       },
-
       start() {
         $.addClass(Gallery.nodes.buttons, 'gal-playing');
         Gallery.slideshow = true;
         return Gallery.setupTimer();
       },
-
       stop() {
-        if (!Gallery.slideshow) { return; }
+        if (!Gallery.slideshow) {
+          return;
+        }
         Gallery.cleanupTimer();
-        const {current} = Gallery.nodes;
-        if (current.nodeName === 'VIDEO') { current.loop = true; }
+        const { current } = Gallery.nodes;
+        if (current.nodeName === 'VIDEO') {
+          current.loop = true;
+        }
         $.rmClass(Gallery.nodes.buttons, 'gal-playing');
         return Gallery.slideshow = false;
       },
-
       rotateLeft() { return Gallery.cb.rotate(270); },
       rotateRight() { return Gallery.cb.rotate(90); },
-
-      rotate: debounce(100, function(delta) {
-        const {current} = Gallery.nodes;
-        if (current.nodeName === 'IFRAME') { return; }
+      rotate: debounce(100, function (delta) {
+        const { current } = Gallery.nodes;
+        if (current.nodeName === 'IFRAME') {
+          return;
+        }
         current.dataRotate = ((current.dataRotate || 0) + delta) % 360;
         current.style.transform = `rotate(${current.dataRotate}deg)`;
         return Gallery.cb.setHeight();
       }),
-
       close() {
         $.off(Gallery.nodes.current, 'error', Gallery.error);
         ImageCommon.pause(Gallery.nodes.current);
@@ -20737,22 +21826,22 @@ svg.icon {
         delete Gallery.colLabelText;
         Gallery.fullscreen = false;
         $.rmClass(doc, 'gal-lightbox-open');
-        for (var p of Gallery.cb.positions) { $.rmClass(doc, `gal-thumbs-${p}`); }
+        for (var p of Gallery.cb.positions) {
+          $.rmClass(doc, `gal-thumbs-${p}`);
+        }
         doc.style.overflow = '';
-
         $.off(d, 'keydown', Gallery.cb.keybinds);
-        if (Conf['Keybinds']) { $.on(d, 'keydown', Keybinds.keydown); }
+        if (Conf['Keybinds']) {
+          $.on(d, 'keydown', Keybinds.keydown);
+        }
         $.off(window, 'resize', Gallery.cb.setHeight);
         $.off(window, 'resize', Gallery.cb.setLayout);
         return clearTimeout(Gallery.timeoutID);
       },
-
       setFitness() {
         return (this.checked ? $.addClass : $.rmClass)(doc, `gal-${this.name.toLowerCase().replace(/\s+/g, '-')}`);
       },
-
       positions: ['top', 'bottom', 'left', 'right'],
-
       // Drive thumbnail-strip extent, column count and dock edge from config, so
       // the grid, the strip size and the fixed label/button offsets all stay in
       // sync. The strip never grows past MAX_EXTENT of the relevant viewport
@@ -20765,35 +21854,38 @@ svg.icon {
       // (horizontal) ones. Because #a-gallery switches to flex-direction:column
       // for top/bottom, the same flex-basis variable reads as height there.
       setLayout() {
-        const THUMB_CELL = 131;           // approx px per thumb incl. padding
-        const MAX_EXTENT = 0.75;          // strip caps at 75% of its docking axis
-        const cols   = Math.max(0, parseInt(Conf['Gallery Columns'], 10) || 0);
+        const THUMB_CELL = 131; // approx px per thumb incl. padding
+        const MAX_EXTENT = 0.75; // strip caps at 75% of its docking axis
+        const cols = Math.max(0, parseInt(Conf['Gallery Columns'], 10) || 0);
         const hidden = Conf['Hide Thumbnails'];
-        const grid   = Conf['Grid Thumbnails'] && !hidden;
-        const pos    = Gallery.cb.positions.includes(Conf['Gallery Thumbnails Position'])
+        const grid = Conf['Grid Thumbnails'] && !hidden;
+        const pos = Gallery.cb.positions.includes(Conf['Gallery Thumbnails Position'])
           ? Conf['Gallery Thumbnails Position'] : 'right';
         const horizontal = (pos === 'top') || (pos === 'bottom');
-
-        for (var p of Gallery.cb.positions) { doc.classList.toggle(`gal-thumbs-${p}`, p === pos); }
-
+        for (var p of Gallery.cb.positions) {
+          doc.classList.toggle(`gal-thumbs-${p}`, p === pos);
+        }
         // The number means columns for the vertical (left/right) strips and rows
         // for the horizontal (top/bottom) ones; relabel the field to match.
-        if (Gallery.colLabelText) { Gallery.colLabelText.nodeValue = horizontal ? 'Grid Rows: ' : 'Grid Columns: '; }
-
+        if (Gallery.colLabelText) {
+          Gallery.colLabelText.nodeValue = horizontal ? 'Grid Rows: ' : 'Grid Columns: ';
+        }
         Gallery.fullscreen = grid && (cols === 0);
         doc.classList.toggle('gal-fullscreen-thumbs', Gallery.fullscreen);
-        if (!Gallery.fullscreen) { doc.classList.remove('gal-lightbox-open'); }
-
+        if (!Gallery.fullscreen) {
+          doc.classList.remove('gal-lightbox-open');
+        }
         // Largest column count that keeps the strip within the cap, measured along
         // the strip's docking axis. Exposed as the input's `max` so the spinner
         // won't tick past what actually fits.
         const axis = horizontal ? doc.clientHeight : doc.clientWidth;
         const maxCols = Math.max(1, Math.floor(((MAX_EXTENT * axis) - 8) / THUMB_CELL));
-        if (Gallery.colInput) { Gallery.colInput.max = maxCols; }
-
+        if (Gallery.colInput) {
+          Gallery.colInput.max = maxCols;
+        }
         let effCols = cols, extent;
         if (hidden || Gallery.fullscreen) {
-          extent = 0;                     // no inline strip (or strip is the whole screen)
+          extent = 0; // no inline strip (or strip is the whole screen)
         } else if (grid) {
           effCols = Math.min(cols, maxCols);
           extent = (effCols * THUMB_CELL) + 8;
@@ -20803,23 +21895,24 @@ svg.icon {
         doc.style.setProperty('--gal-cols', effCols || 1);
         return doc.style.setProperty('--gal-thumbs-width', `${extent}px`);
       },
-
       // Keep a typed-in column count within [0, max-that-fits] so the field can't
       // hold a value larger than the cap allows.
       clampColumns() {
         const max = parseInt(this.max, 10);
         let v = parseInt(this.value, 10);
-        if (isNaN(v)) { return; }
+        if (isNaN(v)) {
+          return;
+        }
         v = Math.max(0, v);
-        if (max && (v > max)) { v = max; }
+        if (max && (v > max)) {
+          v = max;
+        }
         this.value = v;
       },
-
       setHeight: debounce(100, function () {
         let dim, margin, minHeight;
-        const {current, frame} = Gallery.nodes;
-        const {style} = current;
-
+        const { current, frame } = Gallery.nodes;
+        const { style } = current;
         if (Conf['Stretch to Fit'] && (dim = g.posts.get(current.dataset.post)?.files[+current.dataset.file].dimensions)) {
           const [width, height] = dim.split('x');
           let containerWidth = frame.clientWidth;
@@ -20833,93 +21926,86 @@ svg.icon {
         } else {
           style.minHeight = (style.minWidth = '');
         }
-
         if (((current.dataRotate || 0) % 180) === 90) {
-          style.maxWidth  = Conf['Fit Height'] ? `${doc.clientHeight - 25}px` : 'none';
-          style.maxHeight = Conf['Fit Width']  ? `${frame.clientWidth}px`     : 'none';
-          margin = (current.clientWidth - current.clientHeight)/2;
+          style.maxWidth = Conf['Fit Height'] ? `${doc.clientHeight - 25}px` : 'none';
+          style.maxHeight = Conf['Fit Width'] ? `${frame.clientWidth}px` : 'none';
+          margin = (current.clientWidth - current.clientHeight) / 2;
           return style.margin = `${margin}px ${-margin}px`;
         } else {
           return style.maxWidth = (style.maxHeight = (style.margin = ''));
         }
       }),
-
       setDelay() { return Gallery.delay = +this.value; }
     },
-
     menu: {
       init() {
-        if (!Gallery.enabled) { return; }
-
+        if (!Gallery.enabled) {
+          return;
+        }
         const el = $.el('span', {
           textContent: 'Gallery',
           className: 'gallery-link'
-        }
-        );
-
+        });
         return Header.menu.addEntry({
           el,
           order: 105,
           subEntries: Gallery.menu.createSubEntries()
         });
       },
-
       createSubEntry(name) {
         const label = UI.checkbox(name, name);
         const input = label.firstElementChild;
-        if (['Hide Thumbnails', 'Fit Width', 'Fit Height'].includes(name)) { $.on(input, 'change', Gallery.cb.setFitness); }
+        if (['Hide Thumbnails', 'Fit Width', 'Fit Height'].includes(name)) {
+          $.on(input, 'change', Gallery.cb.setFitness);
+        }
         $.event('change', null, input);
         $.on(input, 'change', $.cb.checked);
-        if (['Hide Thumbnails'].includes(name)) { $.on(input, 'change', Gallery.cb.setLayout); }
-        if (['Hide Thumbnails', 'Fit Width', 'Fit Height', 'Stretch to Fit'].includes(name)) { $.on(input, 'change', Gallery.cb.setHeight); }
-        return {el: label};
+        if (['Hide Thumbnails'].includes(name)) {
+          $.on(input, 'change', Gallery.cb.setLayout);
+        }
+        if (['Hide Thumbnails', 'Fit Width', 'Fit Height', 'Stretch to Fit'].includes(name)) {
+          $.on(input, 'change', Gallery.cb.setHeight);
+        }
+        return { el: label };
       },
-
       createSubEntries() {
         const subEntries = (['Hide Thumbnails', 'Fit Width', 'Fit Height', 'Stretch to Fit', 'Scroll to Post'].map((item) => Gallery.menu.createSubEntry(item)));
-
         // Grid toggle and its track count share one row: [✓] Grid Columns: [N].
         // The checkbox drives 'Grid Thumbnails'; the number drives 'Gallery Columns',
         // whose label setLayout() flips between Columns/Rows with the dock edge. The
         // checkbox and number sit in separate labels so editing one never toggles
         // the other.
-        const gridRow = $.el('span', {className: 'gal-grid-entry'});
+        const gridRow = $.el('span', { className: 'gal-grid-entry' });
         const gridCheck = UI.checkbox('Grid Thumbnails', '');
         const gridInput = gridCheck.firstElementChild;
         $.on(gridInput, 'change', Gallery.cb.setFitness);
         $.event('change', null, gridInput);
         $.on(gridInput, 'change', $.cb.checked);
         $.on(gridInput, 'change', Gallery.cb.setLayout);
-
-        const colLabel = $.el('label', {title: '0 disables the image preview and shows fullscreen thumbnails.', innerHTML: 'Grid Columns: <input type="number" name="Gallery Columns" min="0" step="1" class="field gal-col-input" title="0 disables the image preview and shows fullscreen thumbnails.">'});
+        const colLabel = $.el('label', { title: '0 disables the image preview and shows fullscreen thumbnails.', innerHTML: 'Grid Columns: <input type="number" name="Gallery Columns" min="0" step="1" class="field gal-col-input" title="0 disables the image preview and shows fullscreen thumbnails.">' });
         const colInput = colLabel.firstElementChild;
         colInput.value = Math.max(0, parseInt(Conf['Gallery Columns'], 10) || 0);
         Gallery.colInput = colInput;
-        Gallery.colLabelText = colLabel.firstChild;   // "Grid Columns: " text node, relabelled per dock
+        Gallery.colLabelText = colLabel.firstChild; // "Grid Columns: " text node, relabelled per dock
         $.on(colInput, 'change', Gallery.cb.clampColumns);
         $.on(colInput, 'change', $.cb.value);
         $.on(colInput, 'change', Gallery.cb.setLayout);
-
         $.add(gridRow, [gridCheck, colLabel]);
-        subEntries.push({el: gridRow});
-
-        const posOptions = Gallery.cb.positions.map(p =>
-          `<option value="${p}">${p[0].toUpperCase()}${p.slice(1)}</option>`).join('');
-        const posLabel = $.el('label', {innerHTML: `Thumbnails Position: <select name="Gallery Thumbnails Position" class="field gal-field">${posOptions}</select>`});
+        subEntries.push({ el: gridRow });
+        const posOptions = Gallery.cb.positions.map(p => `<option value="${p}">${p[0].toUpperCase()}${p.slice(1)}</option>`).join('');
+        const posLabel = $.el('label', { innerHTML: `Thumbnails Position: <select name="Gallery Thumbnails Position" class="field gal-field">${posOptions}</select>` });
         const posInput = posLabel.firstElementChild;
         posInput.value = Gallery.cb.positions.includes(Conf['Gallery Thumbnails Position'])
           ? Conf['Gallery Thumbnails Position'] : 'right';
         $.on(posInput, 'change', $.cb.value);
         $.on(posInput, 'change', Gallery.cb.setLayout);
-        subEntries.push({el: posLabel});
-
-        const delayLabel = $.el('label', {innerHTML: 'Slide Delay: <input type="number" name="Slide Delay" min="0" step="any" class="field">'});
+        subEntries.push({ el: posLabel });
+        const delayLabel = $.el('label', { innerHTML: 'Slide Delay: <input type="number" name="Slide Delay" min="0" step="any" class="field">' });
         const delayInput = delayLabel.firstElementChild;
         delayInput.value = Gallery.delay;
         $.on(delayInput, 'change', Gallery.cb.setDelay);
         $.on(delayInput, 'change', $.cb.value);
-        subEntries.push({el: delayLabel});
-
+        subEntries.push({ el: delayLabel });
         return subEntries;
       }
     }
@@ -20933,45 +22019,44 @@ svg.icon {
 
   var Linkify = {
     init() {
-      if (!['index', 'thread', 'archive'].includes(g.VIEW)) { return; }
-
+      if (!['index', 'thread', 'archive'].includes(g.VIEW)) {
+        return;
+      }
       // Live-toggle: re-sweep page when the user flips the setting in Settings.
       $.sync('Convert X to xcancel', enabled => {
         Conf['Convert X to xcancel'] = enabled;
         Linkify.refreshFrontEndRewrites();
       });
-
       $.sync('Convert YouTube to yewtu.be', enabled => {
         Conf['Convert YouTube to yewtu.be'] = enabled;
         Linkify.refreshFrontEndRewrites();
       });
-
       const shouldLinkify = Conf['Linkify'];
       const shouldRewriteX = Conf['Convert X to xcancel'];
       const shouldRewriteYouTube = Conf['Convert YouTube to yewtu.be'];
-      if (!shouldLinkify && !shouldRewriteX && !shouldRewriteYouTube) { return; }
-
+      if (!shouldLinkify && !shouldRewriteX && !shouldRewriteYouTube) {
+        return;
+      }
       if (shouldLinkify && Conf['Comment Expansion']) {
         ExpandComment.callbacks.push(this.node);
       }
-
       Callbacks.Post.push({
         name: 'Linkify',
-        cb:   this.node
+        cb: this.node
       });
-
       if (shouldLinkify) {
         return Embedding.init();
       }
     },
-
     refreshFrontEndRewrites() {
       const shouldRewriteX = Conf['Convert X to xcancel'];
       const shouldRewriteYouTube = Conf['Convert YouTube to yewtu.be'];
       if (shouldRewriteX || shouldRewriteYouTube) {
         // Apply rewrite to every <a> in post comments currently on the page.
         const selector = g.SITE?.selectors?.comment;
-        if (!selector) { return; }
+        if (!selector) {
+          return;
+        }
         for (const comment of $$(selector)) {
           for (const link of $$('a', comment)) {
             if (shouldRewriteX) {
@@ -20984,7 +22069,6 @@ svg.icon {
               delete link.dataset.xcancelOrigHref;
               delete link.dataset.xcancelOrigText;
             }
-
             if (shouldRewriteYouTube) {
               Linkify.rewriteYouTubeLink(link);
             } else if (link.dataset.yewtuOrigHref) {
@@ -20999,7 +22083,6 @@ svg.icon {
         }
         return;
       }
-
       // Revert links we previously rewrote.
       for (const link of $$('a[data-xcancel-orig-href]')) {
         link.href = link.dataset.xcancelOrigHref;
@@ -21018,77 +22101,87 @@ svg.icon {
         delete link.dataset.yewtuOrigText;
       }
     },
-
     node() {
       let link;
-      if (this.isClone) { return Embedding.events(this); }
+      if (this.isClone) {
+        return Embedding.events(this);
+      }
       if (!Linkify.regString.test(this.info.comment)) {
         if (Conf['Convert X to xcancel'] || Conf['Convert YouTube to yewtu.be']) {
           for (link of $$('a', this.nodes.comment)) {
-            if (Conf['Convert X to xcancel']) { Linkify.rewriteXLink(link); }
-            if (Conf['Convert YouTube to yewtu.be']) { Linkify.rewriteYouTubeLink(link); }
+            if (Conf['Convert X to xcancel']) {
+              Linkify.rewriteXLink(link);
+            }
+            if (Conf['Convert YouTube to yewtu.be']) {
+              Linkify.rewriteYouTubeLink(link);
+            }
           }
         }
         return;
       }
       for (link of $$('a', this.nodes.comment)) {
-        if (Conf['Convert X to xcancel']) { Linkify.rewriteXLink(link); }
-        if (Conf['Convert YouTube to yewtu.be']) { Linkify.rewriteYouTubeLink(link); }
+        if (Conf['Convert X to xcancel']) {
+          Linkify.rewriteXLink(link);
+        }
+        if (Conf['Convert YouTube to yewtu.be']) {
+          Linkify.rewriteYouTubeLink(link);
+        }
         if (g.SITE.isLinkified?.(link)) {
           $.addClass(link, 'linkify');
-          if (ImageHost.useFaster) { ImageHost.fixLinks([link]); }
+          if (ImageHost.useFaster) {
+            ImageHost.fixLinks([link]);
+          }
           Embedding.process(link, this);
         }
       }
       const links = Linkify.process(this.nodes.comment);
-      if (ImageHost.useFaster) { ImageHost.fixLinks(links); }
-      for (link of links) { Embedding.process(link, this); }
+      if (ImageHost.useFaster) {
+        ImageHost.fixLinks(links);
+      }
+      for (link of links) {
+        Embedding.process(link, this);
+      }
     },
-
     process(node) {
       let length;
-      const test     = /[^\s"]+/g;
-      const space    = /[\s"]/;
+      const test = /[^\s"]+/g;
+      const space = /[\s"]/;
       const snapshot = $.X('.//br|.//text()', node);
       let i = 0;
       const links = [];
       while ((node = snapshot.snapshotItem(i++))) {
         var result;
-        var {data} = node;
-        if (!data || (node.parentElement.nodeName === "A")) { continue; }
-
+        var { data } = node;
+        if (!data || (node.parentElement.nodeName === "A")) {
+          continue;
+        }
         while ((result = test.exec(data))) {
-          var {index} = result;
+          var { index } = result;
           var endNode = node;
-          var word    = result[0];
+          var word = result[0];
           // End of node, not necessarily end of space-delimited string
           if ((length = index + word.length) === data.length) {
             var saved;
             test.lastIndex = 0;
-
             while (saved = snapshot.snapshotItem(i++)) {
               var end;
               if ((saved.nodeName === 'BR') || ((saved.parentElement.nodeName === 'P') && !saved.previousSibling)) {
                 var part1, part2;
                 if (
-                  // link deliberately split
-                  (part1 = word.match(/(https?:\/\/)?([a-z\d-]+\.)*[a-z\d-]+$/i)) &&
+                // link deliberately split
+                (part1 = word.match(/(https?:\/\/)?([a-z\d-]+\.)*[a-z\d-]+$/i)) &&
                   (part2 = snapshot.snapshotItem(i)?.data?.match(/^(\.[a-z\d-]+)*\//i)) &&
-                  ((part1[0] + part2[0]).search(Linkify.regString) === 0)
-                ) {
+                  ((part1[0] + part2[0]).search(Linkify.regString) === 0)) {
                   continue;
                 } else {
                   break;
                 }
               }
-
               if ((saved.parentElement.nodeName === "A") && !Linkify.regString.test(word)) {
                 break;
               }
-
-              endNode  = saved;
-              ({data}   = saved);
-
+              endNode = saved;
+              ({ data } = saved);
               if (end = space.exec(data)) {
                 // Set our snapshot and regex to start on this node at this position when the loop resumes
                 word += data.slice(0, end.index);
@@ -21096,28 +22189,26 @@ svg.icon {
                 i--;
                 break;
               } else {
-                ({length} = data);
-                word    += data;
+                ({ length } = data);
+                word += data;
               }
             }
           }
-
           if (Linkify.regString.test(word)) {
             links.push(Linkify.makeRange(node, endNode, index, length));
 
           }
-
-          if (!test.lastIndex || (node !== endNode)) { break; }
+          if (!test.lastIndex || (node !== endNode)) {
+            break;
+          }
         }
       }
-
       i = links.length;
       while (i--) {
         links[i] = Linkify.makeLink(links[i]);
       }
       return links;
     },
-
     regString: new RegExp(`(\
 \
 (https?|mailto|git|magnet|ftp|irc):(\
@@ -21132,129 +22223,127 @@ aero|asia|biz|cat|com|coop|dance|info|int|jobs|mobi|moe|museum|name|net|org|post
 |\
 [-\\w\\d.@]+@[a-z\\d.-]+\\.[a-z\\d]\
 )`, 'i'),
-
     makeRange(startNode, endNode, startOffset, endOffset) {
       const range = document.createRange();
       range.setStart(startNode, startOffset);
-      range.setEnd(endNode,   endOffset);
+      range.setEnd(endNode, endOffset);
       return range;
     },
-
     makeLink(range) {
       let t;
       let encodedDomain;
       let text = range.toString();
-
       // Clean start of range
       let i = text.search(Linkify.regString);
-
       if (i > 0) {
         text = text.slice(i);
-        while ((range.startOffset + i) >= range.startContainer.data.length) { i--; }
-
-        if (i) { range.setStart(range.startContainer, range.startOffset + i); }
+        while ((range.startOffset + i) >= range.startContainer.data.length) {
+          i--;
+        }
+        if (i) {
+          range.setStart(range.startContainer, range.startOffset + i);
+        }
       }
-
       // Clean end of range
       i = 0;
       while (/[)\]}>.,]/.test(t = text.charAt(text.length - (1 + i)))) {
-        if (!/[.,]/.test(t) && !((text.match(/[()\[\]{}<>]/g)).length % 2)) { break; }
+        if (!/[.,]/.test(t) && !((text.match(/[()\[\]{}<>]/g)).length % 2)) {
+          break;
+        }
         i++;
       }
-
       if (i) {
         text = text.slice(0, -i);
-        while ((range.endOffset - i) < 0) { i--; }
-
+        while ((range.endOffset - i) < 0) {
+          i--;
+        }
         if (i) {
           range.setEnd(range.endContainer, range.endOffset - i);
         }
       }
-
       // Make our link 'valid' if it is formatted incorrectly.
       if (!/((mailto|magnet):|.+:\/\/)/.test(text)) {
-        text = (
-          /@/.test(text) ?
-            'mailto:'
+        text = (/@/.test(text) ?
+          'mailto:'
           :
-            'http://'
-        ) + text;
+            'http://') + text;
       }
-
       // Decode percent-encoded characters in domain so that they behave consistently across browsers.
       if (encodedDomain = text.match(/^(https?:\/\/[^/]*%[0-9a-f]{2})(.*)$/i)) {
-        text = encodedDomain[1].replace(/%([0-9a-f]{2})/ig, function(x, y) {
-          if (y === '25') { return x; } else { return String.fromCharCode(parseInt(y, 16)); }
+        text = encodedDomain[1].replace(/%([0-9a-f]{2})/ig, function (x, y) {
+          if (y === '25') {
+            return x;
+          } else {
+            return String.fromCharCode(parseInt(y, 16));
+          }
         }) + encodedDomain[2];
       }
-
       const rewrittenHref = Linkify.rewriteURLs(text);
       const a = $.el('a', {
         className: 'linkify',
-        rel:       'noreferrer noopener',
-        target:    '_blank',
-        href:      rewrittenHref
-      }
-      );
-
+        rel: 'noreferrer noopener',
+        target: '_blank',
+        href: rewrittenHref
+      });
       // Insert the range into the anchor, the anchor into the range's DOM location, and destroy the range.
       $.add(a, range.extractContents());
       range.insertNode(a);
-
       if (rewrittenHref !== text) {
         if (Conf['Convert X to xcancel'] && Linkify.rewriteXURL(text) !== text) {
           a.dataset.xcancelOrigHref = text;
-          if (a.children.length === 0) { a.dataset.xcancelOrigText = a.textContent; }
+          if (a.children.length === 0) {
+            a.dataset.xcancelOrigText = a.textContent;
+          }
         } else if (Conf['Convert YouTube to yewtu.be'] && Linkify.rewriteYouTubeURL(text) !== text) {
           a.dataset.yewtuOrigHref = text;
-          if (a.children.length === 0) { a.dataset.yewtuOrigText = a.textContent; }
+          if (a.children.length === 0) {
+            a.dataset.yewtuOrigText = a.textContent;
+          }
         }
         Linkify.rewriteVisibleText(a);
       }
-
       return a;
     },
-
     rewriteXLink(link) {
-      if (!Conf['Convert X to xcancel']) { return; }
+      if (!Conf['Convert X to xcancel']) {
+        return;
+      }
       const oldHref = link.href;
       const newHref = Linkify.rewriteXURL(oldHref);
       if (newHref !== oldHref) {
         if (!link.dataset.xcancelOrigHref) {
           link.dataset.xcancelOrigHref = oldHref;
-          if (link.children.length === 0) { link.dataset.xcancelOrigText = link.textContent; }
+          if (link.children.length === 0) {
+            link.dataset.xcancelOrigText = link.textContent;
+          }
         }
         link.href = newHref;
         Linkify.rewriteVisibleText(link);
       }
     },
-
     rewriteYouTubeLink(link) {
-      if (!Conf['Convert YouTube to yewtu.be']) { return; }
+      if (!Conf['Convert YouTube to yewtu.be']) {
+        return;
+      }
       const oldHref = link.href;
       const newHref = Linkify.rewriteYouTubeURL(oldHref);
       if (newHref !== oldHref) {
         if (!link.dataset.yewtuOrigHref) {
           link.dataset.yewtuOrigHref = oldHref;
-          if (link.children.length === 0) { link.dataset.yewtuOrigText = link.textContent; }
+          if (link.children.length === 0) {
+            link.dataset.yewtuOrigText = link.textContent;
+          }
         }
         link.href = newHref;
         Linkify.rewriteVisibleText(link);
       }
     },
-
     rewriteVisibleText(link) {
       // Replace twitter.com / x.com hostnames in the link's visible text with xcancel.com.
       // Replace youtube.com / youtu.be hostnames in the link's visible text with yewtu.be.
       // Only touches text nodes so we don't disturb embed icons or nested markup.
-      const replaceX = s => s.replace(
-        /\b((?:www\.|mobile\.)?(?:fx|vx)?twitter\.com|(?:www\.|mobile\.)?(?:fixup|fixv)?x\.com|twittpr\.com)\b/gi,
-        'xcancel.com'
-      );
-      const replaceYouTube = s => s.replace(
-        /\b((?:www\.|m\.|music\.|mobile\.)?(?:youtu\.be|youtube\.com|youtube-nocookie\.com))\b/gi,
-        'yewtu.be'
-      );
+      const replaceX = s => s.replace(/\b((?:www\.|mobile\.)?(?:fx|vx)?twitter\.com|(?:www\.|mobile\.)?(?:fixup|fixv)?x\.com|twittpr\.com)\b/gi, 'xcancel.com');
+      const replaceYouTube = s => s.replace(/\b((?:www\.|m\.|music\.|mobile\.)?(?:youtu\.be|youtube\.com|youtube-nocookie\.com))\b/gi, 'yewtu.be');
       const walker = document.createTreeWalker(link, NodeFilter.SHOW_TEXT);
       let node;
       while ((node = walker.nextNode())) {
@@ -21265,49 +22354,55 @@ aero|asia|biz|cat|com|coop|dance|info|int|jobs|mobi|moe|museum|name|net|org|post
         if (Conf['Convert YouTube to yewtu.be']) {
           updated = replaceYouTube(updated);
         }
-        if (updated !== node.data) { node.data = updated; }
+        if (updated !== node.data) {
+          node.data = updated;
+        }
       }
     },
-
     rewriteXURL(urlString) {
-      if (!Conf['Convert X to xcancel']) { return urlString; }
+      if (!Conf['Convert X to xcancel']) {
+        return urlString;
+      }
       try {
         const base = (typeof location === 'object' && location?.href) ? location.href : undefined;
         const url = base ? new URL(urlString, base) : new URL(urlString);
-        if (!/^https?:$/.test(url.protocol)) { return urlString; }
-
+        if (!/^https?:$/.test(url.protocol)) {
+          return urlString;
+        }
         // Direct links.
         if (/(?:^|\.)twitter\.com$/i.test(url.hostname) || /(?:^|\.)x\.com$/i.test(url.hostname)) {
           url.hostname = 'xcancel.com';
           return url.toString();
         }
-
         // Wrapped redirect links (e.g. ?url=https://x.com/...).
         const redirectParams = ['url', 'u', 'to', 'target', 'dest', 'destination', 'redirect', 'redir', 'r'];
         for (const key of redirectParams) {
           const value = url.searchParams.get(key);
-          if (!value) { continue; }
+          if (!value) {
+            continue;
+          }
           const rewritten = Linkify.rewriteXURL(value);
           if (rewritten !== value) {
             url.searchParams.set(key, rewritten);
             return url.toString();
           }
         }
-      } catch {}
+      } catch { }
       return urlString;
     },
-
     rewriteYouTubeURL(urlString) {
-      if (!Conf['Convert YouTube to yewtu.be']) { return urlString; }
+      if (!Conf['Convert YouTube to yewtu.be']) {
+        return urlString;
+      }
       try {
         const base = (typeof location === 'object' && location?.href) ? location.href : undefined;
         const url = base ? new URL(urlString, base) : new URL(urlString);
-        if (!/^https?:$/.test(url.protocol)) { return urlString; }
-
+        if (!/^https?:$/.test(url.protocol)) {
+          return urlString;
+        }
         const isYouTube = /(?:^|\.)youtube\.com$/i.test(url.hostname)
           || /(?:^|\.)youtube-nocookie\.com$/i.test(url.hostname)
           || /^(?:www\.)?youtu\.be$/i.test(url.hostname);
-
         // Direct links.
         if (isYouTube) {
           if (/^(?:www\.)?youtu\.be$/i.test(url.hostname)) {
@@ -21322,22 +22417,22 @@ aero|asia|biz|cat|com|coop|dance|info|int|jobs|mobi|moe|museum|name|net|org|post
           url.hostname = 'yewtu.be';
           return url.toString();
         }
-
         // Wrapped redirect links (e.g. ?url=https://youtube.com/...).
         const redirectParams = ['url', 'u', 'to', 'target', 'dest', 'destination', 'redirect', 'redir', 'r'];
         for (const key of redirectParams) {
           const value = url.searchParams.get(key);
-          if (!value) { continue; }
+          if (!value) {
+            continue;
+          }
           const rewritten = Linkify.rewriteYouTubeURL(value);
           if (rewritten !== value) {
             url.searchParams.set(key, rewritten);
             return url.toString();
           }
         }
-      } catch {}
+      } catch { }
       return urlString;
     },
-
     rewriteURLs(urlString) {
       const rewrittenX = Linkify.rewriteXURL(urlString);
       return Linkify.rewriteYouTubeURL(rewrittenX);
@@ -23096,13 +24191,13 @@ aero|asia|biz|cat|com|coop|dance|info|int|jobs|mobi|moe|museum|name|net|org|post
 
   var Keybinds = {
     init() {
-      if (!Conf['Keybinds']) { return; }
-
+      if (!Conf['Keybinds']) {
+        return;
+      }
       for (var hotkey in Config.hotkeys) {
         $.sync(hotkey, Keybinds.sync);
       }
-
-      var init = function() {
+      var init = function () {
         $.off(d, '4chanXInitFinished', init);
         $.on(d, 'keydown', Keybinds.keydown);
         for (var node of $$('[accesskey]')) {
@@ -23111,18 +24206,20 @@ aero|asia|biz|cat|com|coop|dance|info|int|jobs|mobi|moe|museum|name|net|org|post
       };
       return $.on(d, '4chanXInitFinished', init);
     },
-
     sync(key, hotkey) {
       return Conf[hotkey] = key;
     },
-
     keydown(e) {
       let key, thread, threadRoot;
       let catalog, notifications;
-      if (!(key = Keybinds.keyCode(e))) { return; }
-      const {target} = e;
+      if (!(key = Keybinds.keyCode(e))) {
+        return;
+      }
+      const { target } = e;
       if (['INPUT', 'TEXTAREA'].includes(target.nodeName)) {
-        if (!/(Esc|Alt|Ctrl|Meta|Shift\+\w{2,})/.test(key) || !!/^Alt\+(\d|Up|Down|Left|Right)$/.test(key)) { return; }
+        if (!/(Esc|Alt|Ctrl|Meta|Shift\+\w{2,})/.test(key) || !!/^Alt\+(\d|Up|Down|Left|Right)$/.test(key)) {
+          return;
+        }
       }
       if (['index', 'thread'].includes(g.VIEW)) {
         threadRoot = Nav.getThread();
@@ -23215,24 +24312,26 @@ aero|asia|biz|cat|com|coop|dance|info|int|jobs|mobi|moe|museum|name|net|org|post
       if (key === Conf['Update']) {
         switch (g.VIEW) {
           case 'thread':
-            if (ThreadUpdater.enabled) ThreadUpdater.update();
+            if (ThreadUpdater.enabled)
+              ThreadUpdater.update();
             hasAction = true;
-          break;
+            break;
           case 'index':
-            if (Index.enabled) Index.update();
+            if (Index.enabled)
+              Index.update();
             hasAction = true;
         }
       }
-      if (key === Conf['Watch'] && ThreadWatcher$1.enabled && thread) {
-        ThreadWatcher$1.toggle(thread);
+      if (key === Conf['Watch'] && ThreadWatcher.enabled && thread) {
+        ThreadWatcher.toggle(thread);
         hasAction = true;
       }
-      if (key === Conf['Update thread watcher'] && ThreadWatcher$1.enabled) {
-        ThreadWatcher$1.buttonFetchAll();
+      if (key === Conf['Update thread watcher'] && ThreadWatcher.enabled) {
+        ThreadWatcher.buttonFetchAll();
         hasAction = true;
       }
-      if (key === Conf['Toggle thread watcher'] && ThreadWatcher$1.enabled) {
-        ThreadWatcher$1.toggleWatcher();
+      if (key === Conf['Toggle thread watcher'] && ThreadWatcher.enabled) {
+        ThreadWatcher.toggleWatcher();
         hasAction = true;
       }
       if (key === Conf['Toggle threading'] && QuoteThreading.ready) {
@@ -23286,7 +24385,9 @@ aero|asia|biz|cat|com|coop|dance|info|int|jobs|mobi|moe|museum|name|net|org|post
       }
       if (key === Conf['Next page'] && g.VIEW === 'index' && !g.SITE.isOnePage?.(g.BOARD)) {
         if (Index.enabled) {
-          if (!['paged', 'infinite'].includes(Conf['Index Mode'])) { return; }
+          if (!['paged', 'infinite'].includes(Conf['Index Mode'])) {
+            return;
+          }
           $('.next button', Index.pagelist).click();
         } else {
           $(g.SITE.selectors.nav.next)?.click();
@@ -23295,7 +24396,9 @@ aero|asia|biz|cat|com|coop|dance|info|int|jobs|mobi|moe|museum|name|net|org|post
       }
       if (key === Conf['Previous page'] && g.VIEW === 'index' && !g.SITE.isOnePage?.(g.BOARD)) {
         if (Index.enabled) {
-          if (!['paged', 'infinite'].includes(Conf['Index Mode'])) { return; }
+          if (!['paged', 'infinite'].includes(Conf['Index Mode'])) {
+            return;
+          }
           $('.prev button', Index.pagelist).click();
         } else {
           $(g.SITE.selectors.nav.prev)?.click();
@@ -23305,10 +24408,10 @@ aero|asia|biz|cat|com|coop|dance|info|int|jobs|mobi|moe|museum|name|net|org|post
       if (key === Conf['Search form'] && g.VIEW === 'index') {
         var searchInput = Index.enabled ?
           Index.searchInput
-        : g.SITE.selectors.searchBox ?
-          $(g.SITE.selectors.searchBox)
-        :
-          undefined;
+          : g.SITE.selectors.searchBox ?
+            $(g.SITE.selectors.searchBox)
+            :
+              undefined;
         if (searchInput) {
           Header.scrollToIfNeeded(searchInput);
           searchInput.focus();
@@ -23391,69 +24494,82 @@ aero|asia|biz|cat|com|coop|dance|info|int|jobs|mobi|moe|museum|name|net|org|post
         e.stopPropagation();
       }
     },
-
     keyCode(e) {
-      let key = (() => { let kc;
-      switch ((kc = e.keyCode)) {
-        case 8: // return
-          return '';
-        case 13:
-          return 'Enter';
-        case 27:
-          return 'Esc';
-        case 32:
-          return 'Space';
-        case 37:
-          return 'Left';
-        case 38:
-          return 'Up';
-        case 39:
-          return 'Right';
-        case 40:
-          return 'Down';
-        case 188:
-          return 'Comma';
-        case 190:
-          return 'Period';
-        case 191:
-          return 'Slash';
-        case 59: case 186:
-          return 'Semicolon';
-        default:
-          if ((48 <= kc && kc <= 57) || (65 <= kc && kc <= 90)) { // 0-9, A-Z
-            return String.fromCharCode(kc).toLowerCase();
-          } else if (96 <= kc && kc <= 105) { // numpad 0-9
-            return String.fromCharCode(kc - 48);
-          } else {
-            return null;
-          }
-      } })();
+      let key = (() => {
+        let kc;
+        switch ((kc = e.keyCode)) {
+          case 8: // return
+            return '';
+          case 13:
+            return 'Enter';
+          case 27:
+            return 'Esc';
+          case 32:
+            return 'Space';
+          case 37:
+            return 'Left';
+          case 38:
+            return 'Up';
+          case 39:
+            return 'Right';
+          case 40:
+            return 'Down';
+          case 188:
+            return 'Comma';
+          case 190:
+            return 'Period';
+          case 191:
+            return 'Slash';
+          case 59:
+          case 186:
+            return 'Semicolon';
+          default:
+            if ((48 <= kc && kc <= 57) || (65 <= kc && kc <= 90)) { // 0-9, A-Z
+              return String.fromCharCode(kc).toLowerCase();
+            } else if (96 <= kc && kc <= 105) { // numpad 0-9
+              return String.fromCharCode(kc - 48);
+            } else {
+              return null;
+            }
+        }
+      })();
       if (key) {
-        if (e.altKey) {   key = 'Alt+'   + key; }
-        if (e.ctrlKey) {  key = 'Ctrl+'  + key; }
-        if (e.metaKey) {  key = 'Meta+'  + key; }
-        if (e.shiftKey) { key = 'Shift+' + key; }
+        if (e.altKey) {
+          key = 'Alt+' + key;
+        }
+        if (e.ctrlKey) {
+          key = 'Ctrl+' + key;
+        }
+        if (e.metaKey) {
+          key = 'Meta+' + key;
+        }
+        if (e.shiftKey) {
+          key = 'Shift+' + key;
+        }
       }
       return key;
     },
-
     modifierString(e) {
       const parts = [];
-      if (e.altKey)   { parts.push('Alt'); }
-      if (e.ctrlKey)  { parts.push('Ctrl'); }
-      if (e.metaKey)  { parts.push('Meta'); }
-      if (e.shiftKey) { parts.push('Shift'); }
+      if (e.altKey) {
+        parts.push('Alt');
+      }
+      if (e.ctrlKey) {
+        parts.push('Ctrl');
+      }
+      if (e.metaKey) {
+        parts.push('Meta');
+      }
+      if (e.shiftKey) {
+        parts.push('Shift');
+      }
       return parts.join('+');
     },
-
     post(thread) {
       const s = g.SITE.selectors;
-      return (
-        $(`${s.postContainer}${s.highlightable.reply}.${g.SITE.classes.highlight}`, thread) ||
-        $(`${g.SITE.isOPContainerThread ? s.thread : s.postContainer}${s.highlightable.op}`, thread)
-      );
+      return ($(`${s.postContainer}${s.highlightable.reply}.${g.SITE.classes.highlight}`, thread) ||
+        $(`${g.SITE.isOPContainerThread ? s.thread : s.postContainer}${s.highlightable.op}`, thread));
     },
-
     qr(thread) {
       QR.open();
       if (thread != null) {
@@ -23461,47 +24577,45 @@ aero|asia|biz|cat|com|coop|dance|info|int|jobs|mobi|moe|museum|name|net|org|post
       }
       return QR.nodes.com.focus();
     },
-
     tags(tag, ta) {
-      BoardConfig.ready(function() {
-        const {config} = g.BOARD;
-        const supported = (() => { switch (tag) {
-          case 'spoiler':     return !!config.spoilers;
-          case 'code':        return !!config.code_tags;
-          case 'math': case 'eqn': return !!config.math_tags;
-          case 'sjis':        return !!config.sjis_tags;
-        } })();
-        if (!supported) { return new Notice('warning', `[${tag}] tags are not supported on /${g.BOARD}/.`, 20); }
+      BoardConfig.ready(function () {
+        const { config } = g.BOARD;
+        const supported = (() => {
+          switch (tag) {
+            case 'spoiler': return !!config.spoilers;
+            case 'code': return !!config.code_tags;
+            case 'math':
+            case 'eqn': return !!config.math_tags;
+            case 'sjis': return !!config.sjis_tags;
+          }
+        })();
+        if (!supported) {
+          return new Notice('warning', `[${tag}] tags are not supported on /${g.BOARD}/.`, 20);
+        }
       });
-
-      const {
-        value
-      } = ta;
+      const { value } = ta;
       const selStart = ta.selectionStart;
-      const selEnd   = ta.selectionEnd;
-
+      const selEnd = ta.selectionEnd;
       ta.value =
         value.slice(0, selStart) +
-        `[${tag}]` + value.slice(selStart, selEnd) + `[/${tag}]` +
-        value.slice(selEnd);
-
+          `[${tag}]` + value.slice(selStart, selEnd) + `[/${tag}]` +
+          value.slice(selEnd);
       // Move the caret to the end of the selection.
       const range = (`[${tag}]`).length + selEnd;
       ta.setSelectionRange(range, range);
-
       // Fire the 'input' event
       return $.event('input', null, ta);
     },
-
     sage() {
-      const isSage  = /sage/i.test(QR.nodes.email.value);
+      const isSage = /sage/i.test(QR.nodes.email.value);
       return QR.nodes.email.value = isSage ?
         ""
-      : "sage";
+        : "sage";
     },
-
     open(thread, tab) {
-      if (g.VIEW !== 'index') { return; }
+      if (g.VIEW !== 'index') {
+        return;
+      }
       const url = Get.url('thread', thread);
       if (tab) {
         return $.open(url);
@@ -23509,29 +24623,31 @@ aero|asia|biz|cat|com|coop|dance|info|int|jobs|mobi|moe|museum|name|net|org|post
         return location.href = url;
       }
     },
-
     hl(delta, thread) {
       const replySelector = `${g.SITE.selectors.postContainer}${g.SITE.selectors.highlightable.reply}`;
-      const {highlight} = g.SITE.classes;
-
+      const { highlight } = g.SITE.classes;
       const postEl = $(`${replySelector}.${highlight}`, thread);
-
       if (!delta) {
-        if (postEl) { $.rmClass(postEl, highlight); }
+        if (postEl) {
+          $.rmClass(postEl, highlight);
+        }
         return;
       }
-
       if (postEl) {
-        const {height} = postEl.getBoundingClientRect();
+        const { height } = postEl.getBoundingClientRect();
         if ((Header.getTopOf(postEl) >= -height) && (Header.getBottomOf(postEl) >= -height)) { // We're at least partially visible
           let next;
-          const {root} = Get.postFromNode(postEl).nodes;
+          const { root } = Get.postFromNode(postEl).nodes;
           const axis = delta === +1 ?
             'following'
-          :
-            'preceding';
-          if (!(next = $.x(`${axis}-sibling::${g.SITE.xpath.replyContainer}[not(@hidden) and not(child::div[@class='stub'])][1]`, root))) { return; }
-          if (!next.matches(replySelector)) { next = $(replySelector, next); }
+            :
+              'preceding';
+          if (!(next = $.x(`${axis}-sibling::${g.SITE.xpath.replyContainer}[not(@hidden) and not(child::div[@class='stub'])][1]`, root))) {
+            return;
+          }
+          if (!next.matches(replySelector)) {
+            next = $(replySelector, next);
+          }
           Header.scrollToIfNeeded(next, delta === +1);
           $.addClass(next, highlight);
           $.rmClass(postEl, highlight);
@@ -23539,9 +24655,10 @@ aero|asia|biz|cat|com|coop|dance|info|int|jobs|mobi|moe|museum|name|net|org|post
         }
         $.rmClass(postEl, highlight);
       }
-
       const replies = $$(replySelector, thread);
-      if (delta === -1) { replies.reverse(); }
+      if (delta === -1) {
+        replies.reverse();
+      }
       for (var reply of replies) {
         if (((delta === +1) && (Header.getTopOf(reply) > 0)) || ((delta === -1) && (Header.getBottomOf(reply) > 0))) {
           $.addClass(reply, highlight);
@@ -23561,29 +24678,19 @@ aero|asia|biz|cat|com|coop|dance|info|int|jobs|mobi|moe|museum|name|net|org|post
           return this.noCaptcha(e.detail);
         });
       },
-
       captchas: [],
-
       getCount() {
         return this.captchas.length;
       },
-
       neededRaw() {
-        return !(
-          this.haveCookie() || this.captchas.length || QR.req || this.submitCB
-        ) && (
-            (QR.posts.length > 1) || !QR.posts[0].isOnlyQuotes() || QR.posts[0].file
-          );
+        return !(this.haveCookie() || this.captchas.length || QR.req || this.submitCB) && ((QR.posts.length > 1) || !QR.posts[0].isOnlyQuotes() || QR.posts[0].file);
       },
-
       needed() {
         return this.neededRaw() && $.event('LoadCaptcha');
       },
-
       haveCookie() {
         return /\b_ct=/.test(d.cookie) && (QR.posts[0].thread !== 'new');
       },
-
       getOne() {
         let captcha;
         delete this.prerequested;
@@ -23595,17 +24702,17 @@ aero|asia|biz|cat|com|coop|dance|info|int|jobs|mobi|moe|museum|name|net|org|post
           return null;
         }
       },
-
       request(isReply) {
         if (!this.submitCB) {
-          if ($.event('RequestCaptcha', { isReply })) { return; }
+          if ($.event('RequestCaptcha', { isReply })) {
+            return;
+          }
         }
         return cb => {
           this.submitCB = cb;
           return this.updateCount();
         };
       },
-
       abort() {
         if (this.submitCB) {
           delete this.submitCB;
@@ -23613,7 +24720,6 @@ aero|asia|biz|cat|com|coop|dance|info|int|jobs|mobi|moe|museum|name|net|org|post
           return this.updateCount();
         }
       },
-
       saveAPI(captcha) {
         let cb;
         if (cb = this.submitCB) {
@@ -23624,7 +24730,6 @@ aero|asia|biz|cat|com|coop|dance|info|int|jobs|mobi|moe|museum|name|net|org|post
           return this.save(captcha);
         }
       },
-
       noCaptcha(detail) {
         let cb;
         if (cb = this.submitCB) {
@@ -23637,7 +24742,6 @@ aero|asia|biz|cat|com|coop|dance|info|int|jobs|mobi|moe|museum|name|net|org|post
           return this.updateCount();
         }
       },
-
       save(captcha) {
         let cb;
         if (cb = this.submitCB) {
@@ -23649,14 +24753,15 @@ aero|asia|biz|cat|com|coop|dance|info|int|jobs|mobi|moe|museum|name|net|org|post
         this.captchas.sort((a, b) => a.timeout - b.timeout);
         return this.count();
       },
-
       clear() {
         if (this.captchas.length) {
           let i;
           const now = Date.now();
           for (i = 0; i < this.captchas.length; i++) {
             var captcha = this.captchas[i];
-            if (captcha.timeout > now) { break; }
+            if (captcha.timeout > now) {
+              break;
+            }
           }
           if (i) {
             this.captchas = this.captchas.slice(i);
@@ -23664,7 +24769,6 @@ aero|asia|biz|cat|com|coop|dance|info|int|jobs|mobi|moe|museum|name|net|org|post
           }
         }
       },
-
       count() {
         clearTimeout(this.timer);
         if (this.captchas.length) {
@@ -23672,7 +24776,6 @@ aero|asia|biz|cat|com|coop|dance|info|int|jobs|mobi|moe|museum|name|net|org|post
         }
         return this.updateCount();
       },
-
       updateCount() {
         return $.event('CaptchaCount', this.captchas.length);
       }
@@ -23681,33 +24784,35 @@ aero|asia|biz|cat|com|coop|dance|info|int|jobs|mobi|moe|museum|name|net|org|post
     t: CaptchaT,
     v2: {
       lifetime: 2 * MINUTE,
-
       init() {
-        if (d.cookie.indexOf('pass_enabled=1') >= 0) { return; }
-        if (!(this.isEnabled = !!$('#g-recaptcha, #captcha-forced-noscript') || !$.id('postForm'))) { return; }
-
+        if (d.cookie.indexOf('pass_enabled=1') >= 0) {
+          return;
+        }
+        if (!(this.isEnabled = !!$('#g-recaptcha, #captcha-forced-noscript') || !$.id('postForm'))) {
+          return;
+        }
         if (this.noscript = Conf['Force Noscript Captcha'] || !Main.jsEnabled) {
           $.addClass(QR.nodes.el, 'noscript-captcha');
         }
-
         Captcha.cache.init();
         $.on(d, 'CaptchaCount', this.count.bind(this));
-
         const root = $.el('div', { className: 'captcha-root' });
         $.extend(root, {
-          innerHTML:
-            '<div class="captcha-counter"><a href="javascript:;"></a></div>'
-        }
-        );
+          innerHTML: '<div class="captcha-counter"><a href="javascript:;"></a></div>'
+        });
         const counter = $('.captcha-counter > a', root);
         this.nodes = { root, counter };
         this.count();
         $.addClass(QR.nodes.el, 'has-captcha', 'captcha-v2');
         $.after(QR.nodes.com.parentNode, root);
-
         $.on(counter, 'click', this.toggle.bind(this));
         $.on(counter, 'keydown', e => {
-          if (Keybinds.keyCode(e) !== 'Space') { return; }
+          if (Keybinds.keyCode(e) !== 'Space') {
+            return;
+          }
+          if (e.shiftKey) {
+            return;
+          }
           this.toggle();
           e.preventDefault();
           return e.stopPropagation();
@@ -23717,10 +24822,8 @@ aero|asia|biz|cat|com|coop|dance|info|int|jobs|mobi|moe|museum|name|net|org|post
           return $.queueTask(() => this.save(false));
         });
       },
-
       timeouts: {},
       prevNeeded: 0,
-
       noscriptURL() {
         let lang;
         let url = `https://www.google.com/recaptcha/api/fallback?k=${meta.recaptchaKey}`;
@@ -23729,7 +24832,6 @@ aero|asia|biz|cat|com|coop|dance|info|int|jobs|mobi|moe|museum|name|net|org|post
         }
         return url;
       },
-
       moreNeeded() {
         // Post count temporarily off by 1 when called from QR.post.rm, QR.close, or QR.submit
         return $.queueTask(() => {
@@ -23740,7 +24842,6 @@ aero|asia|biz|cat|com|coop|dance|info|int|jobs|mobi|moe|museum|name|net|org|post
           return this.prevNeeded = needed;
         });
       },
-
       toggle() {
         if (this.nodes.container && !this.timeouts.destroy) {
           return this.destroy();
@@ -23748,21 +24849,19 @@ aero|asia|biz|cat|com|coop|dance|info|int|jobs|mobi|moe|museum|name|net|org|post
           return this.setup(true, true);
         }
       },
-
       setup(focus, force) {
-        if (!this.isEnabled || (!Captcha.cache.needed() && !force)) { return; }
-
+        if (!this.isEnabled || (!Captcha.cache.needed() && !force)) {
+          return;
+        }
         if (focus) {
           $.addClass(QR.nodes.el, 'focus');
           this.nodes.counter.focus();
         }
-
         if (this.timeouts.destroy) {
           clearTimeout(this.timeouts.destroy);
           delete this.timeouts.destroy;
           return this.reload();
         }
-
         if (this.nodes.container) {
           // XXX https://bugzilla.mozilla.org/show_bug.cgi?id=1226835
           $.queueTask(() => {
@@ -23774,40 +24873,36 @@ aero|asia|biz|cat|com|coop|dance|info|int|jobs|mobi|moe|museum|name|net|org|post
           }); // Event handler not fired in Firefox
           return;
         }
-
         this.nodes.container = $.el('div', { className: 'captcha-container' });
         $.prepend(this.nodes.root, this.nodes.container);
         new MutationObserver(this.afterSetup.bind(this)).observe(this.nodes.container, {
           childList: true,
           subtree: true
-        }
-        );
-
+        });
         if (this.noscript) {
           return this.setupNoscript();
         } else {
           return this.setupJS();
         }
       },
-
       setupNoscript() {
         const iframe = $.el('iframe', {
           id: 'qr-captcha-iframe',
           scrolling: 'no',
           src: this.noscriptURL()
-        }
-        );
+        });
         const div = $.el('div');
         const textarea = $.el('textarea');
         $.add(div, textarea);
         return $.add(this.nodes.container, [iframe, div]);
       },
-
       setupJS() {
         const render = () => {
           const { classList } = document.documentElement;
           const container = $('#qr .captcha-container');
-          if (!container) { return; }
+          if (!container) {
+            return;
+          }
           container.dataset.widgetID = window.grecaptcha.render(container, {
             sitekey: meta.recaptchaKey,
             theme: classList.contains('tomorrow') || classList.contains('spooky') || classList.contains('dark-captcha') ? 'dark' : 'light',
@@ -23818,7 +24913,7 @@ aero|asia|biz|cat|com|coop|dance|info|int|jobs|mobi|moe|museum|name|net|org|post
           render();
         } else {
           const cbNative = window.onRecaptchaLoaded;
-          window.onRecaptchaLoaded = function() {
+          window.onRecaptchaLoaded = function () {
             render();
             cbNative?.();
           };
@@ -23829,44 +24924,49 @@ aero|asia|biz|cat|com|coop|dance|info|int|jobs|mobi|moe|museum|name|net|org|post
           }
         }
       },
-
       afterSetup(mutations) {
         for (var mutation of mutations) {
           for (var node of mutation.addedNodes) {
             var iframe, textarea;
-            if (iframe = $.x('./descendant-or-self::iframe[starts-with(@src, "https://www.google.com/recaptcha/")]', node)) { this.setupIFrame(iframe); }
-            if (textarea = $.x('./descendant-or-self::textarea', node)) { this.setupTextArea(textarea); }
+            if (iframe = $.x('./descendant-or-self::iframe[starts-with(@src, "https://www.google.com/recaptcha/")]', node)) {
+              this.setupIFrame(iframe);
+            }
+            if (textarea = $.x('./descendant-or-self::textarea', node)) {
+              this.setupTextArea(textarea);
+            }
           }
         }
       },
-
       setupIFrame(iframe) {
         let needle;
-        if (!doc.contains(iframe)) { return; }
+        if (!doc.contains(iframe)) {
+          return;
+        }
         Captcha.replace.iframe(iframe);
         $.addClass(QR.nodes.el, 'captcha-open');
         this.fixQRPosition();
         $.on(iframe, 'load', this.fixQRPosition);
-        if (d.activeElement === this.nodes.counter) { iframe.focus(); }
+        if (d.activeElement === this.nodes.counter) {
+          iframe.focus();
+        }
         // XXX Make sure scroll on space prevention (see src/css/style.css) doesn't cause scrolling of div
         if (['blink', 'edge'].includes($.engine) && (needle = iframe.parentNode, $$('#qr .captcha-container > div > div:first-of-type').includes(needle))) {
           return $.on(iframe.parentNode, 'scroll', function () { return this.scrollTop = 0; });
         }
       },
-
       fixQRPosition() {
         if (QR.nodes.el.getBoundingClientRect().bottom > doc.clientHeight) {
           QR.nodes.el.style.top = '';
           return QR.nodes.el.style.bottom = '0px';
         }
       },
-
       setupTextArea(textarea) {
         return $.one(textarea, 'input', () => this.save(true));
       },
-
       destroy() {
-        if (!this.isEnabled) { return; }
+        if (!this.isEnabled) {
+          return;
+        }
         delete this.timeouts.destroy;
         $.rmClass(QR.nodes.el, 'captcha-open');
         if (this.nodes.container) {
@@ -23875,17 +24975,14 @@ aero|asia|biz|cat|com|coop|dance|info|int|jobs|mobi|moe|museum|name|net|org|post
           return delete this.nodes.container;
         }
       },
-
       getOne(isReply) {
         return Captcha.cache.getOne(isReply);
       },
-
       save(pasted, token) {
         Captcha.cache.save({
           response: token || $('textarea', this.nodes.container).value,
           timeout: Date.now() + this.lifetime
         });
-
         const focus = (d.activeElement?.nodeName === 'IFRAME') && /https?:\/\/www\.google\.com\/recaptcha\//.test(d.activeElement.src);
         if (Captcha.cache.needed()) {
           if (focus) {
@@ -23900,24 +24997,27 @@ aero|asia|biz|cat|com|coop|dance|info|int|jobs|mobi|moe|museum|name|net|org|post
           if (pasted) {
             this.destroy();
           } else {
-            if (this.timeouts.destroy == null) { this.timeouts.destroy = setTimeout(this.destroy.bind(this), 3 * SECOND); }
+            if (this.timeouts.destroy == null) {
+              this.timeouts.destroy = setTimeout(this.destroy.bind(this), 3 * SECOND);
+            }
           }
-          if (focus) { QR.nodes.status.focus(); }
+          if (focus) {
+            QR.nodes.status.focus();
+          }
         }
-
-        if (Conf['Post on Captcha Completion'] && !QR.cooldown.auto) { return QR.submit(); }
+        if (Conf['Post on Captcha Completion'] && !QR.cooldown.auto) {
+          return QR.submit();
+        }
       },
-
       count() {
         const count = Captcha.cache.getCount();
         const loading = Captcha.cache.submitCB ? '...' : '';
         this.nodes.counter.textContent = count || loading ?
           `Captchas: ${count}${loading}`
-        :
-          'Get Captcha';
+          :
+            'Get Captcha';
         return this.moreNeeded();
       },
-
       reload() {
         if ($('iframe[src^="https://www.google.com/recaptcha/api/fallback?"]', this.nodes.container)) {
           this.destroy();
@@ -23929,7 +25029,6 @@ aero|asia|biz|cat|com|coop|dance|info|int|jobs|mobi|moe|museum|name|net|org|post
           }
         }
       },
-
       occupied() {
         return !!this.nodes.container && !this.timeouts.destroy;
       }
@@ -24138,6 +25237,125 @@ aero|asia|biz|cat|com|coop|dance|info|int|jobs|mobi|moe|museum|name|net|org|post
     }
   }
 
+  // IndexedDB-backed blob store for Quick Reply draft attachments.
+  //
+  // The regular $.set/$.get storage layer (GM/localStorage/chrome.storage) is
+  // JSON-only and cannot hold File/Blob data, so draft files (images/videos)
+  // live here instead, referenced by an id from the JSON draft. IndexedDB stores
+  // File/Blob objects natively (no base64 bloat) and has a large per-origin quota.
+  //
+  // Every method FAILS SOFT: on any error (no IndexedDB, blocked, quota, etc.) it
+  // resolves to a harmless value so draft text still works and posting is never
+  // blocked.
+  const DB_NAME = 'fourchanXT';
+  const STORE = 'qrDraftFiles';
+  const VERSION = 1;
+  let dbPromise = null;
+  function openDB() {
+    if (dbPromise) {
+      return dbPromise;
+    }
+    dbPromise = new Promise(resolve => {
+      try {
+        if (typeof indexedDB === 'undefined') {
+          resolve(null);
+          return;
+        }
+        const req = indexedDB.open(DB_NAME, VERSION);
+        req.onupgradeneeded = () => {
+          const db = req.result;
+          if (!db.objectStoreNames.contains(STORE)) {
+            db.createObjectStore(STORE);
+          }
+        };
+        req.onsuccess = () => resolve(req.result);
+        req.onerror = () => resolve(null);
+        req.onblocked = () => resolve(null);
+      } catch {
+        resolve(null);
+      }
+    });
+    return dbPromise;
+  }
+  function store(db, mode) {
+    return db.transaction(STORE, mode).objectStore(STORE);
+  }
+  const QRFileStore = {
+    // Save a blob under `id`. Resolves true on success, false on any failure.
+    async put(id, blob) {
+      const db = await openDB();
+      if (!db) {
+        return false;
+      }
+      return new Promise(resolve => {
+        try {
+          const req = store(db, 'readwrite').put(blob, id);
+          req.onsuccess = () => resolve(true);
+          req.onerror = () => resolve(false);
+        } catch {
+          resolve(false);
+        }
+      });
+    },
+    // Fetch the blob stored under `id`, or undefined if missing/unavailable.
+    async get(id) {
+      const db = await openDB();
+      if (!db) {
+        return undefined;
+      }
+      return new Promise(resolve => {
+        try {
+          const req = store(db, 'readonly').get(id);
+          req.onsuccess = () => resolve(req.result);
+          req.onerror = () => resolve(undefined);
+        } catch {
+          resolve(undefined);
+        }
+      });
+    },
+    // Delete one or more ids. Always resolves.
+    async delete(ids) {
+      const list = Array.isArray(ids) ? ids : [ids];
+      if (!list.length) {
+        return;
+      }
+      const db = await openDB();
+      if (!db) {
+        return;
+      }
+      return new Promise(resolve => {
+        try {
+          const os = store(db, 'readwrite');
+          for (const id of list) {
+            os.delete(id);
+          }
+          os.transaction.oncomplete = () => resolve();
+          os.transaction.onerror = () => resolve();
+          os.transaction.onabort = () => resolve();
+        } catch {
+          resolve();
+        }
+      });
+    },
+    // All stored keys (cheap — does not read blob payloads). Used for orphan
+    // cleanup by board-key prefix.
+    async keys() {
+      const db = await openDB();
+      if (!db) {
+        return [];
+      }
+      return new Promise(resolve => {
+        try {
+          const req = store(db, 'readonly').getAllKeys();
+          req.onsuccess = () => resolve((req.result || []).map(String));
+          req.onerror = () => resolve([]);
+        } catch {
+          resolve([]);
+        }
+      });
+    },
+  };
+
   var QR = {
     postingIsEnabled: false,
     // will be set at init
@@ -24276,6 +25494,18 @@ aero|asia|biz|cat|com|coop|dance|info|int|jobs|mobi|moe|museum|name|net|org|post
         });
         $.before(origToggle, link);
         origToggle.firstElementChild.textContent = 'Original Form';
+        // The native post form is collapsed by default everywhere except the board
+        // index, where 4chan shows it expanded at the top. Hide it there too so it
+        // behaves like the other views; the "Original Form" toggle expands it on
+        // demand. We own the visibility via a class (CSS uses !important to beat
+        // 4chan core's inline display toggle) so the toggle stays in sync.
+        if (Conf['Hide Original Post Form'] && g.VIEW === 'index') {
+          $.addClass(doc, 'hide-original-post-form');
+          $.on(origToggle.firstElementChild, 'click', function () {
+            const shown = $.toggleClass(doc, 'show-original-post-form');
+            this.textContent = shown ? 'Hide Original Form' : 'Original Form';
+          });
+        }
       }
       if (g.VIEW === 'thread') {
         let navLinksBot;
@@ -24426,8 +25656,8 @@ aero|asia|biz|cat|com|coop|dance|info|int|jobs|mobi|moe|museum|name|net|org|post
         return QR.texPreviewHide();
       }
       $.addClass(QR.nodes.el, 'tex-preview');
-      QR.nodes.texPreview.textContent = QR.nodes.com.value;
-      return $.event('mathjax', null, QR.nodes.texPreview);
+      QR.nodes.texPreview.innerHTML = QR.renderComPreview(QR.nodes.com.value);
+      return QR.typesetMathjax(QR.nodes.texPreview);
     },
     texPreviewHide() {
       return $.rmClass(QR.nodes.el, 'tex-preview');
@@ -24435,7 +25665,32 @@ aero|asia|biz|cat|com|coop|dance|info|int|jobs|mobi|moe|museum|name|net|org|post
     updateComPreview() {
       if (!QR.nodes?.comPreview)
         return;
+      QR.updateComPreviewQuoteColor();
       QR.nodes.comPreview.innerHTML = QR.renderComPreview(QR.nodes.com.value);
+      if (g.BOARD.config.math_tags && /\[(math|eqn)\]/.test(QR.nodes.com.value)) {
+        QR.typesetMathjax(QR.nodes.comPreview);
+      }
+    },
+    typesetMathjax(node) {
+      if (!node.id)
+        return;
+      $.global('typesetMathjax', { id: node.id });
+    },
+    updateComPreviewQuoteColor() {
+      if (!QR.nodes?.comPreview)
+        return;
+      const sample = $.el('blockquote', {
+        className: 'postMessage',
+        innerHTML: '<span class="quote">&gt;quote</span>'
+      });
+      sample.style.cssText = 'position:absolute;visibility:hidden;pointer-events:none;left:-9999px;top:-9999px;';
+      $.add(d.body, sample);
+      const quote = $('.quote', sample);
+      const color = quote ? getComputedStyle(quote).color : '';
+      $.rm(sample);
+      if (color) {
+        QR.nodes.comPreview.style.setProperty('--xt-qr-com-preview-quote-color', color);
+      }
     },
     applyCommentPreviewSettings() {
       if (!QR.nodes?.el || !QR.nodes?.com)
@@ -24465,8 +25720,8 @@ aero|asia|biz|cat|com|coop|dance|info|int|jobs|mobi|moe|museum|name|net|org|post
     comPreviewTagWraps: {
       spoiler: { wrap: (i) => `<s>${i}</s>`, format: true },
       code: { wrap: (i) => `<pre class="prettyprint">${i}</pre>`, format: false },
-      math: { wrap: (i) => `<span class="math">[math]${i}[/math]</span>`, format: false },
-      eqn: { wrap: (i) => `<span class="math">[eqn]${i}[/eqn]</span>`, format: false },
+      math: { wrap: (i, fallback = i) => `<span class="qr-math-fallback">[math]${fallback}[/math]</span><script type="math/tex">${i}</script>`, format: false, raw: true },
+      eqn: { wrap: (i, fallback = i) => `<span class="qr-math-fallback">[eqn]${fallback}[/eqn]</span><script type="math/tex; mode=display">${i}</script>`, format: false, raw: true },
       sjis: { wrap: (i) => `<span class="sjis">${i}</span>`, format: true },
       b: { wrap: (i) => `<b>${i}</b>`, format: true },
       i: { wrap: (i) => `<span class="mu-i">${i}</span>`, format: true },
@@ -24503,18 +25758,50 @@ aero|asia|biz|cat|com|coop|dance|info|int|jobs|mobi|moe|museum|name|net|org|post
       while ((m = tagRe.exec(text))) {
         html += QR.formatComPreviewText(text.slice(last, m.index));
         const tag = QR.comPreviewTagWraps[m[1]];
-        const inner = tag.format ? QR.formatComPreviewText(m[2]) : E(m[2]);
-        html += tag.wrap(inner);
+        const inner = tag.raw ? QR.escapeMathJaxScript(m[2]) : tag.format ? QR.formatComPreviewText(m[2]) : E(m[2]);
+        const fallback = tag.raw ? E(m[2]) : undefined;
+        html += tag.wrap(inner, fallback);
         last = m.index + m[0].length;
       }
       html += QR.formatComPreviewText(text.slice(last));
       return html;
     },
+    escapeMathJaxScript(text) {
+      return text.replace(/<\/script/gi, '<\\/script');
+    },
     formatComPreviewText(text) {
       const escaped = E(text);
-      // Treat >>NNN and >>>/board/NNN as quotelinks (greentext detection skips these).
-      const withQuotes = escaped.replace(/&gt;&gt;(?:&gt;\/[a-z\d]+\/)?\d+/g, m => `<a class="quotelink" href="javascript:;">${m}</a>`);
-      return withQuotes.split('\n').map(line => /^&gt;(?!&gt;)/.test(line) ? `<span class="quote">${line}</span>` : line).join('\n');
+      // Treat >>NNN, >>>/board/NNN, and >>>/board/ as 4chan quote/board links.
+      const withQuotes = escaped.replace(/&gt;&gt;(?:\d+|&gt;\/[a-z\d]+\/(?:\d+)?)(?=$|[\s<.,!?;:)])/g, m => QR.renderComPreviewQuoteLink(m));
+      const withLinks = withQuotes.replace(/(^|[\s(])((?:https?:\/\/|www\.)[^\s<>"']+)/g, (m, prefix, url) => `${prefix}${QR.renderComPreviewLink(url)}`);
+      return withLinks.split('\n').map(line => {
+        const quotePrefix = line.match(/^(&gt;)+(?!&gt;\/[a-z\d]+\/\d+)/)?.[0];
+        return quotePrefix ? `<span class="quote">${line}</span>` : line;
+      }).join('\n');
+    },
+    renderComPreviewQuoteLink(text) {
+      const match = text.match(/^&gt;&gt;(?:(\d+)|&gt;\/([a-z\d]+)\/(\d+)?)$/);
+      if (!match)
+        return text;
+      const boardID = match[2] || g.BOARD.ID;
+      const postID = match[1] || match[3];
+      if (!postID) {
+        const href = Get.url('index', { siteID: g.BOARD.siteID, boardID }) || `/${boardID}/`;
+        return `<a class="quotelink" href="${E(href)}">${text}</a>`;
+      }
+      const currentThread = `${g.THREADID || g.threadID || ''}`;
+      const threadID = boardID === g.BOARD.ID ? (currentThread || postID) : postID;
+      const hash = g.SITE.software === 'yotsuba' ? `#p${postID}` : `#${postID}`;
+      const href = boardID === g.BOARD.ID && postID === currentThread
+        ? hash
+        : `${Get.url('thread', { siteID: g.BOARD.siteID, boardID, threadID }) || `/${boardID}/thread/${threadID}`}${hash}`;
+      return `<a class="quotelink" href="${E(href)}">${text}</a>`;
+    },
+    renderComPreviewLink(text) {
+      const trail = text.match(/[.,!?;:)]+$/)?.[0] || '';
+      const body = trail ? text.slice(0, -trail.length) : text;
+      const href = /^https?:\/\//i.test(body) ? body : `https://${body}`;
+      return `<a class="linkify" href="${E(href)}" target="_blank" rel="nofollow noopener">${body}</a>${trail}`;
     },
     addPost() {
       const wasOpen = (QR.nodes && !QR.nodes.el.hidden);
@@ -25049,6 +26336,7 @@ aero|asia|biz|cat|com|coop|dance|info|int|jobs|mobi|moe|museum|name|net|org|post
       setNode('move', '.move');
       setNode('autohide', '#autohide');
       setNode('previewToggle', '#qr-preview-toggle');
+      setNode('clearDraft', '.qr-clear-draft');
       setNode('close', '.close');
       setNode('thread', 'select');
       setNode('form', 'form');
@@ -25168,7 +26456,7 @@ aero|asia|biz|cat|com|coop|dance|info|int|jobs|mobi|moe|museum|name|net|org|post
       // save selected post's data
       const items = ['thread', 'name', 'email', 'sub', 'com', 'filename', 'flag'];
       let i = 0;
-      const save = function () { QR.selected.save(this); };
+      const save = function () { QR.selected.save(this); QR.drafts.save(); };
       while ((name = items[i++])) {
         var node;
         if (!(node = nodes[name])) {
@@ -25177,6 +26465,12 @@ aero|asia|biz|cat|com|coop|dance|info|int|jobs|mobi|moe|museum|name|net|org|post
         event = node.nodeName === 'SELECT' ? 'change' : 'input';
         $.on(nodes[name], event, save);
       }
+      $.on(nodes.clearDraft, 'click', QR.drafts.discard);
+      nodes.clearDraft.hidden = !Conf['Remember QR State'];
+      // React when the draft feature is toggled (same tab via the settings event,
+      // other tabs via storage sync): turning it off wipes saved drafts + files.
+      $.on(d, 'QRStateChanged', QR.drafts.onSettingChanged);
+      $.sync('Remember QR State', QR.drafts.onSettingChanged);
       if (Conf['Remember QR Size']) {
         $.get('QR Size', '', item => nodes.com.style.cssText = item['QR Size']);
         $.on(nodes.com, 'mouseup', function (e) {
@@ -25189,6 +26483,7 @@ aero|asia|biz|cat|com|coop|dance|info|int|jobs|mobi|moe|museum|name|net|org|post
       QR.generatePostableThreadsList();
       QR.persona.load();
       new QR.post(true);
+      QR.drafts.restore();
       QR.status();
       QR.cooldown.setup();
       QR.captcha.init();
@@ -25728,6 +27023,9 @@ aero|asia|biz|cat|com|coop|dance|info|int|jobs|mobi|moe|museum|name|net|org|post
       } else {
         QR.close();
       }
+      // Re-persist the remaining drafts (the posted one was removed above; if
+      // nothing's left this clears the board's saved draft).
+      QR.drafts.flush();
       QR.cleanNotifications();
       if (Conf['Posting Success Notifications']) {
         QR.notifications.push(new Notice('success', h1.textContent, 5));
@@ -26405,6 +27703,302 @@ aero|asia|biz|cat|com|coop|dance|info|int|jobs|mobi|moe|museum|name|net|org|post
         }
       }
     },
+    // Auto-saved per-board draft of what's typed in the QR, so it survives a
+    // refresh/close/crash. Typed text + per-post state (subject, spoiler, flag,
+    // thread) are stored under `QR.drafts` as { '<siteID>/<boardID>': { posts } }.
+    // Attachments (images/videos) are stored separately in IndexedDB via
+    // QRFileStore (the JSON layer can't hold blobs) and referenced by id; the
+    // total kept per board is capped at FILE_CAP.
+    drafts: {
+      timeout: undefined,
+      // Cap on total attachment bytes persisted per board. Files past the cap
+      // (largest first) are not saved; the user is warned once.
+      FILE_CAP: 100 * 1024 * 1024,
+      _warnedCap: false,
+      // Set while discard() tears the QR down, so the post/file removals it
+      // triggers don't re-persist a draft we're deleting.
+      _suspended: false,
+      key() {
+        return `${g.SITE.ID}/${g.BOARD.ID}`;
+      },
+      // File-store ids start with the board key + a space so they can be
+      // enumerated/cleaned per board (site/board ids contain no spaces).
+      filePrefix() {
+        return `${QR.drafts.key()} `;
+      },
+      genId() {
+        return `${QR.drafts.filePrefix()}${Date.now().toString(36)}${Math.random().toString(36).slice(2, 8)}`;
+      },
+      threadValid(thread) {
+        if (thread == null || thread === 'new') {
+          return true;
+        }
+        return $$('option', QR.nodes.thread).some(o => o.value === `${thread}`);
+      },
+      // Debounced text/state auto-save while typing.
+      save() {
+        if (!Conf['Remember QR State'] || QR.drafts._suspended) {
+          return;
+        }
+        clearTimeout(QR.drafts.timeout);
+        QR.drafts.timeout = setTimeout(QR.drafts.flush, 500);
+      },
+      // Serialize the current posts' text + state for this board. Posts with
+      // nothing worth keeping (no text and no file) are dropped; if nothing's
+      // left, the board's saved draft is removed.
+      flush() {
+        clearTimeout(QR.drafts.timeout);
+        if (!Conf['Remember QR State'] || !QR.nodes || QR.drafts._suspended) {
+          return;
+        }
+        QR.selected?.forceSave();
+        const posts = QR.posts
+          .map(post => ({
+          thread: post.thread,
+          sub: post.sub || null,
+          com: post.com || null,
+          spoiler: post.spoiler ? true : undefined,
+          flag: post.flag || undefined,
+          file: (post.file && post._draftFileId)
+            ? { id: post._draftFileId, filename: post.filename || null, originalName: post.originalName || null }
+            : undefined,
+        }))
+          .filter(post => post.com || post.sub || post.file);
+        $.get('QR.drafts', dict(), ({ 'QR.drafts': all }) => {
+          const key = QR.drafts.key();
+          if (posts.length) {
+            all[key] = { posts };
+          } else {
+            delete all[key];
+          }
+          $.set('QR.drafts', all, QR.drafts.updateButton);
+          // Drop any stored attachments no longer referenced (removed/posted
+          // posts, cleared files). Fails soft.
+          QR.drafts.cleanupOrphanFiles(posts.map(p => p.file?.id).filter(Boolean));
+        });
+      },
+      // Persist current attachments to IndexedDB (only newly added ones are
+      // written), enforce the per-board size cap, then flush the JSON refs.
+      // Called when a file is added/removed; safe to call any time.
+      async persistFiles() {
+        if (!Conf['Remember QR State'] || !QR.nodes || QR.drafts._suspended) {
+          return;
+        }
+        try {
+          const withFiles = QR.posts.filter(p => p.file);
+          // Keep smallest-first up to the cap, i.e. skip the largest over it.
+          const keep = new Set();
+          let total = 0;
+          let skipped = 0;
+          for (const p of withFiles.slice().sort((a, b) => a.file.size - b.file.size)) {
+            if (total + p.file.size <= QR.drafts.FILE_CAP) {
+              total += p.file.size;
+              keep.add(p);
+            } else {
+              skipped++;
+            }
+          }
+          for (const p of withFiles) {
+            if (keep.has(p)) {
+              if (!p._draftFileId) {
+                const id = QR.drafts.genId();
+                if (await QRFileStore.put(id, p.file)) {
+                  p._draftFileId = id;
+                }
+              }
+            } else if (p._draftFileId) {
+              // Over the cap now — drop any previously stored copy.
+              await QRFileStore.delete(p._draftFileId);
+              delete p._draftFileId;
+            }
+          }
+          if (skipped && !QR.drafts._warnedCap) {
+            QR.drafts._warnedCap = true;
+            new Notice('warning', `Draft attachments over ~${Math.round(QR.drafts.FILE_CAP / 1048576)} MB total aren't saved for this board; ${skipped} file(s) skipped.`, 6);
+          }
+        } catch (err) {
+          console.error('QR draft persistFiles failed', err);
+        }
+        QR.drafts.flush();
+      },
+      // Delete stored attachments for this board whose ids aren't in `keep`.
+      async cleanupOrphanFiles(keep) {
+        try {
+          const prefix = QR.drafts.filePrefix();
+          const referenced = new Set(keep);
+          const orphans = (await QRFileStore.keys()).filter(k => k.startsWith(prefix) && !referenced.has(k));
+          if (orphans.length) {
+            await QRFileStore.delete(orphans);
+          }
+        } catch (err) {
+          console.error('QR draft cleanupOrphanFiles failed', err);
+        }
+      },
+      // Restore this board's saved draft into an empty Quick Reply.
+      restore() {
+        if (!Conf['Remember QR State'] || !QR.nodes) {
+          return;
+        }
+        $.get('QR.drafts', dict(), ({ 'QR.drafts': all }) => {
+          QR.drafts.updateButton();
+          const data = all?.[QR.drafts.key()];
+          if (!data?.posts?.length || !QR.nodes) {
+            return;
+          }
+          // Never clobber something the user has already started typing/attached.
+          if (QR.posts.some(post => post.com || post.sub || post.file)) {
+            return;
+          }
+          for (let i = 0; i < data.posts.length; i++) {
+            const draft = data.posts[i];
+            const post = i === 0 ? QR.posts[0] : new QR.post();
+            if (!post) {
+              continue;
+            }
+            if (QR.drafts.threadValid(draft.thread)) {
+              post.thread = draft.thread;
+            }
+            post.sub = draft.sub || null;
+            post.setComment(draft.com || '');
+            if (draft.spoiler) {
+              post.spoiler = true;
+              if (post.nodes?.spoiler) {
+                post.nodes.spoiler.checked = true;
+              }
+            }
+            if (draft.flag) {
+              post.flag = draft.flag;
+            }
+            if (draft.file?.id) {
+              QR.drafts.restoreFile(post, draft.file);
+            }
+          }
+          // Expand the dump list when there are attachments or multiple queued
+          // posts, so it's obvious the restored files/posts are there.
+          if (data.posts.length > 1 || data.posts.some(p => p.file?.id)) {
+            $.addClass(QR.nodes.el, 'dump');
+          }
+          QR.selected?.load();
+        });
+      },
+      // Pull a stored attachment back out of IndexedDB and re-attach it to `post`
+      // via the normal file pipeline (regenerating its thumbnail). Fails soft.
+      async restoreFile(post, ref) {
+        try {
+          const blob = await QRFileStore.get(ref.id);
+          if (!blob || !QR.posts.includes(post)) {
+            return;
+          }
+          const name = ref.originalName || ref.filename || blob.name || 'file';
+          const file = new File([blob], name, { type: blob.type, lastModified: blob.lastModified || Date.now() });
+          await post.setFile(file, { restore: true, id: ref.id, filename: ref.filename, originalName: ref.originalName });
+        } catch (err) {
+          console.error('QR draft restoreFile failed', err);
+        }
+      },
+      // Discard the saved draft for this board AND empty the live Quick Reply:
+      // every queued post and its attachment is removed from the dump list,
+      // leaving a single blank post.
+      discard() {
+        clearTimeout(QR.drafts.timeout);
+        // Suspend auto-save so the removals below don't re-persist the draft
+        // we're about to delete.
+        QR.drafts._suspended = true;
+        try {
+          // Drop all but the first post (removes their thumbnails/attachments).
+          for (const p of QR.posts.slice(1)) {
+            delete p._draftFileId;
+            p.rm();
+          }
+          // Reset the remaining (selected) post: clear its file, text and state.
+          const last = QR.posts[0];
+          if (last) {
+            delete last._draftFileId;
+            if (last.file) {
+              last.rmFile();
+            }
+            last.setComment('');
+            last.sub = null;
+            last.spoiler = false;
+            if (last.nodes?.spoiler) {
+              last.nodes.spoiler.checked = false;
+            }
+          }
+          if (QR.nodes?.sub) {
+            QR.nodes.sub.value = '';
+          }
+          if (QR.nodes?.spoiler) {
+            QR.nodes.spoiler.checked = false;
+          }
+          $.rmClass(QR.nodes.el, 'dump');
+        } finally {
+          QR.drafts._suspended = false;
+        }
+        // Remove the saved draft + every stored attachment for this board.
+        QR.drafts.clearBoardFiles();
+        $.get('QR.drafts', dict(), ({ 'QR.drafts': all }) => {
+          delete all[QR.drafts.key()];
+          $.set('QR.drafts', all, QR.drafts.updateButton);
+        });
+      },
+      // Remove every stored attachment for this board. Fails soft.
+      async clearBoardFiles() {
+        try {
+          const prefix = QR.drafts.filePrefix();
+          const mine = (await QRFileStore.keys()).filter(k => k.startsWith(prefix));
+          if (mine.length) {
+            await QRFileStore.delete(mine);
+          }
+        } catch (err) {
+          console.error('QR draft clearBoardFiles failed', err);
+        }
+      },
+      // Called when the setting is toggled. Turning it off wipes every saved
+      // draft and stored attachment so nothing lingers in storage.
+      // Cross-tab sync passes the new boolean value (Conf isn't updated for us);
+      // the same-tab change event passes an Event, which we ignore since Conf is
+      // already fresh from $.cb.checked.
+      onSettingChanged(value) {
+        if (typeof value === 'boolean') {
+          Conf['Remember QR State'] = value;
+        }
+        if (!Conf['Remember QR State']) {
+          for (const p of (QR.posts || [])) {
+            delete p._draftFileId;
+          }
+          QR.drafts.clearAll();
+        }
+        QR.drafts.updateButton();
+      },
+      // Remove all saved drafts (every board) and all stored attachments.
+      async clearAll() {
+        try {
+          const keys = await QRFileStore.keys();
+          if (keys.length) {
+            await QRFileStore.delete(keys);
+          }
+        } catch (err) {
+          console.error('QR draft clearAll failed', err);
+        }
+        $.delete('QR.drafts');
+      },
+      // Show the discard button only when there's a saved draft for this board.
+      updateButton() {
+        const btn = QR.nodes?.clearDraft;
+        if (!btn) {
+          return;
+        }
+        if (!Conf['Remember QR State']) {
+          btn.hidden = true;
+          return;
+        }
+        $.get('QR.drafts', dict(), ({ 'QR.drafts': all }) => {
+          if (QR.nodes?.clearDraft) {
+            QR.nodes.clearDraft.hidden = !all?.[QR.drafts.key()]?.posts?.length;
+          }
+        });
+      },
+    },
     persona: {
       always: {},
       types: {
@@ -26589,6 +28183,7 @@ aero|asia|biz|cat|com|coop|dance|info|int|jobs|mobi|moe|museum|name|net|org|post
       QR.posts.splice(index, 1);
       QR.status();
       QR.captcha.updateThread?.();
+      QR.drafts.save();
     }
     delete() {
       $.rm(this.nodes.el);
@@ -26640,6 +28235,8 @@ aero|asia|biz|cat|com|coop|dance|info|int|jobs|mobi|moe|museum|name|net|org|post
       (this.thread !== 'new' ? $.addClass : $.rmClass)(QR.nodes.el, 'reply-to-thread');
       this.showFileData();
       QR.characterCount();
+      if (Conf['Comment Preview'])
+        QR.updateComPreview();
     }
     save(input, forced) {
       if (input.type === 'checkbox') {
@@ -26711,6 +28308,8 @@ aero|asia|biz|cat|com|coop|dance|info|int|jobs|mobi|moe|museum|name|net|org|post
     updateComment() {
       if (this === QR.selected) {
         QR.characterCount();
+        if (Conf['Comment Preview'])
+          QR.updateComPreview();
       }
       this.nodes.span.textContent = this.com;
       QR.captcha.moreNeeded();
@@ -26893,10 +28492,18 @@ aero|asia|biz|cat|com|coop|dance|info|int|jobs|mobi|moe|museum|name|net|org|post
       }
       return file;
     }
-    async setFile(file) {
+    async setFile(file, opts = {}) {
       this.pendingFile = true;
+      // A fresh user-supplied file invalidates any previously persisted copy so
+      // it gets re-saved; a restored file keeps its existing store id (set below).
+      if (!opts.restore) {
+        delete this._draftFileId;
+      }
       try {
-        if (Conf['Strip Video Audio'] &&
+        // On restore the file was already audio-stripped/metadata-stripped/renamed
+        // when first added, so skip that reprocessing (and its notices).
+        if (!opts.restore &&
+          Conf['Strip Video Audio'] &&
           BoardConfig.noAudio(g.BOARD.ID) &&
           (/^video\/(webm|mp4)$/.test(file.type) || /\.(webm|mp4)$/i.test(file.name))) {
           const stripped = await VideoStripper.stripAudio(file);
@@ -26905,18 +28512,22 @@ aero|asia|biz|cat|com|coop|dance|info|int|jobs|mobi|moe|museum|name|net|org|post
             new Notice('info', 'Removed audio from video for this board.', 4);
           }
         }
-        const strippedMetadata = await this.stripMetadata(file);
-        if (strippedMetadata !== file) {
-          file = strippedMetadata;
-          new Notice('info', 'Removed media metadata from file.', 4);
+        if (!opts.restore) {
+          const strippedMetadata = await this.stripMetadata(file);
+          if (strippedMetadata !== file) {
+            file = strippedMetadata;
+            new Notice('info', 'Removed media metadata from file.', 4);
+          }
         }
         // Needs to be set before the validation for some error messages.
         this.file = file;
         this.filename = file.name;
         this.originalName = file.name;
         this.file = await this.validateFile(file);
-        this.originalName = file.name;
-        if (Conf['Randomize Filename'] && (g.BOARD.ID !== 'f') && (!this.file.name.toLowerCase().includes('[sound='))) {
+        this.originalName = opts.restore ? (opts.originalName || file.name) : file.name;
+        if (opts.restore) {
+          this.filename = opts.filename || this.file.name;
+        } else if (Conf['Randomize Filename'] && (g.BOARD.ID !== 'f') && (!this.file.name.toLowerCase().includes('[sound='))) {
           this.randomizeName(false);
         } else {
           this.filename = this.file.name;
@@ -26939,6 +28550,13 @@ aero|asia|biz|cat|com|coop|dance|info|int|jobs|mobi|moe|museum|name|net|org|post
           this.readFile();
         } else {
           this.nodes.spanFileName.textContent = this.file.name.match(/\.([^\.]+)$/)[1];
+        }
+        if (opts.restore) {
+          // Reuse the existing store entry; nothing new to write.
+          this._draftFileId = opts.id;
+        } else {
+          // New attachment: persist it (and the draft) if the feature is on.
+          QR.drafts.persistFiles();
         }
       } catch (error) {
         console.error(error);
@@ -27077,6 +28695,8 @@ aero|asia|biz|cat|com|coop|dance|info|int|jobs|mobi|moe|museum|name|net|org|post
       delete this.file;
       delete this.filename;
       delete this.filesize;
+      delete this._draftFileId;
+      QR.drafts.persistFiles();
       this.nodes.el.removeAttribute('title');
       QR.nodes.filename.removeAttribute('title');
       this.rmMetadata();
@@ -27380,89 +29000,103 @@ aero|asia|biz|cat|com|coop|dance|info|int|jobs|mobi|moe|museum|name|net|org|post
   var ImageCommon = {
     // Pause and mute video in preparation for removing the element from the document.
     pause(video) {
-      if (video.nodeName !== 'VIDEO') { return; }
+      if (video.nodeName !== 'VIDEO') {
+        return;
+      }
       video.pause();
       $.off(video, 'volumechange', Volume.change);
       return video.muted = true;
     },
-
     rewind(el) {
       if (el.nodeName === 'VIDEO') {
-        if (el.readyState >= el.HAVE_METADATA) { return el.currentTime = 0; }
+        if (el.readyState >= el.HAVE_METADATA) {
+          return el.currentTime = 0;
+        }
       } else if (/\.gif$/.test(el.src)) {
         return $.queueTask(() => el.src = el.src);
       }
     },
-
     pushCache(el) {
       ImageCommon.cache = el;
       return $.on(el, 'error', ImageCommon.cacheError);
     },
-
     popCache() {
       const el = ImageCommon.cache;
       $.off(el, 'error', ImageCommon.cacheError);
       delete ImageCommon.cache;
       return el;
     },
-
     cacheError() {
-      if (ImageCommon.cache === this) { return delete ImageCommon.cache; }
+      if (ImageCommon.cache === this) {
+        return delete ImageCommon.cache;
+      }
     },
-
     decodeError(file, fileObj) {
       let message;
-      if (file.error?.code !== MediaError.MEDIA_ERR_DECODE) { return false; }
+      if (file.error?.code !== MediaError.MEDIA_ERR_DECODE) {
+        return false;
+      }
       if (!(message = $('.warning', fileObj.thumb.parentNode))) {
-        message = $.el('div', {className:   'warning'});
+        message = $.el('div', { className: 'warning' });
         $.after(fileObj.thumb, message);
       }
       message.textContent = 'Error: Corrupt or unplayable video';
       return true;
     },
-
     isFromArchive(file) {
       return (g.SITE.software === 'yotsuba') && !ImageHost.test(file.src.split('/')[2]);
     },
-
     error(file, post, fileObj, delay, cb) {
       let timeoutID;
       const src = fileObj.url.split('/');
       let url = null;
       if ((g.SITE.software === 'yotsuba') && Conf['404 Redirect']) {
         url = Redirect.to('file', {
-          boardID:  post.board.ID,
+          boardID: post.board.ID,
           filename: src[src.length - 1]
         });
       }
-      if (!url || !Redirect.securityCheck(url)) { url = null; }
-
-      if ((post.isDead || fileObj.isDead) && !ImageCommon.isFromArchive(file)) { return cb(url); }
-
-      if (delay != null) { timeoutID = setTimeout((() => cb(url)), delay); }
-      if (post.isDead || fileObj.isDead) { return; }
-      const redirect = function() {
+      if (!url || !Redirect.securityCheck(url)) {
+        url = null;
+      }
+      if ((post.isDead || fileObj.isDead) && !ImageCommon.isFromArchive(file)) {
+        return cb(url);
+      }
+      if (delay != null) {
+        timeoutID = setTimeout((() => cb(url)), delay);
+      }
+      if (post.isDead || fileObj.isDead) {
+        return;
+      }
+      const redirect = function () {
         if (!ImageCommon.isFromArchive(file)) {
-          if (delay != null) { clearTimeout(timeoutID); }
+          if (delay != null) {
+            clearTimeout(timeoutID);
+          }
           return cb(url);
         }
       };
-
       const threadJSON = g.SITE.urls.threadJSON?.(post);
-      if (!threadJSON) { return; }
-      var parseJSON = function(isArchiveURL) {
+      if (!threadJSON) {
+        return;
+      }
+      var parseJSON = function (isArchiveURL) {
         let needle, postObj;
         if (this.status === 404) {
           let archivedThreadJSON;
           if (!isArchiveURL && (archivedThreadJSON = g.SITE.urls.archivedThreadJSON?.(post))) {
-            $.ajax(archivedThreadJSON, {onloadend() { return parseJSON.call(this, true); }});
+            $.ajax(archivedThreadJSON, { onloadend() { return parseJSON.call(this, true); } });
           } else {
             post.kill(!post.isClone, fileObj.index);
           }
         }
-        if (this.status !== 200) { return redirect(); }
+        if (this.status !== 200) {
+          return redirect();
+        }
         for (postObj of this.response.posts) {
-          if (postObj.no === post.ID) { break; }
+          if (postObj.no === post.ID) {
+            break;
+          }
         }
         if (postObj.no !== post.ID) {
           post.kill();
@@ -27474,27 +29108,26 @@ aero|asia|biz|cat|com|coop|dance|info|int|jobs|mobi|moe|museum|name|net|org|post
           return url = fileObj.url;
         }
       };
-      return $.ajax(threadJSON, {onloadend() { return parseJSON.call(this); }});
+      return $.ajax(threadJSON, { onloadend() { return parseJSON.call(this); } });
     },
-
     // XXX Estimate whether clicks are on the video controls and should be ignored.
     onControls(e) {
       return (Conf['Show Controls'] && Conf['Click Passthrough'] && (e.target.nodeName === 'VIDEO')) ||
         (e.target.controls && ((e.target.getBoundingClientRect().bottom - e.clientY) < 35));
     },
-
     download(e) {
-      if (this.protocol === 'blob:') { return true; }
+      if (this.protocol === 'blob:') {
+        return true;
+      }
       e.preventDefault();
-      const {href, download} = this;
-      return CrossOrigin.file(href, function(blob) {
+      const { href, download } = this;
+      return CrossOrigin.file(href, function (blob) {
         if (blob) {
           const a = $.el('a', {
             href: URL.createObjectURL(blob),
             download,
             hidden: true
-          }
-          );
+          });
           $.add(d.body, a);
           a.click();
           return $.rm(a);
@@ -27517,18 +29150,17 @@ aero|asia|biz|cat|com|coop|dance|info|int|jobs|mobi|moe|museum|name|net|org|post
 
   const PassMessage = {
     init() {
-      if (Conf['passMessageClosed']) { return; }
-      const msg = $.el('div',
-        {className: 'box-outer top-box'}
-      ,
-        passMessagePage);
+      if (Conf['passMessageClosed']) {
+        return;
+      }
+      const msg = $.el('div', { className: 'box-outer top-box' }, passMessagePage);
       msg.style.cssText = 'padding-bottom: 0;';
       const close = $('a', msg);
-      $.on(close, 'click', function() {
+      $.on(close, 'click', function () {
         $.rm(msg);
         return $.set('passMessageClosed', true);
       });
-      return $.ready(function() {
+      return $.ready(function () {
         let hd;
         if (hd = $.id('hd')) {
           return $.after(hd, msg);
@@ -27547,67 +29179,65 @@ aero|asia|biz|cat|com|coop|dance|info|int|jobs|mobi|moe|museum|name|net|org|post
   var Report = {
     init() {
       let match;
-      if (!(match = location.search.match(/\bno=(\d+)/))) { return; }
+      if (!(match = location.search.match(/\bno=(\d+)/))) {
+        return;
+      }
       Captcha.replace.init();
       this.postID = +match[1];
       return $.ready(this.ready);
     },
-
     ready() {
       $.addStyle(CSS.report);
-
-      if (Conf['Archive Report']) { Report.archive(); }
-
-      new MutationObserver(function() {
+      if (Conf['Archive Report']) {
+        Report.archive();
+      }
+      new MutationObserver(function () {
         Report.fit('iframe[src^="https://www.google.com/recaptcha/api2/frame"]');
         return Report.fit('body');
       }).observe(d.body, {
-        childList:  true,
+        childList: true,
         attributes: true,
-        subtree:    true
-      }
-      );
+        subtree: true
+      });
       return Report.fit('body');
     },
-
     fit(selector) {
       let el;
-      if (!((el = $(selector, doc)) && (getComputedStyle(el).visibility !== 'hidden'))) { return; }
+      if (!((el = $(selector, doc)) && (getComputedStyle(el).visibility !== 'hidden'))) {
+        return;
+      }
       const dy = (el.getBoundingClientRect().bottom - doc.clientHeight) + 8;
-      if (dy > 0) { return window.resizeBy(0, dy); }
+      if (dy > 0) {
+        return window.resizeBy(0, dy);
+      }
     },
-
     archive() {
       let match, urls;
-      if (!(urls = Redirect.report(g.BOARD.ID)).length) { return; }
-
-      const form    = $('form');
-      const types   = $.id('reportTypes');
+      if (!(urls = Redirect.report(g.BOARD.ID)).length) {
+        return;
+      }
+      const form = $('form');
+      const types = $.id('reportTypes');
       const message = $('h3');
-
       const fieldset = $.el('fieldset', {
         id: 'archive-report',
         hidden: true
-      }
-      ,
-        { innerHTML: ReportPage });
+      }, { innerHTML: ReportPage });
       const enabled = $('#archive-report-enabled', fieldset);
-      const reason  = $('#archive-report-reason',  fieldset);
-      const submit  = $('#archive-report-submit',  fieldset);
-
-      $.on(enabled, 'change', function() {
+      const reason = $('#archive-report-reason', fieldset);
+      const submit = $('#archive-report-submit', fieldset);
+      $.on(enabled, 'change', function () {
         return reason.disabled = !this.checked;
       });
-
       if (form && types) {
         fieldset.hidden = !$('[value="31"]', types).checked;
-        $.on(types, 'change', function(e) {
+        $.on(types, 'change', function (e) {
           fieldset.hidden = (e.target.value !== '31');
           return Report.fit('body');
         });
         $.after(types, fieldset);
         Report.fit('body');
-        $.one(form, 'submit', function(e) {
+        $.one(form, 'submit', function (e) {
           if (!fieldset.hidden && enabled.checked) {
             e.preventDefault();
             return Report.archiveSubmit(urls, reason.value, results => {
@@ -27618,32 +29248,30 @@ aero|asia|biz|cat|com|coop|dance|info|int|jobs|mobi|moe|museum|name|net|org|post
         });
       } else if (message) {
         fieldset.hidden = /Report submitted!/.test(message.textContent);
-        $.on(enabled, 'change', function() {
+        $.on(enabled, 'change', function () {
           return submit.hidden = !this.checked;
         });
         $.after(message, fieldset);
         $.on(submit, 'click', () => Report.archiveSubmit(urls, reason.value, Report.archiveResults));
       }
-
       if (match = location.hash.match(/^#archiveresults=(.*)$/)) {
         try {
           return Report.archiveResults(JSON.parse(decodeURIComponent(match[1])));
-        } catch (error) {}
+        } catch (error) { }
       }
     },
-
     archiveSubmit(urls, reason, cb) {
       const form = $.formData({
-        board:  g.BOARD.ID,
-        num:    Report.postID,
+        board: g.BOARD.ID,
+        num: Report.postID,
         reason
       });
       const results = [];
       for (var [name, url] of urls) {
-        (function(name, url) {
+        (function (name, url) {
           return $.ajax(url, {
             onloadend() {
-              results.push([name, this.response || {error: ''}]);
+              results.push([name, this.response || { error: '' }]);
               if (results.length === urls.length) {
                 return cb(results);
               }
@@ -27653,12 +29281,10 @@ aero|asia|biz|cat|com|coop|dance|info|int|jobs|mobi|moe|museum|name|net|org|post
         })(name, url);
       }
     },
-
     archiveResults(results) {
       const fieldset = $.id('archive-report');
       for (var [name, response] of results) {
-        var line = $.el('h3',
-          {className: 'archive-report-response'});
+        var line = $.el('h3', { className: 'archive-report-response' });
         if ('success' in response) {
           $.addClass(line, 'archive-report-success');
           line.textContent = `${name}: ${response.success}`;
@@ -27677,17 +29303,18 @@ aero|asia|biz|cat|com|coop|dance|info|int|jobs|mobi|moe|museum|name|net|org|post
 
   const PostSuccessful = {
     init() {
-      if (!Conf['Remember Your Posts']) { return; }
+      if (!Conf['Remember Your Posts']) {
+        return;
+      }
       return $.ready(this.ready);
     },
-
     ready() {
-      if (d.title !== 'Post successful!') { return; }
-
+      if (d.title !== 'Post successful!') {
+        return;
+      }
       let [_, threadID, postID] = $('h1').nextSibling.textContent.match(/thread:(\d+),no:(\d+)/);
-      postID   = +postID;
+      postID = +postID;
       threadID = +threadID || postID;
-
       const db = new DataBoard('yourPosts');
       return db.set({
         boardID: g.BOARD.ID,
@@ -28272,7 +29899,7 @@ $\
       },
       parseCommentDisplay(html) {
         // Hide spoilers.
-        if (Conf['Spoiler Mode'] === 'default') {
+        if (!Conf['Remove Spoilers'] && !Conf['Reveal Spoilers']) {
           let html2;
           while ((html2 = html.replace(/<s>(?:(?!<\/?s>).)*<\/s>/g, '[spoiler]')) !== html) {
             html = html2;
@@ -28481,7 +30108,6 @@ $\
     isOPContainerThread: true,
     mayLackJSON: true,
     threadModTimeIgnoresSage: true,
-
     disabledFeatures: [
       'Resurrect Quotes',
       'Quick Reply Personas',
@@ -28505,7 +30131,6 @@ $\
       'Flash Features',
       'Reply Pruning'
     ],
-
     detect() {
       for (var script of $$('script:not([src])', d.head)) {
         var m;
@@ -28518,127 +30143,136 @@ $\
             } else if (/^https?:/.test(root)) {
               properties.root = root;
             }
-          } catch (error) {}
+          } catch (error) { }
           return properties;
         }
       }
       return false;
     },
-
     awaitBoard(cb) {
       if ($.id('react-ui')) {
         const s = (this.selectors = Object.create(this.selectors));
-        s.boardFor = {index: '.page-container'};
+        s.boardFor = { index: '.page-container' };
         s.thread = 'div[id^="thread_"]';
         return Main.mounted(cb);
       } else {
         return cb();
       }
     },
-
     urls: {
-      thread({siteID, boardID, threadID}, isArchived) {
+      thread({ siteID, boardID, threadID }, isArchived) {
         return `${Conf['siteProperties'][siteID]?.root || `http://${siteID}/`}${boardID}/${isArchived ? 'archive/' : ''}res/${threadID}.html`;
       },
-      post({postID})                   { return `#${postID}`; },
-      index({siteID, boardID})          { return `${Conf['siteProperties'][siteID]?.root || `http://${siteID}/`}${boardID}/`; },
-      catalog({siteID, boardID})          { return `${Conf['siteProperties'][siteID]?.root || `http://${siteID}/`}${boardID}/catalog.html`; },
-      threadJSON({siteID, boardID, threadID}, isArchived) {
+      post({ postID }) { return `#${postID}`; },
+      index({ siteID, boardID }) { return `${Conf['siteProperties'][siteID]?.root || `http://${siteID}/`}${boardID}/`; },
+      catalog({ siteID, boardID }) { return `${Conf['siteProperties'][siteID]?.root || `http://${siteID}/`}${boardID}/catalog.html`; },
+      threadJSON({ siteID, boardID, threadID }, isArchived) {
         const root = Conf['siteProperties'][siteID]?.root;
-        if (root) { return `${root}${boardID}/${isArchived ? 'archive/' : ''}res/${threadID}.json`; } else { return ''; }
+        if (root) {
+          return `${root}${boardID}/${isArchived ? 'archive/' : ''}res/${threadID}.json`;
+        } else {
+          return '';
+        }
       },
       archivedThreadJSON(thread) {
         return SWTinyboard.urls.threadJSON(thread, true);
       },
-      threadsListJSON({siteID, boardID}) {
+      threadsListJSON({ siteID, boardID }) {
         const root = Conf['siteProperties'][siteID]?.root;
-        if (root) { return `${root}${boardID}/threads.json`; } else { return ''; }
+        if (root) {
+          return `${root}${boardID}/threads.json`;
+        } else {
+          return '';
+        }
       },
-      archiveListJSON({siteID, boardID}) {
+      archiveListJSON({ siteID, boardID }) {
         const root = Conf['siteProperties'][siteID]?.root;
-        if (root) { return `${root}${boardID}/archive/archive.json`; } else { return ''; }
+        if (root) {
+          return `${root}${boardID}/archive/archive.json`;
+        } else {
+          return '';
+        }
       },
-      catalogJSON({siteID, boardID}) {
+      catalogJSON({ siteID, boardID }) {
         const root = Conf['siteProperties'][siteID]?.root;
-        if (root) { return `${root}${boardID}/catalog.json`; } else { return ''; }
+        if (root) {
+          return `${root}${boardID}/catalog.json`;
+        } else {
+          return '';
+        }
       },
-      file({siteID, boardID}, filename) {
+      file({ siteID, boardID }, filename) {
         return `${Conf['siteProperties'][siteID]?.root || `http://${siteID}/`}${boardID}/${filename}`;
       },
       thumb(board, filename) {
         return SWTinyboard.urls.file(board, filename);
       }
     },
-
     selectors: {
-      board:         'form[name="postcontrols"]',
-      thread:        'input[name="board"] ~ div[id^="thread_"]',
+      board: 'form[name="postcontrols"]',
+      thread: 'input[name="board"] ~ div[id^="thread_"]',
       threadDivider: 'div[id^="thread_"] > hr:last-child',
-      summary:       '.omitted',
+      summary: '.omitted',
       postContainer: 'div[id^="reply_"]:not(.hidden)', // postContainer is thread for OP
-      opBottom:      '.op',
+      opBottom: '.op',
       replyOriginal: 'div[id^="reply_"]:not(.hidden)',
-      infoRoot:      '.intro',
+      infoRoot: '.intro',
       info: {
-        subject:   '.subject',
-        name:      '.name',
-        email:     '.email',
-        tripcode:  '.trip',
-        uniqueID:  '.poster_id',
-        capcode:   '.capcode',
-        flag:      '.flag',
-        date:      'time',
+        subject: '.subject',
+        name: '.name',
+        email: '.email',
+        tripcode: '.trip',
+        uniqueID: '.poster_id',
+        capcode: '.capcode',
+        flag: '.flag',
+        date: 'time',
         nameBlock: 'label',
-        quote:     'a[href*="#q"]',
-        reply:     'a[href*="/res/"]:not([href*="#"])'
+        quote: 'a[href*="#q"]',
+        reply: 'a[href*="/res/"]:not([href*="#"])'
       },
       icons: {
-        isSticky:   '.fa-thumb-tack',
-        isClosed:   '.fa-lock'
+        isSticky: '.fa-thumb-tack',
+        isClosed: '.fa-lock'
       },
       file: {
-        text:  '.fileinfo',
-        link:  '.fileinfo > a',
+        text: '.fileinfo',
+        link: '.fileinfo > a',
         thumb: 'a > .post-image'
       },
       thumbLink: '.file > a',
       multifile: '.files > .file',
       highlightable: {
-        op:      ' > .op',
-        reply:   '.reply',
+        op: ' > .op',
+        reply: '.reply',
         catalog: ' > .thread'
       },
-      comment:   '.body',
-      spoiler:   '.spoiler',
+      comment: '.body',
+      spoiler: '.spoiler',
       quotelink: 'a[onclick*="highlightReply("]',
       catalog: {
-        board:  '#Grid',
+        board: '#Grid',
         thread: '.mix',
-        thumb:  '.thread-image'
+        thumb: '.thread-image'
       },
       boardList: '.boardlist',
       boardListBottom: '.boardlist.bottom',
       styleSheet: '#stylesheet',
-      psa:       '.blotter',
+      psa: '.blotter',
       nav: {
         prev: '.pages > form > [value=Previous]',
         next: '.pages > form > [value=Next]'
       }
     },
-
     classes: {
       highlight: 'highlighted'
     },
-
     xpath: {
-      thread:         'div[starts-with(@id,"thread_")]',
-      postContainer:  'div[starts-with(@id,"reply_") or starts-with(@id,"thread_")]',
+      thread: 'div[starts-with(@id,"thread_")]',
+      postContainer: 'div[starts-with(@id,"reply_") or starts-with(@id,"thread_")]',
       replyContainer: 'div[starts-with(@id,"reply_")]'
     },
-
     regexp: {
-      quotelink:
-        new RegExp(`\
+      quotelink: new RegExp(`\
 /\
 ([^/]+)\
 /res/\
@@ -28647,10 +30281,8 @@ $\
 (\\d+)\
 $\
 `),
-      quotelinkHTML:
-        /<a [^>]*\bhref="[^"]*\/([^\/]+)\/res\/(\d+)(?:\.\w+)?#(\d+)"/g
+      quotelinkHTML: /<a [^>]*\bhref="[^"]*\/([^\/]+)\/res\/(\d+)(?:\.\w+)?#(\d+)"/g
     },
-
     Build: {
       parseJSON(data, board) {
         const o = SWYotsuba.Build.parseJSON(data, board);
@@ -28679,7 +30311,6 @@ $\
         }
         return o;
       },
-
       parseComment(html) {
         html = html
           .replace(/<br\b[^<]*>/gi, '\n')
@@ -28687,15 +30318,12 @@ $\
         return $.unescape(html);
       }
     },
-
     bgColoredEl() {
-      return $.el('div', {className: 'post reply'});
+      return $.el('div', { className: 'post reply' });
     },
-
     isFileURL(url) {
       return /\/src\/[^\/]+/.test(url.pathname);
     },
-
     preParsingFixes(board) {
       // fixes effects of unclosed link in announcement
       let broken;
@@ -28703,11 +30331,12 @@ $\
         return $.before(broken.parentNode, broken);
       }
     },
-
     parseNodes(post, nodes) {
       // Add vichan's span.poster_id around the ID if not already present.
       let m;
-      if (nodes.uniqueID) { return; }
+      if (nodes.uniqueID) {
+        return;
+      }
       let text = '';
       let node = nodes.nameBlock.nextSibling;
       while (node && (node.nodeType === 3)) {
@@ -28717,54 +30346,58 @@ $\
       if (m = text.match(/(\s*ID:\s*)(\S+)/)) {
         let uniqueID;
         nodes.info.normalize();
-        let {nextSibling} = nodes.nameBlock;
+        let { nextSibling } = nodes.nameBlock;
         nextSibling = nextSibling.splitText(m[1].length);
         nextSibling.splitText(m[2].length);
-        nodes.uniqueID = (uniqueID = $.el('span', {className: 'poster_id'}));
+        nodes.uniqueID = (uniqueID = $.el('span', { className: 'poster_id' }));
         $.replace(nextSibling, uniqueID);
         return $.add(uniqueID, nextSibling);
       }
     },
-
     parseDate(node) {
       let date = Date.parse(node.getAttribute('datetime')?.trim());
-      if (!isNaN(date)) { return new Date(date); }
+      if (!isNaN(date)) {
+        return new Date(date);
+      }
       date = Date.parse(node.textContent.trim() + ' UTC'); // e.g. onesixtwo.club
-      if (!isNaN(date)) { return new Date(date); }
+      if (!isNaN(date)) {
+        return new Date(date);
+      }
       return undefined;
     },
-
     parseFile(post, file) {
       let info, infoNode;
-      const {text, link, thumb} = file;
-      if ($.x(`ancestor::${this.xpath.postContainer}[1]`, text) !== post.nodes.root) { return false; } // file belongs to a reply
-      if (!(infoNode = link.nextSibling?.textContent.includes('(') ? link.nextSibling : link.nextElementSibling)) { return false; }
-      if (!(info = infoNode.textContent.match(/\((.*,\s*)?([\d.]+ ?[KMG]?B).*\)/))) { return false; }
+      const { text, link, thumb } = file;
+      if ($.x(`ancestor::${this.xpath.postContainer}[1]`, text) !== post.nodes.root) {
+        return false;
+      } // file belongs to a reply
+      if (!(infoNode = link.nextSibling?.textContent.includes('(') ? link.nextSibling : link.nextElementSibling)) {
+        return false;
+      }
+      if (!(info = infoNode.textContent.match(/\((.*,\s*)?([\d.]+ ?[KMG]?B).*\)/))) {
+        return false;
+      }
       const nameNode = $('.postfilename', text);
       $.extend(file, {
-        name:       nameNode ? (nameNode.title || nameNode.textContent) : link.pathname.match(/[^/]*$/)[0],
-        size:       info[2],
+        name: nameNode ? (nameNode.title || nameNode.textContent) : link.pathname.match(/[^/]*$/)[0],
+        size: info[2],
         dimensions: info[0].match(/\d+x\d+/)?.[0]
       });
       if (thumb) {
         $.extend(file, {
-          thumbURL:  /\/static\//.test(thumb.src) && $.isImage(link.href) ? link.href : thumb.src,
+          thumbURL: /\/static\//.test(thumb.src) && $.isImage(link.href) ? link.href : thumb.src,
           isSpoiler: /^Spoiler/i.test(info[1] || '') || (link.textContent === 'Spoiler Image')
-        }
-        );
+        });
       }
       return true;
     },
-
     isThumbExpanded(file) {
       // Detect old Tinyboard image expansion that changes src attribute on thumbnail.
       return $.hasClass(file.thumb.parentNode, 'expanded') || (file.thumb.parentNode.dataset.expanded === 'true');
     },
-
     isLinkified(link) {
       return /\bnofollow\b/.test(link.rel);
     },
-
     catalogPin(threadRoot) {
       return threadRoot.dataset.sticky = 'true';
     }
@@ -28870,11 +30503,15 @@ $\
     pointerDownInsideDialog: false,
     customCSSEditorThemeObserver: null,
     stylingPreviewPanel: null,
+    stylingPreviewAttached: true,
+    stylingPreviewAttachResizeObserver: null,
+    stylingPreviewAttachRaf: null,
     activeSiteStylePicker: null,
     siteStylePickerOutsideHandler: null,
     stylingEditingVariant: null,
     styleVariantKeySet: new Set(styleVariantKeys),
     resolvedStyleColorCache: null,
+    THEME_BORDER_HIGHLIGHT: '__theme_border_highlight__',
     // What's currently applied to the page. Always derived from the board
     // (or the forced mode); the Styling settings page does NOT override this,
     // so opening the dialog or clicking SFW/NSFW tabs never changes the
@@ -28907,6 +30544,12 @@ $\
     styleConf(key, variant) {
       return Conf[Settings.variantKey(key, variant)];
     },
+    // Text-color mode for the global Text Colors picker and each highlight row.
+    // Anything that isn't an explicit 'auto'/'manual' means "use theme defaults"
+    // (no override) — that's the new default and the migration target.
+    resolveTextMode(value) {
+      return value === 'auto' || value === 'manual' ? value : 'default';
+    },
     styleKeyBase(key) {
       return key.replace(/ (SFW|NSFW)$/, '');
     },
@@ -28920,6 +30563,7 @@ $\
       settingsWindow.style.margin = '0';
       settingsWindow.style.transform = 'none';
       dragstart.call(this, e);
+      Settings.followAttachedStylingPreviewDuringDrag(e);
     },
     init() {
       // 4chan X settings link
@@ -29159,6 +30803,12 @@ $\
         }
       }
       $.add($('.sections-list', dialog), links);
+      // In horizontal layout the search box and section links sit inside the
+      // draggable titlebar; stop pointer events from starting a window drag.
+      for (const navEl of [$('.settings-search', dialog), $('.sections-list', dialog)]) {
+        $.on(navEl, 'touchstart mousedown', e => e.stopPropagation());
+      }
+      Settings.setNavLayout(settingsWindow, Conf['Settings Menu Layout']);
       // Opening on "All Settings" eagerly renders every section, which is
       // noticeably slower in Firefox. Default to the lightweight General view
       // unless the caller explicitly requested another section.
@@ -29170,7 +30820,9 @@ $\
       $.on($('.close', dialog), 'click', e => { e.preventDefault(); Settings.close(); });
       $.on(window, 'beforeunload', Settings.close);
       $.on(dialog, 'mousedown touchstart', e => {
-        Settings.pointerDownInsideDialog = settingsWindow.contains(e.target);
+        const target = e.target;
+        Settings.pointerDownInsideDialog =
+          settingsWindow.contains(target) || !!Settings.stylingPreviewPanel?.contains(target);
       });
       $.on(dialog, 'click', e => {
         if (e.target !== dialog) {
@@ -29198,6 +30850,9 @@ $\
       }
       // Unfocus current field to trigger change event.
       d.activeElement?.blur();
+      // Persist any pending Simple Filters auto-save before the panel is torn down.
+      Settings.easyFiltersFlush?.();
+      Settings.easyFiltersFlush = null;
       if (Settings.rememberLayout) {
         Settings.persistCurrentDetailsState();
         const settingsWindow = $('#fourchanx-settings', Settings.dialog);
@@ -29287,6 +30942,26 @@ $\
           'settings.windowLayout': Settings.savedWindowLayout,
           'settings.detailsState': Settings.detailsState
         });
+      }
+    },
+    // Reposition the search box and section links between the left sidebar
+    // (vertical) and the titlebar (horizontal) based on the chosen layout.
+    setNavLayout(settingsWindow, layout) {
+      const titlebar = $('.settings-titlebar', settingsWindow);
+      const actions = $('.settings-titlebar-actions', settingsWindow);
+      const nav = $('.settings-body > nav', settingsWindow);
+      const search = $('.settings-search', settingsWindow);
+      const sectionsList = $('.sections-list', settingsWindow);
+      if (!titlebar || !actions || !nav || !search || !sectionsList)
+        return;
+      if (layout === 'horizontal') {
+        titlebar.insertBefore(search, actions);
+        titlebar.insertBefore(sectionsList, actions);
+        $.addClass(settingsWindow, 'settings-nav-horizontal');
+      } else {
+        nav.appendChild(search);
+        nav.appendChild(sectionsList);
+        $.rmClass(settingsWindow, 'settings-nav-horizontal');
       }
     },
     restoreWindowLayout(settingsWindow) {
@@ -29529,6 +31204,8 @@ $\
     },
     openSection() {
       Settings.activeSection = this;
+      if (this.title !== 'Styling')
+        Settings.closeStylingPreview();
       Settings.selectSectionTab(this);
       if (Settings.searchQuery && this.title !== 'All Settings') {
         Settings.ensureAllSettingsRendered();
@@ -29574,6 +31251,7 @@ $\
       Settings.decorateDetailsWithKeys(section, sectionInfo);
       section.scrollTop = 0;
       Settings.renderedSection = sectionInfo;
+      Settings.applyDescriptionMode(section);
       Settings.applySearch();
       $.event('OpenSettings', null, section);
       if (leavingStyling)
@@ -29632,6 +31310,33 @@ Enable it on boards.${location.hostname.split('.')[1]}.org in your browser's pri
       }
       return lookup;
     },
+    descriptionsAsTooltips() {
+      return Conf['Settings Descriptions as Tooltips'] === true;
+    },
+    applyDescriptionMode(root = Settings.dialog || d) {
+      const settingsWindow = $('#fourchanx-settings', Settings.dialog || d);
+      const useTooltips = Settings.descriptionsAsTooltips();
+      if (settingsWindow) {
+        settingsWindow.classList.toggle('settings-description-tooltips', useTooltips);
+      }
+      for (const row of $$('[data-setting-description]', root)) {
+        const el = row;
+        const description = el.dataset.settingDescription || '';
+        if (useTooltips && description) {
+          el.title = description;
+        } else {
+          el.removeAttribute('title');
+        }
+      }
+    },
+    registerSettingDescription(row, description) {
+      row.dataset.settingDescription = description;
+      if (Settings.descriptionsAsTooltips() && description) {
+        row.title = description;
+      } else {
+        row.removeAttribute('title');
+      }
+    },
     addCheckboxes(root, obj, items, inputs, includeSetting = (_key) => true) {
       const containers = [root];
       let count = 0;
@@ -29645,12 +31350,13 @@ Enable it on boards.${location.hostname.split('.')[1]}.org in your browser's pri
         const div = $.el('div', { innerHTML: `<label><input type="checkbox" name="${key}"><span class="setting-title">${key}</span></label><span class="description">: <span class="setting-description">${description}</span></span>` });
         div.dataset.name = key;
         div.dataset.settingTitle = key;
-        div.dataset.settingDescription = description;
-        if (description)
-          div.title = description;
+        Settings.registerSettingDescription(div, description);
         const input = $('input', div);
         $.on(input, 'change', $.cb.checked);
         $.on(input, 'change', function () { this.parentNode.parentNode.dataset.checked = this.checked; });
+        if (key === 'Settings Descriptions as Tooltips') {
+          $.on(input, 'change', () => Settings.applyDescriptionMode());
+        }
         if (key === 'Comment Preview') {
           $.on(input, 'change', () => $.event('QRCommentPreviewChanged'));
         }
@@ -29813,11 +31519,17 @@ Enable it on boards.${location.hostname.split('.')[1]}.org in your browser's pri
     },
     addSelectFieldset(section, title, rows) {
       const fs = $.el('details', { open: true }, { innerHTML: `<summary>${title}</summary>` });
+      Settings.addSelectRows(fs, rows);
+      $.add(section, fs);
+    },
+    addSelectRows(root, rows) {
       const items = dict();
       const inputs = dict();
       for (const row of rows) {
         const div = $.el('div');
         div.dataset.name = row.name;
+        div.dataset.settingTitle = row.label;
+        Settings.registerSettingDescription(div, row.description || '');
         const label = $.el('label');
         const select = $.el('select', { name: row.name });
         for (const option of row.options) {
@@ -29837,22 +31549,22 @@ Enable it on boards.${location.hostname.split('.')[1]}.org in your browser's pri
         }
         items[row.name] = Conf[row.name];
         inputs[row.name] = select;
-        $.add(fs, div);
+        $.add(root, div);
       }
-      $.add(section, fs);
       $.get(items, function (items) {
         for (const key in items) {
           inputs[key].value = items[key];
         }
       });
+      return inputs;
     },
     general(section) {
       Settings.renderMainGroups(section, {
         categories: [{
             name: 'Miscellaneous',
             subgroups: [
-              ['System', ['JSON Index', `Use ${meta.name} Catalog`, 'Open Threads in New Tab', 'External Catalog', '404 Redirect', 'Archive Report', 'Exempt Archives from Encryption']],
-              ['Compatibility', ['Disable Native Extension']]
+              ['System', ['JSON Index', `Use ${meta.name} Catalog`, 'Index Refresh Notifications', 'Open Threads in New Tab', 'External Catalog', '404 Redirect', 'Archive Report', 'Exempt Archives from Encryption', 'Show Updated Notifications']],
+              ['Compatibility', ['Disable Native Extension', 'Enable Native Flash Embedding']]
             ]
           }],
         includeWarnings: true,
@@ -29911,6 +31623,7 @@ Enable it on boards.${location.hostname.split('.')[1]}.org in your browser's pri
             name: 'Miscellaneous',
             subgroups: [
               ['UI', ['Announcement Hiding', 'Follow Cursor', 'Catalog Links']],
+              ['Settings UI', ['Settings Descriptions as Tooltips']],
               ['Notifications', ['Desktop Notifications', 'Posting Success Notifications']],
               ['Keyboard and Navigation', ['Keybinds', 'Comment Expansion', 'Thread Expansion', 'Index Navigation', 'Reply Navigation', 'Unique ID and Capcode Navigation', 'Normalize URL', 'Disable Autoplaying Sounds']]
             ]
@@ -29918,6 +31631,27 @@ Enable it on boards.${location.hostname.split('.')[1]}.org in your browser's pri
           'Menu'
         ]
       });
+      const settingsUI = $$('details', section)
+        .find(details => $('summary', details)?.textContent === 'Settings UI');
+      const selectInputs = settingsUI ? Settings.addSelectRows(settingsUI, [
+        {
+          name: 'Settings Menu Layout',
+          label: 'Navigation menu',
+          description: 'Position of menu links.',
+          options: [
+            ['vertical', 'Vertical'],
+            ['horizontal', 'Horizontal']
+          ]
+        }
+      ]) : dict();
+      const navLayoutSelect = selectInputs['Settings Menu Layout'];
+      if (navLayoutSelect) {
+        $.on(navLayoutSelect, 'change', function () {
+          const win = Settings.dialog && $('#fourchanx-settings', Settings.dialog);
+          if (win)
+            Settings.setNavLayout(win, this.value);
+        });
+      }
       $.add(section, fsNav);
       $.get(items, function (items) {
         for (const key in items) {
@@ -29939,9 +31673,14 @@ Enable it on boards.${location.hostname.split('.')[1]}.org in your browser's pri
       const fmtGroup = dict();
       for (const key of [
         'Custom Board Titles',
+        'Persistent Custom Board Titles',
         'Color User IDs',
         'Count Posts by ID',
+        'Remove Spoilers',
+        'Reveal Spoilers',
         'Time Formatting',
+        'Relative Post Dates',
+        'Relative Date Title',
         'File Info Formatting',
         'Quote Backlinks',
       ]) {
@@ -29949,36 +31688,17 @@ Enable it on boards.${location.hostname.split('.')[1]}.org in your browser's pri
           fmtGroup[key] = lookup[key];
       }
       Settings.addCheckboxes(fsFmt, fmtGroup, items, inputs);
-      const inlineSelect = (name, label, description, opts) => {
-        const div = $.el('div');
-        div.dataset.name = name;
-        const lblEl = $.el('label');
-        const select = $.el('select', { name });
-        for (const [value, text] of opts) {
-          select.appendChild($.el('option', { value, textContent: text }));
-        }
-        $.add(lblEl, [$.el('span', { textContent: `${label}: ` }), select]);
-        $.add(div, [
-          lblEl,
-          $.el('span', { className: 'description', textContent: `: ${description}` })
-        ]);
-        $.on(select, 'change', $.cb.value);
-        items[name] = Conf[name];
-        inputs[name] = select;
-        $.add(fsFmt, div);
+      const syncRelativeTime = () => {
+        const value = inputs['Relative Post Dates']?.checked
+          ? (inputs['Relative Date Title']?.checked ? 'Hover' : 'Show')
+          : 'No';
+        Conf['RelativeTime'] = value;
+        $.set('RelativeTime', value);
       };
-      inlineSelect('RelativeTime', 'Relative Post Dates', 'Display dates like "3 minutes ago" inline, on hover, or both.', [
-        ['No', 'Off'],
-        ['Hover', 'Show on hover'],
-        ['Show', 'Show inline (full date on hover)'],
-        ['Both', 'Show timestamp, then relative'],
-        ['BothRelativeFirst', 'Show relative, then timestamp']
-      ]);
-      inlineSelect('Spoiler Mode', 'Spoilers', 'How to display [spoiler] text. "Default" matches the site’s native behavior.', [
-        ['default', 'Default'],
-        ['reveal', 'Reveal on hover'],
-        ['remove', 'Remove entirely']
-      ]);
+      if (inputs['Relative Post Dates'])
+        $.on(inputs['Relative Post Dates'], 'change', syncRelativeTime);
+      if (inputs['Relative Date Title'])
+        $.on(inputs['Relative Date Title'], 'change', syncRelativeTime);
       $.add(section, fsFmt);
       const stylingOnlyKeys = new Set([
         'Scrollbar Markers',
@@ -29990,9 +31710,9 @@ Enable it on boards.${location.hostname.split('.')[1]}.org in your browser's pri
         'Highlight Posts Quoting You',
         'Highlight Own Posts',
         'Highlight Ghost Posts',
-        'Highlight Own Edge Only',
-        'Highlight You Edge Only',
-        'Highlight Ghost Edge Only'
+        'Highlight Own Background',
+        'Highlight You Background',
+        'Highlight Ghost Background'
       ]);
       Settings.renderMainGroups(section, {
         categories: ['Filtering', 'Monitoring', 'Quote Links'],
@@ -30113,9 +31833,7 @@ Enable it on boards.${location.hostname.split('.')[1]}.org in your browser's pri
           div = $.el('div', { innerHTML: `<label><input type="checkbox" name="${name}">${displayName(name)}</label><span class="thread-watcher-inline-number"><input type="number" name="Thread Watcher Thumbnail Size" min="16" max="160" step="1" class="field thread-watcher-size-input" title="Thumbnail size in pixels"></span><span class="description">: <span class="setting-description">${description}</span></span><span class="thread-watcher-inline-subsetting"><label><input type="checkbox" name="Thread Watcher Thumbnail Hover">Hover Preview</label><span class="thread-watcher-inline-number"><input type="number" name="Thread Watcher Thumbnail Preview Size" min="10" max="99" step="1" class="field thread-watcher-preview-size-input" title="Hover preview size as a percentage">%</span><span class="description">: <span class="setting-description">${hoverDescription}</span></span></span>` });
           div.dataset.name = `${name} Thread Watcher Thumbnail Size Thread Watcher Thumbnail Hover Thread Watcher Thumbnail Preview Size`;
           div.dataset.settingTitle = displayName(name);
-          div.dataset.settingDescription = `${description} ${hoverDescription} Thread Watcher Thumbnail Size Thread Watcher Thumbnail Hover Thread Watcher Thumbnail Preview Size`;
-          if (description)
-            div.title = description;
+          Settings.registerSettingDescription(div, `${description} ${hoverDescription} Thread Watcher Thumbnail Size Thread Watcher Thumbnail Hover Thread Watcher Thumbnail Preview Size`);
           const sizeInput = $('input[name="Thread Watcher Thumbnail Size"]', div);
           const previewToggle = $('input[name="Thread Watcher Thumbnail Hover"]', div);
           const previewSizeInput = $('input[name="Thread Watcher Thumbnail Preview Size"]', div);
@@ -30159,9 +31877,7 @@ Enable it on boards.${location.hostname.split('.')[1]}.org in your browser's pri
           div = $.el('div', { innerHTML: `<label><input type="checkbox" name="${name}">${displayName(name)}</label><span class="description">: <span class="setting-description">${description}</span></span>` });
           div.dataset.name = name;
           div.dataset.settingTitle = displayName(name);
-          div.dataset.settingDescription = description;
-          if (description)
-            div.title = description;
+          Settings.registerSettingDescription(div, description);
         }
         const level = arr[2] || 0;
         if (level > 0)
@@ -30176,8 +31892,7 @@ Enable it on boards.${location.hostname.split('.')[1]}.org in your browser's pri
       const heightDiv = $.el('div', { innerHTML: '<label>TW Max H <input type="number" name="Thread Watcher Max Height" min="120" max="999" step="1" class="field thread-watcher-height-input"></label><label class="thread-watcher-inline-number">W <input type="number" name="Thread Watcher Max Width" min="120" max="999" step="1" class="field thread-watcher-width-input"></label><span class="description">: <span class="setting-description">Maximum watched-thread list height and width in pixels.</span></span>' });
       heightDiv.dataset.name = 'Thread Watcher Max Height Thread Watcher Max Width';
       heightDiv.dataset.settingTitle = 'TW Max H/W';
-      heightDiv.dataset.settingDescription = 'Maximum watched-thread list height and width in pixels.';
-      heightDiv.title = 'Maximum watched-thread list height and width in pixels.';
+      Settings.registerSettingDescription(heightDiv, 'Maximum watched-thread list height and width in pixels.');
       const heightInput = $('input[name="Thread Watcher Max Height"]', heightDiv);
       const widthInput = $('input[name="Thread Watcher Max Width"]', heightDiv);
       $.on(heightInput, 'change', function () {
@@ -30208,8 +31923,7 @@ Enable it on boards.${location.hostname.split('.')[1]}.org in your browser's pri
       const attachDiv = $.el('div', { innerHTML: '<label><input type="checkbox" name="Thread Watcher Attached">Attach to QR</label><label class="thread-watcher-inline-number">at <select name="Thread Watcher Attach Location" class="field thread-watcher-attach-loc"><option value="bottom">bottom</option><option value="top">top</option><option value="left">left</option><option value="right">right</option></select></label><span class="description">: <span class="setting-description">Attach/dock watcher to Quick Reply. Bottom natural (width follows QR); left/right use manual width (height to content, capped by max H). Manual max W/H apply. Drag either title bar to move both; use the attach button to detach.</span></span>' });
       attachDiv.dataset.name = 'Thread Watcher Attached Thread Watcher Attach Location';
       attachDiv.dataset.settingTitle = 'Attach to QR';
-      attachDiv.dataset.settingDescription = 'Attach the thread watcher to the Quick Reply dialog.';
-      attachDiv.title = 'Attach the thread watcher to the Quick Reply dialog.';
+      Settings.registerSettingDescription(attachDiv, 'Attach the thread watcher to the Quick Reply dialog.');
       const attachInput = $('input[name="Thread Watcher Attached"]', attachDiv);
       const locInput = $('select[name="Thread Watcher Attach Location"]', attachDiv);
       $.on(attachInput, 'change', $.cb.checked);
@@ -30276,9 +31990,9 @@ Enable it on boards.${location.hostname.split('.')[1]}.org in your browser's pri
       const inputs = dict();
       const lookup = Settings.getMainSettingLookup();
       const groups = [
-        ['Image Behavior', ['Image Expansion', 'Image Hover', 'Image Hover in Catalog', 'Replace Thumbnails', 'Restart when Opened']],
+        ['Image Behavior', ['Image Expansion', 'Image Hover', 'Image Hover in Catalog', 'Replace Thumbnails', 'Replace GIF', 'Replace JPG', 'Replace PNG', 'Replace WEBM', 'Restart when Opened']],
         ['Images', ['Gallery', 'Fullscreen Gallery', 'PDF in Gallery', 'Sauce', 'Reveal Spoiler Thumbnails', 'Image Prefetching', 'Fappe Tyme', 'Werk Tyme']],
-        ['Videos', ['WEBM Metadata', 'Autoplay', 'Show Controls', 'Click Passthrough', 'Allow Sound', 'Mouse Wheel Volume', 'Enable sound posts']]
+        ['Videos', ['WEBM Metadata', 'Autoplay', 'Show Controls', 'Click Passthrough', 'Allow Sound', 'Mouse Wheel Volume', 'Loop in New Tab', 'Volume in New Tab', 'Enable sound posts']]
       ];
       for (const [legendTitle, keys] of groups) {
         const fs = $.el('details', { open: true }, { innerHTML: `<summary>${legendTitle}</summary>` });
@@ -30314,11 +32028,19 @@ Enable it on boards.${location.hostname.split('.')[1]}.org in your browser's pri
         categories: ['Posting and Captchas'],
         includeSetting: key => !['Comment Preview', 'Show Comment Preview Header Icon'].includes(key),
       });
+      // Let the Quick Reply react live (same tab) when the draft feature is
+      // toggled, so turning it off can wipe saved drafts/attachments immediately.
+      const rememberQRState = $('input[name="Remember QR State"]', section);
+      if (rememberQRState) {
+        $.on(rememberQRState, 'change', () => $.event('QRStateChanged', null));
+      }
       const fs = $.el('details', { open: true }, { innerHTML: '<summary>Comment Preview</summary>' });
       const row = $.el('div', {
         innerHTML: `<label><input type="checkbox" name="Comment Preview"><span class="setting-title">Comment Preview</span></label><span class="description">: <span class="setting-description">${Config.main['Posting and Captchas']['Comment Preview'][1]}</span></span>`,
       });
       row.dataset.name = 'Comment Preview';
+      row.dataset.settingTitle = 'Comment Preview';
+      Settings.registerSettingDescription(row, String(Config.main['Posting and Captchas']['Comment Preview'][1]));
       const toggle = $('input[name="Comment Preview"]', row);
       $.on(toggle, 'change', $.cb.checked);
       $.on(toggle, 'change', function () { this.parentNode.parentNode.dataset.checked = this.checked; });
@@ -30326,6 +32048,8 @@ Enable it on boards.${location.hostname.split('.')[1]}.org in your browser's pri
       const sub = $.el('div', { className: 'suboption-list' });
       const positionRow = $.el('div');
       positionRow.dataset.name = 'Comment Preview Position';
+      positionRow.dataset.settingTitle = 'Preview Position';
+      Settings.registerSettingDescription(positionRow, 'Where the live preview appears relative to the comment box (requires Comment Preview enabled).');
       const label = $.el('label');
       const select = $.el('select', { name: 'Comment Preview Position' });
       for (const [value, text] of [
@@ -30351,8 +32075,7 @@ Enable it on boards.${location.hostname.split('.')[1]}.org in your browser's pri
       });
       iconRow.dataset.name = 'Show Comment Preview Header Icon';
       iconRow.dataset.settingTitle = 'Show Header Icon';
-      iconRow.dataset.settingDescription = iconDescription;
-      iconRow.title = iconDescription;
+      Settings.registerSettingDescription(iconRow, iconDescription);
       const iconToggle = $('input[name="Show Comment Preview Header Icon"]', iconRow);
       $.on(iconToggle, 'change', $.cb.checked);
       $.on(iconToggle, 'change', function () { this.parentNode.parentNode.dataset.checked = this.checked; });
@@ -30469,51 +32192,131 @@ Enable it on boards.${location.hostname.split('.')[1]}.org in your browser's pri
         'Catalog Highlight Own Posts',
         'Catalog Highlight Watched Threads',
       ];
-      const markerColorLinkPairs = [
-        ['Scroll Marker Own Color', 'own', 'Scroll Marker Own Match Highlight'],
-        ['Scroll Marker You Color', 'you', 'Scroll Marker You Match Highlight'],
-        ['Scroll Marker Ghost Color', 'ghost', 'Scroll Marker Ghost Match Highlight'],
+      // Scrollbar markers now live folded into each thread highlight row. Each
+      // entry pairs a marker's enable checkbox with its colour/opacity/match
+      // controls so we can disable + dim them as a unit under the master switch.
+      const markerControlRows = [
+        { type: 'own', onKey: 'Scrollbar Mark Own Posts', colorKey: 'Scroll Marker Own Color', opacityKey: 'Scroll Marker Own Opacity', matchKey: 'Scroll Marker Own Match Highlight', highlightKey: 'Highlight Own Color' },
+        { type: 'you', onKey: 'Scrollbar Mark Quotes You', colorKey: 'Scroll Marker You Color', opacityKey: 'Scroll Marker You Opacity', matchKey: 'Scroll Marker You Match Highlight', highlightKey: 'Highlight You Color' },
+        { type: 'ghost', onKey: 'Scrollbar Mark Ghost Posts', colorKey: 'Scroll Marker Ghost Color', opacityKey: 'Scroll Marker Ghost Opacity', matchKey: 'Scroll Marker Ghost Match Highlight', highlightKey: 'Highlight Ghost Color' },
+        { type: 'unread', onKey: 'Scrollbar Mark Unread Line', colorKey: 'Scroll Marker Unread Color', opacityKey: 'Scroll Marker Unread Opacity', matchKey: null, highlightKey: null },
       ];
-      const markerMatchKeys = new Set(markerColorLinkPairs.map(([, , matchKey]) => matchKey));
+      // Changing any of these re-runs syncMarkerColorControls (master, per-row
+      // enable, and match toggles all change which marker controls are live).
+      const markerToggleKeys = new Set([
+        'Scrollbar Markers',
+        ...markerControlRows.map(r => r.onKey),
+        ...markerControlRows.map(r => r.matchKey).filter((k) => !!k),
+      ]);
+      // Thread highlight rows: each enable checkbox gates its own detail controls,
+      // mirroring syncCatalogHighlightControls for the catalog group.
+      const threadHighlightControlRows = [
+        { onKey: 'Highlight Own Posts', controls: ['Highlight Own Color', 'Highlight Own Opacity', 'Highlight Own Background', 'Highlight Own Edge Width', 'Highlight Own Border Style', 'Highlight Own Text Mode', 'Highlight Own Text Color', 'Highlight Own Link Color', 'Highlight Own Quote Color', 'Highlight Own Dead Link Color'] },
+        { onKey: 'Highlight Posts Quoting You', controls: ['Highlight You Color', 'Highlight You Opacity', 'Highlight You Background', 'Highlight You Edge Width', 'Highlight You Border Style', 'Highlight You Text Mode', 'Highlight You Text Color', 'Highlight You Link Color', 'Highlight You Quote Color', 'Highlight You Dead Link Color'] },
+        { onKey: 'Highlight Ghost Posts', controls: ['Highlight Ghost Color', 'Highlight Ghost Opacity', 'Highlight Ghost Background', 'Highlight Ghost Edge Width', 'Highlight Ghost Border Style', 'Highlight Ghost Text Mode', 'Highlight Ghost Text Color', 'Highlight Ghost Link Color', 'Highlight Ghost Quote Color', 'Highlight Ghost Dead Link Color'] },
+      ];
+      const themeDefaultSettings = [
+        ['Enable Thread Highlights', true],
+        ['Highlight Own Posts', true],
+        ['Highlight Posts Quoting You', true],
+        ['Highlight Ghost Posts', true],
+        ['Highlight Own Color', Settings.THEME_BORDER_HIGHLIGHT],
+        ['Highlight You Color', Settings.THEME_BORDER_HIGHLIGHT],
+        ['Highlight Ghost Color', ''],
+        ['Highlight Own Opacity', ''],
+        ['Highlight You Opacity', ''],
+        ['Highlight Ghost Opacity', ''],
+        ['Thread Highlight Edge Width', 3],
+        ['Highlight Own Edge Width', 3],
+        ['Highlight You Edge Width', 3],
+        ['Highlight Ghost Edge Width', 3],
+        ['Highlight Own Background', false],
+        ['Highlight You Background', false],
+        ['Highlight Ghost Background', false],
+        ['Highlight Own Text Mode', 'default'],
+        ['Highlight You Text Mode', 'default'],
+        ['Highlight Ghost Text Mode', 'default'],
+        ['Highlight Own Text Color', ''],
+        ['Highlight Own Link Color', ''],
+        ['Highlight Own Quote Color', ''],
+        ['Highlight Own Dead Link Color', ''],
+        ['Highlight You Text Color', ''],
+        ['Highlight You Link Color', ''],
+        ['Highlight You Quote Color', ''],
+        ['Highlight You Dead Link Color', ''],
+        ['Highlight Ghost Text Color', ''],
+        ['Highlight Ghost Link Color', ''],
+        ['Highlight Ghost Quote Color', ''],
+        ['Highlight Ghost Dead Link Color', ''],
+        // Catalog highlights are neXT-specific; keep them available but off for the vanilla baseline.
+        ['Enable Catalog Highlights', false],
+        ['Catalog Highlight Own Posts', true],
+        ['Catalog Highlight Watched Threads', true],
+        ['Catalog Highlight Own Color', ''],
+        ['Catalog Highlight Own Opacity', ''],
+        ['Catalog Highlight Own Background', false],
+        ['Catalog Highlight Watched Color', ''],
+        ['Catalog Highlight Watched Opacity', ''],
+        ['Catalog Highlight Watched Background', false],
+        ['Catalog Highlight Border Width', 3],
+        ['Catalog Highlight Own Border Width', 3],
+        ['Catalog Highlight Watched Border Width', 3],
+        ['Catalog Highlight Own Text Mode', 'default'],
+        ['Catalog Highlight Own Text Color', ''],
+        ['Catalog Highlight Own Subject Color', ''],
+        ['Catalog Highlight Own Link Color', ''],
+        ['Catalog Highlight Own Quote Color', ''],
+        ['Catalog Highlight Own Dead Link Color', ''],
+        ['Catalog Highlight Watched Text Mode', 'default'],
+        ['Catalog Highlight Watched Text Color', ''],
+        ['Catalog Highlight Watched Subject Color', ''],
+        ['Catalog Highlight Watched Link Color', ''],
+        ['Catalog Highlight Watched Quote Color', ''],
+        ['Catalog Highlight Watched Dead Link Color', ''],
+      ];
+      const threadHighlightToggleKeys = new Set([
+        'Enable Thread Highlights',
+        ...threadHighlightControlRows.map(r => r.onKey),
+      ]);
       const highlightTextControlGroups = [
         {
           manualGroup: 'own',
-          autoKey: 'Highlight Own Text Auto',
+          modeKey: 'Highlight Own Text Mode',
           colorKey: 'Highlight Own Color',
           opacityKey: 'Highlight Own Opacity',
-          edgeKey: 'Highlight Own Edge Only',
+          bgKey: 'Highlight Own Background',
           keys: ['Highlight Own Text Color', 'Highlight Own Link Color', 'Highlight Own Quote Color', 'Highlight Own Dead Link Color'],
         },
         {
           manualGroup: 'you',
-          autoKey: 'Highlight You Text Auto',
+          modeKey: 'Highlight You Text Mode',
           colorKey: 'Highlight You Color',
           opacityKey: 'Highlight You Opacity',
-          edgeKey: 'Highlight You Edge Only',
+          bgKey: 'Highlight You Background',
           keys: ['Highlight You Text Color', 'Highlight You Link Color', 'Highlight You Quote Color', 'Highlight You Dead Link Color'],
         },
         {
           manualGroup: 'ghost',
-          autoKey: 'Highlight Ghost Text Auto',
+          modeKey: 'Highlight Ghost Text Mode',
           colorKey: 'Highlight Ghost Color',
           opacityKey: 'Highlight Ghost Opacity',
-          edgeKey: 'Highlight Ghost Edge Only',
+          bgKey: 'Highlight Ghost Background',
           keys: ['Highlight Ghost Text Color', 'Highlight Ghost Link Color', 'Highlight Ghost Quote Color', 'Highlight Ghost Dead Link Color'],
         },
         {
           manualGroup: 'catalog-own',
-          autoKey: 'Catalog Highlight Own Text Auto',
+          modeKey: 'Catalog Highlight Own Text Mode',
           colorKey: 'Catalog Highlight Own Color',
           opacityKey: 'Catalog Highlight Own Opacity',
-          edgeKey: 'Catalog Highlight Own Border Only',
+          bgKey: 'Catalog Highlight Own Background',
           keys: ['Catalog Highlight Own Text Color', 'Catalog Highlight Own Subject Color', 'Catalog Highlight Own Link Color', 'Catalog Highlight Own Quote Color', 'Catalog Highlight Own Dead Link Color'],
         },
         {
           manualGroup: 'catalog-watched',
-          autoKey: 'Catalog Highlight Watched Text Auto',
+          modeKey: 'Catalog Highlight Watched Text Mode',
           colorKey: 'Catalog Highlight Watched Color',
           opacityKey: 'Catalog Highlight Watched Opacity',
-          edgeKey: 'Catalog Highlight Watched Border Only',
+          bgKey: 'Catalog Highlight Watched Background',
           keys: ['Catalog Highlight Watched Text Color', 'Catalog Highlight Watched Subject Color', 'Catalog Highlight Watched Link Color', 'Catalog Highlight Watched Quote Color', 'Catalog Highlight Watched Dead Link Color'],
         },
       ];
@@ -30569,6 +32372,12 @@ Enable it on boards.${location.hostname.split('.')[1]}.org in your browser's pri
         Conf[storageKey] = value;
         $.set(storageKey, value);
       };
+      // Resolve a highlight row's text mode, preferring the live <select> value
+      // so the preview reacts before the change is persisted.
+      const groupTextMode = (group) => {
+        const el = inputs[group.modeKey];
+        return Settings.resolveTextMode(el ? el.value : editConf(group.modeKey));
+      };
       const baseTextPalette = (baseBackground) => {
         const textColorMode = editConf('textColorMode') === 'manual' ? 'manual' : 'auto';
         const autoTextPalette = Settings.autoTextPalette(baseBackground);
@@ -30581,17 +32390,21 @@ Enable it on boards.${location.hostname.split('.')[1]}.org in your browser's pri
       };
       const syncAutoHighlightPreviewInputs = () => {
         const baseBackground = Settings.getTextBaseBackground();
+        const postBackground = Settings.getPostBaseBackground();
         const basePalette = baseTextPalette(baseBackground);
         const v = editVariant();
         for (const group of highlightTextControlGroups) {
-          const autoToggle = inputs[group.autoKey];
-          if (!autoToggle || !autoToggle.checked)
+          if (groupTextMode(group) !== 'auto')
             continue;
-          // Edge/border-only highlights leave the post on its base background, so the
-          // auto color is derived from that, not the highlight-tinted background.
-          const palette = editConf(group.edgeKey)
+          const groupBackground = group.manualGroup.startsWith('catalog-') ? baseBackground : postBackground;
+          const groupBasePalette = group.manualGroup.startsWith('catalog-')
             ? basePalette
-            : (Settings.autoHighlightTextPalette(group.colorKey, group.opacityKey, baseBackground, v) || basePalette);
+            : baseTextPalette(postBackground);
+          // Edge/border-only highlights leave the post on its base background, so
+          // the auto color is derived from that, not the highlight-tinted background.
+          const palette = !editConf(group.bgKey)
+            ? groupBasePalette
+            : (Settings.autoHighlightTextPalette(group.colorKey, group.opacityKey, groupBackground, v) || groupBasePalette);
           const nextValues = [palette.text, palette.link, palette.quote, palette.deadLink];
           for (let i = 0; i < group.keys.length; i++) {
             const key = group.keys[i];
@@ -30608,16 +32421,20 @@ Enable it on boards.${location.hostname.split('.')[1]}.org in your browser's pri
       };
       const seedManualHighlightTextColors = (targetGroup, overwrite = false) => {
         const baseBackground = Settings.getTextBaseBackground();
+        const postBackground = Settings.getPostBaseBackground();
         const basePalette = baseTextPalette(baseBackground);
         const groups = targetGroup ? [targetGroup] : highlightTextControlGroups;
         const v = editVariant();
         for (const group of groups) {
-          const autoToggle = inputs[group.autoKey];
-          if (!autoToggle || autoToggle.checked)
+          if (groupTextMode(group) !== 'manual')
             continue;
-          const autoPalette = editConf(group.edgeKey)
+          const groupBackground = group.manualGroup.startsWith('catalog-') ? baseBackground : postBackground;
+          const groupBasePalette = group.manualGroup.startsWith('catalog-')
             ? basePalette
-            : (Settings.autoHighlightTextPalette(group.colorKey, group.opacityKey, baseBackground, v) || basePalette);
+            : baseTextPalette(postBackground);
+          const autoPalette = !editConf(group.bgKey)
+            ? groupBasePalette
+            : (Settings.autoHighlightTextPalette(group.colorKey, group.opacityKey, groupBackground, v) || groupBasePalette);
           const nextValues = [autoPalette.text, autoPalette.link, autoPalette.quote, autoPalette.deadLink];
           for (let i = 0; i < group.keys.length; i++) {
             const key = group.keys[i];
@@ -30698,11 +32515,11 @@ Enable it on boards.${location.hostname.split('.')[1]}.org in your browser's pri
           const enabled = catalogEnabled && !!inputs[key]?.checked;
           const controls = key === 'Catalog Highlight Own Posts' ?
             [
-              'Catalog Highlight Own Color', 'Catalog Highlight Own Opacity', 'Catalog Highlight Own Border Only', 'Catalog Highlight Own Text Auto',
+              'Catalog Highlight Own Color', 'Catalog Highlight Own Opacity', 'Catalog Highlight Own Background', 'Catalog Highlight Own Border Width', 'Catalog Highlight Own Border Style', 'Catalog Highlight Own Text Mode',
               'Catalog Highlight Own Text Color', 'Catalog Highlight Own Subject Color', 'Catalog Highlight Own Link Color', 'Catalog Highlight Own Quote Color', 'Catalog Highlight Own Dead Link Color',
             ] :
             [
-              'Catalog Highlight Watched Color', 'Catalog Highlight Watched Opacity', 'Catalog Highlight Watched Border Only', 'Catalog Highlight Watched Text Auto',
+              'Catalog Highlight Watched Color', 'Catalog Highlight Watched Opacity', 'Catalog Highlight Watched Background', 'Catalog Highlight Watched Border Width', 'Catalog Highlight Watched Border Style', 'Catalog Highlight Watched Text Mode',
               'Catalog Highlight Watched Text Color', 'Catalog Highlight Watched Subject Color', 'Catalog Highlight Watched Link Color', 'Catalog Highlight Watched Quote Color', 'Catalog Highlight Watched Dead Link Color',
             ];
           for (const controlKey of controls) {
@@ -30713,19 +32530,67 @@ Enable it on boards.${location.hostname.split('.')[1]}.org in your browser's pri
         }
         syncColorHexInputs();
       };
+      // The editable marker colour swatch (+ hex) normally lives in the body's
+      // scrollbar-marker section, but hops up into the row header while the row is
+      // collapsed so it can be tweaked at a glance. It's only promoted to the
+      // header when the row has an independent marker colour to set — its marker
+      // is on and not slaved to the highlight (matched markers mirror the
+      // highlight swatch already in the header). When open, or with nothing to
+      // adjust, it stays in its body slot.
+      const placeMarkerColorControls = () => {
+        const markersOn = !!inputs['Scrollbar Markers']?.checked;
+        for (const { type, onKey, matchKey, highlightKey } of markerControlRows) {
+          if (!highlightKey)
+            continue; // unread's marker swatch has no body/header split
+          const item = $(`[data-highlight-row="${type}"]`, section);
+          if (!item)
+            continue;
+          const wrapper = $(`[data-marker-color="${type}"]`, item);
+          const headSlot = $(`[data-mk-headslot="${type}"]`, item);
+          const bodySlot = $(`[data-mk-bodyslot="${type}"]`, item);
+          if (!wrapper || !headSlot || !bodySlot)
+            continue;
+          const open = item.classList.contains('styling-hl-open');
+          const rowOn = markersOn && !!inputs[onKey]?.checked;
+          const matched = !!(matchKey && inputs[matchKey]?.checked);
+          const target = !open && rowOn && !matched ? headSlot : bodySlot;
+          if (wrapper.parentElement !== target)
+            target.appendChild(wrapper);
+        }
+      };
       const syncMarkerColorControls = () => {
         Settings.syncLinkedMarkerColors(inputs, editVariant());
-        for (const [key, markerType, matchKey] of markerColorLinkPairs) {
-          const linked = !!inputs[matchKey]?.checked;
-          const colorInput = inputs[key];
+        const markersOn = !!inputs['Scrollbar Markers']?.checked;
+        for (const { type, onKey, colorKey, opacityKey, matchKey } of markerControlRows) {
+          const rowOn = markersOn && !!inputs[onKey]?.checked;
+          const matched = !!(matchKey && inputs[matchKey]?.checked);
+          const onInput = inputs[onKey];
+          if (onInput)
+            onInput.disabled = !markersOn;
+          if (matchKey && inputs[matchKey])
+            inputs[matchKey].disabled = !rowOn;
+          const colorInput = inputs[colorKey];
+          // A matched marker mirrors its highlight colour, so its picker is inert.
           if (colorInput)
-            colorInput.disabled = linked;
-          const row = $(`[data-marker-color="${markerType}"]`, section);
-          if (row) {
-            row.dataset.colorLinked = linked ? 'true' : 'false';
-            const clearButton = $(`[data-clear="${key}"]`, row);
-            if (clearButton)
-              clearButton.disabled = linked;
+            colorInput.disabled = !rowOn || matched;
+          const opacityInput = inputs[opacityKey];
+          if (opacityInput)
+            opacityInput.disabled = !rowOn;
+          const cell = $(`[data-marker-color="${type}"]`, section);
+          if (cell)
+            cell.dataset.colorLinked = matched ? 'true' : 'false';
+        }
+        placeMarkerColorControls();
+        syncColorHexInputs();
+      };
+      const syncThreadHighlightControls = () => {
+        const masterOn = !!inputs['Enable Thread Highlights']?.checked;
+        for (const { onKey, controls } of threadHighlightControlRows) {
+          const enabled = masterOn && !!inputs[onKey]?.checked;
+          for (const key of controls) {
+            const control = inputs[key];
+            if (control)
+              control.disabled = !enabled;
           }
         }
         syncColorHexInputs();
@@ -30745,18 +32610,17 @@ Enable it on boards.${location.hostname.split('.')[1]}.org in your browser's pri
       };
       const syncHighlightTextControls = () => {
         for (const group of highlightTextControlGroups) {
-          const autoToggle = inputs[group.autoKey];
-          const auto = autoToggle ? autoToggle.checked : true;
+          const manual = groupTextMode(group) === 'manual';
           const manualRoot = $(`[data-highlight-text-manual="${group.manualGroup}"]`, section);
           if (manualRoot)
-            manualRoot.hidden = auto;
+            manualRoot.hidden = !manual;
           for (const key of group.keys) {
             const colorInput = inputs[key];
             if (colorInput)
-              colorInput.disabled = auto;
+              colorInput.disabled = !manual;
             const clearButton = $(`[data-clear="${key}"]`, section);
             if (clearButton)
-              clearButton.disabled = auto;
+              clearButton.disabled = !manual;
           }
         }
       };
@@ -30775,6 +32639,97 @@ Enable it on boards.${location.hostname.split('.')[1]}.org in your browser's pri
         $.on(matchLabel, 'focusin', () => setMatchTargetHighlight(role, true));
         $.on(matchLabel, 'focusout', () => setMatchTargetHighlight(role, false));
       }
+      // Highlight rows are an accordion: one open at a time. Clicks on a row's
+      // colour swatch edit in place rather than collapsing it.
+      const accItems = $$('.styling-hl-acc-item', section);
+      let activePreviewHoverRow = '';
+      const setPreviewHoverRow = (row = '') => {
+        activePreviewHoverRow = row;
+        Settings.setStylingPreviewHoverState(row);
+      };
+      for (const item of accItems) {
+        const row = item.dataset.highlightRow || '';
+        if (!row || row === 'unread')
+          continue;
+        $.on(item, 'mouseenter', () => setPreviewHoverRow(row));
+        $.on(item, 'mouseleave', () => {
+          if (activePreviewHoverRow === row)
+            setPreviewHoverRow();
+        });
+        $.on(item, 'focusin', () => setPreviewHoverRow(row));
+        $.on(item, 'focusout', (e) => {
+          if (item.contains(e.relatedTarget))
+            return;
+          if (activePreviewHoverRow === row)
+            setPreviewHoverRow();
+        });
+      }
+      const updatePreviewStateFromRows = refreshStylingPreview;
+      for (const head of $$('.styling-hl-acc-head', section)) {
+        $.on(head, 'click', (e) => {
+          const target = e.target;
+          if (target.closest('.styling-hl-color'))
+            return;
+          const item = head.parentElement;
+          const open = item.classList.contains('styling-hl-open');
+          for (const it of accItems)
+            it.classList.remove('styling-hl-open');
+          if (!open)
+            item.classList.add('styling-hl-open');
+          // Opening/closing changes where each row's marker colour swatch lives
+          // (body section when open, header when collapsed).
+          placeMarkerColorControls();
+          updatePreviewStateFromRows();
+        });
+      }
+      // Per-state width text inputs (px). Text inputs don't get the generic
+      // colour/range apply handler, so wire live apply + clamp here.
+      const widthInputKeys = [
+        'Highlight Own Edge Width', 'Highlight You Edge Width', 'Highlight Ghost Edge Width',
+        'Catalog Highlight Own Border Width', 'Catalog Highlight Watched Border Width',
+      ];
+      const borderStyleInputKeys = new Set([
+        'Highlight Own Border Style', 'Highlight You Border Style', 'Highlight Ghost Border Style',
+        'Catalog Highlight Own Border Style', 'Catalog Highlight Watched Border Style',
+      ]);
+      for (const key of widthInputKeys) {
+        const inp = inputs[key];
+        if (!inp)
+          continue;
+        const apply = () => { Settings.applyStylingVars(); refreshStylingPreview(); };
+        $.on(inp, 'input', apply);
+        $.on(inp, 'change', () => {
+          let n = parseInt(inp.value, 10);
+          if (!Number.isFinite(n))
+            n = 3;
+          n = Math.min(12, Math.max(1, n));
+          inp.value = String(n);
+          writeEditConf(key, n);
+          apply();
+        });
+      }
+      // Live value readout next to each opacity slider so the current step shows
+      // while dragging (a native range gives no number).
+      const opacityReadouts = [];
+      // Always show two decimals (the slider step is 0.05) so the readout keeps a
+      // fixed width and doesn't shift the row as the value crosses 1, 0.1, 0, etc.
+      const fmtOpacity = (v) => {
+        const n = parseFloat(v);
+        return Number.isFinite(n) ? n.toFixed(2) : v;
+      };
+      const refreshOpacityReadouts = () => {
+        for (const { range, out } of opacityReadouts)
+          out.textContent = fmtOpacity(range.value);
+      };
+      for (const range of $$('.styling-hl-octl input[type="range"]', section)) {
+        const out = $.el('span', { className: 'styling-hl-valout' });
+        range.insertAdjacentElement('afterend', out);
+        const upd = () => { out.textContent = fmtOpacity(range.value); };
+        $.on(range, 'input', upd);
+        $.on(range, 'change', upd);
+        opacityReadouts.push({ range, out });
+      }
+      refreshOpacityReadouts();
       const refreshUnsetColorInputs = () => {
         for (const key in inputs) {
           const inp = inputs[key];
@@ -30782,8 +32737,7 @@ Enable it on boards.${location.hostname.split('.')[1]}.org in your browser's pri
             continue;
           if (highlightTextKeys.has(key)) {
             const group = highlightTextControlGroups.find(item => item.keys.includes(key));
-            const autoToggle = group ? inputs[group.autoKey] : null;
-            if (autoToggle && !autoToggle.checked)
+            if (group && groupTextMode(group) === 'manual')
               continue;
           }
           Settings.setColorInputValue(inp, key, '');
@@ -30802,14 +32756,15 @@ Enable it on boards.${location.hostname.split('.')[1]}.org in your browser's pri
         });
       }
       for (const group of highlightTextControlGroups) {
-        const autoToggle = inputs[group.autoKey];
-        if (!autoToggle)
+        const modeSelect = inputs[group.modeKey];
+        if (!modeSelect)
           continue;
-        $.on(autoToggle, 'change', () => {
-          writeEditConf(group.autoKey, !!autoToggle.checked);
-          if (autoToggle.checked) {
+        $.on(modeSelect, 'change', () => {
+          writeEditConf(group.modeKey, modeSelect.value);
+          const mode = Settings.resolveTextMode(modeSelect.value);
+          if (mode === 'auto') {
             syncAutoHighlightPreviewInputs();
-          } else {
+          } else if (mode === 'manual') {
             seedManualHighlightTextColors(group, true);
           }
           syncHighlightTextControls();
@@ -30843,8 +32798,11 @@ Enable it on boards.${location.hostname.split('.')[1]}.org in your browser's pri
           if (catalogHighlightKeys.includes(name)) {
             $.on(input, 'change', syncCatalogHighlightControls);
           }
-          if (markerMatchKeys.has(name)) {
+          if (markerToggleKeys.has(name)) {
             $.on(input, 'change', syncMarkerColorControls);
+          }
+          if (threadHighlightToggleKeys.has(name)) {
+            $.on(input, 'change', syncThreadHighlightControls);
           }
           if (name === 'Enable Catalog Highlights') {
             $.on(input, 'change', syncCatalogHighlightControls);
@@ -30874,6 +32832,12 @@ Enable it on boards.${location.hostname.split('.')[1]}.org in your browser's pri
           $.on(input, event, applyRange);
           if (event !== 'input')
             $.on(input, 'input', applyRange);
+        } else if (borderStyleInputKeys.has(name)) {
+          $.on(input, 'change', () => {
+            writeEditConf(name, input.value);
+            Settings.applyStylingVars();
+            refreshStylingPreview();
+          });
         }
       }
       Settings.primeResolvedStyleColorCache(Object.keys(inputs).filter(key => inputs[key].type === 'color'));
@@ -30906,6 +32870,7 @@ Enable it on boards.${location.hostname.split('.')[1]}.org in your browser's pri
         }
         syncMarkerColorControls();
         syncCatalogHighlightControls();
+        syncThreadHighlightControls();
         syncTextColorControls();
         syncHighlightTextControls();
         seedManualHighlightTextColors();
@@ -30914,6 +32879,7 @@ Enable it on boards.${location.hostname.split('.')[1]}.org in your browser's pri
         refreshUnsetColorInputs();
         Settings.refreshCustomCSSEditor(section);
         syncColorHexInputs();
+        refreshOpacityReadouts();
         refreshStylingPreview();
       };
       $.get(items, populateInputsFromLoaded);
@@ -30935,6 +32901,41 @@ Enable it on boards.${location.hostname.split('.')[1]}.org in your browser's pri
           }
           syncAutoHighlightPreviewInputs();
           refreshStylingPreview();
+        });
+      }
+      const useThemeDefaults = $('#styling-use-theme-defaults', section);
+      if (useThemeDefaults) {
+        $.on(useThemeDefaults, 'click', (e) => {
+          e.preventDefault();
+          for (const [baseKey, value] of themeDefaultSettings) {
+            writeEditConf(baseKey, value);
+            const input = inputs[baseKey];
+            if (!input)
+              continue;
+            if (input.type === 'checkbox') {
+              input.checked = !!value;
+              setCheckedState(input);
+            } else if (input.type === 'color') {
+              Settings.setColorInputValue(input, baseKey, value);
+            } else if (input.type === 'range') {
+              input.value = value === '' ? '1' : String(value);
+            } else {
+              input.value = String(value ?? '');
+            }
+          }
+          syncMarkerColorControls();
+          syncCatalogHighlightControls();
+          syncThreadHighlightControls();
+          syncTextColorControls();
+          syncHighlightTextControls();
+          syncAutoHighlightPreviewInputs();
+          Settings.applyStylingVars();
+          refreshUnsetColorInputs();
+          syncColorHexInputs();
+          refreshOpacityReadouts();
+          updatePreviewStateFromRows();
+          refreshSuggestedPalettesIfOpen();
+          $.event('RefreshScrollMarkers');
         });
       }
       const paletteSuggestionRoot = $('#styling-palette-suggestions', section);
@@ -31129,8 +33130,12 @@ Enable it on boards.${location.hostname.split('.')[1]}.org in your browser's pri
       // Randomize / reset highlight color buttons.
       const openPreview = $('#styling-open-preview', section);
       if (openPreview) {
+        if (Settings.stylingPreviewPanel?.isConnected) {
+          openPreview.textContent = 'Hide preview';
+        }
         $.on(openPreview, 'click', () => {
           Settings.openStylingPreview(section);
+          updatePreviewStateFromRows();
         });
       }
       const randomize = $('#styling-randomize', section);
@@ -31212,6 +33217,9 @@ Enable it on boards.${location.hostname.split('.')[1]}.org in your browser's pri
         stylingHost.dataset.editingVariant = variant;
         for (const detail of $$('details[data-variant-aware="true"]', section)) {
           detail.dataset.variantLabel = shortLabel;
+          const summaryText = $('.styling-section-summary-text', detail);
+          if (summaryText)
+            summaryText.dataset.variantLabel = shortLabel;
         }
       };
       const switchEditingVariant = (variant) => {
@@ -31301,12 +33309,14 @@ Enable it on boards.${location.hostname.split('.')[1]}.org in your browser's pri
       return text.length > 180 ? `${text.slice(0, 177)}...` : text;
     },
     stylingPreviewSampleMessageHTML() {
+      // Greentext first so it stays visible within the catalog's clamped height,
+      // then regular text, a link, a quotelink and a dead quotelink.
       return [
-        'Regular text sample with a ',
-        '<a href="https://example.com/thread-preview" target="_blank" rel="nofollow noopener">regular link</a>, ',
+        '<span class="quote">&gt;greentext sample</span><br>',
+        'Regular text with a ',
+        '<a href="https://example.com/thread-preview" target="_blank" rel="nofollow noopener">link</a>, ',
         '<a class="quotelink" href="#p1213499548" rel="nofollow">&gt;&gt;1213499548</a>, ',
-        '<a class="quotelink deadlink" href="#p1213000000" rel="nofollow">&gt;&gt;1213000000</a>, ',
-        'and <span class="quote">&gt;quoted text preview</span>.'
+        'and a <a class="quotelink deadlink" href="#p1213000000" rel="nofollow">&gt;&gt;1213000000</a> dead link.'
       ].join('');
     },
     stylingPreviewPostHTML({ postID, extraClass = '', author = 'Anonymous', subject = '', message = '', messageHTML = '', }) {
@@ -31330,9 +33340,10 @@ Enable it on boards.${location.hostname.split('.')[1]}.org in your browser's pri
    </div>
   `;
     },
-    stylingPreviewCatalogThreadHTML({ threadID, postID, extraThreadClass = '', extraContainerClass = '', subject = '', message = '', messageHTML = '', summary = '', excerpt = '', }) {
+    stylingPreviewCatalogThreadHTML({ threadID, postID, extraThreadClass = '', extraContainerClass = '', extraPostClass = '', subject = '', message = '', messageHTML = '', summary = '', excerpt = '', }) {
       const threadClasses = `thread catalog-thread ${extraThreadClass}`.trim();
       const containerClasses = `postContainer catalog-container ${extraContainerClass}`.trim();
+      const postClasses = `post catalog-post ${extraPostClass}`.trim();
       const safeSubject = E(subject || 'Catalog subject preview');
       const renderedMessage = messageHTML || E(message || Settings.stylingPreviewSampleText());
       const safeSummary = E(summary || '4 posts and 2 image replies');
@@ -31340,7 +33351,7 @@ Enable it on boards.${location.hostname.split('.')[1]}.org in your browser's pri
       return `
    <div class="${threadClasses}" id="t${threadID}" style="--tn-w: 250; --tn-h: 196;">
     <div class="${containerClasses}" id="pc${threadID}" data-full-i-d="g.${threadID}">
-     <div id="p${postID}" class="post catalog-post">
+     <div id="p${postID}" class="${postClasses}">
       <a class="catalog-link" href="/g/thread/${threadID}">
        <img src="//i.4cdn.org/g/1745612650141704s.jpg" class="catalog-thumb" data-width="250" data-height="196" style="width: 150px; height: 117.6px;">
       </a>
@@ -31364,66 +33375,297 @@ Enable it on boards.${location.hostname.split('.')[1]}.org in your browser's pri
    </div>
   `;
     },
+    stylingPreviewThreadState(state = 'default') {
+      // Every thread state shares identical body content so only the highlight styling
+      // (and the subject label naming the type) differs between them.
+      const messageHTML = [
+        'Sample post text with a ',
+        '<a href="https://example.com/thread-preview" target="_blank" rel="nofollow noopener">regular link</a>, ',
+        '<a class="quotelink" href="#p1213499548" rel="nofollow">&gt;&gt;1213499548</a>, ',
+        'and a <a class="quotelink deadlink" href="#p1213000000" rel="nofollow">&gt;&gt;1213000000</a> dead link.',
+        '<br><span class="quote">&gt;greentext sample</span>'
+      ].join('');
+      const states = {
+        default: { subject: 'Default post', extraClass: '', messageHTML },
+        own: { subject: 'Your post', extraClass: 'yourPost', messageHTML },
+        you: { subject: 'Quotes you', extraClass: 'quotesYou', messageHTML },
+        ghost: { subject: 'Ghost post', extraClass: 'from-archive', messageHTML },
+      };
+      return states[state] || states.default;
+    },
+    stylingPreviewCatalogState(state = 'default') {
+      const sampleMessageHTML = Settings.stylingPreviewSampleMessageHTML();
+      const states = {
+        default: {
+          subject: 'Default catalog',
+          extraThreadClass: '',
+          extraContainerClass: '',
+          extraPostClass: '',
+          messageHTML: sampleMessageHTML,
+          summary: '4 posts and 2 image replies',
+          excerpt: 'recent reply preview',
+        },
+        'catalog-own': {
+          subject: 'Your catalog post',
+          extraThreadClass: 'yourPost',
+          extraContainerClass: 'yourPost',
+          extraPostClass: 'yourPost',
+          messageHTML: sampleMessageHTML,
+          summary: 'You replied in this thread',
+          excerpt: 'your reply preview',
+        },
+        'catalog-watched': {
+          subject: 'Watched catalog',
+          extraThreadClass: 'watched',
+          extraContainerClass: '',
+          extraPostClass: '',
+          messageHTML: sampleMessageHTML,
+          summary: 'Watched thread preview',
+          excerpt: 'watched reply preview',
+        }
+      };
+      return states[state] || states.default;
+    },
+    stylingPreviewContentHTML() {
+      const threadState = Settings.stylingPreviewThreadState();
+      const catalogState = Settings.stylingPreviewCatalogState();
+      return `
+   <div class="styling-preview-layout">
+    <div class="board styling-preview-thread" data-preview-panel="thread" aria-label="Thread highlight states">
+     <div class="thread" id="t503286550">
+      ${Settings.stylingPreviewPostHTML({ postID: 503286554, subject: threadState.subject, extraClass: threadState.extraClass, messageHTML: threadState.messageHTML })}
+     </div>
+    </div>
+    <div class="board styling-preview-catalog catalog-small" data-preview-panel="catalog" aria-label="Catalog highlight states">
+     ${Settings.stylingPreviewCatalogThreadHTML({ threadID: 503286581, postID: 503286581, ...catalogState })}
+    </div>
+   </div>
+  `;
+    },
+    setStylingPreviewHoverState(row = '') {
+      const panel = Settings.stylingPreviewPanel;
+      if (!panel)
+        return;
+      const threadStateName = ['own', 'you', 'ghost'].includes(row) ? row : 'default';
+      const catalogStateName = ['catalog-own', 'catalog-watched'].includes(row) ? row : 'default';
+      const threadState = Settings.stylingPreviewThreadState(threadStateName);
+      const catalogState = Settings.stylingPreviewCatalogState(catalogStateName);
+      panel.dataset.previewHoverState = row || 'default';
+      const postContainer = $('.styling-preview-post', panel);
+      const postSubject = $('.styling-preview-post .postInfo.desktop .subject', panel);
+      const postMessage = $('.styling-preview-post .postMessage', panel);
+      if (postContainer) {
+        postContainer.className = `postContainer replyContainer styling-preview-post ${threadState.extraClass}`.trim();
+      }
+      if (postSubject)
+        postSubject.textContent = threadState.subject;
+      if (postMessage)
+        postMessage.innerHTML = threadState.messageHTML;
+      const catalogThread = $('.styling-preview-catalog > .catalog-thread', panel);
+      const catalogContainer = $('.styling-preview-catalog .catalog-container', panel);
+      const catalogPost = $('.styling-preview-catalog .catalog-post', panel);
+      const catalogSubject = $('.styling-preview-catalog .catalog-post > .postInfo .subject', panel);
+      const catalogMessage = $('.styling-preview-catalog .catalog-post > .postMessage', panel);
+      const catalogSummary = $('.styling-preview-catalog .preview-summary', panel);
+      const catalogExcerpt = $('.styling-preview-catalog .catalog-reply-excerpt', panel);
+      if (catalogThread)
+        catalogThread.className = `thread catalog-thread ${catalogState.extraThreadClass}`.trim();
+      if (catalogContainer)
+        catalogContainer.className = `postContainer catalog-container ${catalogState.extraContainerClass}`.trim();
+      if (catalogPost)
+        catalogPost.className = `post catalog-post ${catalogState.extraPostClass}`.trim();
+      if (catalogSubject)
+        catalogSubject.textContent = catalogState.subject;
+      if (catalogMessage)
+        catalogMessage.innerHTML = catalogState.messageHTML;
+      if (catalogSummary)
+        catalogSummary.textContent = catalogState.summary;
+      if (catalogExcerpt)
+        catalogExcerpt.textContent = catalogState.excerpt;
+    },
     openStylingPreview(section) {
       if (!Settings.dialog)
         return;
       const targetSection = section || $('.section-styling', Settings.dialog);
+      const trigger = Settings.dialog ? $('#styling-open-preview', Settings.dialog) : null;
+      if (Settings.stylingPreviewPanel && Settings.stylingPreviewPanel.isConnected) {
+        Settings.closeStylingPreview();
+        return;
+      }
       if (!targetSection)
         return;
-      const trigger = $('#styling-open-preview', targetSection);
-      if (Settings.stylingPreviewPanel && Settings.stylingPreviewPanel.isConnected) {
-        const collapsed = Settings.stylingPreviewPanel.dataset.collapsed === 'true';
-        Settings.stylingPreviewPanel.dataset.collapsed = collapsed ? 'false' : 'true';
-        if (trigger)
-          trigger.textContent = collapsed ? 'Hide preview' : 'Preview states';
-        return;
-      }
-      const panel = $.el('div', { className: 'styling-preview styling-preview-dock dialog' });
-      panel.dataset.collapsed = 'false';
-      const sampleMessageHTML = Settings.stylingPreviewSampleMessageHTML();
+      const panel = $.el('div', { id: 'styling-preview-window', className: 'styling-preview dialog' });
+      panel.dataset.previewView = 'both';
       panel.innerHTML = `
-   <div class="styling-preview-layout">
-    <div class="board styling-preview-thread">
-     <div class="thread" id="t503286550">
-      ${Settings.stylingPreviewPostHTML({ postID: 503286554, subject: 'Normal thread state', messageHTML: sampleMessageHTML })}
-      ${Settings.stylingPreviewPostHTML({ postID: 503286555, extraClass: 'yourPost', author: 'You', subject: 'Your post state', messageHTML: sampleMessageHTML })}
-      ${Settings.stylingPreviewPostHTML({ postID: 503286556, extraClass: 'quotesYou', subject: 'Quotes you state', messageHTML: sampleMessageHTML })}
-      ${Settings.stylingPreviewPostHTML({ postID: 503286557, extraClass: 'from-archive', author: 'Archived', subject: 'Ghost post state', messageHTML: sampleMessageHTML })}
-     </div>
-    </div>
-    <div class="board styling-preview-catalog catalog-small">
-     ${Settings.stylingPreviewCatalogThreadHTML({
-      threadID: 503286580,
-      postID: 503286580,
-      extraThreadClass: 'yourPost',
-      extraContainerClass: 'yourPost',
-      subject: 'Catalog own-post state',
-      messageHTML: sampleMessageHTML,
-      summary: '5 posts and 3 image replies',
-      excerpt: 'your post reply sample',
-    })}
-     ${Settings.stylingPreviewCatalogThreadHTML({
-      threadID: 503286590,
-      postID: 503286590,
-      extraThreadClass: 'watched',
-      subject: 'Catalog watched-thread state',
-      messageHTML: sampleMessageHTML,
-      summary: '10 posts and 4 image replies',
-      excerpt: 'watched thread reply sample',
-    })}
-    </div>
+   <div class="styling-preview-titlebar move">
+    <span class="styling-preview-title">Styling Preview</span>
+    <span class="styling-preview-titlebar-actions">
+     <a href="#" class="attach styling-preview-attach" title="Attach to Settings"></a>
+     <a href="#" class="close styling-preview-close" title="Close">✕</a>
+    </span>
    </div>
+   ${Settings.stylingPreviewContentHTML()}
   `;
-      const actions = $('.styling-actions', targetSection);
-      if (actions?.parentElement) {
-        actions.parentElement.insertBefore(panel, actions.nextSibling);
-      } else {
-        $.add(targetSection, panel);
+      const attach = $('.styling-preview-attach', panel);
+      if (attach) {
+        Icon.set(attach, 'link');
+        $.on(attach, 'click', e => {
+          e.preventDefault();
+          if (Settings.stylingPreviewAttached) {
+            Settings.detachStylingPreview();
+          } else {
+            Settings.attachStylingPreview();
+          }
+        });
+        $.on(attach, 'touchstart mousedown', e => e.stopPropagation());
       }
+      $.on($('.styling-preview-close', panel), 'click', e => {
+        e.preventDefault();
+        Settings.closeStylingPreview();
+      });
+      $.on($('.styling-preview-close', panel), 'touchstart mousedown', e => e.stopPropagation());
+      $.on($('.move', panel), 'touchstart mousedown', e => Settings.prepareStylingPreviewDrag(e));
+      $.on(panel, 'click', e => e.stopPropagation());
+      $.add(Settings.dialog, panel);
       Settings.stylingPreviewPanel = panel;
+      Settings.stylingPreviewAttached = true;
+      Settings.attachStylingPreview();
       if (trigger)
         trigger.textContent = 'Hide preview';
+      Settings.setStylingPreviewHoverState();
       Settings.refreshStylingPreviewFromDialog();
+    },
+    updateStylingPreviewAttachButton() {
+      const panel = Settings.stylingPreviewPanel;
+      if (!panel)
+        return;
+      const attach = $('.styling-preview-attach', panel);
+      if (!attach)
+        return;
+      attach.classList.toggle('attached', Settings.stylingPreviewAttached);
+      attach.title = Settings.stylingPreviewAttached ? 'Detach from Settings' : 'Attach to Settings';
+    },
+    attachStylingPreview() {
+      const panel = Settings.stylingPreviewPanel;
+      if (!panel || !Settings.dialog)
+        return;
+      Settings.stylingPreviewAttached = true;
+      panel.classList.add('styling-preview-attached');
+      panel.classList.remove('styling-preview-detached');
+      Settings.updateStylingPreviewAttachButton();
+      Settings.positionAttachedStylingPreview();
+      Settings.observeStylingPreviewAttachTarget();
+    },
+    detachStylingPreview() {
+      const panel = Settings.stylingPreviewPanel;
+      if (!panel)
+        return;
+      const rect = panel.getBoundingClientRect();
+      Settings.stylingPreviewAttached = false;
+      panel.classList.remove('styling-preview-attached');
+      panel.classList.add('styling-preview-detached');
+      Settings.stopObservingStylingPreviewAttachTarget();
+      panel.style.left = `${rect.left}px`;
+      panel.style.top = `${rect.top}px`;
+      panel.style.width = `${rect.width}px`;
+      panel.style.height = `${rect.height}px`;
+      panel.style.right = '';
+      panel.style.bottom = '';
+      panel.style.maxHeight = '';
+      Settings.updateStylingPreviewAttachButton();
+    },
+    stylingPreviewDefaultHeight() {
+      const panel = Settings.stylingPreviewPanel;
+      if (!panel)
+        return 280;
+      const titlebar = $('.styling-preview-titlebar', panel);
+      const layout = $('.styling-preview-layout', panel);
+      const catalogThread = $('.styling-preview-catalog > .catalog-thread', panel);
+      const titlebarHeight = Math.ceil(titlebar?.getBoundingClientRect().height || 0);
+      const catalogHeight = Math.ceil(catalogThread?.getBoundingClientRect().height || 225);
+      let layoutChrome = 24;
+      if (layout) {
+        const cs = window.getComputedStyle(layout);
+        layoutChrome =
+          parseFloat(cs.paddingTop || '0') +
+            parseFloat(cs.paddingBottom || '0') +
+            parseFloat(cs.borderTopWidth || '0') +
+            parseFloat(cs.borderBottomWidth || '0');
+      }
+      return Math.ceil(titlebarHeight + layoutChrome + catalogHeight + 52);
+    },
+    prepareStylingPreviewDrag(e) {
+      const panel = Settings.stylingPreviewPanel;
+      if (!panel)
+        return;
+      const target = e.target;
+      if (target.closest('.styling-preview-titlebar-actions'))
+        return;
+      if (Settings.stylingPreviewAttached)
+        Settings.detachStylingPreview();
+      dragstart.call(target, e);
+    },
+    positionAttachedStylingPreview() {
+      const panel = Settings.stylingPreviewPanel;
+      if (!panel || !Settings.dialog || !Settings.stylingPreviewAttached)
+        return;
+      const settingsWindow = $('#fourchanx-settings', Settings.dialog);
+      if (!settingsWindow)
+        return;
+      const rect = settingsWindow.getBoundingClientRect();
+      panel.style.left = `${Math.max(0, rect.left)}px`;
+      panel.style.right = '';
+      panel.style.top = `${Math.max(0, rect.bottom)}px`;
+      panel.style.bottom = '';
+      panel.style.width = `${Math.max(320, rect.width)}px`;
+      if (!panel.style.height) {
+        const height = Math.min(Settings.stylingPreviewDefaultHeight(), Math.max(260, window.innerHeight - rect.bottom));
+        panel.style.height = `${height}px`;
+      }
+      panel.style.maxHeight = '';
+    },
+    queueAttachedStylingPreviewPosition() {
+      if (Settings.stylingPreviewAttachRaf != null)
+        return;
+      Settings.stylingPreviewAttachRaf = requestAnimationFrame(() => {
+        Settings.stylingPreviewAttachRaf = null;
+        Settings.positionAttachedStylingPreview();
+      });
+    },
+    followAttachedStylingPreviewDuringDrag(e) {
+      if (!Settings.stylingPreviewPanel || !Settings.stylingPreviewAttached)
+        return;
+      const isTouch = e.type === 'touchstart';
+      const move = () => Settings.queueAttachedStylingPreviewPosition();
+      const stop = () => {
+        $.off(d, isTouch ? 'touchmove' : 'mousemove', move);
+        $.off(d, isTouch ? 'touchend touchcancel' : 'mouseup', stop);
+        Settings.positionAttachedStylingPreview();
+      };
+      $.on(d, isTouch ? 'touchmove' : 'mousemove', move);
+      $.on(d, isTouch ? 'touchend touchcancel' : 'mouseup', stop);
+    },
+    observeStylingPreviewAttachTarget() {
+      if (!Settings.dialog || !Settings.stylingPreviewPanel)
+        return;
+      const settingsWindow = $('#fourchanx-settings', Settings.dialog);
+      if (!settingsWindow)
+        return;
+      Settings.stopObservingStylingPreviewAttachTarget();
+      if (typeof ResizeObserver !== 'undefined') {
+        Settings.stylingPreviewAttachResizeObserver = new ResizeObserver(() => Settings.queueAttachedStylingPreviewPosition());
+        Settings.stylingPreviewAttachResizeObserver.observe(settingsWindow);
+      }
+      $.on(window, 'resize', Settings.positionAttachedStylingPreview);
+    },
+    stopObservingStylingPreviewAttachTarget() {
+      Settings.stylingPreviewAttachResizeObserver?.disconnect();
+      Settings.stylingPreviewAttachResizeObserver = null;
+      if (Settings.stylingPreviewAttachRaf != null) {
+        cancelAnimationFrame(Settings.stylingPreviewAttachRaf);
+        Settings.stylingPreviewAttachRaf = null;
+      }
+      $.off(window, 'resize', Settings.positionAttachedStylingPreview);
     },
     closeStylingPreview() {
       if (!Settings.stylingPreviewPanel)
@@ -31431,8 +33673,10 @@ Enable it on boards.${location.hostname.split('.')[1]}.org in your browser's pri
       const trigger = Settings.dialog ? $('#styling-open-preview', Settings.dialog) : null;
       if (trigger)
         trigger.textContent = 'Preview states';
+      Settings.stopObservingStylingPreviewAttachTarget();
       $.rm(Settings.stylingPreviewPanel);
       Settings.stylingPreviewPanel = null;
+      Settings.stylingPreviewAttached = true;
     },
     refreshStylingPreviewFromDialog() {
       const panel = Settings.stylingPreviewPanel;
@@ -31448,23 +33692,34 @@ Enable it on boards.${location.hostname.split('.')[1]}.org in your browser's pri
           return !!input.checked;
         return Conf[name] == null ? fallback : !!Conf[name];
       };
-      const ownEnabled = readChecked('Highlight Own Posts');
-      const youEnabled = readChecked('Highlight Posts Quoting You');
-      const ghostEnabled = readChecked('Highlight Ghost Posts');
-      const threadHighlightsEnabled = readChecked('Enable Thread Highlights', true);
-      const catalogHighlightsEnabled = readChecked('Enable Catalog Highlights', true);
-      const catalogOwnEnabled = readChecked('Catalog Highlight Own Posts', true);
-      const catalogWatchedEnabled = readChecked('Catalog Highlight Watched Threads', true);
-      panel.dataset.highlightOwn = (threadHighlightsEnabled && ownEnabled) ? 'true' : 'false';
-      panel.dataset.highlightYou = (threadHighlightsEnabled && youEnabled) ? 'true' : 'false';
-      panel.dataset.highlightGhost = (threadHighlightsEnabled && ghostEnabled) ? 'true' : 'false';
-      panel.dataset.highlightCatalogOwn = (catalogHighlightsEnabled && catalogOwnEnabled) ? 'true' : 'false';
-      panel.dataset.highlightCatalogWatched = (catalogHighlightsEnabled && catalogWatchedEnabled) ? 'true' : 'false';
-      panel.dataset.edgeOwn = readChecked('Highlight Own Edge Only', true) ? 'true' : 'false';
-      panel.dataset.edgeYou = readChecked('Highlight You Edge Only', true) ? 'true' : 'false';
-      panel.dataset.edgeGhost = readChecked('Highlight Ghost Edge Only', true) ? 'true' : 'false';
-      panel.dataset.edgeCatalogOwn = readChecked('Catalog Highlight Own Border Only', true) ? 'true' : 'false';
-      panel.dataset.edgeCatalogWatched = readChecked('Catalog Highlight Watched Border Only', true) ? 'true' : 'false';
+      const readOpacity = (name) => {
+        const input = Settings.dialog ? $(`[name="${name}"]`, Settings.dialog) : null;
+        const value = input ? input.value : Conf[name];
+        if (value === '' || value == null)
+          return 1;
+        const opacity = parseFloat(String(value));
+        return Number.isFinite(opacity) ? $.minmax(opacity, 0, 1) : 1;
+      };
+      // The preview is a pure style demonstrator: it always renders every highlight so
+      // hovering a row previews that style even when its on-page toggle is off (you can
+      // see what it would look like before enabling it). The enable toggles only govern
+      // the real board, not this preview; edge/background and colours still reflect the
+      // configured style so the preview is accurate.
+      panel.dataset.highlightOwn = 'true';
+      panel.dataset.highlightYou = 'true';
+      panel.dataset.highlightGhost = 'true';
+      panel.dataset.highlightCatalogOwn = 'true';
+      panel.dataset.highlightCatalogWatched = 'true';
+      // dataset.edge* drives the preview's edge-only styling: edge-only === background off.
+      panel.dataset.edgeOwn = readChecked('Highlight Own Background', false) ? 'false' : 'true';
+      panel.dataset.edgeYou = readChecked('Highlight You Background', false) ? 'false' : 'true';
+      panel.dataset.edgeGhost = readChecked('Highlight Ghost Background', false) ? 'false' : 'true';
+      panel.dataset.edgeCatalogOwn = readChecked('Catalog Highlight Own Background', false) ? 'false' : 'true';
+      panel.dataset.edgeCatalogWatched = readChecked('Catalog Highlight Watched Background', false) ? 'false' : 'true';
+      panel.dataset.textCatalogOwn =
+        (panel.dataset.edgeCatalogOwn !== 'true' && readOpacity('Catalog Highlight Own Opacity') > 0) ? 'true' : 'false';
+      panel.dataset.textCatalogWatched =
+        (panel.dataset.edgeCatalogWatched !== 'true' && readOpacity('Catalog Highlight Watched Opacity') > 0) ? 'true' : 'false';
       const background = Settings.resolveCanvasBackgroundStyle();
       for (const previewPane of $$('.styling-preview-thread, .styling-preview-catalog', panel)) {
         Settings.applyBackgroundStyle(previewPane, background);
@@ -31621,7 +33876,11 @@ Enable it on boards.${location.hostname.split('.')[1]}.org in your browser's pri
     STYLE_VAR_NAMES: [
       '--xt-highlight-own', '--xt-highlight-you', '--xt-highlight-ghost',
       '--xt-highlight-own-opacity', '--xt-highlight-you-opacity', '--xt-highlight-ghost-opacity',
-      '--xt-highlight-edge-width', '--xt-catalog-border-width',
+      '--xt-highlight-edge-width', '--xt-post-background', '--xt-catalog-border-width',
+      '--xt-edge-width-own', '--xt-edge-width-you', '--xt-edge-width-ghost',
+      '--xt-edge-style-own', '--xt-edge-style-you', '--xt-edge-style-ghost',
+      '--xt-catalog-border-width-own', '--xt-catalog-border-width-watched',
+      '--xt-catalog-border-style-own', '--xt-catalog-border-style-watched',
       '--xt-catalog-own-highlight', '--xt-catalog-own-highlight-opacity',
       '--xt-catalog-watched-highlight', '--xt-catalog-watched-highlight-opacity',
       '--xt-scroll-marker-own', '--xt-scroll-marker-you', '--xt-scroll-marker-ghost', '--xt-scroll-marker-unread',
@@ -31643,9 +33902,11 @@ Enable it on boards.${location.hostname.split('.')[1]}.org in your browser's pri
     // element (only true when called with target=doc; the dialog overlay
     // doesn't need them because the cascade already inherits the doc's classes).
     writeStyleVarsTo(target, variant, updateRootClasses) {
+      const styleVarValue = (value) => value === Settings.THEME_BORDER_HIGHLIGHT ? 'var(--xt-border-highlight)' : value;
       const setVar = (cssVar, value) => {
-        if (value)
-          target.style.setProperty(cssVar, value);
+        const resolved = styleVarValue(value);
+        if (resolved)
+          target.style.setProperty(cssVar, resolved);
         else
           target.style.removeProperty(cssVar);
       };
@@ -31669,11 +33930,12 @@ Enable it on boards.${location.hostname.split('.')[1]}.org in your browser's pri
         doc.classList.toggle('xt-set-ghost-highlight', threadHighlightsEnabled && !!Conf['Highlight Ghost Posts'] && !!cv('Highlight Ghost Color'));
         doc.classList.toggle('xt-highlight-catalog-own', catalogOwnEnabled);
         doc.classList.toggle('xt-highlight-catalog-watched', catalogWatchedEnabled);
-        doc.classList.toggle('xt-catalog-edge-own', catalogOwnEnabled && !!cv('Catalog Highlight Own Border Only'));
-        doc.classList.toggle('xt-catalog-edge-watched', catalogWatchedEnabled && !!cv('Catalog Highlight Watched Border Only'));
-        doc.classList.toggle('xt-edge-own', highlightsOn && !!Conf['Highlight Own Edge Only']);
-        doc.classList.toggle('xt-edge-you', highlightsOn && !!Conf['Highlight You Edge Only']);
-        doc.classList.toggle('xt-edge-ghost', highlightsOn && !!Conf['Highlight Ghost Edge Only']);
+        // xt-(catalog-)edge-* suppress the background fill, so they apply when "background" is off.
+        doc.classList.toggle('xt-catalog-edge-own', catalogOwnEnabled && !cv('Catalog Highlight Own Background'));
+        doc.classList.toggle('xt-catalog-edge-watched', catalogWatchedEnabled && !cv('Catalog Highlight Watched Background'));
+        doc.classList.toggle('xt-edge-own', highlightsOn && !Conf['Highlight Own Background']);
+        doc.classList.toggle('xt-edge-you', highlightsOn && !Conf['Highlight You Background']);
+        doc.classList.toggle('xt-edge-ghost', highlightsOn && !Conf['Highlight Ghost Background']);
       }
       setVar('--xt-highlight-own', cv('Highlight Own Color'));
       setVar('--xt-highlight-you', cv('Highlight You Color'));
@@ -31684,12 +33946,36 @@ Enable it on boards.${location.hostname.split('.')[1]}.org in your browser's pri
       const legacyWidth = Settings.styleConf('Highlight Edge Width', variant);
       const edgeWidth = parseFloat(String(cv('Thread Highlight Edge Width') || legacyWidth));
       setVar('--xt-highlight-edge-width', Number.isFinite(edgeWidth) ? `${$.minmax(edgeWidth, 1, 12)}px` : '');
+      setVar('--xt-post-background', Settings.getPostBaseBackgroundCSS());
       const catalogBorderWidth = parseFloat(String(cv('Catalog Highlight Border Width') || legacyWidth));
       setVar('--xt-catalog-border-width', Number.isFinite(catalogBorderWidth) ? `${$.minmax(catalogBorderWidth, 1, 12)}px` : '');
-      setVar('--xt-catalog-own-highlight', catalogOwnEnabled ? cv('Catalog Highlight Own Color') : '');
-      setVar('--xt-catalog-own-highlight-opacity', (catalogOwnEnabled && cv('Catalog Highlight Own Opacity') !== '') ? String(cv('Catalog Highlight Own Opacity')) : '');
-      setVar('--xt-catalog-watched-highlight', catalogWatchedEnabled ? cv('Catalog Highlight Watched Color') : '');
-      setVar('--xt-catalog-watched-highlight-opacity', (catalogWatchedEnabled && cv('Catalog Highlight Watched Opacity') !== '') ? String(cv('Catalog Highlight Watched Opacity')) : '');
+      // Per-state widths. When unset the var is removed so the rule falls back to
+      // the shared --xt-…-width above (the "linked" value), then to 3px.
+      const setWidthVar = (key, varName) => {
+        const w = parseFloat(String(cv(key)));
+        setVar(varName, Number.isFinite(w) ? `${$.minmax(w, 1, 12)}px` : '');
+      };
+      const setStyleVar = (key, varName) => {
+        const style = String(cv(key) || '');
+        setVar(varName, /^(solid|dashed|dotted|double|groove|ridge|inset|outset)$/.test(style) ? style : '');
+      };
+      setWidthVar('Highlight Own Edge Width', '--xt-edge-width-own');
+      setWidthVar('Highlight You Edge Width', '--xt-edge-width-you');
+      setWidthVar('Highlight Ghost Edge Width', '--xt-edge-width-ghost');
+      setStyleVar('Highlight Own Border Style', '--xt-edge-style-own');
+      setStyleVar('Highlight You Border Style', '--xt-edge-style-you');
+      setStyleVar('Highlight Ghost Border Style', '--xt-edge-style-ghost');
+      setWidthVar('Catalog Highlight Own Border Width', '--xt-catalog-border-width-own');
+      setWidthVar('Catalog Highlight Watched Border Width', '--xt-catalog-border-width-watched');
+      setStyleVar('Catalog Highlight Own Border Style', '--xt-catalog-border-style-own');
+      setStyleVar('Catalog Highlight Watched Border Style', '--xt-catalog-border-style-watched');
+      // Set catalog highlight colours unconditionally: the real board only paints them
+      // under the enable-gated .xt-highlight-catalog-* classes, so an unused var is
+      // harmless, while the styling preview (always-on demonstrator) can show them.
+      setVar('--xt-catalog-own-highlight', cv('Catalog Highlight Own Color'));
+      setVar('--xt-catalog-own-highlight-opacity', cv('Catalog Highlight Own Opacity') !== '' ? String(cv('Catalog Highlight Own Opacity')) : '');
+      setVar('--xt-catalog-watched-highlight', cv('Catalog Highlight Watched Color'));
+      setVar('--xt-catalog-watched-highlight-opacity', cv('Catalog Highlight Watched Opacity') !== '' ? String(cv('Catalog Highlight Watched Opacity')) : '');
       const ownMarkerLinked = !!cv('Scroll Marker Own Match Highlight');
       const youMarkerLinked = !!cv('Scroll Marker You Match Highlight');
       const ghostMarkerLinked = !!cv('Scroll Marker Ghost Match Highlight');
@@ -31705,18 +33991,28 @@ Enable it on boards.${location.hostname.split('.')[1]}.org in your browser's pri
       markerVar('--xt-scroll-marker-ghost-opacity', cv('Scroll Marker Ghost Opacity'));
       markerVar('--xt-scroll-marker-unread-opacity', cv('Scroll Marker Unread Opacity'));
       const baseBackground = Settings.getTextBaseBackground();
-      const textColorMode = cv('textColorMode') === 'manual' ? 'manual' : 'auto';
+      const postBackground = Settings.getPostBaseBackground();
+      const textColorMode = Settings.resolveTextMode(cv('textColorMode'));
       const autoTextPalette = Settings.autoTextPalette(baseBackground);
-      // Text Colors section off ⇒ no text-color override at all (page falls back
-      // to the theme's native colors; the empty values also flow through to the
-      // highlight-text fallback below, so they stay theme-default too).
-      const textColor = !textColorsOn ? '' : (textColorMode === 'auto' ? autoTextPalette.text : cv('Text Color'));
-      const linkColor = !textColorsOn ? '' : (textColorMode === 'auto' ? autoTextPalette.link : cv('Link Text Color'));
-      const quoteColor = !textColorsOn ? '' : (textColorMode === 'auto' ? autoTextPalette.quote : cv('Quote Text Color'));
-      const deadLinkColor = !textColorsOn ? '' : (textColorMode === 'auto' ? autoTextPalette.deadLink : cv('Dead Link Text Color'));
+      // 'default' (and the Text Colors section being off) ⇒ no text-color override
+      // at all: the page keeps the theme's native text/link/greentext, and the
+      // empty values flow through to the highlight-text fallback below so those
+      // stay theme-default too.
+      const textColorsOverride = textColorsOn && textColorMode !== 'default';
+      const textColor = !textColorsOverride ? '' : (textColorMode === 'auto' ? autoTextPalette.text : cv('Text Color'));
+      const linkColor = !textColorsOverride ? '' : (textColorMode === 'auto' ? autoTextPalette.link : cv('Link Text Color'));
+      const quoteColor = !textColorsOverride ? '' : (textColorMode === 'auto' ? autoTextPalette.quote : cv('Quote Text Color'));
+      const deadLinkColor = !textColorsOverride ? '' : (textColorMode === 'auto' ? autoTextPalette.deadLink : cv('Dead Link Text Color'));
       const hasAnyTextOverride = !!(textColor || linkColor || quoteColor || deadLinkColor);
+      // The shared .xt-custom-text-colors class also gates the per-post highlight
+      // text rules, so keep it on when any thread highlight row recolors text even
+      // if the global text mode is Defaults. (Empty global vars stay harmless:
+      // var(--xt-quote-text-color) with no value is an invalid color and ignored.)
+      const anyThreadHighlightText = highlightsOn && [
+        'Highlight Own Text Mode', 'Highlight You Text Mode', 'Highlight Ghost Text Mode',
+      ].some(k => Settings.resolveTextMode(cv(k)) !== 'default');
       if (updateRootClasses) {
-        if (hasAnyTextOverride) {
+        if (hasAnyTextOverride || anyThreadHighlightText) {
           $.addClass(doc, 'xt-custom-text-colors');
         } else {
           $.rmClass(doc, 'xt-custom-text-colors');
@@ -31726,20 +34022,25 @@ Enable it on boards.${location.hostname.split('.')[1]}.org in your browser's pri
       setVar('--xt-link-text-color', linkColor || '');
       setVar('--xt-quote-text-color', quoteColor || '');
       setVar('--xt-dead-link-text-color', deadLinkColor || '');
-      const autoHighlightPalette = (colorKey, opacityKey) => Settings.autoHighlightTextPalette(colorKey, opacityKey, baseBackground, variant);
       // Edge/border-only highlights draw just a border and leave the post on its
       // normal background — the highlight color never fills behind the text (see
       // the `:not(.xt-edge-*)` / `:not(.xt-catalog-edge-*)` gating in
       // variableBase.css). So the auto text palette must NOT tint the background
       // with the highlight color; passing null below makes withManual fall back to
       // the default text palette, which is computed against the bare baseBackground.
-      const ownEdgeOnly = highlightsOn && !!Conf['Highlight Own Edge Only'];
-      const youEdgeOnly = highlightsOn && !!Conf['Highlight You Edge Only'];
-      const ghostEdgeOnly = highlightsOn && !!Conf['Highlight Ghost Edge Only'];
-      const catalogOwnBorderOnly = catalogOwnEnabled && !!cv('Catalog Highlight Own Border Only');
-      const catalogWatchedBorderOnly = catalogWatchedEnabled && !!cv('Catalog Highlight Watched Border Only');
-      const highlightPaletteFor = (edgeOnly, colorKey, opacityKey) => edgeOnly ? null : autoHighlightPalette(colorKey, opacityKey);
-      const withManual = (autoPalette, autoKey, textKey, subjectKey, linkKey, quoteKey, deadKey) => {
+      const ownEdgeOnly = highlightsOn && !Conf['Highlight Own Background'];
+      const youEdgeOnly = highlightsOn && !Conf['Highlight You Background'];
+      const ghostEdgeOnly = highlightsOn && !Conf['Highlight Ghost Background'];
+      const catalogOwnBorderOnly = catalogOwnEnabled && !cv('Catalog Highlight Own Background');
+      const catalogWatchedBorderOnly = catalogWatchedEnabled && !cv('Catalog Highlight Watched Background');
+      const highlightOpacity = (opacityKey) => {
+        const opacity = cv(opacityKey);
+        if (opacity === '' || opacity == null)
+          return 1;
+        const alpha = parseFloat(String(opacity));
+        return Number.isFinite(alpha) ? $.minmax(alpha, 0, 1) : 1;
+      };
+      const withManual = (autoPalette, modeKey, textKey, subjectKey, linkKey, quoteKey, deadKey) => {
         const base = autoPalette || {
           text: textColor || '',
           subject: textColor || '',
@@ -31747,7 +34048,12 @@ Enable it on boards.${location.hostname.split('.')[1]}.org in your browser's pri
           quote: quoteColor || '',
           deadLink: deadLinkColor || '',
         };
-        if (cv(autoKey))
+        const mode = Settings.resolveTextMode(cv(modeKey));
+        // 'default' ⇒ no override; the vars stay unset so the post text falls
+        // back to the theme's native text/link/greentext colors.
+        if (mode === 'default')
+          return null;
+        if (mode === 'auto')
           return base;
         return {
           text: cv(textKey) || base.text,
@@ -31757,11 +34063,19 @@ Enable it on boards.${location.hostname.split('.')[1]}.org in your browser's pri
           deadLink: cv(deadKey) || base.deadLink,
         };
       };
-      const ownPalette = withManual(highlightPaletteFor(ownEdgeOnly, 'Highlight Own Color', 'Highlight Own Opacity'), 'Highlight Own Text Auto', 'Highlight Own Text Color', null, 'Highlight Own Link Color', 'Highlight Own Quote Color', 'Highlight Own Dead Link Color');
-      const youPalette = withManual(highlightPaletteFor(youEdgeOnly, 'Highlight You Color', 'Highlight You Opacity'), 'Highlight You Text Auto', 'Highlight You Text Color', null, 'Highlight You Link Color', 'Highlight You Quote Color', 'Highlight You Dead Link Color');
-      const ghostPalette = withManual(highlightPaletteFor(ghostEdgeOnly, 'Highlight Ghost Color', 'Highlight Ghost Opacity'), 'Highlight Ghost Text Auto', 'Highlight Ghost Text Color', null, 'Highlight Ghost Link Color', 'Highlight Ghost Quote Color', 'Highlight Ghost Dead Link Color');
-      const catalogOwnPalette = withManual(highlightPaletteFor(catalogOwnBorderOnly, 'Catalog Highlight Own Color', 'Catalog Highlight Own Opacity'), 'Catalog Highlight Own Text Auto', 'Catalog Highlight Own Text Color', 'Catalog Highlight Own Subject Color', 'Catalog Highlight Own Link Color', 'Catalog Highlight Own Quote Color', 'Catalog Highlight Own Dead Link Color');
-      const catalogWatchedPalette = withManual(highlightPaletteFor(catalogWatchedBorderOnly, 'Catalog Highlight Watched Color', 'Catalog Highlight Watched Opacity'), 'Catalog Highlight Watched Text Auto', 'Catalog Highlight Watched Text Color', 'Catalog Highlight Watched Subject Color', 'Catalog Highlight Watched Link Color', 'Catalog Highlight Watched Quote Color', 'Catalog Highlight Watched Dead Link Color');
+      const ownPalette = withManual(ownEdgeOnly ? null : Settings.autoHighlightTextPalette('Highlight Own Color', 'Highlight Own Opacity', postBackground, variant), 'Highlight Own Text Mode', 'Highlight Own Text Color', null, 'Highlight Own Link Color', 'Highlight Own Quote Color', 'Highlight Own Dead Link Color');
+      const youPalette = withManual(youEdgeOnly ? null : Settings.autoHighlightTextPalette('Highlight You Color', 'Highlight You Opacity', postBackground, variant), 'Highlight You Text Mode', 'Highlight You Text Color', null, 'Highlight You Link Color', 'Highlight You Quote Color', 'Highlight You Dead Link Color');
+      const ghostPalette = withManual(ghostEdgeOnly ? null : Settings.autoHighlightTextPalette('Highlight Ghost Color', 'Highlight Ghost Opacity', postBackground, variant), 'Highlight Ghost Text Mode', 'Highlight Ghost Text Color', null, 'Highlight Ghost Link Color', 'Highlight Ghost Quote Color', 'Highlight Ghost Dead Link Color');
+      const catalogOwnTextActive = catalogOwnEnabled && !catalogOwnBorderOnly && highlightOpacity('Catalog Highlight Own Opacity') > 0
+        && Settings.resolveTextMode(cv('Catalog Highlight Own Text Mode')) !== 'default';
+      const catalogWatchedTextActive = catalogWatchedEnabled && !catalogWatchedBorderOnly && highlightOpacity('Catalog Highlight Watched Opacity') > 0
+        && Settings.resolveTextMode(cv('Catalog Highlight Watched Text Mode')) !== 'default';
+      if (updateRootClasses) {
+        doc.classList.toggle('xt-catalog-own-text-colors', catalogOwnTextActive);
+        doc.classList.toggle('xt-catalog-watched-text-colors', catalogWatchedTextActive);
+      }
+      const catalogOwnPalette = withManual(catalogOwnTextActive ? Settings.autoHighlightTextPalette('Catalog Highlight Own Color', 'Catalog Highlight Own Opacity', postBackground, variant) : null, 'Catalog Highlight Own Text Mode', 'Catalog Highlight Own Text Color', 'Catalog Highlight Own Subject Color', 'Catalog Highlight Own Link Color', 'Catalog Highlight Own Quote Color', 'Catalog Highlight Own Dead Link Color');
+      const catalogWatchedPalette = withManual(catalogWatchedTextActive ? Settings.autoHighlightTextPalette('Catalog Highlight Watched Color', 'Catalog Highlight Watched Opacity', postBackground, variant) : null, 'Catalog Highlight Watched Text Mode', 'Catalog Highlight Watched Text Color', 'Catalog Highlight Watched Subject Color', 'Catalog Highlight Watched Link Color', 'Catalog Highlight Watched Quote Color', 'Catalog Highlight Watched Dead Link Color');
       setVar('--xt-highlight-own-text', ownPalette?.text || '');
       setVar('--xt-highlight-own-link', ownPalette?.link || '');
       setVar('--xt-highlight-own-quote', ownPalette?.quote || '');
@@ -31936,6 +34250,30 @@ Enable it on boards.${location.hostname.split('.')[1]}.org in your browser's pri
       // Transparent background color with only an image has no reliable average
       // color; use white as a neutral fallback for contrast calculations.
       return [255, 255, 255];
+    },
+    getPostBaseBackground() {
+      const fallback = Settings.getTextBaseBackground();
+      let bgColor = '';
+      try {
+        const el = g.SITE?.bgColoredEl?.();
+        if (el && d.body) {
+          el.style.cssText = 'position:absolute;left:-9999px;top:-9999px;visibility:hidden;pointer-events:none;';
+          d.body.appendChild(el);
+          bgColor = window.getComputedStyle(el).backgroundColor;
+          $.rm(el);
+        }
+      } catch (e) {
+        bgColor = '';
+      }
+      const rgba = Settings.parseCSSColorRGBA(bgColor);
+      if (!rgba || rgba[3] <= 0)
+        return fallback;
+      const postRgb = [rgba[0], rgba[1], rgba[2]];
+      return rgba[3] >= 1 ? postRgb : Settings.mixRgb(fallback, postRgb, rgba[3]);
+    },
+    getPostBaseBackgroundCSS() {
+      const bg = Settings.getPostBaseBackground();
+      return `rgb(${bg[0]}, ${bg[1]}, ${bg[2]})`;
     },
     autoHighlightTextPalette(colorKey, opacityKey, baseBackground = Settings.getTextBaseBackground(), variant) {
       const color = Settings.styleConf(colorKey, variant);
@@ -32658,6 +34996,7 @@ Enable it on boards.${location.hostname.split('.')[1]}.org in your browser's pri
       'Custom CSS',
       'Interface',
       'Threads & Posts',
+      'History',
       'Watched Threads',
       'Media',
       'Posting',
@@ -32669,7 +35008,7 @@ Enable it on boards.${location.hostname.split('.')[1]}.org in your browser's pri
       { name: 'General', option: 'General' },
       { name: 'Styling', option: 'Styling', children: ['Custom CSS'] },
       { name: 'Interface', option: 'Interface' },
-      { name: 'Threads & Posts', option: 'Threads & Posts', children: ['Watched Threads'] },
+      { name: 'Threads & Posts', option: 'Threads & Posts', children: ['History', 'Watched Threads'] },
       { name: 'Media', option: 'Media' },
       { name: 'Posting', option: 'Posting' },
       { name: 'Filters', option: 'Filters' },
@@ -32702,12 +35041,15 @@ Enable it on boards.${location.hostname.split('.')[1]}.org in your browser's pri
       options['General'] = [
         'JSON Index',
         `Use ${meta.name} Catalog`,
+        'Index Refresh Notifications',
         'Open Threads in New Tab',
         'External Catalog',
         '404 Redirect',
         'Archive Report',
         'Exempt Archives from Encryption',
+        'Show Updated Notifications',
         'Disable Native Extension',
+        'Enable Native Flash Embedding',
         ...Object.keys(Config.Index)
       ];
       options['Interface'] = [
@@ -32729,11 +35071,14 @@ Enable it on boards.${location.hostname.split('.')[1]}.org in your browser's pri
       ];
       options['Threads & Posts'] = [
         'Custom Board Titles',
+        'Persistent Custom Board Titles',
         'Color User IDs',
         'Count Posts by ID',
-        'Spoiler Mode',
+        'Remove Spoilers',
+        'Reveal Spoilers',
         'Time Formatting',
-        'RelativeTime',
+        'Relative Post Dates',
+        'Relative Date Title',
         'File Info Formatting',
         'Quote Backlinks',
         ...keysIn('Filtering').filter(key => !stylingOnlyKeys.includes(key)),
@@ -32751,7 +35096,18 @@ Enable it on boards.${location.hostname.split('.')[1]}.org in your browser's pri
         'Interval',
         'customCooldown'
       ];
-      options['Watched Threads'] = ['watchedThreads', 'watcherBackup'];
+      options['History'] = [
+        'lastReadPosts',
+        'yourPosts',
+        'hiddenThreads',
+        'hiddenPosts',
+        'hiddenPosterIds'
+      ];
+      options['Watched Threads'] = [
+        'watchedThreads',
+        'watcherBackup',
+        'watcherLastModified'
+      ];
       options['Media'] = [
         ...keysIn('Images and Videos'),
         ...keysIn('Linkification'),
@@ -32778,23 +35134,29 @@ Enable it on boards.${location.hostname.split('.')[1]}.org in your browser's pri
         'Quote Text Color',
         'Dead Link Text Color',
         'Thread Highlight Edge Width',
+        'Highlight Own Edge Width',
+        'Highlight You Edge Width',
+        'Highlight Ghost Edge Width',
         'Catalog Highlight Border Width',
+        'Catalog Highlight Own Border Width',
+        'Catalog Highlight Watched Border Width',
+        'Scroll Marker Match Highlights',
         'Scroll Marker Own Match Highlight',
         'Scroll Marker You Match Highlight',
         'Scroll Marker Ghost Match Highlight',
         'Catalog Highlight Own Posts',
         'Catalog Highlight Watched Threads',
-        'Catalog Highlight Own Border Only',
-        'Catalog Highlight Watched Border Only',
+        'Catalog Highlight Own Background',
+        'Catalog Highlight Watched Background',
         'Highlight Own Color',
         'Highlight You Color',
         'Highlight Ghost Color',
         'Catalog Highlight Own Color',
         'Catalog Highlight Watched Color',
-        'Catalog Highlight Own Border Only',
-        'Catalog Highlight Watched Border Only',
-        'Catalog Highlight Own Text Auto',
-        'Catalog Highlight Watched Text Auto',
+        'Catalog Highlight Own Background',
+        'Catalog Highlight Watched Background',
+        'Catalog Highlight Own Text Mode',
+        'Catalog Highlight Watched Text Mode',
         'Catalog Highlight Own Text Color',
         'Catalog Highlight Own Subject Color',
         'Catalog Highlight Own Link Color',
@@ -32808,6 +35170,9 @@ Enable it on boards.${location.hostname.split('.')[1]}.org in your browser's pri
         'Highlight Own Text Auto',
         'Highlight You Text Auto',
         'Highlight Ghost Text Auto',
+        'Highlight Own Text Mode',
+        'Highlight You Text Mode',
+        'Highlight Ghost Text Mode',
         'Highlight Own Text Color',
         'Highlight Own Link Color',
         'Highlight Own Quote Color',
@@ -32823,9 +35188,9 @@ Enable it on boards.${location.hostname.split('.')[1]}.org in your browser's pri
         'Highlight Own Opacity',
         'Highlight You Opacity',
         'Highlight Ghost Opacity',
-        'Highlight Own Edge Only',
-        'Highlight You Edge Only',
-        'Highlight Ghost Edge Only',
+        'Highlight Own Background',
+        'Highlight You Background',
+        'Highlight Ghost Background',
         'Catalog Highlight Own Opacity',
         'Catalog Highlight Watched Opacity',
         'Scroll Marker Own Color',
@@ -32893,18 +35258,24 @@ Enable it on boards.${location.hostname.split('.')[1]}.org in your browser's pri
       const Conf2 = dict();
       $.extend(Conf2, Conf);
       $.get(Conf2, function (Conf2) {
-        // Don't export cached JSON data.
+        // Don't export cached JSON data or the remembered checkbox state.
         delete Conf2['boardConfig'];
-        const defaultCheckedOptions = dict();
-        for (const name of Settings.exportOptionOrder) {
-          defaultCheckedOptions[name] = true;
-        }
-        Settings.openImpExpPicker({
-          title: 'Export Settings',
-          action: 'Export',
-          conf: Conf2,
-          defaultCheckedGroups: defaultCheckedOptions,
-          onConfirm: checkedOptions => Settings.doExport(checkedOptions, Conf2)
+        delete Conf2['settings.exportGroups'];
+        // Default every group to checked, unless the user has exported before,
+        // in which case restore their last-used selection.
+        $.get('settings.exportGroups', null, function (items) {
+          const lastUsed = items['settings.exportGroups'];
+          const defaultCheckedOptions = dict();
+          for (const name of Settings.exportOptionOrder) {
+            defaultCheckedOptions[name] = lastUsed ? !!lastUsed[name] : true;
+          }
+          Settings.openImpExpPicker({
+            title: 'Export Settings',
+            action: 'Export',
+            conf: Conf2,
+            defaultCheckedGroups: defaultCheckedOptions,
+            onConfirm: checkedOptions => Settings.doExport(checkedOptions, Conf2)
+          });
         });
       });
     },
@@ -32917,6 +35288,8 @@ Enable it on boards.${location.hostname.split('.')[1]}.org in your browser's pri
           out[key] = conf[key];
       }
       const groups = Settings.exportOptionOrder.filter(name => checkedOptions[name]);
+      // Remember the selection so the next export defaults to the same checkboxes.
+      $.set('settings.exportGroups', checkedOptions);
       Settings.downloadExport({ version: g.VERSION, date: Date.now(), groups, Conf: out });
     },
     downloadExport(data) {
@@ -33269,12 +35642,92 @@ Enable it on boards.${location.hostname.split('.')[1]}.org in your browser's pri
         if (data[`Catalog Highlight Border Width ${variant}`] === undefined)
           set(`Catalog Highlight Border Width ${variant}`, legacyWidth);
       }
-      // Edge-only highlighting defaults on for fresh installs. Existing users are
-      // upgraded here, so seed it off to preserve their current filled highlights
-      // unless they opt in. Idempotent: only seeds keys not already present.
-      for (const k of ['Highlight Own Edge Only', 'Highlight You Edge Only', 'Highlight Ghost Edge Only']) {
-        if (data[k] === undefined)
-          set(k, false);
+      // Per-state widths were split out of the single section width; seed each
+      // from the section value so existing looks carry over until customized.
+      for (const variant of ['SFW', 'NSFW']) {
+        const threadShared = data[`Thread Highlight Edge Width ${variant}`] ?? data['Thread Highlight Edge Width'] ?? 3;
+        for (const k of ['Highlight Own Edge Width', 'Highlight You Edge Width', 'Highlight Ghost Edge Width']) {
+          if (data[`${k} ${variant}`] === undefined)
+            set(`${k} ${variant}`, threadShared);
+        }
+        const catalogShared = data[`Catalog Highlight Border Width ${variant}`] ?? data['Catalog Highlight Border Width'] ?? 3;
+        for (const k of ['Catalog Highlight Own Border Width', 'Catalog Highlight Watched Border Width']) {
+          if (data[`${k} ${variant}`] === undefined)
+            set(`${k} ${variant}`, catalogShared);
+        }
+      }
+      // The "edge only" / "border only" toggles were replaced by inverted
+      // "background" toggles: the colored edge is now the always-on default, and
+      // checking the box adds the background fill. Migrate existing users by
+      // inverting their old value. This block runs only on upgrade (see
+      // Main.upgrade), so a thread key that's still undefined means a
+      // pre-edge-feature user who had filled highlights -> background on.
+      // Idempotent: only seeds keys not already present.
+      for (const [oldKey, newKey] of [
+        ['Highlight Own Edge Only', 'Highlight Own Background'],
+        ['Highlight You Edge Only', 'Highlight You Background'],
+        ['Highlight Ghost Edge Only', 'Highlight Ghost Background'],
+      ]) {
+        if (data[newKey] === undefined) {
+          set(newKey, data[oldKey] !== undefined ? !data[oldKey] : true);
+        }
+      }
+      // Catalog border-only toggles are per-variant (SFW/NSFW). Only seed when the
+      // user actually stored a value; otherwise the new `false` default already
+      // matches the old border-only default, so reads fall through to it.
+      for (const [oldKey, newKey] of [
+        ['Catalog Highlight Own Border Only', 'Catalog Highlight Own Background'],
+        ['Catalog Highlight Watched Border Only', 'Catalog Highlight Watched Background'],
+      ]) {
+        for (const variant of ['SFW', 'NSFW']) {
+          const old = data[`${oldKey} ${variant}`] ?? data[oldKey];
+          if (old !== undefined && data[`${newKey} ${variant}`] === undefined) {
+            set(`${newKey} ${variant}`, !old);
+          }
+        }
+      }
+      // Highlight text coloring moved from an "Auto text" checkbox to a
+      // Defaults/Auto/Manual dropdown that defaults to Defaults (theme colors).
+      // Preserve users who had set manual highlight text colors by switching
+      // those rows to Manual; everyone else lands on Defaults.
+      const highlightTextTypes = [
+        ['Highlight Own Text Mode', ['Highlight Own Text Color', 'Highlight Own Link Color', 'Highlight Own Quote Color', 'Highlight Own Dead Link Color']],
+        ['Highlight You Text Mode', ['Highlight You Text Color', 'Highlight You Link Color', 'Highlight You Quote Color', 'Highlight You Dead Link Color']],
+        ['Highlight Ghost Text Mode', ['Highlight Ghost Text Color', 'Highlight Ghost Link Color', 'Highlight Ghost Quote Color', 'Highlight Ghost Dead Link Color']],
+        ['Catalog Highlight Own Text Mode', ['Catalog Highlight Own Text Color', 'Catalog Highlight Own Subject Color', 'Catalog Highlight Own Link Color', 'Catalog Highlight Own Quote Color', 'Catalog Highlight Own Dead Link Color']],
+        ['Catalog Highlight Watched Text Mode', ['Catalog Highlight Watched Text Color', 'Catalog Highlight Watched Subject Color', 'Catalog Highlight Watched Link Color', 'Catalog Highlight Watched Quote Color', 'Catalog Highlight Watched Dead Link Color']],
+      ];
+      for (const [legacyKey, modeBase] of [
+        ['Highlight Own Text Auto', 'Highlight Own Text Mode'],
+        ['Highlight You Text Auto', 'Highlight You Text Mode'],
+        ['Highlight Ghost Text Auto', 'Highlight Ghost Text Mode'],
+      ]) {
+        if (data[legacyKey] !== undefined && data[modeBase] === undefined) {
+          set(modeBase, data[legacyKey] ? 'auto' : 'manual');
+        }
+      }
+      if (data['Scroll Marker Match Highlights'] !== undefined) {
+        for (const key of [
+          'Scroll Marker Own Match Highlight',
+          'Scroll Marker You Match Highlight',
+          'Scroll Marker Ghost Match Highlight',
+        ]) {
+          if (data[key] === undefined)
+            set(key, !!data['Scroll Marker Match Highlights']);
+        }
+      }
+      for (const variant of ['SFW', 'NSFW']) {
+        for (const [modeBase, colorBases] of highlightTextTypes) {
+          const modeKey = `${modeBase} ${variant}`;
+          if (data[modeKey] !== undefined)
+            continue;
+          const hasManual = colorBases.some(c => {
+            const v = data[`${c} ${variant}`];
+            return typeof v === 'string' && v !== '';
+          });
+          if (hasManual)
+            set(modeKey, 'manual');
+        }
       }
       return changes;
     },
@@ -33303,12 +35756,15 @@ Enable it on boards.${location.hostname.split('.')[1]}.org in your browser's pri
     filtersPreviewState: null,
     forcedFiltersMode: null,
     forcedFilterType: null,
+    // Set by easyFilters(); flushes a pending debounced auto-save (called on close so an
+    // edit made right before closing is persisted to Conf synchronously, not lost).
+    easyFiltersFlush: null,
     filter(section) {
       const simplePanel = $.el('div');
       const advancedPanel = $.el('div');
       const previewState = {
         panel: null,
-        simpleTbody: null,
+        simpleContainer: null,
         advancedType: null,
         advancedTextarea: null,
       };
@@ -33431,27 +35887,84 @@ Enable it on boards.${location.hostname.split('.')[1]}.org in your browser's pri
     ],
     easyFilters(section, previewState) {
       $.extend(section, { innerHTML: SimpleFiltersPage });
-      const tbody = $('tbody', section);
+      const container = $('.easy-filters-list', section);
       const addButton = $('.easy-filter-add', section);
-      const saveButton = $('.easy-filter-save', section);
       const status = $('.easy-filter-status', section);
       if (previewState)
-        previewState.simpleTbody = tbody;
-      const markDirty = () => {
-        status.textContent = 'Unsaved changes.';
-        Settings.refreshCombinedFilterPreview(previewState);
+        previewState.simpleContainer = container;
+      // Layout mode (auto/grid/list). "list" = inline rows, "grid" = vertical cards.
+      // "auto" switches on the settings dialog's own width: at >= AUTO_LIST_MIN_WIDTH the
+      // inline row fits comfortably, so it uses "list"; below that it drops to "grid",
+      // whose column count then auto-fits the available width (~3 just under the
+      // breakpoint, scaling down as it narrows). Re-evaluated live via ResizeObserver.
+      // Mode persists like settings.filtersMode; the resolved class is layout-list/grid.
+      const AUTO_LIST_MIN_WIDTH = 1000;
+      let resizeObserver = null;
+      let lastAutoWidth = -1;
+      const dialogWidth = () => {
+        const dialog = container.closest('#fourchanx-settings');
+        return (dialog || container).getBoundingClientRect().width;
       };
+      const resolveAuto = () => {
+        const w = dialogWidth();
+        lastAutoWidth = w;
+        container.className = `easy-filters-list ${w >= AUTO_LIST_MIN_WIDTH ? 'layout-list' : 'layout-grid'}`;
+      };
+      const setLayout = (mode) => {
+        if (!['auto', 'grid', 'list'].includes(mode))
+          mode = 'auto';
+        for (const btn of $$('.easy-filter-layout-btn', section)) {
+          btn.classList.toggle('selected', btn.dataset.layout === mode);
+        }
+        $.set('settings.easyFiltersLayout', mode);
+        if (resizeObserver) {
+          resizeObserver.disconnect();
+          resizeObserver = null;
+        }
+        if (mode === 'auto') {
+          resolveAuto();
+          if (typeof ResizeObserver !== 'undefined') {
+            resizeObserver = new ResizeObserver(() => {
+              if (Math.round(dialogWidth()) !== Math.round(lastAutoWidth))
+                resolveAuto();
+            });
+            resizeObserver.observe(container.closest('#fourchanx-settings') || container);
+          }
+        } else {
+          container.className = `easy-filters-list layout-${mode}`;
+        }
+      };
+      for (const btn of $$('.easy-filter-layout-btn', section)) {
+        $.on(btn, 'click', () => setLayout(btn.dataset.layout || 'auto'));
+      }
+      $.get('settings.easyFiltersLayout', 'auto', (item) => setLayout(item['settings.easyFiltersLayout']));
       const save = () => {
-        const rules = Settings.collectEasyFilters(tbody);
+        const rules = Settings.collectEasyFilters(container);
         const serialized = JSON.stringify(rules);
         $.set('easyFilters', serialized);
         Conf['easyFilters'] = serialized;
         status.textContent = `Saved ${rules.length} rule${rules.length === 1 ? '' : 's'}.`;
         Settings.refreshCombinedFilterPreview(previewState);
       };
+      // Auto-save: any add/edit/remove schedules a save. Debounced so typing a pattern
+      // persists shortly after the last keystroke rather than on every character.
+      let saveTimer = null;
+      const markDirty = () => {
+        status.textContent = 'Saving…';
+        Settings.refreshCombinedFilterPreview(previewState);
+        clearTimeout(saveTimer);
+        saveTimer = setTimeout(() => { saveTimer = null; save(); }, 500);
+      };
+      Settings.easyFiltersFlush = () => {
+        if (saveTimer == null)
+          return;
+        clearTimeout(saveTimer);
+        saveTimer = null;
+        save();
+      };
       const addRow = (rule = {}) => {
         const row = Settings.easyFilterRow(rule, markDirty);
-        $.add(tbody, row);
+        $.add(container, row);
         return row;
       };
       const rules = Settings.parseEasyFilters();
@@ -33470,68 +35983,41 @@ Enable it on boards.${location.hostname.split('.')[1]}.org in your browser's pri
         }
         markDirty();
       });
-      $.on(saveButton, 'click', save);
       status.textContent = `Loaded ${rules.length} rule${rules.length === 1 ? '' : 's'}.`;
       Settings.refreshCombinedFilterPreview(previewState);
     },
     parseEasyFilters() {
-      const raw = Conf['easyFilters'];
-      let rules = [];
-      if (Array.isArray(raw)) {
-        rules = raw;
-      } else if (typeof raw === 'string' && raw.trim()) {
-        try {
-          rules = JSON.parse(raw);
-        } catch {
-          rules = [];
-        }
-      }
-      if (!Array.isArray(rules))
-        return [];
-      return rules.map((rule) => {
-        if (!rule || typeof rule !== 'object')
-          return {};
-        const type = (rule.type in Config.filter) ? rule.type : {
-          title: 'subject', body: 'comment', name: 'name',
-        }[rule.field] || 'general';
-        const hide = (rule.hide != null)
-          ? !!rule.hide
-          : !['highlight', 'notify'].includes(rule.action);
-        return {
-          enabled: rule.enabled != null ? !!rule.enabled : true,
-          pattern: typeof rule.pattern === 'string' ? rule.pattern
-            : typeof rule.match === 'string' ? rule.match : '',
-          boards: typeof rule.boards === 'string' ? rule.boards : '',
-          type,
-          color: typeof rule.color === 'string' ? rule.color : '',
-          auto: !!rule.auto,
-          hide,
-          override: !!rule.override,
-        };
-      });
+      return Filter.parseEasyFilterRules(Conf['easyFilters']);
     },
     easyFilterRow(rule, markDirty) {
-      const tr = $.el('tr', {
+      const tr = $.el('div', {
+        className: 'easy-filter-tile',
         innerHTML: `
-    <td><input class="easy-filter-enabled" type="checkbox"></td>
-    <td><input class="field easy-filter-pattern" type="text"></td>
-    <td><input class="field easy-filter-boards" type="text" placeholder="all or g,v"></td>
-    <td><select class="easy-filter-type"></select></td>
-    <td><input class="field easy-filter-color" type="text" placeholder="highlight class"></td>
-    <td><input class="easy-filter-auto" type="checkbox" title="Move highlighted OPs to top"></td>
-    <td><input class="easy-filter-hide" type="checkbox"></td>
-    <td><input class="easy-filter-override" type="checkbox" title="Whitelist: matching highlight prevents this thread from being hidden by other rules"></td>
-    <td><button class="easy-filter-remove" type="button" title="Remove">\u00D7</button></td>
+    <div class="easy-filter-tile-head">
+     <label class="easy-filter-on"><input class="easy-filter-enabled" type="checkbox"> On</label>
+     <button class="easy-filter-remove" type="button" title="Remove">\u00D7</button>
+    </div>
+    <label class="easy-filter-field"><input class="field easy-filter-pattern" type="text" placeholder="Pattern" aria-label="Pattern"></label>
+    <label class="easy-filter-field"><input class="field easy-filter-boards" type="text" placeholder="Boards: all or g,v" aria-label="Boards"></label>
+    <label class="easy-filter-field"><select class="field easy-filter-type" aria-label="Filter type" title="Filter type"></select></label>
+    <label class="easy-filter-field"><span class="easy-filter-color-cell"><input class="easy-filter-color-on" type="checkbox" title="Apply this color (off = theme default)"><input class="easy-filter-color" type="color" title="Highlight color"></span></label>
+    <label class="easy-filter-field"><input class="field easy-filter-class" type="text" placeholder="CSS class" aria-label="CSS class" title="Optional custom CSS class, applied alongside the color"></label>
+    <label class="easy-filter-field" title="Auto: move highlighted OPs to top"><span>A</span><input class="easy-filter-auto" type="checkbox" title="Auto: move highlighted OPs to top"></label>
+    <label class="easy-filter-field" title="Hide"><span>H</span><input class="easy-filter-hide" type="checkbox" title="Hide"></label>
+    <label class="easy-filter-field" title="Override: matching highlight prevents this thread from being hidden by other rules"><span>O</span><input class="easy-filter-override" type="checkbox" title="Override: matching highlight prevents this thread from being hidden by other rules"></label>
    `,
       });
       const typeSelect = $('.easy-filter-type', tr);
+      $.add(typeSelect, $.el('option', { textContent: 'Filter type', value: '', disabled: true }));
       for (const [label, value] of Settings.easyFilterTypes) {
         $.add(typeSelect, $.el('option', { textContent: label, value }));
       }
       const enabledInput = $('.easy-filter-enabled', tr);
       const patternInput = $('.easy-filter-pattern', tr);
       const boardsInput = $('.easy-filter-boards', tr);
+      const colorOnInput = $('.easy-filter-color-on', tr);
       const colorInput = $('.easy-filter-color', tr);
+      const classInput = $('.easy-filter-class', tr);
       const autoInput = $('.easy-filter-auto', tr);
       const hideInput = $('.easy-filter-hide', tr);
       const overrideInput = $('.easy-filter-override', tr);
@@ -33540,20 +36026,29 @@ Enable it on boards.${location.hostname.split('.')[1]}.org in your browser's pri
       patternInput.value = rule.pattern || '';
       boardsInput.value = rule.boards || '';
       typeSelect.value = (rule.type in Config.filter) ? rule.type : 'general';
-      colorInput.value = rule.color || '';
+      // <input type="color"> needs a valid #rrggbb value; the normalizer guarantees one.
+      const hexColor = /^#?([0-9a-f]{6})$/i.exec((rule.color || '').trim());
+      colorInput.value = hexColor ? `#${hexColor[1].toLowerCase()}` : '#dd0000';
+      colorOnInput.checked = !!rule.colorOn;
+      classInput.value = rule.hlClass || '';
       autoInput.checked = !!rule.auto;
       hideInput.checked = rule.hide != null ? !!rule.hide : true;
       overrideInput.checked = !!rule.override;
-      // Override only applies to highlight rules. Grey it out when this row is set
-      // to hide, since "hide + override" has no meaning.
-      const syncOverrideState = () => {
-        const disabled = hideInput.checked;
-        overrideInput.disabled = disabled;
-        if (disabled)
+      // Highlight controls (color + class) only apply when the rule highlights rather
+      // than hides. The swatch itself also depends on its "apply color" checkbox, so an
+      // off checkbox means "use the theme default" while a class can still be set.
+      const syncHighlightControls = () => {
+        const hidden = hideInput.checked;
+        overrideInput.disabled = hidden;
+        if (hidden)
           overrideInput.checked = false;
+        colorOnInput.disabled = hidden;
+        colorInput.disabled = hidden || !colorOnInput.checked;
+        classInput.disabled = hidden;
       };
-      syncOverrideState();
-      $.on(hideInput, 'change', syncOverrideState);
+      syncHighlightControls();
+      $.on(hideInput, 'change', syncHighlightControls);
+      $.on(colorOnInput, 'change', syncHighlightControls);
       for (const input of $$('input, select', tr)) {
         $.on(input, 'change', markDirty);
         if (input.type === 'text') {
@@ -33566,9 +36061,9 @@ Enable it on boards.${location.hostname.split('.')[1]}.org in your browser's pri
       });
       return tr;
     },
-    collectEasyFilters(tbody) {
+    collectEasyFilters(container) {
       const rules = [];
-      for (const tr of $$('tr', tbody)) {
+      for (const tr of $$('.easy-filter-tile', container)) {
         const pattern = $('.easy-filter-pattern', tr).value.trim();
         if (!pattern)
           continue;
@@ -33580,6 +36075,8 @@ Enable it on boards.${location.hostname.split('.')[1]}.org in your browser's pri
           boards: $('.easy-filter-boards', tr).value.trim(),
           type: (type in Config.filter) ? type : 'general',
           color: $('.easy-filter-color', tr).value.trim(),
+          colorOn: $('.easy-filter-color-on', tr).checked,
+          hlClass: $('.easy-filter-class', tr).value.trim().replace(/^\.+/, '').replace(/[^\w-]/g, ''),
           auto: $('.easy-filter-auto', tr).checked,
           hide,
           override: !hide && $('.easy-filter-override', tr).checked,
@@ -33599,38 +36096,15 @@ Enable it on boards.${location.hostname.split('.')[1]}.org in your browser's pri
         boards: $('.easy-filter-boards', tr).value.trim(),
         type: (type in Config.filter) ? type : 'general',
         color: $('.easy-filter-color', tr).value.trim(),
+        colorOn: $('.easy-filter-color-on', tr).checked,
+        hlClass: $('.easy-filter-class', tr).value.trim().replace(/^\.+/, '').replace(/[^\w-]/g, ''),
         auto: $('.easy-filter-auto', tr).checked,
         hide,
         override: !hide && $('.easy-filter-override', tr).checked,
       };
     },
     easyFilterRuleToLine(rule) {
-      if (!rule?.enabled)
-        return null;
-      const match = (rule.pattern || '').trim();
-      if (!match)
-        return null;
-      const flags = rule.caseSensitive ? '' : 'i';
-      let line = `/${Filter.escape(match)}/${flags}`;
-      const options = [];
-      if (typeof rule.boards === 'string' && rule.boards.trim()) {
-        options.push(`boards:${rule.boards.trim()}`);
-      }
-      const type = (rule.type in Config.filter) ? rule.type : 'general';
-      options.push(`type:${type === 'general' ? 'subject,name,comment' : type}`);
-      const hide = (rule.hide != null) ? !!rule.hide : !['highlight', 'notify'].includes(rule.action);
-      if (!hide) {
-        const color = (rule.color || '').trim();
-        options.push(color ? `highlight:${color}` : 'highlight');
-        options.push(`top:${rule.auto ? 'yes' : 'no'}`);
-        if (rule.override)
-          options.push('override');
-      }
-      if (rule.action === 'notify')
-        options.push('notify');
-      if (options.length)
-        line += `;${options.join(';')}`;
-      return line;
+      return Filter.easyRuleToLine(rule);
     },
     addFilterStats(type, textarea, container, previewState) {
       if (previewState) {
@@ -33648,19 +36122,19 @@ Enable it on boards.${location.hostname.split('.')[1]}.org in your browser's pri
       if (!panel)
         return;
       $.rmAll(panel);
-      if (!previewState.simpleTbody && !previewState.advancedTextarea) {
+      if (!previewState.simpleContainer && !previewState.advancedTextarea) {
         $.add(panel, $.el('div', {
           className: 'filter-stats-empty',
           textContent: 'No filters loaded yet.',
         }));
         return;
       }
-      if (previewState.simpleTbody) {
+      if (previewState.simpleContainer) {
         const simpleGroup = $.el('div', { className: 'filter-preview-group' });
         $.add(simpleGroup, $.el('div', { className: 'filter-preview-heading', textContent: 'Simple Filters' }));
         const simplePanel = $.el('div', { className: 'filter-stats' });
         $.add(simpleGroup, simplePanel);
-        Settings.renderEasyFilterPreview(previewState.simpleTbody, simplePanel);
+        Settings.renderEasyFilterPreview(previewState.simpleContainer, simplePanel);
         $.add(panel, simpleGroup);
       }
       if (previewState.advancedTextarea) {
@@ -33674,7 +36148,7 @@ Enable it on boards.${location.hostname.split('.')[1]}.org in your browser's pri
         $.add(panel, advancedGroup);
       }
     },
-    renderEasyFilterPreview(tbody, panel) {
+    renderEasyFilterPreview(container, panel) {
       $.rmAll(panel);
       if (!g.BOARD?.threads || !['index', 'thread', 'catalog'].includes(g.VIEW)) {
         $.add(panel, $.el('div', {
@@ -33696,7 +36170,7 @@ Enable it on boards.${location.hostname.split('.')[1]}.org in your browser's pri
       let totalHidden = 0;
       let activeRules = 0;
       let rowNo = 0;
-      for (const tr of $$('tr', tbody)) {
+      for (const tr of $$('.easy-filter-tile', container)) {
         rowNo++;
         const rule = Settings.easyFilterRuleFromRow(tr);
         if (!rule)
@@ -34870,12 +37344,14 @@ Enable it on boards.${location.hostname.split('.')[1]}.org in your browser's pri
         $.addClass(doc, 'hide-backlinks');
       }
       const easyLines = Filter.easyFilterLines();
+      Filter.injectEasyHighlightColors();
       for (var key in Config.filter) {
         const lines = Conf[key].split('\n');
         if (key === 'general' && easyLines.length)
           lines.push(...easyLines);
         for (var line of lines) {
           let hl;
+          let tile = false;
           let regexp;
           let top;
           let hide = true;
@@ -34942,9 +37418,14 @@ Enable it on boards.${location.hostname.split('.')[1]}.org in your browser's pri
             noti = /(?:^|;)\s*notify/.test(options);
             // Highlight the post.
             // If not specified, the highlight class will be filter-highlight.
-            const highlightRes = options.match(/(?:^|;)\s*highlight(?::([\w-]+))?/);
+            // Accepts a comma-separated list of classes (e.g. `highlight:xt-hl-ff0000,my-class`),
+            // applied together; test() splits them apart.
+            const highlightRes = options.match(/(?:^|;)\s*highlight(?::([\w,-]+))?/);
             if (highlightRes) {
               hl = highlightRes[1] || 'filter-highlight';
+              // Glow around the whole catalog entry (image + text) instead of
+              // just the thumbnail. Catalog-only; no effect in thread view.
+              tile = /(?:^|;)\s*tile(?:[;:]|$)/.test(options);
               // Put highlighted OP's thread on top of the board page or not.
               // Defaults to on top.
               top = (options.match(/(?:^|;)\s*top:(yes|no)/)?.[1] || 'yes') === 'yes';
@@ -34962,7 +37443,7 @@ Enable it on boards.${location.hostname.split('.')[1]}.org in your browser's pri
           const label = (regexp instanceof RegExp)
             ? `${key}: /${regexp.source}/${regexp.flags}`
             : `${key}: ${regexp}`;
-          const filterObj = { regexp, boards, excludes, mask, hide, stub, hl, top, noti, reason, poster, replies, override, label };
+          const filterObj = { regexp, boards, excludes, mask, hide, stub, hl, tile, top, noti, reason, poster, replies, override, label };
           // Fields that this filter applies to (for 'general' filters)
           if (key === 'general') {
             const types = options.match(/(?:^|;)\s*type:([^;]*)/)?.[1].split(',')
@@ -35071,8 +37552,23 @@ Enable it on boards.${location.hostname.split('.')[1]}.org in your browser's pri
                 }
               }
             }
-            if (filter.hl && !hl?.includes(filter.hl)) {
-              (hl || (hl = [])).push(filter.hl);
+            if (filter.hl) {
+              // A filter may carry several comma-separated highlight classes.
+              for (const cls of filter.hl.split(',')) {
+                if (!cls || hl?.includes(cls))
+                  continue;
+                (hl || (hl = [])).push(cls);
+                // A generated `xt-hl-<rrggbb>` class only sets color variables; pair it
+                // with `filter-highlight` so the actual highlight styling applies (see
+                // injectEasyHighlightColors).
+                if (cls.startsWith('xt-hl-') && !hl.includes('filter-highlight')) {
+                  hl.push('filter-highlight');
+                }
+              }
+            }
+            // `;tile` glows the whole catalog entry instead of the thumbnail.
+            if (filter.hl && filter.tile && !hl.includes('filter-glow-tile')) {
+              hl.push('filter-glow-tile');
             }
             if (filter.override && filter.hl)
               hlOverride = true;
@@ -35095,8 +37591,48 @@ Enable it on boards.${location.hostname.split('.')[1]}.org in your browser's pri
       post.filterResults = { hide, stub, hl, top, noti, poster, replies, reasons };
       return post.filterResults;
     },
-    easyFilterLines() {
-      const raw = Conf['easyFilters'];
+    // Normalizes one stored/edited Simple Filter rule into a canonical shape, the single
+    // source of truth shared by the Settings UI, the live filters, and the injected CSS.
+    // A highlight can carry a swatch color (`color` + `colorOn`) and/or a custom CSS
+    // class (`hlClass`), applied together ("tandem"). Backward compatible: an older rule
+    // whose `color` held a class name is migrated to `hlClass`; a bare hex color turns the
+    // swatch on.
+    normalizeEasyRule(rule) {
+      if (!rule || typeof rule !== 'object')
+        return null;
+      const pattern = typeof rule.pattern === 'string' ? rule.pattern
+        : typeof rule.match === 'string' ? rule.match
+          : '';
+      const type = (rule.type in Config.filter) ? rule.type : {
+        title: 'subject', body: 'comment', name: 'name',
+      }[rule.field] || 'general';
+      const hide = (rule.hide != null)
+        ? !!rule.hide
+        : !['highlight', 'notify'].includes(rule.action);
+      const rawColor = typeof rule.color === 'string' ? rule.color.trim() : '';
+      const hex = /^#?([0-9a-fA-F]{6})$/.exec(rawColor);
+      let hlClass = typeof rule.hlClass === 'string' ? rule.hlClass.trim() : '';
+      // Legacy rules stored a CSS class name in `color`; move it to the class field.
+      if (!hex && rawColor && !hlClass)
+        hlClass = rawColor;
+      hlClass = hlClass.replace(/^\.+/, '').replace(/[^\w-]/g, '');
+      return {
+        enabled: rule.enabled != null ? !!rule.enabled : true,
+        pattern,
+        boards: typeof rule.boards === 'string' ? rule.boards : '',
+        type,
+        color: hex ? `#${hex[1].toLowerCase()}` : '#dd0000',
+        colorOn: rule.colorOn != null ? !!rule.colorOn : !!hex,
+        hlClass,
+        auto: !!rule.auto,
+        hide,
+        override: !!rule.override,
+        action: rule.action,
+        caseSensitive: !!rule.caseSensitive,
+      };
+    },
+    // Parses the stored easyFilters blob (JSON string or array) into normalized rules.
+    parseEasyFilterRules(raw) {
       let rules = [];
       if (Array.isArray(raw)) {
         rules = raw;
@@ -35109,45 +37645,76 @@ Enable it on boards.${location.hostname.split('.')[1]}.org in your browser's pri
       }
       if (!Array.isArray(rules))
         return [];
+      return rules.map(r => Filter.normalizeEasyRule(r)).filter(Boolean);
+    },
+    // The highlight CSS classes a normalized rule applies: a generated `xt-hl-<rrggbb>`
+    // color class (when the swatch is on) and/or the user's custom class. Both ride
+    // together; an empty list means the theme's default highlight.
+    easyHighlightClasses(rule) {
+      const classes = [];
+      if (rule.colorOn && /^#[0-9a-f]{6}$/.test(rule.color)) {
+        classes.push(`xt-hl-${rule.color.slice(1)}`);
+      }
+      if (rule.hlClass)
+        classes.push(rule.hlClass);
+      return classes;
+    },
+    // Builds the advanced-filter line for one normalized rule (or null to skip it).
+    easyRuleToLine(rule) {
+      if (!rule?.enabled)
+        return null;
+      const match = (rule.pattern || '').trim();
+      if (!match)
+        return null;
+      const flags = rule.caseSensitive ? '' : 'i';
+      let line = `/${Filter.escape(match)}/${flags}`;
+      const options = [];
+      if ((rule.boards || '').trim())
+        options.push(`boards:${rule.boards.trim()}`);
+      const type = (rule.type in Config.filter) ? rule.type : 'general';
+      options.push(`type:${type === 'general' ? 'subject,name,comment' : type}`);
+      if (!rule.hide) {
+        const classes = Filter.easyHighlightClasses(rule);
+        options.push(classes.length ? `highlight:${classes.join(',')}` : 'highlight');
+        options.push(`top:${rule.auto ? 'yes' : 'no'}`);
+        if (rule.override)
+          options.push('override');
+      }
+      if (rule.action === 'notify')
+        options.push('notify');
+      if (options.length)
+        line += `;${options.join(';')}`;
+      return line;
+    },
+    easyFilterLines() {
       const lines = [];
-      for (const rule of rules) {
-        if (!rule || typeof rule !== 'object')
-          continue;
-        if (rule.enabled === false)
-          continue;
-        const pattern = typeof rule.pattern === 'string' ? rule.pattern
-          : typeof rule.match === 'string' ? rule.match
-            : '';
-        const match = pattern.trim();
-        if (!match)
-          continue;
-        const flags = rule.caseSensitive ? '' : 'i';
-        let line = `/${Filter.escape(match)}/${flags}`;
-        const options = [];
-        if (typeof rule.boards === 'string' && rule.boards.trim()) {
-          options.push(`boards:${rule.boards.trim()}`);
-        }
-        const type = (rule.type in Config.filter) ? rule.type : {
-          title: 'subject', body: 'comment', name: 'name',
-        }[rule.field] || 'general';
-        options.push(`type:${type === 'general' ? 'subject,name,comment' : type}`);
-        const hide = (rule.hide != null)
-          ? !!rule.hide
-          : !['highlight', 'notify'].includes(rule.action);
-        if (!hide) {
-          const color = typeof rule.color === 'string' ? rule.color.trim() : '';
-          options.push(color ? `highlight:${color}` : 'highlight');
-          options.push(`top:${rule.auto ? 'yes' : 'no'}`);
-          if (rule.override)
-            options.push('override');
-        }
-        if (rule.action === 'notify')
-          options.push('notify');
-        if (options.length)
-          line += `;${options.join(';')}`;
-        lines.push(line);
+      for (const rule of Filter.parseEasyFilterRules(Conf['easyFilters'])) {
+        const line = Filter.easyRuleToLine(rule);
+        if (line)
+          lines.push(line);
       }
       return lines;
+    },
+    // Injects a stylesheet defining the highlight color variables for every custom
+    // `xt-hl-<rrggbb>` class used by Simple Filters. The generated class sits on the
+    // post root alongside `filter-highlight` (added in test()), so all the existing
+    // filter-highlight styling (edge bar, side arrows, catalog glow) picks up the color.
+    injectEasyHighlightColors() {
+      const colors = new Set();
+      for (const rule of Filter.parseEasyFilterRules(Conf['easyFilters'])) {
+        if (!rule.enabled || rule.hide || !rule.colorOn)
+          continue;
+        const hex = /^#([0-9a-f]{6})$/.exec(rule.color);
+        if (hex)
+          colors.add(hex[1]);
+      }
+      const existing = $.id('xt-easy-highlight-colors');
+      if (existing)
+        $.rm(existing);
+      if (!colors.size)
+        return;
+      const css = [...colors].map(hex => `.xt-hl-${hex}{--xt-filter-highlight:#${hex};--xt-highlight-side-arrow:#${hex};--xt-highlight-shadow:#${hex};}`).join('\n');
+      $.addStyle(css, 'xt-easy-highlight-colors');
     },
     node() {
       if (this.isClone ||
@@ -35222,7 +37789,7 @@ Enable it on boards.${location.hostname.split('.')[1]}.org in your browser's pri
       }
       if (this.file?.thumbLink) {
         $.on(this.file.thumbLink, 'click', (e) => {
-          if (!e.shiftKey)
+          if (!e.shiftKey || !Conf['MD5 Quick Filter in Threads'])
             return;
           Filter.quickFilterMD5.call(this);
           e.preventDefault();
@@ -35384,6 +37951,13 @@ Enable it on boards.${location.hostname.split('.')[1]}.org in your browser's pri
       } else {
         hideMatchingPost(origin);
       }
+      if (!Conf['MD5 Quick Filter Notifications']) {
+        // Feedback for when nothing gets hidden.
+        if (post.nodes.post.getBoundingClientRect().height) {
+          new Notice('info', 'MD5 filtered.', 2);
+        }
+        return;
+      }
       let { notice } = Filter.quickFilterMD5;
       if (notice) {
         if (!notice.filters.includes(filter)) {
@@ -35498,14 +38072,13 @@ Enable it on boards.${location.hostname.split('.')[1]}.org in your browser's pri
 
   var Site = {
     defaultProperties: {
-      '4chan.org':    {software: 'yotsuba'},
-      '4channel.org': {canonical: '4chan.org'},
-      '4cdn.org':     {canonical: '4chan.org'},
-      'notso.smuglo.li': {canonical: 'smuglo.li'},
-      'smugloli.net':    {canonical: 'smuglo.li'},
-      'smug.nepu.moe':   {canonical: 'smuglo.li'}
+      '4chan.org': { software: 'yotsuba' },
+      '4channel.org': { canonical: '4chan.org' },
+      '4cdn.org': { canonical: '4chan.org' },
+      'notso.smuglo.li': { canonical: 'smuglo.li' },
+      'smugloli.net': { canonical: 'smuglo.li' },
+      'smug.nepu.moe': { canonical: 'smuglo.li' }
     },
-
     init(cb) {
       $.extend(Conf['siteProperties'], Site.defaultProperties);
       let hostname = Site.resolve();
@@ -35539,35 +38112,36 @@ Enable it on boards.${location.hostname.split('.')[1]}.org in your browser's pri
         }
       });
     },
-
-    resolve(url=location) {
-      let {hostname} = url;
+    resolve(url = location) {
+      let { hostname } = url;
       while (hostname && !$.hasOwn(Conf['siteProperties'], hostname)) {
         hostname = hostname.replace(/^[^.]*\.?/, '');
       }
       if (hostname) {
         let canonical;
-        if (canonical = Conf['siteProperties'][hostname].canonical) { hostname = canonical; }
+        if (canonical = Conf['siteProperties'][hostname].canonical) {
+          hostname = canonical;
+        }
       }
       return hostname;
     },
-
     parseURL(url) {
       const siteID = Site.resolve(url);
       return Main.parseURL(g.sites[siteID], url);
     },
-
     set(hostname) {
       for (var ID in Conf['siteProperties']) {
         var site;
         var properties = Conf['siteProperties'][ID];
-        if (properties.canonical) { continue; }
-        var {
-          software
-        } = properties;
-        if (!software || !$.hasOwn(SW, software)) { continue; }
+        if (properties.canonical) {
+          continue;
+        }
+        var { software } = properties;
+        if (!software || !$.hasOwn(SW, software)) {
+          continue;
+        }
         g.sites[ID] = (site = Object.create(SW[software]));
-        $.extend(site, {ID, siteID: ID, properties, software});
+        $.extend(site, { ID, siteID: ID, properties, software });
       }
       return g.SITE = g.sites[hostname];
     }
@@ -35576,17 +38150,22 @@ Enable it on boards.${location.hostname.split('.')[1]}.org in your browser's pri
   var CatalogLinks = {
     init() {
       if ((g.SITE.software === 'yotsuba') && (Conf['External Catalog'] || Conf['JSON Index']) && !(Conf['JSON Index'] && (g.VIEW === 'index'))) {
-        const selector = (() => { switch (g.VIEW) {
-          case 'thread': case 'archive': return '.navLinks.desktop > a';
-          case 'catalog':           return '.navLinks > :first-child > a';
-          case 'index':             return '#ctrl-top > a, .cataloglink > a';
-        } })();
-        $.ready(function() {
+        const selector = (() => {
+          switch (g.VIEW) {
+            case 'thread':
+            case 'archive': return '.navLinks.desktop > a';
+            case 'catalog': return '.navLinks > :first-child > a';
+            case 'index': return '#ctrl-top > a, .cataloglink > a';
+          }
+        })();
+        $.ready(function () {
           for (var link of $$(selector)) {
             var catalogURL;
             switch (link.pathname.replace(/\/+/g, '/')) {
               case `/${g.BOARD}/`:
-                if (Conf['JSON Index']) { link.textContent = 'Index'; }
+                if (Conf['JSON Index']) {
+                  link.textContent = 'Index';
+                }
                 link.href = CatalogLinks.index();
                 break;
               case `/${g.BOARD}/catalog`:
@@ -35603,14 +38182,12 @@ Enable it on boards.${location.hostname.split('.')[1]}.org in your browser's pri
           }
         });
       }
-
       if ((g.SITE.software === 'yotsuba') && Conf['JSON Index'] && Conf[`Use ${meta.name} Catalog`]) {
         Callbacks.Post.push({
           name: 'Catalog Link Rewrite',
-          cb:   this.node
+          cb: this.node
         });
       }
-
       if (this.enabled = Conf['Catalog Links']) {
         let el;
         CatalogLinks.el = (el = UI.checkbox('Header catalog links', 'Catalog Links'));
@@ -35624,7 +38201,6 @@ Enable it on boards.${location.hostname.split('.')[1]}.org in your browser's pri
         });
       }
     },
-
     node() {
       for (var a of $$('a', this.nodes.comment)) {
         var m;
@@ -35633,13 +38209,11 @@ Enable it on boards.${location.hostname.split('.')[1]}.org in your browser's pri
         }
       }
     },
-
     toggle() {
       $.event('CloseMenu');
       $.set('Header catalog links', this.checked);
       return CatalogLinks.set(this.checked);
     },
-
     set(useCatalog) {
       Conf['Header catalog links'] = useCatalog;
       CatalogLinks.setLinks(Header.boardList);
@@ -35647,28 +38221,26 @@ Enable it on boards.${location.hostname.split('.')[1]}.org in your browser's pri
       CatalogLinks.el.title = `Turn catalog links ${useCatalog ? 'off' : 'on'}.`;
       return $('input', CatalogLinks.el).checked = useCatalog;
     },
-
     // Also called by Header when board lists are loaded / generated.
     setLinks(list) {
-      if ((!(CatalogLinks.enabled ?? Conf['Catalog Links'])) || !list) { return; }
-
+      if ((!(CatalogLinks.enabled ?? Conf['Catalog Links'])) || !list) {
+        return;
+      }
       // do not transform links unless they differ from the expected value at most by this tail
       const tail = /(?:index)?(?:\.\w+)?$/;
-
       for (var a of $$('a:not([data-only])', list)) {
-        var {siteID, boardID} = a.dataset;
+        var { siteID, boardID } = a.dataset;
         if (!siteID || !boardID) {
           var VIEW;
-          ({siteID, boardID, VIEW} = Site.parseURL(a));
-          if (
-            !siteID || !boardID ||
+          ({ siteID, boardID, VIEW } = Site.parseURL(a));
+          if (!siteID || !boardID ||
             !['index', 'catalog'].includes(VIEW) ||
-            (!a.dataset.indexOptions && (a.href.replace(tail, '') !== (Get.url(VIEW, {siteID, boardID}) || '').replace(tail, '')))
-          ) { continue; }
-          $.extend(a.dataset, {siteID, boardID});
+            (!a.dataset.indexOptions && (a.href.replace(tail, '') !== (Get.url(VIEW, { siteID, boardID }) || '').replace(tail, '')))) {
+            continue;
+          }
+          $.extend(a.dataset, { siteID, boardID });
         }
-
-        var board = {siteID, boardID};
+        var board = { siteID, boardID };
         var url = Conf['Header catalog links'] ? CatalogLinks.catalog(board) : Get.url('index', board);
         if (url) {
           a.href = url;
@@ -35678,13 +38250,14 @@ Enable it on boards.${location.hostname.split('.')[1]}.org in your browser's pri
         }
       }
     },
-
     externalParse() {
       CatalogLinks.externalList = dict();
       for (var line of Conf['externalCatalogURLs'].split('\n')) {
-        if (line[0] === '#') { continue; }
+        if (line[0] === '#') {
+          continue;
+        }
         var url = line.split(';')[0];
-        var boards   = Filter.parseBoards(line.match(/;boards:([^;]+)/)?.[1] || '*');
+        var boards = Filter.parseBoards(line.match(/;boards:([^;]+)/)?.[1] || '*');
         var excludes = Filter.parseBoards(line.match(/;exclude:([^;]+)/)?.[1]) || dict();
         for (var board in boards) {
           if (!excludes[board] && !excludes[board.split('/')[0] + '/*']) {
@@ -35693,13 +38266,17 @@ Enable it on boards.${location.hostname.split('.')[1]}.org in your browser's pri
         }
       }
     },
-
-    external({siteID, boardID}) {
-      if (!CatalogLinks.externalList) { CatalogLinks.externalParse(); }
+    external({ siteID, boardID }) {
+      if (!CatalogLinks.externalList) {
+        CatalogLinks.externalParse();
+      }
       const external = (CatalogLinks.externalList[`${siteID}/${boardID}`] || CatalogLinks.externalList[`${siteID}/*`]);
-      if (external) { return external.replace(/%board/g, boardID); } else { return undefined; }
+      if (external) {
+        return external.replace(/%board/g, boardID);
+      } else {
+        return undefined;
+      }
     },
-
     jsonIndex(board, hash) {
       if ((g.SITE.ID === board.siteID) && (g.BOARD.ID === board.boardID) && (g.VIEW === 'index')) {
         return hash;
@@ -35707,8 +38284,7 @@ Enable it on boards.${location.hostname.split('.')[1]}.org in your browser's pri
         return Get.url('index', board) + hash;
       }
     },
-
-    catalog(board=g.BOARD) {
+    catalog(board = g.BOARD) {
       let external, nativeCatalog;
       if (Conf['External Catalog'] && (external = CatalogLinks.external(board))) {
         return external;
@@ -35720,8 +38296,7 @@ Enable it on boards.${location.hostname.split('.')[1]}.org in your browser's pri
         return CatalogLinks.external(board);
       }
     },
-
-    index(board=g.BOARD) {
+    index(board = g.BOARD) {
       if (Index.enabledOn(board)) {
         return CatalogLinks.jsonIndex(board, '#index');
       } else {
@@ -36333,23 +38908,21 @@ Enable it on boards.${location.hostname.split('.')[1]}.org in your browser's pri
       this.el = $.el('div', {
         innerHTML: `<a href="javascript:;" class="close" title="Close">${Icon.get('xmark')}</a><div class="message"></div>`
       });
-      this.el.style.opacity = 0;
+      this.el.style.opacity = '0';
       this.setType(type);
       $.on(this.el.firstElementChild, 'click', this.close);
       if (typeof content === 'string') {
         content = $.tn(content);
       }
       $.add(this.el.lastElementChild, content);
-
       $.ready(this.add);
     }
-
     setType(type) {
       this.el.className = `notification ${type}`;
     }
-
     add() {
-      if (this.closed) return;
+      if (this.closed)
+        return;
       if (d.hidden) {
         $.on(d, 'visibilitychange', this.add);
         return;
@@ -36357,18 +38930,19 @@ Enable it on boards.${location.hostname.split('.')[1]}.org in your browser's pri
       $.off(d, 'visibilitychange', this.add);
       $.add(Header.noticesRoot, this.el);
       this.el.clientHeight; // force reflow
-      this.el.style.opacity = 1;
-      if (this.timeout) { this.timeoutId = setTimeout(this.close, this.timeout * SECOND); }
+      this.el.style.opacity = '1';
+      if (this.timeout) {
+        this.timeoutId = setTimeout(this.close, this.timeout * SECOND);
+      }
     }
-
     close() {
-      if (this.timeoutId) clearTimeout(this.timeoutId);
+      if (this.timeoutId)
+        clearTimeout(this.timeoutId);
       this.closed = true;
       $.off(d, 'visibilitychange', this.add);
       $.rm(this.el);
       this.onclose?.();
     }
-
     resetTimer() {
       if (this.timeout) {
         clearTimeout(this.timeoutId);
@@ -36730,13 +39304,12 @@ Enable it on boards.${location.hostname.split('.')[1]}.org in your browser's pri
 
   class CatalogThreadNative {
     toString() { return this.ID; }
-
     constructor(root) {
       this.nodes = {
         root,
         thumb: $(g.SITE.selectors.catalog.thumb, root)
       };
-      this.siteID  = g.SITE.ID;
+      this.siteID = g.SITE.ID;
       this.boardID = this.nodes.thumb.parentNode.pathname.split(/\/+/)[1];
       this.board = g.boards[this.boardID] || new Board(this.boardID);
       this.ID = (this.threadID = +(root.dataset.id || root.id).match(/\d*$/)[0]);
@@ -36746,209 +39319,244 @@ Enable it on boards.${location.hostname.split('.')[1]}.org in your browser's pri
 
   const Anonymize = {
     init() {
-      if (!Conf['Anonymize']) { return; }
+      if (!Conf['Anonymize']) {
+        return;
+      }
       return $.addClass(doc, 'anonymize');
     }
   };
 
   var ImageHover = {
     init() {
-      if (!['index', 'thread'].includes(g.VIEW)) { return; }
+      if (!['index', 'thread'].includes(g.VIEW)) {
+        return;
+      }
       if (Conf['Image Hover']) {
         Callbacks.Post.push({
           name: 'Image Hover',
-          cb:   this.node
+          cb: this.node
         });
       }
       if (Conf['Image Hover in Catalog']) {
         return Callbacks.CatalogThread.push({
           name: 'Image Hover',
-          cb:   this.catalogNode
+          cb: this.catalogNode
         });
       }
     },
-
     node() {
-      return this.files.filter((file) => (file.isImage || file.isVideo) && file.thumb).map((file) =>
-        $.on(file.thumb, 'mouseover', ImageHover.mouseover(this, file)));
+      return this.files.filter((file) => (file.isImage || file.isVideo) && file.thumb).map((file) => $.on(file.thumb, 'mouseover', ImageHover.mouseover(this, file)));
     },
-
     catalogNode() {
       const file = this.thread.OP.files[0];
-      if (!file || (!file.isImage && !file.isVideo)) { return; }
+      if (!file || (!file.isImage && !file.isVideo)) {
+        return;
+      }
       return $.on(this.nodes.thumb, 'mouseover', ImageHover.mouseover(this.thread.OP, file));
     },
-
-    mouseover(post, file) { return function(e) {
-      let el, height, width;
-      if (!doc.contains(this)) { return; }
-      const {isVideo} = file;
-      if (file.isExpanding || file.isExpanded || g.SITE.isThumbExpanded?.(file)) { return; }
-      const error = ImageHover.error(post, file);
-      if (ImageCommon.cache?.dataset.fileID === `${post.fullID}.${file.index}`) {
-        el = ImageCommon.popCache();
-        $.on(el, 'error', error);
-      } else {
-        el = $.el((isVideo ? 'video' : 'img'));
-        el.dataset.fileID = `${post.fullID}.${file.index}`;
-        $.on(el, 'error', error);
-        el.src = file.url;
-      }
-
-      if (Conf['Restart when Opened']) {
-        ImageCommon.rewind(el);
-        ImageCommon.rewind(this);
-      }
-      el.id = 'ihover';
-      $.add(Header.hover, el);
-      if (isVideo) {
-        el.loop     = true;
-        el.controls = false;
-        Volume.setup(el);
-        if (Conf['Autoplay']) {
-          el.play();
-          if (this.nodeName === 'VIDEO') { this.currentTime = el.currentTime; }
+    mouseover(post, file) {
+      return function (e) {
+        let el, height, width;
+        if (!doc.contains(this)) {
+          return;
         }
-      }
-      if (file.dimensions) {
-        [width, height] = file.dimensions.split('x').map((x) => +x);
-        const maxWidth = doc.clientWidth;
-        const maxHeight = doc.clientHeight - UI.hover.padding;
-        const scale = Math.min(1, maxWidth / width, maxHeight / height);
-        width *= scale;
-        height *= scale;
-        el.style.maxWidth  = `${width}px`;
-        el.style.maxHeight = `${height}px`;
-      }
-      return UI.hover({
-        root: this,
-        el,
-        latestEvent: e,
-        endEvents: 'mouseout click',
-        height,
-        width,
-        noRemove: true,
-        cb() {
-          $.off(el, 'error', error);
-          ImageCommon.pushCache(el);
-          ImageCommon.pause(el);
-          $.rm(el);
-          return el.removeAttribute('style');
+        const { isVideo } = file;
+        if (file.isExpanding || file.isExpanded || g.SITE.isThumbExpanded?.(file)) {
+          return;
         }
-      });
-    }; },
-
-    error(post, file) { return function() {
-      if (ImageCommon.decodeError(this, file)) { return; }
-      return ImageCommon.error(this, post, file, 3 * SECOND, URL => {
-        if (URL) {
-          return this.src = URL + (this.src === URL ? '?' + Date.now() : '');
+        const error = ImageHover.error(post, file);
+        if (ImageCommon.cache?.dataset.fileID === `${post.fullID}.${file.index}`) {
+          el = ImageCommon.popCache();
+          $.on(el, 'error', error);
         } else {
-          return $.rm(this);
+          el = $.el((isVideo ? 'video' : 'img'));
+          el.dataset.fileID = `${post.fullID}.${file.index}`;
+          $.on(el, 'error', error);
+          el.src = file.url;
         }
-      });
-    }; }
+        if (Conf['Restart when Opened']) {
+          ImageCommon.rewind(el);
+          ImageCommon.rewind(this);
+        }
+        el.id = 'ihover';
+        $.add(Header.hover, el);
+        if (isVideo) {
+          el.loop = true;
+          el.controls = false;
+          Volume.setup(el);
+          if (Conf['Autoplay']) {
+            el.play();
+            if (this.nodeName === 'VIDEO') {
+              this.currentTime = el.currentTime;
+            }
+          }
+        }
+        if (file.dimensions) {
+          [width, height] = file.dimensions.split('x').map((x) => +x);
+          const maxWidth = doc.clientWidth;
+          const maxHeight = doc.clientHeight - UI.hover.padding;
+          const scale = Math.min(1, maxWidth / width, maxHeight / height);
+          width *= scale;
+          height *= scale;
+          el.style.maxWidth = `${width}px`;
+          el.style.maxHeight = `${height}px`;
+        }
+        return UI.hover({
+          root: this,
+          el,
+          latestEvent: e,
+          endEvents: 'mouseout click',
+          height,
+          width,
+          noRemove: true,
+          cb() {
+            $.off(el, 'error', error);
+            ImageCommon.pushCache(el);
+            ImageCommon.pause(el);
+            $.rm(el);
+            return el.removeAttribute('style');
+          }
+        });
+      };
+    },
+    error(post, file) {
+      return function () {
+        if (ImageCommon.decodeError(this, file)) {
+          return;
+        }
+        return ImageCommon.error(this, post, file, 3 * SECOND, URL => {
+          if (URL) {
+            return this.src = URL + (this.src === URL ? '?' + Date.now() : '');
+          } else {
+            return $.rm(this);
+          }
+        });
+      };
+    }
   };
 
   var ImageLoader = {
     init() {
-      if (!['index', 'thread', 'archive'].includes(g.VIEW)) { return; }
-      const replace = Conf['Replace Thumbnails'];
-      if (!Conf['Image Prefetching'] && !replace) { return; }
-
+      if (!['index', 'thread', 'archive'].includes(g.VIEW)) {
+        return;
+      }
+      const replace = Conf['Replace Thumbnails'] && (Conf['Replace JPG'] ||
+        Conf['Replace PNG'] ||
+        Conf['Replace GIF'] ||
+        Conf['Replace WEBM']);
+      if (!Conf['Image Prefetching'] && !replace) {
+        return;
+      }
       Callbacks.Post.push({
         name: 'Image Replace',
-        cb:   this.node
+        cb: this.node
       });
-
-      $.on(d, 'PostsInserted', function() {
+      $.on(d, 'PostsInserted', function () {
         if (ImageLoader.prefetchEnabled || replace) {
           return g.posts.forEach(ImageLoader.prefetchAll);
         }
       });
-
-      if (Conf['Replace Thumbnails']) {
+      if (Conf['Replace Thumbnails'] && Conf['Replace WEBM']) {
         $.on(d, 'scroll visibilitychange 4chanXInitFinished PostsInserted', this.playVideos);
       }
-
-      if (!Conf['Image Prefetching'] || !['index', 'thread'].includes(g.VIEW)) { return; }
-
+      if (!Conf['Image Prefetching'] || !['index', 'thread'].includes(g.VIEW)) {
+        return;
+      }
       const el = $.el('a', {
         href: 'javascript:;',
         title: 'Prefetch Images',
         className: 'disabled',
       });
       Icon.set(el, 'bolt', 'Prefetch');
-
       $.on(el, 'click', this.toggle);
-
       return Header.addShortcut('prefetch', el, 525);
     },
-
     node() {
-      if (this.isClone) { return; }
+      if (this.isClone) {
+        return;
+      }
       for (var file of this.files) {
-        if (Conf['Replace Thumbnails'] && file.isVideo) { ImageLoader.replaceVideo(this, file); }
+        if (Conf['Replace Thumbnails'] && Conf['Replace WEBM'] && file.isVideo) {
+          ImageLoader.replaceVideo(this, file);
+        }
         ImageLoader.prefetch(this, file);
       }
     },
-
     replaceVideo(post, file) {
-      const {thumb} = file;
+      const { thumb } = file;
       const video = $.el('video', {
-        preload:     'none',
-        loop:        true,
-        muted:       true,
-        poster:      thumb.src || thumb.dataset.src,
+        preload: 'none',
+        loop: true,
+        muted: true,
+        poster: thumb.src || thumb.dataset.src,
         textContent: thumb.alt,
-        className:   thumb.className
-      }
-      );
+        className: thumb.className
+      });
       video.setAttribute('muted', 'muted');
       video.dataset.md5 = thumb.dataset.md5;
-      for (var attr of ['height', 'width', 'maxHeight', 'maxWidth']) { video.style[attr] = thumb.style[attr]; }
-      video.src         = file.url;
+      for (var attr of ['height', 'width', 'maxHeight', 'maxWidth']) {
+        video.style[attr] = thumb.style[attr];
+      }
+      video.src = file.url;
       $.replace(thumb, video);
-      file.thumb      = video;
+      file.thumb = video;
       return file.videoThumb = true;
     },
-
     prefetch(post, file) {
-      let clone;
-      const {isImage, isVideo, thumb, url} = file;
-      if (file.isPrefetched || !(isImage || isVideo) || post.isHidden || post.thread.isHidden) { return; }
-      const replace = Conf['Replace Thumbnails'] && !/spoiler/.test(thumb.src || thumb.dataset.src);
-      if (!replace && !ImageLoader.prefetchEnabled) { return; }
-      if ($.hasClass(doc, 'catalog-mode')) { return; }
-      if (![post, ...post.clones].some(clone => doc.contains(clone.nodes.root))) { return; }
+      let clone, type;
+      const { isImage, isVideo, thumb, url } = file;
+      if (file.isPrefetched || !(isImage || isVideo) || post.isHidden || post.thread.isHidden) {
+        return;
+      }
+      if (isVideo) {
+        type = 'WEBM';
+      } else {
+        type = url.match(/\.([^.]+)$/)?.[1].toUpperCase();
+        if (type === 'JPEG') {
+          type = 'JPG';
+        }
+      }
+      const replace = Conf['Replace Thumbnails'] && Conf[`Replace ${type}`] && !/spoiler/.test(thumb.src || thumb.dataset.src);
+      if (!replace && !ImageLoader.prefetchEnabled) {
+        return;
+      }
+      if ($.hasClass(doc, 'catalog-mode')) {
+        return;
+      }
+      if (![post, ...post.clones].some(clone => doc.contains(clone.nodes.root))) {
+        return;
+      }
       file.isPrefetched = true;
       if (file.videoThumb) {
-        for (clone of post.clones) { clone.file.thumb.preload = 'auto'; }
+        for (clone of post.clones) {
+          clone.file.thumb.preload = 'auto';
+        }
         thumb.preload = 'auto';
         // XXX Cloned video elements with poster in Firefox cause momentary display of image loading icon.
         if ($.engine === 'gecko') {
-          $.on(thumb, 'loadeddata', function() { return this.removeAttribute('poster'); });
+          $.on(thumb, 'loadeddata', function () { return this.removeAttribute('poster'); });
         }
         return;
       }
-
       const el = $.el(isImage ? 'img' : 'video');
-      if (isVideo) { el.preload = 'auto'; }
+      if (isVideo) {
+        el.preload = 'auto';
+      }
       if (replace && isImage) {
-        $.on(el, 'load', function() {
-          for (clone of post.clones) { clone.file.thumb.src = url; }
+        $.on(el, 'load', function () {
+          for (clone of post.clones) {
+            clone.file.thumb.src = url;
+          }
           return thumb.src = url;
         });
       }
       return el.src = url;
     },
-
     prefetchAll(post) {
       for (var file of post.files) {
         ImageLoader.prefetch(post, file);
       }
     },
-
     toggle() {
       ImageLoader.prefetchEnabled = !ImageLoader.prefetchEnabled;
       this.classList.toggle('disabled', !ImageLoader.prefetchEnabled);
@@ -36956,16 +39564,19 @@ Enable it on boards.${location.hostname.split('.')[1]}.org in your browser's pri
         g.posts.forEach(ImageLoader.prefetchAll);
       }
     },
-
     playVideos() {
       // Special case: Quote previews are off screen when inserted into document, but quickly moved on screen.
       const qpClone = $.id('qp')?.firstElementChild;
-      return g.posts.forEach(function(post) {
+      return g.posts.forEach(function (post) {
         for (post of [post, ...post.clones]) {
           for (var file of post.files) {
             if (file.videoThumb) {
-              var {thumb} = file;
-              if (Header.isNodeVisible(thumb) || (post.nodes.root === qpClone)) { thumb.play(); } else { thumb.pause(); }
+              var { thumb } = file;
+              if (Header.isNodeVisible(thumb) || (post.nodes.root === qpClone)) {
+                thumb.play();
+              } else {
+                thumb.pause();
+              }
             }
           }
         }
@@ -36975,74 +39586,74 @@ Enable it on boards.${location.hostname.split('.')[1]}.org in your browser's pri
 
   var Metadata = {
     init() {
-      if (!Conf['WEBM Metadata'] || !['index', 'thread'].includes(g.VIEW)) { return; }
-
+      if (!Conf['WEBM Metadata'] || !['index', 'thread'].includes(g.VIEW)) {
+        return;
+      }
       return Callbacks.Post.push({
         name: 'WEBM Metadata',
-        cb:   this.node
+        cb: this.node
       });
     },
-
     node() {
       for (let i = 0; i < this.files.length; i++) {
         var file = this.files[i];
-        if (/webm$/i.test(file.url)) {var el;
-
+        if (/webm$/i.test(file.url)) {
+          var el;
           if (this.isClone) {
             el = $('.webm-title', file.text);
           } else {
-            el = $.el('span',
-              {className: 'webm-title'});
+            el = $.el('span', { className: 'webm-title' });
             el.dataset.index = i;
-            $.extend(el,
-              {innerHTML: "<a href=\"javascript:;\"></a>"});
+            $.extend(el, { innerHTML: "<a href=\"javascript:;\"></a>" });
             $.add(file.text, [$.tn(' '), el]);
           }
-          if (el.children.length === 1) { $.one(el.lastElementChild, 'mouseover focus', Metadata.load); }
+          if (el.children.length === 1) {
+            $.one(el.lastElementChild, 'mouseover focus', Metadata.load);
+          }
         }
       }
     },
-
     load() {
       $.rmClass(this.parentNode, 'error');
       $.addClass(this.parentNode, 'loading');
-      const {index} = this.parentNode.dataset;
+      const { index } = this.parentNode.dataset;
       return CrossOrigin.binary(Get.postFromNode(this).files[+index].url, data => {
         $.rmClass(this.parentNode, 'loading');
         if (data != null) {
           const title = Metadata.parse(data);
-          const output = $.el('span',
-            {textContent: title || ''});
-          if (title == null) { $.addClass(this.parentNode, 'not-found'); }
+          const output = $.el('span', { textContent: title || '' });
+          if (title == null) {
+            $.addClass(this.parentNode, 'not-found');
+          }
           $.before(this, output);
           this.parentNode.tabIndex = 0;
-          if (d.activeElement === this) { this.parentNode.focus(); }
+          if (d.activeElement === this) {
+            this.parentNode.focus();
+          }
           return this.tabIndex = -1;
         } else {
           $.addClass(this.parentNode, 'error');
           return $.one(this, 'click', Metadata.load);
         }
-      }
-      ,
-        {Range: 'bytes=0-9999'});
+      }, { Range: 'bytes=0-9999' });
     },
-
     parse(data) {
-      const readInt = function() {
+      const readInt = function () {
         let n = data[i++];
         let len = 0;
-        while (n < (0x80 >> len)) { len++; }
+        while (n < (0x80 >> len)) {
+          len++;
+        }
         n ^= (0x80 >> len);
         while (len-- && (i < data.length)) {
           n = (n << 8) ^ data[i++];
         }
         return n;
       };
-
       var i = 0;
       while (i < data.length) {
         var element = readInt();
-        var size    = readInt();
+        var size = readInt();
         if (element === 0x3BA9) { // Title
           var title = '';
           while (size-- && (i < data.length)) {
@@ -37059,19 +39670,21 @@ Enable it on boards.${location.hostname.split('.')[1]}.org in your browser's pri
 
   const RevealSpoilers = {
     init() {
-      if (!['index', 'thread', 'archive'].includes(g.VIEW) || !Conf['Reveal Spoiler Thumbnails']) { return; }
-
+      if (!['index', 'thread', 'archive'].includes(g.VIEW) || !Conf['Reveal Spoiler Thumbnails']) {
+        return;
+      }
       return Callbacks.Post.push({
         name: 'Reveal Spoiler Thumbnails',
-        cb:   this.node
+        cb: this.node
       });
     },
-
     node() {
-      if (this.isClone) { return; }
+      if (this.isClone) {
+        return;
+      }
       for (var file of this.files) {
         if (file.thumb && file.isSpoiler) {
-          var {thumb} = file;
+          var { thumb } = file;
           // Remove old width and height.
           thumb.removeAttribute('style');
           // Enforce thumbnail size if thumbnail is replaced.
@@ -37088,71 +39701,65 @@ Enable it on boards.${location.hostname.split('.')[1]}.org in your browser's pri
 
   const ArchiveLink = {
     init() {
-      if ((g.SITE.software !== 'yotsuba') || !['index', 'thread'].includes(g.VIEW) || !Conf['Menu'] || !Conf['Archive Link']) { return; }
-
-      const div = $.el('div',
-        {textContent: 'Archive'});
-
+      if ((g.SITE.software !== 'yotsuba') || !['index', 'thread'].includes(g.VIEW) || !Conf['Menu'] || !Conf['Archive Link']) {
+        return;
+      }
+      const div = $.el('div', { textContent: 'Archive' });
       const entry = {
         el: div,
         order: 60,
-        open({ID, thread, board}) {
-          return !!Redirect.to('thread', {postID: ID, threadID: thread.ID, boardID: board.ID});
+        open({ ID, thread, board }) {
+          return !!Redirect.to('thread', { postID: ID, threadID: thread.ID, boardID: board.ID });
         },
         subEntries: []
       };
-
       for (var type of [
-        ['Post',      'post'],
-        ['Name',      'name'],
-        ['Tripcode',  'tripcode'],
-        ['Capcode',   'capcode'],
-        ['Subject',   'subject'],
-        ['Flag',      'country'],
-        ['Filename',  'filename'],
+        ['Post', 'post'],
+        ['Name', 'name'],
+        ['Tripcode', 'tripcode'],
+        ['Capcode', 'capcode'],
+        ['Subject', 'subject'],
+        ['Flag', 'country'],
+        ['Filename', 'filename'],
         ['Image MD5', 'MD5']
       ]) {
         // Add a sub entry for each type.
         entry.subEntries.push(this.createSubEntry(type[0], type[1]));
       }
-
       return Menu.menu.addEntry(entry);
     },
-
     createSubEntry(text, type) {
       const el = $.el('a', {
         textContent: text,
         target: '_blank'
-      }
-      );
-
+      });
       const open = type === 'post' ?
-        function({ID, thread, board}) {
-          el.href = Redirect.to('thread', {postID: ID, threadID: thread.ID, boardID: board.ID});
+        function ({ ID, thread, board }) {
+          el.href = Redirect.to('thread', { postID: ID, threadID: thread.ID, boardID: board.ID });
           return true;
         }
-      :
-        function(post) {
-          const typeParam = (type === 'country') && post.info.flagCodeTroll ?
-            'troll_country'
-          :
-            type;
-          const value = type === 'country' ?
-            post.info.flagCode || post.info.flagCodeTroll?.toLowerCase()
-          :
-            Filter.values(type, post)[0];
-          // We want to parse the exact same stuff as the filter does already.
-          if (!value) { return false; }
-          el.href = Redirect.to('search', {
-            boardID:  post.board.ID,
-            type:     typeParam,
-            value,
-            isSearch: true
-          }
-          );
-          return true;
-        };
-
+        :
+          function (post) {
+            const typeParam = (type === 'country') && post.info.flagCodeTroll ?
+              'troll_country'
+              :
+                type;
+            const value = type === 'country' ?
+              post.info.flagCode || post.info.flagCodeTroll?.toLowerCase()
+              :
+                Filter.values(type, post)[0];
+            // We want to parse the exact same stuff as the filter does already.
+            if (!value) {
+              return false;
+            }
+            el.href = Redirect.to('search', {
+              boardID: post.board.ID,
+              type: typeParam,
+              value,
+              isSearch: true
+            });
+            return true;
+          };
       return {
         el,
         open
@@ -37162,16 +39769,15 @@ Enable it on boards.${location.hostname.split('.')[1]}.org in your browser's pri
 
   var CopyTextLink = {
     init() {
-      if (!['index', 'thread'].includes(g.VIEW) || !Conf['Menu'] || !Conf['Copy Text Link']) { return; }
-
+      if (!['index', 'thread'].includes(g.VIEW) || !Conf['Menu'] || !Conf['Copy Text Link']) {
+        return;
+      }
       const a = $.el('a', {
         className: 'copy-text-link',
         href: 'javascript:;',
         textContent: 'Copy Text'
-      }
-      );
+      });
       $.on(a, 'click', CopyTextLink.copy);
-
       return Menu.menu.addEntry({
         el: a,
         order: 12,
@@ -37181,48 +39787,42 @@ Enable it on boards.${location.hostname.split('.')[1]}.org in your browser's pri
         }
       });
     },
-
     copy() {
       const el = $.el('textarea', {
         className: 'copy-text-element',
         value: CopyTextLink.text
-      }
-      );
+      });
       $.add(d.body, el);
       el.select();
       try {
         d.execCommand('copy');
-      } catch (error) {}
+      } catch (error) { }
       return $.rm(el);
     }
   };
 
   var DeleteLink = {
     auto: [dict(), dict()],
-
     init() {
-      if (!['index', 'thread'].includes(g.VIEW) || !Conf['Menu'] || !Conf['Delete Link']) { return; }
-
+      if (!['index', 'thread'].includes(g.VIEW) || !Conf['Menu'] || !Conf['Delete Link']) {
+        return;
+      }
       const div = $.el('div', {
         className: 'delete-link',
         textContent: 'Delete'
-      }
-      );
+      });
       const postEl = $.el('a', {
         className: 'delete-post',
         href: 'javascript:;'
-      }
-      );
+      });
       const fileEl = $.el('a', {
         className: 'delete-file',
         href: 'javascript:;'
-      }
-      );
+      });
       this.nodes = {
-        menu:  div.firstChild,
+        menu: div.firstChild,
         links: [postEl, fileEl]
       };
-
       const postEntry = {
         el: postEl,
         open() {
@@ -37233,27 +39833,30 @@ Enable it on boards.${location.hostname.split('.')[1]}.org in your browser's pri
       };
       const fileEntry = {
         el: fileEl,
-        open({file}) {
-          if (!file || file.isDead) { return false; }
+        open({ file }) {
+          if (!file || file.isDead) {
+            return false;
+          }
           fileEl.textContent = DeleteLink.linkText(true);
           $.on(fileEl, 'click', DeleteLink.toggle);
           return true;
         }
       };
-
       return Menu.menu.addEntry({
         el: div,
         order: 40,
         open(post) {
-          if (post.isDead) { return false; }
+          if (post.isDead) {
+            return false;
+          }
           DeleteLink.post = post;
           DeleteLink.nodes.menu.textContent = DeleteLink.menuText();
           DeleteLink.cooldown.start(post);
           return true;
         },
-        subEntries: [postEntry, fileEntry]});
+        subEntries: [postEntry, fileEntry]
+      });
     },
-
     menuText() {
       let seconds;
       if ((seconds = DeleteLink.cooldown.seconds[DeleteLink.post.fullID])) {
@@ -37262,7 +39865,6 @@ Enable it on boards.${location.hostname.split('.')[1]}.org in your browser's pri
         return 'Delete';
       }
     },
-
     linkText(fileOnly) {
       let text = fileOnly ? 'File' : 'Post';
       if (DeleteLink.auto[+fileOnly][DeleteLink.post.fullID]) {
@@ -37270,91 +39872,94 @@ Enable it on boards.${location.hostname.split('.')[1]}.org in your browser's pri
       }
       return text;
     },
-
     toggle() {
-      const {post} = DeleteLink;
+      const { post } = DeleteLink;
       const fileOnly = $.hasClass(this, 'delete-file');
       const auto = DeleteLink.auto[+fileOnly];
-
       if (auto[post.fullID]) {
         delete auto[post.fullID];
       } else {
         auto[post.fullID] = true;
       }
       this.textContent = DeleteLink.linkText(fileOnly);
-
       if (!DeleteLink.cooldown.seconds[post.fullID]) {
         return DeleteLink.delete(post, fileOnly);
       }
     },
-
     delete(post, fileOnly) {
       const link = DeleteLink.nodes.links[+fileOnly];
       delete DeleteLink.auto[+fileOnly][post.fullID];
-      if (post.fullID === DeleteLink.post.fullID) { $.off(link, 'click', DeleteLink.toggle); }
-
+      if (post.fullID === DeleteLink.post.fullID) {
+        $.off(link, 'click', DeleteLink.toggle);
+      }
       const form = {
         mode: 'usrdel',
         onlyimgdel: fileOnly,
         pwd: QR.persona.getPassword()
       };
       form[+post.ID] = 'delete';
-
       return $.ajax($.id('delform').action.replace(`/${g.BOARD}/`, `/${post.board}/`), {
         responseType: 'document',
         withCredentials: true,
         onloadend() { return DeleteLink.load(link, post, fileOnly, this.response); },
         form: $.formData(form)
-      }
-      );
+      });
     },
-
     load(link, post, fileOnly, resDoc) {
       let msg;
       if (!resDoc) {
         new Notice('warning', 'Connection error, please retry.', 20);
-        if (post.fullID === DeleteLink.post.fullID) { $.on(link, 'click', DeleteLink.toggle); }
+        if (post.fullID === DeleteLink.post.fullID) {
+          $.on(link, 'click', DeleteLink.toggle);
+        }
         return;
       }
-
       link.textContent = DeleteLink.linkText(fileOnly);
       if (resDoc.title === '4chan - Banned') { // Ban/warn check
-        const el = $.el('span', {innerHTML: "You can&#039;t delete posts because you are <a href=\"//www.4chan.org/banned\" target=\"_blank\">banned</a>."});
+        const el = $.el('span', { innerHTML: "You can&#039;t delete posts because you are <a href=\"//www.4chan.org/banned\" target=\"_blank\">banned</a>." });
         return new Notice('warning', el, 20);
       } else if (msg = resDoc.getElementById('errmsg')) { // error!
         new Notice('warning', msg.textContent, 20);
-        if (post.fullID === DeleteLink.post.fullID) { $.on(link, 'click', DeleteLink.toggle); }
+        if (post.fullID === DeleteLink.post.fullID) {
+          $.on(link, 'click', DeleteLink.toggle);
+        }
         if (QR.cooldown.data && Conf['Cooldown'] && /\bwait\b/i.test(msg.textContent)) {
           DeleteLink.cooldown.start(post, 5);
           DeleteLink.auto[+fileOnly][post.fullID] = true;
           return DeleteLink.nodes.links[+fileOnly].textContent = DeleteLink.linkText(fileOnly);
         }
       } else {
-        if (!fileOnly) { QR.cooldown.delete(post); }
+        if (!fileOnly) {
+          QR.cooldown.delete(post);
+        }
         if (resDoc.title === 'Updating index...') {
           // We're 100% sure.
           (post.origin || post).kill(fileOnly);
         }
-        if (post.fullID === DeleteLink.post.fullID) { return link.textContent = 'Deleted'; }
+        if (post.fullID === DeleteLink.post.fullID) {
+          return link.textContent = 'Deleted';
+        }
       }
     },
-
     cooldown: {
       seconds: dict(),
-
       start(post, seconds) {
         // Already counting.
-        if (DeleteLink.cooldown.seconds[post.fullID] != null) { return; }
-
-        if (seconds == null) { seconds = QR.cooldown.secondsDeletion(post); }
+        if (DeleteLink.cooldown.seconds[post.fullID] != null) {
+          return;
+        }
+        if (seconds == null) {
+          seconds = QR.cooldown.secondsDeletion(post);
+        }
         if (seconds > 0) {
           DeleteLink.cooldown.seconds[post.fullID] = seconds;
           return DeleteLink.cooldown.count(post);
         }
       },
-
       count(post) {
-        if (post.fullID === DeleteLink.post.fullID) { DeleteLink.nodes.menu.textContent = DeleteLink.menuText(); }
+        if (post.fullID === DeleteLink.post.fullID) {
+          DeleteLink.nodes.menu.textContent = DeleteLink.menuText();
+        }
         if ((DeleteLink.cooldown.seconds[post.fullID] > 0) && Conf['Cooldown']) {
           DeleteLink.cooldown.seconds[post.fullID]--;
           setTimeout(DeleteLink.cooldown.count, 1000, post);
@@ -37372,23 +39977,23 @@ Enable it on boards.${location.hostname.split('.')[1]}.org in your browser's pri
 
   const DownloadLink = {
     init() {
-      if (!['index', 'thread'].includes(g.VIEW) || !Conf['Menu'] || !Conf['Download Link']) { return; }
-
+      if (!['index', 'thread'].includes(g.VIEW) || !Conf['Menu'] || !Conf['Download Link']) {
+        return;
+      }
       const a = $.el('a', {
         className: 'download-link',
         textContent: 'Download file'
-      }
-      );
-
+      });
       // Specifying the filename with the download attribute only works for same-origin links.
       $.on(a, 'click', ImageCommon.download);
-
       return Menu.menu.addEntry({
         el: a,
         order: 100,
-        open({file}) {
-          if (!file) { return false; }
-          a.href     = file.url;
+        open({ file }) {
+          if (!file) {
+            return false;
+          }
+          a.href = file.url;
           a.download = file.name;
           return true;
         }
@@ -37398,16 +40003,15 @@ Enable it on boards.${location.hostname.split('.')[1]}.org in your browser's pri
 
   var ReportLink = {
     init() {
-      if (!['index', 'thread'].includes(g.VIEW) || !Conf['Menu'] || !Conf['Report Link']) { return; }
-
+      if (!['index', 'thread'].includes(g.VIEW) || !Conf['Menu'] || !Conf['Report Link']) {
+        return;
+      }
       const a = $.el('a', {
         className: 'report-link',
         href: 'javascript:;',
         textContent: 'Report'
-      }
-      );
+      });
       $.on(a, 'click', ReportLink.report);
-
       return Menu.menu.addEntry({
         el: a,
         order: 10,
@@ -37422,10 +40026,9 @@ Enable it on boards.${location.hostname.split('.')[1]}.org in your browser's pri
         }
       });
     },
-
     report() {
-      const {url, dims} = ReportLink;
-      const id  = Date.now();
+      const { url, dims } = ReportLink;
+      const id = Date.now();
       const set = `toolbar=0,scrollbars=1,location=0,status=1,menubar=0,resizable=1,${dims}`;
       return window.open(url, id, set);
     }
@@ -37530,30 +40133,35 @@ Enable it on boards.${location.hostname.split('.')[1]}.org in your browser's pri
 
   var AntiAutoplay = {
     init() {
-      if (!Conf['Disable Autoplaying Sounds']) { return; }
+      if (!Conf['Disable Autoplaying Sounds']) {
+        return;
+      }
       $.addClass(doc, 'anti-autoplay');
-      for (var audio of $$('audio[autoplay]', doc)) { this.stop(audio); }
+      for (var audio of $$('audio[autoplay]', doc)) {
+        this.stop(audio);
+      }
       window.addEventListener('loadstart', (e => this.stop(e.target)), true);
       Callbacks.Post.push({
         name: 'Disable Autoplaying Sounds',
-        cb:   this.node
+        cb: this.node
       });
       return $.ready(() => this.process(d.body));
     },
-
     stop(audio) {
-      if (!audio.autoplay) { return; }
+      if (!audio.autoplay) {
+        return;
+      }
       audio.pause();
       audio.autoplay = false;
-      if (audio.controls) { return; }
+      if (audio.controls) {
+        return;
+      }
       audio.controls = true;
       return $.addClass(audio, 'controls-added');
     },
-
     node() {
       return AntiAutoplay.process(this.nodes.comment);
     },
-
     process(root) {
       for (var iframe of $$('iframe[src*="youtube"][src*="autoplay=1"]', root)) {
         AntiAutoplay.processVideo(iframe, 'src');
@@ -37562,10 +40170,11 @@ Enable it on boards.${location.hostname.split('.')[1]}.org in your browser's pri
         AntiAutoplay.processVideo(object, 'data');
       }
     },
-
     processVideo(el, attr) {
       el[attr] = el[attr].replace(/\?autoplay=1&?/, '?').replace('&autoplay=1', '');
-      if (window.getComputedStyle(el).display === 'none') { el.style.display = 'block'; }
+      if (window.getComputedStyle(el).display === 'none') {
+        el.style.display = 'block';
+      }
       return $.addClass(el, 'autoplay-removed');
     }
   };
@@ -37575,44 +40184,37 @@ Enable it on boards.${location.hostname.split('.')[1]}.org in your browser's pri
       if (Conf['Custom Board Titles']) {
         this.db = new DataBoard('customTitles', null, true);
       }
-
       $.asap((() => d.body), () => $.asap((() => $('hr')), Banner.ready));
-
       // Let 4chan's JS load the banner if enabled; otherwise, load it ourselves.
       if (g.BOARD.ID !== 'f') {
         return Main.ready(() => $.queueTask(Banner.load));
       }
     },
-
     ready() {
       const banner = $(".boardBanner");
-      const {children} = banner;
-
+      const { children } = banner;
       if ((g.VIEW === 'thread') && Conf['Remove Thread Excerpt']) {
         Banner.setTitle(children[1].textContent);
       }
-
       children[0].title = "Click to change";
       $.on(children[0], 'click', Banner.cb.toggle);
-
       if (Conf['Custom Board Titles']) {
         Banner.custom(children[1]);
-        if (children[2]) { return Banner.custom(children[2]); }
+        if (children[2]) {
+          return Banner.custom(children[2]);
+        }
       }
     },
-
     load() {
       const bannerCnt = $.id('bannerCnt');
       if (!bannerCnt.firstChild) {
         const img = $.el('img', {
           alt: '4chan',
           src: '//s.4cdn.org/image/title/' + bannerCnt.dataset.src
-        }
-        );
+        });
         return $.add(bannerCnt, img);
       }
     },
-
     setTitle(title) {
       if (Unread.title != null) {
         Unread.title = title;
@@ -37621,7 +40223,6 @@ Enable it on boards.${location.hostname.split('.')[1]}.org in your browser's pri
         return d.title = title;
       }
     },
-
     cb: {
       toggle() {
         if (!Banner.choices?.length) {
@@ -37631,61 +40232,64 @@ Enable it on boards.${location.hostname.split('.')[1]}.org in your browser's pri
         const banner = Banner.choices.splice(i, 1);
         return $('img', this.parentNode).src = `//s.4cdn.org/image/title/${banner}`;
       },
-
       click(e) {
-        if (!e.ctrlKey && !e.metaKey) { return; }
-        if (Banner.original[this.className] == null) { Banner.original[this.className] = this.cloneNode(true); }
+        if (!e.ctrlKey && !e.metaKey) {
+          return;
+        }
+        if (Banner.original[this.className] == null) {
+          Banner.original[this.className] = this.cloneNode(true);
+        }
         this.contentEditable = true;
-        for (var br of $$('br', this)) { $.replace(br, $.tn('\n')); }
+        for (var br of $$('br', this)) {
+          $.replace(br, $.tn('\n'));
+        }
         return this.focus();
       },
-
       keydown(e) {
         e.stopPropagation();
-        if (!e.shiftKey && (e.keyCode === 13)) { return this.blur(); }
+        if (!e.shiftKey && (e.keyCode === 13)) {
+          return this.blur();
+        }
       },
-
       blur() {
-        for (var br of $$('br', this)) { $.replace(br, $.tn('\n')); }
+        for (var br of $$('br', this)) {
+          $.replace(br, $.tn('\n'));
+        }
         if (this.textContent = this.textContent.replace(/\n*$/, '')) {
           this.contentEditable = false;
           return Banner.db.set({
-            boardID:  g.BOARD.ID,
+            boardID: g.BOARD.ID,
             threadID: this.className,
             val: {
               title: this.textContent,
-              orig:  Banner.original[this.className].textContent
+              orig: Banner.original[this.className].textContent
             }
           });
         } else {
           $.rmAll(this);
           $.add(this, [...Banner.original[this.className].cloneNode(true).childNodes]);
           return Banner.db.delete({
-            boardID:  g.BOARD.ID,
+            boardID: g.BOARD.ID,
             threadID: this.className
           });
         }
       }
     },
-
     original: dict(),
-
     custom(child) {
       let data;
-      const {className} = child;
+      const { className } = child;
       child.title = `Ctrl/\u2318+click to edit board ${className.slice(5).toLowerCase()}`;
       child.spellcheck = false;
-
       for (var event of ['click', 'keydown', 'blur']) {
         $.on(child, event, Banner.cb[event]);
       }
-
-      if (data = Banner.db.get({boardID: g.BOARD.ID, threadID: className})) {
-        if (data.orig === child.textContent) {
+      if (data = Banner.db.get({ boardID: g.BOARD.ID, threadID: className })) {
+        if (Conf['Persistent Custom Board Titles'] || (data.orig === child.textContent)) {
           Banner.original[className] = child.cloneNode(true);
           return child.textContent = data.title;
         } else {
-          return Banner.db.delete({boardID: g.BOARD.ID, threadID: className});
+          return Banner.db.delete({ boardID: g.BOARD.ID, threadID: className });
         }
       }
     }
@@ -37693,11 +40297,10 @@ Enable it on boards.${location.hostname.split('.')[1]}.org in your browser's pri
 
   var Flash = {
     init() {
-      if (g.BOARD.ID === 'f') {
+      if ((g.BOARD.ID === 'f') && Conf['Enable Native Flash Embedding']) {
         return $.ready(Flash.initReady);
       }
     },
-
     initReady() {
       if ($.hasStorage) {
         $.global('initFlash');
@@ -37712,17 +40315,23 @@ Enable it on boards.${location.hostname.split('.')[1]}.org in your browser's pri
 
   var Fourchan = {
     init() {
-      if ((g.SITE.software !== 'yotsuba') || !['index', 'thread', 'archive'].includes(g.VIEW)) { return; }
+      if ((g.SITE.software !== 'yotsuba') || !['index', 'thread', 'archive'].includes(g.VIEW)) {
+        return;
+      }
       BoardConfig.ready(this.initBoard);
       return Main.ready(this.initReady);
     },
-
     initBoard() {
+      Fourchan.applyPageFeatureFlags();
       if (g.BOARD.config.code_tags) {
-        $.on(window, 'prettyprint:cb', function(e) {
+        $.on(window, 'prettyprint:cb', function (e) {
           let post, pre;
-          if (!(post = g.posts.get(e.detail.ID))) { return; }
-          if (!(pre  = $$('.prettyprint', post.nodes.comment)[+e.detail.i])) { return; }
+          if (!(post = g.posts.get(e.detail.ID))) {
+            return;
+          }
+          if (!(pre = $$('.prettyprint', post.nodes.comment)[+e.detail.i])) {
+            return;
+          }
           if (!$.hasClass(pre, 'prettyprinted')) {
             pre.innerHTML = e.detail.html;
             return $.addClass(pre, 'prettyprinted');
@@ -37731,23 +40340,22 @@ Enable it on boards.${location.hostname.split('.')[1]}.org in your browser's pri
         $.global('fourChanPrettyPrintListener');
         Callbacks.Post.push({
           name: 'Parse [code] tags',
-          cb:   Fourchan.code
+          cb: Fourchan.code
         });
-        g.posts.forEach(function(post) {
+        g.posts.forEach(function (post) {
           if (post.callbacksExecuted) {
             return Callbacks.Post.execute(post, ['Parse [code] tags'], true);
           }
         });
         ExpandComment.callbacks.push(Fourchan.code);
       }
-
       if (g.BOARD.config.math_tags) {
         $.global('fourChanMathjaxListener');
         Callbacks.Post.push({
           name: 'Parse [math] tags',
-          cb:   Fourchan.math
+          cb: Fourchan.math
         });
-        g.posts.forEach(function(post) {
+        g.posts.forEach(function (post) {
           if (post.callbacksExecuted) {
             return Callbacks.Post.execute(post, ['Parse [math] tags'], true);
           }
@@ -37755,35 +40363,51 @@ Enable it on boards.${location.hostname.split('.')[1]}.org in your browser's pri
         return ExpandComment.callbacks.push(Fourchan.math);
       }
     },
-
+    applyPageFeatureFlags() {
+      const flags = ['code_tags', 'math_tags', 'sjis_tags'];
+      for (const script of $$('script')) {
+        const text = script.textContent || '';
+        for (const flag of flags) {
+          if (!g.BOARD.config[flag] && new RegExp(`\\b${flag}\\s*=\\s*true\\b`).test(text)) {
+            g.BOARD.config[flag] = 1;
+          }
+        }
+      }
+    },
     // Disable 4chan's ID highlighting (replaced by IDHighlight) and reported post hiding.
     initReady() {
       return $.global('disable4chanIdHl');
     },
-
     code() {
-      if (this.isClone) { return; }
+      if (this.isClone) {
+        return;
+      }
       return $.ready(() => {
         const iterable = $$('.prettyprint', this.nodes.comment);
         for (let i = 0; i < iterable.length; i++) {
           var pre = iterable[i];
           if (!$.hasClass(pre, 'prettyprinted')) {
-            $.event('prettyprint', {ID: this.fullID, i, html: pre.innerHTML}, window);
+            $.event('prettyprint', { ID: this.fullID, i, html: pre.innerHTML }, window);
           }
         }
       });
     },
-
     math() {
       let wbrs;
-      if (!/\[(math|eqn)\]/.test(this.nodes.comment.textContent)) { return; }
+      if (!/\[(math|eqn)\]/.test(this.nodes.comment.textContent)) {
+        return;
+      }
       // XXX <wbr> tags frequently break MathJax; remove them.
       if ((wbrs = $$('wbr', this.nodes.comment)).length) {
-        for (var wbr of wbrs) { $.rm(wbr); }
+        for (var wbr of wbrs) {
+          $.rm(wbr);
+        }
         this.nodes.comment.normalize();
       }
       var cb = () => {
-        if (!doc.contains(this.nodes.comment)) { return; }
+        if (!doc.contains(this.nodes.comment)) {
+          return;
+        }
         $.off(d, 'PostsInserted', cb);
         return $.event('mathjax', null, this.nodes.comment);
       };
@@ -37794,48 +40418,43 @@ Enable it on boards.${location.hostname.split('.')[1]}.org in your browser's pri
 
   var IDColor = {
     init() {
-      if (!['index', 'thread'].includes(g.VIEW) || !Conf['Color User IDs']) { return; }
+      if (!['index', 'thread'].includes(g.VIEW) || !Conf['Color User IDs']) {
+        return;
+      }
       this.ids = dict();
       this.ids['Heaven'] = [0, 0, 0, '#fff'];
-
       return Callbacks.Post.push({
         name: 'Color User IDs',
-        cb:   this.node
+        cb: this.node
       });
     },
-
     node() {
       let span, uid;
-      if (this.isClone || !((uid = this.info.uniqueID) && (span = this.nodes.uniqueID))) { return; }
-
+      if (this.isClone || !((uid = this.info.uniqueID) && (span = this.nodes.uniqueID))) {
+        return;
+      }
       const rgb = IDColor.ids[uid] || IDColor.compute(uid);
-
       // Style the damn node.
-      const {style} = span;
+      const { style } = span;
       style.color = rgb[3];
       style.backgroundColor = `rgb(${rgb[0]},${rgb[1]},${rgb[2]})`;
       return $.addClass(span, 'painted');
     },
-
     compute(uid) {
       // Convert chars to integers, bitshift and math to create a larger integer
       // Create a nice string of binary
       const hash = g.SITE.uidColor ? g.SITE.uidColor(uid) : parseInt(uid, 16);
-
       // Convert binary string to numerical values with bitshift and '&' truncation.
       const rgb = [
         (hash >> 16) & 0xFF,
-        (hash >> 8)  & 0xFF,
+        (hash >> 8) & 0xFF,
         hash & 0xFF
       ];
-
       // Weight color luminance values, assign a font color that should be readable.
       rgb.push($.luma(rgb) > 125 ?
         '#000'
-      :
-        '#fff'
-      );
-
+        :
+          '#fff');
       // Cache.
       return this.ids[uid] = rgb;
     }
@@ -37843,58 +40462,65 @@ Enable it on boards.${location.hostname.split('.')[1]}.org in your browser's pri
 
   var IDHighlight = {
     init() {
-      if (!['index', 'thread'].includes(g.VIEW)) { return; }
-
+      if (!['index', 'thread'].includes(g.VIEW)) {
+        return;
+      }
       return Callbacks.Post.push({
         name: 'Highlight by User ID',
-        cb:   this.node
+        cb: this.node
       });
     },
-
     uniqueID: null,
-
     node() {
-      if (this.nodes.uniqueIDRoot) { $.on(this.nodes.uniqueIDRoot, 'click', IDHighlight.click(this)); }
-      if (this.nodes.capcode) { $.on(this.nodes.capcode,      'click', IDHighlight.click(this)); }
-      if (!this.isClone) { return IDHighlight.set(this); }
+      if (this.nodes.uniqueIDRoot) {
+        $.on(this.nodes.uniqueIDRoot, 'click', IDHighlight.click(this));
+      }
+      if (this.nodes.capcode) {
+        $.on(this.nodes.capcode, 'click', IDHighlight.click(this));
+      }
+      if (!this.isClone) {
+        return IDHighlight.set(this);
+      }
     },
-
     set(post) {
       const match = (post.info.uniqueID || post.info.capcode) === IDHighlight.uniqueID;
       return $[match ? 'addClass' : 'rmClass'](post.nodes.post, 'highlight');
     },
-
-    click(post) { return function() {
-      const uniqueID = post.info.uniqueID || post.info.capcode;
-      IDHighlight.uniqueID = IDHighlight.uniqueID === uniqueID ? null : uniqueID;
-      return g.posts.forEach(IDHighlight.set);
-    }; }
+    click(post) {
+      return function () {
+        const uniqueID = post.info.uniqueID || post.info.capcode;
+        IDHighlight.uniqueID = IDHighlight.uniqueID === uniqueID ? null : uniqueID;
+        return g.posts.forEach(IDHighlight.set);
+      };
+    }
   };
 
   var IDPostCount = {
     init() {
-      if ((g.VIEW !== 'thread') || !Conf['Count Posts by ID']) { return; }
+      if ((g.VIEW !== 'thread') || !Conf['Count Posts by ID']) {
+        return;
+      }
       Callbacks.Thread.push({
         name: 'Count Posts by ID',
         cb() { return IDPostCount.thread = this; }
       });
       return Callbacks.Post.push({
         name: 'Count Posts by ID',
-        cb:   this.node
+        cb: this.node
       });
     },
-
     node() {
       if (this.nodes.uniqueID && (this.thread === IDPostCount.thread)) {
         return $.on(this.nodes.uniqueID, 'mouseover', IDPostCount.count);
       }
     },
-
     count() {
-      const {uniqueID} = Get.postFromNode(this).info;
+      const { uniqueID } = Get.postFromNode(this).info;
       let n = 0;
-      IDPostCount.thread.posts.forEach(function(post) {
-        if (post.info.uniqueID === uniqueID) { return n++; }
+      IDPostCount.thread.posts.forEach(function (post) {
+        if (post.info.uniqueID === uniqueID) {
+          return n++;
+        }
       });
       return this.title = `${n} post${n === 1 ? '' : 's'} by this ID`;
     }
@@ -37902,46 +40528,47 @@ Enable it on boards.${location.hostname.split('.')[1]}.org in your browser's pri
 
   var ModContact = {
     init() {
-      if ((g.SITE.software !== 'yotsuba') || !['index', 'thread'].includes(g.VIEW)) { return; }
+      if ((g.SITE.software !== 'yotsuba') || !['index', 'thread'].includes(g.VIEW)) {
+        return;
+      }
       return Callbacks.Post.push({
         name: 'Mod Contact Links',
-        cb:   this.node
+        cb: this.node
       });
     },
-
     node() {
       let moved;
-      if (this.isClone || !$.hasOwn(ModContact.specific, this.info.capcode)) { return; }
-      const links = $.el('span', {className: 'contact-links brackets-wrap'});
+      if (this.isClone || !$.hasOwn(ModContact.specific, this.info.capcode)) {
+        return;
+      }
+      const links = $.el('span', { className: 'contact-links brackets-wrap' });
       $.extend(links, ModContact.template(this.info.capcode));
       $.after(this.nodes.capcode, links);
       if ((moved = this.info.comment.match(/This thread was moved to >>>\/(\w+)\//)) && $.hasOwn(ModContact.moveNote, moved[1])) {
-        const moveNote = $.el('div', {className: 'move-note'});
+        const moveNote = $.el('div', { className: 'move-note' });
         $.extend(moveNote, ModContact.moveNote[moved[1]]);
         return $.add(this.nodes.post, moveNote);
       }
     },
-
     template(capcode) {
-      return {innerHTML: "<a href=\"https://www.4chan.org/feedback\" target=\"_blank\">feedback</a>" + (ModContact.specific[capcode]()).innerHTML};
+      return { innerHTML: "<a href=\"https://www.4chan.org/feedback\" target=\"_blank\">feedback</a>" + (ModContact.specific[capcode]()).innerHTML };
     },
-
     specific: {
-      Mod() { return {innerHTML: " <a href=\"https://www.4chan-x.net/4chan-irc.html\" target=\"_blank\">IRC</a>"}; },
+      Mod() { return { innerHTML: " <a href=\"https://www.4chan-x.net/4chan-irc.html\" target=\"_blank\">IRC</a>" }; },
       Manager() { return ModContact.specific.Mod(); },
-      Developer() { return {innerHTML: " <a href=\"https://github.com/4chan\" target=\"_blank\">github</a>"}; },
-      Admin() { return {innerHTML: " <a href=\"https://twitter.com/hiroyuki_ni\" target=\"_blank\">twitter</a>"}; }
+      Developer() { return { innerHTML: " <a href=\"https://github.com/4chan\" target=\"_blank\">github</a>" }; },
+      Admin() { return { innerHTML: " <a href=\"https://twitter.com/hiroyuki_ni\" target=\"_blank\">twitter</a>" }; }
     },
-
     moveNote: {
-      qa: {innerHTML: "Moving a thread to /qa/ does not imply mods will read it. If you wish to contact mods, use <a href=\"https://www.4chan.org/feedback\" target=\"_blank\">feedback</a><span class=\"invisible\"> (https://www.4chan.org/feedback)</span> or <a href=\"https://www.4chan-x.net/4chan-irc.html\" target=\"_blank\">IRC</a><span class=\"invisible\"> (https://www.4chan-x.net/4chan-irc.html)</span>."}
+      qa: { innerHTML: "Moving a thread to /qa/ does not imply mods will read it. If you wish to contact mods, use <a href=\"https://www.4chan.org/feedback\" target=\"_blank\">feedback</a><span class=\"invisible\"> (https://www.4chan.org/feedback)</span> or <a href=\"https://www.4chan-x.net/4chan-irc.html\" target=\"_blank\">IRC</a><span class=\"invisible\"> (https://www.4chan-x.net/4chan-irc.html)</span>." }
     }
   };
 
   const NormalizeURL = {
     init() {
-      if (!Conf['Normalize URL']) { return; }
-
+      if (!Conf['Normalize URL']) {
+        return;
+      }
       let pathname = location.pathname.split(/\/+/);
       if (g.SITE.software === 'yotsuba') {
         switch (g.VIEW) {
@@ -37963,18 +40590,17 @@ Enable it on boards.${location.hostname.split('.')[1]}.org in your browser's pri
 
   var PostJumper = {
     init() {
-      if (!Conf['Unique ID and Capcode Navigation'] || !['index', 'thread'].includes(g.VIEW)) { return; }
-
+      if (!Conf['Unique ID and Capcode Navigation'] || !['index', 'thread'].includes(g.VIEW)) {
+        return;
+      }
       this.buttons = this.makeButtons();
       Icon.set(this.buttons.firstChild, 'arrowUpLong');
       Icon.set(this.buttons.lastChild, 'arrowDownLong');
-
       return Callbacks.Post.push({
         name: 'Post Jumper',
-        cb:   this.node
+        cb: this.node
       });
     },
-
     node() {
       if (this.isClone) {
         for (var buttons of $$('.postJumper', this.nodes.info)) {
@@ -37982,29 +40608,24 @@ Enable it on boards.${location.hostname.split('.')[1]}.org in your browser's pri
         }
         return;
       }
-
       if (this.nodes.uniqueIDRoot) {
-        PostJumper.addButtons(this,'uniqueID');
+        PostJumper.addButtons(this, 'uniqueID');
       }
-
       if (this.nodes.capcode) {
-        return PostJumper.addButtons(this,'capcode');
+        return PostJumper.addButtons(this, 'capcode');
       }
     },
-
-    addButtons(post,type) {
+    addButtons(post, type) {
       const value = post.info[type];
       const buttons = PostJumper.buttons.cloneNode(true);
-      $.extend(buttons.dataset, {type, value});
-      $.after(post.nodes[type+(type === 'capcode' ? '' : 'Root')], buttons);
+      $.extend(buttons.dataset, { type, value });
+      $.after(post.nodes[type + (type === 'capcode' ? '' : 'Root')], buttons);
       return PostJumper.addListeners(buttons);
     },
-
     addListeners(buttons) {
       $.on(buttons.firstChild, 'click', PostJumper.buttonClick);
       return $.on(buttons.lastChild, 'click', PostJumper.buttonClick);
     },
-
     buttonClick() {
       let toJumper;
       const dir = $.hasClass(this, 'prev') ? -1 : 1;
@@ -38012,39 +40633,41 @@ Enable it on boards.${location.hostname.split('.')[1]}.org in your browser's pri
         return PostJumper.scroll(this.parentNode, toJumper);
       }
     },
-
     find(jumper, dir) {
-      const {type, value} = jumper.dataset;
+      const { type, value } = jumper.dataset;
       const xpath = `span[contains(@class,\"postJumper\") and @data-value=\"${value}\" and @data-type=\"${type}\"]`;
       const axis = dir < 0 ? 'preceding' : 'following';
       let jumper2 = jumper;
       while (jumper2 = $.x(`${axis}::${xpath}`, jumper2)) {
-        if (jumper2.getBoundingClientRect().height) { return jumper2; }
+        if (jumper2.getBoundingClientRect().height) {
+          return jumper2;
+        }
       }
       if (jumper2 = $.x(`(//${xpath})[${dir < 0 ? 'last()' : '1'}]`)) {
-        if (jumper2.getBoundingClientRect().height) { return jumper2; }
+        if (jumper2.getBoundingClientRect().height) {
+          return jumper2;
+        }
       }
       while ((jumper2 = $.x(`${axis}::${xpath}`, jumper2)) && (jumper2 !== jumper)) {
-        if (jumper2.getBoundingClientRect().height) { return jumper2; }
+        if (jumper2.getBoundingClientRect().height) {
+          return jumper2;
+        }
       }
       return null;
     },
-
     makeButtons() {
       const charPrev = '\u23EB';
       const charNext = '\u23EC';
       const classPrev = 'prev';
       const classNext = 'next';
-      const span = $.el('span',
-        {className: 'postJumper'});
-      $.extend(span, {innerHTML: "<a href=\"javascript:;\" class=\"" + E(classPrev) + "\">" + E(charPrev) + "</a><a href=\"javascript:;\" class=\"" + E(classNext) + "\">" + E(charNext) + "</a>"});
+      const span = $.el('span', { className: 'postJumper' });
+      $.extend(span, { innerHTML: "<a href=\"javascript:;\" class=\"" + E(classPrev) + "\">" + E(charPrev) + "</a><a href=\"javascript:;\" class=\"" + E(classNext) + "\">" + E(charNext) + "</a>" });
       return span;
     },
-
     scroll(fromJumper, toJumper) {
       const prevPos = fromJumper.getBoundingClientRect().top;
       const destPos = toJumper.getBoundingClientRect().top;
-      return window.scrollBy(0, destPos-prevPos);
+      return window.scrollBy(0, destPos - prevPos);
     }
   };
 
@@ -38052,31 +40675,34 @@ Enable it on boards.${location.hostname.split('.')[1]}.org in your browser's pri
     init() {
       let el;
       if ((g.SITE.software === 'yotsuba') && (g.BOARD.ID === 'qa')) {
-        const announcement = {innerHTML: "Stay in touch with your <a href=\"https://www.4chan-x.net/qa_friends.html\" target=\"_blank\" rel=\"noopener\">/qa/ friends</a>!"};
-        el = $.el('div', {className: 'fcx-announcement'}, announcement);
+        const announcement = { innerHTML: "Stay in touch with your <a href=\"https://www.4chan-x.net/qa_friends.html\" target=\"_blank\" rel=\"noopener\">/qa/ friends</a>!" };
+        el = $.el('div', { className: 'fcx-announcement' }, announcement);
         $.onExists(doc, '.boardBanner', banner => $.after(banner, el));
       }
       if ('samachan.org' in Conf['siteProperties'] && !Conf['PSAseen'].includes('samachan')) {
-        el = $.el('span',
-          {innerHTML: "<a href=\"https://sushigirl.us/yakuza/res/776.html\" target=\"_blank\" rel=\"noopener\">Looking for a new home?<br>Some former Samachan users are regrouping on SushiChan.</a><br>(a message from 4chan X)"});
-        return Main.ready(function() {
+        el = $.el('span', { innerHTML: "<a href=\"https://sushigirl.us/yakuza/res/776.html\" target=\"_blank\" rel=\"noopener\">Looking for a new home?<br>Some former Samachan users are regrouping on SushiChan.</a><br>(a message from 4chan X)" });
+        return Main.ready(function () {
           new Notice('info', el);
           Conf['PSAseen'].push('samachan');
-          return $.set('PSAseen', Conf['PSAseen']);});
+          return $.set('PSAseen', Conf['PSAseen']);
+        });
       }
     }
   };
 
   var PSAHiding = {
     init() {
-      if (!Conf['Announcement Hiding'] || !g.SITE.selectors.psa) { return; }
+      if (!Conf['Announcement Hiding'] || !g.SITE.selectors.psa) {
+        return;
+      }
       $.addClass(doc, 'hide-announcement');
       $.onExists(doc, g.SITE.selectors.psa, this.setup);
-      return $.ready(function() {
-        if (!$(g.SITE.selectors.psa)) { return $.rmClass(doc, 'hide-announcement'); }
+      return $.ready(function () {
+        if (!$(g.SITE.selectors.psa)) {
+          return $.rmClass(doc, 'hide-announcement');
+        }
       });
     },
-
     setup(psa) {
       let btn, hr;
       PSAHiding.psa = psa;
@@ -38085,27 +40711,23 @@ Enable it on boards.${location.hostname.split('.')[1]}.org in your browser's pri
         PSAHiding.hr = hr;
       }
       PSAHiding.content = $.el('div');
-
       const entry = {
         el: $.el('a', {
           textContent: 'Show announcement',
           className: 'show-announcement',
           href: 'javascript:;'
-        }
-        ),
+        }),
         order: 50,
         open() { return psa.hidden; }
       };
       Header.menu.addEntry(entry);
       $.on(entry.el, 'click', PSAHiding.toggle);
-
       PSAHiding.btn = (btn = $.el('a', {
-        title:       'Mark announcement as read and hide.',
-        className:   'hide-announcement-button',
-        href:        'javascript:;',
+        title: 'Mark announcement as read and hide.',
+        className: 'hide-announcement-button',
+        href: 'javascript:;',
         textContent: '➖︎',
-      }
-      ));
+      }));
       Icon.set(btn, 'squareMinus');
       $.on(btn, 'click', PSAHiding.toggle);
       if (psa.firstChild?.tagName === 'HR') {
@@ -38113,16 +40735,13 @@ Enable it on boards.${location.hostname.split('.')[1]}.org in your browser's pri
       } else {
         $.prepend(psa, btn);
       }
-
       PSAHiding.sync(Conf['hiddenPSAList']);
       $.rmClass(doc, 'hide-announcement');
-
       return $.sync('hiddenPSAList', PSAHiding.sync);
     },
-
     toggle() {
       const hide = $.hasClass(this, 'hide-announcement-button');
-      const set = function(hiddenPSAList) {
+      const set = function (hiddenPSAList) {
         if (hide) {
           return hiddenPSAList[g.SITE.ID] = PSAHiding.text;
         } else {
@@ -38131,14 +40750,13 @@ Enable it on boards.${location.hostname.split('.')[1]}.org in your browser's pri
       };
       set(Conf['hiddenPSAList']);
       PSAHiding.sync(Conf['hiddenPSAList']);
-      return $.get('hiddenPSAList', Conf['hiddenPSAList'], function({hiddenPSAList}) {
+      return $.get('hiddenPSAList', Conf['hiddenPSAList'], function ({ hiddenPSAList }) {
         set(hiddenPSAList);
         return $.set('hiddenPSAList', hiddenPSAList);
       });
     },
-
     sync(hiddenPSAList) {
-      const {psa, content} = PSAHiding;
+      const { psa, content } = PSAHiding;
       psa.hidden = (hiddenPSAList[g.SITE.ID] === PSAHiding.text);
       // Remove content to prevent autoplaying sounds from hidden announcements
       if (psa.hidden) {
@@ -38146,37 +40764,34 @@ Enable it on boards.${location.hostname.split('.')[1]}.org in your browser's pri
       } else {
         $.add(psa, [...content.childNodes]);
       }
-      if (PSAHiding.hr) PSAHiding.hr.hidden = psa.hidden;
+      if (PSAHiding.hr)
+        PSAHiding.hr.hidden = psa.hidden;
     }
   };
 
   var RemoveSpoilers = {
     init() {
-      const mode = Conf['Spoiler Mode'];
-      if (mode === 'reveal') {
+      if (Conf['Reveal Spoilers']) {
         $.addClass(doc, 'reveal-spoilers');
       }
-
-      if (mode !== 'remove') { return; }
-
+      if (!Conf['Remove Spoilers']) {
+        return;
+      }
       Callbacks.Post.push({
         name: 'Reveal Spoilers',
-        cb:   this.node
+        cb: this.node
       });
-
       if (g.VIEW === 'archive') {
         return $.ready(() => RemoveSpoilers.unspoiler($.id('arc-list')));
       }
     },
-
     node() {
       return RemoveSpoilers.unspoiler(this.nodes.comment);
     },
-
     unspoiler(el) {
       const spoilers = $$(g.SITE.selectors.spoiler, el);
       for (var spoiler of spoilers) {
-        var span = $.el('span', {className: 'removed-spoiler'});
+        var span = $.el('span', { className: 'removed-spoiler' });
         $.replace(spoiler, span);
         $.add(span, [...spoiler.childNodes]);
       }
@@ -38185,27 +40800,27 @@ Enable it on boards.${location.hostname.split('.')[1]}.org in your browser's pri
 
   var ThreadLinks = {
     init() {
-      if ((g.VIEW !== 'index') || !Conf['Open Threads in New Tab']) { return; }
-
+      if ((g.VIEW !== 'index') || !Conf['Open Threads in New Tab']) {
+        return;
+      }
       Callbacks.Post.push({
         name: 'Thread Links',
-        cb:   this.node
+        cb: this.node
       });
       return Callbacks.CatalogThread.push({
         name: 'Thread Links',
-        cb:   this.catalogNode
+        cb: this.catalogNode
       });
     },
-
     node() {
-      if (this.isReply || this.isClone) { return; }
+      if (this.isReply || this.isClone) {
+        return;
+      }
       return ThreadLinks.process(this.nodes.reply);
     },
-
     catalogNode() {
       return ThreadLinks.process(this.nodes.thumb.parentNode);
     },
-
     process(link) {
       return link.target = '_blank';
     }
@@ -38213,7 +40828,9 @@ Enable it on boards.${location.hostname.split('.')[1]}.org in your browser's pri
 
   const Tinyboard = {
     init() {
-      if (g.SITE.software !== 'tinyboard') { return; }
+      if (g.SITE.software !== 'tinyboard') {
+        return;
+      }
       if (g.VIEW === 'thread') {
         return Main.ready(() => $.global("initTinyBoard", { boardID: g.BOARD.ID, threadID: g.THREADID.toString() }));
       }
@@ -38222,24 +40839,25 @@ Enable it on boards.${location.hostname.split('.')[1]}.org in your browser's pri
 
   var MarkNewIPs = {
     init() {
-      if ((g.SITE.software !== 'yotsuba') || (g.VIEW !== 'thread') || !Conf['Mark New IPs']) { return; }
+      if ((g.SITE.software !== 'yotsuba') || (g.VIEW !== 'thread') || !Conf['Mark New IPs']) {
+        return;
+      }
       return Callbacks.Thread.push({
         name: 'Mark New IPs',
-        cb:   this.node
+        cb: this.node
       });
     },
-
     node() {
       MarkNewIPs.ipCount = this.ipCount;
       MarkNewIPs.postCount = this.posts.keys.length;
       return $.on(d, 'ThreadUpdate', MarkNewIPs.onUpdate);
     },
-
     onUpdate(e) {
       let fullID;
-      const {ipCount, postCount, newPosts, deletedPosts} = e.detail;
-      if (ipCount == null) { return; }
-
+      const { ipCount, postCount, newPosts, deletedPosts } = e.detail;
+      if (ipCount == null) {
+        return;
+      }
       switch (ipCount - MarkNewIPs.ipCount) {
         case (postCount - MarkNewIPs.postCount) + deletedPosts.length:
           var i = MarkNewIPs.ipCount;
@@ -38256,22 +40874,19 @@ Enable it on boards.${location.hostname.split('.')[1]}.org in your browser's pri
       MarkNewIPs.ipCount = ipCount;
       return MarkNewIPs.postCount = postCount;
     },
-
     markNew(post, ipCount) {
       const suffix = ((Math.floor(ipCount / 10)) % 10) === 1 ?
         'th'
-      :
-        ['st', 'nd', 'rd'][(ipCount % 10) - 1] || 'th'; // fuck switches
+        :
+          ['st', 'nd', 'rd'][(ipCount % 10) - 1] || 'th'; // fuck switches
       const counter = $.el('span', {
         className: 'ip-counter',
         textContent: `(${ipCount})`
-      }
-      );
+      });
       post.nodes.nameBlock.title = `This is the ${ipCount}${suffix} IP in the thread.`;
       $.add(post.nodes.nameBlock, [$.tn(' '), counter]);
       return $.addClass(post.nodes.root, 'new-ip');
     },
-
     markOld(post) {
       post.nodes.nameBlock.title = 'Not the first post from this IP.';
       return $.addClass(post.nodes.root, 'old-ip');
@@ -38282,56 +40897,52 @@ Enable it on boards.${location.hostname.split('.')[1]}.org in your browser's pri
     postCount: 0,
     fileCount: 0,
     postIndex: 0,
-
     init() {
       let sc;
-      if ((g.VIEW !== 'thread') || !Conf['Thread Stats']) { return; }
-
+      if ((g.VIEW !== 'thread') || !Conf['Thread Stats']) {
+        return;
+      }
       if (Conf['Page Count in Stats']) {
         this[g.SITE.isPrunedByAge?.(g.BOARD) ? 'showPurgePos' : 'showPage'] = true;
       }
-
-      const statsHTML = {innerHTML: "<span id=\"post-count\">?</span> / <span id=\"file-count\">?</span>" + ((Conf["IP Count in Stats"] && g.SITE.hasIPCount) ? " / <span id=\"ip-count\">?</span>" : "") + ((Conf["Page Count in Stats"]) ? " / <span id=\"page-count\">?</span>" : "")};
+      const statsHTML = { innerHTML: "<span id=\"post-count\">?</span> / <span id=\"file-count\">?</span>" + ((Conf["IP Count in Stats"] && g.SITE.hasIPCount) ? " / <span id=\"ip-count\">?</span>" : "") + ((Conf["Page Count in Stats"]) ? " / <span id=\"page-count\">?</span>" : "") };
       let statsTitle = 'Posts / Files';
-      if (Conf['IP Count in Stats'] && g.SITE.hasIPCount) { statsTitle += ' / IPs'; }
+      if (Conf['IP Count in Stats'] && g.SITE.hasIPCount) {
+        statsTitle += ' / IPs';
+      }
       if (Conf['Page Count in Stats']) {
         if (this.showPurgePos) {
           statsTitle += ' / Purge Position';
         } else {
           statsTitle += ' / Page';
-          if (Conf['Purge Position']) statsTitle += ' (Purge Position)';
+          if (Conf['Purge Position'])
+            statsTitle += ' (Purge Position)';
         }
       }
-
       if (Conf['Updater and Stats in Header']) {
         this.dialog = (sc = $.el('span', {
-          id:    'thread-stats',
+          id: 'thread-stats',
           title: statsTitle
-        }
-        ));
+        }));
         $.extend(sc, statsHTML);
         Header.addShortcut('stats', sc, 200);
-
       } else {
-        this.dialog = (sc = UI.dialog('thread-stats',
-          {innerHTML: "<div class=\"move\" title=\"" + E(statsTitle) + "\">" + (statsHTML).innerHTML + "</div>"}));
+        this.dialog = (sc = UI.dialog('thread-stats', { innerHTML: "<div class=\"move\" title=\"" + E(statsTitle) + "\">" + (statsHTML).innerHTML + "</div>" }));
         $.addClass(doc, 'float');
         $.ready(() => $.add(d.body, sc));
       }
-
       this.postCountEl = $('#post-count', sc);
       this.fileCountEl = $('#file-count', sc);
-      this.ipCountEl   = $('#ip-count',   sc);
+      this.ipCountEl = $('#ip-count', sc);
       this.pageCountEl = $('#page-count', sc);
-
-      if (this.pageCountEl) { $.on(this.pageCountEl, 'click', ThreadStats.fetchPage); }
-
+      if (this.pageCountEl) {
+        $.on(this.pageCountEl, 'click', ThreadStats.fetchPage);
+      }
       return Callbacks.Thread.push({
         name: 'Thread Stats',
-        cb:   this.node
+        cb: this.node
       });
     },
-
     node() {
       ThreadStats.thread = this;
       ThreadStats.count();
@@ -38340,9 +40951,8 @@ Enable it on boards.${location.hostname.split('.')[1]}.org in your browser's pri
       $.on(d, 'PostsInserted', () => $.queueTask(ThreadStats.onPostsInserted));
       return $.on(d, 'ThreadUpdate', ThreadStats.onUpdate);
     },
-
     count() {
-      const {posts} = ThreadStats.thread;
+      const { posts } = ThreadStats.thread;
       const n = posts.keys.length;
       for (let i = ThreadStats.postIndex, end = n; i < end; i++) {
         var post = posts.get(posts.keys[i]);
@@ -38353,29 +40963,30 @@ Enable it on boards.${location.hostname.split('.')[1]}.org in your browser's pri
       }
       ThreadStats.postIndex = n;
     },
-
     onUpdate(e) {
-      if (e.detail[404]) { return; }
-      const {postCount, fileCount} = e.detail;
-      $.extend(ThreadStats, {postCount, fileCount});
+      if (e.detail[404]) {
+        return;
+      }
+      const { postCount, fileCount } = e.detail;
+      $.extend(ThreadStats, { postCount, fileCount });
       ThreadStats.postIndex = ThreadStats.thread.posts.keys.length;
       ThreadStats.update();
       if (ThreadStats.showPage && (ThreadStats.pageCountEl.textContent !== '1')) {
         return ThreadStats.fetchPage();
       }
     },
-
     onPostsInserted() {
-      if (ThreadStats.thread.posts.keys.length <= ThreadStats.postIndex) { return; }
+      if (ThreadStats.thread.posts.keys.length <= ThreadStats.postIndex) {
+        return;
+      }
       ThreadStats.count();
       ThreadStats.update();
       if (ThreadStats.showPage && (ThreadStats.pageCountEl.textContent !== '1')) {
         return ThreadStats.fetchPage();
       }
     },
-
     update() {
-      const {thread, postCountEl, fileCountEl, ipCountEl} = ThreadStats;
+      const { thread, postCountEl, fileCountEl, ipCountEl } = ThreadStats;
       postCountEl.textContent = ThreadStats.postCount;
       fileCountEl.textContent = ThreadStats.fileCount;
       if (ipCountEl) {
@@ -38394,27 +41005,20 @@ Enable it on boards.${location.hostname.split('.')[1]}.org in your browser's pri
       postCountEl.classList.toggle('warning', (thread.postLimit && !thread.isSticky));
       fileCountEl.classList.toggle('warning', (thread.fileLimit && !thread.isSticky));
     },
-
     fetchPage() {
-      if (!ThreadStats.pageCountEl) { return; }
+      if (!ThreadStats.pageCountEl) {
+        return;
+      }
       clearTimeout(ThreadStats.timeout);
       if (ThreadStats.thread.isDead) {
         ThreadStats.pageCountEl.textContent = 'Dead';
         $.addClass(ThreadStats.pageCountEl, 'warning');
         return;
       }
-      ThreadStats.timeout = setTimeout(
-        ThreadStats.fetchPage,
-        Conf['Purge Position'] && ThreadStats.pageCountEl.classList.contains('warning')
-          ? (5 * SECOND) : (2 * MINUTE)
-      );
-      $.whenModified(
-        g.SITE.urls.threadsListJSON(ThreadStats.thread),
-        'ThreadStats',
-        ThreadStats.onThreadsLoad
-      );
+      ThreadStats.timeout = setTimeout(ThreadStats.fetchPage, Conf['Purge Position'] && ThreadStats.pageCountEl.classList.contains('warning')
+        ? (5 * SECOND) : (2 * MINUTE));
+      $.whenModified(g.SITE.urls.threadsListJSON(ThreadStats.thread), 'ThreadStats', ThreadStats.onThreadsLoad);
     },
-
     onThreadsLoad() {
       if (this.status === 200) {
         let page, thread;
@@ -38457,16 +41061,15 @@ Enable it on boards.${location.hostname.split('.')[1]}.org in your browser's pri
         ThreadStats.retry();
       }
     },
-
     retry() {
       // If thread data is stale (modification date given < time of last post), try again.
       // Skip this on vichan sites due to sage posts not updating modification time in threads.json.
-      if (
-        !ThreadStats.showPage ||
+      if (!ThreadStats.showPage ||
         (ThreadStats.pageCountEl.textContent === '1') ||
         !!g.SITE.threadModTimeIgnoresSage ||
-        (ThreadStats.thread.posts.get(ThreadStats.thread.lastPost).info.date <= ThreadStats.lastPageUpdate)
-      ) { return; }
+        (ThreadStats.thread.posts.get(ThreadStats.thread.lastPost).info.date <= ThreadStats.lastPageUpdate)) {
+        return;
+      }
       clearTimeout(ThreadStats.timeout);
       ThreadStats.timeout = setTimeout(ThreadStats.fetchPage, 5 * SECOND);
     }
@@ -38474,83 +41077,86 @@ Enable it on boards.${location.hostname.split('.')[1]}.org in your browser's pri
 
   const PassLink = {
     init() {
-      if ((g.SITE.software !== 'yotsuba') || !Conf['Pass Link']) { return; }
+      if ((g.SITE.software !== 'yotsuba') || !Conf['Pass Link']) {
+        return;
+      }
       return Main.ready(this.ready);
     },
-
     ready() {
       let styleSelector;
-      if (!(styleSelector = $.id('styleSelector'))) { return; }
-
-      const passLink = $.el('span',
-        {className: 'brackets-wrap pass-link-container'});
-      $.extend(passLink, {innerHTML: "<a href=\"javascript:;\">4chan Pass</a>"});
-      $.on(passLink.firstElementChild, 'click', () => window.open(`//sys.${location.hostname.split('.')[1]}.org/auth`,
-        Date.now(),
-        'width=500,height=280,toolbar=0'));
+      if (!(styleSelector = $.id('styleSelector'))) {
+        return;
+      }
+      const passLink = $.el('span', { className: 'brackets-wrap pass-link-container' });
+      $.extend(passLink, { innerHTML: "<a href=\"javascript:;\">4chan Pass</a>" });
+      $.on(passLink.firstElementChild, 'click', () => window.open(`//sys.${location.hostname.split('.')[1]}.org/auth`, Date.now(), 'width=500,height=280,toolbar=0'));
       return $.before(styleSelector.previousSibling, [passLink, $.tn('\u00A0\u00A0')]);
     }
   };
 
   var QuoteInline = {
     init() {
-      if (!['index', 'thread'].includes(g.VIEW) || !Conf['Quote Inlining']) { return; }
-
+      if (!['index', 'thread'].includes(g.VIEW) || !Conf['Quote Inlining']) {
+        return;
+      }
       if (Conf['Comment Expansion']) {
         ExpandComment.callbacks.push(this.node);
       }
-
       return Callbacks.Post.push({
         name: 'Quote Inlining',
-        cb:   this.node
+        cb: this.node
       });
     },
-
     node() {
-      const {process} = QuoteInline;
-      const {isClone} = this;
+      const { process } = QuoteInline;
+      const { isClone } = this;
       for (var link of this.nodes.quotelinks.concat([...this.nodes.backlinks], this.nodes.archivelinks)) {
         process(link, isClone);
       }
     },
-
     process(link, clone) {
       if (Conf['Quote Hash Navigation']) {
-        if (!clone) { $.after(link, QuoteInline.qiQuote(link, $.hasClass(link, 'filtered'))); }
+        if (!clone) {
+          $.after(link, QuoteInline.qiQuote(link, $.hasClass(link, 'filtered')));
+        }
       }
       return $.on(link, 'click', QuoteInline.toggle);
     },
-
     qiQuote(link, hidden) {
       let name = "hashlink";
-      if (hidden) { name += " filtered"; }
+      if (hidden) {
+        name += " filtered";
+      }
       return $.el('a', {
         className: name,
         textContent: '#',
         href: link.href
-      }
-      );
+      });
     },
-
     toggle(e) {
-      if ($.modifiedClick(e)) { return; }
-
-      const {boardID, threadID, postID} = Get.postDataFromLink(this);
-      if (Conf['Inline Cross-thread Quotes Only'] && (g.VIEW === 'thread') && g.posts.get(`${boardID}.${postID}`)?.nodes.root.offsetParent) { return; } // exists and not hidden
-      if ($.hasClass(doc, 'catalog-mode')) { return; }
-
+      if ($.modifiedClick(e)) {
+        return;
+      }
+      const { boardID, threadID, postID } = Get.postDataFromLink(this);
+      if (Conf['Inline Cross-thread Quotes Only'] && (g.VIEW === 'thread') && g.posts.get(`${boardID}.${postID}`)?.nodes.root.offsetParent) {
+        return;
+      } // exists and not hidden
+      if ($.hasClass(doc, 'catalog-mode')) {
+        return;
+      }
       e.preventDefault();
       const quoter = Get.postFromNode(this);
-      const {context} = quoter;
+      const { context } = quoter;
       if ($.hasClass(this, 'inlined')) {
         QuoteInline.rm(this, boardID, threadID, postID, context);
       } else {
-        if ($.x(`ancestor::div[@data-full-i-d='${boardID}.${postID}']`, this)) { return; }
+        if ($.x(`ancestor::div[@data-full-i-d='${boardID}.${postID}']`, this)) {
+          return;
+        }
         QuoteInline.add(this, boardID, threadID, postID, context, quoter);
       }
       return this.classList.toggle('inlined');
     },
-
     findRoot(quotelink, isBacklink) {
       if (isBacklink) {
         return $.x('ancestor::*[parent::*[contains(@class,"post")]][1]', quotelink);
@@ -38558,39 +41164,33 @@ Enable it on boards.${location.hostname.split('.')[1]}.org in your browser's pri
         return $.x('ancestor-or-self::*[parent::blockquote][1]', quotelink);
       }
     },
-
     add(quotelink, boardID, threadID, postID, context, quoter) {
       let post;
       const isBacklink = $.hasClass(quotelink, 'backlink');
-      const inline = $.el('div',
-        {className: 'inline'});
+      const inline = $.el('div', { className: 'inline' });
       inline.dataset.fullID = `${boardID}.${postID}`;
       const root = QuoteInline.findRoot(quotelink, isBacklink);
       $.after(root, inline);
-
       const qroot = $.x('ancestor::*[contains(@class,"postContainer")][1]', root);
-
       $.addClass(qroot, 'hasInline');
       new Fetcher(boardID, threadID, postID, inline, quoter);
-
-      if (!(
-        (post = g.posts.get(`${boardID}.${postID}`)) &&
-        (context.thread === post.thread)
-      )) { return; }
-
+      if (!((post = g.posts.get(`${boardID}.${postID}`)) &&
+        (context.thread === post.thread))) {
+        return;
+      }
       // Hide forward post if it's a backlink of a post in this thread.
       // Will only unhide if there's no inlined backlinks of it anymore.
       if (isBacklink && Conf['Forward Hiding']) {
         $.addClass(post.nodes.root, 'forwarded');
         post.forwarded++ || (post.forwarded = 1);
       }
-
       // Decrease the unread count if this post
       // is in the array of unread posts.
-      if (!Unread.posts) { return; }
+      if (!Unread.posts) {
+        return;
+      }
       return Unread.readSinglePost(post);
     },
-
     rm(quotelink, boardID, threadID, postID, context) {
       let el;
       let inlined;
@@ -38599,33 +41199,30 @@ Enable it on boards.${location.hostname.split('.')[1]}.org in your browser's pri
       let root = QuoteInline.findRoot(quotelink, isBacklink);
       root = $.x(`following-sibling::div[@data-full-i-d='${boardID}.${postID}'][1]`, root);
       const qroot = $.x('ancestor::*[contains(@class,"postContainer")][1]', root);
-      const {parentNode} = root;
+      const { parentNode } = root;
       $.rm(root);
       $.event('PostsRemoved', null, parentNode);
-
       if (!$('.inline', qroot)) {
         $.rmClass(qroot, 'hasInline');
       }
-
       // Stop if it only contains text.
-      if (!(el = root.firstElementChild)) { return; }
-
+      if (!(el = root.firstElementChild)) {
+        return;
+      }
       // Dereference clone.
       const post = g.posts.get(`${boardID}.${postID}`);
       post.rmClone(el.dataset.clone);
-
       // Decrease forward count and unhide.
       if (Conf['Forward Hiding'] &&
         isBacklink &&
         (context.thread === g.threads.get(`${boardID}.${threadID}`)) &&
         !--post.forwarded) {
-          delete post.forwarded;
-          $.rmClass(post.nodes.root, 'forwarded');
-        }
-
+        delete post.forwarded;
+        $.rmClass(post.nodes.root, 'forwarded');
+      }
       // Repeat.
       while ((inlined = $('.inlined', el))) {
-        ({boardID, threadID, postID} = Get.postDataFromLink(inlined));
+        ({ boardID, threadID, postID } = Get.postDataFromLink(inlined));
         QuoteInline.rm(inlined, boardID, threadID, postID, context);
         $.rmClass(inlined, 'inlined');
       }
@@ -38646,33 +41243,36 @@ Enable it on boards.${location.hostname.split('.')[1]}.org in your browser's pri
     // and that as much backlinks are appended in the background as possible.
     containers: dict(),
     init() {
-      if (!['index', 'thread'].includes(g.VIEW) || !Conf['Quote Backlinks']) { return; }
-
+      if (!['index', 'thread'].includes(g.VIEW) || !Conf['Quote Backlinks']) {
+        return;
+      }
       // Add a class to differentiate when backlinks are at
       // the top (default) or bottom of a post
       if (this.bottomBacklinks = Conf['Bottom Backlinks']) {
         $.addClass(doc, 'bottom-backlinks');
       }
-
       Callbacks.Post.push({
         name: 'Quote Backlinking Part 1',
-        cb:   this.firstNode
+        cb: this.firstNode
       });
       return Callbacks.Post.push({
         name: 'Quote Backlinking Part 2',
-        cb:   this.secondNode
+        cb: this.secondNode
       });
     },
     firstNode() {
-      if (this.isClone || !this.quotes.length || this.isRebuilt) { return; }
+      if (this.isClone || !this.quotes.length || this.isRebuilt) {
+        return;
+      }
       const markYours = Conf['Mark Quotes of You'] && QuoteYou.isYou(this);
       const a = $.el('a', {
         href: g.SITE.Build.postURL(this.board.ID, this.thread.ID, this.ID),
         className: this.isHidden ? 'filtered backlink' : 'backlink',
-        textContent: Conf['backlink'].replace(/%(?:id|%)/g, x => ({'%id': this.ID, '%%': '%'})[x])
+        textContent: Conf['backlink'].replace(/%(?:id|%)/g, x => ({ '%id': this.ID, '%%': '%' })[x])
+      });
+      if (markYours) {
+        $.add(a, QuoteYou.mark.cloneNode(true));
       }
-      );
-      if (markYours) { $.add(a, QuoteYou.mark.cloneNode(true)); }
       for (var quote of this.quotes) {
         var post;
         var containers = [QuoteBacklink.getContainer(quote)];
@@ -38706,7 +41306,9 @@ Enable it on boards.${location.hostname.split('.')[1]}.org in your browser's pri
         return;
       }
       // Don't backlink the OP.
-      if (!this.isReply && !Conf['OP Backlinks']) { return; }
+      if (!this.isReply && !Conf['OP Backlinks']) {
+        return;
+      }
       const container = QuoteBacklink.getContainer(this.fullID);
       this.nodes.backlinkContainer = container;
       if (QuoteBacklink.bottomBacklinks) {
@@ -38717,37 +41319,39 @@ Enable it on boards.${location.hostname.split('.')[1]}.org in your browser's pri
     },
     getContainer(id) {
       return this.containers[id] ||
-        (this.containers[id] = $.el('span', {className: 'container'}));
+        (this.containers[id] = $.el('span', { className: 'container' }));
     }
   };
 
   var QuoteCT = {
     init() {
-      if (!['index', 'thread'].includes(g.VIEW) || !Conf['Mark Cross-thread Quotes']) { return; }
-
+      if (!['index', 'thread'].includes(g.VIEW) || !Conf['Mark Cross-thread Quotes']) {
+        return;
+      }
       if (Conf['Comment Expansion']) {
         ExpandComment.callbacks.push(this.node);
       }
-
       // \u00A0 is nbsp
       this.mark = $.el('span', {
         textContent: '\u00A0(Cross-thread)',
-        className:   'qmark-ct'
-      }
-      );
+        className: 'qmark-ct'
+      });
       return Callbacks.Post.push({
         name: 'Mark Cross-thread Quotes',
-        cb:   this.node
+        cb: this.node
       });
     },
     node() {
       // Stop there if it's a clone of a post in the same thread.
-      if (this.isClone && (this.thread === this.context.thread)) { return; }
-
-      const {board, thread} = this.context;
+      if (this.isClone && (this.thread === this.context.thread)) {
+        return;
+      }
+      const { board, thread } = this.context;
       for (var quotelink of this.nodes.quotelinks) {
-        var {boardID, threadID} = Get.postDataFromLink(quotelink);
-        if (!threadID) { continue; } // deadlink
+        var { boardID, threadID } = Get.postDataFromLink(quotelink);
+        if (!threadID) {
+          continue;
+        } // deadlink
         if (this.isClone) {
           $.rm($('.qmark-ct', quotelink));
         }
@@ -38760,32 +41364,33 @@ Enable it on boards.${location.hostname.split('.')[1]}.org in your browser's pri
 
   var QuoteOP = {
     init() {
-      if (!['index', 'thread'].includes(g.VIEW) || !Conf['Mark OP Quotes']) { return; }
-
+      if (!['index', 'thread'].includes(g.VIEW) || !Conf['Mark OP Quotes']) {
+        return;
+      }
       if (Conf['Comment Expansion']) {
         ExpandComment.callbacks.push(this.node);
       }
-
       // \u00A0 is nbsp
       this.mark = $.el('span', {
         textContent: '\u00A0(OP)',
-        className:   'qmark-op'
-      }
-      );
+        className: 'qmark-op'
+      });
       return Callbacks.Post.push({
         name: 'Mark OP Quotes',
-        cb:   this.node
+        cb: this.node
       });
     },
-
     node() {
       // Stop there if it's a clone of a post in the same thread.
       let i, quotelink, quotes;
-      if (this.isClone && (this.thread === this.context.thread)) { return; }
+      if (this.isClone && (this.thread === this.context.thread)) {
+        return;
+      }
       // Stop there if there's no quotes in that post.
-      if (!(quotes = this.quotes).length) { return; }
-      const {quotelinks} = this.nodes;
-
+      if (!(quotes = this.quotes).length) {
+        return;
+      }
+      const { quotelinks } = this.nodes;
       // rm (OP) from cross-thread quotes.
       if (this.isClone && quotes.includes(this.thread.fullID)) {
         i = 0;
@@ -38793,14 +41398,14 @@ Enable it on boards.${location.hostname.split('.')[1]}.org in your browser's pri
           $.rm($('.qmark-op', quotelink));
         }
       }
-
-      const {fullID} = this.context.thread;
+      const { fullID } = this.context.thread;
       // add (OP) to quotes quoting this context's OP.
-
-      if (!quotes.includes(fullID)) { return; }
+      if (!quotes.includes(fullID)) {
+        return;
+      }
       i = 0;
       while ((quotelink = quotelinks[i++])) {
-        var {boardID, postID} = Get.postDataFromLink(quotelink);
+        var { boardID, postID } = Get.postDataFromLink(quotelink);
         if (`${boardID}.${postID}` === fullID) {
           $.add(quotelink, QuoteOP.mark.cloneNode(true));
         }
@@ -38811,18 +41416,20 @@ Enable it on boards.${location.hostname.split('.')[1]}.org in your browser's pri
   const QuoteStrikeThrough = {
     init() {
       if (!['index', 'thread'].includes(g.VIEW) ||
-        (!Conf['Reply Hiding Buttons'] && (!Conf['Menu'] || !Conf['Reply Hiding Link']) && !Conf['Filter'])) { return; }
-
+        (!Conf['Reply Hiding Buttons'] && (!Conf['Menu'] || !Conf['Reply Hiding Link']) && !Conf['Filter'])) {
+        return;
+      }
       return Callbacks.Post.push({
         name: 'Strike-through Quotes',
-        cb:   this.node
+        cb: this.node
       });
     },
-
     node() {
-      if (this.isClone) { return; }
+      if (this.isClone) {
+        return;
+      }
       for (var quotelink of this.nodes.quotelinks) {
-        var {boardID, postID} = Get.postDataFromLink(quotelink);
+        var { boardID, postID } = Get.postDataFromLink(quotelink);
         if (g.posts.get(`${boardID}.${postID}`)?.isHidden) {
           $.addClass(quotelink, 'filtered');
         }
@@ -38832,20 +41439,18 @@ Enable it on boards.${location.hostname.split('.')[1]}.org in your browser's pri
 
   var Quotify = {
     init() {
-      if (!['index', 'thread'].includes(g.VIEW) || !Conf['Resurrect Quotes']) { return; }
-
+      if (!['index', 'thread'].includes(g.VIEW) || !Conf['Resurrect Quotes']) {
+        return;
+      }
       $.addClass(doc, 'resurrect-quotes');
-
       if (Conf['Comment Expansion']) {
         ExpandComment.callbacks.push(this.node);
       }
-
       return Callbacks.Post.push({
         name: 'Resurrect Quotes',
-        cb:   this.node
+        cb: this.node
       });
     },
-
     node() {
       if (this.isClone) {
         this.nodes.archivelinks = $$('a.linkify.quotelink', this.nodes.comment);
@@ -38858,21 +41463,23 @@ Enable it on boards.${location.hostname.split('.')[1]}.org in your browser's pri
         Quotify.parseDeadlink.call(this, deadlink);
       }
     },
-
     parseArchivelink(link) {
       let m;
-      if (!(m = link.pathname.match(/^\/([^/]+)\/thread\/S?(\d+)\/?$/))) { return; }
-      if (['boards.4chan.org', 'boards.4channel.org'].includes(link.hostname)) { return; }
-      const boardID  = m[1];
+      if (!(m = link.pathname.match(/^\/([^/]+)\/thread\/S?(\d+)\/?$/))) {
+        return;
+      }
+      if (['boards.4chan.org', 'boards.4channel.org'].includes(link.hostname)) {
+        return;
+      }
+      const boardID = m[1];
       const threadID = m[2];
-      const postID   = link.hash.match(/^#[pq]?(\d+)$|$/)[1] || threadID;
-      if (Redirect.to('post', {boardID, postID})) {
+      const postID = link.hash.match(/^#[pq]?(\d+)$|$/)[1] || threadID;
+      if (Redirect.to('post', { boardID, postID })) {
         $.addClass(link, 'quotelink');
-        $.extend(link.dataset, {boardID, threadID, postID});
+        $.extend(link.dataset, { boardID, threadID, postID });
         return this.nodes.archivelinks.push(link);
       }
     },
-
     parseDeadlink(deadlink) {
       let a, m, post, postID;
       if ($.hasClass(deadlink.parentNode, 'prettyprint')) {
@@ -38884,9 +41491,10 @@ Enable it on boards.${location.hostname.split('.')[1]}.org in your browser's pri
         Quotify.fixDeadlink(deadlink);
         return;
       }
-
       const quote = deadlink.textContent;
-      if (!(postID = quote.match(/\d+$/)?.[0])) { return; }
+      if (!(postID = quote.match(/\d+$/)?.[0])) {
+        return;
+      }
       if (postID[0] === '0') {
         // Fix quotelinks that start with a `0`.
         Quotify.fixDeadlink(deadlink);
@@ -38894,70 +41502,62 @@ Enable it on boards.${location.hostname.split('.')[1]}.org in your browser's pri
       }
       const boardID = (m = quote.match(/^>>>\/([a-z\d]+)/)) ?
         m[1]
-      :
-        this.board.ID;
+        :
+          this.board.ID;
       const quoteID = `${boardID}.${postID}`;
-
       if (post = g.posts.get(quoteID)) {
         if (!post.isDead) {
           // Don't (Dead) when quotifying in an archived post,
           // and we know the post still exists.
           a = $.el('a', {
-            href:        g.SITE.Build.postURL(boardID, post.thread.ID, postID),
-            className:   'quotelink',
+            href: g.SITE.Build.postURL(boardID, post.thread.ID, postID),
+            className: 'quotelink',
             textContent: quote
-          }
-          );
+          });
         } else {
           // Replace the .deadlink span if we can redirect.
           a = $.el('a', {
-            href:        g.SITE.Build.postURL(boardID, post.thread.ID, postID),
-            className:   'quotelink deadlink',
+            href: g.SITE.Build.postURL(boardID, post.thread.ID, postID),
+            className: 'quotelink deadlink',
             textContent: quote
-          }
-          );
+          });
           $.add(a, Post.deadMark.cloneNode(true));
-          $.extend(a.dataset, {boardID, threadID: post.thread.ID, postID});
+          $.extend(a.dataset, { boardID, threadID: post.thread.ID, postID });
         }
-
       } else {
-        const redirect = Redirect.to('thread', {boardID, threadID: 0, postID});
-        const fetchable = Redirect.to('post', {boardID, postID});
+        const redirect = Redirect.to('thread', { boardID, threadID: 0, postID });
+        const fetchable = Redirect.to('post', { boardID, postID });
         if (redirect || fetchable) {
           // Replace the .deadlink span if we can redirect or fetch the post.
           a = $.el('a', {
-            href:        redirect || 'javascript:;',
-            className:   'deadlink',
+            href: redirect || 'javascript:;',
+            className: 'deadlink',
             textContent: quote
-          }
-          );
+          });
           $.add(a, Post.deadMark.cloneNode(true));
           if (fetchable) {
             // Make it function as a normal quote if we can fetch the post.
             $.addClass(a, 'quotelink');
-            $.extend(a.dataset, {boardID, postID});
+            $.extend(a.dataset, { boardID, postID });
           }
         }
       }
-
-      if (!this.quotes.includes(quoteID)) { this.quotes.push(quoteID); }
-
+      if (!this.quotes.includes(quoteID)) {
+        this.quotes.push(quoteID);
+      }
       if (!a) {
         $.add(deadlink, Post.deadMark.cloneNode(true));
         return;
       }
-
       $.replace(deadlink, a);
       if ($.hasClass(a, 'quotelink')) {
         return this.nodes.quotelinks.push(a);
       }
     },
-
     fixDeadlink(deadlink) {
       let el;
       if (!(el = deadlink.previousSibling) || (el.nodeName === 'BR')) {
-        const green = $.el('span',
-          {className: 'quote'});
+        const green = $.el('span', { className: 'quote' });
         $.before(deadlink, green);
         $.add(green, deadlink);
       }
@@ -39037,50 +41637,52 @@ Enable it on boards.${location.hostname.split('.')[1]}.org in your browser's pri
   var Main = {
     init() {
       // __cf is a cloudflare check page.
-      if (location.search.includes("__cf")) return;
+      if (location.search.includes("__cf"))
+        return;
       // Keep the full script disabled on boardless home pages, but still apply
       // home-page styling preferences (site style + optional custom CSS).
       if (Main.isHomePage()) {
         Main.initHomePageStyleBridge();
         return;
       }
-
       // Apply native-extension disable as early as possible so 4chan's own
       // extension does not initialize alongside XT.
       Main.maybeDisableNativeExtensionEarly();
-
       // XXX dwb userscripts extension reloads scripts run at document-start when replaceState/pushState is called.
       // XXX Firefox reinjects WebExtension content scripts when extension is updated / reloaded.
       try {
         let w = window;
 
-        if (`${meta.name} antidup` in w) { return; }
+        if (`${meta.name} antidup` in w) {
+          return;
+        }
         w[`${meta.name} antidup`] = true;
-      } catch (error) {}
-
+      } catch (error) { }
       // Don't run inside ad iframes.
       try {
-        if (window.frameElement && ['', 'about:blank'].includes(window.frameElement.src)) { return; }
-      } catch (error1) {}
-
+        if (window.frameElement && ['', 'about:blank'].includes(window.frameElement.src)) {
+          return;
+        }
+      } catch (error1) { }
       // Detect multiple copies of 4chan X
-      if (doc && $.hasClass(doc, 'fourchan-x')) { return; }
-      $.asap(docSet, function() {
+      if (doc && $.hasClass(doc, 'fourchan-x')) {
+        return;
+      }
+      $.asap(docSet, function () {
         $.addClass(doc, 'fourchan-next', 'fourchan-xt', 'fourchan-x', 'seaweedchan');
-        if ($.engine) $.addClass(doc, `ua-${$.engine}`);
+        if ($.engine)
+          $.addClass(doc, `ua-${$.engine}`);
         BoardConfig.ready(() => {
-          if (g.BOARD?.config.ws_board != null) $.addClass(doc, g.BOARD.config.ws_board ? 'ws' : 'nws');
+          if (g.BOARD?.config.ws_board != null)
+            $.addClass(doc, g.BOARD.config.ws_board ? 'ws' : 'nws');
         });
       });
       try {
-        $.global(
-          'exposeVersion',
-          { version: g.VERSION, buildDate: g.VERSION_DATE.getTime().toString() },
-        );
+        $.global('exposeVersion', { version: g.VERSION, buildDate: g.VERSION_DATE.getTime().toString() });
       } catch (e) {
         console.error(e);
       }
-      $.on(d, '4chanXInitFinished', function() {
+      $.on(d, '4chanXInitFinished', function () {
         if (Main.expectInitFinished) {
           return delete Main.expectInitFinished;
         } else {
@@ -39088,20 +41690,19 @@ Enable it on boards.${location.hostname.split('.')[1]}.org in your browser's pri
           return $.addClass(doc, 'tainted');
         }
       });
-
       // Detect "mounted" event from Kissu
-      var mountedCB = function() {
+      var mountedCB = function () {
         d.removeEventListener('mounted', mountedCB, true);
         Main.isMounted = true;
-        return Main.mountedCBs.map((cb) =>
-          (() => { try {
+        return Main.mountedCBs.map((cb) => (() => {
+          try {
             return cb();
-          } catch (error2) {} })());
+          } catch (error2) { }
+        })());
       };
       d.addEventListener('mounted', mountedCB, true);
-
       // Flatten default values from Config into Conf
-      var flatten = function(parent, obj) {
+      var flatten = function (parent, obj) {
         if (obj instanceof Array) {
           Conf[parent] = dict.clone(obj[0]);
         } else if (typeof obj === 'object') {
@@ -39112,30 +41713,25 @@ Enable it on boards.${location.hostname.split('.')[1]}.org in your browser's pri
           Conf[parent] = obj;
         }
       };
-
       // XXX Remove document-breaking ad
       if (location.hostname === 'boards.4chan.org') {
         $.asap(docSet, () => $.onExists(doc, 'iframe[srcdoc]', $.rm));
       }
-
       flatten(null, Config);
-
+      const legacyReplaceThumbnailKeys = ['Replace GIF', 'Replace JPG', 'Replace PNG', 'Replace WEBM'];
       for (var db of DataBoard.keys) {
         Conf[db] = dict();
       }
-      Conf['customTitles'] = dict.clone({'4chan.org': {boards: {'qa': {'boardTitle': {orig: '/qa/ - Question & Answer', title: '/qa/ - 2D/Random'}}}}});
-      Conf['boardConfig'] = {boards: dict()};
+      Conf['customTitles'] = dict.clone({ '4chan.org': { boards: { 'qa': { 'boardTitle': { orig: '/qa/ - Question & Answer', title: '/qa/ - 2D/Random' } } } } });
+      Conf['boardConfig'] = { boards: dict() };
       Conf['archives'] = Redirect.archives;
       Conf['selectedArchives'] = dict();
       Conf['cooldowns'] = dict();
       Conf['Index Sort'] = dict();
-      for (let i = 0; i < 2; i++) { Conf[`Last Long Reply Thresholds ${i}`] = dict(); }
-      Conf['siteProperties'] = dict();
-      const legacyReplaceThumbnailKeys = ['Replace GIF', 'Replace JPG', 'Replace PNG', 'Replace WEBM'];
-      for (const key of legacyReplaceThumbnailKeys) {
-        Conf[key] = false;
+      for (let i = 0; i < 2; i++) {
+        Conf[`Last Long Reply Thresholds ${i}`] = dict();
       }
-
+      Conf['siteProperties'] = dict();
       // XXX old key names
       Conf['Except Archives from Encryption'] = false;
       Conf['JSON Navigation'] = true;
@@ -39149,41 +41745,48 @@ Enable it on boards.${location.hostname.split('.')[1]}.org in your browser's pri
       Conf['Captcha Fixes'] = true;
       Conf['captchaServiceDomain'] = '';
       Conf['captchaServiceKey'] = dict();
-
       // Enforce JS whitelist
-      if (
-        /\.4chan(?:nel)?\.org$/.test(location.hostname) &&
+      if (/\.4chan(?:nel)?\.org$/.test(location.hostname) &&
         !SW.yotsuba.regexp.pass.test(location.href) &&
         !SW.yotsuba.regexp.captcha.test(location.href) &&
-        !$$('script:not([src])', d).filter(s => /this\[/.test(s.textContent)).length
-      ) {
-        ($.getSync || $.get)({'jsWhitelist': Conf['jsWhitelist']}, ({jsWhitelist}) => {
-          const parsedList = jsWhitelist.replace(/^#.*$/mg, '').replace(/[\s;]+/g, ' ').trim();
-          if (/\S/.test(parsedList)) $.addCSP(`script-src ${parsedList}`);
+        !$$('script:not([src])', d).filter(s => /this\[/.test(s.textContent)).length) {
+        ($.getSync || $.get)({ 'jsWhitelist': Conf['jsWhitelist'] }, ({ jsWhitelist }) => {
+          const sources = jsWhitelist.replace(/^#.*$/mg, '').split(/[\s;]+/).filter(Boolean);
+          const mathBoard = $$('script:not([src])', d).some(s => /\bmath_tags\s*=\s*true\b/.test(s.textContent || ''));
+          if (mathBoard) {
+            sources.push('https://cdnjs.cloudflare.com', 'https://cdn.mathjax.org');
+          }
+          // Permit the extension's own injected scripts ($.global) via a nonce, so the
+          // whitelist still blocks the page's inline scripts but not our page-context code.
+          // MathJax v2 evaluates strings internally, so math boards also need 'unsafe-eval'.
+          const extras = [`'nonce-${$.getCSPNonce()}'`];
+          if (mathBoard)
+            extras.push(`'unsafe-eval'`);
+          const parsedList = [...new Set(sources)].join(' ');
+          if (parsedList)
+            $.addCSP(`script-src ${parsedList} ${extras.join(' ')}`);
         });
       }
-
       // Get saved values as items
       const items = dict();
-      for (const key in Conf) items[key] = undefined;
-      for (const key of legacyReplaceThumbnailKeys) items[key] = undefined;
+      for (const key in Conf)
+        items[key] = undefined;
+      for (const key of legacyReplaceThumbnailKeys)
+        items[key] = undefined;
       items['previousversion'] = undefined;
-      ($.getSync || $.get)(items, function(items) {
-        $.asap(docSet, function() {
-
+      ($.getSync || $.get)(items, function (items) {
+        $.asap(docSet, function () {
           // Don't hide the local storage warning behind a settings panel.
           if ($.cantSet) ; else if ((items.previousversion == null)) {
             Main.isFirstRun = true;
-            Main.ready(function() {
+            Main.ready(function () {
               $.set('previousversion', g.VERSION);
               return Settings.open();
             });
-
-          // Migrate old settings
+            // Migrate old settings
           } else if (items.previousversion !== g.VERSION) {
             Main.upgrade(items);
           }
-
           // Combine default values with saved values
           for (const key in Conf) {
             Conf[key] = items[key] ?? Conf[key];
@@ -39192,23 +41795,24 @@ Enable it on boards.${location.hostname.split('.')[1]}.org in your browser's pri
             Conf['Replace Thumbnails'] = true;
             $.set('Replace Thumbnails', true);
           }
-
           Site.init(Main.initFeatures);
         });
       });
     },
-
     maybeDisableNativeExtensionEarly() {
-      if (!/\.4chan(?:nel)?\.org$/.test(location.hostname)) { return; }
-      const apply = function(disableNativeExtension) {
-        if (!disableNativeExtension) { return; }
+      if (!/\.4chan(?:nel)?\.org$/.test(location.hostname)) {
+        return;
+      }
+      const apply = function (disableNativeExtension) {
+        if (!disableNativeExtension) {
+          return;
+        }
         if ($.hasStorage) {
           $.global('disableNativeExtension');
         } else {
           $.global('disableNativeExtensionNoStorage');
         }
       };
-
       // Prefer sync reads where available so this runs before native scripts init.
       if ($.getSync) {
         try {
@@ -39217,24 +41821,22 @@ Enable it on boards.${location.hostname.split('.')[1]}.org in your browser's pri
             apply(dict.json(raw));
             return;
           }
-        } catch (err) {}
+        } catch (err) { }
       }
-
       // Fallback for async-only storage APIs.
-      ($.getSync || $.get)({'Disable Native Extension': true}, items => {
+      ($.getSync || $.get)({ 'Disable Native Extension': true }, items => {
         apply(items['Disable Native Extension']);
       });
     },
-
     isHomePage() {
       if (!['www.4chan.org', 'www.4channel.org', '4chan.org', '4channel.org'].includes(location.hostname)) {
         return false;
       }
       return /^\/(?:index\.php)?\/?$/.test(location.pathname);
     },
-
     normalizeSiteStyle(style) {
-      if (!style) return '';
+      if (!style)
+        return '';
       const normalized = String(style)
         .trim()
         .toLowerCase()
@@ -39245,7 +41847,6 @@ Enable it on boards.${location.hostname.split('.')[1]}.org in your browser's pri
         .replace(/^-|-$/g, '');
       return normalized;
     },
-
     initHomePageStyleBridge() {
       const defaults = {
         siteStyleHome: false,
@@ -39300,11 +41901,10 @@ Enable it on boards.${location.hostname.split('.')[1]}.org in your browser's pri
         }
       });
     },
-
     applyHomePageSiteStyle(preferred) {
       const want = Main.normalizeSiteStyle(preferred);
-      if (!want) return;
-
+      if (!want)
+        return;
       $.onExists(doc, 'head', () => {
         $.rm($.id('fourchanx-homepage-theme-css'));
         // www.css has :root.<theme> rules that target 4chan's homepage chrome
@@ -39314,26 +41914,27 @@ Enable it on boards.${location.hostname.split('.')[1]}.org in your browser's pri
         Main.ensureHomePageCustomCSSLast();
       });
     },
-
     ensureHomePageCustomCSSLast() {
       const style = $.id('custom-css-home');
       if (style && d.head && d.head.lastElementChild !== style) {
         $.add(d.head, style);
       }
     },
-
     installHomePageCustomCSS(usercss) {
       let style = null;
       const ensure = () => {
-        if (!d.head) return;
+        if (!d.head)
+          return;
         if (!style || !style.isConnected) {
           style = $.el('style', { id: 'custom-css-home', textContent: usercss });
           $.add(d.head, style);
           return;
         }
-        if (style.textContent !== usercss) style.textContent = usercss;
+        if (style.textContent !== usercss)
+          style.textContent = usercss;
         // Keep our <style> as the last child of <head> so it wins specificity ties.
-        if (d.head.lastElementChild !== style) $.add(d.head, style);
+        if (d.head.lastElementChild !== style)
+          $.add(d.head, style);
       };
       $.onExists(doc, 'head', () => {
         ensure();
@@ -39343,7 +41944,6 @@ Enable it on boards.${location.hostname.split('.')[1]}.org in your browser's pri
       $.on(window, 'pageshow', ensure);
       $.on(window, 'load', ensure);
     },
-
     // Replay StyleChan's captured stylesheet on the home page. StyleChan splits
     // its output into `#sc-theme-vars` (the `:root{--sc-*}` color variables) and
     // `#ch4SS` (the theme rules + the user's per-theme custom CSS, which reference
@@ -39351,13 +41951,15 @@ Enable it on boards.${location.hostname.split('.')[1]}.org in your browser's pri
     // and re-inject them here so www.4chan.org matches the StyleChan look.
     applyStylechanToHome(varsCSS, themeCSS) {
       const reapply = () => {
-        if (!d.head) return;
+        if (!d.head)
+          return;
         // Don't reorder once appended: with two styles, both fighting to be the
         // last child would ping-pong forever under the MutationObserver below.
         // StyleChan's rules are heavily !important, so source order vs 4chan's
         // own sheets doesn't matter for them to win.
         const ensureStyle = (id, css) => {
-          if (!css) return;
+          if (!css)
+            return;
           const el = $.id(id);
           if (!el || !el.isConnected) {
             $.add(d.head, $.el('style', { id, textContent: css }));
@@ -39376,7 +41978,6 @@ Enable it on boards.${location.hostname.split('.')[1]}.org in your browser's pri
       $.on(window, 'pageshow', reapply);
       $.on(window, 'load', reapply);
     },
-
     // Capture StyleChan's injected stylesheet while on a board page (where
     // StyleChan runs) so the home page bridge can replay it. We can't read
     // StyleChan's saved config directly — it lives in its own sandboxed GM
@@ -39405,28 +42006,28 @@ Enable it on boards.${location.hostname.split('.')[1]}.org in your browser's pri
       watch('sc-theme-vars');
       $.on(window, 'pageshow', save);
     },
-
     upgrade(items) {
-      const {previousversion} = items;
+      const { previousversion } = items;
       const changes = Settings.upgrade(items, previousversion);
       items.previousversion = (changes.previousversion = g.VERSION);
-      return $.set(changes, function() {
-        const el = $.el('span',
-          { innerHTML: `${meta.name} has been updated to <a href="${meta.changelog}" target="_blank">version ${g.VERSION}</a>.` });
-        return new Notice('info', el, 15);
+      return $.set(changes, function () {
+        if (items['Show Updated Notifications'] ?? true) {
+          const el = $.el('span', { innerHTML: `${meta.name} has been updated to <a href="${meta.changelog}" target="_blank">version ${g.VERSION}</a>.` });
+          return new Notice('info', el, 15);
+        }
       });
     },
-
-    parseURL(site=g.SITE, url=location) {
+    parseURL(site = g.SITE, url = location) {
       const r = {};
-
-      if (!site) { return r; }
+      if (!site) {
+        return r;
+      }
       r.siteID = site.ID;
-
-      if (site.isBoardlessPage?.(url)) { return r; }
+      if (site.isBoardlessPage?.(url)) {
+        return r;
+      }
       const pathname = url.pathname.split(/\/+/);
       r.boardID = pathname[1];
-
       if (site.isFileURL(url)) {
         r.VIEW = 'file';
       } else if (site.isAuxiliaryPage?.(url)) ; else if (['thread', 'res'].includes(pathname[2])) {
@@ -39443,47 +42044,48 @@ Enable it on boards.${location.hostname.split('.')[1]}.org in your browser's pri
       }
       return r;
     },
-
     initFeatures() {
       $.global('initMain');
       Main.jsEnabled = $.hasClass(doc, 'js-enabled');
-
       $.extend(g, Main.parseURL());
-      if (g.boardID) { g.BOARD = new Board(g.boardID); }
-
+      if (g.boardID) {
+        g.BOARD = new Board(g.boardID);
+      }
       if (!g.VIEW) {
         g.SITE.initAuxiliary?.();
         return;
       }
-
       if (g.VIEW === 'file') {
-        $.asap((() => d.readyState !== 'loading'), function() {
+        $.asap((() => d.readyState !== 'loading'), function () {
           let video;
           if ((g.SITE.software === 'yotsuba') && Conf['404 Redirect'] && g.SITE.is404?.()) {
             const pathname = location.pathname.split(/\/+/);
             return Redirect.navigate('file', {
-              boardID:  g.BOARD.ID,
+              boardID: g.BOARD.ID,
               filename: pathname[pathname.length - 1]
             });
           } else if (video = $('video')) {
-            Volume.setup(video);
-            video.loop = true;
-            video.controls = true;
-            video.play();
+            if (Conf['Volume in New Tab']) {
+              Volume.setup(video);
+            }
+            if (Conf['Loop in New Tab']) {
+              video.loop = true;
+              video.controls = true;
+              video.play();
+            }
           }
         });
         return;
       }
-
       g.threads = new SimpleDict();
-      g.posts   = new SimpleDict();
-
+      g.posts = new SimpleDict();
       // set up CSS when <head> is completely loaded
       $.onExists(doc, 'body', Main.initStyle);
-
       // c.time 'All initializations'
       for (var [name, feature] of Main.features) {
-        if (g.SITE.disabledFeatures && g.SITE.disabledFeatures.includes(name)) { continue; }
+        if (g.SITE.disabledFeatures && g.SITE.disabledFeatures.includes(name)) {
+          continue;
+        }
         // c.time "#{name} initialization"
         try {
           feature.init();
@@ -39494,16 +42096,15 @@ Enable it on boards.${location.hostname.split('.')[1]}.org in your browser's pri
           });
         }
       }
-        // finally
-        //   c.timeEnd "#{name} initialization"
-
+      // finally
+      //   c.timeEnd "#{name} initialization"
       // c.timeEnd 'All initializations'
-
       return $.ready(Main.initReady);
     },
-
     initStyle() {
-      if (!Main.isThisPageLegit()) { return; }
+      if (!Main.isThisPageLegit()) {
+        return;
+      }
       const homeSiteStyle = Settings.styleConf('siteStyle');
       // On a board page StyleChan detection is reliable, so this is where we run
       // the one-time "hand StyleChan-owned sections over" recommendation (and the
@@ -39518,16 +42119,18 @@ Enable it on boards.${location.hostname.split('.')[1]}.org in your browser's pri
       if (Conf['siteStyleHome'] && Settings.stylingSectionEnabled('siteStyle') && homeSiteStyle) {
         Main.setSiteStyleHomeCookie(homeSiteStyle);
       }
-
       // disable the mobile layout
       const mobileLink = $('link[href*=mobile]', d.head);
-      if (mobileLink) mobileLink.disabled = true;
+      if (mobileLink)
+        mobileLink.disabled = true;
       doc.dataset.host = location.host;
       $.addClass(doc, `sw-${g.SITE.software}`);
       $.addClass(doc, g.VIEW === 'thread' ? 'thread-view' : g.VIEW);
       $.onExists(doc, '.ad-cnt, .adg-rects > .desktop', ad => $.onExists(ad, 'img, iframe', () => $.addClass(doc, 'ads-loaded')));
-      if (Conf['Autohiding Scrollbar']) { $.addClass(doc, 'autohiding-scrollbar'); }
-      $.ready(function() {
+      if (Conf['Autohiding Scrollbar']) {
+        $.addClass(doc, 'autohiding-scrollbar');
+      }
+      $.ready(function () {
         if ((d.body.clientHeight > doc.clientHeight) && ((window.innerWidth === doc.clientWidth) !== Conf['Autohiding Scrollbar'])) {
           Conf['Autohiding Scrollbar'] = !Conf['Autohiding Scrollbar'];
           $.set('Autohiding Scrollbar', Conf['Autohiding Scrollbar']);
@@ -39535,18 +42138,17 @@ Enable it on boards.${location.hostname.split('.')[1]}.org in your browser's pri
         }
       });
       $.addStyle(CSS.sub(CSS.boards), 'fourchanx-css');
-      Main.bgColorStyle = $.el('style', {id: 'fourchanx-bgcolor-css'});
-
+      Main.bgColorStyle = $.el('style', { id: 'fourchanx-bgcolor-css' });
       return Main.setClass();
     },
-
     setClass() {
       let mainStyleSheet, style, styleSheets;
       const knownStyles = ['yotsuba', 'yotsuba-b', 'futaba', 'burichan', 'photon', 'tomorrow', 'spooky'];
       const customPrefix = 'custom:';
       const isCustomSiteStyle = (v) => typeof v === 'string' && v.startsWith(customPrefix);
       const findCustomTheme = (value) => {
-        if (!isCustomSiteStyle(value)) return null;
+        if (!isCustomSiteStyle(value))
+          return null;
         const name = value.slice(customPrefix.length);
         const list = Array.isArray(Conf['customSiteThemes']) ? Conf['customSiteThemes'] : [];
         return list.find(t => t && t.name === name) || null;
@@ -39564,9 +42166,11 @@ Enable it on boards.${location.hostname.split('.')[1]}.org in your browser's pri
           return false;
         }
         // Strip any built-in theme class so the custom CSS owns the look.
-        for (const cls of knownStyles) $.rmClass(doc, cls);
+        for (const cls of knownStyles)
+          $.rmClass(doc, cls);
         style = null;
-        if (mainStyleSheet) mainStyleSheet.disabled = true;
+        if (mainStyleSheet)
+          mainStyleSheet.disabled = true;
         if (!Main.customSiteThemeStyle) {
           Main.customSiteThemeStyle = $.el('style', { id: 'xt-custom-site-theme-css' });
         }
@@ -39584,14 +42188,17 @@ Enable it on boards.${location.hostname.split('.')[1]}.org in your browser's pri
         return true;
       };
       let preferredStyleApplied = false;
-      const applyPreferredStyle = function() {
+      const applyPreferredStyle = function () {
         const activeSiteStyle = Settings.styleConf('siteStyle');
         // Site Style section off ⇒ don't actively switch the site theme; leave
         // whatever the page / native extension / StyleChan rendered in place.
-        if (!Settings.stylingSectionEnabled('siteStyle')) { return; }
-        if (preferredStyleApplied || g.SITE.software !== 'yotsuba' || !activeSiteStyle) { return; }
+        if (!Settings.stylingSectionEnabled('siteStyle')) {
+          return;
+        }
+        if (preferredStyleApplied || g.SITE.software !== 'yotsuba' || !activeSiteStyle) {
+          return;
+        }
         const preferred = activeSiteStyle;
-
         if (isCustomSiteStyle(preferred)) {
           const theme = findCustomTheme(preferred);
           if (theme) {
@@ -39600,7 +42207,6 @@ Enable it on boards.${location.hostname.split('.')[1]}.org in your browser's pri
           }
           return;
         }
-
         const styleSelector = $.id('styleSelector');
         if (styleSelector?.options?.length) {
           const hasPreferred = Array.from(styleSelector.options).some(option => option.value === preferred);
@@ -39613,8 +42219,9 @@ Enable it on boards.${location.hostname.split('.')[1]}.org in your browser's pri
             return;
           }
         }
-
-        if (!styleSheets || !mainStyleSheet) { return; }
+        if (!styleSheets || !mainStyleSheet) {
+          return;
+        }
         for (var styleSheet of styleSheets) {
           if (styleSheet.title?.trim() === preferred) {
             if (mainStyleSheet.href !== styleSheet.href) {
@@ -39625,7 +42232,6 @@ Enable it on boards.${location.hostname.split('.')[1]}.org in your browser's pri
           }
         }
       };
-
       if ((g.SITE.software === 'yotsuba') && (g.VIEW === 'catalog')) {
         if (mainStyleSheet = $.id('base-css')) {
           style = mainStyleSheet.href.match(/catalog_(\w+)/)?.[1].replace('_new', '').replace(/_+/g, '-');
@@ -39636,10 +42242,8 @@ Enable it on boards.${location.hostname.split('.')[1]}.org in your browser's pri
           }
         }
       }
-
       style = (mainStyleSheet = (styleSheets = null));
-
-      const setStyle = function() {
+      const setStyle = function () {
         let activeStyleTitle = null;
         let customThemeApplied = false;
         const currentSiteStyle = Settings.styleConf('siteStyle');
@@ -39665,8 +42269,12 @@ Enable it on boards.${location.hostname.split('.')[1]}.org in your browser's pri
             if (styleSheet.href === mainStyleSheet?.href) {
               activeStyleTitle = styleSheet.title?.trim() || null;
               style = styleSheet.title.toLowerCase().replace('new', '').trim().replace(/\s+/g, '-');
-              if (style === '_special') { style = styleSheet.href.match(/[a-z]*(?=[^/]*$)/)[0]; }
-              if (!knownStyles.includes(style)) { style = null; }
+              if (style === '_special') {
+                style = styleSheet.href.match(/[a-z]*(?=[^/]*$)/)[0];
+              }
+              if (!knownStyles.includes(style)) {
+                style = null;
+              }
               break;
             }
           }
@@ -39690,7 +42298,6 @@ Enable it on boards.${location.hostname.split('.')[1]}.org in your browser's pri
             return;
           }
         }
-
         // Determine proper dialog background color for other themes.
         const div = g.SITE.bgColoredEl();
         div.style.position = 'absolute';
@@ -39709,7 +42316,7 @@ Enable it on boards.${location.hostname.split('.')[1]}.org in your browser's pri
   background: ${bgColor};
 }
 .unread-mark-read {
-  background-color: rgba(${rgb.slice(0, 3).join(', ')}, ${0.5*(rgb[3] || 1)});
+  background-color: rgba(${rgb.slice(0, 3).join(', ')}, ${0.5 * (rgb[3] || 1)});
 }\
 `;
         if ($.luma(rgb) < 100) {
@@ -39720,20 +42327,23 @@ Enable it on boards.${location.hostname.split('.')[1]}.org in your browser's pri
         Settings.applyStylingVars();
         return;
       };
-
-      $.onExists(d.head, g.SITE.selectors.styleSheet, function(el) {
+      $.onExists(d.head, g.SITE.selectors.styleSheet, function (el) {
         mainStyleSheet = el;
         if (g.SITE.software === 'yotsuba') {
           styleSheets = $$('link[rel="alternate stylesheet"]', d.head);
         }
         applyPreferredStyle();
-        $.onExists(doc, '#styleSelector', function(styleSelector) {
-          const syncSiteStyle = function() {
+        $.onExists(doc, '#styleSelector', function (styleSelector) {
+          const syncSiteStyle = function () {
             const selected = styleSelector.value;
-            if (!selected) { return; }
+            if (!selected) {
+              return;
+            }
             const activeSiteStyle = Settings.styleConf('siteStyle');
             // Don't clobber a custom theme selection with the native dropdown's value.
-            if (isCustomSiteStyle(activeSiteStyle)) { return; }
+            if (isCustomSiteStyle(activeSiteStyle)) {
+              return;
+            }
             if (activeSiteStyle !== selected) {
               const siteStyleKey = Settings.variantKey('siteStyle');
               Conf[siteStyleKey] = selected;
@@ -39770,7 +42380,6 @@ Enable it on boards.${location.hostname.split('.')[1]}.org in your browser's pri
         return setStyle();
       }
     },
-
     setSiteStyleHomeCookie(style) {
       const domain = location.hostname.includes('4channel.org') ? '4channel.org' : '4chan.org';
       const expires = 60 * 60 * 24 * 365; // 1 year
@@ -39786,32 +42395,27 @@ Enable it on boards.${location.hostname.split('.')[1]}.org in your browser's pri
         d.cookie = `${key}=${style}; Max-Age=${expires}; Path=/; Domain=${domain}`;
       }
     },
-
     initReady() {
       if (g.SITE.is404?.()) {
         if (g.VIEW === 'thread') {
-          ThreadWatcher$1.set404(g.BOARD.ID, g.THREADID, function() {
+          ThreadWatcher.set404(g.BOARD.ID, g.THREADID, function () {
             if (Conf['404 Redirect']) {
               return Redirect.navigate('thread', {
-                boardID:  g.BOARD.ID,
+                boardID: g.BOARD.ID,
                 threadID: g.THREADID,
-                postID:   +location.hash.match(/\d+/)
+                postID: +location.hash.match(/\d+/)
               } // post number or 0
               , `/${g.BOARD}/`);
             }
           });
         }
-
         return;
       }
-
       if (g.SITE.isIncomplete?.()) {
-        const msg = $.el('div',
-          {innerHTML: 'The page didn&#039;t load completely.<br>Some features may not work unless you <a href="javascript:;">reload</a>.'});
+        const msg = $.el('div', { innerHTML: 'The page didn&#039;t load completely.<br>Some features may not work unless you <a href="javascript:;">reload</a>.' });
         $.on($('a', msg), 'click', () => location.reload());
         new Notice('warning', msg);
       }
-
       // Parse HTML or skip it and start building from JSON.
       if (g.VIEW === 'catalog') {
         Main.initCatalog();
@@ -39826,26 +42430,23 @@ Enable it on boards.${location.hostname.split('.')[1]}.org in your browser's pri
         $.event('4chanXInitFinished');
       }
     },
-
     initThread() {
       let board;
       const s = g.SITE.selectors;
       if (board = $((s.boardFor?.[g.VIEW] || s.board))) {
         const threads = [];
-        const posts   = [];
-        const errors  = [];
-
+        const posts = [];
+        const errors = [];
         try {
           g.SITE.preParsingFixes?.(board);
-        } catch (error) {}
-
+        } catch (error) { }
         Main.addThreadsObserver = new MutationObserver(Main.addThreads);
-        Main.addPostsObserver   = new MutationObserver(Main.addPosts);
-        Main.addThreadsObserver.observe(board, {childList: true});
-
+        Main.addPostsObserver = new MutationObserver(Main.addPosts);
+        Main.addThreadsObserver.observe(board, { childList: true });
         Main.parseThreads($$(s.thread, board), threads, posts, errors);
-        if (errors.length) { Main.handleErrors(errors); }
-
+        if (errors.length) {
+          Main.handleErrors(errors);
+        }
         if (g.VIEW === 'thread') {
           if (g.threadArchived) {
             threads[0].isArchived = true;
@@ -39853,45 +42454,46 @@ Enable it on boards.${location.hostname.split('.')[1]}.org in your browser's pri
           }
           g.SITE.parseThreadMetadata?.(threads[0]);
         }
-
         setTimeout(() => {
           Main.callbackNodes('Thread', threads);
-          Main.callbackNodesDB('Post', posts, function() {
-            for (var post of posts) QuoteThreading.insert(post);
+          Main.callbackNodesDB('Post', posts, function () {
+            for (var post of posts)
+              QuoteThreading.insert(post);
             Main.expectInitFinished = true;
             $.event('4chanXInitFinished');
           });
         }, 0);
-
       } else {
         Main.expectInitFinished = true;
         $.event('4chanXInitFinished');
       }
     },
-
     parseThreads(threadRoots, threads, posts, errors) {
       for (var threadRoot of threadRoots) {
         var boardObj = (() => {
           let boardID;
           if (boardID = threadRoot.dataset.board) {
-          boardID = encodeURIComponent(boardID);
-          return g.boards[boardID] || new Board(boardID);
-        } else {
-          return g.BOARD;
-        }
+            boardID = encodeURIComponent(boardID);
+            return g.boards[boardID] || new Board(boardID);
+          } else {
+            return g.BOARD;
+          }
         })();
         var threadID = +threadRoot.id.match(/\d*$/)[0];
-        if (!threadID || boardObj.threads.get(threadID)?.nodes.root) { return; }
+        if (!threadID || boardObj.threads.get(threadID)?.nodes.root) {
+          return;
+        }
         var thread = new Thread(threadID, boardObj);
         thread.nodes.root = threadRoot;
         threads.push(thread);
         var postRoots = $$(g.SITE.selectors.postContainer, threadRoot);
-        if (g.SITE.isOPContainerThread) { postRoots.unshift(threadRoot); }
+        if (g.SITE.isOPContainerThread) {
+          postRoots.unshift(threadRoot);
+        }
         Main.parsePosts(postRoots, thread, posts, errors);
-        Main.addPostsObserver.observe(threadRoot, {childList: true});
+        Main.addPostsObserver.observe(threadRoot, { childList: true });
       }
     },
-
     parsePosts(postRoots, thread, posts, errors) {
       for (var postRoot of postRoots) {
         if (!(postRoot.dataset.fullID && g.posts.get(postRoot.dataset.fullID)) && $(g.SITE.selectors.comment, postRoot)) {
@@ -39908,7 +42510,6 @@ Enable it on boards.${location.hostname.split('.')[1]}.org in your browser's pri
         }
       }
     },
-
     addThreads(records) {
       const threadRoots = [];
       for (var record of records) {
@@ -39918,22 +42519,25 @@ Enable it on boards.${location.hostname.split('.')[1]}.org in your browser's pri
           }
         }
       }
-      if (!threadRoots.length) { return; }
+      if (!threadRoots.length) {
+        return;
+      }
       const threads = [];
-      const posts   = [];
-      const errors  = [];
+      const posts = [];
+      const errors = [];
       Main.parseThreads(threadRoots, threads, posts, errors);
-      if (errors.length) { Main.handleErrors(errors); }
+      if (errors.length) {
+        Main.handleErrors(errors);
+      }
       Main.callbackNodes('Thread', threads);
       Main.callbackNodesDB('Post', posts, () => $.event('PostsInserted', null, records[0].target));
     },
-
     addPosts(records) {
       let thread;
-      const threads   = [];
+      const threads = [];
       const threadsRM = [];
-      const posts     = [];
-      const errors    = [];
+      const posts = [];
+      const errors = [];
       for (var record of records) {
         thread = Get.threadFromRoot(record.target);
         var postRoots = [];
@@ -39960,8 +42564,10 @@ Enable it on boards.${location.hostname.split('.')[1]}.org in your browser's pri
           threadsRM.push(thread);
         }
       }
-      if (errors.length) { Main.handleErrors(errors); }
-      Main.callbackNodesDB('Post', posts, function() {
+      if (errors.length) {
+        Main.handleErrors(errors);
+      }
+      Main.callbackNodesDB('Post', posts, function () {
         for (thread of threads) {
           $.event('PostsInserted', null, thread.nodes.root);
         }
@@ -39970,27 +42576,23 @@ Enable it on boards.${location.hostname.split('.')[1]}.org in your browser's pri
         }
       });
     },
-
     initCatalog() {
       let board;
       const s = g.SITE.selectors.catalog;
       if (s && (board = $(s.board))) {
         const threads = [];
-        const errors  = [];
-
+        const errors = [];
         Main.addCatalogThreadsObserver = new MutationObserver(Main.addCatalogThreads);
-        Main.addCatalogThreadsObserver.observe(board, {childList: true});
-
+        Main.addCatalogThreadsObserver.observe(board, { childList: true });
         Main.parseCatalogThreads($$(s.thread, board), threads, errors);
-        if (errors.length) { Main.handleErrors(errors); }
-
+        if (errors.length) {
+          Main.handleErrors(errors);
+        }
         Main.callbackNodes('CatalogThreadNative', threads);
       }
-
       Main.expectInitFinished = true;
       return $.event('4chanXInitFinished');
     },
-
     parseCatalogThreads(threadRoots, threads, errors) {
       for (var threadRoot of threadRoots) {
         try {
@@ -40009,7 +42611,6 @@ Enable it on boards.${location.hostname.split('.')[1]}.org in your browser's pri
         }
       }
     },
-
     addCatalogThreads(records) {
       const threadRoots = [];
       for (var record of records) {
@@ -40019,14 +42620,17 @@ Enable it on boards.${location.hostname.split('.')[1]}.org in your browser's pri
           }
         }
       }
-      if (!threadRoots.length) { return; }
+      if (!threadRoots.length) {
+        return;
+      }
       const threads = [];
-      const errors  = [];
+      const errors = [];
       Main.parseCatalogThreads(threadRoots, threads, errors);
-      if (errors.length) { Main.handleErrors(errors); }
+      if (errors.length) {
+        Main.handleErrors(errors);
+      }
       return Main.callbackNodes('CatalogThreadNative', threads);
     },
-
     callbackNodes(klass, nodes) {
       let node;
       let i = 0;
@@ -40035,31 +42639,31 @@ Enable it on boards.${location.hostname.split('.')[1]}.org in your browser's pri
         cb.execute(node);
       }
     },
-
     callbackNodesDB(klass, nodes, cb) {
-      let i   = 0;
+      let i = 0;
       const cbs = Callbacks[klass];
-      const fn  = function() {
+      const fn = function () {
         let node;
-        if (!(node = nodes[i])) { return false; }
+        if (!(node = nodes[i])) {
+          return false;
+        }
         cbs.execute(node);
         return ++i % 250;
       };
-
-      var softTask = function() {
+      var softTask = function () {
         while (fn()) {
           continue;
         }
         if (!nodes[i]) {
-          if (cb) { cb(); }
+          if (cb) {
+            cb();
+          }
           return;
         }
         setTimeout(softTask, 0);
       };
-
       softTask();
     },
-
     handleErrors(errors) {
       // Detect conflicts with 4chan X v2
       let error;
@@ -40067,22 +42671,19 @@ Enable it on boards.${location.hostname.split('.')[1]}.org in your browser's pri
         new Notice('error', `Error: Multiple copies of ${meta.name} or 4chan X are enabled.`);
         $.addClass(doc, 'tainted');
       }
-
       // Detect conflicts with native extension
       if (g.SITE.testNativeExtension && !$.hasClass(doc, 'tainted')) {
-        g.SITE.testNativeExtension().then(({enabled}) => {
+        g.SITE.testNativeExtension().then(({ enabled }) => {
           if (enabled) {
             $.addClass(doc, 'tainted');
             if (Conf['Disable Native Extension'] && !Main.isFirstRun) {
-              const msg = $.el('div',
-                { innerHTML: 'Failed to disable the native extension. You may need to <a href="' + E(meta.upstreamFaq) +
+              const msg = $.el('div', { innerHTML: 'Failed to disable the native extension. You may need to <a href="' + E(meta.upstreamFaq) +
                   '#blocking-native-extension" target="_blank">block it</a>.' });
               new Notice('error', msg);
             }
           }
         });
       }
-
       if (!(errors instanceof Array)) {
         error = errors;
       } else if (errors.length === 1) {
@@ -40092,43 +42693,35 @@ Enable it on boards.${location.hostname.split('.')[1]}.org in your browser's pri
         new Notice('error', Main.parseError(error, Main.reportLink([error])), 15);
         return;
       }
-
       const div = $.el('div', {
-        innerHTML:
-          `${errors.length} errors occurred.${Main.reportLink(errors).innerHTML} [<a href="javascript:;">show</a>]`
+        innerHTML: `${errors.length} errors occurred.${Main.reportLink(errors).innerHTML} [<a href="javascript:;">show</a>]`
       });
       $.on(div.lastElementChild, 'click', function () {
         return [this.textContent, logs.hidden] = this.textContent === 'show' ? ['hide', false] : ['show', true];
       });
-
-      var logs = $.el('div',
-        {hidden: true});
+      var logs = $.el('div', { hidden: true });
       for (error of errors) {
         $.add(logs, Main.parseError(error));
       }
-
       return new Notice('error', [div, logs], 30);
     },
-
     parseError(data, reportLink) {
       c.error(data.message, data.error.stack);
-      const message = $.el('div',
-        { innerHTML: E(data.message) + ((reportLink) ? (reportLink).innerHTML : "") });
-      const error = $.el('div',
-        {textContent: `${data.error.name || 'Error'}: ${data.error.message || 'see console for details'}`});
+      const message = $.el('div', { innerHTML: E(data.message) + ((reportLink) ? (reportLink).innerHTML : "") });
+      const error = $.el('div', { textContent: `${data.error.name || 'Error'}: ${data.error.message || 'see console for details'}` });
       const lines = data.error.stack?.match(/\d+(?=:\d+\)?$)/mg)?.join().replace(/^/, ' at ') || '';
-      const context = $.el('div',
-        { textContent: `(${meta.name} ${meta.fork} v${g.VERSION} ${platform} on ${$.engine}${lines})` });
+      const context = $.el('div', { textContent: `(${meta.name} ${meta.fork} v${g.VERSION} ${platform} on ${$.engine}${lines})` });
       return [message, error, context];
     },
-
     reportLink(errors) {
       let info;
       const data = errors[0];
-      let title  = data.message;
-      if (errors.length > 1) { title += ` (+${errors.length - 1} other errors)`; }
+      let title = data.message;
+      if (errors.length > 1) {
+        title += ` (+${errors.length - 1} other errors)`;
+      }
       let details = '';
-      const addDetails = function(text) {
+      const addDetails = function (text) {
         if (encodeURIComponent(title + details + text + '\n').length <= meta.newIssueMaxLength - meta.newIssue.replace(/%(title|details)/, '').length) {
           return details += text + '\n';
         }
@@ -40139,39 +42732,46 @@ Enable it on boards.${location.hostname.split('.')[1]}.org in your browser's pri
 Script: ${meta.name} ${meta.fork} v${g.VERSION} ${platform}
 URL: ${location.href}
 User agent: ${navigator.userAgent}\
-`
-      );
+`);
       if ((platform === 'userscript') && (info = (() => {
-        if (typeof GM !== 'undefined' && GM !== null) { return GM.info; } else { if (typeof GM_info !== 'undefined' && GM_info !== null) { return GM_info; }
-    }
+        if (typeof GM !== 'undefined' && GM !== null) {
+          return GM.info;
+        } else {
+          if (typeof GM_info !== 'undefined' && GM_info !== null) {
+            return GM_info;
+          }
+        }
       })())) {
         addDetails(`Userscript manager: ${info.scriptHandler} ${info.version}`);
       }
       addDetails('\n' + data.error);
-      if (data.error.stack) { addDetails(data.error.stack.replace(data.error.toString(), '').trim()); }
-      if (data.html) { addDetails('\n`' + data.html + '`'); }
+      if (data.error.stack) {
+        addDetails(data.error.stack.replace(data.error.toString(), '').trim());
+      }
+      if (data.html) {
+        addDetails('\n`' + data.html + '`');
+      }
       details = details.replace(/file:\/{3}.+\//g, ''); // Remove local file paths
       const url = meta.newIssue.replace('%title', encodeURIComponent(title)).replace('%details', encodeURIComponent(details));
       return { innerHTML: `<span class="report-error"> [<a href="${url}" target="_blank">report</a>]</span>` };
     },
-
     isThisPageLegit() {
       // not 404 error page or similar.
       if (!('thisPageIsLegit' in Main)) {
         Main.thisPageIsLegit = g.SITE.isThisPageLegit ?
           g.SITE.isThisPageLegit()
-        :
-          !/^[45]\d\d\b/.test(document.title) && !/\.(?:json|rss)$/.test(location.pathname);
+          :
+            !/^[45]\d\d\b/.test(document.title) && !/\.(?:json|rss)$/.test(location.pathname);
       }
       return Main.thisPageIsLegit;
     },
-
     ready(cb) {
-      return $.ready(function() {
-        if (Main.isThisPageLegit()) { return cb(); }
+      return $.ready(function () {
+        if (Main.isThisPageLegit()) {
+          return cb();
+        }
       });
     },
-
     mounted(cb) {
       if (Main.isMounted) {
         return cb();
@@ -40179,98 +42779,96 @@ User agent: ${navigator.userAgent}\
         return Main.mountedCBs.push(cb);
       }
     },
-
     mountedCBs: [],
-
     features: [
-      ['Board Configuration',       BoardConfig],
-      ['Normalize URL',             NormalizeURL],
-      ['Delay Redirect on Post',    PostRedirect],
-      ['Captcha Configuration',     CaptchaReplace],
-      ['Image Host Rewriting',      ImageHost],
-      ['Redirect',                  Redirect],
-      ['Header',                    Header],
-      ['Catalog Links',             CatalogLinks],
-      ['Settings',                  Settings],
-      ['Index Generator',           Index],
-      ['Disable Autoplay',          AntiAutoplay],
-      ['Announcement Hiding',       PSAHiding],
-      ['Fourchan thingies',         Fourchan],
-      ['Tinyboard Glue',            Tinyboard],
-      ['Color User IDs',            IDColor],
-      ['Highlight by User ID',      IDHighlight],
-      ['Count Posts by ID',         IDPostCount],
-      ['Custom CSS',                CustomCSS],
-      ['Thread Links',              ThreadLinks],
-      ['Linkify',                   Linkify],
-      ['Spoiler Mode',              RemoveSpoilers],
-      ['Resurrect Quotes',          Quotify],
-      ['Fetch Ghost Posts',         GhostPosts],
-      ['Filter',                    Filter],
-      ['Thread Hiding Buttons',     ThreadHiding],
-      ['Reply Hiding Buttons',      PostHiding],
-      ['Recursive',                 Recursive],
-      ['Strike-through Quotes',     QuoteStrikeThrough],
-      ['Quick Reply Personas',      QR.persona],
-      ['Quick Reply',               QR],
-      ['Cooldown',                  QR.cooldown],
-      ['Post Jumper',               PostJumper],
-      ['Pass Link',                 PassLink],
-      ['Menu',                      Menu],
-      ['Index Generator (Menu)',    Index.menu],
-      ['Report Link',               ReportLink],
-      ['Copy Text Link',            CopyTextLink],
-      ['Thread Hiding (Menu)',      ThreadHiding.menu],
-      ['Reply Hiding (Menu)',       PostHiding.menu],
-      ['Delete Link',               DeleteLink],
-      ['Filter (Menu)',             Filter.menu],
-      ['Edit Link',                 QR.oekaki.menu],
-      ['Download Link',             DownloadLink],
-      ['Archive Link',              ArchiveLink],
-      ['Sound Link',                SoundLink],
-      ['Quote Inlining',            QuoteInline],
-      ['Quote Previewing',          QuotePreview],
-      ['Quote Backlinks',           QuoteBacklink],
-      ['Mark Quotes of You',        QuoteYou],
-      ['Mark OP Quotes',            QuoteOP],
-      ['Mark Cross-thread Quotes',  QuoteCT],
-      ['Anonymize',                 Anonymize],
-      ['Time Formatting',           Time],
-      ['Relative Post Dates',       RelativeDates],
-      ['File Info Formatting',      FileInfo],
-      ['Fappe Tyme',                FappeTyme],
-      ['Gallery',                   Gallery],
-      ['Gallery (menu)',            Gallery.menu],
-      ['Download All Media',        DownloadAll],
+      ['Board Configuration', BoardConfig],
+      ['Normalize URL', NormalizeURL],
+      ['Delay Redirect on Post', PostRedirect],
+      ['Captcha Configuration', CaptchaReplace],
+      ['Image Host Rewriting', ImageHost],
+      ['Redirect', Redirect],
+      ['Header', Header],
+      ['Catalog Links', CatalogLinks],
+      ['Settings', Settings],
+      ['Index Generator', Index],
+      ['Disable Autoplay', AntiAutoplay],
+      ['Announcement Hiding', PSAHiding],
+      ['Fourchan thingies', Fourchan],
+      ['Tinyboard Glue', Tinyboard],
+      ['Color User IDs', IDColor],
+      ['Highlight by User ID', IDHighlight],
+      ['Count Posts by ID', IDPostCount],
+      ['Custom CSS', CustomCSS],
+      ['Thread Links', ThreadLinks],
+      ['Linkify', Linkify],
+      ['Reveal Spoilers', RemoveSpoilers],
+      ['Resurrect Quotes', Quotify],
+      ['Fetch Ghost Posts', GhostPosts],
+      ['Filter', Filter],
+      ['Thread Hiding Buttons', ThreadHiding],
+      ['Reply Hiding Buttons', PostHiding],
+      ['Recursive', Recursive],
+      ['Strike-through Quotes', QuoteStrikeThrough],
+      ['Quick Reply Personas', QR.persona],
+      ['Quick Reply', QR],
+      ['Cooldown', QR.cooldown],
+      ['Post Jumper', PostJumper],
+      ['Pass Link', PassLink],
+      ['Menu', Menu],
+      ['Index Generator (Menu)', Index.menu],
+      ['Report Link', ReportLink],
+      ['Copy Text Link', CopyTextLink],
+      ['Thread Hiding (Menu)', ThreadHiding.menu],
+      ['Reply Hiding (Menu)', PostHiding.menu],
+      ['Delete Link', DeleteLink],
+      ['Filter (Menu)', Filter.menu],
+      ['Edit Link', QR.oekaki.menu],
+      ['Download Link', DownloadLink],
+      ['Archive Link', ArchiveLink],
+      ['Sound Link', SoundLink],
+      ['Quote Inlining', QuoteInline],
+      ['Quote Previewing', QuotePreview],
+      ['Quote Backlinks', QuoteBacklink],
+      ['Mark Quotes of You', QuoteYou],
+      ['Mark OP Quotes', QuoteOP],
+      ['Mark Cross-thread Quotes', QuoteCT],
+      ['Anonymize', Anonymize],
+      ['Time Formatting', Time],
+      ['Relative Post Dates', RelativeDates],
+      ['File Info Formatting', FileInfo],
+      ['Fappe Tyme', FappeTyme],
+      ['Gallery', Gallery],
+      ['Gallery (menu)', Gallery.menu],
+      ['Download All Media', DownloadAll],
       ['Download All Media (menu)', DownloadAll.menu],
-      ['Sauce',                     Sauce],
-      ['Image Expansion',           ImageExpand],
-      ['Image Expansion (Menu)',    ImageExpand.menu],
+      ['Sauce', Sauce],
+      ['Image Expansion', ImageExpand],
+      ['Image Expansion (Menu)', ImageExpand.menu],
       ['Reveal Spoiler Thumbnails', RevealSpoilers],
-      ['Image Loading',             ImageLoader],
-      ['Image Hover',               ImageHover],
-      ['Volume Control',            Volume],
-      ['WEBM Metadata',             Metadata],
-      ['Comment Expansion',         ExpandComment],
-      ['Thread Expansion',          ExpandThread],
-      ['Favicon',                   Favicon],
-      ['Unread',                    Unread],
-      ['Unread Line in Index',      UnreadIndex],
-      ['Quote Threading',           QuoteThreading],
-      ['Thread Stats',              ThreadStats],
-      ['Thread Updater',            ThreadUpdater],
-      ['Thread Watcher',            ThreadWatcher$1],
-      ['Thread Watcher (Menu)',     ThreadWatcher$1.menu],
-      ['Mark New IPs',              MarkNewIPs],
-      ['Index Navigation',          Nav],
-      ['Keybinds',                  Keybinds],
-      ['Banner',                    Banner],
-      ['Announcements',             PSA],
-      ['Flash Features',            Flash],
-      ['Reply Pruning',             ReplyPruning],
-      ['Mod Contact Links',         ModContact],
+      ['Image Loading', ImageLoader],
+      ['Image Hover', ImageHover],
+      ['Volume Control', Volume],
+      ['WEBM Metadata', Metadata],
+      ['Comment Expansion', ExpandComment],
+      ['Thread Expansion', ExpandThread],
+      ['Favicon', Favicon],
+      ['Unread', Unread],
+      ['Unread Line in Index', UnreadIndex],
+      ['Quote Threading', QuoteThreading],
+      ['Thread Stats', ThreadStats],
+      ['Thread Updater', ThreadUpdater],
+      ['Thread Watcher', ThreadWatcher],
+      ['Thread Watcher (Menu)', ThreadWatcher.menu],
+      ['Mark New IPs', MarkNewIPs],
+      ['Index Navigation', Nav],
+      ['Keybinds', Keybinds],
+      ['Banner', Banner],
+      ['Announcements', PSA],
+      ['Flash Features', Flash],
+      ['Reply Pruning', ReplyPruning],
+      ['Mod Contact Links', ModContact],
       ['Restore deleted posts from archive', RestoreDeletedFromArchive],
-      ['Mark posts on scroll bar',  ScrollMarkers],
+      ['Mark posts on scroll bar', ScrollMarkers],
     ]
   };
   $.ready(() => Main.init());

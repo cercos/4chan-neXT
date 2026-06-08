@@ -53,19 +53,83 @@ const PageContextFunctions = {
   },
   fourChanMathjaxListener: () => {
     window.addEventListener('mathjax', function (e) {
-      if (window.MathJax) {
-        window.MathJax.Hub.Queue(['Typeset', window.MathJax.Hub, e.target]);
-      } else {
-        if (!document.querySelector('script[src^="//cdn.mathjax.org/"]')) { // don't load MathJax if already loading
-          window.loadMathJax();
-          window.loadMathJax = function () { };
+      const target = e.target;
+      const scriptURL = 'https://cdnjs.cloudflare.com/ajax/libs/mathjax/2.7.9/MathJax.js?config=TeX-AMS_HTML-full';
+      const scriptSelector = 'script[src^="https://cdnjs.cloudflare.com/ajax/libs/mathjax/2.7.9/MathJax.js"]';
+      const queueTypeset = () => {
+        if (!window.MathJax?.Hub)
+          return false;
+        window.MathJax.Hub.Queue(['Typeset', window.MathJax.Hub, target]);
+        return true;
+      };
+      if (queueTypeset())
+        return;
+      if (!document.querySelector(scriptSelector)) {
+        if (!document.getElementById('fourchanx-mathjax-config')) {
+          const config = document.createElement('script');
+          config.id = 'fourchanx-mathjax-config';
+          config.type = 'text/x-mathjax-config';
+          config.text = "MathJax.Hub.Config({extensions:['Safe.js'],tex2jax:{processRefs:false,processEnvironments:false,preview:'none',inlineMath:[['[math]','[/math]']],displayMath:[['[eqn]','[/eqn]']]},Safe:{allow:{URLs:'none',classes:'none',cssIDs:'none',styles:'none',fontsize:'none',require:'none'}},displayAlign:'left',messageStyle:'none'});";
+          document.head.appendChild(config);
         }
-        // 4chan only handles post comments on MathJax load; anything else (e.g. the QR preview) must be queued explicitly.
-        if (!e.target.classList.contains('postMessage')) {
-          document.querySelector('script[src^="//cdn.mathjax.org/"]').addEventListener('load', () => window.MathJax.Hub.Queue(['Typeset', window.MathJax.Hub, e.target]), false);
-        }
+        const script = document.createElement('script');
+        script.src = scriptURL;
+        document.head.appendChild(script);
       }
+      const script = document.querySelector(scriptSelector);
+      if (script) {
+        script.addEventListener('load', () => { queueTypeset(); }, false);
+      }
+      let tries = 0;
+      const timer = window.setInterval(() => {
+        if (queueTypeset() || ++tries > 200) {
+          window.clearInterval(timer);
+        }
+      }, 50);
     }, false);
+  },
+  typesetMathjax: ({ id }) => {
+    const target = document.getElementById(id);
+    if (!target)
+      return;
+    const scriptURL = 'https://cdnjs.cloudflare.com/ajax/libs/mathjax/2.7.9/MathJax.js?config=TeX-AMS_HTML-full';
+    const scriptSelector = 'script[src^="https://cdnjs.cloudflare.com/ajax/libs/mathjax/2.7.9/MathJax.js"]';
+    const queueTypeset = () => {
+      if (!window.MathJax?.Hub)
+        return false;
+      window.MathJax.Hub.Queue(['Typeset', window.MathJax.Hub, target], () => {
+        if (!target.querySelector('.MathJax, .MathJax_Display'))
+          return;
+        for (const fallback of target.querySelectorAll('.qr-math-fallback')) {
+          fallback.remove();
+        }
+      });
+      return true;
+    };
+    if (queueTypeset())
+      return;
+    if (!document.querySelector(scriptSelector)) {
+      if (!document.getElementById('fourchanx-mathjax-config')) {
+        const config = document.createElement('script');
+        config.id = 'fourchanx-mathjax-config';
+        config.type = 'text/x-mathjax-config';
+        config.text = "MathJax.Hub.Config({extensions:['Safe.js'],tex2jax:{processRefs:false,processEnvironments:false,preview:'none',inlineMath:[['[math]','[/math]']],displayMath:[['[eqn]','[/eqn]']]},Safe:{allow:{URLs:'none',classes:'none',cssIDs:'none',styles:'none',fontsize:'none',require:'none'}},displayAlign:'left',messageStyle:'none'});";
+        document.head.appendChild(config);
+      }
+      const script = document.createElement('script');
+      script.src = scriptURL;
+      document.head.appendChild(script);
+    }
+    const script = document.querySelector(scriptSelector);
+    if (script) {
+      script.addEventListener('load', () => { queueTypeset(); }, false);
+    }
+    let tries = 0;
+    const timer = window.setInterval(() => {
+      if (queueTypeset() || ++tries > 200) {
+        window.clearInterval(timer);
+      }
+    }, 50);
   },
   disable4chanIdHl: () => {
     window.clickable_ids = false;
@@ -235,7 +299,7 @@ const PageContextFunctions = {
 // This requestId workaround isn't needed in manifest V3, since returning true in the event listener works.
 // But we keep it for manifest V2.
 let requestID = 0;
-chrome.runtime.onMessage.addListener(function(request, sender, sendResponse) {
+chrome.runtime.onMessage.addListener(function (request, sender, sendResponse) {
   const id = requestID;
   requestID++;
   handlers[request.type](request, sender).then(data => {
@@ -243,23 +307,21 @@ chrome.runtime.onMessage.addListener(function(request, sender, sendResponse) {
   });
   sendResponse(id);
 });
-
 var handlers = {
   permission(request) {
     return new Promise(resolve => {
       const origins = request.origins || ['*://*/'];
-      chrome.permissions.contains({origins}, function(result) {
+      chrome.permissions.contains({ origins }, function (result) {
         if (result) {
           resolve(result);
         } else {
-          chrome.permissions.request({origins}, function(result) {
+          chrome.permissions.request({ origins }, function (result) {
             resolve(chrome.runtime.lastError ? false : result);
           });
         }
       });
-    })
+    });
   },
-
   async ajax(request) {
     try {
       const res = await fetch(request.url, { headers: request.headers || {} });
@@ -280,7 +342,6 @@ var handlers = {
       return { error: true };
     }
   },
-
   async runInPageContext(request, sender) {
     const results = await chrome.scripting.executeScript({
       func: PageContextFunctions[request.fn],
@@ -288,6 +349,6 @@ var handlers = {
       target: { tabId: sender.tab.id },
       world: 'MAIN',
     });
-    return results[0].result
+    return results[0].result;
   }
 };
