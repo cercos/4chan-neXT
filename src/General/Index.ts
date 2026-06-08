@@ -32,8 +32,12 @@ import NavLinksPage from './Index/NavLinks.html';
 import PageList from './Index/PageList.html';
 import BoardConfig from './BoardConfig';
 import Get from './Get';
+import SearchHighlight from './SearchHighlight';
 import { dict, SECOND } from '../platform/helpers';
 import Icon from '../Icons/icon';
+
+// Name of the CSS Custom Highlight that paints index/catalog search matches.
+const INDEX_SEARCH_HL = 'fourchanx-index-search';
 
 var Index = {
   showHiddenThreads: false,
@@ -1212,6 +1216,7 @@ var Index = {
     if (Index.root.parentNode) {
       $.event('PostsInserted', null, Index.root);
     }
+    Index.highlightSearch();
     Index.loaded = true;
   },
 
@@ -1242,6 +1247,7 @@ var Index = {
           $.event('PostsInserted', null, Index.root);
         }
         Index.groupHiddenCatalogThreads(threadIDs);
+        Index.highlightSearch();
         return Index.loaded = true;
       }
     };
@@ -1417,6 +1423,22 @@ var Index = {
     }
     if (!(keywords = query.toLowerCase().match(/\S+/g))) { return; }
     return Index.sortedThreadIDs.filter(ID => Index.searchMatch(Index.parsedThreads[ID], keywords));
+  },
+
+  // Keyword terms to highlight in the rendered results. Regex queries
+  // (`field:/pattern/flags`) match structurally rather than by literal text, so
+  // there's nothing meaningful to highlight — return none.
+  getSearchTerms() {
+    const query = Index.search;
+    if (!query || /^([\w+]+):\/(.*)\/(\w*)$/.test(query)) { return []; }
+    return query.toLowerCase().match(/\S+/g) || [];
+  },
+
+  // Paint the current search terms across the rendered threads. Re-run after
+  // every (re)build, since buildIndex replaces Index.root's contents and the old
+  // highlight ranges would point at detached nodes. An empty query clears it.
+  highlightSearch() {
+    SearchHighlight.apply(INDEX_SEARCH_HL, Index.root, Index.getSearchTerms());
   },
 
   searchMatch(obj, keywords) {

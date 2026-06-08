@@ -110,7 +110,17 @@ var QR = {
   fileBatchSize: 3,
   heavyBatchFileCount: 8,
   heavyBatchSize: 64 * 1024 * 1024,
+  metadataStrippedFlag: '__4chanXTMetadataStripped',
   commentPreviewInputBound: false,
+
+  // Page-stitched literal preview post (when style = 'thread')
+  previewPost: null as HTMLDivElement | null,
+
+  // Floating window preview (when style = 'floating')
+  previewFloat: null as HTMLDivElement | null,
+
+  // Internal: ResizeObserver for keeping floating preview docked to QR on size changes.
+  _qrResizeObs: undefined as ResizeObserver | undefined,
 
   req: undefined as (XMLHttpRequest & { isUploadFinished: boolean, progress: string }) | undefined,
   selected: undefined as post,
@@ -118,6 +128,15 @@ var QR = {
   mimeTypes: ['image/jpeg', 'image/png', 'image/gif', 'application/pdf', 'application/vnd.adobe.flash.movie', 'application/x-shockwave-flash', 'video/webm', 'video/mp4'],
 
   validExtension: /\.(jpe?g|png|gif|pdf|swf|webm|mp4)$/i,
+
+  markMetadataStripped(file: File) {
+    (file as File & { [key: string]: any })[QR.metadataStrippedFlag] = true;
+    return file;
+  },
+
+  isMetadataStripped(file: File) {
+    return !!(file as File & { [key: string]: any })[QR.metadataStrippedFlag];
+  },
 
   typeFromExtension: {
     'jpg':  'image/jpeg',
@@ -260,12 +279,22 @@ var QR = {
     $.on(d, 'QRDrawFile',         QR.drawFile);
     $.on(d, 'QRSetFile',          QR.setFile);
     $.on(d, 'QRCommentPreviewChanged', QR.applyCommentPreviewSettings);
+    $.on(d, 'PostsInserted', QR.onPostsInsertedPreview);
+    $.on(d, 'QRPostSuccessful', QR.removeThreadPreviewPost);
     $.sync('Comment Preview', (value: boolean | undefined) => {
       Conf['Comment Preview'] = !!value;
       QR.applyCommentPreviewSettings();
     });
     $.sync('Comment Preview Position', (value: string | undefined) => {
-      Conf['Comment Preview Position'] = ['below', 'right', 'left'].includes(value || '') ? value! : 'below';
+      // Support legacy below/right/left (map to floating) + the two modern styles.
+      const v = value || '';
+      if (v === 'thread' || v === 'floating') {
+        Conf['Comment Preview Position'] = v;
+      } else if (['below', 'right', 'left'].includes(v)) {
+        Conf['Comment Preview Position'] = 'floating';
+      } else {
+        Conf['Comment Preview Position'] = 'thread'; // prefer the literal one as discussed
+      }
       QR.applyCommentPreviewSettings();
     });
     $.sync('Show Comment Preview Header Icon', (value: boolean | undefined) => {
@@ -280,6 +309,11 @@ var QR = {
 
     $.on(d, 'IndexRefreshInternal', QR.generatePostableThreadsList);
     $.on(d, 'ThreadUpdate', QR.statusCheck);
+
+    // Keep floating comment preview docked under the QR (left+top edge aligned) when QR moves/resizes,
+    // until the user explicitly drags the preview itself away.
+    $.on(d, '4chanXQRMove', QR.repositionFloatingPreview);
+    $.on(window, 'resize', QR.repositionFloatingPreview);
 
     if (!Conf['Persistent QR']) { return; }
     QR.open();
@@ -331,6 +365,8 @@ var QR = {
     QR.blur();
     $.rmClass(QR.nodes.el, 'dump');
     $.addClass(QR.shortcut, 'disabled');
+    QR.removeThreadPreviewPost();
+    QR.removeFloatingPreview();
     new QR.post(true);
     for (var post of QR.posts.splice(0, QR.posts.length - 1)) {
       post.delete();
@@ -404,6 +440,14 @@ var QR = {
   },
 
   updateComPreview() {
+    if (QR.usingThreadPreview()) {
+      QR.updateThreadPreviewPost();
+      return;
+    }
+    if (QR.usingFloatingPreview()) {
+      QR.updateFloatingPreview();
+      return;
+    }
     if (!QR.nodes?.comPreview) return;
     QR.updateComPreviewQuoteColor();
     QR.nodes.comPreview.innerHTML = QR.renderComPreview(QR.nodes.com.value);
@@ -433,29 +477,544 @@ var QR = {
     }
   },
 
+  // Preview style: 'thread' (stitched literal at bottom of thread) or 'floating' (separate window-like post preview).
+  getPreviewStyle(): 'thread' | 'floating' {
+    const pos = Conf['Comment Preview Position'];
+    return pos === 'thread' ? 'thread' : 'floating';
+  },
+
+  usingThreadPreview(): boolean {
+    return !!Conf['Comment Preview'] &&
+           QR.getPreviewStyle() === 'thread' &&
+           QR.canActuallyShowThreadPreview();
+  },
+
+  usingFloatingPreview(): boolean {
+    if (!Conf['Comment Preview']) return false;
+    const configured = QR.getPreviewStyle();
+    if (configured === 'floating') return true;
+    // "thread" (inline) selected, but cannot actually stitch into the current thread
+    // (catalog, index, new thread from QR, replying to a different thread, etc.).
+    // Automatically use floating instead.
+    return !QR.canActuallyShowThreadPreview();
+  },
+
+  canActuallyShowThreadPreview(): boolean {
+    if (g.VIEW !== 'thread') return false;
+    const currentThread = `${g.THREADID || g.threadID || ''}`;
+    if (!currentThread) return false;
+    const qrThread = QR.posts?.[0]?.thread;
+    if (qrThread && qrThread !== 'new' && `${qrThread}` === currentThread) return true;
+
+    // Fallback: the thread <select> (which may have been set by quote, catalog reply, or generatePostableThreadsList)
+    // currently targets this page's thread. Treat as "can show inline" even if the post model
+    // hasn't synced the .thread yet (programmatic value= does not fire change).
+    const uiThread = QR.nodes?.thread?.value;
+    if (uiThread && uiThread !== 'new' && `${uiThread}` === currentThread) return true;
+
+    return false;
+  },
+
+  refreshCommentPreview() {
+    const wantThread = QR.usingThreadPreview();
+    const wantFloat = QR.usingFloatingPreview();
+
+    if (wantThread) {
+      QR.removeFloatingPreview();
+      QR.updateThreadPreviewPost();
+    } else if (wantFloat) {
+      QR.removeThreadPreviewPost();
+      QR.updateFloatingPreview();
+    } else if (Conf['Comment Preview']) {
+      QR.removeThreadPreviewPost();
+      QR.removeFloatingPreview();
+      QR.updateComPreview();
+    } else {
+      QR.removeThreadPreviewPost();
+      QR.removeFloatingPreview();
+    }
+  },
+
   applyCommentPreviewSettings() {
     if (!QR.nodes?.el || !QR.nodes?.com) return;
     const { classList } = QR.nodes.el;
     const enabled = !!Conf['Comment Preview'];
-    const pos = ['below', 'right', 'left'].includes(Conf['Comment Preview Position']) ? Conf['Comment Preview Position'] : 'below';
-    classList.toggle('has-com-preview', enabled);
+    const configured = QR.getPreviewStyle();
+    const canThread = QR.canActuallyShowThreadPreview();
+    // "In the thread" (inline) only when the user selected it *and* we can actually
+    // stitch the preview post into the current thread (i.e. on the correct thread page).
+    // Otherwise automatically fall back to floating (catalog, index, new thread, etc.).
+    const isThread = enabled && configured === 'thread' && canThread;
+    const isFloating = enabled && (configured === 'floating' || (configured === 'thread' && !canThread));
+
+    // Never use the old compact built-in box for the modern styles.
+    // The internal #qr-com-preview is only for legacy below/right/left.
+    const useInternalBox = enabled && !isThread && !isFloating; // legacy only
+    classList.toggle('has-com-preview', useInternalBox);
+
+    classList.remove('com-preview-below', 'com-preview-right', 'com-preview-left', 'com-preview-thread');
+    if (useInternalBox) {
+      // legacy positions are no longer offered in UI but still supported for old conf
+      const legacy = ['below', 'right', 'left'].includes(Conf['Comment Preview Position']) ? Conf['Comment Preview Position'] : 'below';
+      classList.add(`com-preview-${legacy}`);
+    } else if (enabled && isThread) {
+      classList.add('com-preview-thread');
+    }
+
     QR.nodes.previewToggle?.classList.toggle('enabled', enabled);
     QR.nodes.previewToggle?.setAttribute('aria-pressed', enabled ? 'true' : 'false');
     if (QR.nodes.previewToggle) {
       QR.nodes.previewToggle.hidden = Conf['Show Comment Preview Header Icon'] === false;
     }
-    classList.remove('com-preview-below', 'com-preview-right', 'com-preview-left');
-    classList.add(`com-preview-${pos}`);
+
+    // Cleanup when disabled or style switched
+    if (!enabled || !isThread) {
+      QR.removeThreadPreviewPost();
+    }
+    if (!enabled || !isFloating) {
+      QR.removeFloatingPreview();
+    }
+
     if (enabled) {
       if (!QR.commentPreviewInputBound) {
         $.on(QR.nodes.com, 'input', QR.updateComPreview);
         QR.commentPreviewInputBound = true;
       }
-      QR.updateComPreview();
+      QR.ensurePersonaPreviewListeners();
+      if (isThread) {
+        QR.updateThreadPreviewPost();
+      } else if (isFloating) {
+        QR.updateFloatingPreview();
+      } else {
+        QR.updateComPreview();
+      }
     } else if (QR.commentPreviewInputBound) {
       $.off(QR.nodes.com, 'input', QR.updateComPreview);
       QR.commentPreviewInputBound = false;
     }
+  },
+
+  personaPreviewListenersBound: false,
+  ensurePersonaPreviewListeners() {
+    if (QR.personaPreviewListenersBound || !QR.nodes) return;
+    const fields = [QR.nodes.name, QR.nodes.sub, QR.nodes.email].filter(Boolean);
+    for (const f of fields) {
+      $.on(f, 'input', QR.onPersonaFieldInputForPreview);
+      $.on(f, 'change', QR.onPersonaFieldInputForPreview);
+    }
+    if (QR.nodes.thread) {
+      $.on(QR.nodes.thread, 'change', QR.onQRThreadChangeForPreview);
+    }
+    // Also react to file changes on the selected post (attach/remove/spoiler/filename edits)
+    $.on(d, 'QRSetFile', QR.onQRFileEventForPreview);
+    $.on(d, 'QRFileRemoved', QR.onQRFileEventForPreview); // best-effort; we also call refresh explicitly from post code
+    QR.personaPreviewListenersBound = true;
+  },
+
+  onPersonaFieldInputForPreview() {
+    QR.refreshCommentPreview();
+  },
+
+  onQRFileEventForPreview() {
+    QR.refreshCommentPreview();
+  },
+
+  onQRThreadChangeForPreview() {
+    // Target thread changed (replying to a different thread or "new thread").
+    // The shouldShow check inside update will clean it up if it no longer applies.
+    QR.refreshCommentPreview();
+  },
+
+  onPostsInsertedPreview() {
+    QR.repositionThreadPreviewPost();
+    // Thread content may have just been inserted (e.g. opening a thread from catalog/index).
+    // Re-evaluate whether we can/should show the "in thread" preview vs floating.
+    if (QR.nodes?.el) QR.refreshCommentPreview();
+  },
+
+  // --- Thread (literal) preview post management ---
+
+  getThreadPreviewRoot(): HTMLElement | null {
+    // The thread container that holds reply posts (same place ThreadUpdater appends new posts).
+    const threadEl = $(g.SITE?.selectors?.thread || '.thread');
+    if (threadEl) return threadEl;
+    // Very late fallback (shouldn't normally be needed).
+    return document.querySelector('.thread') as HTMLElement | null;
+  },
+
+  shouldShowThreadPreview(): boolean {
+    if (!QR.usingThreadPreview()) return false;
+    return QR.canActuallyShowThreadPreview();
+  },
+
+  createThreadPreviewPost(includeSideArrows = true): HTMLDivElement {
+    const container = $.el('div', {
+      className: 'postContainer replyContainer qr-preview-post',
+    }) as HTMLDivElement;
+
+    // Build a structure very close to a real reply post (desktop + mobile info)
+    // so both the stitched inline and the floating versions look authentic.
+    // The delete checkbox is included (on desktop postInfo) to match real posts.
+    // We avoid real numeric IDs so nothing treats it as a live post.
+    const now = new Date();
+    const utc = Math.floor(now.getTime() / 1000);
+    const timeStr = now.toLocaleString([], {
+      month: '2-digit', day: '2-digit', year: '2-digit',
+      hour: '2-digit', minute: '2-digit'
+    }).replace(',', '');
+
+    const sideArrows = includeSideArrows ? `<div class="sideArrows">&gt;&gt;</div>` : '';
+
+    container.innerHTML = `
+      ${sideArrows}
+      <div class="post reply">
+        <div class="postInfoM mobile" id="pim-preview">
+          <input type="checkbox" name="preview" value="delete">
+          <span class="nameBlock"><span class="name">Anonymous</span><br></span>
+          <span class="dateTime postNum" data-utc="${utc}">
+            <time datetime="${now.toISOString()}">${timeStr}</time>
+            <a href="javascript:;" rel="nofollow" title="Link to this post">No.</a><a href="javascript:;" rel="nofollow" title="Reply to this post">preview</a>
+          </span>
+        </div>
+        <div class="postInfo desktop" id="pi-preview">
+          <input type="checkbox" name="preview" value="delete">
+          <span class="nameBlock">
+            <span class="name" itemprop="author" itemscope="" itemtype="https://schema.org/Person">
+              <span itemprop="name">Anonymous</span>
+            </span>
+          </span>
+          <span class="dateTime" data-utc="${utc}" title="just now">${timeStr}</span>&nbsp;
+          <span class="postNum desktop">
+            <a href="javascript:;" rel="nofollow" title="Link to this post">No.</a><a href="javascript:;" rel="nofollow" title="Reply to this post">preview</a>
+          </span>
+        </div>
+        <blockquote class="postMessage" id="m-preview" itemprop="text"></blockquote>
+      </div>
+    `;
+
+    container.dataset.previewPost = 'true';
+    return container;
+  },
+
+  updateThreadPreviewPost() {
+    if (!QR.shouldShowThreadPreview()) {
+      QR.removeThreadPreviewPost();
+      return;
+    }
+
+    // Ensure we don't leave a stale floating preview when the inline one is active.
+    QR.removeFloatingPreview();
+
+    const root = QR.getThreadPreviewRoot();
+    if (!root) {
+      // No thread root yet (e.g. very early init); try again shortly.
+      setTimeout(() => QR.updateThreadPreviewPost(), 120);
+      return;
+    }
+
+    if (!QR.previewPost) {
+      QR.previewPost = QR.createThreadPreviewPost();
+      // Append; reposition will ensure it's last if needed.
+      $.add(root, QR.previewPost);
+    }
+
+    QR.populatePreviewPost(QR.previewPost);
+    // Ensure it's still the last thing in the container (cheap call).
+    QR.repositionThreadPreviewPost();
+  },
+
+  // Shared population for any preview post shell (thread or floating).
+  populatePreviewPost(container: HTMLDivElement) {
+    const postEl = $('.post', container) as HTMLElement;
+    // Prefer the desktop postInfo for name/date so we match real desktop rendering.
+    const desktopInfo = $('.postInfo.desktop', container) || container;
+    const nameBlock = $('.nameBlock', desktopInfo) as HTMLElement || $('.nameBlock', container) as HTMLElement;
+    const dateEl = $('.dateTime', desktopInfo) as HTMLElement || $('.dateTime', container) as HTMLElement;
+    const msg = $('.postMessage', container) as HTMLElement;
+
+    // Persona (name / subject / trip etc). Keep it simple and literal-ish.
+    const nameVal = (QR.nodes.name?.value || '').trim() || 'Anonymous';
+    const subVal = (QR.nodes.sub?.value || '').trim();
+    const emailVal = (QR.nodes.email?.value || '').trim();
+
+    let nameHTML = `<span class="name">${E(nameVal)}</span>`;
+    if (subVal) {
+      const subj = $.el('span', { className: 'subject', textContent: subVal });
+      if (nameBlock.parentNode) {
+        const existingSub = $('.subject', container);
+        if (existingSub) $.rm(existingSub);
+        $.before(nameBlock, subj);
+      }
+    } else {
+      const existingSub = $('.subject', container);
+      if (existingSub) $.rm(existingSub);
+    }
+
+    if (emailVal) {
+      nameHTML = `<a href="mailto:${E(emailVal)}" class="useremail">${nameHTML}</a>`;
+    }
+    nameBlock.innerHTML = nameHTML;
+
+    // Timestamp
+    const now = new Date();
+    dateEl.textContent = now.toLocaleString([], { month: '2-digit', day: '2-digit', year: '2-digit', hour: '2-digit', minute: '2-digit' });
+
+    // The actual preview content
+    msg.innerHTML = QR.renderComPreview(QR.nodes.com.value || '');
+    if (g.BOARD.config.math_tags && /\[(math|eqn)\]/.test(QR.nodes.com.value || '')) {
+      QR.typesetMathjax(msg);
+    }
+
+    // Force newline / wrapping behavior so Enter in the textarea produces visible line breaks
+    // in both the stitched inline post and the floating one.
+    // Use aggressive word-break so long non-breaking runs (hold key down) don't cause
+    // the preview "post body" to grow right / jump / extend strangely, esp. with a file thumb present.
+    msg.style.whiteSpace = 'pre-wrap';
+    msg.style.overflowWrap = 'break-word';
+    msg.style.wordBreak = 'break-all';
+
+    // Light file indicator
+    QR.updatePreviewFileIndicator(container, postEl);
+  },
+
+  // Render (or update) an attached file as a realistic post file block (thumb + text)
+  // inside the preview post container. Supports images and videos with blob previews.
+  // Non-media files get a simple fileText line. Cleans up previous blob URLs.
+  updatePreviewFileIndicator(rootForQuery: HTMLElement, postElForAppend?: HTMLElement) {
+    const container = rootForQuery;
+    const sel = QR.selected;
+    const file: File | undefined = sel && (sel.file as File | undefined);
+    const hasPending = !!(sel && sel.pendingFile);
+    const hasFile = !!file || hasPending;
+
+    // Revoke + remove any previous preview file blocks / media we created.
+    $$('.qr-preview-file-block, .qr-preview-file-note', container).forEach((el: HTMLElement) => {
+      if (el.classList.contains('qr-preview-file-block')) {
+        $$('img, video', el).forEach((m: HTMLImageElement | HTMLVideoElement) => {
+          if (m.src && m.src.startsWith('blob:')) {
+            try { URL.revokeObjectURL(m.src); } catch {}
+          }
+        });
+      }
+      $.rm(el);
+    });
+
+    if (!hasFile) return;
+
+    const targetParent = postElForAppend || $('.post', container) || container;
+    const fname = (QR.nodes?.filename?.value || (file && (file as any).name) || (hasPending ? 'file' : 'file')).toString();
+    const sizeStr = file ? ($.bytesToString?.(file.size) || '') : (hasPending ? '' : '');
+
+    // Always create a container so CSS and structure match real posts.
+    const block = $.el('div', { className: 'file qr-preview-file-block' }) as HTMLDivElement;
+    const fileText = $.el('div', { className: 'fileText' }) as HTMLDivElement;
+    fileText.innerHTML = `File: <a href="javascript:;" class="qr-preview-file-link">${E(fname)}</a>${sizeStr ? ` (${E(sizeStr)})` : ''}`;
+    $.add(block, fileText);
+
+    const isImage = file && /^image\//.test(file.type);
+    const isVideo = file && /^video\//.test(file.type);
+
+    if ((isImage || isVideo) && file) {
+      const thumbLink = $.el('a', { className: 'fileThumb qr-preview-file-thumb' }) as HTMLAnchorElement;
+      let media: HTMLImageElement | HTMLVideoElement;
+      const url = URL.createObjectURL(file);
+      // Tag the thumb so removal can find/revoke if needed (belt + suspenders).
+      thumbLink.dataset.previewBlobUrl = url;
+
+      if (isVideo) {
+        media = $.el('video', {
+          src: url,
+          muted: true,
+          loop: true,
+          playsInline: true,
+          // Reasonable preview size; real CSS will constrain too.
+          style: 'max-width: 125px; max-height: 125px; display: block;'
+        }) as HTMLVideoElement;
+      } else {
+        media = $.el('img', {
+          src: url,
+          alt: fname,
+          style: 'max-width: 125px; max-height: 125px; display: block;'
+        }) as HTMLImageElement;
+      }
+      $.add(thumbLink, media);
+      $.add(block, thumbLink);
+    }
+
+    // Insert before the message (standard post layout: file info/thumb then body).
+    const msg = $('.postMessage', targetParent);
+    if (msg && msg.parentNode) {
+      $.before(msg, block);
+    } else {
+      $.add(targetParent, block);
+    }
+  },
+
+  repositionThreadPreviewPost() {
+    if (!QR.previewPost) return;
+    const root = QR.getThreadPreviewRoot();
+    if (!root) return;
+    // If it's not the last child, move it to the end.
+    if (root.lastElementChild !== QR.previewPost) {
+      $.add(root, QR.previewPost);
+    }
+  },
+
+  removeThreadPreviewPost() {
+    if (QR.previewPost && QR.previewPost.parentNode) {
+      QR.revokePreviewFileBlobs(QR.previewPost);
+      $.rm(QR.previewPost);
+    }
+    QR.previewPost = null;
+  },
+
+  // --- Floating preview (just the post, no window frame, draggable, positioned near QR initially) ---
+
+  createFloatingPreview(): HTMLDivElement {
+    // The root IS the floating post preview itself (no dialog chrome, no .move bar, no extra window).
+    // It is literally a realistic post (as it would appear in the thread) but taken out of flow,
+    // positioned near the QR, and draggable by its header.
+    const float = $.el('div', {
+      className: 'qr-preview-float',
+      style: 'position:fixed; z-index: 99999;'
+    }) as HTMLDivElement;
+
+    // Create the post shell WITHOUT side arrows (floating standalone post).
+    const shell = QR.createThreadPreviewPost(false);
+    $.add(float, shell);
+
+    $.add(d.body, float);
+
+    // Attach drag behavior (grab the postInfo area to move the whole preview).
+    QR.attachDragToFloatingPreview(float);
+
+    return float;
+  },
+
+  updateFloatingPreview() {
+    if (!QR.usingFloatingPreview()) {
+      QR.removeFloatingPreview();
+      return;
+    }
+
+    // Ensure we don't leave a stale inline thread preview when the floating one is active.
+    QR.removeThreadPreviewPost();
+
+    if (!QR.previewFloat) {
+      QR.previewFloat = QR.createFloatingPreview();
+    }
+
+    QR.previewFloat.hidden = false;
+
+    // Position (or re-position) under the QR on show/refresh unless this preview instance
+    // has been manually dragged by the user. This keeps it "docked" with top edge at QR bottom,
+    // left edges aligned, even across QR drags/resizes (via 4chanXQRMove + RO + resize listener).
+    if (QR.nodes?.el && QR.previewFloat.dataset.userDragged !== 'true') {
+      QR.positionFloatingPreviewNearQR(QR.previewFloat);
+    }
+
+    // Find the post shell we created and populate it.
+    const postShell = $('.qr-preview-post', QR.previewFloat) as HTMLDivElement | null;
+    if (postShell) {
+      QR.populatePreviewPost(postShell);
+    }
+  },
+
+  positionFloatingPreviewNearQR(float: HTMLElement) {
+    if (!QR.nodes?.el || !float) return;
+    const qrRect = QR.nodes.el.getBoundingClientRect();
+    // Position so the floating preview's top edge aligns exactly to the QR's bottom edge,
+    // and left edges align (like an attached panel under the QR, until the user drags the preview).
+    float.style.position = 'fixed';
+    float.style.left = `${qrRect.left}px`;
+    float.style.top = `${qrRect.bottom}px`;
+    float.style.right = '';
+    float.style.bottom = '';
+  },
+
+  repositionFloatingPreview() {
+    const float = QR.previewFloat;
+    if (!float || float.dataset.userDragged === 'true' || !QR.nodes?.el) { return; }
+    QR.positionFloatingPreviewNearQR(float);
+  },
+
+  attachDragToFloatingPreview(float: HTMLElement) {
+    let dragging = false;
+    let startClientX = 0;
+    let startClientY = 0;
+    let startLeft = 0;
+    let startTop = 0;
+
+    const onMouseDown = (e: MouseEvent) => {
+      // The entire floating preview is grabbable for dragging (including the content area / postMessage),
+      // not just the header. This matches the desired behavior for positioning the preview anywhere.
+      if (!float.contains(e.target as HTMLElement)) return;
+
+      dragging = true;
+      startClientX = e.clientX;
+      startClientY = e.clientY;
+
+      // Use viewport rect because we are position:fixed.
+      const rect = float.getBoundingClientRect();
+      startLeft = rect.left;
+      startTop = rect.top;
+
+      // Keep it fixed while the user drags it around the viewport.
+      float.style.position = 'fixed';
+
+      document.addEventListener('mousemove', onMouseMove, { passive: false });
+      document.addEventListener('mouseup', onMouseUp, { once: true, passive: false });
+
+      e.preventDefault();
+      e.stopPropagation();
+    };
+
+    const onMouseMove = (e: MouseEvent) => {
+      if (!dragging) return;
+      e.preventDefault();
+
+      const dx = e.clientX - startClientX;
+      const dy = e.clientY - startClientY;
+
+      float.style.left = `${startLeft + dx}px`;
+      float.style.top = `${startTop + dy}px`;
+    };
+
+    const onMouseUp = () => {
+      dragging = false;
+      document.removeEventListener('mousemove', onMouseMove as any);
+      // Mark so future content updates don't reset the user's chosen position.
+      float.dataset.userDragged = 'true';
+    };
+
+    float.addEventListener('mousedown', onMouseDown);
+  },
+
+  removeFloatingPreview() {
+    if (QR.previewFloat && QR.previewFloat.parentNode) {
+      QR.revokePreviewFileBlobs(QR.previewFloat);
+      $.rm(QR.previewFloat);
+    }
+    QR.previewFloat = null;
+  },
+
+  // Revoke any blob: URLs we created for file thumbs inside a preview post (thread or floating).
+  revokePreviewFileBlobs(root: HTMLElement | null) {
+    if (!root) return;
+    $$('img, video', root).forEach((m: HTMLImageElement | HTMLVideoElement) => {
+      const src = m.src || (m as any).currentSrc;
+      if (src && src.startsWith('blob:')) {
+        try { URL.revokeObjectURL(src); } catch {}
+      }
+    });
+    // Also check our tagged thumb links
+    $$('[data-preview-blob-url]', root).forEach((el: HTMLElement) => {
+      const u = el.dataset.previewBlobUrl;
+      if (u && u.startsWith('blob:')) {
+        try { URL.revokeObjectURL(u); } catch {}
+      }
+      delete el.dataset.previewBlobUrl;
+    });
   },
 
   comPreviewTagWraps: {
@@ -522,8 +1081,9 @@ var QR = {
     );
     return withLinks.split('\n').map(line => {
       const quotePrefix = line.match(/^(&gt;)+(?!&gt;\/[a-z\d]+\/\d+)/)?.[0];
-      return quotePrefix ? `<span class="quote">${line}</span>` : line;
-    }).join('\n');
+      const content = quotePrefix ? `<span class="quote">${line}</span>` : line;
+      return content;
+    }).join('<br>');
   },
 
   renderComPreviewQuoteLink(text: string): string {
@@ -1078,6 +1638,13 @@ var QR = {
       g.THREADID
     :
       'new';
+    // Sync the model on the current draft post so canActuallyShowThreadPreview sees the right target thread.
+    // (programmatic .value = does not fire 'change', so explicit save is needed; used e.g. on catalog -> thread navigation)
+    if (QR.selected && list) {
+      QR.selected.save(list, true);
+    }
+    // Re-eval preview style (thread vs floating) now that thread context may have changed.
+    QR.refreshCommentPreview();
     return (g.VIEW === 'thread' ? $.addClass : $.rmClass)(QR.nodes.el, 'reply-to-thread');
   },
 
@@ -1251,6 +1818,13 @@ var QR = {
     $.add(d.body, dialog);
     QR.captcha.setup();
     QR.oekaki.setup();
+
+    // Observe QR size changes (textarea resize, dump list growth, etc.) so a non-dragged
+    // floating comment preview stays precisely under the QR bottom edge.
+    if (typeof ResizeObserver === 'function' && !QR._qrResizeObs) {
+      QR._qrResizeObs = new ResizeObserver(() => QR.repositionFloatingPreview());
+      QR._qrResizeObs.observe(dialog);
+    }
 
     // Create a custom event when the QR dialog is first initialized.
     // Use it to extend the QR's functionalities, or for XTRM RICE.
@@ -1922,7 +2496,7 @@ var QR = {
       return file;
     }
 
-    return newFile;
+    return QR.markMetadataStripped(newFile);
   },
 
   previewUrl: undefined as string | undefined,
@@ -2665,34 +3239,27 @@ var QR = {
       }
     },
 
-    // Discard the saved draft for this board AND empty the live Quick Reply:
-    // every queued post and its attachment is removed from the dump list,
-    // leaving a single blank post.
+    // Discard the current text/attachments and the saved draft for this board.
     discard() {
       clearTimeout(QR.drafts.timeout);
-      // Suspend auto-save so the removals below don't re-persist the draft
-      // we're about to delete.
-      QR.drafts._suspended = true;
-      try {
-        // Drop all but the first post (removes their thumbnails/attachments).
-        for (const p of QR.posts.slice(1)) { delete p._draftFileId; p.rm(); }
-        // Reset the remaining (selected) post: clear its file, text and state.
-        const last = QR.posts[0];
-        if (last) {
-          delete last._draftFileId;
-          if (last.file) { last.rmFile(); }
-          last.setComment('');
-          last.sub = null;
-          last.spoiler = false;
-          if (last.nodes?.spoiler) { last.nodes.spoiler.checked = false; }
+      for (const p of QR.posts) { delete p._draftFileId; }
+
+      // Reset every open post (and its attached image) back to a single blank
+      // post, mirroring QR.close()'s reset, so the trash icon clears posts and
+      // images from the window, not just the saved draft.
+      if (QR.nodes) {
+        new QR.post(true);
+        for (const post of QR.posts.splice(0, QR.posts.length - 1)) {
+          post.delete();
         }
-        if (QR.nodes?.sub) { QR.nodes.sub.value = ''; }
-        if (QR.nodes?.spoiler) { QR.nodes.spoiler.checked = false; }
         $.rmClass(QR.nodes.el, 'dump');
-      } finally {
-        QR.drafts._suspended = false;
+        if (QR.selected) {
+          QR.selected.setComment('');
+          QR.selected.sub = null;
+          if (QR.nodes.sub) { QR.nodes.sub.value = ''; }
+        }
       }
-      // Remove the saved draft + every stored attachment for this board.
+
       QR.drafts.clearBoardFiles();
       $.get('QR.drafts', dict(), ({ 'QR.drafts': all }) => {
         delete all[QR.drafts.key()];
@@ -3024,7 +3591,7 @@ class post {
 
     this.showFileData();
     QR.characterCount();
-    if (Conf['Comment Preview']) QR.updateComPreview();
+    QR.refreshCommentPreview();
   }
 
   save(input: HTMLInputElement, forced?: boolean) {
@@ -3090,7 +3657,7 @@ class post {
   updateComment() {
     if (this === QR.selected) {
       QR.characterCount();
-      if (Conf['Comment Preview']) QR.updateComPreview();
+      QR.refreshCommentPreview();
     }
     this.nodes.span.textContent = this.com;
     QR.captcha.moreNeeded();
@@ -3147,6 +3714,73 @@ class post {
         }
       }
     }
+  }
+
+  shouldStripMetadata(file: File) {
+    if (Conf['Strip All Media Metadata']) { return true; }
+    const category = file.type.split('/')[0];
+    switch (category) {
+      case 'image': return !!Conf['Image Metadata'];
+      case 'video': return !!Conf['Video Metadata'];
+      case 'audio': return !!Conf['Audio Metadata'];
+      default:      return !!Conf['Other Metadata'];
+    }
+  }
+
+  async stripImageMetadata(file: File): Promise<File> {
+    if (QR.isMetadataStripped(file)) { return file; }
+    const type = file.type.toLowerCase();
+    if (!['image/jpeg', 'image/png'].includes(type)) { return file; }
+    const outputType = type === 'image/jpeg' ? 'jpeg' : 'png';
+    const img = await createImageBitmap(file);
+    const width = img.width;
+    const height = img.height;
+    let canvas: HTMLCanvasElement | OffscreenCanvas;
+    let toBlob: (mime: string, quality: number) => Promise<Blob>;
+
+    if (window.OffscreenCanvas && !Conf['Avoid OffscreenCanvas']) {
+      canvas = new OffscreenCanvas(width, height);
+      toBlob = (mime, quality) => (canvas as OffscreenCanvas).convertToBlob({ type: mime, quality });
+    } else {
+      canvas = $.el('canvas', { width, height }) as HTMLCanvasElement;
+      toBlob = (mime, quality) => new Promise((resolve, reject) => {
+        (canvas as HTMLCanvasElement).toBlob(blob => {
+          if (blob) {
+            resolve(blob);
+          } else {
+            reject(new Error('Failed to strip image metadata.'));
+          }
+        }, mime, quality);
+      });
+    }
+    canvas.getContext('2d').drawImage(img, 0, 0, width, height);
+    const mime = `image/${outputType}`;
+    const stripped = await toBlob(mime, .92);
+    return QR.markMetadataStripped(new File([stripped], file.name, { type: file.type }));
+  }
+
+  async stripMetadata(file: File): Promise<File> {
+    if (QR.isMetadataStripped(file)) { return file; }
+    if (!this.shouldStripMetadata(file)) { return file; }
+    if (file.type.startsWith('image/')) {
+      const stripped = await this.stripImageMetadata(file);
+      if (stripped === file && !['image/jpeg', 'image/png'].includes(file.type.toLowerCase())) {
+        new Notice('warning', `Metadata stripping is not supported for ${file.type || 'this image type'}.`, 4);
+      }
+      return stripped;
+    }
+    if (file.type.startsWith('video/')) {
+      let stripped = await VideoStripper.stripMetadata(file);
+      if (stripped !== file) {
+        stripped = QR.markMetadataStripped(stripped);
+      }
+      if (stripped === file && !(/^video\/mp4$/i.test(file.type) || /\.mp4$/i.test(file.name))) {
+        new Notice('warning', `Metadata stripping is not supported for ${file.type || 'this video type'}.`, 4);
+      }
+      return stripped;
+    }
+    new Notice('warning', `Metadata stripping is not supported for ${file.type || 'this file type'}.`, 4);
+    return file;
   }
 
   /**
@@ -3220,7 +3854,7 @@ class post {
     // it gets re-saved; a restored file keeps its existing store id (set below).
     if (!opts.restore) { delete this._draftFileId; }
     try {
-      // On restore the file was already audio-stripped/renamed
+      // On restore the file was already audio-stripped/metadata-stripped/renamed
       // when first added, so skip that reprocessing (and its notices).
       if (
         !opts.restore &&
@@ -3232,6 +3866,14 @@ class post {
         if (stripped !== file) {
           file = stripped;
           new Notice('info', 'Removed audio from video for this board.', 4);
+        }
+      }
+
+      if (!opts.restore) {
+        const strippedMetadata = await this.stripMetadata(file);
+        if (strippedMetadata !== file) {
+          file = strippedMetadata;
+          new Notice('info', 'Removed media metadata from file.', 4);
         }
       }
 

@@ -672,7 +672,7 @@ const Config = {
       ],
       'Comment Preview': [
         false,
-        'Add a toggle below the Quick Reply comment box to switch between editing and a preview of how the post will render on the current board (greentext, quotes, [spoiler]/[code]/[math]/sjis when supported).',
+        'Toggle (via button in QR titlebar) a live preview of how your comment will render. Two styles via "Preview Style": "In the thread" (literal post stitched at the very bottom of the thread when possible; automatically uses floating on catalog/index) or "Floating window" (draggable post-like panel similar to quote hovers or thread watcher; controlled only by the toggle).',
         1
       ],
       'Show Comment Preview Header Icon': [
@@ -862,7 +862,7 @@ const Config = {
   'Thread Watcher Attach Location': 'bottom',
   'Thread Title': 'excerpt',
   'Unread Title Count': 'always',
-  'Comment Preview Position': 'below',
+  'Comment Preview Position': 'thread',
   'Show Comment Preview Header Icon': true,
   'Spoiler Mode': 'default',
   'Settings Menu Layout': 'vertical',

@@ -23,6 +23,7 @@ import $ from '../platform/$';
 import meta from '../../package.json';
 import { c, Conf, d, doc, E, g } from '../globals/globals';
 import Header from './Header';
+import { SearchHighlight } from './SearchHighlight';
 import h, { hFragment } from '../globals/jsx';
 import { dict } from '../platform/helpers';
 import Icon from '../Icons/icon';
@@ -34,6 +35,15 @@ import BoardConfig from './BoardConfig';
 import nextSettingsDiff from '../config/nextSettingsDiff.json';
 
 export type StyleVariant = 'sfw' | 'nsfw';
+
+// Name of the CSS Custom Highlight that paints settings-search term matches.
+const SETTINGS_SEARCH_HL = 'fourchanx-settings-search';
+
+// The visible text elements a search term can be highlighted within. Kept in
+// sync between highlightSettingRow (what gets painted) and applySearch (deciding
+// whether a row's match is visible or only on a hidden data-name field).
+const SEARCH_HIGHLIGHT_SELECTOR =
+  '.setting-title, .setting-description, .settings-section-header, .styling-section-summary-text, summary, th, h4';
 
 // Settings neXT added or changed vs upstream 4chan-X (see
 // tools/gen-next-settings-diff.js). Powers the "Highlight neXT" toggle.
@@ -433,6 +443,7 @@ var Settings = {
     // stale query doesn't re-highlight matches on the next open.
     const searchInput = $('.settings-search input', Settings.dialog) as HTMLInputElement | null;
     if (searchInput) searchInput.value = '';
+    SearchHighlight.clear(SETTINGS_SEARCH_HL);
     $.rm(Settings.dialog);
     Settings.searchQuery = '';
     Settings.searchTerms = [];
@@ -733,8 +744,10 @@ var Settings = {
       const rowEl = row as HTMLElement;
       Settings.revealSearchMatch(rowEl, section);
       // The row matched, but the match may be on a hidden field (data-name)
-      // with nothing visible marked; flag it so the match isn't a mystery.
-      rowEl.classList.toggle('settings-search-keyword-match', !rowEl.querySelector('mark'));
+      // with nothing visible highlighted; flag it so the match isn't a mystery.
+      // (The highlight is painted ranges now, not <mark> nodes, so probe the
+      // visible text directly rather than looking for a marker element.)
+      rowEl.classList.toggle('settings-search-keyword-match', !Settings.hasVisibleMatch(rowEl));
 
       // Only reveal descendant rider settings when the setting's title itself
       // matched, to avoid broad description matches expanding unrelated rows.
@@ -791,18 +804,40 @@ var Settings = {
     }
   },
 
+  // Visible text elements within `root` that a search term can be highlighted in.
+  // Styling summaries carry an injected section toggle plus a dedicated
+  // `.styling-section-summary-text` span for their title; highlight that span,
+  // not the bare summary, so the two don't paint the same text twice.
+  highlightableEls(root: ParentNode) {
+    return $$(SEARCH_HIGHLIGHT_SELECTOR, root).filter(el =>
+      !((el as HTMLElement).tagName === 'SUMMARY' && el.querySelector('.styling-section-summary-text')));
+  },
+
+  // True when any search term appears in the row's visible text (as opposed to
+  // matching only a hidden data-name field), so the row's match is self-evident.
+  hasVisibleMatch(rowEl: HTMLElement) {
+    if (!Settings.searchTerms.length) return false;
+    return Settings.highlightableEls(rowEl).some(el => {
+      const text = (el.textContent || '').toLowerCase();
+      return Settings.searchTerms.some(term => text.indexOf(term) >= 0);
+    });
+  },
+
   highlightSettingRow(root, _query?) {
-    // Highlight every matching term (order-independent), not just the whole
-    // query as one phrase, so multi-word searches still show what matched.
+    const els = Settings.highlightableEls(root);
+    // Preferred path: paint matches with the CSS Custom Highlight API, which
+    // covers every matching term (order-independent) without touching the DOM —
+    // no <mark> nodes, no flex-layout span wrappers, no text save/restore.
+    if (SearchHighlight.supported) {
+      SearchHighlight.apply(SETTINGS_SEARCH_HL, els, Settings.searchTerms);
+      return;
+    }
+    // Legacy fallback for browsers without the Highlight API: wrap matches in
+    // <mark>, stashing the original text so an empty query can restore it.
     const rx = Settings.searchTerms.length
       ? RegExp(`(${Settings.searchTerms.map(t => Settings.escapeRegExp(t)).join('|')})`, 'ig')
       : null;
-    for (const el of $$('.setting-title, .setting-description, .settings-section-header, .styling-section-summary-text, summary, th, h4', root)) {
-      // Styling summaries carry an injected section toggle plus a dedicated
-      // `.styling-section-summary-text` span for their title. Highlight that
-      // span, not the bare summary — resetting the summary's textContent here
-      // would destroy the toggle (and the title wrapper) on every render.
-      if ((el as HTMLElement).tagName === 'SUMMARY' && el.querySelector('.styling-section-summary-text')) continue;
+    for (const el of els) {
       const source = (el as HTMLElement).dataset.rawText ?? el.textContent ?? '';
       (el as HTMLElement).dataset.rawText = source;
       if (rx) {
@@ -1747,14 +1782,13 @@ Enable it on boards.${location.hostname.split('.')[1]}.org in your browser's pri
     const sub = $.el('div', { className: 'suboption-list' });
     const positionRow = $.el('div') as HTMLDivElement;
     positionRow.dataset.name = 'Comment Preview Position';
-    positionRow.dataset.settingTitle = 'Preview Position';
-    Settings.registerSettingDescription(positionRow, 'Where the live preview appears relative to the comment box (requires Comment Preview enabled).');
+    positionRow.dataset.settingTitle = 'Preview Style';
+    Settings.registerSettingDescription(positionRow, 'How the live comment preview is displayed when the preview toggle is on: "In the thread" stitches a literal post at the bottom of the thread (real width/wrapping, locked last); "Floating window" shows a draggable window containing the post preview (similar to quote hovers or the thread watcher). The old compact in-QR boxes are no longer offered.');
     const label = $.el('label');
     const select = $.el('select', { name: 'Comment Preview Position' }) as HTMLSelectElement;
     for (const [value, text] of [
-      ['below', 'Below the comment box'],
-      ['right', 'Right of the comment box'],
-      ['left', 'Left of the comment box'],
+      ['thread', 'In the thread (literal post at bottom)'],
+      ['floating', 'Floating window (like a quote preview or thread watcher)'],
     ] as const) {
       $.add(select, $.el('option', { value, textContent: text }));
     }
@@ -1788,7 +1822,7 @@ Enable it on boards.${location.hostname.split('.')[1]}.org in your browser's pri
     const updateCommentPreviewSettings = (items: Record<string, any>) => {
       toggle.checked = !!items['Comment Preview'];
       row.dataset.checked = toggle.checked ? 'true' : 'false';
-      select.value = items['Comment Preview Position'] || 'below';
+      select.value = items['Comment Preview Position'] === 'thread' ? 'thread' : 'floating';
       iconToggle.checked = items['Show Comment Preview Header Icon'] !== false;
       iconRow.dataset.checked = iconToggle.checked ? 'true' : 'false';
     };

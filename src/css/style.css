@@ -689,6 +689,14 @@ audio.controls-added {
 .settings-search-hidden {
   display: none !important;
 }
+/* Search-term highlighting via the CSS Custom Highlight API: settings search and
+   index/catalog search paint matched ranges instead of injecting <mark> nodes. */
+::highlight(fourchanx-settings-search),
+::highlight(fourchanx-index-search) {
+  background: rgba(255, 214, 83, .5);
+  color: inherit;
+}
+/* Legacy <mark> fallback for browsers without the Highlight API. */
 .section-container mark {
   background: rgba(255, 214, 83, .5);
   color: inherit;
@@ -3600,8 +3608,13 @@ textarea.copy-text-element {
 }
 .inline {
   border: 1px solid;
-  display: table;
   margin: 2px 0;
+  /* Shrink-to-fit bordered container for inlined quotes.
+     display:table + display:table on inner .post previously broke normal
+     float layout for .fileThumb + text wrapping in .postMessage. */
+  display: block;
+  width: fit-content;
+  max-width: 100%;
 }
 .container ~ .inline {
   margin-left: 20px;
@@ -3612,9 +3625,24 @@ textarea.copy-text-element {
 .inline .post {
   border: 0 !important;
   background-color: transparent !important;
-  display: table !important;
   margin: 0 !important;
   padding: 1px 2px !important;
+  /* normal display (block) so that floated thumbnails inside inlined posts
+     interact correctly with postMessage text flow/wrapping. */
+}
+/* Protect inlined quotes from extremely long non-breaking content (e.g. a quoted post
+   with a huge run of characters) making the bordered inline box grow too wide.
+   Pairs with the fit-content + max-width on .inline. */
+.inline .postMessage {
+  overflow-wrap: break-word;
+  word-break: break-all;
+}
+/* Ensure floats (e.g. fileThumb) inside inlined posts are cleared so the
+   .inline border box gets the correct height (mirrors #qp handling). */
+.inline::after {
+  content: '';
+  clear: both;
+  display: table;
 }
 #qp > .opContainer::after {
   content: '';
@@ -4105,6 +4133,133 @@ body:not(.board_f) #qr select[name="filetag"],
 }
 #qr.com-preview-left #qr-com-preview {
   margin-right: 2px;
+}
+
+/* Thread (literal) preview post - stitched at the bottom of the thread, always last. */
+.postContainer.qr-preview-post {
+  opacity: 0.92;
+  /* Prevent the stitched inline comment preview from growing the thread or its own box
+     unbounded when the comment contains long non-breaking content (e.g. holding a key)
+     or combined with an attached image/file in the preview. */
+  max-width: 100%;
+}
+.postContainer.qr-preview-post > .reply {
+  border: 1px dashed rgba(120, 120, 120, 0.55);
+  background-image: repeating-linear-gradient(
+    135deg,
+    transparent,
+    transparent 3px,
+    rgba(0,0,0,0.025) 3px,
+    rgba(0,0,0,0.025) 6px
+  );
+  max-width: 100%;
+}
+.postContainer.qr-preview-post .postInfo .preview-no .preview-label {
+  font-style: italic;
+  opacity: 0.7;
+  margin-left: 2px;
+}
+.postContainer.qr-preview-post .qr-preview-file-note {
+  font-size: 90%;
+  opacity: 0.85;
+  margin: 2px 0;
+}
+.postContainer.qr-preview-post .postMessage:empty::before {
+  content: "(empty post body)";
+  opacity: 0.5;
+  font-style: italic;
+}
+
+/* Floating preview: just the post itself (no window frame), absolutely positioned + draggable */
+#qr-preview-float {
+  /* The element is the postContainer; it carries its own post styling */
+  min-width: 280px;
+  max-width: 520px;
+  z-index: 99999;
+  cursor: move; /* entire floating post (including content area) is grabbable for dragging */
+}
+#qr-preview-float .qr-preview-post {
+  margin: 0;
+  opacity: 1;
+}
+#qr-preview-float .qr-preview-post > .reply {
+  border: 1px solid rgba(120,120,120,0.45);
+  box-shadow: 0 2px 8px rgba(0,0,0,0.18);
+  background: var(--reply-background-color, #f0f0f0);
+}
+/* Hide only the post menu dropdown button on preview posts.
+   The delete checkbox is intentionally kept so the in-thread preview
+   looks as "official" as a real reply post. */
+.qr-preview-post .menu-button {
+  display: none !important;
+}
+
+/* Links inside the preview should still behave normally */
+#qr-preview-float a {
+  cursor: pointer;
+}
+
+/* File attachments (images/video) in the live QR comment previews (thread-stitched or floating).
+   We now let the native .fileThumb float + margin rules from the site theme apply inside
+   the preview .post so the comment text flows/wraps beside the thumb (just like the final post).
+   This fixes the "weird page break" / strange wrapping / extra gap below the image that
+   happened with the previous stacked inline-block layout. Thumb size is still capped for
+   the compact preview. The whole preview post is self-contained (dashed border or floating
+   box + our max-width caps + clearfix) so the float doesn't steal layout from the thread. */
+.qr-preview-post .file,
+#qr-preview-float .file {
+  margin: 2px 0 4px;
+  font-size: 90%;
+  max-width: 100%;
+}
+.qr-preview-post .fileText,
+#qr-preview-float .fileText {
+  margin-bottom: 1px;
+  /* Long filenames ... break instead of forcing width. */
+  word-break: break-all;
+  overflow-wrap: break-word;
+}
+/* Do NOT force inline-block here anymore — let the theme's normal floated .fileThumb
+   (with its left float + margins) apply so text in the following postMessage can sit
+   beside the thumbnail for the first few lines, matching real post rendering.
+   We only override the rendered size + border for preview niceness. */
+.qr-preview-post .fileThumb img,
+.qr-preview-post .fileThumb video,
+#qr-preview-float .fileThumb img,
+#qr-preview-float .fileThumb video {
+  max-width: 125px;
+  max-height: 125px;
+  display: block;
+  border: 1px solid rgba(0,0,0,.2);
+  background: #fff;
+}
+
+/* Ensure newlines and wrapping behave in our injected preview posts (the renderer now uses <br> but this helps code blocks etc.)
+   Use strong breaking so holding a key (long runs of the same char with no spaces) does not make
+   the preview post body grow rightward or cause strange "page break"/wrapping artifacts,
+   especially when a file/image is also shown in the preview. */
+.postContainer.qr-preview-post .postMessage,
+#qr-preview-float .postMessage {
+  white-space: pre-wrap;
+  overflow-wrap: break-word;
+  word-break: break-all;
+  word-wrap: break-word; /* legacy alias */
+}
+/* Clearfix for the preview post containers so floated thumbnails (when an image/file
+   is attached in the QR) are properly contained for height. Prevents the preview box
+   from collapsing or showing odd "page break" gaps below the image area. */
+.postContainer.qr-preview-post::after,
+#qr-preview-float .qr-preview-post::after {
+  content: '';
+  clear: both;
+  display: table;
+}
+
+/* Hide internal box for modern styles */
+#qr.com-preview-thread #qr-com-preview,
+#qr.com-preview-float #qr-com-preview,
+#qr:not(.has-com-preview) #qr-com-preview {
+  display: none;
 }
 #sjis-toggle, #qr.sjis-preview textarea.field {
   font-family: "IPAMonaPGothic","Mona","MS PGothic",monospace;
