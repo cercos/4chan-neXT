@@ -8,17 +8,13 @@ const settingsHtml = <div id="fourchanx-settings" class="dialog">
     <span class="settings-titlebar-actions">
       <a href="#" class="expand-all" title="Expand all sections">Expand all</a>
       <a href="#" class="collapse-all" title="Collapse all sections">Collapse all</a>
-      <label class="remember-layout-toggle" title="Remember dialog layout and section collapse state">
-        <input id="settings-remember-layout" type="checkbox" autocomplete="off" />
-        <span>Remember layout</span>
-      </label>
       <a href="#" class="close" title="Close">✕</a>
     </span>
   </div>
   <div class="settings-body">
     <nav>
       <div class="settings-search">
-        <input type="search" class="field" placeholder="Search settings" autocomplete="off" />
+        <input type="search" class="field" placeholder="Search" autocomplete="off" />
       </div>
       <div class="sections-list"></div>
     </nav>
@@ -29,12 +25,17 @@ const settingsHtml = <div id="fourchanx-settings" class="dialog">
       <a href="#" class="export">Export</a>
       <a href="#" class="import">Import</a>
       <a href="#" class="reset">Reset Settings</a>
+      <label class="remember-layout-toggle" title="Remember dialog layout and section collapse state">
+        <input id="settings-remember-layout" type="checkbox" autocomplete="off" />
+        <span>Remember layout</span>
+      </label>
       <input type="file" hidden accept=".json,application/json" />
     </div>
     <p class="imp-exp-result warning"></p>
     <div class="credits">
       <a href={meta.page} target="_blank">{meta.name}</a>
       <a href={meta.changelog} target="_blank">{g.VERSION}</a>
+      <a href={meta.userGuide} target="_blank">User Guide</a>
       <a href={meta.issues} target="_blank">Issues</a>
     </div>
   </div>

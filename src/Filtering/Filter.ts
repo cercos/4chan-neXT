@@ -71,6 +71,7 @@ var Filter = {
     }
 
     const easyLines = Filter.easyFilterLines();
+    Filter.injectEasyHighlightColors();
     for (var key in Config.filter) {
       const lines = (Conf[key] as string).split('\n');
       if (key === 'general' && easyLines.length) lines.push(...easyLines);
@@ -152,7 +153,9 @@ var Filter = {
 
           // Highlight the post.
           // If not specified, the highlight class will be filter-highlight.
-          const highlightRes = options.match(/(?:^|;)\s*highlight(?::([\w-]+))?/)
+          // Accepts a comma-separated list of classes (e.g. `highlight:xt-hl-ff0000,my-class`),
+          // applied together; test() splits them apart.
+          const highlightRes = options.match(/(?:^|;)\s*highlight(?::([\w,-]+))?/)
           if (highlightRes) {
             hl = highlightRes[1] || 'filter-highlight';
             // Glow around the whole catalog entry (image + text) instead of
@@ -297,8 +300,18 @@ var Filter = {
               }
             }
           }
-          if (filter.hl && !hl?.includes(filter.hl)) {
-            (hl || (hl = [])).push(filter.hl);
+          if (filter.hl) {
+            // A filter may carry several comma-separated highlight classes.
+            for (const cls of filter.hl.split(',')) {
+              if (!cls || hl?.includes(cls)) continue;
+              (hl || (hl = [])).push(cls);
+              // A generated `xt-hl-<rrggbb>` class only sets color variables; pair it
+              // with `filter-highlight` so the actual highlight styling applies (see
+              // injectEasyHighlightColors).
+              if (cls.startsWith('xt-hl-') && !hl.includes('filter-highlight')) {
+                hl.push('filter-highlight');
+              }
+            }
           }
           // `;tile` glows the whole catalog entry instead of the thumbnail.
           if (filter.hl && filter.tile && !hl.includes('filter-glow-tile')) {
@@ -320,61 +333,129 @@ var Filter = {
     return post.filterResults;
   },
 
-  easyFilterLines(): string[] {
-    const raw = Conf['easyFilters'];
+  // Normalizes one stored/edited Simple Filter rule into a canonical shape, the single
+  // source of truth shared by the Settings UI, the live filters, and the injected CSS.
+  // A highlight can carry a swatch color (`color` + `colorOn`) and/or a custom CSS
+  // class (`hlClass`), applied together ("tandem"). Backward compatible: an older rule
+  // whose `color` held a class name is migrated to `hlClass`; a bare hex color turns the
+  // swatch on.
+  normalizeEasyRule(rule: any) {
+    if (!rule || typeof rule !== 'object') return null;
+
+    const pattern = typeof rule.pattern === 'string' ? rule.pattern
+      : typeof rule.match === 'string' ? rule.match
+      : '';
+    const type = (rule.type in Config.filter) ? rule.type : ({
+      title: 'subject', body: 'comment', name: 'name',
+    } as Record<string, string>)[rule.field] || 'general';
+    const hide = (rule.hide != null)
+      ? !!rule.hide
+      : !['highlight', 'notify'].includes(rule.action);
+
+    const rawColor = typeof rule.color === 'string' ? rule.color.trim() : '';
+    const hex = /^#?([0-9a-fA-F]{6})$/.exec(rawColor);
+    let hlClass = typeof rule.hlClass === 'string' ? rule.hlClass.trim() : '';
+    // Legacy rules stored a CSS class name in `color`; move it to the class field.
+    if (!hex && rawColor && !hlClass) hlClass = rawColor;
+    hlClass = hlClass.replace(/^\.+/, '').replace(/[^\w-]/g, '');
+
+    return {
+      enabled: rule.enabled != null ? !!rule.enabled : true,
+      pattern,
+      boards: typeof rule.boards === 'string' ? rule.boards : '',
+      type,
+      color: hex ? `#${hex[1].toLowerCase()}` : '#dd0000',
+      colorOn: rule.colorOn != null ? !!rule.colorOn : !!hex,
+      hlClass,
+      auto: !!rule.auto,
+      hide,
+      override: !!rule.override,
+      action: rule.action,
+      caseSensitive: !!rule.caseSensitive,
+    };
+  },
+
+  // Parses the stored easyFilters blob (JSON string or array) into normalized rules.
+  parseEasyFilterRules(raw: unknown): any[] {
     let rules: any[] = [];
     if (Array.isArray(raw)) {
       rules = raw;
     } else if (typeof raw === 'string' && raw.trim()) {
-      try {
-        rules = JSON.parse(raw);
-      } catch {
-        rules = [];
-      }
+      try { rules = JSON.parse(raw); } catch { rules = []; }
     }
     if (!Array.isArray(rules)) return [];
+    return rules.map(r => Filter.normalizeEasyRule(r)).filter(Boolean);
+  },
 
+  // The highlight CSS classes a normalized rule applies: a generated `xt-hl-<rrggbb>`
+  // color class (when the swatch is on) and/or the user's custom class. Both ride
+  // together; an empty list means the theme's default highlight.
+  easyHighlightClasses(rule: any): string[] {
+    const classes: string[] = [];
+    if (rule.colorOn && /^#[0-9a-f]{6}$/.test(rule.color)) {
+      classes.push(`xt-hl-${rule.color.slice(1)}`);
+    }
+    if (rule.hlClass) classes.push(rule.hlClass);
+    return classes;
+  },
+
+  // Builds the advanced-filter line for one normalized rule (or null to skip it).
+  easyRuleToLine(rule: any): string | null {
+    if (!rule?.enabled) return null;
+    const match = (rule.pattern || '').trim();
+    if (!match) return null;
+
+    const flags = rule.caseSensitive ? '' : 'i';
+    let line = `/${Filter.escape(match)}/${flags}`;
+
+    const options: string[] = [];
+    if ((rule.boards || '').trim()) options.push(`boards:${rule.boards.trim()}`);
+
+    const type = (rule.type in Config.filter) ? rule.type : 'general';
+    options.push(`type:${type === 'general' ? 'subject,name,comment' : type}`);
+
+    if (!rule.hide) {
+      const classes = Filter.easyHighlightClasses(rule);
+      options.push(classes.length ? `highlight:${classes.join(',')}` : 'highlight');
+      options.push(`top:${rule.auto ? 'yes' : 'no'}`);
+      if (rule.override) options.push('override');
+    }
+
+    if (rule.action === 'notify') options.push('notify');
+
+    if (options.length) line += `;${options.join(';')}`;
+    return line;
+  },
+
+  easyFilterLines(): string[] {
     const lines: string[] = [];
-    for (const rule of rules) {
-      if (!rule || typeof rule !== 'object') continue;
-      if (rule.enabled === false) continue;
-
-      const pattern = typeof rule.pattern === 'string' ? rule.pattern
-        : typeof rule.match === 'string' ? rule.match
-        : '';
-      const match = pattern.trim();
-      if (!match) continue;
-
-      const flags = rule.caseSensitive ? '' : 'i';
-      let line = `/${Filter.escape(match)}/${flags}`;
-
-      const options: string[] = [];
-      if (typeof rule.boards === 'string' && rule.boards.trim()) {
-        options.push(`boards:${rule.boards.trim()}`);
-      }
-
-      const type = (rule.type in Config.filter) ? rule.type : ({
-        title: 'subject', body: 'comment', name: 'name',
-      } as Record<string, string>)[rule.field] || 'general';
-      options.push(`type:${type === 'general' ? 'subject,name,comment' : type}`);
-
-      const hide = (rule.hide != null)
-        ? !!rule.hide
-        : !['highlight', 'notify'].includes(rule.action);
-
-      if (!hide) {
-        const color = typeof rule.color === 'string' ? rule.color.trim() : '';
-        options.push(color ? `highlight:${color}` : 'highlight');
-        options.push(`top:${rule.auto ? 'yes' : 'no'}`);
-        if (rule.override) options.push('override');
-      }
-
-      if (rule.action === 'notify') options.push('notify');
-
-      if (options.length) line += `;${options.join(';')}`;
-      lines.push(line);
+    for (const rule of Filter.parseEasyFilterRules(Conf['easyFilters'])) {
+      const line = Filter.easyRuleToLine(rule);
+      if (line) lines.push(line);
     }
     return lines;
+  },
+
+  // Injects a stylesheet defining the highlight color variables for every custom
+  // `xt-hl-<rrggbb>` class used by Simple Filters. The generated class sits on the
+  // post root alongside `filter-highlight` (added in test()), so all the existing
+  // filter-highlight styling (edge bar, side arrows, catalog glow) picks up the color.
+  injectEasyHighlightColors() {
+    const colors = new Set<string>();
+    for (const rule of Filter.parseEasyFilterRules(Conf['easyFilters'])) {
+      if (!rule.enabled || rule.hide || !rule.colorOn) continue;
+      const hex = /^#([0-9a-f]{6})$/.exec(rule.color);
+      if (hex) colors.add(hex[1]);
+    }
+
+    const existing = $.id('xt-easy-highlight-colors');
+    if (existing) $.rm(existing);
+    if (!colors.size) return;
+
+    const css = [...colors].map(hex =>
+      `.xt-hl-${hex}{--xt-filter-highlight:#${hex};--xt-highlight-side-arrow:#${hex};--xt-highlight-shadow:#${hex};}`
+    ).join('\n');
+    $.addStyle(css, 'xt-easy-highlight-colors');
   },
 
   node(this: Post) {

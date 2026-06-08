@@ -17,6 +17,7 @@ declare module '*/package.json' {
     "upstreamFaq": string,
     "captchaFAQ": string,
     "cssGuide": string,
+    "userGuide": string,
     "license": string,
     "changelog": string,
     "issues": string,

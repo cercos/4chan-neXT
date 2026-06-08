@@ -3,6 +3,12 @@
   --xt-border: #D9BFB7;
   --xt-border-field-focus: #EA8;
   --xt-border-highlight: rgba(221, 0, 0, .8);
+  /* Highlight accents — tuned to this theme's red (matches --xt-border-highlight)
+     so the catalog glow/watched edge don't fall back to brighter pure #F00. */
+  --xt-filter-highlight: rgba(221, 0, 0, .5);
+  --xt-highlight-shadow: rgba(221, 0, 0, .5);
+  --xt-highlight-side-arrow: rgba(221, 0, 0, .8);
+  --xt-watched-border: rgb(221, 0, 0);
   --xt-notification-size: 11pt;
   --xt-header-dialog-fg: #B86;
   --xt-dead-link: #00E;

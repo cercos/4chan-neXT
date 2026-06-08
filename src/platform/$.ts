@@ -203,6 +203,19 @@ $.addStyle = function(css, id, test='head') {
   return style;
 };
 
+// A per-session nonce so the extension's own injected scripts can run under the
+// restrictive CSP added by the "Enforce JS whitelist" feature. Generated once and
+// cached, so $.addCSP and $.global always agree on the value regardless of call order.
+let cspNonce: string | null = null;
+$.getCSPNonce = function() {
+  if (cspNonce == null) {
+    const bytes = new Uint8Array(16);
+    (self.crypto || window.crypto).getRandomValues(bytes);
+    cspNonce = btoa(String.fromCharCode(...bytes));
+  }
+  return cspNonce;
+};
+
 $.addCSP = function(policy) {
   const meta = $.el('meta', {
     httpEquiv: 'Content-Security-Policy',
@@ -294,6 +307,18 @@ $.off = function(el, events, handler) {
     el.removeEventListener(event, handler, false);
   }
 };
+
+// Many legacy UI controls are anchors with `href="javascript:;"` plus a click
+// listener. Under 4chan's strict CSP, letting that inert URL navigate still logs
+// a violation after the listener runs. Block only no-op JS URLs; real site links
+// such as `javascript:quote(...)` are intentionally left alone.
+d.addEventListener('click', function(e) {
+  const anchor = (e.target as Element | null)?.closest?.('a[href]');
+  const href = anchor?.getAttribute('href') || '';
+  if (/^javascript:\s*;?\s*$/i.test(href)) {
+    e.preventDefault();
+  }
+}, true);
 
 $.one = function(el, events, handler) {
   var cb = function(e) {
@@ -416,6 +441,8 @@ $.global = async function(fn: string, data?: Record<string, string>) {
     if (doc) {
       const script = $.el('script',
         {textContent: `(${PageContextFunctions[fn]})(document.currentScript.dataset);`});
+      // Allow this script through the extension's own whitelist CSP (no-op if no CSP is set).
+      script.nonce = $.getCSPNonce();
       if (data) { $.extend(script.dataset, data); }
       $.add((d.head || doc), script);
       $.rm(script);

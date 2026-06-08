@@ -60,23 +60,89 @@ const PageContextFunctions = {
 
   fourChanMathjaxListener: () => {
     window.addEventListener('mathjax', function (e) {
-      if ((window as any).MathJax) {
-        (window as any).MathJax.Hub.Queue(['Typeset', (window as any).MathJax.Hub, e.target]);
-      } else {
-        if (!document.querySelector('script[src^="//cdn.mathjax.org/"]')) { // don't load MathJax if already loading
-          (window as any).loadMathJax();
-          (window as any).loadMathJax = function () { };
+      const target = e.target as HTMLElement;
+      const scriptURL = 'https://cdnjs.cloudflare.com/ajax/libs/mathjax/2.7.9/MathJax.js?config=TeX-AMS_HTML-full';
+      const scriptSelector = 'script[src^="https://cdnjs.cloudflare.com/ajax/libs/mathjax/2.7.9/MathJax.js"]';
+
+      const queueTypeset = () => {
+        if (!(window as any).MathJax?.Hub) return false;
+        (window as any).MathJax.Hub.Queue(['Typeset', (window as any).MathJax.Hub, target]);
+        return true;
+      };
+      if (queueTypeset()) return;
+
+      if (!document.querySelector(scriptSelector)) {
+        if (!document.getElementById('fourchanx-mathjax-config')) {
+          const config = document.createElement('script');
+          config.id = 'fourchanx-mathjax-config';
+          config.type = 'text/x-mathjax-config';
+          config.text = "MathJax.Hub.Config({extensions:['Safe.js'],tex2jax:{processRefs:false,processEnvironments:false,preview:'none',inlineMath:[['[math]','[/math]']],displayMath:[['[eqn]','[/eqn]']]},Safe:{allow:{URLs:'none',classes:'none',cssIDs:'none',styles:'none',fontsize:'none',require:'none'}},displayAlign:'left',messageStyle:'none'});";
+          document.head.appendChild(config);
         }
-        // 4chan only handles post comments on MathJax load; anything else (e.g. the QR preview) must be queued explicitly.
-        if (!(e.target as HTMLElement).classList.contains('postMessage')) {
-          document.querySelector('script[src^="//cdn.mathjax.org/"]').addEventListener(
-            'load',
-            () => (window as any).MathJax.Hub.Queue(['Typeset', (window as any).MathJax.Hub, e.target]),
-            false,
-          );
-        }
+        const script = document.createElement('script');
+        script.src = scriptURL;
+        document.head.appendChild(script);
       }
+
+      const script = document.querySelector(scriptSelector);
+      if (script) {
+        script.addEventListener('load', () => { queueTypeset(); }, false);
+      }
+
+      let tries = 0;
+      const timer = window.setInterval(() => {
+        if (queueTypeset() || ++tries > 200) {
+          window.clearInterval(timer);
+        }
+      }, 50);
     }, false);
+  },
+
+  typesetMathjax: ({ id }) => {
+    const target = document.getElementById(id);
+    if (!target) return;
+    const scriptURL = 'https://cdnjs.cloudflare.com/ajax/libs/mathjax/2.7.9/MathJax.js?config=TeX-AMS_HTML-full';
+    const scriptSelector = 'script[src^="https://cdnjs.cloudflare.com/ajax/libs/mathjax/2.7.9/MathJax.js"]';
+
+    const queueTypeset = () => {
+      if (!(window as any).MathJax?.Hub) return false;
+      (window as any).MathJax.Hub.Queue(
+        ['Typeset', (window as any).MathJax.Hub, target],
+        () => {
+          if (!target.querySelector('.MathJax, .MathJax_Display')) return;
+          for (const fallback of target.querySelectorAll('.qr-math-fallback')) {
+            fallback.remove();
+          }
+        }
+      );
+      return true;
+    };
+    if (queueTypeset()) return;
+
+    if (!document.querySelector(scriptSelector)) {
+      if (!document.getElementById('fourchanx-mathjax-config')) {
+        const config = document.createElement('script');
+        config.id = 'fourchanx-mathjax-config';
+        config.type = 'text/x-mathjax-config';
+        config.text = "MathJax.Hub.Config({extensions:['Safe.js'],tex2jax:{processRefs:false,processEnvironments:false,preview:'none',inlineMath:[['[math]','[/math]']],displayMath:[['[eqn]','[/eqn]']]},Safe:{allow:{URLs:'none',classes:'none',cssIDs:'none',styles:'none',fontsize:'none',require:'none'}},displayAlign:'left',messageStyle:'none'});";
+        document.head.appendChild(config);
+      }
+      const script = document.createElement('script');
+      script.src = scriptURL;
+      document.head.appendChild(script);
+    }
+
+    const script = document.querySelector(scriptSelector);
+    if (script) {
+      script.addEventListener('load', () => { queueTypeset(); }, false);
+    }
+
+    let tries = 0;
+    const timer = window.setInterval(() => {
+      if (queueTypeset() || ++tries > 200) {
+        window.clearInterval(timer);
+      }
+    }, 50);
   },
 
   disable4chanIdHl: () => {

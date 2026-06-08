@@ -225,8 +225,18 @@ var Main = {
       !$$('script:not([src])', d).filter(s => /this\[/.test(s.textContent)).length
     ) {
       ($.getSync || $.get)({'jsWhitelist': Conf['jsWhitelist']}, ({jsWhitelist}) => {
-        const parsedList = jsWhitelist.replace(/^#.*$/mg, '').replace(/[\s;]+/g, ' ').trim();
-        if (/\S/.test(parsedList)) $.addCSP(`script-src ${parsedList}`);
+        const sources = jsWhitelist.replace(/^#.*$/mg, '').split(/[\s;]+/).filter(Boolean);
+        const mathBoard = $$('script:not([src])', d).some(s => /\bmath_tags\s*=\s*true\b/.test(s.textContent || ''));
+        if (mathBoard) {
+          sources.push('https://cdnjs.cloudflare.com', 'https://cdn.mathjax.org');
+        }
+        // Permit the extension's own injected scripts ($.global) via a nonce, so the
+        // whitelist still blocks the page's inline scripts but not our page-context code.
+        // MathJax v2 evaluates strings internally, so math boards also need 'unsafe-eval'.
+        const extras = [`'nonce-${$.getCSPNonce()}'`];
+        if (mathBoard) extras.push(`'unsafe-eval'`);
+        const parsedList = [...new Set(sources)].join(' ');
+        if (parsedList) $.addCSP(`script-src ${parsedList} ${extras.join(' ')}`);
       });
     }
 

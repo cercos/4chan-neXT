@@ -477,10 +477,13 @@ audio.controls-added {
   box-shadow: 0 0 15px rgba(0, 0, 0, .15);
   height: 600px;
   max-height: 100%;
-  min-height: 360px;
-  width: 900px;
+  /* The Simple Filters page used to be a wide table that forced a ~975px minimum.
+     It is now a responsive tile grid (see .easy-filters-list) that collapses to a
+     single column, so the window can shrink to a phone-friendly floor. */
+  min-height: 480px;
+  width: 1000px;
   max-width: 100%;
-  min-width: 520px;
+  min-width: 360px;
   margin: auto;
   padding: 0;
   display: flex;
@@ -515,7 +518,7 @@ audio.controls-added {
   opacity: 1;
   text-decoration: underline;
 }
-.settings-titlebar-actions .remember-layout-toggle {
+.remember-layout-toggle {
   align-items: center;
   cursor: pointer;
   display: inline-flex;
@@ -523,13 +526,13 @@ audio.controls-added {
   opacity: .85;
   user-select: none;
 }
-.settings-titlebar-actions .remember-layout-toggle:hover {
+.remember-layout-toggle:hover {
   opacity: 1;
 }
-.settings-titlebar-actions .remember-layout-toggle > span {
+.remember-layout-toggle > span {
   white-space: nowrap;
 }
-.settings-titlebar-actions .remember-layout-toggle input {
+.remember-layout-toggle input {
   margin: 0;
 }
 #fourchanx-settings > .settings-body {
@@ -543,9 +546,10 @@ audio.controls-added {
   padding: 8px;
   display: flex;
   flex-direction: column;
-  flex: 0 0 auto;
-  min-width: 148px;
-  max-width: 220px;
+  flex: 0 0 max-content;
+  min-width: 0;
+  max-width: 180px;
+  width: max-content;
 }
 #fourchanx-settings > .settings-body > nav a {
   text-decoration: none;
@@ -555,7 +559,21 @@ audio.controls-added {
 }
 #fourchanx-settings > .settings-body > nav .settings-search input {
   box-sizing: border-box;
-  width: 100%;
+  max-width: 100%;
+  width: 15ch;
+}
+/* The .field defaults (white bg, #CCC border) are built for light pages and
+   read as a harsh bright-white box on dark themes. The styling section already
+   gives its own fields a subtle, theme-adaptive frame; do the same for every
+   other plain .field in the settings dialog (search box, board nav, filters,
+   thread-watcher inputs, …) so the whole dialog is consistent. The styling
+   section's special fields are excluded so their bespoke rules — including the
+   red invalid-hex border — keep winning. */
+#fourchanx-settings .field:not(.styling-color-hex):not(.styling-saved-palette-name):not(.styling-hl-widthnum):not(.custom-css-textarea) {
+  background-color: transparent;
+  border-color: rgba(128, 128, 128, .45);
+  border-radius: 3px;
+  color: inherit;
 }
 #fourchanx-settings .close {
   text-decoration: none;
@@ -625,6 +643,39 @@ audio.controls-added {
 .tab-selected {
   background: rgba(128, 128, 128, .18);
   font-weight: 700;
+}
+/* Horizontal navigation layout: the search box and section links are moved
+   into the titlebar (in place of the title) and the left sidebar is hidden. */
+#fourchanx-settings.settings-nav-horizontal .settings-titlebar {
+  flex-wrap: wrap;
+  gap: 4px 10px;
+}
+#fourchanx-settings.settings-nav-horizontal .settings-title {
+  display: none;
+}
+#fourchanx-settings.settings-nav-horizontal .settings-titlebar > .settings-search {
+  margin: 0;
+}
+#fourchanx-settings.settings-nav-horizontal .settings-titlebar > .settings-search input {
+  box-sizing: border-box;
+  width: 15ch;
+}
+#fourchanx-settings.settings-nav-horizontal .settings-titlebar > .sections-list {
+  flex: 1 1 auto;
+  flex-direction: row;
+  flex-wrap: wrap;
+  align-items: center;
+  gap: 0;
+  overflow: visible;
+}
+#fourchanx-settings.settings-nav-horizontal .settings-titlebar > .sections-list > a {
+  padding: 3px 7px;
+}
+#fourchanx-settings.settings-nav-horizontal .settings-titlebar > .sections-list > a + a {
+  border-left: 1px solid rgba(128, 128, 128, .4);
+}
+#fourchanx-settings.settings-nav-horizontal > .settings-body > nav {
+  display: none;
 }
 .settings-footer {
   border-top: 1px solid rgba(128, 128, 128, .25);
@@ -916,44 +967,141 @@ div[data-checked="false"] > .suboption-list {
 .section-filters .filter-stat-more {
   opacity: .8;
 }
-.section-filters .easy-filters-table {
-  width: 100%;
-  border-collapse: separate;
-  border-spacing: 4px;
+/* Filter rules share one tile DOM rendered in two layouts:
+   - "list" = inline rows (fields side by side, one rule per line) — the classic form.
+   - "grid" = vertical cards (label left / value right) flowed into responsive columns.
+   "auto" is not its own layout: easyFilters() resolves the container to .layout-list
+   when the settings dialog is at least ~1000px wide and .layout-grid below that,
+   re-evaluating on resize. layout-grid auto-fits its column count to the width. */
+.section-filters .easy-filters-list {
+  gap: 8px;
 }
-.section-filters th,
-.section-filters td {
-  padding: 0;
-  text-align: left;
-  vertical-align: middle;
+.section-filters .easy-filter-tile {
+  box-sizing: border-box;
+  border: 1px solid rgba(128, 128, 128, .3);
+  border-radius: 5px;
+  padding: 6px 8px;
+  display: flex;
+  gap: 6px;
 }
-.section-filters .easy-filter-enabled,
-.section-filters .easy-filter-auto,
-.section-filters .easy-filter-hide,
-.section-filters .easy-filter-override {
-  display: block;
-  margin: auto;
+.section-filters .easy-filter-on {
+  display: inline-flex;
+  align-items: center;
+  gap: 4px;
 }
-.section-filters .easy-filter-pattern {
-  min-width: 200px;
+.section-filters .easy-filter-field {
+  display: flex;
+  align-items: center;
+  gap: 5px;
 }
-.section-filters .easy-filter-boards {
-  min-width: 96px;
+.section-filters .easy-filter-field > span {
+  flex: 0 0 auto;
+  opacity: .85;
 }
-.section-filters .easy-filter-color {
+
+/* Card (vertical) layout — "grid", and "auto" when a row would wrap. */
+.section-filters .easy-filters-list.layout-grid {
+  display: grid;
+  grid-template-columns: repeat(auto-fill, minmax(240px, 1fr));
+}
+.section-filters .layout-grid .easy-filter-tile {
+  flex-direction: column;
+}
+.section-filters .layout-grid .easy-filter-tile-head {
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+}
+.section-filters .layout-grid .easy-filter-field {
+  justify-content: space-between;
+}
+.section-filters .layout-grid .easy-filter-field .field {
+  flex: 1 1 auto;
+  min-width: 0;
+}
+
+/* Row (inline) layout — "list", and "auto" while the row fits on one line. */
+.section-filters .easy-filters-list.layout-list {
+  display: flex;
+  flex-direction: column;
+}
+.section-filters .layout-list .easy-filter-tile {
+  flex-direction: row;
+  flex-wrap: wrap;
+  align-items: center;
+  gap: 10px;
+}
+.section-filters .layout-list .easy-filter-tile-head {
+  display: contents;
+}
+.section-filters .layout-list .easy-filter-remove {
+  order: 1;
+  margin-left: auto;
+}
+.section-filters .layout-list .easy-filter-field {
+  width: auto;
+}
+.section-filters .layout-list .easy-filter-pattern {
+  width: 160px;
+}
+.section-filters .layout-list .easy-filter-boards {
+  width: 112px;
+}
+.section-filters .layout-list .easy-filter-type {
+  width: 132px;
+}
+.section-filters .layout-list .easy-filter-class {
   width: 84px;
 }
-.section-filters .easy-filter-remove {
-  min-width: 26px;
+.section-filters .easy-filter-color-cell {
+  align-items: center;
+  display: inline-flex;
+  gap: 4px;
+}
+.section-filters .easy-filter-class {
+  min-width: 90px;
+  width: 100%;
+}
+.section-filters .easy-filter-color {
+  width: 34px;
   height: 24px;
-  line-height: 20px;
+  padding: 0;
+  border: 1px solid rgba(128, 128, 128, .4);
+  border-radius: 3px;
+  background: none;
+  cursor: pointer;
+  vertical-align: middle;
+}
+.section-filters .easy-filter-color::-webkit-color-swatch-wrapper {
+  padding: 2px;
+}
+.section-filters .easy-filter-color::-webkit-color-swatch,
+.section-filters .easy-filter-color::-moz-color-swatch {
+  border: none;
+  border-radius: 2px;
+}
+.section-filters .easy-filter-color:disabled {
+  opacity: .4;
+  cursor: default;
+}
+.section-filters .easy-filter-remove {
+  font-size: 13px;
+  height: 20px;
+  line-height: 16px;
+  min-width: 20px;
+  padding: 0;
   text-align: center;
+  width: 20px;
 }
 .section-filters .easy-filters-controls {
-  margin-top: 6px;
+  margin-bottom: 8px;
 }
-.section-filters .easy-filter-save {
-  margin-left: 6px;
+.section-filters .easy-filter-layout {
+  margin-left: 10px;
+}
+.section-filters .easy-filter-layout-btn.selected {
+  font-weight: 700;
+  text-decoration: underline;
 }
 .section-filters .easy-filter-status {
   margin-left: 8px;
@@ -991,6 +1139,22 @@ div[data-checked="false"] > .suboption-list {
   display: flex;
   flex-wrap: wrap;
   gap: 8px;
+}
+.section-styling .styling-highlight-intro {
+  align-items: start;
+  display: grid;
+  gap: 8px 12px;
+  grid-template-columns: minmax(0, 1fr) auto;
+}
+.section-styling .styling-highlight-intro > p {
+  margin: 0;
+}
+.section-styling #styling-open-preview {
+  justify-self: end;
+  white-space: nowrap;
+}
+#styling-preview-anchor {
+  height: 0;
 }
 .section-styling .styling-palette-suggestions {
   margin-top: 8px;
@@ -1070,36 +1234,81 @@ div[data-checked="false"] > .suboption-list {
   background: color-mix(in srgb, currentColor 8%, transparent);
 }
 .styling-preview {
-  width: min(960px, 92vw);
-  max-height: 85vh;
+  box-sizing: border-box;
+  box-shadow: 0 0 18px rgba(0, 0, 0, .25);
+  display: flex;
+  flex-direction: column;
+  max-width: 96vw;
+  min-height: 260px;
+  min-width: min(420px, 96vw);
+  overflow: hidden;
+  padding: 0;
+  position: absolute;
+  resize: both;
+  z-index: 2;
+}
+.styling-preview-attached {
+  resize: vertical;
+}
+.styling-preview-detached {
+  max-height: min(85vh, 640px);
+}
+.styling-preview-titlebar {
+  align-items: center;
+  border-bottom: 1px solid rgba(128, 128, 128, .25);
+  box-sizing: border-box;
+  cursor: move;
+  display: flex;
+  flex: 0 0 auto;
+  justify-content: space-between;
+  padding: 6px 8px;
+}
+.styling-preview-title {
+  font-weight: 700;
+}
+.styling-preview-titlebar-actions {
+  align-items: center;
+  display: inline-flex;
+  gap: 4px;
+  margin-left: auto;
+}
+.styling-preview-attach {
+  align-items: center;
+  display: inline-flex;
+  justify-content: center;
+  min-height: 18px;
+  min-width: 18px;
+  opacity: .7;
+  padding: 2px 4px;
+  text-decoration: none;
+}
+.styling-preview-attach:hover,
+.styling-preview-attach.attached {
+  opacity: 1;
+}
+.styling-preview-close {
+  margin: 0;
+  padding: 2px 4px;
+  text-decoration: none;
+}
+.styling-preview-layout {
+  align-items: start;
+  /* Cover the whole sample area with the board's current background so the previews
+     sit on the real page colour instead of the dialog's grey chrome. */
+  background: var(--xt-background, Canvas);
+  display: grid;
+  flex: 1 1 auto;
+  gap: 12px;
+  grid-template-columns: minmax(360px, max-content) max-content;
   overflow: auto;
   padding: 10px 12px;
 }
-.styling-preview-dock {
-  margin-top: 10px;
-  width: auto;
-  max-height: none;
-  transition: max-height 150ms ease, opacity 120ms ease;
-}
-.styling-preview-dock[data-collapsed="true"] {
-  max-height: 0;
-  opacity: 0;
-  overflow: hidden;
-  padding: 0 12px;
-  margin: 0;
-  border-width: 0;
-}
 .styling-preview-thread {
   background: transparent;
-  border: 1px solid rgba(128, 128, 128, .35);
+  border: 0;
   margin: 0;
   padding: 8px;
-}
-.styling-preview-layout {
-  display: grid;
-  grid-template-columns: minmax(520px, 1fr) minmax(350px, 360px);
-  gap: 10px;
-  align-items: start;
+  width: fit-content;
 }
 .styling-preview-thread > .thread {
   display: block;
@@ -1109,20 +1318,32 @@ div[data-checked="false"] > .suboption-list {
 }
 .styling-preview-catalog {
   background: transparent;
-  border: 1px solid rgba(128, 128, 128, .35);
+  border: 0;
+  display: flex;
+  flex-wrap: nowrap;
+  gap: 8px;
   margin: 0;
+  min-width: 0;
   padding: 8px;
-  min-width: 350px;
-  text-align: left;
+  /* Catalog entries center their subject/text like the real catalog does. */
+  text-align: center;
+  width: fit-content;
 }
 .styling-preview-catalog > .catalog-thread {
-  margin: 2px;
-  vertical-align: top;
+  flex: 0 0 165px;
+  height: 225px;
+  margin: 0;
+  width: 165px;
 }
-.styling-preview-catalog::after {
-  content: "";
-  display: block;
-  clear: both;
+.styling-preview-catalog .catalog-thumb {
+  height: auto !important;
+  max-height: 92px;
+  max-width: 118px;
+  width: auto !important;
+}
+.styling-preview-catalog .catalog-post > .postMessage {
+  max-height: 4.5em;
+  overflow: hidden;
 }
 .styling-preview-post {
   border: none;
@@ -1140,17 +1361,36 @@ div[data-checked="false"] > .suboption-list {
   margin-bottom: 0;
 }
 .styling-preview-post > .reply {
-  display: block;
-  max-width: min(100%, 960px);
+  display: inline-block;
+  max-width: min(100%, 860px);
+  width: auto;
 }
 .styling-preview-post .sideArrows {
   display: inline-block;
   float: left;
   margin-right: 4px;
 }
-@media (max-width: 1200px) {
+@media (max-width: 700px) {
+  .styling-preview {
+    min-width: 0;
+    width: 96vw !important;
+  }
   .styling-preview-layout {
+    display: block;
+  }
+  .styling-preview-catalog {
+    flex-wrap: wrap;
+    min-width: 0;
+  }
+  .styling-preview-catalog > .catalog-thread {
+    flex-basis: 140px;
+    width: 140px;
+  }
+  .section-styling .styling-highlight-intro {
     grid-template-columns: 1fr;
+  }
+  .section-styling #styling-open-preview {
+    justify-self: start;
   }
 }
 .styling-preview-post .postInfo,
@@ -1163,8 +1403,12 @@ div[data-checked="false"] > .suboption-list {
 .styling-preview-post a {
   color: var(--xt-link-text-color);
 }
-.styling-preview-post .quote {
-  color: var(--xt-quote-text-color) !important;
+/* Greentext: custom override if set, else the theme's quote colour, else native
+   4chan green. Without the theme/native fallback an unset --xt-quote-text-color
+   made the whole declaration invalid, so greentext fell back to plain text colour. */
+.styling-preview-post .quote,
+.styling-preview-catalog .quote {
+  color: var(--xt-quote-text-color, var(--xt-quote-color, #789922)) !important;
 }
 .styling-preview-post .backlink.deadlink,
 .styling-preview-post .quotelink.deadlink {
@@ -1176,29 +1420,43 @@ div[data-checked="false"] > .suboption-list {
   /* Reset any site theme that forces a reply background via !important so the
      preview faithfully shows the configured highlight colors. */
   background-color: var(--xt-post-background, var(--xt-background, transparent)) !important;
-  border-left: var(--xt-edge-width-ghost, var(--xt-highlight-edge-width, 3px)) solid transparent !important;
+  border-left: var(--xt-highlight-edge-width, 3px) solid transparent !important;
 }
+/* Highlight on → background fill. Edge and fill are mutually exclusive, so the
+   colored edge (and a reset of the fill) is layered on top only in edge mode
+   ([data-edge-*="true"]); otherwise a lowered-opacity fill would show the edge
+   bleeding through. Mirrors the real highlight rules in variableBase.css. */
 .styling-preview[data-highlight-own="true"] .styling-preview-post.yourPost > .reply {
-  border-left: var(--xt-edge-width-own, var(--xt-highlight-edge-width, 3px)) dashed color-mix(in srgb, var(--xt-highlight-own, var(--xt-border-highlight)) calc(var(--xt-highlight-own-opacity, 1) * 100%), transparent) !important;
   background-color: color-mix(in srgb, var(--xt-highlight-own, var(--xt-border-highlight)) calc(var(--xt-highlight-own-opacity, 1) * 100%), var(--xt-post-background, var(--xt-background, transparent))) !important;
 }
 .styling-preview[data-highlight-you="true"] .styling-preview-post.quotesYou > .reply {
-  border-left: var(--xt-edge-width-you, var(--xt-highlight-edge-width, 3px)) solid color-mix(in srgb, var(--xt-highlight-you, var(--xt-border-highlight)) calc(var(--xt-highlight-you-opacity, 1) * 100%), transparent) !important;
   background-color: color-mix(in srgb, var(--xt-highlight-you, var(--xt-border-highlight)) calc(var(--xt-highlight-you-opacity, 1) * 100%), var(--xt-post-background, var(--xt-background, transparent))) !important;
 }
 .styling-preview[data-highlight-ghost="true"] .styling-preview-post.from-archive > .reply {
-  border-left: var(--xt-edge-width-ghost, var(--xt-highlight-edge-width, 3px)) dotted color-mix(in srgb, var(--xt-highlight-ghost, #888) calc(var(--xt-highlight-ghost-opacity, 1) * 100%), transparent) !important;
   background-color: color-mix(in srgb, var(--xt-highlight-ghost, #888) calc(var(--xt-highlight-ghost-opacity, 1) * 100%), var(--xt-post-background, var(--xt-background, transparent))) !important;
 }
-.styling-preview[data-edge-own="true"] .styling-preview-post.yourPost > .reply,
-.styling-preview[data-edge-you="true"] .styling-preview-post.quotesYou > .reply,
-.styling-preview[data-edge-ghost="true"] .styling-preview-post.from-archive > .reply {
+.styling-preview[data-highlight-own="true"][data-edge-own="true"] .styling-preview-post.yourPost > .reply {
+  border-left: var(--xt-edge-width-own, var(--xt-highlight-edge-width, 3px)) var(--xt-edge-style-own, dashed) color-mix(in srgb, var(--xt-highlight-own, var(--xt-border-highlight)) calc(var(--xt-highlight-own-opacity, 1) * 100%), transparent) !important;
+  background-color: var(--xt-post-background, var(--xt-background, transparent)) !important;
+}
+.styling-preview[data-highlight-you="true"][data-edge-you="true"] .styling-preview-post.quotesYou > .reply {
+  border-left: var(--xt-edge-width-you, var(--xt-highlight-edge-width, 3px)) var(--xt-edge-style-you, solid) color-mix(in srgb, var(--xt-highlight-you, var(--xt-border-highlight)) calc(var(--xt-highlight-you-opacity, 1) * 100%), transparent) !important;
+  background-color: var(--xt-post-background, var(--xt-background, transparent)) !important;
+}
+.styling-preview[data-highlight-ghost="true"][data-edge-ghost="true"] .styling-preview-post.from-archive > .reply {
+  border-left: var(--xt-edge-width-ghost, var(--xt-highlight-edge-width, 3px)) var(--xt-edge-style-ghost, dotted) color-mix(in srgb, var(--xt-highlight-ghost, #888) calc(var(--xt-highlight-ghost-opacity, 1) * 100%), transparent) !important;
   background-color: var(--xt-post-background, var(--xt-background, transparent)) !important;
 }
 .styling-preview[data-highlight-own="false"] .styling-preview-post.yourPost > .reply,
 .styling-preview[data-highlight-you="false"] .styling-preview-post.quotesYou > .reply,
 .styling-preview[data-highlight-ghost="false"] .styling-preview-post.from-archive > .reply {
   opacity: .6;
+}
+.styling-preview .styling-preview-post.filter-highlight > .reply {
+  box-shadow: inset 5px 0 var(--xt-filter-highlight, rgba(221, 0, 0, .5));
+}
+.styling-preview .styling-preview-post.filter-highlight > .sideArrows {
+  color: var(--xt-highlight-side-arrow, rgba(221, 0, 0, .8));
 }
 .styling-preview .styling-preview-post.yourPost .postInfo,
 .styling-preview .styling-preview-post.yourPost .postMessage {
@@ -1208,7 +1466,7 @@ div[data-checked="false"] > .suboption-list {
   color: var(--xt-highlight-own-link, var(--xt-link-text-color)) !important;
 }
 .styling-preview .styling-preview-post.yourPost .quote {
-  color: var(--xt-highlight-own-quote, var(--xt-quote-text-color)) !important;
+  color: var(--xt-highlight-own-quote, var(--xt-quote-text-color, var(--xt-quote-color, #789922))) !important;
 }
 .styling-preview .styling-preview-post.yourPost .backlink.deadlink,
 .styling-preview .styling-preview-post.yourPost .quotelink.deadlink {
@@ -1222,7 +1480,7 @@ div[data-checked="false"] > .suboption-list {
   color: var(--xt-highlight-you-link, var(--xt-link-text-color)) !important;
 }
 .styling-preview .styling-preview-post.quotesYou .quote {
-  color: var(--xt-highlight-you-quote, var(--xt-quote-text-color)) !important;
+  color: var(--xt-highlight-you-quote, var(--xt-quote-text-color, var(--xt-quote-color, #789922))) !important;
 }
 .styling-preview .styling-preview-post.quotesYou .backlink.deadlink,
 .styling-preview .styling-preview-post.quotesYou .quotelink.deadlink {
@@ -1236,7 +1494,7 @@ div[data-checked="false"] > .suboption-list {
   color: var(--xt-highlight-ghost-link, var(--xt-link-text-color)) !important;
 }
 .styling-preview .styling-preview-post.from-archive .quote {
-  color: var(--xt-highlight-ghost-quote, var(--xt-quote-text-color)) !important;
+  color: var(--xt-highlight-ghost-quote, var(--xt-quote-text-color, var(--xt-quote-color, #789922))) !important;
 }
 .styling-preview .styling-preview-post.from-archive .backlink.deadlink,
 .styling-preview .styling-preview-post.from-archive .quotelink.deadlink {
@@ -1250,6 +1508,7 @@ div[data-checked="false"] > .suboption-list {
 .styling-preview[data-highlight-catalog-own="true"][data-edge-catalog-own="true"] .catalog-thread:has(.yourPost),
 .styling-preview[data-highlight-catalog-own="true"][data-edge-catalog-own="true"] .catalog-thread.yourPost {
   border-color: color-mix(in srgb, var(--xt-catalog-own-highlight, var(--xt-highlight-own, var(--xt-border-highlight))) calc(var(--xt-catalog-own-highlight-opacity, 1) * 100%), transparent) !important;
+  border-style: var(--xt-catalog-border-style-own, solid) !important;
   border-width: var(--xt-catalog-border-width-own, var(--xt-catalog-border-width, 3px)) !important;
 }
 .styling-preview[data-highlight-catalog-own="true"]:not([data-edge-catalog-own="true"]) .catalog-thread:has(.yourPost) > .catalog-container,
@@ -1298,6 +1557,7 @@ div[data-checked="false"] > .suboption-list {
 }
 .styling-preview[data-highlight-catalog-watched="true"][data-edge-catalog-watched="true"] .catalog-thread.watched {
   border-color: color-mix(in srgb, var(--xt-catalog-watched-highlight, var(--xt-watched-border, rgba(255, 0, 0, .75))) calc(var(--xt-catalog-watched-highlight-opacity, 0.2) * 100%), transparent) !important;
+  border-style: var(--xt-catalog-border-style-watched, solid) !important;
   border-width: var(--xt-catalog-border-width-watched, var(--xt-catalog-border-width, 3px)) !important;
 }
 .styling-preview[data-highlight-catalog-watched="true"]:not([data-edge-catalog-watched="true"]) .catalog-thread.watched > .catalog-container,
@@ -1326,6 +1586,10 @@ div[data-checked="false"] > .suboption-list {
 .styling-preview[data-highlight-catalog-watched="true"][data-text-catalog-watched="true"] .catalog-thread.watched .post.catalog-post .deadlink {
   color: var(--xt-catalog-watched-dead-link, var(--xt-dead-link-text-color, var(--xt-dead-link))) !important;
 }
+.styling-preview .catalog-thread.filter-highlight:not(.filter-glow-tile) .catalog-thumb,
+.styling-preview .catalog-thread.filter-highlight.filter-glow-tile {
+  box-shadow: 0 0 3px 3px var(--xt-highlight-shadow, rgba(255, 0, 0, .5));
+}
 .section-styling .styling-variant-bar {
   align-items: center;
   border-bottom: 1px solid rgba(128, 128, 128, .25);
@@ -1335,7 +1599,6 @@ div[data-checked="false"] > .suboption-list {
   margin: 0 0 10px;
   padding: 6px 8px 8px;
   position: relative;
-  border-left: 4px solid var(--xt-variant-accent, rgba(128, 128, 128, .4));
 }
 /* SFW is treated as the default/regular style — no accent. Only NSFW
    gets the colored treatment so the user gets a visual warning when
@@ -1498,14 +1761,11 @@ body > #overlay:not(.media-preview) {
 }
 
 /* Mark each <details> section that contains variant-aware controls without
-   turning the whole Styling page into a stack of warning boxes. The left
-   accent and compact summary badge make the affected sections scannable
-   after switching SFW/NSFW tabs. */
-#fourchanx-settings .section-styling details[data-variant-aware="true"] {
-  border-left: 3px solid var(--xt-variant-accent, rgba(128, 128, 128, .35));
-  transition: border-left-color .15s ease;
-}
-#fourchanx-settings .section-styling details[data-variant-aware="true"] > summary::after {
+   turning the whole Styling page into a stack of warning boxes. The compact
+   summary badge keeps the affected sections scannable after switching
+   SFW/NSFW tabs. Keep it off summary::after; that pseudo-element is reserved
+   for the shared details disclosure arrow. */
+#fourchanx-settings .section-styling details[data-variant-aware="true"] > summary .styling-section-summary-text::after {
   background: color-mix(in srgb, var(--xt-variant-accent, currentColor) 16%, transparent);
   border: 1px solid color-mix(in srgb, var(--xt-variant-accent, currentColor) 45%, transparent);
   border-radius: 3px;
@@ -1700,6 +1960,40 @@ body > #overlay:not(.media-preview) {
   border: 1px solid rgba(128, 128, 128, .35);
   background: transparent;
 }
+/* Match the theme picker's subtle, theme-adaptive frame for the styling section's
+   bright text/number inputs (hex fields, palette name, width boxes) instead of the
+   stark white .field box, so they're easier on the eyes. Placed before the
+   .styling-color-hex-invalid rules so the red invalid border still wins. */
+.section-styling .styling-color-hex,
+.section-styling .styling-saved-palette-name,
+.section-styling .styling-hl-widthnum {
+  background: transparent;
+  border: 1px solid rgba(128, 128, 128, .45);
+  border-radius: 3px;
+  color: inherit;
+}
+/* Bring the styling section's native dropdowns in line with the same subtle,
+   theme-adaptive frame (they previously rendered with the browser's stark
+   default control, clashing with the theme picker and hex/name fields). */
+.section-styling .styling-variant-mode select,
+.section-styling .styling-theme-row select,
+.section-styling .styling-hl-octl select,
+.section-styling .custom-css-controls select {
+  background: transparent;
+  border: 1px solid rgba(128, 128, 128, .45);
+  border-radius: 3px;
+  color: inherit;
+  padding: 2px 6px;
+}
+/* Keep the popped-open option list readable: an inherited light text colour
+   would otherwise sit on the browser's default light popup on dark themes. */
+.section-styling .styling-variant-mode select option,
+.section-styling .styling-theme-row select option,
+.section-styling .styling-hl-octl select option,
+.section-styling .custom-css-controls select option {
+  background: var(--xt-dialog-bg, var(--background, Canvas));
+  color: inherit;
+}
 .section-styling .styling-inline-controls .styling-color-hex {
   font-family: ui-monospace, SFMono-Regular, Menlo, Monaco, Consolas, "Liberation Mono", "Courier New", monospace;
   font-size: 11px;
@@ -1743,11 +2037,22 @@ body > #overlay:not(.media-preview) {
   gap: 6px 16px;
   margin: 6px 0;
 }
-.section-styling .styling-hl-master {
+#fourchanx-settings .section-styling .styling-hl-master {
   align-items: center;
   display: inline-flex;
   font-weight: 600;
   gap: 5px;
+  line-height: 16px;
+  min-height: 18px;
+  white-space: nowrap;
+}
+#fourchanx-settings .section-styling .styling-hl-master input[type="checkbox"] {
+  align-self: center;
+  display: block;
+  flex: none;
+  margin: 0;
+  position: relative;
+  top: 1px;
 }
 .section-styling .styling-hl-width {
   align-items: center;
@@ -1774,13 +2079,15 @@ body > #overlay:not(.media-preview) {
   padding: 4px 10px;
   user-select: none;
 }
+.section-styling .styling-hl-acc-head:hover {
+  background: color-mix(in srgb, currentColor 10%, transparent);
+}
 .section-styling .styling-hl-acc-item.styling-hl-open .styling-hl-acc-head {
   background: color-mix(in srgb, currentColor 7%, transparent);
   border-bottom: 1px solid color-mix(in srgb, currentColor 16%, transparent);
 }
-.section-styling .styling-hl-acc-toggle {
-  align-items: center;
-  display: inline-flex;
+.section-styling .styling-hl-acc-item.styling-hl-open .styling-hl-acc-head:hover {
+  background: color-mix(in srgb, currentColor 12%, transparent);
 }
 .section-styling .styling-hl-acc-name {
   align-items: center;
@@ -1815,13 +2122,41 @@ body > #overlay:not(.media-preview) {
 .section-styling .styling-hl-acc-item.styling-hl-open .styling-hl-acc-body {
   display: block;
 }
-.section-styling .styling-hl-sub {
+/* ID prefix beats `#fourchanx-settings label { display: inline }`, so the
+   subsection label lays out as a full-width flex row and keeps its full-width
+   underline. */
+#fourchanx-settings .section-styling .styling-hl-sub {
+  align-items: center;
   border-bottom: 1px solid color-mix(in srgb, currentColor 18%, transparent);
+  box-sizing: border-box;
+  display: flex;
   font-size: 11px;
+  gap: 6px;
   letter-spacing: .04em;
+  line-height: 16px;
   margin: 5px 0 1px;
+  min-height: 21px;
+  padding: 2px 0;
+}
+/* A subsection header doubling as its on/off toggle: the checkbox sits inline
+   with the (dimmed, uppercase) section label and stays at full opacity. */
+.section-styling .styling-hl-subtoggle {
+  cursor: pointer;
+}
+.section-styling .styling-hl-subtoggle input[type="checkbox"] {
+  align-self: center;
+  display: block;
+  flex: none;
+  margin: 0;
+  position: relative;
+  top: 1px;
+}
+.section-styling .styling-hl-sub-text {
+  align-items: center;
+  display: inline-flex;
+  line-height: 16px;
+  min-height: 16px;
   opacity: .6;
-  padding-bottom: 2px;
   text-transform: uppercase;
 }
 .section-styling .styling-hl-orow {
@@ -1835,6 +2170,15 @@ body > #overlay:not(.media-preview) {
 .section-styling .styling-hl-orow:last-child {
   border-bottom: 0;
 }
+/* Subtle per-setting hover so the row under the cursor reads as a unit. The
+   negative margin + matching padding lets the tint reach the body's edges
+   instead of sitting inset within its horizontal padding. */
+.section-styling .styling-hl-orow:hover {
+  background: color-mix(in srgb, currentColor 6%, transparent);
+  border-radius: 4px;
+  margin: 0 -8px;
+  padding: 2px 8px;
+}
 .section-styling .styling-hl-olabel {
   min-width: 0;
   opacity: .9;
@@ -1843,6 +2187,19 @@ body > #overlay:not(.media-preview) {
   align-items: center;
   display: inline-flex;
   gap: 6px;
+}
+/* Header colour swatch + hex field: line them up on a shared centre line
+   instead of letting them fall to the text baseline. */
+.section-styling .styling-hl-color {
+  align-items: center;
+  display: inline-flex;
+  gap: 6px;
+}
+/* Slot that receives a row's marker swatch while collapsed. display:contents so
+   the moved-in swatch joins the header flex line directly, and an empty slot
+   (swatch currently in the body) adds no stray gap. */
+.section-styling .styling-hl-mkheadslot {
+  display: contents;
 }
 .section-styling .styling-hl-color input[type="color"],
 .section-styling .styling-hl-octl input[type="color"] {
@@ -1857,7 +2214,7 @@ body > #overlay:not(.media-preview) {
 }
 .section-styling .styling-hl-widthnum {
   text-align: right;
-  width: 40px;
+  width: 56px;
 }
 .section-styling .styling-hl-unit {
   font-size: 11px;
@@ -1886,37 +2243,22 @@ body > #overlay:not(.media-preview) {
   border-color: #d33;
   box-shadow: 0 0 0 1px color-mix(in srgb, #d33 45%, transparent);
 }
-.section-styling .styling-hl-manual {
-  margin: 2px 0 4px;
-}
-.section-styling .styling-hl-manual[hidden] {
-  display: none;
-}
-.section-styling .styling-hl-manual > summary {
-  color: color-mix(in srgb, currentColor 65%, #6cf);
-  cursor: pointer;
-  font-size: 12px;
-  padding: 3px 0;
-}
-.section-styling .styling-hl-manual-row {
-  display: flex;
-  flex-wrap: wrap;
-  gap: 4px 12px;
-  padding: 4px 0 2px 10px;
-}
-.section-styling .styling-hl-manual-row label {
+/* Manual highlight text colours sit inline, just left of the mode dropdown,
+   and only appear when the row's text mode is "Manual" (toggled via [hidden]). */
+.section-styling .styling-hl-inlinecolors {
   align-items: center;
   display: inline-flex;
-  font-size: 12px;
-  gap: 4px;
-  opacity: .9;
+  gap: 3px;
 }
-.section-styling .styling-hl-manual-row input[type="color"] {
+.section-styling .styling-hl-inlinecolors[hidden] {
+  display: none;
+}
+.section-styling .styling-hl-inlinecolors input[type="color"] {
   background: transparent;
   border: 1px solid rgba(128, 128, 128, .35);
   height: 22px;
   padding: 0;
-  width: 34px;
+  width: 24px;
 }
 /* Marker color slaved to its highlight colour → dim the now-inert picker. */
 .section-styling .styling-hl-mkcolor[data-color-linked="true"] input[type="color"],
@@ -3452,14 +3794,19 @@ $site$thread[hidden] + hr {
 }
 
 /* QR */
-:root.hide-original-post-form #togglePostFormLink,
 #qr.autohide:not(.focus):not(:hover):not(:active) > form,
 :root.thread-view #qr:not(.show-new-thread-option) select[data-name="thread"],
 #file-n-submit:not(.has-file) #qr-filerm {
   display: none;
 }
-:root.hide-original-post-form #postForm {
+/* Own the native post form's visibility outright: !important beats 4chan core's
+   inline display toggle so the "Original Form" link (which flips
+   .show-original-post-form) stays authoritative. */
+:root.hide-original-post-form:not(.show-original-post-form) #postForm {
   display: none !important;
+}
+:root.hide-original-post-form.show-original-post-form #postForm {
+  display: table !important;
 }
 #qr select,
 #qr-filename-container > a,
@@ -3605,12 +3952,13 @@ select.flagSelector {
   font-weight: 600;
 }
 .flagSelector-icon {
-  background-image: url('//s.4cdn.org/image/flags/pol/flags.png?2');
-  background-repeat: no-repeat;
-  background-position: -200px -200px;
+  align-self: center;
   display: inline-block;
   flex: none;
   height: 11px;
+  margin: 0;
+  position: static;
+  top: auto;
   width: 16px;
 }
 .flagSelector-icon-empty {
@@ -3619,31 +3967,6 @@ select.flagSelector {
 .flagSelector-label {
   line-height: 1.25;
 }
-.flagSelector-icon.bfl-ac { background-position: 0 0 }
-.flagSelector-icon.bfl-an { background-position: -16px 0 }
-.flagSelector-icon.bfl-bl { background-position: -32px 0 }
-.flagSelector-icon.bfl-cf { background-position: -48px 0 }
-.flagSelector-icon.bfl-cm { background-position: -64px 0 }
-.flagSelector-icon.bfl-ct { background-position: 0 -12px }
-.flagSelector-icon.bfl-dm { background-position: -16px -12px }
-.flagSelector-icon.bfl-eu { background-position: -32px -12px }
-.flagSelector-icon.bfl-fc { background-position: -48px -12px }
-.flagSelector-icon.bfl-gn { background-position: -64px -12px }
-.flagSelector-icon.bfl-gy { background-position: 0 -24px }
-.flagSelector-icon.bfl-jh { background-position: -16px -24px }
-.flagSelector-icon.bfl-kn { background-position: -32px -24px }
-.flagSelector-icon.bfl-mf { background-position: -48px -24px }
-.flagSelector-icon.bfl-mz { background-position: -64px -24px }
-.flagSelector-icon.bfl-nb { background-position: 0 -36px }
-.flagSelector-icon.bfl-nt { background-position: -16px -36px }
-.flagSelector-icon.bfl-nz { background-position: -32px -36px }
-.flagSelector-icon.bfl-pc { background-position: -48px -36px }
-.flagSelector-icon.bfl-pr { background-position: -64px -36px }
-.flagSelector-icon.bfl-re { background-position: 0 -48px }
-.flagSelector-icon.bfl-tm { background-position: -16px -48px }
-.flagSelector-icon.bfl-tr { background-position: -32px -48px }
-.flagSelector-icon.bfl-un { background-position: -48px -48px }
-.flagSelector-icon.bfl-wp { background-position: -64px -48px }
 #qr.forced-anon :is(input[data-name="name"]:not(.force-show), input[data-name="sub"]:not(.force-show)),
 #qr.reply-to-thread input[data-name="sub"]:not(.force-show),
 body:not(.board_f) #qr select[name="filetag"],
@@ -3673,6 +3996,9 @@ body:not(.board_f) #qr select[name="filetag"],
 #qr-com-preview pre.prettyprint {
   white-space: pre-wrap;
   margin: 0;
+}
+#qr-com-preview .quote {
+  color: var(--xt-qr-com-preview-quote-color, var(--xt-quote-color, #789922));
 }
 #qr.has-com-preview.com-preview-below .textarea {
   flex-direction: column;
@@ -3760,12 +4086,13 @@ input.field.tripped:not(:hover):not(:focus) {
   cursor: pointer;
   display: inline-flex;
   font: inherit;
-  height: 1.2em;
+  height: 18px;
   justify-content: center;
   line-height: inherit;
-  margin: 0 4px;
+  margin: 0 1px;
   opacity: .45;
-  padding: 0 2px;
+  padding: 0;
+  width: 18px;
 }
 #qr-preview-toggle > .icon {
   display: block;
@@ -3777,13 +4104,27 @@ input.field.tripped:not(:hover):not(:focus) {
 #qr-preview-toggle:focus {
   opacity: 1;
 }
+/* The clear-draft trash is a raw emoji <a>, so it rides high on the text
+   baseline; flex-center it like the preview toggle / close so it sits on the
+   same vertical line. Scoped to :not([hidden]) so it stays hidden when the JS
+   toggles its `hidden` property and no draft exists. */
+#qr > .move .qr-clear-draft:not([hidden]) {
+  align-items: center;
+  display: inline-flex;
+  height: 18px;
+  justify-content: center;
+  line-height: 1;
+  margin: 0 1px;
+  text-decoration: none;
+  width: 18px;
+}
 #qr > .move select[data-name="thread"] {
   margin-left: auto;
   min-height: 20px;
-  padding: 1px 18px 1px 4px;
+  padding: 1px 14px 1px 3px;
 }
 #qr > .move .close {
-  margin-left: 6px;
+  margin-left: 3px;
   display: inline-flex;
   align-items: center;
   justify-content: center;
@@ -3894,9 +4235,23 @@ input.field.tripped:not(:hover):not(:focus) {
   color: inherit !important;
   -webkit-text-fill-color: currentColor !important;
 }
+/* The native TCaptcha root is a bare <div> (its className is wiped to "") inside
+   .captcha-root, carrying an INLINE light background (rgb(238,238,238)). Target
+   it structurally so the missing class doesn't matter, and use !important so it
+   beats the inline style. Only background-COLOR is cleared, so #t-task's captcha
+   background-image is preserved and the themed QR background shows through. */
+#qr.captcha-t .captcha-root > div,
+#qr.captcha-t .captcha-root > div * {
+  background-color: transparent !important;
+}
+/* Buttons follow the theme: built from the adaptive text color (currentColor)
+   so they read correctly on both light and dark themes with no per-theme rule. */
 #qr.captcha-t :is(#t-load, #t-next) {
-  background-color: #d8dde3;
-  border: 1px solid #9ea7b3;
+  background-color: color-mix(in srgb, currentColor 14%, transparent) !important;
+  border: 1px solid color-mix(in srgb, currentColor 38%, transparent);
+}
+#qr.captcha-t :is(#t-load, #t-next):hover:not(:disabled) {
+  background-color: color-mix(in srgb, currentColor 22%, transparent) !important;
 }
 #qr.captcha-t :is(#t-load, #t-next):disabled {
   opacity: .6;
@@ -4688,7 +5043,10 @@ div.post {
   top: 0;
   height: 100vh;
   pointer-events: none;
-  z-index: 2147483646;
+  /* Sit above page content but below floating widgets (QR z-index 20,
+     thread-watcher 5/10, float updater/stats 40, etc.) so the marker
+     strip never covers them where they overlap the right edge. */
+  z-index: 4;
   background: transparent;
   box-sizing: border-box;
 }
@@ -4777,7 +5135,7 @@ div.post {
   top: var(--xt-scroll-marker-top, 0px);
   height: calc(100vh - var(--xt-scroll-marker-top, 0px) - var(--xt-scroll-marker-bottom, 0px));
   pointer-events: none;
-  z-index: 2147483647;
+  z-index: 4;
 }
 :root.scrollbar-markers-over #scroll-markers {
   width: var(--xt-scroll-marker-track, 14px);

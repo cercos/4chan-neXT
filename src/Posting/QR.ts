@@ -15,6 +15,7 @@ import UI from '../General/UI';
 import BoardConfig from '../General/BoardConfig';
 import Get from '../General/Get';
 import { VideoStripper } from './VideoStripper';
+import QRFileStore from '../platform/QRFileStore';
 import { DAY, dict, platform, SECOND } from '../platform/helpers';
 import Icon from '../Icons/icon';
 
@@ -58,6 +59,7 @@ var QR = {
     autohide: HTMLInputElement,
     previewToggle: HTMLButtonElement,
     close: HTMLAnchorElement,
+    clearDraft: HTMLAnchorElement,
     thread: HTMLSelectElement,
     form: HTMLFormElement,
     sjisToggle: HTMLButtonElement,
@@ -235,6 +237,19 @@ var QR = {
 
       $.before(origToggle, link);
       origToggle.firstElementChild.textContent = 'Original Form';
+
+      // The native post form is collapsed by default everywhere except the board
+      // index, where 4chan shows it expanded at the top. Hide it there too so it
+      // behaves like the other views; the "Original Form" toggle expands it on
+      // demand. We own the visibility via a class (CSS uses !important to beat
+      // 4chan core's inline display toggle) so the toggle stays in sync.
+      if (Conf['Hide Original Post Form'] && g.VIEW === 'index') {
+        $.addClass(doc, 'hide-original-post-form');
+        $.on(origToggle.firstElementChild, 'click', function() {
+          const shown = $.toggleClass(doc, 'show-original-post-form');
+          this.textContent = shown ? 'Hide Original Form' : 'Original Form';
+        });
+      }
     }
 
     if (g.VIEW === 'thread') {
@@ -390,8 +405,8 @@ var QR = {
   texPreviewShow() {
     if ($.hasClass(QR.nodes.el, 'tex-preview')) { return QR.texPreviewHide(); }
     $.addClass(QR.nodes.el, 'tex-preview');
-    QR.nodes.texPreview.textContent = QR.nodes.com.value;
-    return $.event('mathjax', null, QR.nodes.texPreview);
+    QR.nodes.texPreview.innerHTML = QR.renderComPreview(QR.nodes.com.value);
+    return QR.typesetMathjax(QR.nodes.texPreview);
   },
 
   texPreviewHide() {
@@ -400,7 +415,32 @@ var QR = {
 
   updateComPreview() {
     if (!QR.nodes?.comPreview) return;
+    QR.updateComPreviewQuoteColor();
     QR.nodes.comPreview.innerHTML = QR.renderComPreview(QR.nodes.com.value);
+    if (g.BOARD.config.math_tags && /\[(math|eqn)\]/.test(QR.nodes.com.value)) {
+      QR.typesetMathjax(QR.nodes.comPreview);
+    }
+  },
+
+  typesetMathjax(node: HTMLElement) {
+    if (!node.id) return;
+    $.global('typesetMathjax', {id: node.id});
+  },
+
+  updateComPreviewQuoteColor() {
+    if (!QR.nodes?.comPreview) return;
+    const sample = $.el('blockquote', {
+      className: 'postMessage',
+      innerHTML: '<span class="quote">&gt;quote</span>'
+    }) as HTMLElement;
+    sample.style.cssText = 'position:absolute;visibility:hidden;pointer-events:none;left:-9999px;top:-9999px;';
+    $.add(d.body, sample);
+    const quote = $('.quote', sample) as HTMLElement;
+    const color = quote ? getComputedStyle(quote).color : '';
+    $.rm(sample);
+    if (color) {
+      QR.nodes.comPreview.style.setProperty('--xt-qr-com-preview-quote-color', color);
+    }
   },
 
   applyCommentPreviewSettings() {
@@ -431,15 +471,15 @@ var QR = {
   comPreviewTagWraps: {
     spoiler: { wrap: (i: string) => `<s>${i}</s>`,                                       format: true  },
     code:    { wrap: (i: string) => `<pre class="prettyprint">${i}</pre>`,               format: false },
-    math:    { wrap: (i: string) => `<span class="math">[math]${i}[/math]</span>`,       format: false },
-    eqn:     { wrap: (i: string) => `<span class="math">[eqn]${i}[/eqn]</span>`,         format: false },
+    math:    { wrap: (i: string, fallback = i) => `<span class="qr-math-fallback">[math]${fallback}[/math]</span><script type="math/tex">${i}</script>`, format: false, raw: true },
+    eqn:     { wrap: (i: string, fallback = i) => `<span class="qr-math-fallback">[eqn]${fallback}[/eqn]</span><script type="math/tex; mode=display">${i}</script>`, format: false, raw: true },
     sjis:    { wrap: (i: string) => `<span class="sjis">${i}</span>`,                    format: true  },
     b:       { wrap: (i: string) => `<b>${i}</b>`,                                       format: true  },
     i:       { wrap: (i: string) => `<span class="mu-i">${i}</span>`,                    format: true  },
     red:     { wrap: (i: string) => `<span class="mu-r">${i}</span>`,                    format: true  },
     green:   { wrap: (i: string) => `<span class="mu-g">${i}</span>`,                    format: true  },
     blue:    { wrap: (i: string) => `<span class="mu-b">${i}</span>`,                    format: true  },
-  } as Record<string, { wrap: (i: string) => string; format: boolean }>,
+  } as Record<string, { wrap: (i: string, fallback?: string) => string; format: boolean; raw?: boolean }>,
 
   // Per-board extra tags that 4chan renders but aren't surfaced via boards.json flags.
   comPreviewBoardExtras: {
@@ -466,24 +506,59 @@ var QR = {
     while ((m = tagRe.exec(text))) {
       html += QR.formatComPreviewText(text.slice(last, m.index));
       const tag = QR.comPreviewTagWraps[m[1]];
-      const inner = tag.format ? QR.formatComPreviewText(m[2]) : E(m[2]);
-      html += tag.wrap(inner);
+      const inner = tag.raw ? QR.escapeMathJaxScript(m[2]) : tag.format ? QR.formatComPreviewText(m[2]) : E(m[2]);
+      const fallback = tag.raw ? E(m[2]) : undefined;
+      html += tag.wrap(inner, fallback);
       last = m.index + m[0].length;
     }
     html += QR.formatComPreviewText(text.slice(last));
     return html;
   },
 
+  escapeMathJaxScript(text: string): string {
+    return text.replace(/<\/script/gi, '<\\/script');
+  },
+
   formatComPreviewText(text: string): string {
     const escaped = E(text);
-    // Treat >>NNN and >>>/board/NNN as quotelinks (greentext detection skips these).
+    // Treat >>NNN, >>>/board/NNN, and >>>/board/ as 4chan quote/board links.
     const withQuotes = escaped.replace(
-      /&gt;&gt;(?:&gt;\/[a-z\d]+\/)?\d+/g,
-      m => `<a class="quotelink" href="javascript:;">${m}</a>`
+      /&gt;&gt;(?:\d+|&gt;\/[a-z\d]+\/(?:\d+)?)(?=$|[\s<.,!?;:)])/g,
+      m => QR.renderComPreviewQuoteLink(m)
     );
-    return withQuotes.split('\n').map(line =>
-      /^&gt;(?!&gt;)/.test(line) ? `<span class="quote">${line}</span>` : line
-    ).join('\n');
+    const withLinks = withQuotes.replace(
+      /(^|[\s(])((?:https?:\/\/|www\.)[^\s<>"']+)/g,
+      (m, prefix, url) => `${prefix}${QR.renderComPreviewLink(url)}`
+    );
+    return withLinks.split('\n').map(line => {
+      const quotePrefix = line.match(/^(&gt;)+(?!&gt;\/[a-z\d]+\/\d+)/)?.[0];
+      return quotePrefix ? `<span class="quote">${line}</span>` : line;
+    }).join('\n');
+  },
+
+  renderComPreviewQuoteLink(text: string): string {
+    const match = text.match(/^&gt;&gt;(?:(\d+)|&gt;\/([a-z\d]+)\/(\d+)?)$/);
+    if (!match) return text;
+    const boardID = match[2] || g.BOARD.ID;
+    const postID = match[1] || match[3];
+    if (!postID) {
+      const href = Get.url('index', {siteID: g.BOARD.siteID, boardID}) || `/${boardID}/`;
+      return `<a class="quotelink" href="${E(href)}">${text}</a>`;
+    }
+    const currentThread = `${g.THREADID || g.threadID || ''}`;
+    const threadID = boardID === g.BOARD.ID ? (currentThread || postID) : postID;
+    const hash = g.SITE.software === 'yotsuba' ? `#p${postID}` : `#${postID}`;
+    const href = boardID === g.BOARD.ID && postID === currentThread
+      ? hash
+      : `${Get.url('thread', {siteID: g.BOARD.siteID, boardID, threadID}) || `/${boardID}/thread/${threadID}`}${hash}`;
+    return `<a class="quotelink" href="${E(href)}">${text}</a>`;
+  },
+
+  renderComPreviewLink(text: string): string {
+    const trail = text.match(/[.,!?;:)]+$/)?.[0] || '';
+    const body = trail ? text.slice(0, -trail.length) : text;
+    const href = /^https?:\/\//i.test(body) ? body : `https://${body}`;
+    return `<a class="linkify" href="${E(href)}" target="_blank" rel="nofollow noopener">${body}</a>${trail}`;
   },
 
   addPost() {
@@ -1029,6 +1104,7 @@ var QR = {
     setNode('move',           '.move');
     setNode('autohide',       '#autohide');
     setNode('previewToggle',  '#qr-preview-toggle');
+    setNode('clearDraft',     '.qr-clear-draft');
     setNode('close',          '.close');
     setNode('thread',         'select');
     setNode('form',           'form');
@@ -1151,13 +1227,20 @@ var QR = {
     // save selected post's data
     const items = ['thread', 'name', 'email', 'sub', 'com', 'filename', 'flag'];
     let i = 0;
-    const save = function() { QR.selected.save(this); };
+    const save = function() { QR.selected.save(this); QR.drafts.save(); };
     while ((name = items[i++])) {
       var node;
       if (!(node = nodes[name])) { continue; }
       event = node.nodeName === 'SELECT' ? 'change' : 'input';
       $.on(nodes[name], event, save);
     }
+
+    $.on(nodes.clearDraft, 'click', QR.drafts.discard);
+    nodes.clearDraft.hidden = !Conf['Remember QR State'];
+    // React when the draft feature is toggled (same tab via the settings event,
+    // other tabs via storage sync): turning it off wipes saved drafts + files.
+    $.on(d, 'QRStateChanged', QR.drafts.onSettingChanged);
+    $.sync('Remember QR State', QR.drafts.onSettingChanged);
 
     if (Conf['Remember QR Size']) {
       $.get('QR Size', '', item => nodes.com.style.cssText = item['QR Size']);
@@ -1170,6 +1253,7 @@ var QR = {
     QR.generatePostableThreadsList();
     QR.persona.load();
     new QR.post(true);
+    QR.drafts.restore();
     QR.status();
     QR.cooldown.setup();
     QR.captcha.init();
@@ -1736,6 +1820,10 @@ var QR = {
     } else {
       QR.close();
     }
+
+    // Re-persist the remaining drafts (the posted one was removed above; if
+    // nothing's left this clears the board's saved draft).
+    QR.drafts.flush();
 
     QR.cleanNotifications();
     if (Conf['Posting Success Notifications']) {
@@ -2421,6 +2509,256 @@ var QR = {
     }
   },
 
+  // Auto-saved per-board draft of what's typed in the QR, so it survives a
+  // refresh/close/crash. Typed text + per-post state (subject, spoiler, flag,
+  // thread) are stored under `QR.drafts` as { '<siteID>/<boardID>': { posts } }.
+  // Attachments (images/videos) are stored separately in IndexedDB via
+  // QRFileStore (the JSON layer can't hold blobs) and referenced by id; the
+  // total kept per board is capped at FILE_CAP.
+  drafts: {
+    timeout: undefined as ReturnType<typeof setTimeout> | undefined,
+    // Cap on total attachment bytes persisted per board. Files past the cap
+    // (largest first) are not saved; the user is warned once.
+    FILE_CAP: 100 * 1024 * 1024,
+    _warnedCap: false,
+    // Set while discard() tears the QR down, so the post/file removals it
+    // triggers don't re-persist a draft we're deleting.
+    _suspended: false,
+
+    key() {
+      return `${g.SITE.ID}/${g.BOARD.ID}`;
+    },
+
+    // File-store ids start with the board key + a space so they can be
+    // enumerated/cleaned per board (site/board ids contain no spaces).
+    filePrefix() {
+      return `${QR.drafts.key()} `;
+    },
+
+    genId() {
+      return `${QR.drafts.filePrefix()}${Date.now().toString(36)}${Math.random().toString(36).slice(2, 8)}`;
+    },
+
+    threadValid(thread) {
+      if (thread == null || thread === 'new') { return true; }
+      return $$('option', QR.nodes.thread).some(o => (o as HTMLOptionElement).value === `${thread}`);
+    },
+
+    // Debounced text/state auto-save while typing.
+    save() {
+      if (!Conf['Remember QR State'] || QR.drafts._suspended) { return; }
+      clearTimeout(QR.drafts.timeout);
+      QR.drafts.timeout = setTimeout(QR.drafts.flush, 500);
+    },
+
+    // Serialize the current posts' text + state for this board. Posts with
+    // nothing worth keeping (no text and no file) are dropped; if nothing's
+    // left, the board's saved draft is removed.
+    flush() {
+      clearTimeout(QR.drafts.timeout);
+      if (!Conf['Remember QR State'] || !QR.nodes || QR.drafts._suspended) { return; }
+      QR.selected?.forceSave();
+      const posts = QR.posts
+        .map(post => ({
+          thread: post.thread,
+          sub: post.sub || null,
+          com: post.com || null,
+          spoiler: post.spoiler ? true : undefined,
+          flag: post.flag || undefined,
+          file: (post.file && post._draftFileId)
+            ? { id: post._draftFileId, filename: post.filename || null, originalName: post.originalName || null }
+            : undefined,
+        }))
+        .filter(post => post.com || post.sub || post.file);
+      $.get('QR.drafts', dict(), ({ 'QR.drafts': all }) => {
+        const key = QR.drafts.key();
+        if (posts.length) { all[key] = { posts }; } else { delete all[key]; }
+        $.set('QR.drafts', all, QR.drafts.updateButton);
+        // Drop any stored attachments no longer referenced (removed/posted
+        // posts, cleared files). Fails soft.
+        QR.drafts.cleanupOrphanFiles(posts.map(p => p.file?.id).filter(Boolean) as string[]);
+      });
+    },
+
+    // Persist current attachments to IndexedDB (only newly added ones are
+    // written), enforce the per-board size cap, then flush the JSON refs.
+    // Called when a file is added/removed; safe to call any time.
+    async persistFiles() {
+      if (!Conf['Remember QR State'] || !QR.nodes || QR.drafts._suspended) { return; }
+      try {
+        const withFiles = QR.posts.filter(p => p.file);
+        // Keep smallest-first up to the cap, i.e. skip the largest over it.
+        const keep = new Set<typeof withFiles[number]>();
+        let total = 0;
+        let skipped = 0;
+        for (const p of withFiles.slice().sort((a, b) => a.file.size - b.file.size)) {
+          if (total + p.file.size <= QR.drafts.FILE_CAP) { total += p.file.size; keep.add(p); }
+          else { skipped++; }
+        }
+        for (const p of withFiles) {
+          if (keep.has(p)) {
+            if (!p._draftFileId) {
+              const id = QR.drafts.genId();
+              if (await QRFileStore.put(id, p.file)) { p._draftFileId = id; }
+            }
+          } else if (p._draftFileId) {
+            // Over the cap now — drop any previously stored copy.
+            await QRFileStore.delete(p._draftFileId);
+            delete p._draftFileId;
+          }
+        }
+        if (skipped && !QR.drafts._warnedCap) {
+          QR.drafts._warnedCap = true;
+          new Notice('warning', `Draft attachments over ~${Math.round(QR.drafts.FILE_CAP / 1048576)} MB total aren't saved for this board; ${skipped} file(s) skipped.`, 6);
+        }
+      } catch (err) {
+        console.error('QR draft persistFiles failed', err);
+      }
+      QR.drafts.flush();
+    },
+
+    // Delete stored attachments for this board whose ids aren't in `keep`.
+    async cleanupOrphanFiles(keep: string[]) {
+      try {
+        const prefix = QR.drafts.filePrefix();
+        const referenced = new Set(keep);
+        const orphans = (await QRFileStore.keys()).filter(k => k.startsWith(prefix) && !referenced.has(k));
+        if (orphans.length) { await QRFileStore.delete(orphans); }
+      } catch (err) {
+        console.error('QR draft cleanupOrphanFiles failed', err);
+      }
+    },
+
+    // Restore this board's saved draft into an empty Quick Reply.
+    restore() {
+      if (!Conf['Remember QR State'] || !QR.nodes) { return; }
+      $.get('QR.drafts', dict(), ({ 'QR.drafts': all }) => {
+        QR.drafts.updateButton();
+        const data = all?.[QR.drafts.key()];
+        if (!data?.posts?.length || !QR.nodes) { return; }
+        // Never clobber something the user has already started typing/attached.
+        if (QR.posts.some(post => post.com || post.sub || post.file)) { return; }
+        for (let i = 0; i < data.posts.length; i++) {
+          const draft = data.posts[i];
+          const post = i === 0 ? QR.posts[0] : new QR.post();
+          if (!post) { continue; }
+          if (QR.drafts.threadValid(draft.thread)) { post.thread = draft.thread; }
+          post.sub = draft.sub || null;
+          post.setComment(draft.com || '');
+          if (draft.spoiler) {
+            post.spoiler = true;
+            if (post.nodes?.spoiler) { post.nodes.spoiler.checked = true; }
+          }
+          if (draft.flag) { post.flag = draft.flag; }
+          if (draft.file?.id) { QR.drafts.restoreFile(post, draft.file); }
+        }
+        // Expand the dump list when there are attachments or multiple queued
+        // posts, so it's obvious the restored files/posts are there.
+        if (data.posts.length > 1 || data.posts.some(p => p.file?.id)) {
+          $.addClass(QR.nodes.el, 'dump');
+        }
+        QR.selected?.load();
+      });
+    },
+
+    // Pull a stored attachment back out of IndexedDB and re-attach it to `post`
+    // via the normal file pipeline (regenerating its thumbnail). Fails soft.
+    async restoreFile(post: any, ref: { id: string; filename?: string; originalName?: string }) {
+      try {
+        const blob = await QRFileStore.get(ref.id);
+        if (!blob || !QR.posts.includes(post)) { return; }
+        const name = ref.originalName || ref.filename || (blob as File).name || 'file';
+        const file = new File([blob], name, { type: blob.type, lastModified: (blob as File).lastModified || Date.now() });
+        await post.setFile(file, { restore: true, id: ref.id, filename: ref.filename, originalName: ref.originalName });
+      } catch (err) {
+        console.error('QR draft restoreFile failed', err);
+      }
+    },
+
+    // Discard the saved draft for this board AND empty the live Quick Reply:
+    // every queued post and its attachment is removed from the dump list,
+    // leaving a single blank post.
+    discard() {
+      clearTimeout(QR.drafts.timeout);
+      // Suspend auto-save so the removals below don't re-persist the draft
+      // we're about to delete.
+      QR.drafts._suspended = true;
+      try {
+        // Drop all but the first post (removes their thumbnails/attachments).
+        for (const p of QR.posts.slice(1)) { delete p._draftFileId; p.rm(); }
+        // Reset the remaining (selected) post: clear its file, text and state.
+        const last = QR.posts[0];
+        if (last) {
+          delete last._draftFileId;
+          if (last.file) { last.rmFile(); }
+          last.setComment('');
+          last.sub = null;
+          last.spoiler = false;
+          if (last.nodes?.spoiler) { last.nodes.spoiler.checked = false; }
+        }
+        if (QR.nodes?.sub) { QR.nodes.sub.value = ''; }
+        if (QR.nodes?.spoiler) { QR.nodes.spoiler.checked = false; }
+        $.rmClass(QR.nodes.el, 'dump');
+      } finally {
+        QR.drafts._suspended = false;
+      }
+      // Remove the saved draft + every stored attachment for this board.
+      QR.drafts.clearBoardFiles();
+      $.get('QR.drafts', dict(), ({ 'QR.drafts': all }) => {
+        delete all[QR.drafts.key()];
+        $.set('QR.drafts', all, QR.drafts.updateButton);
+      });
+    },
+
+    // Remove every stored attachment for this board. Fails soft.
+    async clearBoardFiles() {
+      try {
+        const prefix = QR.drafts.filePrefix();
+        const mine = (await QRFileStore.keys()).filter(k => k.startsWith(prefix));
+        if (mine.length) { await QRFileStore.delete(mine); }
+      } catch (err) {
+        console.error('QR draft clearBoardFiles failed', err);
+      }
+    },
+
+    // Called when the setting is toggled. Turning it off wipes every saved
+    // draft and stored attachment so nothing lingers in storage.
+    // Cross-tab sync passes the new boolean value (Conf isn't updated for us);
+    // the same-tab change event passes an Event, which we ignore since Conf is
+    // already fresh from $.cb.checked.
+    onSettingChanged(value?: any) {
+      if (typeof value === 'boolean') { Conf['Remember QR State'] = value; }
+      if (!Conf['Remember QR State']) {
+        for (const p of (QR.posts || [])) { delete p._draftFileId; }
+        QR.drafts.clearAll();
+      }
+      QR.drafts.updateButton();
+    },
+
+    // Remove all saved drafts (every board) and all stored attachments.
+    async clearAll() {
+      try {
+        const keys = await QRFileStore.keys();
+        if (keys.length) { await QRFileStore.delete(keys); }
+      } catch (err) {
+        console.error('QR draft clearAll failed', err);
+      }
+      $.delete('QR.drafts');
+    },
+
+    // Show the discard button only when there's a saved draft for this board.
+    updateButton() {
+      const btn = QR.nodes?.clearDraft;
+      if (!btn) { return; }
+      if (!Conf['Remember QR State']) { btn.hidden = true; return; }
+      $.get('QR.drafts', dict(), ({ 'QR.drafts': all }) => {
+        if (QR.nodes?.clearDraft) {
+          QR.nodes.clearDraft.hidden = !all?.[QR.drafts.key()]?.posts?.length;
+        }
+      });
+    },
+  },
+
   persona: {
     always: {} as Record<string, string>,
     types: {
@@ -2532,6 +2870,9 @@ class post {
   declare com?: string;
   declare pasting?: boolean;
   declare pendingFile?: boolean;
+  // id of this post's attached file in QRFileStore (IndexedDB), when the draft
+  // feature has persisted it. See QR.drafts.
+  declare _draftFileId?: string;
 
   constructor(select) {
     this.select = this.select.bind(this);
@@ -2637,6 +2978,7 @@ class post {
     QR.posts.splice(index, 1);
     QR.status();
     QR.captcha.updateThread?.();
+    QR.drafts.save();
   }
 
   delete() {
@@ -2692,6 +3034,7 @@ class post {
 
     this.showFileData();
     QR.characterCount();
+    if (Conf['Comment Preview']) QR.updateComPreview();
   }
 
   save(input: HTMLInputElement, forced?: boolean) {
@@ -2757,6 +3100,7 @@ class post {
   updateComment() {
     if (this === QR.selected) {
       QR.characterCount();
+      if (Conf['Comment Preview']) QR.updateComPreview();
     }
     this.nodes.span.textContent = this.com;
     QR.captcha.moreNeeded();
@@ -2947,10 +3291,16 @@ class post {
     return file;
   }
 
-  async setFile(file: File) {
+  async setFile(file: File, opts: { restore?: boolean; id?: string; filename?: string; originalName?: string } = {}) {
     this.pendingFile = true;
+    // A fresh user-supplied file invalidates any previously persisted copy so
+    // it gets re-saved; a restored file keeps its existing store id (set below).
+    if (!opts.restore) { delete this._draftFileId; }
     try {
+      // On restore the file was already audio-stripped/metadata-stripped/renamed
+      // when first added, so skip that reprocessing (and its notices).
       if (
+        !opts.restore &&
         Conf['Strip Video Audio'] &&
         BoardConfig.noAudio(g.BOARD.ID) &&
         (/^video\/(webm|mp4)$/.test(file.type) || /\.(webm|mp4)$/i.test(file.name))
@@ -2962,10 +3312,12 @@ class post {
         }
       }
 
-      const strippedMetadata = await this.stripMetadata(file);
-      if (strippedMetadata !== file) {
-        file = strippedMetadata;
-        new Notice('info', 'Removed media metadata from file.', 4);
+      if (!opts.restore) {
+        const strippedMetadata = await this.stripMetadata(file);
+        if (strippedMetadata !== file) {
+          file = strippedMetadata;
+          new Notice('info', 'Removed media metadata from file.', 4);
+        }
       }
 
       // Needs to be set before the validation for some error messages.
@@ -2974,8 +3326,10 @@ class post {
       this.originalName = file.name;
 
       this.file = await this.validateFile(file);
-      this.originalName = file.name;
-      if (Conf['Randomize Filename'] && (g.BOARD.ID !== 'f') && (!this.file.name.toLowerCase().includes('[sound='))) {
+      this.originalName = opts.restore ? (opts.originalName || file.name) : file.name;
+      if (opts.restore) {
+        this.filename = opts.filename || this.file.name;
+      } else if (Conf['Randomize Filename'] && (g.BOARD.ID !== 'f') && (!this.file.name.toLowerCase().includes('[sound='))) {
         this.randomizeName(false);
       } else {
         this.filename = this.file.name;
@@ -2998,6 +3352,13 @@ class post {
         this.readFile();
       } else {
         this.nodes.spanFileName.textContent = this.file.name.match(/\.([^\.]+)$/)[1];
+      }
+      if (opts.restore) {
+        // Reuse the existing store entry; nothing new to write.
+        this._draftFileId = opts.id;
+      } else {
+        // New attachment: persist it (and the draft) if the feature is on.
+        QR.drafts.persistFiles();
       }
     } catch (error) {
       console.error(error);
@@ -3138,6 +3499,8 @@ class post {
     delete this.file;
     delete this.filename;
     delete this.filesize;
+    delete this._draftFileId;
+    QR.drafts.persistFiles();
     this.nodes.el.removeAttribute('title');
     QR.nodes.filename.removeAttribute('title');
     this.rmMetadata();

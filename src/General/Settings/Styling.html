@@ -32,7 +32,11 @@
 
 <details open data-styling-section="highlights">
   <summary>Highlights</summary>
-  <p>Each row is one highlight state. Click a row to open its colors and scrollbar marker; only one stays open at a time. The master toggles turn whole groups on or off.</p>
+  <div class="styling-highlight-intro">
+    <p>Each row is one highlight state. Click a row to open its colors and scrollbar marker; only one stays open at a time. The master toggles turn whole groups on or off.</p>
+    <button type="button" id="styling-open-preview" title="Open a live preview of post highlight states">Preview states</button>
+  </div>
+  <div id="styling-preview-anchor"></div>
 
   <div data-name="Thread Highlights" class="styling-hl-group styling-hl-group-thread">
     <div class="styling-hl-grouphead">
@@ -43,103 +47,75 @@
 
       <div class="styling-hl-acc-item" data-highlight-row="own">
         <div class="styling-hl-acc-head">
-          <label class="styling-hl-acc-toggle" title="Highlight your own posts"><input type="checkbox" name="Highlight Own Posts"></label>
           <span class="styling-hl-acc-name">Your post</span>
+          <span class="styling-hl-mkheadslot" data-mk-headslot="own"></span>
           <span class="styling-hl-color"><input type="color" name="Highlight Own Color" title="Highlight background color"></span>
           <button type="button" class="styling-hl-acc-chev" aria-label="Expand row">&#9656;</button>
         </div>
         <div class="styling-hl-acc-body">
-          <div class="styling-hl-sub">Highlight</div>
-          <div class="styling-hl-orow"><span class="styling-hl-olabel">Text colors</span><span class="styling-hl-octl"><select name="Highlight Own Text Mode" title="Defaults: keep the theme's colors; Auto: pick readable colors; Manual: choose your own"><option value="default">Defaults</option><option value="auto">Auto</option><option value="manual">Manual</option></select></span></div>
-          <details class="styling-hl-manual" data-highlight-text-manual="own" hidden>
-            <summary>Manual text colors</summary>
-            <div class="styling-hl-manual-row">
-              <label title="Text color">Text <input type="color" name="Highlight Own Text Color"></label>
-              <label title="Link color">Link <input type="color" name="Highlight Own Link Color"></label>
-              <label title="Quote color">Quote <input type="color" name="Highlight Own Quote Color"></label>
-              <label title="Dead link color">Dead <input type="color" name="Highlight Own Dead Link Color"></label>
-            </div>
-          </details>
-          <div class="styling-hl-orow"><span class="styling-hl-olabel" title="Show only the colored left edge, no background fill (classic XT look)">Edge only</span><span class="styling-hl-octl"><input type="checkbox" name="Highlight Own Edge Only"></span></div>
-          <div class="styling-hl-orow"><span class="styling-hl-olabel" title="Width of the colored edge when Edge only is on">Edge width</span><span class="styling-hl-octl"><input type="text" inputmode="numeric" class="field styling-hl-widthnum" name="Highlight Own Edge Width" maxlength="2"><span class="styling-hl-unit">px</span></span></div>
+          <label class="styling-hl-sub styling-hl-subtoggle" title="Highlight your own posts"><input type="checkbox" name="Highlight Own Posts"><span class="styling-hl-sub-text">Highlight</span></label>
+          <div class="styling-hl-orow"><span class="styling-hl-olabel">Text colors</span><span class="styling-hl-octl"><span class="styling-hl-inlinecolors" data-highlight-text-manual="own" hidden><input type="color" name="Highlight Own Text Color" title="Text color"><input type="color" name="Highlight Own Link Color" title="Link color"><input type="color" name="Highlight Own Quote Color" title="Quote color"><input type="color" name="Highlight Own Dead Link Color" title="Dead link color"></span><select name="Highlight Own Text Mode" title="Defaults: keep the theme's colors; Auto: pick readable colors; Manual: choose your own"><option value="default">Defaults</option><option value="auto">Auto</option><option value="manual">Manual</option></select></span></div>
+          <div class="styling-hl-orow"><span class="styling-hl-olabel" title="Fill the whole post background instead of just the colored left edge (the edge always shows; off is the classic XT look)">Highlight background</span><span class="styling-hl-octl"><input type="checkbox" name="Highlight Own Background"></span></div>
+          <div class="styling-hl-orow"><span class="styling-hl-olabel" title="Width of the colored left edge">Edge width</span><span class="styling-hl-octl"><input type="number" min="1" max="12" step="1" class="field styling-hl-widthnum" name="Highlight Own Edge Width"><span class="styling-hl-unit">px</span></span></div>
+          <div class="styling-hl-orow"><span class="styling-hl-olabel" title="CSS border style for the colored left edge">Edge style</span><span class="styling-hl-octl"><select name="Highlight Own Border Style"><option value="solid">Solid</option><option value="dashed">Dashed</option><option value="dotted">Dotted</option><option value="double">Double</option><option value="groove">Groove</option><option value="ridge">Ridge</option><option value="inset">Inset</option><option value="outset">Outset</option></select></span></div>
           <div class="styling-hl-orow"><span class="styling-hl-olabel">Opacity</span><span class="styling-hl-octl"><input type="range" name="Highlight Own Opacity" min="0" max="1" step="0.05" title="Highlight opacity"></span></div>
-          <div class="styling-hl-sub">Scrollbar marker</div>
-          <div class="styling-hl-orow"><span class="styling-hl-olabel">Show marker</span><span class="styling-hl-octl"><input type="checkbox" name="Scrollbar Mark Own Posts"></span></div>
+          <label class="styling-hl-sub styling-hl-subtoggle" title="Show a scrollbar marker for your own posts"><input type="checkbox" name="Scrollbar Mark Own Posts"><span class="styling-hl-sub-text">Scrollbar marker</span></label>
           <div class="styling-hl-orow"><span class="styling-hl-olabel">Match highlight color</span><span class="styling-hl-octl"><label class="styling-hl-matchlab" data-match-target="own" title="Match this marker color to the highlight color."><input type="checkbox" name="Scroll Marker Own Match Highlight"></label></span></div>
-          <div class="styling-hl-orow"><span class="styling-hl-olabel">Marker color</span><span class="styling-hl-octl styling-hl-mkcolor" data-marker-color="own"><input type="color" name="Scroll Marker Own Color" title="Scrollbar marker color"></span></div>
+          <div class="styling-hl-orow"><span class="styling-hl-olabel">Marker color</span><span class="styling-hl-octl styling-hl-mkbodyslot" data-mk-bodyslot="own"><span class="styling-hl-color styling-hl-mkcolor" data-marker-color="own"><input type="color" name="Scroll Marker Own Color" title="Scrollbar marker color"></span></span></div>
           <div class="styling-hl-orow"><span class="styling-hl-olabel">Marker opacity</span><span class="styling-hl-octl"><input type="range" name="Scroll Marker Own Opacity" min="0" max="1" step="0.05" title="Scrollbar marker opacity"></span></div>
         </div>
       </div>
 
       <div class="styling-hl-acc-item" data-highlight-row="you">
         <div class="styling-hl-acc-head">
-          <label class="styling-hl-acc-toggle" title="Highlight posts that quote you"><input type="checkbox" name="Highlight Posts Quoting You"></label>
           <span class="styling-hl-acc-name">Quotes you</span>
+          <span class="styling-hl-mkheadslot" data-mk-headslot="you"></span>
           <span class="styling-hl-color"><input type="color" name="Highlight You Color" title="Highlight background color"></span>
           <button type="button" class="styling-hl-acc-chev" aria-label="Expand row">&#9656;</button>
         </div>
         <div class="styling-hl-acc-body">
-          <div class="styling-hl-sub">Highlight</div>
-          <div class="styling-hl-orow"><span class="styling-hl-olabel">Text colors</span><span class="styling-hl-octl"><select name="Highlight You Text Mode" title="Defaults: keep the theme's colors; Auto: pick readable colors; Manual: choose your own"><option value="default">Defaults</option><option value="auto">Auto</option><option value="manual">Manual</option></select></span></div>
-          <details class="styling-hl-manual" data-highlight-text-manual="you" hidden>
-            <summary>Manual text colors</summary>
-            <div class="styling-hl-manual-row">
-              <label title="Text color">Text <input type="color" name="Highlight You Text Color"></label>
-              <label title="Link color">Link <input type="color" name="Highlight You Link Color"></label>
-              <label title="Quote color">Quote <input type="color" name="Highlight You Quote Color"></label>
-              <label title="Dead link color">Dead <input type="color" name="Highlight You Dead Link Color"></label>
-            </div>
-          </details>
-          <div class="styling-hl-orow"><span class="styling-hl-olabel" title="Show only the colored left edge, no background fill (classic XT look)">Edge only</span><span class="styling-hl-octl"><input type="checkbox" name="Highlight You Edge Only"></span></div>
-          <div class="styling-hl-orow"><span class="styling-hl-olabel" title="Width of the colored edge when Edge only is on">Edge width</span><span class="styling-hl-octl"><input type="text" inputmode="numeric" class="field styling-hl-widthnum" name="Highlight You Edge Width" maxlength="2"><span class="styling-hl-unit">px</span></span></div>
+          <label class="styling-hl-sub styling-hl-subtoggle" title="Highlight posts that quote you"><input type="checkbox" name="Highlight Posts Quoting You"><span class="styling-hl-sub-text">Highlight</span></label>
+          <div class="styling-hl-orow"><span class="styling-hl-olabel">Text colors</span><span class="styling-hl-octl"><span class="styling-hl-inlinecolors" data-highlight-text-manual="you" hidden><input type="color" name="Highlight You Text Color" title="Text color"><input type="color" name="Highlight You Link Color" title="Link color"><input type="color" name="Highlight You Quote Color" title="Quote color"><input type="color" name="Highlight You Dead Link Color" title="Dead link color"></span><select name="Highlight You Text Mode" title="Defaults: keep the theme's colors; Auto: pick readable colors; Manual: choose your own"><option value="default">Defaults</option><option value="auto">Auto</option><option value="manual">Manual</option></select></span></div>
+          <div class="styling-hl-orow"><span class="styling-hl-olabel" title="Fill the whole post background instead of just the colored left edge (the edge always shows; off is the classic XT look)">Highlight background</span><span class="styling-hl-octl"><input type="checkbox" name="Highlight You Background"></span></div>
+          <div class="styling-hl-orow"><span class="styling-hl-olabel" title="Width of the colored left edge">Edge width</span><span class="styling-hl-octl"><input type="number" min="1" max="12" step="1" class="field styling-hl-widthnum" name="Highlight You Edge Width"><span class="styling-hl-unit">px</span></span></div>
+          <div class="styling-hl-orow"><span class="styling-hl-olabel" title="CSS border style for the colored left edge">Edge style</span><span class="styling-hl-octl"><select name="Highlight You Border Style"><option value="solid">Solid</option><option value="dashed">Dashed</option><option value="dotted">Dotted</option><option value="double">Double</option><option value="groove">Groove</option><option value="ridge">Ridge</option><option value="inset">Inset</option><option value="outset">Outset</option></select></span></div>
           <div class="styling-hl-orow"><span class="styling-hl-olabel">Opacity</span><span class="styling-hl-octl"><input type="range" name="Highlight You Opacity" min="0" max="1" step="0.05" title="Highlight opacity"></span></div>
-          <div class="styling-hl-sub">Scrollbar marker</div>
-          <div class="styling-hl-orow"><span class="styling-hl-olabel">Show marker</span><span class="styling-hl-octl"><input type="checkbox" name="Scrollbar Mark Quotes You"></span></div>
+          <label class="styling-hl-sub styling-hl-subtoggle" title="Show a scrollbar marker for posts that quote you"><input type="checkbox" name="Scrollbar Mark Quotes You"><span class="styling-hl-sub-text">Scrollbar marker</span></label>
           <div class="styling-hl-orow"><span class="styling-hl-olabel">Match highlight color</span><span class="styling-hl-octl"><label class="styling-hl-matchlab" data-match-target="you" title="Match this marker color to the highlight color."><input type="checkbox" name="Scroll Marker You Match Highlight"></label></span></div>
-          <div class="styling-hl-orow"><span class="styling-hl-olabel">Marker color</span><span class="styling-hl-octl styling-hl-mkcolor" data-marker-color="you"><input type="color" name="Scroll Marker You Color" title="Scrollbar marker color"></span></div>
+          <div class="styling-hl-orow"><span class="styling-hl-olabel">Marker color</span><span class="styling-hl-octl styling-hl-mkbodyslot" data-mk-bodyslot="you"><span class="styling-hl-color styling-hl-mkcolor" data-marker-color="you"><input type="color" name="Scroll Marker You Color" title="Scrollbar marker color"></span></span></div>
           <div class="styling-hl-orow"><span class="styling-hl-olabel">Marker opacity</span><span class="styling-hl-octl"><input type="range" name="Scroll Marker You Opacity" min="0" max="1" step="0.05" title="Scrollbar marker opacity"></span></div>
         </div>
       </div>
 
       <div class="styling-hl-acc-item" data-highlight-row="ghost">
         <div class="styling-hl-acc-head">
-          <label class="styling-hl-acc-toggle" title="Highlight restored (ghost) posts"><input type="checkbox" name="Highlight Ghost Posts"></label>
           <span class="styling-hl-acc-name">Ghost post</span>
+          <span class="styling-hl-mkheadslot" data-mk-headslot="ghost"></span>
           <span class="styling-hl-color"><input type="color" name="Highlight Ghost Color" title="Highlight background color"></span>
           <button type="button" class="styling-hl-acc-chev" aria-label="Expand row">&#9656;</button>
         </div>
         <div class="styling-hl-acc-body">
-          <div class="styling-hl-sub">Highlight</div>
-          <div class="styling-hl-orow"><span class="styling-hl-olabel">Text colors</span><span class="styling-hl-octl"><select name="Highlight Ghost Text Mode" title="Defaults: keep the theme's colors; Auto: pick readable colors; Manual: choose your own"><option value="default">Defaults</option><option value="auto">Auto</option><option value="manual">Manual</option></select></span></div>
-          <details class="styling-hl-manual" data-highlight-text-manual="ghost" hidden>
-            <summary>Manual text colors</summary>
-            <div class="styling-hl-manual-row">
-              <label title="Text color">Text <input type="color" name="Highlight Ghost Text Color"></label>
-              <label title="Link color">Link <input type="color" name="Highlight Ghost Link Color"></label>
-              <label title="Quote color">Quote <input type="color" name="Highlight Ghost Quote Color"></label>
-              <label title="Dead link color">Dead <input type="color" name="Highlight Ghost Dead Link Color"></label>
-            </div>
-          </details>
-          <div class="styling-hl-orow"><span class="styling-hl-olabel" title="Show only the colored left edge, no background fill (classic XT look)">Edge only</span><span class="styling-hl-octl"><input type="checkbox" name="Highlight Ghost Edge Only"></span></div>
-          <div class="styling-hl-orow"><span class="styling-hl-olabel" title="Width of the colored edge when Edge only is on">Edge width</span><span class="styling-hl-octl"><input type="text" inputmode="numeric" class="field styling-hl-widthnum" name="Highlight Ghost Edge Width" maxlength="2"><span class="styling-hl-unit">px</span></span></div>
+          <label class="styling-hl-sub styling-hl-subtoggle" title="Highlight restored (ghost) posts"><input type="checkbox" name="Highlight Ghost Posts"><span class="styling-hl-sub-text">Highlight</span></label>
+          <div class="styling-hl-orow"><span class="styling-hl-olabel">Text colors</span><span class="styling-hl-octl"><span class="styling-hl-inlinecolors" data-highlight-text-manual="ghost" hidden><input type="color" name="Highlight Ghost Text Color" title="Text color"><input type="color" name="Highlight Ghost Link Color" title="Link color"><input type="color" name="Highlight Ghost Quote Color" title="Quote color"><input type="color" name="Highlight Ghost Dead Link Color" title="Dead link color"></span><select name="Highlight Ghost Text Mode" title="Defaults: keep the theme's colors; Auto: pick readable colors; Manual: choose your own"><option value="default">Defaults</option><option value="auto">Auto</option><option value="manual">Manual</option></select></span></div>
+          <div class="styling-hl-orow"><span class="styling-hl-olabel" title="Fill the whole post background instead of just the colored left edge (the edge always shows; off is the classic XT look)">Highlight background</span><span class="styling-hl-octl"><input type="checkbox" name="Highlight Ghost Background"></span></div>
+          <div class="styling-hl-orow"><span class="styling-hl-olabel" title="Width of the colored left edge">Edge width</span><span class="styling-hl-octl"><input type="number" min="1" max="12" step="1" class="field styling-hl-widthnum" name="Highlight Ghost Edge Width"><span class="styling-hl-unit">px</span></span></div>
+          <div class="styling-hl-orow"><span class="styling-hl-olabel" title="CSS border style for the colored left edge">Edge style</span><span class="styling-hl-octl"><select name="Highlight Ghost Border Style"><option value="solid">Solid</option><option value="dashed">Dashed</option><option value="dotted">Dotted</option><option value="double">Double</option><option value="groove">Groove</option><option value="ridge">Ridge</option><option value="inset">Inset</option><option value="outset">Outset</option></select></span></div>
           <div class="styling-hl-orow"><span class="styling-hl-olabel">Opacity</span><span class="styling-hl-octl"><input type="range" name="Highlight Ghost Opacity" min="0" max="1" step="0.05" title="Highlight opacity"></span></div>
-          <div class="styling-hl-sub">Scrollbar marker</div>
-          <div class="styling-hl-orow"><span class="styling-hl-olabel">Show marker</span><span class="styling-hl-octl"><input type="checkbox" name="Scrollbar Mark Ghost Posts"></span></div>
+          <label class="styling-hl-sub styling-hl-subtoggle" title="Show a scrollbar marker for restored (ghost) posts"><input type="checkbox" name="Scrollbar Mark Ghost Posts"><span class="styling-hl-sub-text">Scrollbar marker</span></label>
           <div class="styling-hl-orow"><span class="styling-hl-olabel">Match highlight color</span><span class="styling-hl-octl"><label class="styling-hl-matchlab" data-match-target="ghost" title="Match this marker color to the highlight color."><input type="checkbox" name="Scroll Marker Ghost Match Highlight"></label></span></div>
-          <div class="styling-hl-orow"><span class="styling-hl-olabel">Marker color</span><span class="styling-hl-octl styling-hl-mkcolor" data-marker-color="ghost"><input type="color" name="Scroll Marker Ghost Color" title="Scrollbar marker color"></span></div>
+          <div class="styling-hl-orow"><span class="styling-hl-olabel">Marker color</span><span class="styling-hl-octl styling-hl-mkbodyslot" data-mk-bodyslot="ghost"><span class="styling-hl-color styling-hl-mkcolor" data-marker-color="ghost"><input type="color" name="Scroll Marker Ghost Color" title="Scrollbar marker color"></span></span></div>
           <div class="styling-hl-orow"><span class="styling-hl-olabel">Marker opacity</span><span class="styling-hl-octl"><input type="range" name="Scroll Marker Ghost Opacity" min="0" max="1" step="0.05" title="Scrollbar marker opacity"></span></div>
         </div>
       </div>
 
       <div class="styling-hl-acc-item styling-hl-acc-item-markeronly">
         <div class="styling-hl-acc-head">
-          <label class="styling-hl-acc-toggle" title="Show a scrollbar marker for the unread line"><input type="checkbox" name="Scrollbar Mark Unread Line"></label>
           <span class="styling-hl-acc-name">Unread line <span class="styling-hl-type-note">scrollbar only</span></span>
           <span class="styling-hl-color styling-hl-mkcolor" data-marker-color="unread"><input type="color" name="Scroll Marker Unread Color" title="Scrollbar marker color"></span>
           <button type="button" class="styling-hl-acc-chev" aria-label="Expand row">&#9656;</button>
         </div>
         <div class="styling-hl-acc-body">
-          <div class="styling-hl-sub">Scrollbar marker</div>
+          <label class="styling-hl-sub styling-hl-subtoggle" title="Show a scrollbar marker for the unread line"><input type="checkbox" name="Scrollbar Mark Unread Line"><span class="styling-hl-sub-text">Scrollbar marker</span></label>
           <div class="styling-hl-orow"><span class="styling-hl-olabel">Opacity</span><span class="styling-hl-octl"><input type="range" name="Scroll Marker Unread Opacity" min="0" max="1" step="0.05" title="Scrollbar marker opacity"></span></div>
         </div>
       </div>
@@ -153,54 +129,34 @@
     </div>
     <div class="styling-hl-acc">
 
-      <div class="styling-hl-acc-item">
+      <div class="styling-hl-acc-item" data-highlight-row="catalog-own">
         <div class="styling-hl-acc-head">
-          <label class="styling-hl-acc-toggle" title="Highlight your own posts in the catalog"><input type="checkbox" name="Catalog Highlight Own Posts"></label>
           <span class="styling-hl-acc-name">Your post</span>
           <span class="styling-hl-color"><input type="color" name="Catalog Highlight Own Color" title="Catalog your-post highlight color"></span>
           <button type="button" class="styling-hl-acc-chev" aria-label="Expand row">&#9656;</button>
         </div>
         <div class="styling-hl-acc-body">
-          <div class="styling-hl-sub">Highlight</div>
-          <div class="styling-hl-orow"><span class="styling-hl-olabel">Text colors</span><span class="styling-hl-octl"><select name="Catalog Highlight Own Text Mode" title="Defaults: keep the theme's colors; Auto: pick readable colors; Manual: choose your own"><option value="default">Defaults</option><option value="auto">Auto</option><option value="manual">Manual</option></select></span></div>
-          <details class="styling-hl-manual" data-highlight-text-manual="catalog-own" hidden>
-            <summary>Manual text colors</summary>
-            <div class="styling-hl-manual-row">
-              <label title="Text color">Text <input type="color" name="Catalog Highlight Own Text Color"></label>
-              <label title="Subject color">Subject <input type="color" name="Catalog Highlight Own Subject Color"></label>
-              <label title="Link color">Link <input type="color" name="Catalog Highlight Own Link Color"></label>
-              <label title="Quote color">Quote <input type="color" name="Catalog Highlight Own Quote Color"></label>
-              <label title="Dead link color">Dead <input type="color" name="Catalog Highlight Own Dead Link Color"></label>
-            </div>
-          </details>
-          <div class="styling-hl-orow"><span class="styling-hl-olabel" title="Show only a colored border around the catalog tile, no background fill">Border only</span><span class="styling-hl-octl"><input type="checkbox" name="Catalog Highlight Own Border Only"></span></div>
-          <div class="styling-hl-orow"><span class="styling-hl-olabel" title="Width of the border when Border only is on">Border width</span><span class="styling-hl-octl"><input type="text" inputmode="numeric" class="field styling-hl-widthnum" name="Catalog Highlight Own Border Width" maxlength="2"><span class="styling-hl-unit">px</span></span></div>
+          <label class="styling-hl-sub styling-hl-subtoggle" title="Highlight your own posts in the catalog"><input type="checkbox" name="Catalog Highlight Own Posts"><span class="styling-hl-sub-text">Highlight</span></label>
+          <div class="styling-hl-orow"><span class="styling-hl-olabel">Text colors</span><span class="styling-hl-octl"><span class="styling-hl-inlinecolors" data-highlight-text-manual="catalog-own" hidden><input type="color" name="Catalog Highlight Own Text Color" title="Text color"><input type="color" name="Catalog Highlight Own Subject Color" title="Subject color"><input type="color" name="Catalog Highlight Own Link Color" title="Link color"><input type="color" name="Catalog Highlight Own Quote Color" title="Quote color"><input type="color" name="Catalog Highlight Own Dead Link Color" title="Dead link color"></span><select name="Catalog Highlight Own Text Mode" title="Defaults: keep the theme's colors; Auto: pick readable colors; Manual: choose your own"><option value="default">Defaults</option><option value="auto">Auto</option><option value="manual">Manual</option></select></span></div>
+          <div class="styling-hl-orow"><span class="styling-hl-olabel" title="Fill the whole catalog tile background instead of just the colored border (the border always shows)">Highlight background</span><span class="styling-hl-octl"><input type="checkbox" name="Catalog Highlight Own Background"></span></div>
+          <div class="styling-hl-orow"><span class="styling-hl-olabel" title="Width of the colored border">Border width</span><span class="styling-hl-octl"><input type="number" min="1" max="12" step="1" class="field styling-hl-widthnum" name="Catalog Highlight Own Border Width"><span class="styling-hl-unit">px</span></span></div>
+          <div class="styling-hl-orow"><span class="styling-hl-olabel" title="CSS border style for the colored border">Border style</span><span class="styling-hl-octl"><select name="Catalog Highlight Own Border Style"><option value="solid">Solid</option><option value="dashed">Dashed</option><option value="dotted">Dotted</option><option value="double">Double</option><option value="groove">Groove</option><option value="ridge">Ridge</option><option value="inset">Inset</option><option value="outset">Outset</option></select></span></div>
           <div class="styling-hl-orow"><span class="styling-hl-olabel">Opacity</span><span class="styling-hl-octl"><input type="range" name="Catalog Highlight Own Opacity" min="0" max="1" step="0.05" title="Highlight opacity"></span></div>
         </div>
       </div>
 
-      <div class="styling-hl-acc-item">
+      <div class="styling-hl-acc-item" data-highlight-row="catalog-watched">
         <div class="styling-hl-acc-head">
-          <label class="styling-hl-acc-toggle" title="Highlight watched threads in the catalog"><input type="checkbox" name="Catalog Highlight Watched Threads"></label>
           <span class="styling-hl-acc-name">Watched thread</span>
           <span class="styling-hl-color"><input type="color" name="Catalog Highlight Watched Color" title="Catalog watched-thread highlight color"></span>
           <button type="button" class="styling-hl-acc-chev" aria-label="Expand row">&#9656;</button>
         </div>
         <div class="styling-hl-acc-body">
-          <div class="styling-hl-sub">Highlight</div>
-          <div class="styling-hl-orow"><span class="styling-hl-olabel">Text colors</span><span class="styling-hl-octl"><select name="Catalog Highlight Watched Text Mode" title="Defaults: keep the theme's colors; Auto: pick readable colors; Manual: choose your own"><option value="default">Defaults</option><option value="auto">Auto</option><option value="manual">Manual</option></select></span></div>
-          <details class="styling-hl-manual" data-highlight-text-manual="catalog-watched" hidden>
-            <summary>Manual text colors</summary>
-            <div class="styling-hl-manual-row">
-              <label title="Text color">Text <input type="color" name="Catalog Highlight Watched Text Color"></label>
-              <label title="Subject color">Subject <input type="color" name="Catalog Highlight Watched Subject Color"></label>
-              <label title="Link color">Link <input type="color" name="Catalog Highlight Watched Link Color"></label>
-              <label title="Quote color">Quote <input type="color" name="Catalog Highlight Watched Quote Color"></label>
-              <label title="Dead link color">Dead <input type="color" name="Catalog Highlight Watched Dead Link Color"></label>
-            </div>
-          </details>
-          <div class="styling-hl-orow"><span class="styling-hl-olabel" title="Show only a colored border around the catalog tile, no background fill">Border only</span><span class="styling-hl-octl"><input type="checkbox" name="Catalog Highlight Watched Border Only"></span></div>
-          <div class="styling-hl-orow"><span class="styling-hl-olabel" title="Width of the border when Border only is on">Border width</span><span class="styling-hl-octl"><input type="text" inputmode="numeric" class="field styling-hl-widthnum" name="Catalog Highlight Watched Border Width" maxlength="2"><span class="styling-hl-unit">px</span></span></div>
+          <label class="styling-hl-sub styling-hl-subtoggle" title="Highlight watched threads in the catalog"><input type="checkbox" name="Catalog Highlight Watched Threads"><span class="styling-hl-sub-text">Highlight</span></label>
+          <div class="styling-hl-orow"><span class="styling-hl-olabel">Text colors</span><span class="styling-hl-octl"><span class="styling-hl-inlinecolors" data-highlight-text-manual="catalog-watched" hidden><input type="color" name="Catalog Highlight Watched Text Color" title="Text color"><input type="color" name="Catalog Highlight Watched Subject Color" title="Subject color"><input type="color" name="Catalog Highlight Watched Link Color" title="Link color"><input type="color" name="Catalog Highlight Watched Quote Color" title="Quote color"><input type="color" name="Catalog Highlight Watched Dead Link Color" title="Dead link color"></span><select name="Catalog Highlight Watched Text Mode" title="Defaults: keep the theme's colors; Auto: pick readable colors; Manual: choose your own"><option value="default">Defaults</option><option value="auto">Auto</option><option value="manual">Manual</option></select></span></div>
+          <div class="styling-hl-orow"><span class="styling-hl-olabel" title="Fill the whole catalog tile background instead of just the colored border (the border always shows)">Highlight background</span><span class="styling-hl-octl"><input type="checkbox" name="Catalog Highlight Watched Background"></span></div>
+          <div class="styling-hl-orow"><span class="styling-hl-olabel" title="Width of the colored border">Border width</span><span class="styling-hl-octl"><input type="number" min="1" max="12" step="1" class="field styling-hl-widthnum" name="Catalog Highlight Watched Border Width"><span class="styling-hl-unit">px</span></span></div>
+          <div class="styling-hl-orow"><span class="styling-hl-olabel" title="CSS border style for the colored border">Border style</span><span class="styling-hl-octl"><select name="Catalog Highlight Watched Border Style"><option value="solid">Solid</option><option value="dashed">Dashed</option><option value="dotted">Dotted</option><option value="double">Double</option><option value="groove">Groove</option><option value="ridge">Ridge</option><option value="inset">Inset</option><option value="outset">Outset</option></select></span></div>
           <div class="styling-hl-orow"><span class="styling-hl-olabel">Opacity</span><span class="styling-hl-octl"><input type="range" name="Catalog Highlight Watched Opacity" min="0" max="1" step="0.05" title="Highlight opacity"></span></div>
         </div>
       </div>
@@ -209,9 +165,9 @@
   </div>
 
   <div class="styling-actions">
+    <button type="button" id="styling-use-theme-defaults" title="Reset highlight colors and modes to the active theme defaults">Use theme defaults</button>
     <button type="button" id="styling-suggest-palettes" title="Show suggested highlight palettes for the current theme">Suggest palettes</button>
     <button type="button" id="styling-randomize" title="Generate random highlight colors that contrast with the page background">Randomize</button>
-    <button type="button" id="styling-open-preview" title="Open a live preview of post highlight states">Preview states</button>
   </div>
   <div id="styling-palette-suggestions" class="styling-palette-suggestions" hidden></div>
   <div class="styling-saved-palettes">
@@ -273,7 +229,7 @@
     <label><input type="checkbox" name="Custom CSS"> Enable Custom CSS</label>
     <label><input type="checkbox" name="customCSSHome"> Load on home page</label>
   </div>
-  <div>For more information about customizing 4chan X&#039;s CSS, see the <a href="<%= meta.cssGuide %>" target="_blank">styling guide</a>.</div>
+  <div>For more information about customizing 4chan-neXT&#039;s CSS, see the <a href="<%= meta.cssGuide %>" target="_blank">styling guide</a>.</div>
   <div class="custom-css-controls">
     <label>Syntax theme:
       <select id="custom-css-theme">

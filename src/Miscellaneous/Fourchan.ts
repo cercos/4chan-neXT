@@ -19,6 +19,8 @@ var Fourchan = {
   },
 
   initBoard() {
+    Fourchan.applyPageFeatureFlags();
+
     if (g.BOARD.config.code_tags) {
       $.on(window, 'prettyprint:cb', function(e) {
         let post, pre;
@@ -54,6 +56,18 @@ var Fourchan = {
         }
       });
       return ExpandComment.callbacks.push(Fourchan.math);
+    }
+  },
+
+  applyPageFeatureFlags() {
+    const flags = ['code_tags', 'math_tags', 'sjis_tags'] as const;
+    for (const script of $$('script')) {
+      const text = script.textContent || '';
+      for (const flag of flags) {
+        if (!g.BOARD.config[flag] && new RegExp(`\\b${flag}\\s*=\\s*true\\b`).test(text)) {
+          g.BOARD.config[flag] = 1;
+        }
+      }
     }
   },
 

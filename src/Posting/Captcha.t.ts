@@ -54,6 +54,7 @@ const CaptchaT = {
     this.ensureLoadButtonHook();
     this.ensureStatusNode();
     this.ensureProgressNode();
+    this.ensureCrumbsNode();
     if (!this.cachedButtons?.length) {
       this.setState('idle');
       this.updateProgress();
@@ -71,6 +72,8 @@ const CaptchaT = {
     delete this.nodes.container;
     this.cachedButtons = [];
     this.currentHighlightIndex = -1;
+    this.answerHistory = [];
+    this.editingIndex = null;
     this.stopThemeObservers();
     this.setState('idle');
   },
@@ -138,7 +141,7 @@ const CaptchaT = {
       el.style.setProperty('-webkit-text-fill-color', color, 'important');
     }
 
-    for (const el of container.querySelectorAll('#t-msg, #t-desc, #t-task, .fourchanx-captcha-load-hint, .fourchanx-captcha-status-text, .fourchanx-captcha-progress')) {
+    for (const el of container.querySelectorAll('#t-msg, #t-desc, #t-task, .fourchanx-captcha-load-hint, .fourchanx-captcha-status-text, .fourchanx-captcha-progress, .fourchanx-captcha-crumb')) {
       const color = this.pickReadableTextColor(el);
       el.style.setProperty('color', color, 'important');
       el.style.setProperty('-webkit-text-fill-color', color, 'important');
@@ -513,27 +516,161 @@ const CaptchaT = {
     this.currentHighlightIndex = -1;
     this.initializeEventHandler(container, TCaptcha);
     TCaptcha.taskNode = container;
+    this.ensureCrumbsNode();
+    this.renderCrumbs(TCaptcha);
     this.applyAdaptiveTextColors();
   },
 
   submitCaptchaAnswer(imageNumber, TCaptcha) {
     if (!TCaptcha?.respNode || !TCaptcha.tasks || imageNumber < 0) { return; }
-    const totalTasks = TCaptcha.tasks.length - 1;
-    if (totalTasks < 0) { return; }
+    const lastIndex = TCaptcha.tasks.length - 1;
+    if (lastIndex < 0) { return; }
 
-    TCaptcha.respNode.value += imageNumber;
+    // Store the pick per-task (not by blind concatenation) so any one answer
+    // can be re-edited later, then rebuild the response string from truth.
+    (this.answerHistory ||= [])[TCaptcha.taskId] = imageNumber;
+    TCaptcha.respNode.value = this.answerHistory.join('');
+
+    // Re-editing a single step: apply it, then go to review only if every task
+    // is now answered, otherwise resume at the next unanswered task.
+    if (this.editingIndex != null) {
+      this.closeEdit(TCaptcha);
+      return;
+    }
+
     const nextId = TCaptcha.taskId + 1;
-    if (nextId <= totalTasks) {
+    if (nextId <= lastIndex) {
       TCaptcha.setTaskId(nextId);
       this.createImageGrid(TCaptcha);
-    } else {
+    } else if (Conf['Post on Captcha Completion'] && !QR.cooldown.auto) {
       TCaptcha.taskId = TCaptcha.tasks.length;
       TCaptcha.setTaskNodeContent('Done.');
       this.setState('complete');
       this.updateProgress(TCaptcha);
       this.cachedButtons = [];
       this.currentHighlightIndex = -1;
-      if (Conf['Post on Captcha Completion'] && !QR.cooldown.auto) { QR.submit(); }
+      QR.submit();
+    } else {
+      // Land on an editable review screen instead of a dead-end "Done."
+      this.showReview(TCaptcha);
+    }
+  },
+
+  answeredCount() {
+    const h = this.answerHistory || [];
+    let n = 0;
+    while (n < h.length && h[n] != null) { n++; }
+    return n;
+  },
+
+  // Pick the best image to represent a task as a chip: the challenge image,
+  // else the reference image embedded in the prompt, else the picked tile.
+  taskChipImage(task, selectedIndex) {
+    if (!task) { return null; }
+    if (task.img) { return `data:image/png;base64,${task.img}`; }
+    if (typeof task.str === 'string' && /<img/i.test(task.str)) {
+      const re = /<img[^>]*\bsrc\s*=\s*["']([^"']+)["']/gi;
+      let match, last = null;
+      while ((match = re.exec(task.str))) { last = match[1]; }
+      if (last) { return last; }
+    }
+    const bitmap = selectedIndex != null ? task.items?.[selectedIndex] : null;
+    return bitmap ? `data:image/png;base64,${bitmap}` : null;
+  },
+
+  editAnswer(index, TCaptcha) {
+    if (!TCaptcha?.tasks || this.answerHistory?.[index] == null) { return; }
+    // Toggle: clicking the chip you're already editing closes it again.
+    if (this.editingIndex === index) {
+      this.closeEdit(TCaptcha);
+      return;
+    }
+    this.editingIndex = index;
+    TCaptcha.setTaskId(index);
+    this.createImageGrid(TCaptcha);
+    // Highlight the tile previously chosen for this task.
+    this.currentHighlightIndex = this.answerHistory[index];
+    this.updateHighlight();
+    this.renderCrumbs(TCaptcha);
+  },
+
+  // Leave edit mode: show review if every task is answered, else resume solving.
+  closeEdit(TCaptcha) {
+    this.editingIndex = null;
+    const answered = this.answeredCount();
+    if (answered > TCaptcha.tasks.length - 1) {
+      this.showReview(TCaptcha);
+    } else {
+      TCaptcha.setTaskId(answered);
+      this.createImageGrid(TCaptcha);
+    }
+  },
+
+  showReview(TCaptcha) {
+    if (!TCaptcha?.tasks?.length) { return; }
+    TCaptcha.taskId = TCaptcha.tasks.length;
+    this.editingIndex = null;
+    this.cachedButtons = [];
+    this.currentHighlightIndex = -1;
+    this.setState('complete');
+    const taskNode = $('#t-task', this.nodes.container);
+    if (taskNode) { taskNode.innerHTML = ''; }
+    this.setStatusMessage('Click an image to edit, or post.', 'complete');
+    this.updateProgress(TCaptcha);
+    this.ensureCrumbsNode();
+    this.renderCrumbs(TCaptcha);
+    this.applyAdaptiveTextColors();
+  },
+
+  ensureCrumbsNode() {
+    const container = this.nodes?.container;
+    if (!container) { return; }
+    const ctrl = $('#t-ctrl', container);
+    if (!ctrl || $('.fourchanx-captcha-crumbs', ctrl)) { return; }
+    $.add(ctrl, $.el('span', {className: 'fourchanx-captcha-crumbs'}));
+  },
+
+  renderCrumbs(TCaptcha) {
+    const container = this.nodes?.container;
+    if (!container) { return; }
+    const crumbs = $('.fourchanx-captcha-crumbs', container);
+    if (!crumbs) { return; }
+    crumbs.replaceChildren();
+
+    const history = this.answerHistory || [];
+    const answeredCount = this.answeredCount();
+    const tasksLen = TCaptcha?.tasks?.length || 0;
+    if (!answeredCount || !tasksLen) { return; }
+
+    // Show a chip per answered task, plus the one currently being solved.
+    const upTo = Math.min(Math.max(answeredCount - 1, TCaptcha.taskId), tasksLen - 1);
+    for (let i = 0; i <= upTo; i++) {
+      const answered = history[i] != null;
+      const chip = $.el('button', {
+        type: 'button',
+        className: 'fourchanx-captcha-crumb',
+      });
+      // Represent the task with its challenge/reference image; fall back to the
+      // step number (e.g. the step still being solved, or if no image exists).
+      const src = this.taskChipImage(TCaptcha.tasks?.[i], answered ? history[i] : null);
+      if (src) {
+        chip.appendChild($.el('img', {src, alt: ''}));
+      } else {
+        chip.textContent = `${i + 1}`;
+        chip.classList.add('numbered');
+      }
+      if (i === this.editingIndex) {
+        chip.classList.add('editing');
+        chip.title = `Click to stop editing answer ${i + 1}`;
+        chip.addEventListener('click', () => this.editAnswer(i, TCaptcha));
+      } else if (this.editingIndex == null && i === TCaptcha.taskId && !answered) {
+        chip.classList.add('current');
+        chip.title = `Solving step ${i + 1}`;
+      } else if (answered) {
+        chip.title = `Click to change answer ${i + 1}`;
+        chip.addEventListener('click', () => this.editAnswer(i, TCaptcha));
+      }
+      crumbs.appendChild(chip);
     }
   },
 
@@ -548,6 +685,21 @@ const CaptchaT = {
         e.preventDefault();
         e.stopImmediatePropagation();
         this.submitCaptchaAnswer(this.currentHighlightIndex, TCaptcha);
+        return;
+      }
+
+      // Backspace steps back to re-edit the previous answer — but never while
+      // the user is typing in the comment box or any other field.
+      const ae = document.activeElement as HTMLElement | null;
+      const typing = ae && (ae.tagName === 'INPUT' || ae.tagName === 'TEXTAREA' || ae.isContentEditable);
+      if (!typing && e.key === 'Backspace' && this.answerHistory?.length) {
+        const ref = this.editingIndex != null ? this.editingIndex : TCaptcha.taskId;
+        const target = ref - 1;
+        if (target >= 0 && this.answerHistory[target] != null) {
+          e.preventDefault();
+          e.stopImmediatePropagation();
+          this.editAnswer(target, TCaptcha);
+        }
       }
     }, true);
   },
@@ -565,7 +717,7 @@ const CaptchaT = {
         #qr.fourchanx-stacked-captcha #t-ctrl { flex-wrap: wrap; gap: 4px; align-items: center; }
         #qr.fourchanx-stacked-captcha .tcaptcha-image { padding: 0; margin: 3px; border: none; background: none; cursor: pointer !important; }
         #qr.fourchanx-stacked-captcha .tcaptcha-image img { height: 100%; width: 100%; display: block; }
-        #qr.fourchanx-stacked-captcha .tcaptcha-image.active { outline: 3px solid #00c06f; }
+        #qr.fourchanx-stacked-captcha .tcaptcha-image.active { outline: 4px solid var(--xt-variant-accent, #00c06f); outline-offset: -3px; box-shadow: 0 0 10px 2px color-mix(in srgb, var(--xt-variant-accent, #00c06f) 70%, transparent); border-radius: 2px; }
         #qr.fourchanx-stacked-captcha #t-desc { white-space: pre-line; text-align: center; font-size: 14px; user-select: none; width: 100%; }
         #qr.fourchanx-stacked-captcha #t-desc.tcaptcha-message { padding-bottom: 15px; box-sizing: border-box; display: inline-flex; align-items: center; justify-content: center; gap: 6px; }
         #qr.fourchanx-stacked-captcha #t-desc.tcaptcha-message .tcaptcha-message-icon { display: inline-flex; align-items: center; justify-content: center; width: 1.2em; height: 1.2em; border: 2px solid currentColor; border-radius: 50%; font-weight: bold; font-size: 11px; line-height: 1; box-sizing: border-box; }
@@ -580,6 +732,12 @@ const CaptchaT = {
         #qr.fourchanx-stacked-captcha #t-next { display: none !important; }
         #qr.fourchanx-stacked-captcha .fourchanx-captcha-progress { margin-left: auto; font-weight: bold; min-width: 3em; text-align: right; }
         #qr.fourchanx-stacked-captcha #t-slider { display: none !important; }
+        #qr.fourchanx-stacked-captcha .fourchanx-captcha-crumbs { display: flex; flex-wrap: wrap; gap: 5px; justify-content: center; align-items: center; flex: 1 0 100%; margin: 5px 0 0; }
+        #qr.fourchanx-stacked-captcha .fourchanx-captcha-crumb { width: 40px; height: 40px; padding: 0; border: 1px solid currentColor; border-radius: 3px; background: none; cursor: pointer; font-size: 13px; line-height: 1; font-weight: bold; opacity: .7; box-sizing: border-box; overflow: hidden; display: inline-flex; align-items: center; justify-content: center; }
+        #qr.fourchanx-stacked-captcha .fourchanx-captcha-crumb img { width: 100%; height: 100%; object-fit: cover; display: block; }
+        #qr.fourchanx-stacked-captcha .fourchanx-captcha-crumb:hover { opacity: 1; }
+        #qr.fourchanx-stacked-captcha .fourchanx-captcha-crumb.current { opacity: 1; outline: 2px solid var(--xt-variant-accent, #00c06f); cursor: default; }
+        #qr.fourchanx-stacked-captcha .fourchanx-captcha-crumb.editing { opacity: 1; outline: 3px solid var(--xt-variant-accent, #00c06f); outline-offset: -1px; box-shadow: 0 0 6px color-mix(in srgb, var(--xt-variant-accent, #00c06f) 70%, transparent); }
       `;
       document.head.appendChild(style);
     }
@@ -652,6 +810,8 @@ const CaptchaT = {
       if (!challenge?.tasks) { return o.setChallenge.call(this, challenge); }
       this.challengeIdNode.value = challenge.challenge;
       this.respNode.value = '';
+      CaptchaT.answerHistory = [];
+      CaptchaT.editingIndex = null;
       this.tasks = challenge.tasks;
       this.setTaskId(0);
       CaptchaT.createImageGrid(this);
@@ -669,6 +829,9 @@ const CaptchaT = {
       CaptchaT.setStatusMessage(text, state);
       CaptchaT.cachedButtons = [];
       CaptchaT.currentHighlightIndex = -1;
+      CaptchaT.answerHistory = [];
+      CaptchaT.editingIndex = null;
+      CaptchaT.renderCrumbs(this);
       CaptchaT.updateProgress();
     };
     TCaptcha.buildSliderNode = function() {

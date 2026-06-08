@@ -1,9 +1,10 @@
 <div class="move">
   <label>
     <input type="checkbox" id="autohide" title="Auto-hide">
-    Quick Reply
+    QR
   </label>
   <button type="button" id="qr-preview-toggle" title="Toggle comment preview"></button>
+  <a href="javascript:;" class="qr-clear-draft" title="Discard saved draft for this board" hidden>🗑︎</a>
   <select data-name="thread" title="Create a new thread / Reply">
     <option value="new">New thread</option>
   </select>
@@ -20,8 +21,8 @@
   <div class="textarea">
     <textarea data-name="com" placeholder="Comment" class="field"></textarea>
     <span id="char-count"></span>
-    <div id="tex-preview"></div>
-    <div id="qr-com-preview"></div>
+    <div id="tex-preview" class="postMessage"></div>
+    <div id="qr-com-preview" class="postMessage"></div>
   </div>
   <div id="dump-list-container">
     <div id="dump-list"></div>

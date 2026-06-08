@@ -3,9 +3,16 @@
   --xt-border: #D9BFB7;
   --xt-border-field-focus: #EA8;
   --xt-border-highlight: rgba(221, 0, 0, .8);
+  /* Highlight accents — tuned to this theme's red (matches --xt-border-highlight)
+     so the catalog glow/watched edge don't fall back to brighter pure #F00. */
+  --xt-filter-highlight: rgba(221, 0, 0, .5);
+  --xt-highlight-shadow: rgba(221, 0, 0, .5);
+  --xt-highlight-side-arrow: rgba(221, 0, 0, .8);
+  --xt-watched-border: rgb(221, 0, 0);
   --xt-header-dialog-bg: rgba(240,224,214,0.98);
   --xt-header-dialog-fg: #B86;
   --xt-header-link: #800000;
+  --xt-quote-color: #789922;
   --xt-dead-link: #00E;
   --xt-qr-link-border: rgb(225, 209, 199) rgb(225, 209, 199) rgb(210, 194, 184);
   --xt-qr-bg: linear-gradient(#FFEFE5, #F0E0D6) repeat scroll 0% 0% transparent;

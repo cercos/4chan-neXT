@@ -2,6 +2,25 @@
 
 ### Unreleased
 
+- Completed the TypeScript migration using decaffeinate, custom codemods, `@rollup/plugin-typescript`, and custom Rollup transformers.
+- Added back legacy 4chan XT settings.
+- Fixed Shift+Space triggering captcha
+- Post on captcha completion now works with new captcha
+- Added the ability to edit captcha answers in stacked captcha.
+- Changed settings descriptions to always show, with a toggle for tooltip descriptions.
+- Tweaked the Styling settings page layout.
+- Fixed Quick Reply comment preview quote text coloring.
+- Fixed Quick Reply comment preview links, cross-board quote links, programmatic quote insertion refreshes, and `[math]` / `[eqn]` preview rendering.
+- Added `Remember QR State`, a per-board Quick Reply draft system that restores all queued posts — subject/comment text, spoiler, flag, thread, and attachments (images/videos, stored in IndexedDB up to ~100 MB per board), and after refreshes, closes, and crashes.
+- Added an option to hide the native board-index post form by default; the existing Original Form toggle can still show it.
+- Fixed the `/pol/` Quick Reply flag selector to use the existing board flag CSS instead of duplicating sprite offsets.
+- Added a Settings Window navigation layout option for switching between the vertical sidebar and horizontal titlebar navigation.
+- Added a styling hooks reference (`docs/styling-hooks.md`) listing the highlight classes and CSS variables for custom CSS/userstyles.
+- Added a local styling guide (`docs/styling-guide.md`) and pointed Styling settings / README links at it.
+- Made the colored left edge the default highlight style; the per-row "Edge only" / "Border only" checkboxes are now a single "Highlight background" opt-in. Existing setups are migrated so filled highlights are preserved.
+- Turning on "Highlight background" now hides the edge (the two are mutually exclusive), so lowering opacity no longer shows the edge bleeding through the fill.
+- Simple Filters now highlight with a color swatch and/or a custom CSS class (applied together) instead of a plain class text field; an "apply color" toggle falls back to the theme default. The `highlight:` filter option now accepts a comma-separated list of classes.
+- Set a minimum size on the Settings window so the Simple Filters table no longer breaks when the window is shrunk.
 
 ### 1.0.8 (2026-06-05)
 

@@ -41,19 +41,20 @@ To migrate settings:
 ## Compatible Styling Scripts
 
 - StyleChan: https://github.com/3nly/StyleChan
+- Styling guide (Custom CSS, userstyles, and theme-aware highlight overrides): [docs/styling-guide.md](./docs/styling-guide.md)
+- Styling hooks (highlight classes and `--xt-*` CSS variables for custom CSS / userstyles): [docs/styling-hooks.md](./docs/styling-hooks.md)
 
 ## Fork Additions
 
 Recent fork additions include:
-- Built-in site theme styles and StyleChan compatibility.
-- IDE-style "over scrollbar" marker mode (single or 3 columns), plus per-subject highlight colors for catalog Own / Watched threads.
-- Quick Reply docking controls for the Thread Watcher and a compact preview toggle.
-- Configurable thread updater sounds with per-board overrides, cross-tab single-beep, and a volume slider.
-- YouTube → yewtu.be and X → xcancel link rewriting.
-- Scrollbar hover thumbnail preview and Thread Watcher thumbnails.
-- Comment previewing in replies.
-- Download-all media support.
-- Reorganized Settings dialog: faster initial load, hover-tooltip descriptions, search-friendly layout.
+- **Quick Reply and posting:** per-board `Remember QR State` draft restore with attachment persistence, native board-index form hiding, upload progress, thumbnail remove-file-first behavior, image auto-processing, media metadata stripping, audio stripping for boards that disallow audio, stacked TCaptcha editing, and comment preview with a titlebar toggle.
+- **Thread Watcher and monitoring:** Quick Reply docking, attach location controls, manual max size controls, OP thumbnails, hover thumbnail previews, mark-all-read and per-thread mark-read icons, detailed thread stats, and replies-to-you state support for watcher links.
+- **Styling and themes:** built-in site themes, SFW/NSFW styling variants, StyleChan section handoff, home-page StyleChan mirroring, theme-aware highlight colors, text color modes, edge/background highlight modes, edge and border styles, catalog own/watched highlights, saved palettes, and a local styling guide.
+- **Scrollbar markers:** own-post, quotes-you, ghost-post, and unread-line markers with per-marker colors, opacity, match-highlight controls, plus beside-scrollbar and IDE-style over-scrollbar layouts.
+- **Filters:** responsive Simple Filters, auto-save, color swatches plus custom CSS classes, combined Simple/Advanced preview, hidden-thread grouping, showing hidden threads with unread replies to you, `highlight:` class lists, and catalog `tile` highlight glow.
+- **Gallery and media:** grid gallery thumbnails, configurable gallery columns and thumbnail dock position, ZIP-based download-all-media support, persistent download dialog behavior, thumbnail replacement controls, and metadata visibility/stripping controls.
+- **Linkification:** YouTube -> yewtu.be and X/Twitter -> xcancel link rewriting.
+- **Settings and UI:** faster Settings loading, visible or tooltip descriptions, vertical or horizontal Settings navigation, search-friendly layout, relative post dates, relative-date title mode, and local user/styling docs.
 
 ## Build from Source
 
@@ -72,6 +73,8 @@ Useful build flags:
 ## Links
 
 - User Guide: [docs/user-guide.md](./docs/user-guide.md)
+- Styling Guide: [docs/styling-guide.md](./docs/styling-guide.md)
+- Styling Hooks: [docs/styling-hooks.md](./docs/styling-hooks.md)
 - Changelog: [CHANGELOG.md](./CHANGELOG.md)
 - Issues: https://github.com/cercos/4chan-next/issues
 - Contributing: [CONTRIBUTING.md](./CONTRIBUTING.md)

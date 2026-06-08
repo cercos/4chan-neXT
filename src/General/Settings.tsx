@@ -46,11 +46,15 @@ var Settings = {
   pointerDownInsideDialog: false,
   customCSSEditorThemeObserver: null as MutationObserver | null,
   stylingPreviewPanel: null as HTMLDivElement | null,
+  stylingPreviewAttached: true,
+  stylingPreviewAttachResizeObserver: null as ResizeObserver | null,
+  stylingPreviewAttachRaf: null as number | null,
   activeSiteStylePicker: null as HTMLElement | null,
   siteStylePickerOutsideHandler: null as ((e: Event) => void) | null,
   stylingEditingVariant: null as StyleVariant | null,
   styleVariantKeySet: new Set<string>(styleVariantKeys),
   resolvedStyleColorCache: null as Record<string, string> | null,
+  THEME_BORDER_HIGHLIGHT: '__theme_border_highlight__',
 
   // What's currently applied to the page. Always derived from the board
   // (or the forced mode); the Styling settings page does NOT override this,
@@ -104,6 +108,7 @@ var Settings = {
     settingsWindow.style.margin = '0';
     settingsWindow.style.transform = 'none';
     dragstart.call(this, e);
+    Settings.followAttachedStylingPreviewDuringDrag(e);
   },
 
   init() {
@@ -354,6 +359,12 @@ var Settings = {
       ) { sectionToOpen = link; }
     }
     $.add($('.sections-list', dialog), links);
+    // In horizontal layout the search box and section links sit inside the
+    // draggable titlebar; stop pointer events from starting a window drag.
+    for (const navEl of [$('.settings-search', dialog), $('.sections-list', dialog)]) {
+      $.on(navEl, 'touchstart mousedown', e => e.stopPropagation());
+    }
+    Settings.setNavLayout(settingsWindow, Conf['Settings Menu Layout']);
     // Opening on "All Settings" eagerly renders every section, which is
     // noticeably slower in Firefox. Default to the lightweight General view
     // unless the caller explicitly requested another section.
@@ -364,7 +375,9 @@ var Settings = {
     $.on($('.close', dialog), 'click', e => { e.preventDefault(); Settings.close(); });
     $.on(window, 'beforeunload', Settings.close);
     $.on(dialog, 'mousedown touchstart', e => {
-      Settings.pointerDownInsideDialog = settingsWindow.contains(e.target as Node);
+      const target = e.target as Node;
+      Settings.pointerDownInsideDialog =
+        settingsWindow.contains(target) || !!Settings.stylingPreviewPanel?.contains(target);
     });
     $.on(dialog, 'click', e => {
       if (e.target !== dialog) { return; }
@@ -390,6 +403,9 @@ var Settings = {
     if (!Settings.dialog) { return; }
     // Unfocus current field to trigger change event.
     d.activeElement?.blur();
+    // Persist any pending Simple Filters auto-save before the panel is torn down.
+    Settings.easyFiltersFlush?.();
+    Settings.easyFiltersFlush = null;
     if (Settings.rememberLayout) {
       Settings.persistCurrentDetailsState();
       const settingsWindow = $('#fourchanx-settings', Settings.dialog) as HTMLDivElement | null;
@@ -480,6 +496,26 @@ var Settings = {
         'settings.windowLayout': Settings.savedWindowLayout,
         'settings.detailsState': Settings.detailsState
       });
+    }
+  },
+
+  // Reposition the search box and section links between the left sidebar
+  // (vertical) and the titlebar (horizontal) based on the chosen layout.
+  setNavLayout(settingsWindow: HTMLDivElement, layout: string) {
+    const titlebar = $('.settings-titlebar', settingsWindow);
+    const actions = $('.settings-titlebar-actions', settingsWindow);
+    const nav = $('.settings-body > nav', settingsWindow);
+    const search = $('.settings-search', settingsWindow);
+    const sectionsList = $('.sections-list', settingsWindow);
+    if (!titlebar || !actions || !nav || !search || !sectionsList) return;
+    if (layout === 'horizontal') {
+      titlebar.insertBefore(search, actions);
+      titlebar.insertBefore(sectionsList, actions);
+      $.addClass(settingsWindow, 'settings-nav-horizontal');
+    } else {
+      nav.appendChild(search);
+      nav.appendChild(sectionsList);
+      $.rmClass(settingsWindow, 'settings-nav-horizontal');
     }
   },
 
@@ -721,6 +757,7 @@ var Settings = {
 
   openSection() {
     Settings.activeSection = this;
+    if (this.title !== 'Styling') Settings.closeStylingPreview();
     Settings.selectSectionTab(this);
     if (Settings.searchQuery && this.title !== 'All Settings') {
       Settings.ensureAllSettingsRendered();
@@ -1062,11 +1099,18 @@ Enable it on boards.${location.hostname.split('.')[1]}.org in your browser's pri
     const fs = $.el('details',
       { open: true },
       { innerHTML: `<summary>${title}</summary>` });
+    Settings.addSelectRows(fs, rows);
+    $.add(section, fs);
+  },
+
+  addSelectRows(root, rows) {
     const items = dict();
     const inputs = dict();
     for (const row of rows) {
       const div = $.el('div');
       div.dataset.name = row.name;
+      div.dataset.settingTitle = row.label;
+      Settings.registerSettingDescription(div, row.description || '');
       const label = $.el('label');
       const select = $.el('select', { name: row.name }) as HTMLSelectElement;
       for (const option of row.options) {
@@ -1086,14 +1130,14 @@ Enable it on boards.${location.hostname.split('.')[1]}.org in your browser's pri
       }
       items[row.name] = Conf[row.name];
       inputs[row.name] = select;
-      $.add(fs, div);
+      $.add(root, div);
     }
-    $.add(section, fs);
     $.get(items, function(items) {
       for (const key in items) {
         inputs[key].value = items[key];
       }
     });
+    return inputs;
   },
 
   general(section) {
@@ -1102,7 +1146,6 @@ Enable it on boards.${location.hostname.split('.')[1]}.org in your browser's pri
         name: 'Miscellaneous',
         subgroups: [
           ['System', ['JSON Index', `Use ${meta.name} Catalog`, 'Index Refresh Notifications', 'Open Threads in New Tab', 'External Catalog', '404 Redirect', 'Archive Report', 'Exempt Archives from Encryption', 'Show Updated Notifications']],
-          ['History', ['Export History', 'Ask to Export History']],
           ['Compatibility', ['Disable Native Extension', 'Enable Native Flash Embedding']]
         ]
       }],
@@ -1177,6 +1220,27 @@ Enable it on boards.${location.hostname.split('.')[1]}.org in your browser's pri
       ]
     });
 
+    const settingsUI = $$('details', section)
+      .find(details => $('summary', details)?.textContent === 'Settings UI') as HTMLElement | undefined;
+    const selectInputs = settingsUI ? Settings.addSelectRows(settingsUI, [
+      {
+        name: 'Settings Menu Layout',
+        label: 'Navigation menu',
+        description: 'Position of menu links.',
+        options: [
+          ['vertical', 'Vertical'],
+          ['horizontal', 'Horizontal']
+        ]
+      }
+    ]) : dict();
+    const navLayoutSelect = selectInputs['Settings Menu Layout'] as HTMLSelectElement | undefined;
+    if (navLayoutSelect) {
+      $.on(navLayoutSelect, 'change', function(this: HTMLSelectElement) {
+        const win = Settings.dialog && $('#fourchanx-settings', Settings.dialog) as HTMLDivElement | null;
+        if (win) Settings.setNavLayout(win, this.value);
+      });
+    }
+
     $.add(section, fsNav);
 
     $.get(items, function(items) {
@@ -1238,9 +1302,9 @@ Enable it on boards.${location.hostname.split('.')[1]}.org in your browser's pri
       'Highlight Posts Quoting You',
       'Highlight Own Posts',
       'Highlight Ghost Posts',
-      'Highlight Own Edge Only',
-      'Highlight You Edge Only',
-      'Highlight Ghost Edge Only'
+      'Highlight Own Background',
+      'Highlight You Background',
+      'Highlight Ghost Background'
     ]);
 
     Settings.renderMainGroups(section, {
@@ -1574,6 +1638,13 @@ Enable it on boards.${location.hostname.split('.')[1]}.org in your browser's pri
       includeSetting: key => !['Comment Preview', 'Show Comment Preview Header Icon'].includes(key),
     });
 
+    // Let the Quick Reply react live (same tab) when the draft feature is
+    // toggled, so turning it off can wipe saved drafts/attachments immediately.
+    const rememberQRState = $('input[name="Remember QR State"]', section) as HTMLInputElement | null;
+    if (rememberQRState) {
+      $.on(rememberQRState, 'change', () => $.event('QRStateChanged', null));
+    }
+
     const fs = $.el('details',
       { open: true },
       { innerHTML: '<summary>Comment Preview</summary>' }) as HTMLDetailsElement;
@@ -1746,10 +1817,10 @@ Enable it on boards.${location.hostname.split('.')[1]}.org in your browser's pri
     // entry pairs a marker's enable checkbox with its colour/opacity/match
     // controls so we can disable + dim them as a unit under the master switch.
     const markerControlRows = [
-      { type: 'own', onKey: 'Scrollbar Mark Own Posts', colorKey: 'Scroll Marker Own Color', opacityKey: 'Scroll Marker Own Opacity', matchKey: 'Scroll Marker Own Match Highlight' },
-      { type: 'you', onKey: 'Scrollbar Mark Quotes You', colorKey: 'Scroll Marker You Color', opacityKey: 'Scroll Marker You Opacity', matchKey: 'Scroll Marker You Match Highlight' },
-      { type: 'ghost', onKey: 'Scrollbar Mark Ghost Posts', colorKey: 'Scroll Marker Ghost Color', opacityKey: 'Scroll Marker Ghost Opacity', matchKey: 'Scroll Marker Ghost Match Highlight' },
-      { type: 'unread', onKey: 'Scrollbar Mark Unread Line', colorKey: 'Scroll Marker Unread Color', opacityKey: 'Scroll Marker Unread Opacity', matchKey: null },
+      { type: 'own', onKey: 'Scrollbar Mark Own Posts', colorKey: 'Scroll Marker Own Color', opacityKey: 'Scroll Marker Own Opacity', matchKey: 'Scroll Marker Own Match Highlight', highlightKey: 'Highlight Own Color' },
+      { type: 'you', onKey: 'Scrollbar Mark Quotes You', colorKey: 'Scroll Marker You Color', opacityKey: 'Scroll Marker You Opacity', matchKey: 'Scroll Marker You Match Highlight', highlightKey: 'Highlight You Color' },
+      { type: 'ghost', onKey: 'Scrollbar Mark Ghost Posts', colorKey: 'Scroll Marker Ghost Color', opacityKey: 'Scroll Marker Ghost Opacity', matchKey: 'Scroll Marker Ghost Match Highlight', highlightKey: 'Highlight Ghost Color' },
+      { type: 'unread', onKey: 'Scrollbar Mark Unread Line', colorKey: 'Scroll Marker Unread Color', opacityKey: 'Scroll Marker Unread Opacity', matchKey: null, highlightKey: null },
     ] as const;
     // Changing any of these re-runs syncMarkerColorControls (master, per-row
     // enable, and match toggles all change which marker controls are live).
@@ -1761,9 +1832,68 @@ Enable it on boards.${location.hostname.split('.')[1]}.org in your browser's pri
     // Thread highlight rows: each enable checkbox gates its own detail controls,
     // mirroring syncCatalogHighlightControls for the catalog group.
     const threadHighlightControlRows = [
-      { onKey: 'Highlight Own Posts', controls: ['Highlight Own Color', 'Highlight Own Opacity', 'Highlight Own Edge Only', 'Highlight Own Edge Width', 'Highlight Own Text Mode', 'Highlight Own Text Color', 'Highlight Own Link Color', 'Highlight Own Quote Color', 'Highlight Own Dead Link Color'] },
-      { onKey: 'Highlight Posts Quoting You', controls: ['Highlight You Color', 'Highlight You Opacity', 'Highlight You Edge Only', 'Highlight You Edge Width', 'Highlight You Text Mode', 'Highlight You Text Color', 'Highlight You Link Color', 'Highlight You Quote Color', 'Highlight You Dead Link Color'] },
-      { onKey: 'Highlight Ghost Posts', controls: ['Highlight Ghost Color', 'Highlight Ghost Opacity', 'Highlight Ghost Edge Only', 'Highlight Ghost Edge Width', 'Highlight Ghost Text Mode', 'Highlight Ghost Text Color', 'Highlight Ghost Link Color', 'Highlight Ghost Quote Color', 'Highlight Ghost Dead Link Color'] },
+      { onKey: 'Highlight Own Posts', controls: ['Highlight Own Color', 'Highlight Own Opacity', 'Highlight Own Background', 'Highlight Own Edge Width', 'Highlight Own Border Style', 'Highlight Own Text Mode', 'Highlight Own Text Color', 'Highlight Own Link Color', 'Highlight Own Quote Color', 'Highlight Own Dead Link Color'] },
+      { onKey: 'Highlight Posts Quoting You', controls: ['Highlight You Color', 'Highlight You Opacity', 'Highlight You Background', 'Highlight You Edge Width', 'Highlight You Border Style', 'Highlight You Text Mode', 'Highlight You Text Color', 'Highlight You Link Color', 'Highlight You Quote Color', 'Highlight You Dead Link Color'] },
+      { onKey: 'Highlight Ghost Posts', controls: ['Highlight Ghost Color', 'Highlight Ghost Opacity', 'Highlight Ghost Background', 'Highlight Ghost Edge Width', 'Highlight Ghost Border Style', 'Highlight Ghost Text Mode', 'Highlight Ghost Text Color', 'Highlight Ghost Link Color', 'Highlight Ghost Quote Color', 'Highlight Ghost Dead Link Color'] },
+    ] as const;
+    const themeDefaultSettings = [
+      ['Enable Thread Highlights', true],
+      ['Highlight Own Posts', true],
+      ['Highlight Posts Quoting You', true],
+      ['Highlight Ghost Posts', true],
+      ['Highlight Own Color', Settings.THEME_BORDER_HIGHLIGHT],
+      ['Highlight You Color', Settings.THEME_BORDER_HIGHLIGHT],
+      ['Highlight Ghost Color', ''],
+      ['Highlight Own Opacity', ''],
+      ['Highlight You Opacity', ''],
+      ['Highlight Ghost Opacity', ''],
+      ['Thread Highlight Edge Width', 3],
+      ['Highlight Own Edge Width', 3],
+      ['Highlight You Edge Width', 3],
+      ['Highlight Ghost Edge Width', 3],
+      ['Highlight Own Background', false],
+      ['Highlight You Background', false],
+      ['Highlight Ghost Background', false],
+      ['Highlight Own Text Mode', 'default'],
+      ['Highlight You Text Mode', 'default'],
+      ['Highlight Ghost Text Mode', 'default'],
+      ['Highlight Own Text Color', ''],
+      ['Highlight Own Link Color', ''],
+      ['Highlight Own Quote Color', ''],
+      ['Highlight Own Dead Link Color', ''],
+      ['Highlight You Text Color', ''],
+      ['Highlight You Link Color', ''],
+      ['Highlight You Quote Color', ''],
+      ['Highlight You Dead Link Color', ''],
+      ['Highlight Ghost Text Color', ''],
+      ['Highlight Ghost Link Color', ''],
+      ['Highlight Ghost Quote Color', ''],
+      ['Highlight Ghost Dead Link Color', ''],
+      // Catalog highlights are neXT-specific; keep them available but off for the vanilla baseline.
+      ['Enable Catalog Highlights', false],
+      ['Catalog Highlight Own Posts', true],
+      ['Catalog Highlight Watched Threads', true],
+      ['Catalog Highlight Own Color', ''],
+      ['Catalog Highlight Own Opacity', ''],
+      ['Catalog Highlight Own Background', false],
+      ['Catalog Highlight Watched Color', ''],
+      ['Catalog Highlight Watched Opacity', ''],
+      ['Catalog Highlight Watched Background', false],
+      ['Catalog Highlight Border Width', 3],
+      ['Catalog Highlight Own Border Width', 3],
+      ['Catalog Highlight Watched Border Width', 3],
+      ['Catalog Highlight Own Text Mode', 'default'],
+      ['Catalog Highlight Own Text Color', ''],
+      ['Catalog Highlight Own Subject Color', ''],
+      ['Catalog Highlight Own Link Color', ''],
+      ['Catalog Highlight Own Quote Color', ''],
+      ['Catalog Highlight Own Dead Link Color', ''],
+      ['Catalog Highlight Watched Text Mode', 'default'],
+      ['Catalog Highlight Watched Text Color', ''],
+      ['Catalog Highlight Watched Subject Color', ''],
+      ['Catalog Highlight Watched Link Color', ''],
+      ['Catalog Highlight Watched Quote Color', ''],
+      ['Catalog Highlight Watched Dead Link Color', ''],
     ] as const;
     const threadHighlightToggleKeys = new Set<string>([
       'Enable Thread Highlights',
@@ -1775,7 +1905,7 @@ Enable it on boards.${location.hostname.split('.')[1]}.org in your browser's pri
         modeKey: 'Highlight Own Text Mode',
         colorKey: 'Highlight Own Color',
         opacityKey: 'Highlight Own Opacity',
-        edgeKey: 'Highlight Own Edge Only',
+        bgKey: 'Highlight Own Background',
         keys: ['Highlight Own Text Color', 'Highlight Own Link Color', 'Highlight Own Quote Color', 'Highlight Own Dead Link Color'] as const,
       },
       {
@@ -1783,7 +1913,7 @@ Enable it on boards.${location.hostname.split('.')[1]}.org in your browser's pri
         modeKey: 'Highlight You Text Mode',
         colorKey: 'Highlight You Color',
         opacityKey: 'Highlight You Opacity',
-        edgeKey: 'Highlight You Edge Only',
+        bgKey: 'Highlight You Background',
         keys: ['Highlight You Text Color', 'Highlight You Link Color', 'Highlight You Quote Color', 'Highlight You Dead Link Color'] as const,
       },
       {
@@ -1791,7 +1921,7 @@ Enable it on boards.${location.hostname.split('.')[1]}.org in your browser's pri
         modeKey: 'Highlight Ghost Text Mode',
         colorKey: 'Highlight Ghost Color',
         opacityKey: 'Highlight Ghost Opacity',
-        edgeKey: 'Highlight Ghost Edge Only',
+        bgKey: 'Highlight Ghost Background',
         keys: ['Highlight Ghost Text Color', 'Highlight Ghost Link Color', 'Highlight Ghost Quote Color', 'Highlight Ghost Dead Link Color'] as const,
       },
       {
@@ -1799,7 +1929,7 @@ Enable it on boards.${location.hostname.split('.')[1]}.org in your browser's pri
         modeKey: 'Catalog Highlight Own Text Mode',
         colorKey: 'Catalog Highlight Own Color',
         opacityKey: 'Catalog Highlight Own Opacity',
-        edgeKey: 'Catalog Highlight Own Border Only',
+        bgKey: 'Catalog Highlight Own Background',
         keys: ['Catalog Highlight Own Text Color', 'Catalog Highlight Own Subject Color', 'Catalog Highlight Own Link Color', 'Catalog Highlight Own Quote Color', 'Catalog Highlight Own Dead Link Color'] as const,
       },
       {
@@ -1807,7 +1937,7 @@ Enable it on boards.${location.hostname.split('.')[1]}.org in your browser's pri
         modeKey: 'Catalog Highlight Watched Text Mode',
         colorKey: 'Catalog Highlight Watched Color',
         opacityKey: 'Catalog Highlight Watched Opacity',
-        edgeKey: 'Catalog Highlight Watched Border Only',
+        bgKey: 'Catalog Highlight Watched Background',
         keys: ['Catalog Highlight Watched Text Color', 'Catalog Highlight Watched Subject Color', 'Catalog Highlight Watched Link Color', 'Catalog Highlight Watched Quote Color', 'Catalog Highlight Watched Dead Link Color'] as const,
       },
     ] as const;
@@ -1894,7 +2024,7 @@ Enable it on boards.${location.hostname.split('.')[1]}.org in your browser's pri
           : baseTextPalette(postBackground);
         // Edge/border-only highlights leave the post on its base background, so
         // the auto color is derived from that, not the highlight-tinted background.
-        const palette = editConf<boolean>(group.edgeKey)
+        const palette = !editConf<boolean>(group.bgKey)
           ? groupBasePalette
           : (Settings.autoHighlightTextPalette(group.colorKey, group.opacityKey, groupBackground, v) || groupBasePalette);
         const nextValues = [palette.text, palette.link, palette.quote, palette.deadLink] as const;
@@ -1924,7 +2054,7 @@ Enable it on boards.${location.hostname.split('.')[1]}.org in your browser's pri
         const groupBasePalette = group.manualGroup.startsWith('catalog-')
           ? basePalette
           : baseTextPalette(postBackground);
-        const autoPalette = editConf<boolean>(group.edgeKey)
+        const autoPalette = !editConf<boolean>(group.bgKey)
           ? groupBasePalette
           : (Settings.autoHighlightTextPalette(group.colorKey, group.opacityKey, groupBackground, v) || groupBasePalette);
         const nextValues = [autoPalette.text, autoPalette.link, autoPalette.quote, autoPalette.deadLink] as const;
@@ -2001,11 +2131,11 @@ Enable it on boards.${location.hostname.split('.')[1]}.org in your browser's pri
         const enabled = catalogEnabled && !!inputs[key]?.checked;
         const controls = key === 'Catalog Highlight Own Posts' ?
           [
-            'Catalog Highlight Own Color', 'Catalog Highlight Own Opacity', 'Catalog Highlight Own Border Only', 'Catalog Highlight Own Border Width', 'Catalog Highlight Own Text Mode',
+            'Catalog Highlight Own Color', 'Catalog Highlight Own Opacity', 'Catalog Highlight Own Background', 'Catalog Highlight Own Border Width', 'Catalog Highlight Own Border Style', 'Catalog Highlight Own Text Mode',
             'Catalog Highlight Own Text Color', 'Catalog Highlight Own Subject Color', 'Catalog Highlight Own Link Color', 'Catalog Highlight Own Quote Color', 'Catalog Highlight Own Dead Link Color',
           ] :
           [
-            'Catalog Highlight Watched Color', 'Catalog Highlight Watched Opacity', 'Catalog Highlight Watched Border Only', 'Catalog Highlight Watched Border Width', 'Catalog Highlight Watched Text Mode',
+            'Catalog Highlight Watched Color', 'Catalog Highlight Watched Opacity', 'Catalog Highlight Watched Background', 'Catalog Highlight Watched Border Width', 'Catalog Highlight Watched Border Style', 'Catalog Highlight Watched Text Mode',
             'Catalog Highlight Watched Text Color', 'Catalog Highlight Watched Subject Color', 'Catalog Highlight Watched Link Color', 'Catalog Highlight Watched Quote Color', 'Catalog Highlight Watched Dead Link Color',
           ];
         for (const controlKey of controls) {
@@ -2014,6 +2144,30 @@ Enable it on boards.${location.hostname.split('.')[1]}.org in your browser's pri
         }
       }
       syncColorHexInputs();
+    };
+    // The editable marker colour swatch (+ hex) normally lives in the body's
+    // scrollbar-marker section, but hops up into the row header while the row is
+    // collapsed so it can be tweaked at a glance. It's only promoted to the
+    // header when the row has an independent marker colour to set — its marker
+    // is on and not slaved to the highlight (matched markers mirror the
+    // highlight swatch already in the header). When open, or with nothing to
+    // adjust, it stays in its body slot.
+    const placeMarkerColorControls = () => {
+      const markersOn = !!inputs['Scrollbar Markers']?.checked;
+      for (const { type, onKey, matchKey, highlightKey } of markerControlRows) {
+        if (!highlightKey) continue; // unread's marker swatch has no body/header split
+        const item = $(`[data-highlight-row="${type}"]`, section) as HTMLElement | null;
+        if (!item) continue;
+        const wrapper = $(`[data-marker-color="${type}"]`, item) as HTMLElement | null;
+        const headSlot = $(`[data-mk-headslot="${type}"]`, item) as HTMLElement | null;
+        const bodySlot = $(`[data-mk-bodyslot="${type}"]`, item) as HTMLElement | null;
+        if (!wrapper || !headSlot || !bodySlot) continue;
+        const open = item.classList.contains('styling-hl-open');
+        const rowOn = markersOn && !!inputs[onKey]?.checked;
+        const matched = !!(matchKey && inputs[matchKey]?.checked);
+        const target = !open && rowOn && !matched ? headSlot : bodySlot;
+        if (wrapper.parentElement !== target) target.appendChild(wrapper);
+      }
     };
     const syncMarkerColorControls = () => {
       Settings.syncLinkedMarkerColors(inputs, editVariant());
@@ -2032,6 +2186,7 @@ Enable it on boards.${location.hostname.split('.')[1]}.org in your browser's pri
         const cell = $(`[data-marker-color="${type}"]`, section) as HTMLElement | null;
         if (cell) cell.dataset.colorLinked = matched ? 'true' : 'false';
       }
+      placeMarkerColorControls();
       syncColorHexInputs();
     };
     const syncThreadHighlightControls = () => {
@@ -2081,17 +2236,40 @@ Enable it on boards.${location.hostname.split('.')[1]}.org in your browser's pri
       $.on(matchLabel, 'focusin', () => setMatchTargetHighlight(role, true));
       $.on(matchLabel, 'focusout', () => setMatchTargetHighlight(role, false));
     }
-    // Highlight rows are an accordion: one open at a time. Clicks on a row's own
-    // enable checkbox or colour swatch edit in place rather than collapsing it.
+    // Highlight rows are an accordion: one open at a time. Clicks on a row's
+    // colour swatch edit in place rather than collapsing it.
     const accItems = $$('.styling-hl-acc-item', section) as HTMLElement[];
+    let activePreviewHoverRow = '';
+    const setPreviewHoverRow = (row = '') => {
+      activePreviewHoverRow = row;
+      Settings.setStylingPreviewHoverState(row);
+    };
+    for (const item of accItems) {
+      const row = item.dataset.highlightRow || '';
+      if (!row || row === 'unread') continue;
+      $.on(item, 'mouseenter', () => setPreviewHoverRow(row));
+      $.on(item, 'mouseleave', () => {
+        if (activePreviewHoverRow === row) setPreviewHoverRow();
+      });
+      $.on(item, 'focusin', () => setPreviewHoverRow(row));
+      $.on(item, 'focusout', (e: FocusEvent) => {
+        if (item.contains(e.relatedTarget as Node | null)) return;
+        if (activePreviewHoverRow === row) setPreviewHoverRow();
+      });
+    }
+    const updatePreviewStateFromRows = refreshStylingPreview;
     for (const head of $$('.styling-hl-acc-head', section) as HTMLElement[]) {
       $.on(head, 'click', (e: Event) => {
         const target = e.target as HTMLElement;
-        if (target.closest('.styling-hl-acc-toggle, .styling-hl-color')) return;
+        if (target.closest('.styling-hl-color')) return;
         const item = head.parentElement as HTMLElement;
         const open = item.classList.contains('styling-hl-open');
         for (const it of accItems) it.classList.remove('styling-hl-open');
         if (!open) item.classList.add('styling-hl-open');
+        // Opening/closing changes where each row's marker colour swatch lives
+        // (body section when open, header when collapsed).
+        placeMarkerColorControls();
+        updatePreviewStateFromRows();
       });
     }
     // Per-state width text inputs (px). Text inputs don't get the generic
@@ -2100,6 +2278,10 @@ Enable it on boards.${location.hostname.split('.')[1]}.org in your browser's pri
       'Highlight Own Edge Width', 'Highlight You Edge Width', 'Highlight Ghost Edge Width',
       'Catalog Highlight Own Border Width', 'Catalog Highlight Watched Border Width',
     ];
+    const borderStyleInputKeys = new Set([
+      'Highlight Own Border Style', 'Highlight You Border Style', 'Highlight Ghost Border Style',
+      'Catalog Highlight Own Border Style', 'Catalog Highlight Watched Border Style',
+    ]);
     for (const key of widthInputKeys) {
       const inp = inputs[key];
       if (!inp) continue;
@@ -2117,13 +2299,19 @@ Enable it on boards.${location.hostname.split('.')[1]}.org in your browser's pri
     // Live value readout next to each opacity slider so the current step shows
     // while dragging (a native range gives no number).
     const opacityReadouts: Array<{ range: HTMLInputElement; out: HTMLElement }> = [];
+    // Always show two decimals (the slider step is 0.05) so the readout keeps a
+    // fixed width and doesn't shift the row as the value crosses 1, 0.1, 0, etc.
+    const fmtOpacity = (v: string) => {
+      const n = parseFloat(v);
+      return Number.isFinite(n) ? n.toFixed(2) : v;
+    };
     const refreshOpacityReadouts = () => {
-      for (const { range, out } of opacityReadouts) out.textContent = range.value;
+      for (const { range, out } of opacityReadouts) out.textContent = fmtOpacity(range.value);
     };
     for (const range of $$('.styling-hl-octl input[type="range"]', section) as HTMLInputElement[]) {
       const out = $.el('span', { className: 'styling-hl-valout' }) as HTMLElement;
       range.insertAdjacentElement('afterend', out);
-      const upd = () => { out.textContent = range.value; };
+      const upd = () => { out.textContent = fmtOpacity(range.value); };
       $.on(range, 'input', upd);
       $.on(range, 'change', upd);
       opacityReadouts.push({ range, out });
@@ -2228,6 +2416,12 @@ Enable it on boards.${location.hostname.split('.')[1]}.org in your browser's pri
         };
         $.on(input, event, applyRange);
         if (event !== 'input') $.on(input, 'input', applyRange);
+      } else if (borderStyleInputKeys.has(name)) {
+        $.on(input, 'change', () => {
+          writeEditConf(name, (input as HTMLSelectElement).value);
+          Settings.applyStylingVars();
+          refreshStylingPreview();
+        });
       }
     }
     Settings.primeResolvedStyleColorCache(
@@ -2298,6 +2492,40 @@ Enable it on boards.${location.hostname.split('.')[1]}.org in your browser's pri
         }
         syncAutoHighlightPreviewInputs();
         refreshStylingPreview();
+      });
+    }
+    const useThemeDefaults = $('#styling-use-theme-defaults', section) as HTMLButtonElement | null;
+    if (useThemeDefaults) {
+      $.on(useThemeDefaults, 'click', (e: Event) => {
+        e.preventDefault();
+        for (const [baseKey, value] of themeDefaultSettings) {
+          writeEditConf(baseKey, value);
+          const input = inputs[baseKey];
+          if (!input) continue;
+          if (input.type === 'checkbox') {
+            input.checked = !!value;
+            setCheckedState(input);
+          } else if (input.type === 'color') {
+            Settings.setColorInputValue(input, baseKey, value);
+          } else if (input.type === 'range') {
+            input.value = value === '' ? '1' : String(value);
+          } else {
+            input.value = String(value ?? '');
+          }
+        }
+        syncMarkerColorControls();
+        syncCatalogHighlightControls();
+        syncThreadHighlightControls();
+        syncTextColorControls();
+        syncHighlightTextControls();
+        syncAutoHighlightPreviewInputs();
+        Settings.applyStylingVars();
+        refreshUnsetColorInputs();
+        syncColorHexInputs();
+        refreshOpacityReadouts();
+        updatePreviewStateFromRows();
+        refreshSuggestedPalettesIfOpen();
+        $.event('RefreshScrollMarkers');
       });
     }
 
@@ -2490,8 +2718,12 @@ Enable it on boards.${location.hostname.split('.')[1]}.org in your browser's pri
     // Randomize / reset highlight color buttons.
     const openPreview = $('#styling-open-preview', section);
     if (openPreview) {
+      if (Settings.stylingPreviewPanel?.isConnected) {
+        openPreview.textContent = 'Hide preview';
+      }
       $.on(openPreview, 'click', () => {
         Settings.openStylingPreview(section);
+        updatePreviewStateFromRows();
       });
     }
     const randomize = $('#styling-randomize', section);
@@ -2566,6 +2798,8 @@ Enable it on boards.${location.hostname.split('.')[1]}.org in your browser's pri
       stylingHost.dataset.editingVariant = variant;
       for (const detail of $$('details[data-variant-aware="true"]', section) as HTMLElement[]) {
         detail.dataset.variantLabel = shortLabel;
+        const summaryText = $('.styling-section-summary-text', detail) as HTMLElement | null;
+        if (summaryText) summaryText.dataset.variantLabel = shortLabel;
       }
     };
     const switchEditingVariant = (variant: StyleVariant) => {
@@ -2650,12 +2884,14 @@ Enable it on boards.${location.hostname.split('.')[1]}.org in your browser's pri
   },
 
   stylingPreviewSampleMessageHTML() {
+    // Greentext first so it stays visible within the catalog's clamped height,
+    // then regular text, a link, a quotelink and a dead quotelink.
     return [
-      'Regular text sample with a ',
-      '<a href="https://example.com/thread-preview" target="_blank" rel="nofollow noopener">regular link</a>, ',
+      '<span class="quote">&gt;greentext sample</span><br>',
+      'Regular text with a ',
+      '<a href="https://example.com/thread-preview" target="_blank" rel="nofollow noopener">link</a>, ',
       '<a class="quotelink" href="#p1213499548" rel="nofollow">&gt;&gt;1213499548</a>, ',
-      '<a class="quotelink deadlink" href="#p1213000000" rel="nofollow">&gt;&gt;1213000000</a>, ',
-      'and <span class="quote">&gt;quoted text preview</span>.'
+      'and a <a class="quotelink deadlink" href="#p1213000000" rel="nofollow">&gt;&gt;1213000000</a> dead link.'
     ].join('');
   },
 
@@ -2700,6 +2936,7 @@ Enable it on boards.${location.hostname.split('.')[1]}.org in your browser's pri
     postID,
     extraThreadClass = '',
     extraContainerClass = '',
+    extraPostClass = '',
     subject = '',
     message = '',
     messageHTML = '',
@@ -2710,6 +2947,7 @@ Enable it on boards.${location.hostname.split('.')[1]}.org in your browser's pri
     postID: number;
     extraThreadClass?: string;
     extraContainerClass?: string;
+    extraPostClass?: string;
     subject?: string;
     message?: string;
     messageHTML?: string;
@@ -2718,6 +2956,7 @@ Enable it on boards.${location.hostname.split('.')[1]}.org in your browser's pri
   }) {
     const threadClasses = `thread catalog-thread ${extraThreadClass}`.trim();
     const containerClasses = `postContainer catalog-container ${extraContainerClass}`.trim();
+    const postClasses = `post catalog-post ${extraPostClass}`.trim();
     const safeSubject = E(subject || 'Catalog subject preview');
     const renderedMessage = messageHTML || E(message || Settings.stylingPreviewSampleText());
     const safeSummary = E(summary || '4 posts and 2 image replies');
@@ -2725,7 +2964,7 @@ Enable it on boards.${location.hostname.split('.')[1]}.org in your browser's pri
     return `
       <div class="${threadClasses}" id="t${threadID}" style="--tn-w: 250; --tn-h: 196;">
         <div class="${containerClasses}" id="pc${threadID}" data-full-i-d="g.${threadID}">
-          <div id="p${postID}" class="post catalog-post">
+          <div id="p${postID}" class="${postClasses}">
             <a class="catalog-link" href="/g/thread/${threadID}">
               <img src="//i.4cdn.org/g/1745612650141704s.jpg" class="catalog-thumb" data-width="250" data-height="196" style="width: 150px; height: 117.6px;">
             </a>
@@ -2750,73 +2989,305 @@ Enable it on boards.${location.hostname.split('.')[1]}.org in your browser's pri
     `;
   },
 
-  openStylingPreview(section?: HTMLElement) {
-    if (!Settings.dialog) return;
-    const targetSection = section || ($('.section-styling', Settings.dialog) as HTMLElement | null);
-    if (!targetSection) return;
-    const trigger = $('#styling-open-preview', targetSection) as HTMLButtonElement | null;
+  stylingPreviewThreadState(state = 'default') {
+    // Every thread state shares identical body content so only the highlight styling
+    // (and the subject label naming the type) differs between them.
+    const messageHTML = [
+      'Sample post text with a ',
+      '<a href="https://example.com/thread-preview" target="_blank" rel="nofollow noopener">regular link</a>, ',
+      '<a class="quotelink" href="#p1213499548" rel="nofollow">&gt;&gt;1213499548</a>, ',
+      'and a <a class="quotelink deadlink" href="#p1213000000" rel="nofollow">&gt;&gt;1213000000</a> dead link.',
+      '<br><span class="quote">&gt;greentext sample</span>'
+    ].join('');
+    const states = {
+      default: { subject: 'Default post', extraClass: '', messageHTML },
+      own: { subject: 'Your post', extraClass: 'yourPost', messageHTML },
+      you: { subject: 'Quotes you', extraClass: 'quotesYou', messageHTML },
+      ghost: { subject: 'Ghost post', extraClass: 'from-archive', messageHTML },
+    };
+    return states[state] || states.default;
+  },
 
-    if (Settings.stylingPreviewPanel && Settings.stylingPreviewPanel.isConnected) {
-      const collapsed = Settings.stylingPreviewPanel.dataset.collapsed === 'true';
-      Settings.stylingPreviewPanel.dataset.collapsed = collapsed ? 'false' : 'true';
-      if (trigger) trigger.textContent = collapsed ? 'Hide preview' : 'Preview states';
-      return;
-    }
-
-    const panel = $.el('div', { className: 'styling-preview styling-preview-dock dialog' }) as HTMLDivElement;
-    panel.dataset.collapsed = 'false';
+  stylingPreviewCatalogState(state = 'default') {
     const sampleMessageHTML = Settings.stylingPreviewSampleMessageHTML();
-    panel.innerHTML = `
+    const states = {
+      default: {
+        subject: 'Default catalog',
+        extraThreadClass: '',
+        extraContainerClass: '',
+        extraPostClass: '',
+        messageHTML: sampleMessageHTML,
+        summary: '4 posts and 2 image replies',
+        excerpt: 'recent reply preview',
+      },
+      'catalog-own': {
+        subject: 'Your catalog post',
+        extraThreadClass: 'yourPost',
+        extraContainerClass: 'yourPost',
+        extraPostClass: 'yourPost',
+        messageHTML: sampleMessageHTML,
+        summary: 'You replied in this thread',
+        excerpt: 'your reply preview',
+      },
+      'catalog-watched': {
+        subject: 'Watched catalog',
+        extraThreadClass: 'watched',
+        extraContainerClass: '',
+        extraPostClass: '',
+        messageHTML: sampleMessageHTML,
+        summary: 'Watched thread preview',
+        excerpt: 'watched reply preview',
+      }
+    };
+    return states[state] || states.default;
+  },
+
+  stylingPreviewContentHTML() {
+    const threadState = Settings.stylingPreviewThreadState();
+    const catalogState = Settings.stylingPreviewCatalogState();
+    return `
       <div class="styling-preview-layout">
-        <div class="board styling-preview-thread">
+        <div class="board styling-preview-thread" data-preview-panel="thread" aria-label="Thread highlight states">
           <div class="thread" id="t503286550">
-            ${Settings.stylingPreviewPostHTML({ postID: 503286554, subject: 'Normal thread state', messageHTML: sampleMessageHTML })}
-            ${Settings.stylingPreviewPostHTML({ postID: 503286555, extraClass: 'yourPost', author: 'You', subject: 'Your post state', messageHTML: sampleMessageHTML })}
-            ${Settings.stylingPreviewPostHTML({ postID: 503286556, extraClass: 'quotesYou', subject: 'Quotes you state', messageHTML: sampleMessageHTML })}
-            ${Settings.stylingPreviewPostHTML({ postID: 503286557, extraClass: 'from-archive', author: 'Archived', subject: 'Ghost post state', messageHTML: sampleMessageHTML })}
+            ${Settings.stylingPreviewPostHTML({ postID: 503286554, subject: threadState.subject, extraClass: threadState.extraClass, messageHTML: threadState.messageHTML })}
           </div>
         </div>
-        <div class="board styling-preview-catalog catalog-small">
-          ${Settings.stylingPreviewCatalogThreadHTML({
-            threadID: 503286580,
-            postID: 503286580,
-            extraThreadClass: 'yourPost',
-            extraContainerClass: 'yourPost',
-            subject: 'Catalog own-post state',
-            messageHTML: sampleMessageHTML,
-            summary: '5 posts and 3 image replies',
-            excerpt: 'your post reply sample',
-          })}
-          ${Settings.stylingPreviewCatalogThreadHTML({
-            threadID: 503286590,
-            postID: 503286590,
-            extraThreadClass: 'watched',
-            subject: 'Catalog watched-thread state',
-            messageHTML: sampleMessageHTML,
-            summary: '10 posts and 4 image replies',
-            excerpt: 'watched thread reply sample',
-          })}
+        <div class="board styling-preview-catalog catalog-small" data-preview-panel="catalog" aria-label="Catalog highlight states">
+          ${Settings.stylingPreviewCatalogThreadHTML({ threadID: 503286581, postID: 503286581, ...catalogState })}
         </div>
       </div>
     `;
+  },
 
-    const actions = $('.styling-actions', targetSection) as HTMLElement | null;
-    if (actions?.parentElement) {
-      actions.parentElement.insertBefore(panel, actions.nextSibling);
-    } else {
-      $.add(targetSection, panel);
+  setStylingPreviewHoverState(row = '') {
+    const panel = Settings.stylingPreviewPanel;
+    if (!panel) return;
+    const threadStateName = ['own', 'you', 'ghost'].includes(row) ? row : 'default';
+    const catalogStateName = ['catalog-own', 'catalog-watched'].includes(row) ? row : 'default';
+    const threadState = Settings.stylingPreviewThreadState(threadStateName);
+    const catalogState = Settings.stylingPreviewCatalogState(catalogStateName);
+
+    panel.dataset.previewHoverState = row || 'default';
+
+    const postContainer = $('.styling-preview-post', panel) as HTMLElement | null;
+    const postSubject = $('.styling-preview-post .postInfo.desktop .subject', panel) as HTMLElement | null;
+    const postMessage = $('.styling-preview-post .postMessage', panel) as HTMLElement | null;
+    if (postContainer) {
+      postContainer.className = `postContainer replyContainer styling-preview-post ${threadState.extraClass}`.trim();
     }
+    if (postSubject) postSubject.textContent = threadState.subject;
+    if (postMessage) postMessage.innerHTML = threadState.messageHTML;
+
+    const catalogThread = $('.styling-preview-catalog > .catalog-thread', panel) as HTMLElement | null;
+    const catalogContainer = $('.styling-preview-catalog .catalog-container', panel) as HTMLElement | null;
+    const catalogPost = $('.styling-preview-catalog .catalog-post', panel) as HTMLElement | null;
+    const catalogSubject = $('.styling-preview-catalog .catalog-post > .postInfo .subject', panel) as HTMLElement | null;
+    const catalogMessage = $('.styling-preview-catalog .catalog-post > .postMessage', panel) as HTMLElement | null;
+    const catalogSummary = $('.styling-preview-catalog .preview-summary', panel) as HTMLElement | null;
+    const catalogExcerpt = $('.styling-preview-catalog .catalog-reply-excerpt', panel) as HTMLElement | null;
+    if (catalogThread) catalogThread.className = `thread catalog-thread ${catalogState.extraThreadClass}`.trim();
+    if (catalogContainer) catalogContainer.className = `postContainer catalog-container ${catalogState.extraContainerClass}`.trim();
+    if (catalogPost) catalogPost.className = `post catalog-post ${catalogState.extraPostClass}`.trim();
+    if (catalogSubject) catalogSubject.textContent = catalogState.subject;
+    if (catalogMessage) catalogMessage.innerHTML = catalogState.messageHTML;
+    if (catalogSummary) catalogSummary.textContent = catalogState.summary;
+    if (catalogExcerpt) catalogExcerpt.textContent = catalogState.excerpt;
+  },
+
+  openStylingPreview(section?: HTMLElement) {
+    if (!Settings.dialog) return;
+    const targetSection = section || ($('.section-styling', Settings.dialog) as HTMLElement | null);
+    const trigger = Settings.dialog ? ($('#styling-open-preview', Settings.dialog) as HTMLButtonElement | null) : null;
+
+    if (Settings.stylingPreviewPanel && Settings.stylingPreviewPanel.isConnected) {
+      Settings.closeStylingPreview();
+      return;
+    }
+
+    if (!targetSection) return;
+
+    const panel = $.el('div', { id: 'styling-preview-window', className: 'styling-preview dialog' }) as HTMLDivElement;
+    panel.dataset.previewView = 'both';
+    panel.innerHTML = `
+      <div class="styling-preview-titlebar move">
+        <span class="styling-preview-title">Styling Preview</span>
+        <span class="styling-preview-titlebar-actions">
+          <a href="#" class="attach styling-preview-attach" title="Attach to Settings"></a>
+          <a href="#" class="close styling-preview-close" title="Close">✕</a>
+        </span>
+      </div>
+      ${Settings.stylingPreviewContentHTML()}
+    `;
+
+    const attach = $('.styling-preview-attach', panel) as HTMLAnchorElement | null;
+    if (attach) {
+      Icon.set(attach, 'link');
+      $.on(attach, 'click', e => {
+        e.preventDefault();
+        if (Settings.stylingPreviewAttached) {
+          Settings.detachStylingPreview();
+        } else {
+          Settings.attachStylingPreview();
+        }
+      });
+      $.on(attach, 'touchstart mousedown', e => e.stopPropagation());
+    }
+    $.on($('.styling-preview-close', panel), 'click', e => {
+      e.preventDefault();
+      Settings.closeStylingPreview();
+    });
+    $.on($('.styling-preview-close', panel), 'touchstart mousedown', e => e.stopPropagation());
+    $.on($('.move', panel), 'touchstart mousedown', e => Settings.prepareStylingPreviewDrag(e));
+    $.on(panel, 'click', e => e.stopPropagation());
+
+    $.add(Settings.dialog, panel);
     Settings.stylingPreviewPanel = panel;
+    Settings.stylingPreviewAttached = true;
+    Settings.attachStylingPreview();
     if (trigger) trigger.textContent = 'Hide preview';
+    Settings.setStylingPreviewHoverState();
     Settings.refreshStylingPreviewFromDialog();
+  },
+
+  updateStylingPreviewAttachButton() {
+    const panel = Settings.stylingPreviewPanel;
+    if (!panel) return;
+    const attach = $('.styling-preview-attach', panel) as HTMLElement | null;
+    if (!attach) return;
+    attach.classList.toggle('attached', Settings.stylingPreviewAttached);
+    attach.title = Settings.stylingPreviewAttached ? 'Detach from Settings' : 'Attach to Settings';
+  },
+
+  attachStylingPreview() {
+    const panel = Settings.stylingPreviewPanel;
+    if (!panel || !Settings.dialog) return;
+    Settings.stylingPreviewAttached = true;
+    panel.classList.add('styling-preview-attached');
+    panel.classList.remove('styling-preview-detached');
+    Settings.updateStylingPreviewAttachButton();
+    Settings.positionAttachedStylingPreview();
+    Settings.observeStylingPreviewAttachTarget();
+  },
+
+  detachStylingPreview() {
+    const panel = Settings.stylingPreviewPanel;
+    if (!panel) return;
+    const rect = panel.getBoundingClientRect();
+    Settings.stylingPreviewAttached = false;
+    panel.classList.remove('styling-preview-attached');
+    panel.classList.add('styling-preview-detached');
+    Settings.stopObservingStylingPreviewAttachTarget();
+    panel.style.left = `${rect.left}px`;
+    panel.style.top = `${rect.top}px`;
+    panel.style.width = `${rect.width}px`;
+    panel.style.height = `${rect.height}px`;
+    panel.style.right = '';
+    panel.style.bottom = '';
+    panel.style.maxHeight = '';
+    Settings.updateStylingPreviewAttachButton();
+  },
+
+  stylingPreviewDefaultHeight() {
+    const panel = Settings.stylingPreviewPanel;
+    if (!panel) return 280;
+
+    const titlebar = $('.styling-preview-titlebar', panel) as HTMLElement | null;
+    const layout = $('.styling-preview-layout', panel) as HTMLElement | null;
+    const catalogThread = $('.styling-preview-catalog > .catalog-thread', panel) as HTMLElement | null;
+    const titlebarHeight = Math.ceil(titlebar?.getBoundingClientRect().height || 0);
+    const catalogHeight = Math.ceil(catalogThread?.getBoundingClientRect().height || 225);
+    let layoutChrome = 24;
+
+    if (layout) {
+      const cs = window.getComputedStyle(layout);
+      layoutChrome =
+        parseFloat(cs.paddingTop || '0') +
+        parseFloat(cs.paddingBottom || '0') +
+        parseFloat(cs.borderTopWidth || '0') +
+        parseFloat(cs.borderBottomWidth || '0');
+    }
+
+    return Math.ceil(titlebarHeight + layoutChrome + catalogHeight + 52);
+  },
+
+  prepareStylingPreviewDrag(e: Event) {
+    const panel = Settings.stylingPreviewPanel;
+    if (!panel) return;
+    const target = e.target as HTMLElement;
+    if (target.closest('.styling-preview-titlebar-actions')) return;
+    if (Settings.stylingPreviewAttached) Settings.detachStylingPreview();
+    dragstart.call(target, e);
+  },
+
+  positionAttachedStylingPreview() {
+    const panel = Settings.stylingPreviewPanel;
+    if (!panel || !Settings.dialog || !Settings.stylingPreviewAttached) return;
+    const settingsWindow = $('#fourchanx-settings', Settings.dialog) as HTMLDivElement | null;
+    if (!settingsWindow) return;
+    const rect = settingsWindow.getBoundingClientRect();
+    panel.style.left = `${Math.max(0, rect.left)}px`;
+    panel.style.right = '';
+    panel.style.top = `${Math.max(0, rect.bottom)}px`;
+    panel.style.bottom = '';
+    panel.style.width = `${Math.max(320, rect.width)}px`;
+    if (!panel.style.height) {
+      const height = Math.min(Settings.stylingPreviewDefaultHeight(), Math.max(260, window.innerHeight - rect.bottom));
+      panel.style.height = `${height}px`;
+    }
+    panel.style.maxHeight = '';
+  },
+
+  queueAttachedStylingPreviewPosition() {
+    if (Settings.stylingPreviewAttachRaf != null) return;
+    Settings.stylingPreviewAttachRaf = requestAnimationFrame(() => {
+      Settings.stylingPreviewAttachRaf = null;
+      Settings.positionAttachedStylingPreview();
+    });
+  },
+
+  followAttachedStylingPreviewDuringDrag(e: Event) {
+    if (!Settings.stylingPreviewPanel || !Settings.stylingPreviewAttached) return;
+    const isTouch = e.type === 'touchstart';
+    const move = () => Settings.queueAttachedStylingPreviewPosition();
+    const stop = () => {
+      $.off(d, isTouch ? 'touchmove' : 'mousemove', move);
+      $.off(d, isTouch ? 'touchend touchcancel' : 'mouseup', stop);
+      Settings.positionAttachedStylingPreview();
+    };
+    $.on(d, isTouch ? 'touchmove' : 'mousemove', move);
+    $.on(d, isTouch ? 'touchend touchcancel' : 'mouseup', stop);
+  },
+
+  observeStylingPreviewAttachTarget() {
+    if (!Settings.dialog || !Settings.stylingPreviewPanel) return;
+    const settingsWindow = $('#fourchanx-settings', Settings.dialog) as HTMLDivElement | null;
+    if (!settingsWindow) return;
+    Settings.stopObservingStylingPreviewAttachTarget();
+    if (typeof ResizeObserver !== 'undefined') {
+      Settings.stylingPreviewAttachResizeObserver = new ResizeObserver(() => Settings.queueAttachedStylingPreviewPosition());
+      Settings.stylingPreviewAttachResizeObserver.observe(settingsWindow);
+    }
+    $.on(window, 'resize', Settings.positionAttachedStylingPreview);
+  },
+
+  stopObservingStylingPreviewAttachTarget() {
+    Settings.stylingPreviewAttachResizeObserver?.disconnect();
+    Settings.stylingPreviewAttachResizeObserver = null;
+    if (Settings.stylingPreviewAttachRaf != null) {
+      cancelAnimationFrame(Settings.stylingPreviewAttachRaf);
+      Settings.stylingPreviewAttachRaf = null;
+    }
+    $.off(window, 'resize', Settings.positionAttachedStylingPreview);
   },
 
   closeStylingPreview() {
     if (!Settings.stylingPreviewPanel) return;
     const trigger = Settings.dialog ? ($('#styling-open-preview', Settings.dialog) as HTMLButtonElement | null) : null;
     if (trigger) trigger.textContent = 'Preview states';
+    Settings.stopObservingStylingPreviewAttachTarget();
     $.rm(Settings.stylingPreviewPanel);
     Settings.stylingPreviewPanel = null;
+    Settings.stylingPreviewAttached = true;
   },
 
   refreshStylingPreviewFromDialog() {
@@ -2838,29 +3309,27 @@ Enable it on boards.${location.hostname.split('.')[1]}.org in your browser's pri
       const opacity = parseFloat(String(value));
       return Number.isFinite(opacity) ? $.minmax(opacity, 0, 1) : 1;
     };
-    const ownEnabled = readChecked('Highlight Own Posts');
-    const youEnabled = readChecked('Highlight Posts Quoting You');
-    const ghostEnabled = readChecked('Highlight Ghost Posts');
-    const threadHighlightsEnabled = readChecked('Enable Thread Highlights', true);
-    const catalogHighlightsEnabled = readChecked('Enable Catalog Highlights', true);
-    const catalogOwnEnabled = readChecked('Catalog Highlight Own Posts', true);
-    const catalogWatchedEnabled = readChecked('Catalog Highlight Watched Threads', true);
+    // The preview is a pure style demonstrator: it always renders every highlight so
+    // hovering a row previews that style even when its on-page toggle is off (you can
+    // see what it would look like before enabling it). The enable toggles only govern
+    // the real board, not this preview; edge/background and colours still reflect the
+    // configured style so the preview is accurate.
+    panel.dataset.highlightOwn = 'true';
+    panel.dataset.highlightYou = 'true';
+    panel.dataset.highlightGhost = 'true';
+    panel.dataset.highlightCatalogOwn = 'true';
+    panel.dataset.highlightCatalogWatched = 'true';
 
-    panel.dataset.highlightOwn = (threadHighlightsEnabled && ownEnabled) ? 'true' : 'false';
-    panel.dataset.highlightYou = (threadHighlightsEnabled && youEnabled) ? 'true' : 'false';
-    panel.dataset.highlightGhost = (threadHighlightsEnabled && ghostEnabled) ? 'true' : 'false';
-    panel.dataset.highlightCatalogOwn = (catalogHighlightsEnabled && catalogOwnEnabled) ? 'true' : 'false';
-    panel.dataset.highlightCatalogWatched = (catalogHighlightsEnabled && catalogWatchedEnabled) ? 'true' : 'false';
-
-    panel.dataset.edgeOwn = readChecked('Highlight Own Edge Only', true) ? 'true' : 'false';
-    panel.dataset.edgeYou = readChecked('Highlight You Edge Only', true) ? 'true' : 'false';
-    panel.dataset.edgeGhost = readChecked('Highlight Ghost Edge Only', true) ? 'true' : 'false';
-    panel.dataset.edgeCatalogOwn = readChecked('Catalog Highlight Own Border Only', true) ? 'true' : 'false';
-    panel.dataset.edgeCatalogWatched = readChecked('Catalog Highlight Watched Border Only', true) ? 'true' : 'false';
+    // dataset.edge* drives the preview's edge-only styling: edge-only === background off.
+    panel.dataset.edgeOwn = readChecked('Highlight Own Background', false) ? 'false' : 'true';
+    panel.dataset.edgeYou = readChecked('Highlight You Background', false) ? 'false' : 'true';
+    panel.dataset.edgeGhost = readChecked('Highlight Ghost Background', false) ? 'false' : 'true';
+    panel.dataset.edgeCatalogOwn = readChecked('Catalog Highlight Own Background', false) ? 'false' : 'true';
+    panel.dataset.edgeCatalogWatched = readChecked('Catalog Highlight Watched Background', false) ? 'false' : 'true';
     panel.dataset.textCatalogOwn =
-      (catalogHighlightsEnabled && catalogOwnEnabled && panel.dataset.edgeCatalogOwn !== 'true' && readOpacity('Catalog Highlight Own Opacity') > 0) ? 'true' : 'false';
+      (panel.dataset.edgeCatalogOwn !== 'true' && readOpacity('Catalog Highlight Own Opacity') > 0) ? 'true' : 'false';
     panel.dataset.textCatalogWatched =
-      (catalogHighlightsEnabled && catalogWatchedEnabled && panel.dataset.edgeCatalogWatched !== 'true' && readOpacity('Catalog Highlight Watched Opacity') > 0) ? 'true' : 'false';
+      (panel.dataset.edgeCatalogWatched !== 'true' && readOpacity('Catalog Highlight Watched Opacity') > 0) ? 'true' : 'false';
 
     const background = Settings.resolveCanvasBackgroundStyle();
     for (const previewPane of $$('.styling-preview-thread, .styling-preview-catalog', panel) as HTMLElement[]) {
@@ -3022,7 +3491,9 @@ Enable it on boards.${location.hostname.split('.')[1]}.org in your browser's pri
     '--xt-highlight-own-opacity', '--xt-highlight-you-opacity', '--xt-highlight-ghost-opacity',
     '--xt-highlight-edge-width', '--xt-post-background', '--xt-catalog-border-width',
     '--xt-edge-width-own', '--xt-edge-width-you', '--xt-edge-width-ghost',
+    '--xt-edge-style-own', '--xt-edge-style-you', '--xt-edge-style-ghost',
     '--xt-catalog-border-width-own', '--xt-catalog-border-width-watched',
+    '--xt-catalog-border-style-own', '--xt-catalog-border-style-watched',
     '--xt-catalog-own-highlight', '--xt-catalog-own-highlight-opacity',
     '--xt-catalog-watched-highlight', '--xt-catalog-watched-highlight-opacity',
     '--xt-scroll-marker-own', '--xt-scroll-marker-you', '--xt-scroll-marker-ghost', '--xt-scroll-marker-unread',
@@ -3045,8 +3516,11 @@ Enable it on boards.${location.hostname.split('.')[1]}.org in your browser's pri
   // element (only true when called with target=doc; the dialog overlay
   // doesn't need them because the cascade already inherits the doc's classes).
   writeStyleVarsTo(target: HTMLElement, variant: StyleVariant, updateRootClasses: boolean) {
+    const styleVarValue = (value: any) =>
+      value === Settings.THEME_BORDER_HIGHLIGHT ? 'var(--xt-border-highlight)' : value;
     const setVar = (cssVar: string, value: string) => {
-      if (value) target.style.setProperty(cssVar, value);
+      const resolved = styleVarValue(value);
+      if (resolved) target.style.setProperty(cssVar, resolved);
       else target.style.removeProperty(cssVar);
     };
     const cv = (key: string) => Settings.styleConf(key, variant);
@@ -3072,11 +3546,12 @@ Enable it on boards.${location.hostname.split('.')[1]}.org in your browser's pri
         threadHighlightsEnabled && !!Conf['Highlight Ghost Posts'] && !!cv('Highlight Ghost Color'));
       doc.classList.toggle('xt-highlight-catalog-own', catalogOwnEnabled);
       doc.classList.toggle('xt-highlight-catalog-watched', catalogWatchedEnabled);
-      doc.classList.toggle('xt-catalog-edge-own', catalogOwnEnabled && !!cv('Catalog Highlight Own Border Only'));
-      doc.classList.toggle('xt-catalog-edge-watched', catalogWatchedEnabled && !!cv('Catalog Highlight Watched Border Only'));
-      doc.classList.toggle('xt-edge-own', highlightsOn && !!Conf['Highlight Own Edge Only']);
-      doc.classList.toggle('xt-edge-you', highlightsOn && !!Conf['Highlight You Edge Only']);
-      doc.classList.toggle('xt-edge-ghost', highlightsOn && !!Conf['Highlight Ghost Edge Only']);
+      // xt-(catalog-)edge-* suppress the background fill, so they apply when "background" is off.
+      doc.classList.toggle('xt-catalog-edge-own', catalogOwnEnabled && !cv('Catalog Highlight Own Background'));
+      doc.classList.toggle('xt-catalog-edge-watched', catalogWatchedEnabled && !cv('Catalog Highlight Watched Background'));
+      doc.classList.toggle('xt-edge-own', highlightsOn && !Conf['Highlight Own Background']);
+      doc.classList.toggle('xt-edge-you', highlightsOn && !Conf['Highlight You Background']);
+      doc.classList.toggle('xt-edge-ghost', highlightsOn && !Conf['Highlight Ghost Background']);
     }
     setVar('--xt-highlight-own',   cv('Highlight Own Color'));
     setVar('--xt-highlight-you',   cv('Highlight You Color'));
@@ -3099,17 +3574,29 @@ Enable it on boards.${location.hostname.split('.')[1]}.org in your browser's pri
       const w = parseFloat(String(cv(key)));
       setVar(varName, Number.isFinite(w) ? `${$.minmax(w, 1, 12)}px` : '');
     };
+    const setStyleVar = (key: string, varName: string) => {
+      const style = String(cv(key) || '');
+      setVar(varName, /^(solid|dashed|dotted|double|groove|ridge|inset|outset)$/.test(style) ? style : '');
+    };
     setWidthVar('Highlight Own Edge Width', '--xt-edge-width-own');
     setWidthVar('Highlight You Edge Width', '--xt-edge-width-you');
     setWidthVar('Highlight Ghost Edge Width', '--xt-edge-width-ghost');
+    setStyleVar('Highlight Own Border Style', '--xt-edge-style-own');
+    setStyleVar('Highlight You Border Style', '--xt-edge-style-you');
+    setStyleVar('Highlight Ghost Border Style', '--xt-edge-style-ghost');
     setWidthVar('Catalog Highlight Own Border Width', '--xt-catalog-border-width-own');
     setWidthVar('Catalog Highlight Watched Border Width', '--xt-catalog-border-width-watched');
-    setVar('--xt-catalog-own-highlight', catalogOwnEnabled ? cv('Catalog Highlight Own Color') : '');
+    setStyleVar('Catalog Highlight Own Border Style', '--xt-catalog-border-style-own');
+    setStyleVar('Catalog Highlight Watched Border Style', '--xt-catalog-border-style-watched');
+    // Set catalog highlight colours unconditionally: the real board only paints them
+    // under the enable-gated .xt-highlight-catalog-* classes, so an unused var is
+    // harmless, while the styling preview (always-on demonstrator) can show them.
+    setVar('--xt-catalog-own-highlight', cv('Catalog Highlight Own Color'));
     setVar('--xt-catalog-own-highlight-opacity',
-      (catalogOwnEnabled && cv('Catalog Highlight Own Opacity') !== '') ? String(cv('Catalog Highlight Own Opacity')) : '');
-    setVar('--xt-catalog-watched-highlight', catalogWatchedEnabled ? cv('Catalog Highlight Watched Color') : '');
+      cv('Catalog Highlight Own Opacity') !== '' ? String(cv('Catalog Highlight Own Opacity')) : '');
+    setVar('--xt-catalog-watched-highlight', cv('Catalog Highlight Watched Color'));
     setVar('--xt-catalog-watched-highlight-opacity',
-      (catalogWatchedEnabled && cv('Catalog Highlight Watched Opacity') !== '') ? String(cv('Catalog Highlight Watched Opacity')) : '');
+      cv('Catalog Highlight Watched Opacity') !== '' ? String(cv('Catalog Highlight Watched Opacity')) : '');
     const ownMarkerLinked = !!cv('Scroll Marker Own Match Highlight');
     const youMarkerLinked = !!cv('Scroll Marker You Match Highlight');
     const ghostMarkerLinked = !!cv('Scroll Marker Ghost Match Highlight');
@@ -3168,11 +3655,11 @@ Enable it on boards.${location.hostname.split('.')[1]}.org in your browser's pri
     // variableBase.css). So the auto text palette must NOT tint the background
     // with the highlight color; passing null below makes withManual fall back to
     // the default text palette, which is computed against the bare baseBackground.
-    const ownEdgeOnly = highlightsOn && !!Conf['Highlight Own Edge Only'];
-    const youEdgeOnly = highlightsOn && !!Conf['Highlight You Edge Only'];
-    const ghostEdgeOnly = highlightsOn && !!Conf['Highlight Ghost Edge Only'];
-    const catalogOwnBorderOnly = catalogOwnEnabled && !!cv('Catalog Highlight Own Border Only');
-    const catalogWatchedBorderOnly = catalogWatchedEnabled && !!cv('Catalog Highlight Watched Border Only');
+    const ownEdgeOnly = highlightsOn && !Conf['Highlight Own Background'];
+    const youEdgeOnly = highlightsOn && !Conf['Highlight You Background'];
+    const ghostEdgeOnly = highlightsOn && !Conf['Highlight Ghost Background'];
+    const catalogOwnBorderOnly = catalogOwnEnabled && !cv('Catalog Highlight Own Background');
+    const catalogWatchedBorderOnly = catalogWatchedEnabled && !cv('Catalog Highlight Watched Background');
     const highlightOpacity = (
       opacityKey:
         | 'Highlight Own Opacity' | 'Highlight You Opacity' | 'Highlight Ghost Opacity'
@@ -4228,6 +4715,7 @@ Enable it on boards.${location.hostname.split('.')[1]}.org in your browser's pri
     'Custom CSS',
     'Interface',
     'Threads & Posts',
+    'History',
     'Watched Threads',
     'Media',
     'Posting',
@@ -4240,7 +4728,7 @@ Enable it on boards.${location.hostname.split('.')[1]}.org in your browser's pri
     { name: 'General', option: 'General' },
     { name: 'Styling', option: 'Styling', children: ['Custom CSS'] },
     { name: 'Interface', option: 'Interface' },
-    { name: 'Threads & Posts', option: 'Threads & Posts', children: ['Watched Threads'] },
+    { name: 'Threads & Posts', option: 'Threads & Posts', children: ['History', 'Watched Threads'] },
     { name: 'Media', option: 'Media' },
     { name: 'Posting', option: 'Posting' },
     { name: 'Filters', option: 'Filters' },
@@ -4282,8 +4770,6 @@ Enable it on boards.${location.hostname.split('.')[1]}.org in your browser's pri
       'Archive Report',
       'Exempt Archives from Encryption',
       'Show Updated Notifications',
-      'Export History',
-      'Ask to Export History',
       'Disable Native Extension',
       'Enable Native Flash Embedding',
       ...Object.keys(Config.Index)
@@ -4335,7 +4821,19 @@ Enable it on boards.${location.hostname.split('.')[1]}.org in your browser's pri
       'customCooldown'
     ];
 
-    options['Watched Threads'] = ['watchedThreads', 'watcherBackup'];
+    options['History'] = [
+      'lastReadPosts',
+      'yourPosts',
+      'hiddenThreads',
+      'hiddenPosts',
+      'hiddenPosterIds'
+    ];
+
+    options['Watched Threads'] = [
+      'watchedThreads',
+      'watcherBackup',
+      'watcherLastModified'
+    ];
 
     options['Media'] = [
       ...keysIn('Images and Videos'),
@@ -4378,15 +4876,15 @@ Enable it on boards.${location.hostname.split('.')[1]}.org in your browser's pri
       'Scroll Marker Ghost Match Highlight',
       'Catalog Highlight Own Posts',
       'Catalog Highlight Watched Threads',
-      'Catalog Highlight Own Border Only',
-      'Catalog Highlight Watched Border Only',
+      'Catalog Highlight Own Background',
+      'Catalog Highlight Watched Background',
       'Highlight Own Color',
       'Highlight You Color',
       'Highlight Ghost Color',
       'Catalog Highlight Own Color',
       'Catalog Highlight Watched Color',
-      'Catalog Highlight Own Border Only',
-      'Catalog Highlight Watched Border Only',
+      'Catalog Highlight Own Background',
+      'Catalog Highlight Watched Background',
       'Catalog Highlight Own Text Mode',
       'Catalog Highlight Watched Text Mode',
       'Catalog Highlight Own Text Color',
@@ -4420,9 +4918,9 @@ Enable it on boards.${location.hostname.split('.')[1]}.org in your browser's pri
       'Highlight Own Opacity',
       'Highlight You Opacity',
       'Highlight Ghost Opacity',
-      'Highlight Own Edge Only',
-      'Highlight You Edge Only',
-      'Highlight Ghost Edge Only',
+      'Highlight Own Background',
+      'Highlight You Background',
+      'Highlight Ghost Background',
       'Catalog Highlight Own Opacity',
       'Catalog Highlight Watched Opacity',
       'Scroll Marker Own Color',
@@ -4494,19 +4992,24 @@ Enable it on boards.${location.hostname.split('.')[1]}.org in your browser's pri
     const Conf2 = dict();
     $.extend(Conf2, Conf);
     $.get(Conf2, function(Conf2) {
-      // Don't export cached JSON data.
+      // Don't export cached JSON data or the remembered checkbox state.
       delete Conf2['boardConfig'];
-      const defaultCheckedOptions: Record<string, boolean> = dict();
-      for (const name of Settings.exportOptionOrder) {
-        defaultCheckedOptions[name] = true;
-      }
-      defaultCheckedOptions['Watched Threads'] = !!Conf['Export History'];
-      Settings.openImpExpPicker({
-        title: 'Export Settings',
-        action: 'Export',
-        conf: Conf2,
-        defaultCheckedGroups: defaultCheckedOptions,
-        onConfirm: checkedOptions => Settings.doExport(checkedOptions, Conf2)
+      delete Conf2['settings.exportGroups'];
+      // Default every group to checked, unless the user has exported before,
+      // in which case restore their last-used selection.
+      $.get('settings.exportGroups', null, function(items) {
+        const lastUsed = items['settings.exportGroups'];
+        const defaultCheckedOptions: Record<string, boolean> = dict();
+        for (const name of Settings.exportOptionOrder) {
+          defaultCheckedOptions[name] = lastUsed ? !!lastUsed[name] : true;
+        }
+        Settings.openImpExpPicker({
+          title: 'Export Settings',
+          action: 'Export',
+          conf: Conf2,
+          defaultCheckedGroups: defaultCheckedOptions,
+          onConfirm: checkedOptions => Settings.doExport(checkedOptions, Conf2)
+        });
       });
     });
   },
@@ -4519,9 +5022,8 @@ Enable it on boards.${location.hostname.split('.')[1]}.org in your browser's pri
       if (checkedOptions[option]) out[key] = conf[key];
     }
     const groups = Settings.exportOptionOrder.filter(name => checkedOptions[name]);
-    const exportHistory = !!checkedOptions['Watched Threads'];
-    Conf['Export History'] = exportHistory;
-    $.set('Export History', exportHistory);
+    // Remember the selection so the next export defaults to the same checkboxes.
+    $.set('settings.exportGroups', checkedOptions);
     Settings.downloadExport({version: g.VERSION, date: Date.now(), groups, Conf: out});
   },
 
@@ -4920,11 +5422,35 @@ Enable it on boards.${location.hostname.split('.')[1]}.org in your browser's pri
         if (data[`${k} ${variant}`] === undefined) set(`${k} ${variant}`, catalogShared);
       }
     }
-    // Edge-only highlighting defaults on for fresh installs. Existing users are
-    // upgraded here, so seed it off to preserve their current filled highlights
-    // unless they opt in. Idempotent: only seeds keys not already present.
-    for (const k of ['Highlight Own Edge Only', 'Highlight You Edge Only', 'Highlight Ghost Edge Only']) {
-      if (data[k] === undefined) set(k, false);
+    // The "edge only" / "border only" toggles were replaced by inverted
+    // "background" toggles: the colored edge is now the always-on default, and
+    // checking the box adds the background fill. Migrate existing users by
+    // inverting their old value. This block runs only on upgrade (see
+    // Main.upgrade), so a thread key that's still undefined means a
+    // pre-edge-feature user who had filled highlights -> background on.
+    // Idempotent: only seeds keys not already present.
+    for (const [oldKey, newKey] of [
+      ['Highlight Own Edge Only', 'Highlight Own Background'],
+      ['Highlight You Edge Only', 'Highlight You Background'],
+      ['Highlight Ghost Edge Only', 'Highlight Ghost Background'],
+    ]) {
+      if (data[newKey] === undefined) {
+        set(newKey, data[oldKey] !== undefined ? !data[oldKey] : true);
+      }
+    }
+    // Catalog border-only toggles are per-variant (SFW/NSFW). Only seed when the
+    // user actually stored a value; otherwise the new `false` default already
+    // matches the old border-only default, so reads fall through to it.
+    for (const [oldKey, newKey] of [
+      ['Catalog Highlight Own Border Only', 'Catalog Highlight Own Background'],
+      ['Catalog Highlight Watched Border Only', 'Catalog Highlight Watched Background'],
+    ]) {
+      for (const variant of ['SFW', 'NSFW']) {
+        const old = data[`${oldKey} ${variant}`] ?? data[oldKey];
+        if (old !== undefined && data[`${newKey} ${variant}`] === undefined) {
+          set(`${newKey} ${variant}`, !old);
+        }
+      }
     }
     // Highlight text coloring moved from an "Auto text" checkbox to a
     // Defaults/Auto/Manual dropdown that defaults to Defaults (theme colors).
@@ -4993,19 +5519,22 @@ Enable it on boards.${location.hostname.split('.')[1]}.org in your browser's pri
 
   filtersPreviewState: null as null | {
     panel: HTMLDivElement | null;
-    simpleTbody: HTMLTableSectionElement | null;
+    simpleContainer: HTMLElement | null;
     advancedType: string | null;
     advancedTextarea: HTMLTextAreaElement | null;
   },
   forcedFiltersMode: null as null | string,
   forcedFilterType: null as null | string,
+  // Set by easyFilters(); flushes a pending debounced auto-save (called on close so an
+  // edit made right before closing is persisted to Conf synchronously, not lost).
+  easyFiltersFlush: null as null | (() => void),
 
   filter(section) {
     const simplePanel = $.el('div') as HTMLDivElement;
     const advancedPanel = $.el('div') as HTMLDivElement;
     const previewState = {
       panel: null,
-      simpleTbody: null as HTMLTableSectionElement | null,
+      simpleContainer: null as HTMLElement | null,
       advancedType: null as string | null,
       advancedTextarea: null as HTMLTextAreaElement | null,
     };
@@ -5128,19 +5657,55 @@ Enable it on boards.${location.hostname.split('.')[1]}.org in your browser's pri
 
   easyFilters(section: HTMLElement, previewState: any) {
     $.extend(section, { innerHTML: SimpleFiltersPage });
-    const tbody = $('tbody', section) as HTMLTableSectionElement;
+    const container = $('.easy-filters-list', section) as HTMLElement;
     const addButton = $('.easy-filter-add', section);
-    const saveButton = $('.easy-filter-save', section);
     const status = $('.easy-filter-status', section);
-    if (previewState) previewState.simpleTbody = tbody;
+    if (previewState) previewState.simpleContainer = container;
 
-    const markDirty = () => {
-      status.textContent = 'Unsaved changes.';
-      Settings.refreshCombinedFilterPreview(previewState);
+    // Layout mode (auto/grid/list). "list" = inline rows, "grid" = vertical cards.
+    // "auto" switches on the settings dialog's own width: at >= AUTO_LIST_MIN_WIDTH the
+    // inline row fits comfortably, so it uses "list"; below that it drops to "grid",
+    // whose column count then auto-fits the available width (~3 just under the
+    // breakpoint, scaling down as it narrows). Re-evaluated live via ResizeObserver.
+    // Mode persists like settings.filtersMode; the resolved class is layout-list/grid.
+    const AUTO_LIST_MIN_WIDTH = 1000;
+    let resizeObserver: ResizeObserver | null = null;
+    let lastAutoWidth = -1;
+    const dialogWidth = () => {
+      const dialog = container.closest('#fourchanx-settings') as HTMLElement | null;
+      return (dialog || container).getBoundingClientRect().width;
     };
+    const resolveAuto = () => {
+      const w = dialogWidth();
+      lastAutoWidth = w;
+      container.className = `easy-filters-list ${w >= AUTO_LIST_MIN_WIDTH ? 'layout-list' : 'layout-grid'}`;
+    };
+    const setLayout = (mode: string) => {
+      if (!['auto', 'grid', 'list'].includes(mode)) mode = 'auto';
+      for (const btn of $$('.easy-filter-layout-btn', section)) {
+        btn.classList.toggle('selected', (btn as HTMLElement).dataset.layout === mode);
+      }
+      $.set('settings.easyFiltersLayout', mode);
+      if (resizeObserver) { resizeObserver.disconnect(); resizeObserver = null; }
+      if (mode === 'auto') {
+        resolveAuto();
+        if (typeof ResizeObserver !== 'undefined') {
+          resizeObserver = new ResizeObserver(() => {
+            if (Math.round(dialogWidth()) !== Math.round(lastAutoWidth)) resolveAuto();
+          });
+          resizeObserver.observe((container.closest('#fourchanx-settings') as HTMLElement) || container);
+        }
+      } else {
+        container.className = `easy-filters-list layout-${mode}`;
+      }
+    };
+    for (const btn of $$('.easy-filter-layout-btn', section)) {
+      $.on(btn, 'click', () => setLayout((btn as HTMLElement).dataset.layout || 'auto'));
+    }
+    $.get('settings.easyFiltersLayout', 'auto', (item) => setLayout(item['settings.easyFiltersLayout']));
 
     const save = () => {
-      const rules = Settings.collectEasyFilters(tbody);
+      const rules = Settings.collectEasyFilters(container);
       const serialized = JSON.stringify(rules);
       $.set('easyFilters', serialized);
       Conf['easyFilters'] = serialized;
@@ -5148,9 +5713,25 @@ Enable it on boards.${location.hostname.split('.')[1]}.org in your browser's pri
       Settings.refreshCombinedFilterPreview(previewState);
     };
 
+    // Auto-save: any add/edit/remove schedules a save. Debounced so typing a pattern
+    // persists shortly after the last keystroke rather than on every character.
+    let saveTimer: any = null;
+    const markDirty = () => {
+      status.textContent = 'Saving…';
+      Settings.refreshCombinedFilterPreview(previewState);
+      clearTimeout(saveTimer);
+      saveTimer = setTimeout(() => { saveTimer = null; save(); }, 500);
+    };
+    Settings.easyFiltersFlush = () => {
+      if (saveTimer == null) return;
+      clearTimeout(saveTimer);
+      saveTimer = null;
+      save();
+    };
+
     const addRow = (rule: any = {}) => {
       const row = Settings.easyFilterRow(rule, markDirty);
-      $.add(tbody, row);
+      $.add(container, row);
       return row;
     };
 
@@ -5171,60 +5752,35 @@ Enable it on boards.${location.hostname.split('.')[1]}.org in your browser's pri
       markDirty();
     });
 
-    $.on(saveButton, 'click', save);
-
     status.textContent = `Loaded ${rules.length} rule${rules.length === 1 ? '' : 's'}.`;
     Settings.refreshCombinedFilterPreview(previewState);
   },
 
   parseEasyFilters(): any[] {
-    const raw = Conf['easyFilters'];
-    let rules: any[] = [];
-    if (Array.isArray(raw)) {
-      rules = raw;
-    } else if (typeof raw === 'string' && raw.trim()) {
-      try { rules = JSON.parse(raw); } catch { rules = []; }
-    }
-    if (!Array.isArray(rules)) return [];
-
-    return rules.map((rule) => {
-      if (!rule || typeof rule !== 'object') return {};
-      const type = (rule.type in Config.filter) ? rule.type : ({
-        title: 'subject', body: 'comment', name: 'name',
-      } as Record<string, string>)[rule.field] || 'general';
-      const hide = (rule.hide != null)
-        ? !!rule.hide
-        : !['highlight', 'notify'].includes(rule.action);
-      return {
-        enabled: rule.enabled != null ? !!rule.enabled : true,
-        pattern: typeof rule.pattern === 'string' ? rule.pattern
-          : typeof rule.match === 'string' ? rule.match : '',
-        boards: typeof rule.boards === 'string' ? rule.boards : '',
-        type,
-        color: typeof rule.color === 'string' ? rule.color : '',
-        auto: !!rule.auto,
-        hide,
-        override: !!rule.override,
-      };
-    });
+    return Filter.parseEasyFilterRules(Conf['easyFilters']);
   },
 
-  easyFilterRow(rule: any, markDirty: () => void): HTMLTableRowElement {
-    const tr = $.el('tr', {
+  easyFilterRow(rule: any, markDirty: () => void): HTMLElement {
+    const tr = $.el('div', {
+      className: 'easy-filter-tile',
       innerHTML: `
-        <td><input class="easy-filter-enabled" type="checkbox"></td>
-        <td><input class="field easy-filter-pattern" type="text"></td>
-        <td><input class="field easy-filter-boards" type="text" placeholder="all or g,v"></td>
-        <td><select class="easy-filter-type"></select></td>
-        <td><input class="field easy-filter-color" type="text" placeholder="highlight class"></td>
-        <td><input class="easy-filter-auto" type="checkbox" title="Move highlighted OPs to top"></td>
-        <td><input class="easy-filter-hide" type="checkbox"></td>
-        <td><input class="easy-filter-override" type="checkbox" title="Whitelist: matching highlight prevents this thread from being hidden by other rules"></td>
-        <td><button class="easy-filter-remove" type="button" title="Remove">\u00D7</button></td>
+        <div class="easy-filter-tile-head">
+          <label class="easy-filter-on"><input class="easy-filter-enabled" type="checkbox"> On</label>
+          <button class="easy-filter-remove" type="button" title="Remove">\u00D7</button>
+        </div>
+        <label class="easy-filter-field"><input class="field easy-filter-pattern" type="text" placeholder="Pattern" aria-label="Pattern"></label>
+        <label class="easy-filter-field"><input class="field easy-filter-boards" type="text" placeholder="Boards: all or g,v" aria-label="Boards"></label>
+        <label class="easy-filter-field"><select class="field easy-filter-type" aria-label="Filter type" title="Filter type"></select></label>
+        <label class="easy-filter-field"><span class="easy-filter-color-cell"><input class="easy-filter-color-on" type="checkbox" title="Apply this color (off = theme default)"><input class="easy-filter-color" type="color" title="Highlight color"></span></label>
+        <label class="easy-filter-field"><input class="field easy-filter-class" type="text" placeholder="CSS class" aria-label="CSS class" title="Optional custom CSS class, applied alongside the color"></label>
+        <label class="easy-filter-field" title="Auto: move highlighted OPs to top"><span>A</span><input class="easy-filter-auto" type="checkbox" title="Auto: move highlighted OPs to top"></label>
+        <label class="easy-filter-field" title="Hide"><span>H</span><input class="easy-filter-hide" type="checkbox" title="Hide"></label>
+        <label class="easy-filter-field" title="Override: matching highlight prevents this thread from being hidden by other rules"><span>O</span><input class="easy-filter-override" type="checkbox" title="Override: matching highlight prevents this thread from being hidden by other rules"></label>
       `,
-    }) as HTMLTableRowElement;
+    }) as HTMLElement;
 
     const typeSelect = $('.easy-filter-type', tr) as HTMLSelectElement;
+    $.add(typeSelect, $.el('option', { textContent: 'Filter type', value: '', disabled: true }));
     for (const [label, value] of Settings.easyFilterTypes) {
       $.add(typeSelect, $.el('option', { textContent: label, value }));
     }
@@ -5232,7 +5788,9 @@ Enable it on boards.${location.hostname.split('.')[1]}.org in your browser's pri
     const enabledInput = $('.easy-filter-enabled', tr) as HTMLInputElement;
     const patternInput = $('.easy-filter-pattern', tr) as HTMLInputElement;
     const boardsInput = $('.easy-filter-boards', tr) as HTMLInputElement;
+    const colorOnInput = $('.easy-filter-color-on', tr) as HTMLInputElement;
     const colorInput = $('.easy-filter-color', tr) as HTMLInputElement;
+    const classInput = $('.easy-filter-class', tr) as HTMLInputElement;
     const autoInput = $('.easy-filter-auto', tr) as HTMLInputElement;
     const hideInput = $('.easy-filter-hide', tr) as HTMLInputElement;
     const overrideInput = $('.easy-filter-override', tr) as HTMLInputElement;
@@ -5242,20 +5800,29 @@ Enable it on boards.${location.hostname.split('.')[1]}.org in your browser's pri
     patternInput.value = rule.pattern || '';
     boardsInput.value = rule.boards || '';
     typeSelect.value = (rule.type in Config.filter) ? rule.type : 'general';
-    colorInput.value = rule.color || '';
+    // <input type="color"> needs a valid #rrggbb value; the normalizer guarantees one.
+    const hexColor = /^#?([0-9a-f]{6})$/i.exec((rule.color || '').trim());
+    colorInput.value = hexColor ? `#${hexColor[1].toLowerCase()}` : '#dd0000';
+    colorOnInput.checked = !!rule.colorOn;
+    classInput.value = rule.hlClass || '';
     autoInput.checked = !!rule.auto;
     hideInput.checked = rule.hide != null ? !!rule.hide : true;
     overrideInput.checked = !!rule.override;
 
-    // Override only applies to highlight rules. Grey it out when this row is set
-    // to hide, since "hide + override" has no meaning.
-    const syncOverrideState = () => {
-      const disabled = hideInput.checked;
-      overrideInput.disabled = disabled;
-      if (disabled) overrideInput.checked = false;
+    // Highlight controls (color + class) only apply when the rule highlights rather
+    // than hides. The swatch itself also depends on its "apply color" checkbox, so an
+    // off checkbox means "use the theme default" while a class can still be set.
+    const syncHighlightControls = () => {
+      const hidden = hideInput.checked;
+      overrideInput.disabled = hidden;
+      if (hidden) overrideInput.checked = false;
+      colorOnInput.disabled = hidden;
+      colorInput.disabled = hidden || !colorOnInput.checked;
+      classInput.disabled = hidden;
     };
-    syncOverrideState();
-    $.on(hideInput, 'change', syncOverrideState);
+    syncHighlightControls();
+    $.on(hideInput, 'change', syncHighlightControls);
+    $.on(colorOnInput, 'change', syncHighlightControls);
 
     for (const input of $$('input, select', tr)) {
       $.on(input, 'change', markDirty);
@@ -5272,9 +5839,9 @@ Enable it on boards.${location.hostname.split('.')[1]}.org in your browser's pri
     return tr;
   },
 
-  collectEasyFilters(tbody: HTMLTableSectionElement): any[] {
+  collectEasyFilters(container: HTMLElement): any[] {
     const rules: any[] = [];
-    for (const tr of $$('tr', tbody)) {
+    for (const tr of $$('.easy-filter-tile', container)) {
       const pattern = ($('.easy-filter-pattern', tr) as HTMLInputElement).value.trim();
       if (!pattern) continue;
       const type = ($('.easy-filter-type', tr) as HTMLSelectElement).value;
@@ -5285,6 +5852,8 @@ Enable it on boards.${location.hostname.split('.')[1]}.org in your browser's pri
         boards: ($('.easy-filter-boards', tr) as HTMLInputElement).value.trim(),
         type: (type in Config.filter) ? type : 'general',
         color: ($('.easy-filter-color', tr) as HTMLInputElement).value.trim(),
+        colorOn: ($('.easy-filter-color-on', tr) as HTMLInputElement).checked,
+        hlClass: ($('.easy-filter-class', tr) as HTMLInputElement).value.trim().replace(/^\.+/, '').replace(/[^\w-]/g, ''),
         auto: ($('.easy-filter-auto', tr) as HTMLInputElement).checked,
         hide,
         override: !hide && ($('.easy-filter-override', tr) as HTMLInputElement).checked,
@@ -5293,7 +5862,7 @@ Enable it on boards.${location.hostname.split('.')[1]}.org in your browser's pri
     return rules;
   },
 
-  easyFilterRuleFromRow(tr: HTMLTableRowElement) {
+  easyFilterRuleFromRow(tr: HTMLElement) {
     const pattern = ($('.easy-filter-pattern', tr) as HTMLInputElement).value.trim();
     if (!pattern) return null;
     const type = ($('.easy-filter-type', tr) as HTMLSelectElement).value;
@@ -5304,6 +5873,8 @@ Enable it on boards.${location.hostname.split('.')[1]}.org in your browser's pri
       boards: ($('.easy-filter-boards', tr) as HTMLInputElement).value.trim(),
       type: (type in Config.filter) ? type : 'general',
       color: ($('.easy-filter-color', tr) as HTMLInputElement).value.trim(),
+      colorOn: ($('.easy-filter-color-on', tr) as HTMLInputElement).checked,
+      hlClass: ($('.easy-filter-class', tr) as HTMLInputElement).value.trim().replace(/^\.+/, '').replace(/[^\w-]/g, ''),
       auto: ($('.easy-filter-auto', tr) as HTMLInputElement).checked,
       hide,
       override: !hide && ($('.easy-filter-override', tr) as HTMLInputElement).checked,
@@ -5311,32 +5882,7 @@ Enable it on boards.${location.hostname.split('.')[1]}.org in your browser's pri
   },
 
   easyFilterRuleToLine(rule: any): string | null {
-    if (!rule?.enabled) return null;
-    const match = (rule.pattern || '').trim();
-    if (!match) return null;
-
-    const flags = rule.caseSensitive ? '' : 'i';
-    let line = `/${Filter.escape(match)}/${flags}`;
-
-    const options: string[] = [];
-    if (typeof rule.boards === 'string' && rule.boards.trim()) {
-      options.push(`boards:${rule.boards.trim()}`);
-    }
-
-    const type = (rule.type in Config.filter) ? rule.type : 'general';
-    options.push(`type:${type === 'general' ? 'subject,name,comment' : type}`);
-
-    const hide = (rule.hide != null) ? !!rule.hide : !['highlight', 'notify'].includes(rule.action);
-    if (!hide) {
-      const color = (rule.color || '').trim();
-      options.push(color ? `highlight:${color}` : 'highlight');
-      options.push(`top:${rule.auto ? 'yes' : 'no'}`);
-      if (rule.override) options.push('override');
-    }
-    if (rule.action === 'notify') options.push('notify');
-
-    if (options.length) line += `;${options.join(';')}`;
-    return line;
+    return Filter.easyRuleToLine(rule);
   },
 
   addFilterStats(type: string, textarea: HTMLTextAreaElement, container: HTMLElement, previewState: any) {
@@ -5356,7 +5902,7 @@ Enable it on boards.${location.hostname.split('.')[1]}.org in your browser's pri
     if (!panel) return;
     $.rmAll(panel);
 
-    if (!previewState.simpleTbody && !previewState.advancedTextarea) {
+    if (!previewState.simpleContainer && !previewState.advancedTextarea) {
       $.add(panel, $.el('div', {
         className: 'filter-stats-empty',
         textContent: 'No filters loaded yet.',
@@ -5364,12 +5910,12 @@ Enable it on boards.${location.hostname.split('.')[1]}.org in your browser's pri
       return;
     }
 
-    if (previewState.simpleTbody) {
+    if (previewState.simpleContainer) {
       const simpleGroup = $.el('div', { className: 'filter-preview-group' });
       $.add(simpleGroup, $.el('div', { className: 'filter-preview-heading', textContent: 'Simple Filters' }));
       const simplePanel = $.el('div', { className: 'filter-stats' });
       $.add(simpleGroup, simplePanel);
-      Settings.renderEasyFilterPreview(previewState.simpleTbody, simplePanel);
+      Settings.renderEasyFilterPreview(previewState.simpleContainer, simplePanel);
       $.add(panel, simpleGroup);
     }
 
@@ -5385,7 +5931,7 @@ Enable it on boards.${location.hostname.split('.')[1]}.org in your browser's pri
     }
   },
 
-  renderEasyFilterPreview(tbody: HTMLTableSectionElement, panel: HTMLElement) {
+  renderEasyFilterPreview(container: HTMLElement, panel: HTMLElement) {
     $.rmAll(panel);
     if (!g.BOARD?.threads || !['index', 'thread', 'catalog'].includes(g.VIEW)) {
       $.add(panel, $.el('div', {
@@ -5409,7 +5955,7 @@ Enable it on boards.${location.hostname.split('.')[1]}.org in your browser's pri
     let totalHidden = 0;
     let activeRules = 0;
     let rowNo = 0;
-    for (const tr of $$('tr', tbody)) {
+    for (const tr of $$('.easy-filter-tile', container)) {
       rowNo++;
       const rule = Settings.easyFilterRuleFromRow(tr);
       if (!rule) continue;

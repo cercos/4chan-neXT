@@ -145,14 +145,6 @@ const Config = {
         true,
         'Activate the native extension\'s Flash embedding if the native extension is disabled.'
       ],
-      'Export History': [
-        true,
-        'Export last read, your posts, etc. when exporting the setting'
-      ],
-      'Ask to Export History': [
-        true,
-        'Ask if history should be exported when settings are exported.'
-      ],
       'Scroll Markers': [
         true,
         'Mark your posts and replies to them on the scroll bar.'
@@ -612,6 +604,11 @@ const Config = {
         'Remember the spoiler state, instead of resetting after posting.',
         1
       ],
+      'Remember QR State': [
+        false,
+        'Auto-save your Quick Reply (per board) so it survives a refresh, close or crash, including all queued posts and their attachments (images and videos, up to ~100 MB per board). Restores into an empty Quick Reply when you return to the board; cleared after you post.',
+        1
+      ],
       'QR Thumbnail Remove File First': [
         true,
         'In Quick Reply thumbnails, first click on Remove clears the file, second click removes the post. Disable for single-click post removal.',
@@ -625,6 +622,11 @@ const Config = {
       'Show New Thread Option in Threads': [
         true,
         'Show the option to post a new / different thread from inside a thread.',
+        1
+      ],
+      'Hide Original Post Form': [
+        true,
+        'Hide the native post form that sits at the top of board index pages by default, like on threads. Use the "Original Form" link or "Start a Thread" to show it.',
         1
       ],
       'Show Upload Progress': [
@@ -657,18 +659,6 @@ const Config = {
         'Do not use OffscreenCanvas when converting images, workaround for ' +
           '<a href="https://github.com/TuxedoTako/4chan-xt/issues/132">this LibreWolf bug</a>',
         1
-      ],
-      'Force Noscript Captcha': [
-        false,
-        'Use the non-Javascript fallback captcha even if Javascript is enabled.'
-      ],
-      'Stacked TCaptcha': [
-        false,
-        'Show 4chan\'s TCaptcha as a stacked image grid in Quick Reply instead of the default slider/next UI.'
-      ],
-      'Pass Link': [
-        false,
-        'Add a 4chan Pass login link to the bottom of the page.'
       ],
       'Auto-process Images': [
         true,
@@ -714,6 +704,18 @@ const Config = {
         true,
         'Show the comment preview toggle icon in the Quick Reply titlebar.',
         2
+      ],
+      'Force Noscript Captcha': [
+        false,
+        'Use the non-Javascript fallback captcha even if Javascript is enabled.'
+      ],
+      'Stacked TCaptcha': [
+        false,
+        'Show 4chan\'s TCaptcha as a stacked image grid in Quick Reply instead of the default slider/next UI.'
+      ],
+      'Pass Link': [
+        false,
+        'Add a 4chan Pass login link to the bottom of the page.'
       ]
     },
 
@@ -888,6 +890,7 @@ const Config = {
   'Comment Preview Position': 'below',
   'Show Comment Preview Header Icon': true,
   'Spoiler Mode': 'default',
+  'Settings Menu Layout': 'vertical',
 
   threadWatcher: {
     'Current Board': [
@@ -1122,22 +1125,29 @@ http://eye.swfchan.com/search/?q=%name;types:swf
   'Highlight Own Edge Width':    3,
   'Highlight You Edge Width':    3,
   'Highlight Ghost Edge Width':  3,
-  'Highlight Own Edge Only':     true,
-  'Highlight You Edge Only':     true,
-  'Highlight Ghost Edge Only':   true,
+  // Border style of the colored left edge. Defaults preserve the classic XT
+  // look (you: solid, own: dashed, ghost: dotted).
+  'Highlight Own Border Style':  'dashed',
+  'Highlight You Border Style':  'dashed',
+  'Highlight Ghost Border Style':'dotted',
+  'Highlight Own Background':     false,
+  'Highlight You Background':     false,
+  'Highlight Ghost Background':   false,
   'Enable Thread Highlights':    true,
-  'Enable Catalog Highlights':   true,
+  'Enable Catalog Highlights':   false,
   'Catalog Highlight Own Posts': true,
   'Catalog Highlight Watched Threads': true,
   'Catalog Highlight Own Color': '',
   'Catalog Highlight Own Opacity': '',
-  'Catalog Highlight Own Border Only': true,
+  'Catalog Highlight Own Background': false,
   'Catalog Highlight Watched Color': '',
   'Catalog Highlight Watched Opacity': '',
-  'Catalog Highlight Watched Border Only': true,
-  'Catalog Highlight Border Width': 3,
-  'Catalog Highlight Own Border Width': 3,
-  'Catalog Highlight Watched Border Width': 3,
+  'Catalog Highlight Watched Background': false,
+  'Catalog Highlight Border Width': 2,
+  'Catalog Highlight Own Border Width': 2,
+  'Catalog Highlight Watched Border Width': 2,
+  'Catalog Highlight Own Border Style': 'solid',
+  'Catalog Highlight Watched Border Style': 'solid',
   'Catalog Highlight Own Text Mode': 'default',
   'Catalog Highlight Own Text Color': '',
   'Catalog Highlight Own Subject Color': '',
@@ -1559,16 +1569,18 @@ export const styleVariantKeys = [
   'Highlight Own Opacity', 'Highlight You Opacity', 'Highlight Ghost Opacity',
   'Thread Highlight Edge Width',
   'Highlight Own Edge Width', 'Highlight You Edge Width', 'Highlight Ghost Edge Width',
+  'Highlight Own Border Style', 'Highlight You Border Style', 'Highlight Ghost Border Style',
   'Highlight Own Text Mode', 'Highlight You Text Mode', 'Highlight Ghost Text Mode',
   'Highlight Own Text Color', 'Highlight Own Link Color', 'Highlight Own Quote Color', 'Highlight Own Dead Link Color',
   'Highlight You Text Color', 'Highlight You Link Color', 'Highlight You Quote Color', 'Highlight You Dead Link Color',
   'Highlight Ghost Text Color', 'Highlight Ghost Link Color', 'Highlight Ghost Quote Color', 'Highlight Ghost Dead Link Color',
   'Catalog Highlight Own Color', 'Catalog Highlight Own Opacity',
-  'Catalog Highlight Own Border Only',
+  'Catalog Highlight Own Background',
   'Catalog Highlight Watched Color', 'Catalog Highlight Watched Opacity',
-  'Catalog Highlight Watched Border Only',
+  'Catalog Highlight Watched Background',
   'Catalog Highlight Border Width',
   'Catalog Highlight Own Border Width', 'Catalog Highlight Watched Border Width',
+  'Catalog Highlight Own Border Style', 'Catalog Highlight Watched Border Style',
   'Catalog Highlight Own Text Mode',
   'Catalog Highlight Own Text Color', 'Catalog Highlight Own Subject Color', 'Catalog Highlight Own Link Color', 'Catalog Highlight Own Quote Color', 'Catalog Highlight Own Dead Link Color',
   'Catalog Highlight Watched Text Mode',
