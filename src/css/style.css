@@ -645,6 +645,15 @@ audio.controls-added {
   border-radius: 3px;
   color: inherit;
 }
+/* Giving a <select> a non-default background (transparent, above) opts it out of
+   the browser's native dark popup, so the opened option list would fall back to a
+   stark white default on dark themes (simple-filter type, attach-to-QR location,
+   board update sound, …). Re-theme the options to the dialog background, matching
+   the styling-section and #qr selects which already do this. */
+#fourchanx-settings select.field option {
+  background-color: var(--xt-dialog-bg, var(--background, Canvas));
+  color: inherit;
+}
 #fourchanx-settings .close {
   text-decoration: none;
   padding: 2px 4px;

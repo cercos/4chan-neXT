@@ -428,8 +428,14 @@ var Settings = {
       if (settingsWindow) Settings.saveWindowLayout(settingsWindow);
     }
     Settings.closeImpExpPicker();
+    // The settings page node is a reused singleton, so the search field keeps
+    // its value across opens. Clear it (and the derived search state) so a
+    // stale query doesn't re-highlight matches on the next open.
+    const searchInput = $('.settings-search input', Settings.dialog) as HTMLInputElement | null;
+    if (searchInput) searchInput.value = '';
     $.rm(Settings.dialog);
     Settings.searchQuery = '';
+    Settings.searchTerms = [];
     Settings.activeSection = null;
     Settings.renderedSection = null;
     Settings.rememberLayout = false;
@@ -800,7 +806,11 @@ var Settings = {
       const source = (el as HTMLElement).dataset.rawText ?? el.textContent ?? '';
       (el as HTMLElement).dataset.rawText = source;
       if (rx) {
-        el.innerHTML = source.replace(rx, '<mark>$1</mark>');
+        // Summaries (and other headers) are `display:flex` rows; injecting the
+        // bare marked text would split the title into several flex items that
+        // `justify-content:space-between` spreads apart. Keep it as one inline
+        // unit by wrapping the highlighted text in a single span.
+        el.innerHTML = `<span class="settings-search-text">${source.replace(rx, '<mark>$1</mark>')}</span>`;
       } else {
         el.textContent = source;
       }
@@ -1331,8 +1341,12 @@ Enable it on boards.${location.hostname.split('.')[1]}.org in your browser's pri
       { open: true },
       { innerHTML: '<summary>Formatting</summary>' });
     const lookup = Settings.getMainSettingLookup();
-    const fmtGroup = dict();
-    for (const key of [
+    const collectGroup = (keys: string[]) => {
+      const g = dict();
+      for (const key of keys) if (lookup[key]) g[key] = lookup[key];
+      return g;
+    };
+    Settings.addCheckboxes(fsFmt, collectGroup([
       'Custom Board Titles',
       'Persistent Custom Board Titles',
       'Color User IDs',
@@ -1340,23 +1354,27 @@ Enable it on boards.${location.hostname.split('.')[1]}.org in your browser's pri
       'Remove Spoilers',
       'Reveal Spoilers',
       'Time Formatting',
-      'Relative Post Dates',
-      'Relative Date Title',
+    ]), items, inputs);
+    // Relative dates as a single dropdown. The earlier two-checkbox form could
+    // only reach No / Show / Hover; the renderer (RelativeDates.ts) also supports
+    // the two "Both" orderings, so a select exposes the full set. RelativeTime is
+    // the canonical value (legacy checkbox imports migrate to it at load).
+    Settings.addSelectRows(fsFmt, [{
+      name: 'RelativeTime',
+      label: 'Relative Post Dates',
+      description: 'Display dates like "3 minutes ago" inline, on hover, or both.',
+      options: [
+        ['No', 'Off'],
+        ['Hover', 'Show on hover'],
+        ['Show', 'Show inline (full date on hover)'],
+        ['Both', 'Show timestamp, then relative'],
+        ['BothRelativeFirst', 'Show relative, then timestamp'],
+      ],
+    }]);
+    Settings.addCheckboxes(fsFmt, collectGroup([
       'File Info Formatting',
       'Quote Backlinks',
-    ]) {
-      if (lookup[key]) fmtGroup[key] = lookup[key];
-    }
-    Settings.addCheckboxes(fsFmt, fmtGroup, items, inputs);
-    const syncRelativeTime = () => {
-      const value = inputs['Relative Post Dates']?.checked
-        ? (inputs['Relative Date Title']?.checked ? 'Hover' : 'Show')
-        : 'No';
-      Conf['RelativeTime'] = value;
-      $.set('RelativeTime', value);
-    };
-    if (inputs['Relative Post Dates']) $.on(inputs['Relative Post Dates'], 'change', syncRelativeTime);
-    if (inputs['Relative Date Title']) $.on(inputs['Relative Date Title'], 'change', syncRelativeTime);
+    ]), items, inputs);
     $.add(section, fsFmt);
 
     const stylingOnlyKeys = new Set([
@@ -4868,8 +4886,7 @@ Enable it on boards.${location.hostname.split('.')[1]}.org in your browser's pri
       'Remove Spoilers',
       'Reveal Spoilers',
       'Time Formatting',
-      'Relative Post Dates',
-      'Relative Date Title',
+      'RelativeTime',
       'File Info Formatting',
       'Quote Backlinks',
       ...keysIn('Filtering').filter(key => !stylingOnlyKeys.includes(key)),
