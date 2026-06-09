@@ -1,6 +1,6 @@
 ## 4chan-neXT changelog
 
-### Unreleased
+### 1.1.1 (2026-06-09)
 
 - Added a "Highlight neXT" settings toggle that marks settings added or changed compared to upstream 4chan-X.
 - Hardened Quick Reply Name, Options, and Subject fields against browser autofill/autocomplete and stopped restoring saved values into those fields.
@@ -11,7 +11,7 @@
 - Moved the Quick Reply saved-draft trash button next to the close button when the thread selector is hidden.
 - Fixed console spam from JSON.parse on non-2xx CrossOrigin responses.
 - Added CSS Custom Highlight API search highlighting for thread index and settings search.
-- Added IDE-style editing to the Custom CSS editor: auto-closing brackets/quotes, skip-over and empty-pair deletion, selection wrapping, Tab/Shift+Tab indent and dedent, and brace-aware auto-indent on Enter.
+- Added IDE-style editing to the Custom CSS editor: auto-closing brackets/quotes, skip-over and empty-pair deletion, seletcion wrapping, Tab/Shift+Tab indent and dedent, and brace-aware auto-indent on Enter.
 - Added an "Auto-close Tags" option that closes supported board tags (`[code]`, `[spoiler]`, `[math]`/`[eqn]`, `[sjis]`, etc.) in the Quick Reply comment box, inserting the matching closing tag.
 
 ### 1.1.0 (2026-06-08)

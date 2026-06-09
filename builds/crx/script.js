@@ -85,8 +85,8 @@
   'use strict';
 
   var version = {
-    "version": "1.1.0",
-    "date": "2026-06-08T00:00:00Z"
+    "version": "1.1.1",
+    "date": "2026-06-09T00:00:00Z"
   }
   ;
 
@@ -821,6 +821,11 @@ div.boardTitle {
           'Remember the spoiler state, instead of resetting after posting.',
           1
         ],
+        'Auto-close Tags': [
+          true,
+          'In the Quick Reply comment field, automatically insert the matching closing tag when you type a supported opening tag (e.g. typing [code] on /g/ inserts [/code] and parks the cursor between them). Only fires for tags the current board actually supports ([code], [math]/[eqn], [spoiler], [sjis], and the /mu/ & /qst/ color tags).',
+          1
+        ],
         'Remember QR State': [
           false,
           'Auto-save your Quick Reply (per board) so it survives a refresh, close or crash, including all queued posts and their attachments (images and videos, up to ~100 MB per board). Restores into an empty Quick Reply when you return to the board; cleared after you post.',
@@ -887,35 +892,25 @@ div.boardTitle {
           'Remove audio from MP4 and WebM uploads in Quick Reply on boards that do not allow audio.',
           1
         ],
-        'Strip All Media Metadata': [
-          false,
-          'Strip metadata from all uploaded media in Quick Reply, regardless of type.',
-          1
-        ],
-        'Image Metadata': [
-          true,
-          'Strip metadata from image uploads in Quick Reply when "Strip All Media Metadata" is disabled.',
-          2
-        ],
-        'Video Metadata': [
-          true,
-          'Strip metadata from video uploads in Quick Reply when "Strip All Media Metadata" is disabled.',
-          2
-        ],
-        'Audio Metadata': [
-          false,
-          'Strip metadata from audio uploads in Quick Reply when "Strip All Media Metadata" is disabled.',
-          2
-        ],
-        'Other Metadata': [
-          false,
-          'Strip metadata from non-image/video/audio uploads in Quick Reply when "Strip All Media Metadata" is disabled and supported in-browser.',
-          2
-        ],
         'Comment Preview': [
           false,
-          'Add a toggle below the Quick Reply comment box to switch between editing and a preview of how the post will render on the current board (greentext, quotes, [spoiler]/[code]/[math]/sjis when supported).',
+          'Toggle (via button in QR titlebar) a live preview of how your comment will render. The preview shows as a draggable floating window by default; an arrow icon in the preview\'s header docks it inline as a literal post in the thread (and back). "Inline Behavior" controls whether docking scrolls to the thread end or inserts in place and follows your scroll.',
           1
+        ],
+        'Comment Preview Default Mode': [
+          'attached',
+          'Choose where the comment preview starts when Quick Reply opens.',
+          2
+        ],
+        'Comment Preview Attach Location': [
+          'auto',
+          'Where the attached floating preview docks to Quick Reply. Auto prefers bottom, but avoids the Thread Watcher when it is already attached there.',
+          2
+        ],
+        'Comment Preview Remember Float Position': [
+          false,
+          'Remember a manually dragged floating preview position when Quick Reply is closed and reopened.',
+          2
         ],
         'Show Comment Preview Header Icon': [
           true,
@@ -1100,7 +1095,13 @@ div.boardTitle {
     'Thread Watcher Attach Location': 'bottom',
     'Thread Title': 'excerpt',
     'Unread Title Count': 'always',
-    'Comment Preview Position': 'below',
+    'Comment Preview Position': 'thread', // deprecated/unused: preview is always floating + on-demand inline
+    'Comment Preview Default Mode': 'attached', // 'attached' | 'inline' | 'remember'
+    'Comment Preview Last Mode': 'attached', // internal state for Default Mode = remember
+    'Comment Preview Attach Location': 'auto', // 'auto' | 'bottom' | 'top' | 'right' | 'left'
+    'Comment Preview Inline Behavior': 'scroll', // 'scroll' = dock at thread end + scroll to it; 'inplace' = insert near viewport and follow scroll
+    'Comment Preview Remember Float Position': false,
+    'Comment Preview Float Position': {}, // internal state: { left: string, top: string }
     'Show Comment Preview Header Icon': true,
     'Spoiler Mode': 'default',
     'Settings Menu Layout': 'vertical',
@@ -2934,6 +2935,9 @@ current-archive-text:"Archive"]
         h("a", { href: "#", class: "export" }, "Export"),
         h("a", { href: "#", class: "import" }, "Import"),
         h("a", { href: "#", class: "reset" }, "Reset Settings"),
+        h("label", { class: "highlight-next-toggle", title: `Highlight settings ${meta.name} added or changed compared to 4chan-X. Added settings are marked green; changed defaults are marked amber.` },
+          h("input", { id: "settings-highlight-next", type: "checkbox", autocomplete: "off" }),
+          h("span", null, "Highlight neXT")),
         h("label", { class: "remember-layout-toggle", title: "Remember dialog layout and section collapse state" },
           h("input", { id: "settings-remember-layout", type: "checkbox", autocomplete: "off" }),
           h("span", null, "Remember layout")),
@@ -4818,6 +4822,77 @@ audio.controls-added {
 .remember-layout-toggle input {
   margin: 0;
 }
+.highlight-next-toggle {
+  align-items: center;
+  cursor: pointer;
+  display: inline-flex;
+  gap: 4px;
+  opacity: .85;
+  user-select: none;
+}
+.highlight-next-toggle:hover {
+  opacity: 1;
+}
+.highlight-next-toggle > span {
+  white-space: nowrap;
+}
+.highlight-next-toggle input {
+  margin: 0;
+}
+/* "Highlight neXT" — settings neXT added (green) or changed the default of
+   (amber). The left bar is an inset box-shadow (no layout shift), so it works
+   on plain rows, suboptions, and bare <label> controls alike. Intentionally
+   does NOT set padding so it never fights the .suboption-list indent. */
+#fourchanx-settings.highlight-next-settings [data-next-status] {
+  border-radius: 2px;
+}
+/* Alpha is high enough to read clearly on the dark dialog base (a faint tint
+   only showed on lighter/checked rows, which looked inconsistent). The
+   #fourchanx-settings prefix raises specificity above per-section/theme rules. */
+#fourchanx-settings.highlight-next-settings [data-next-status="added"] {
+  background: rgba(63, 185, 80, .24);
+  box-shadow: inset 4px 0 0 #3fb950;
+}
+#fourchanx-settings.highlight-next-settings [data-next-status="changed"] {
+  background: rgba(210, 153, 34, .26);
+  box-shadow: inset 4px 0 0 #d29922;
+}
+/* Badge anchors, covering every row shape:
+   - .setting-title::after            -> standard checkbox rows
+   - label[data-next-status]::after   -> bare-label Styling/Advanced controls
+   - > label > span:first-child::after -> select rows (addSelectRows: label is
+     "<span>Label: </span><select>"; checkbox labels start with <input>, so
+     their span is not :first-child and never double-badges). */
+.highlight-next-settings [data-next-status] .setting-title::after,
+.highlight-next-settings label[data-next-status]::after,
+.highlight-next-settings [data-next-status] > label > span:first-child::after {
+  display: inline-block;
+  margin-left: 6px;
+  padding: 0 5px;
+  border-radius: 8px;
+  font-size: 9px;
+  font-weight: 700;
+  letter-spacing: .04em;
+  line-height: 14px;
+  text-transform: uppercase;
+  vertical-align: middle;
+  white-space: nowrap;
+}
+.highlight-next-settings [data-next-status="added"] .setting-title::after,
+.highlight-next-settings label[data-next-status="added"]::after,
+.highlight-next-settings [data-next-status="added"] > label > span:first-child::after {
+  content: 'neXT';
+  color: #fff;
+  background: #3fb950;
+  text-transform: none;
+}
+.highlight-next-settings [data-next-status="changed"] .setting-title::after,
+.highlight-next-settings label[data-next-status="changed"]::after,
+.highlight-next-settings [data-next-status="changed"] > label > span:first-child::after {
+  content: 'changed';
+  color: #1a1a1a;
+  background: #d29922;
+}
 #fourchanx-settings > .settings-body {
   flex: 1;
   min-height: 0;
@@ -4858,6 +4933,15 @@ audio.controls-added {
   border-radius: 3px;
   color: inherit;
 }
+/* Giving a <select> a non-default background (transparent, above) opts it out of
+   the browser's native dark popup, so the opened option list would fall back to a
+   stark white default on dark themes (simple-filter type, attach-to-QR location,
+   board update sound, …). Re-theme the options to the dialog background, matching
+   the styling-section and #qr selects which already do this. */
+#fourchanx-settings select.field option {
+  background-color: var(--xt-dialog-bg, var(--background, Canvas));
+  color: inherit;
+}
 #fourchanx-settings .close {
   text-decoration: none;
   padding: 2px 4px;
@@ -4893,6 +4977,14 @@ audio.controls-added {
 .settings-search-hidden {
   display: none !important;
 }
+/* Search-term highlighting via the CSS Custom Highlight API: settings search and
+   index/catalog search paint matched ranges instead of injecting <mark> nodes. */
+::highlight(fourchanx-settings-search),
+::highlight(fourchanx-index-search) {
+  background: rgba(255, 214, 83, .5);
+  color: inherit;
+}
+/* Legacy <mark> fallback for browsers without the Highlight API. */
 .section-container mark {
   background: rgba(255, 214, 83, .5);
   color: inherit;
@@ -7804,8 +7896,13 @@ textarea.copy-text-element {
 }
 .inline {
   border: 1px solid;
-  display: table;
   margin: 2px 0;
+  /* Shrink-to-fit bordered container for inlined quotes.
+     display:table + display:table on inner .post previously broke normal
+     float layout for .fileThumb + text wrapping in .postMessage. */
+  display: block;
+  width: fit-content;
+  max-width: 100%;
 }
 .container ~ .inline {
   margin-left: 20px;
@@ -7816,9 +7913,24 @@ textarea.copy-text-element {
 .inline .post {
   border: 0 !important;
   background-color: transparent !important;
-  display: table !important;
   margin: 0 !important;
   padding: 1px 2px !important;
+  /* normal display (block) so that floated thumbnails inside inlined posts
+     interact correctly with postMessage text flow/wrapping. */
+}
+/* Protect inlined quotes from extremely long non-breaking content (e.g. a quoted post
+   with a huge run of characters) making the bordered inline box grow too wide.
+   Pairs with the fit-content + max-width on .inline. */
+.inline .postMessage {
+  overflow-wrap: break-word;
+  word-break: break-all;
+}
+/* Ensure floats (e.g. fileThumb) inside inlined posts are cleared so the
+   .inline border box gets the correct height (mirrors #qp handling). */
+.inline::after {
+  content: '';
+  clear: both;
+  display: table;
 }
 #qp > .opContainer::after {
   content: '';
@@ -8310,6 +8422,164 @@ body:not(.board_f) #qr select[name="filetag"],
 #qr.com-preview-left #qr-com-preview {
   margin-right: 2px;
 }
+
+/* Thread (literal) preview post - stitched at the bottom of the thread, always last. */
+.postContainer.qr-preview-post {
+  opacity: 0.92;
+  /* Prevent the stitched inline comment preview from growing the thread or its own box
+     unbounded when the comment contains long non-breaking content (e.g. holding a key)
+     or combined with an attached image/file in the preview. */
+  max-width: 100%;
+}
+.postContainer.qr-preview-post > .reply {
+  border: 1px dashed rgba(120, 120, 120, 0.55);
+  /* Edge highlight: make the live preview clearly stand out from real posts.
+     Applies to BOTH the stitched in-thread preview and the floating preview
+     (the floating post shell carries the same .qr-preview-post class), so the
+     highlight stays visible in the float too. Themeable via --xt-qr-preview-accent. */
+  border-left: 3px solid var(--xt-qr-preview-accent, #ff8c00);
+  box-shadow:
+    inset 0 0 0 1px rgba(255, 140, 0, 0.30),
+    0 0 7px rgba(255, 140, 0, 0.30);
+  background-image: repeating-linear-gradient(
+    135deg,
+    transparent,
+    transparent 3px,
+    rgba(0,0,0,0.025) 3px,
+    rgba(0,0,0,0.025) 6px
+  );
+  /* Keep the docked preview on the site's native reply layout (display: table)
+     so the left collapse gutter reserves the same space as a real reply. */
+  box-sizing: border-box;
+}
+.postContainer.qr-preview-post .postInfo .preview-no .preview-label {
+  font-style: italic;
+  opacity: 0.7;
+  margin-left: 2px;
+}
+.postContainer.qr-preview-post .qr-preview-file-note {
+  font-size: 90%;
+  opacity: 0.85;
+  margin: 2px 0;
+}
+.postContainer.qr-preview-post .postMessage:empty::before {
+  content: "(empty post body)";
+  opacity: 0.5;
+  font-style: italic;
+}
+
+/* Floating preview: just the post itself (no window frame), absolutely positioned + draggable */
+.qr-preview-float {
+  /* The element is the postContainer; it carries its own post styling */
+  min-width: 180px;
+  max-width: none; /* no cap: expand as wide as the comment needs (wide screens included) */
+  z-index: 21; /* just above QR (20), below Settings overlay (999) */
+  cursor: move; /* entire floating post (including content area) is grabbable for dragging */
+}
+.qr-preview-float .qr-preview-post {
+  margin: 0;
+  opacity: 1;
+}
+.qr-preview-float .qr-preview-post > .reply {
+  /* Only add a drop shadow so the float reads as a lifted panel. Do NOT set border/background
+     here: that would override the shared orange dashed "preview" edge above and (because the
+     float lives on <body>, outside the themed board) replace the inherited reply background
+     with a hard-coded light color — which is what made the floating preview render all-white
+     with no orange border. Let it inherit the theme's reply colors like the in-thread preview. */
+  box-shadow: 0 2px 8px rgba(0,0,0,0.18);
+  /* JS pins an explicit pixel width after measuring the unwrapped preview. Keeping
+     CSS auto avoids reintroducing shrink-to-fit feedback while the measurement runs. */
+  display: inline-block;
+  width: auto;
+}
+/* Hide only the post menu dropdown button on preview posts.
+   The delete checkbox is intentionally kept so the in-thread preview
+   looks as "official" as a real reply post. */
+.qr-preview-post .menu-button {
+  display: none !important;
+}
+
+/* Links inside the preview should still behave normally */
+.qr-preview-float a {
+  cursor: pointer;
+}
+
+/* The dock toggle is the "preview" link itself (No.<preview>): clicking it docks the
+   floating preview into the thread and back. Reads "dock preview" / "undock preview"
+   in a thread, plain "preview" elsewhere. Keep it a pointer even inside the floating
+   preview (whose body is cursor:move for dragging). */
+.qr-preview-inline-toggle {
+  cursor: pointer;
+  /* It's a <span>, not an <a>, on purpose: the quote link is matched positionally as
+     .postNum > a:nth-of-type(2), so an anchor here gets wired to quoting and inserts >>0.
+     A span keeps the link look without being quotable. */
+  color: var(--xt-link-text-color, inherit);
+}
+.qr-preview-inline-toggle.is-dockable {
+  text-decoration: underline dotted;
+  text-underline-offset: 2px;
+}
+.qr-preview-inline-toggle.is-dockable:hover {
+  text-decoration: underline;
+}
+
+/* File attachments in live QR previews use the real post structure:
+   .file before blockquote.postMessage, with the site theme's .fileThumb float
+   controlling text flow. */
+.qr-preview-post .file,
+.qr-preview-float .file {
+  margin-top: 2px;
+  margin-bottom: 4px;
+  max-width: 100%;
+}
+.qr-preview-post .fileText,
+.qr-preview-float .fileText {
+  margin-bottom: 1px;
+  /* Long filenames ... break instead of forcing width. */
+  word-break: break-all;
+  overflow-wrap: break-word;
+}
+/* Keep preview media compact while preserving the native floated fileThumb layout. */
+.qr-preview-post .qr-preview-file-thumb,
+.qr-preview-float .qr-preview-file-thumb {
+  min-width: 125px;
+}
+.qr-preview-post .fileThumb img,
+.qr-preview-post .fileThumb video,
+.qr-preview-float .fileThumb img,
+.qr-preview-float .fileThumb video {
+  max-width: 125px;
+  max-height: 125px;
+  display: block;
+  border: 1px solid rgba(0,0,0,.2);
+  background: #fff;
+}
+
+/* Preserve typed newlines but do not soft-break long unspaced runs. Width sync
+   expands the preview; allowing anywhere-breaks causes the visible wrap-then-jump. */
+.postContainer.qr-preview-post .postMessage,
+.qr-preview-float .postMessage {
+  white-space: pre-wrap;
+  overflow-wrap: normal;
+  word-break: normal;
+  word-wrap: normal; /* legacy alias */
+}
+/* Clearfix for the preview post containers so floated thumbnails (when an image/file
+   is attached in the QR) are properly contained for height. Prevents the preview box
+   from collapsing or showing odd "page break" gaps below the image area. */
+.postContainer.qr-preview-post::after,
+.qr-preview-float .qr-preview-post::after {
+  content: '';
+  clear: both;
+  display: table;
+}
+
+/* Hide internal box for modern styles */
+#qr.com-preview-thread #qr-com-preview,
+#qr.com-preview-float #qr-com-preview,
+#qr:not(.has-com-preview) #qr-com-preview {
+  display: none;
+}
 #sjis-toggle, #qr.sjis-preview textarea.field {
   font-family: "IPAMonaPGothic","Mona","MS PGothic",monospace;
   font-size: 16px;
@@ -8372,7 +8642,8 @@ input.field.tripped:not(:hover):not(:focus) {
   height: 18px;
   justify-content: center;
   line-height: inherit;
-  margin: 0 1px;
+  /* A touch of breathing room from the "QR" label it sits next to. */
+  margin: 0 1px 0 6px;
   opacity: .45;
   padding: 0;
   width: 18px;
@@ -8382,9 +8653,7 @@ input.field.tripped:not(:hover):not(:focus) {
   height: 1em;
   width: auto;
 }
-#qr-preview-toggle.enabled,
-#qr-preview-toggle:hover,
-#qr-preview-toggle:focus {
+#qr-preview-toggle.enabled {
   opacity: 1;
 }
 /* The clear-draft trash is a raw emoji <a>, so it rides high on the text
@@ -8397,7 +8666,7 @@ input.field.tripped:not(:hover):not(:focus) {
   height: 18px;
   justify-content: center;
   line-height: 1;
-  margin: 0 1px;
+  margin: 0 4px 0 1px;
   text-decoration: none;
   width: 18px;
 }
@@ -8419,9 +8688,17 @@ input.field.tripped:not(:hover):not(:focus) {
 #qr > .move .close > .icon {
   display: block;
 }
-/* When the thread select is hidden, the close button takes over right-anchoring */
+/* When the thread select is hidden, keep the draft trash grouped with close
+   instead of leaving it beside the left-side QR header controls. */
+:root.thread-view #qr:not(.show-new-thread-option) > .move .qr-clear-draft:not([hidden]) {
+  margin-left: auto;
+}
+/* If there is no draft trash, the close button still takes over right-anchoring. */
 :root.thread-view #qr:not(.show-new-thread-option) > .move .close {
   margin-left: auto;
+}
+:root.thread-view #qr:not(.show-new-thread-option) > .move .qr-clear-draft:not([hidden]) + .close {
+  margin-left: 0;
 }
 
 /* Recaptcha v2 */
@@ -8474,30 +8751,40 @@ input.field.tripped:not(:hover):not(:focus) {
   display: inline-flex;
   align-items: center;
   gap: 5px;
+  align-self: center;
   flex: 1 1 140px;
   min-width: 0;
+  height: 18px;
   margin-left: 6px;
   font-size: 11px;
-  line-height: 1.35;
+  line-height: 18px;
   opacity: .8;
   white-space: normal;
   overflow-wrap: anywhere;
 }
 #qr.captcha-t .fourchanx-captcha-status-text {
+  display: inline-flex;
+  align-items: center;
+  align-self: center;
   min-width: 0;
+  height: 18px;
+  line-height: inherit;
 }
 #qr.captcha-t .fourchanx-captcha-status-icon {
   display: inline-flex;
   align-items: center;
   justify-content: center;
-  width: 1.2em;
-  height: 1.2em;
-  border: 2px solid currentColor;
-  border-radius: 50%;
-  font-weight: bold;
-  font-size: 9px;
-  line-height: 1;
+  flex: 0 0 auto;
+  width: 13px;
+  height: 13px;
+  line-height: 0;
+  transform: translateY(-.5px);
   box-sizing: border-box;
+}
+#qr.captcha-t .fourchanx-captcha-status-svg {
+  display: block;
+  width: 100%;
+  height: 100%;
 }
 #qr.captcha-t .fourchanx-captcha-status-icon.state-complete {
   color: #2c9c47;
@@ -8508,6 +8795,12 @@ input.field.tripped:not(:hover):not(:focus) {
 #qr.captcha-t .fourchanx-captcha-status-icon.state-expired {
   color: #c38c2f;
 }
+#qr.captcha-t .fourchanx-captcha-status-icon.state-loading {
+  color: #4f7eaa;
+}
+#qr.captcha-t .fourchanx-captcha-status-icon.state-idle {
+  color: #6f7c8f;
+}
 #qr.captcha-t .fourchanx-captcha-progress {
   font-size: 11px;
   line-height: 18px;
@@ -8517,6 +8810,13 @@ input.field.tripped:not(:hover):not(:focus) {
 #qr.captcha-t :is(#t-ctrl, #t-msg, #t-desc, #t-task, #t-load, #t-next, .fourchanx-captcha-load-hint, .fourchanx-captcha-status-text, .fourchanx-captcha-progress) {
   color: inherit !important;
   -webkit-text-fill-color: currentColor !important;
+}
+/* Native t-captcha sets an inline \`padding: 4px\` on #t-ctrl; drop the left padding
+   (!important to beat the inline style) so the Get Captcha button lines up with the
+   left edge of the comment textarea. */
+#qr.captcha-t #t-ctrl {
+  padding-left: 0 !important;
+  align-items: center !important;
 }
 /* The native TCaptcha root is a bare <div> (its className is wiped to "") inside
    .captcha-root, carrying an INLINE light background (rgb(238,238,238)). Target
@@ -10320,19 +10620,19 @@ svg.icon {
     QR
   </label>
   <button type="button" id="qr-preview-toggle" title="Toggle comment preview"></button>
-  <a href="javascript:;" class="qr-clear-draft" title="Discard saved draft for this board" hidden>🗑︎</a>
   <select data-name="thread" title="Create a new thread / Reply">
     <option value="new">New thread</option>
   </select>
+  <a href="javascript:;" class="qr-clear-draft" title="Discard saved draft for this board" hidden>🗑︎</a>
   <a href="javascript:;" class="close" title="Close">✕</a>
 </div>
-<form>
+<form autocomplete="off">
   <div class="persona">
     <button type="button" id="sjis-toggle" class="qr-button" title="Toggle Mona font">∀</button>
     <button type="button" id="tex-preview-button" class="qr-button" title="Preview TeX">T<sub>E</sub>X</button>
-    <input name="name" data-name="name" list="list-name" placeholder="Name" class="field" size="1">
-    <input name="email" data-name="email" list="list-email" placeholder="Options" class="field" size="1">
-    <input name="sub" data-name="sub" list="list-sub" placeholder="Subject" class="field" size="1" maxlength="100">
+    <input name="qr-no-autofill-name" data-name="name" data-no-autofill="true" placeholder="Name" class="field" size="1" autocomplete="off" autocapitalize="off" autocorrect="off" spellcheck="false" readonly>
+    <input name="qr-no-autofill-options" data-name="email" data-no-autofill="true" placeholder="Options" class="field" size="1" autocomplete="off" autocapitalize="off" autocorrect="off" spellcheck="false" readonly>
+    <input name="qr-no-autofill-subject" data-name="sub" data-no-autofill="true" placeholder="Subject" class="field" size="1" maxlength="100" autocomplete="off" autocapitalize="off" autocorrect="off" spellcheck="false" readonly>
   </div>
   <div class="textarea">
     <textarea data-name="com" placeholder="Comment" class="field"></textarea>
@@ -10387,10 +10687,7 @@ svg.icon {
     <option value="4" selected>Other</option>
   </select>
   <input type="file" multiple>
-</form>
-<datalist id="list-name"></datalist>
-<datalist id="list-email"></datalist>
-<datalist id="list-sub"></datalist>`;
+</form>`;
 
   var ferongr_unreadDead = 'iVBORw0KGgoAAAANSUhEUgAAABAAAAAQBAMAAADt3eJSAAAAFVBMVEX///9zBQC/AADpDAP/gID/q6voCwJJTwpOAAAAAXRSTlMAQObYZgAAAGJJREFUeF5Fi7ENg0AQBCfa/AFdDh2gdwPIogMK2E2+/xLslwOvdqRJhv+GQQPUCtJM7svankLrq/I+TY5e6Ueh1jyBMX7AFJi9vwfyVO4CbbO6jNYpp9GyVPbdkFhVgAQ2H0NOE5jk9DT8AAAAAElFTkSuQmCC';
 
@@ -10615,7 +10912,32 @@ svg.icon {
     }
   };
 
+  const CircleSvg = 'M256 512A256 256 0 1 0 256 0a256 256 0 1 0 0 512z';
+  const CircleW = 512, CircleH = 512;
+
+  const CircleCheckSvg = 'M256 512A256 256 0 1 0 256 0a256 256 0 1 0 0 512zM369 209L241 337c-9.4 9.4-24.6 9.4-33.9 0l-64-64c-9.4-9.4-9.4-24.6 0-33.9s24.6-9.4 33.9 0l47 47L335 175c9.4-9.4 24.6-9.4 33.9 0s9.4 24.6 0 33.9z';
+  const CircleCheckW = 512, CircleCheckH = 512;
+
+  const CircleExclamationSvg = 'M256 512A256 256 0 1 0 256 0a256 256 0 1 0 0 512zm0-384c13.3 0 24 10.7 24 24V264c0 13.3-10.7 24-24 24s-24-10.7-24-24V152c0-13.3 10.7-24 24-24zM224 352a32 32 0 1 1 64 0 32 32 0 1 1 -64 0z';
+  const CircleExclamationW = 512, CircleExclamationH = 512;
+
+  const CircleNotchSvg = 'M222.7 32.1c5 16.9-4.6 34.8-21.5 39.8C121.8 95.6 64 169.1 64 256c0 106 86 192 192 192s192-86 192-192c0-86.9-57.8-160.4-137.1-184.1c-16.9-5-26.6-22.9-21.5-39.8s22.9-26.6 39.8-21.5C434.9 42.1 512 140 512 256c0 141.4-114.6 256-256 256S0 397.4 0 256C0 140 77.1 42.1 182.9 10.6c16.9-5 34.8 4.6 39.8 21.5z';
+  const CircleNotchW = 512, CircleNotchH = 512;
+
+  const CircleXmarkSvg = 'M256 512A256 256 0 1 0 256 0a256 256 0 1 0 0 512zM175 175c9.4-9.4 24.6-9.4 33.9 0l47 47 47-47c9.4-9.4 24.6-9.4 33.9 0s9.4 24.6 0 33.9l-47 47 47 47c9.4 9.4 9.4 24.6 0 33.9s-24.6 9.4-33.9 0l-47-47-47 47c-9.4 9.4-24.6 9.4-33.9 0s-9.4-24.6 0-33.9l47-47-47-47c-9.4-9.4-9.4-24.6 0-33.9z';
+  const CircleXmarkW = 512, CircleXmarkH = 512;
+
   const getTCaptcha = () => window.TCaptcha || window.wrappedJSObject?.TCaptcha || (typeof unsafeWindow !== 'undefined' ? unsafeWindow.TCaptcha : undefined);
+  const captchaStatusIcon = (svgPathData, width, height) => (`<svg xmlns="http://www.w3.org/2000/svg" class="fourchanx-captcha-status-svg" viewBox="0 0 ${width} ${height}" aria-hidden="true">` +
+    `<path d="${svgPathData}" fill="currentColor" />` +
+    `</svg>`);
+  const captchaStatusIcons = {
+    idle: captchaStatusIcon(CircleSvg, CircleW, CircleH),
+    loading: captchaStatusIcon(CircleNotchSvg, CircleNotchW, CircleNotchH),
+    complete: captchaStatusIcon(CircleCheckSvg, CircleCheckW, CircleCheckH),
+    failed: captchaStatusIcon(CircleXmarkSvg, CircleXmarkW, CircleXmarkH),
+    expired: captchaStatusIcon(CircleExclamationSvg, CircleExclamationW, CircleExclamationH),
+  };
   const CaptchaT = {
     init() {
       if (d.cookie.indexOf('pass_enabled=1') >= 0) {
@@ -10903,11 +11225,18 @@ svg.icon {
         failed: '#cf4a4a',
         expired: '#d0a64d',
       };
-      const borderColor = borderColors[state] || borderColors.idle;
       const showBorder = state === 'complete' || state === 'failed' || state === 'expired';
-      container.style.border = showBorder ? `2px solid ${borderColor}` : '2px solid transparent';
+      const borderColor = borderColors[state] || borderColors.idle;
+      const loadButton = $('#t-load', container);
+      container.style.border = '2px solid transparent';
       container.style.borderRadius = '4px';
       container.style.transition = 'border-color .2s ease';
+      if (loadButton) {
+        loadButton.style.border = showBorder ? `2px solid ${borderColor}` : '';
+        loadButton.style.borderRadius = '4px';
+        loadButton.style.transition = 'border-color .2s ease';
+        loadButton.style.opacity = showBorder ? '1' : '';
+      }
       this.setStatusMessage({
         idle: '',
         loading: '',
@@ -10963,18 +11292,14 @@ svg.icon {
       }
       statusNode.classList.add(`state-${state}`);
       statusNode.replaceChildren();
-      const iconByState = {
-        complete: '✓',
-        failed: '✕',
-        expired: '!'
-      };
-      const icon = iconByState[state];
+      const icon = captchaStatusIcons[state];
       if (icon) {
-        statusNode.appendChild($.el('span', {
+        const iconNode = $.el('span', {
           className: `fourchanx-captcha-status-icon state-${state}`,
-          textContent: icon,
           title: this.plainStatusMessage(text)
-        }));
+        });
+        iconNode.innerHTML = icon;
+        statusNode.appendChild(iconNode);
       }
       const message = $.el('span', {
         className: 'fourchanx-captcha-status-text'
@@ -11039,13 +11364,7 @@ svg.icon {
       return 'idle';
     },
     formatTaskMessage(text, state) {
-      const icon = {
-        loading: '◔',
-        complete: '✓',
-        failed: '✕',
-        expired: '⏱',
-        idle: '○'
-      }[state] || '○';
+      const icon = captchaStatusIcons[state] || captchaStatusIcons.idle;
       return `<div id="t-desc" class="tcaptcha-message state-${state}">` +
         `<span class="tcaptcha-message-icon" aria-hidden="true">${icon}</span>` +
         `<span class="tcaptcha-message-text">${text || ''}</span>` +
@@ -11364,12 +11683,15 @@ svg.icon {
         style.textContent = `
     #qr.fourchanx-stacked-captcha .captcha-container { width: 100% !important; height: auto !important; min-height: 145px; overflow: visible !important; }
     #qr.fourchanx-stacked-captcha #t-ctrl { flex-wrap: wrap; gap: 4px; align-items: center; }
+    #qr.fourchanx-stacked-captcha .fourchanx-captcha-load-hint.state-complete { flex: 0 0 auto; white-space: nowrap; overflow-wrap: normal; }
+    #qr.fourchanx-stacked-captcha .fourchanx-captcha-load-hint.state-complete .fourchanx-captcha-status-text { white-space: nowrap; overflow-wrap: normal; }
     #qr.fourchanx-stacked-captcha .tcaptcha-image { padding: 0; margin: 3px; border: none; background: none; cursor: pointer !important; }
     #qr.fourchanx-stacked-captcha .tcaptcha-image img { height: 100%; width: 100%; display: block; }
     #qr.fourchanx-stacked-captcha .tcaptcha-image.active { outline: 4px solid var(--xt-variant-accent, #00c06f); outline-offset: -3px; box-shadow: 0 0 10px 2px color-mix(in srgb, var(--xt-variant-accent, #00c06f) 70%, transparent); border-radius: 2px; }
     #qr.fourchanx-stacked-captcha #t-desc { white-space: pre-line; text-align: center; font-size: 14px; user-select: none; width: 100%; }
     #qr.fourchanx-stacked-captcha #t-desc.tcaptcha-message { padding-bottom: 15px; box-sizing: border-box; display: inline-flex; align-items: center; justify-content: center; gap: 6px; }
-    #qr.fourchanx-stacked-captcha #t-desc.tcaptcha-message .tcaptcha-message-icon { display: inline-flex; align-items: center; justify-content: center; width: 1.2em; height: 1.2em; border: 2px solid currentColor; border-radius: 50%; font-weight: bold; font-size: 11px; line-height: 1; box-sizing: border-box; }
+    #qr.fourchanx-stacked-captcha #t-desc.tcaptcha-message .tcaptcha-message-icon { display: inline-flex; align-items: center; justify-content: center; flex: 0 0 auto; width: 1.15em; height: 1.15em; line-height: 0; transform: translateY(-.5px); box-sizing: border-box; }
+    #qr.fourchanx-stacked-captcha #t-desc.tcaptcha-message .tcaptcha-message-icon > .fourchanx-captcha-status-svg { display: block; width: 100%; height: 100%; }
     #qr.fourchanx-stacked-captcha #t-desc.tcaptcha-message.state-complete .tcaptcha-message-icon { color: #2c9c47; }
     #qr.fourchanx-stacked-captcha #t-desc.tcaptcha-message.state-failed .tcaptcha-message-icon { color: #cf4a4a; }
     #qr.fourchanx-stacked-captcha #t-desc.tcaptcha-message.state-expired .tcaptcha-message-icon { color: #c38c2f; }
@@ -14069,27 +14391,44 @@ svg.icon {
 
   var RelativeDates = {
     INTERVAL: 30000,
+    callbackRegistered: false,
+    listenersBound: false,
     init() {
-      if ((['index', 'thread', 'archive'].includes(g.VIEW) &&
-        ['Show', 'Both', 'BothRelativeFirst'].includes(Conf.RelativeTime)) ||
-        Index.enabled) {
-        this.flush();
-        $.on(d, 'visibilitychange PostsInserted', this.flush);
-      }
+      RelativeDates.ensureListeners();
+      $.on(d, 'RelativePostDatesChanged', RelativeDates.reapply);
+      $.sync('RelativeTime', (RelativeTime) => {
+        Conf.RelativeTime = RelativeTime;
+        RelativeDates.reapply();
+      });
       if (Conf.RelativeTime !== 'No') {
-        return Callbacks.Post.push({
-          name: 'Relative Post Dates',
-          cb: this.node
-        });
+        return RelativeDates.ensureCallback();
       }
     },
+    ensureListeners() {
+      if (RelativeDates.listenersBound)
+        return;
+      RelativeDates.listenersBound = true;
+      $.on(d, 'visibilitychange PostsInserted', RelativeDates.flush);
+    },
+    ensureCallback() {
+      if (RelativeDates.callbackRegistered)
+        return;
+      RelativeDates.callbackRegistered = true;
+      return Callbacks.Post.push({
+        name: 'Relative Post Dates',
+        cb: RelativeDates.node
+      });
+    },
     node() {
+      if (Conf.RelativeTime === 'No') {
+        return;
+      }
       if (!this.info.date) {
         return;
       }
       const dateEl = this.nodes.date;
       if (Conf.RelativeTime === 'Hover') {
-        $.on(dateEl, 'mouseover', () => RelativeDates.hover(this));
+        RelativeDates.bindHover(this);
         return;
       }
       if (this.isClone) {
@@ -14104,8 +14443,52 @@ svg.icon {
       }
       return RelativeDates.update(this);
     },
+    bindHover(post) {
+      const dateEl = post.nodes.date;
+      if (dateEl.dataset.relativeHoverBound)
+        return;
+      dateEl.dataset.relativeHoverBound = '1';
+      $.on(dateEl, 'mouseover', () => RelativeDates.hover(post));
+    },
+    reapply() {
+      clearTimeout(RelativeDates.timeout);
+      RelativeDates.timeout = undefined;
+      RelativeDates.stale = [];
+      if (!['index', 'thread', 'archive'].includes(g.VIEW))
+        return;
+      const mode = Conf.RelativeTime;
+      if (mode !== 'No') {
+        RelativeDates.ensureListeners();
+        RelativeDates.ensureCallback();
+      }
+      g.posts.forEach((post) => {
+        if (!post.info.date || post.isFetchedQuote || !doc.contains(post.nodes.root))
+          return;
+        RelativeDates.restore(post);
+        if (mode === 'No')
+          return;
+        if (mode === 'Hover') {
+          RelativeDates.bindHover(post);
+          return;
+        }
+        if (!post.isClone)
+          RelativeDates.update(post);
+      });
+      if (['Show', 'Both', 'BothRelativeFirst'].includes(mode)) {
+        RelativeDates.flush();
+      }
+    },
+    restore(post) {
+      for (const singlePost of [post].concat(post.clones)) {
+        const node = singlePost.nodes.date;
+        const full = node.dataset.fullTime;
+        if (full)
+          node.textContent = full;
+        node.removeAttribute('title');
+      }
+    },
     /** @param diff is milliseconds from now. */
-    relative(diff, now, date, abbrev) {
+    relative(diff, now, date, abbrev = false) {
       let number;
       let unit;
       if ((number = (diff / DAY)) >= 1) {
@@ -14113,13 +14496,13 @@ svg.icon {
         let months = now.getMonth() - date.getMonth();
         const days = now.getDate() - date.getDate();
         if (years > 1) {
-          number = years - ((months < 0) || ((months === 0) && (days < 0)));
+          number = years - ((months < 0) || ((months === 0) && (days < 0)) ? 1 : 0);
           unit = 'year';
         } else if ((years === 1) && ((months > 0) || ((months === 0) && (days >= 0)))) {
           number = years;
           unit = 'year';
         } else if ((months = months + (12 * years)) > 1) {
-          number = months - (days < 0);
+          number = months - (days < 0 ? 1 : 0);
           unit = 'month';
         } else if ((months === 1) && (days >= 0)) {
           number = months;
@@ -14177,7 +14560,7 @@ svg.icon {
     hover(post) {
       const { date } = post.info;
       const now = new Date();
-      const diff = now - date;
+      const diff = now.getTime() - date.getTime();
       post.nodes.date.title = RelativeDates.relative(diff, now, date);
     },
     // `update()`, when called from `flush()`, updates the elements,
@@ -14192,7 +14575,7 @@ svg.icon {
         date = new Date(+data.dataset.utc);
         abbrev = !!data.dataset.abbrev;
       }
-      const diff = now - date;
+      const diff = now.getTime() - date.getTime();
       const relative = RelativeDates.relative(diff, now, date, abbrev);
       if (isPost) {
         for (var singlePost of [data].concat(data.clones)) {
@@ -17297,6 +17680,7 @@ svg.icon {
           dialog.style.setProperty('--watcher-max-width', `${Math.max(120, targetW - 12)}px`);
         }
       }
+      QR?.repositionFloatingPreview?.();
     },
     restorePosition() {
       const dialog = ThreadWatcher.dialog;
@@ -17315,6 +17699,7 @@ svg.icon {
       dialog.style.height = '';
       dialog.style.position = Conf['Fixed Thread Watcher'] ? 'fixed' : 'absolute';
       ThreadWatcher.applyLayout();
+      QR?.repositionFloatingPreview?.();
     },
     onQRDialogCreation() {
       const qr = QR?.nodes?.el;
@@ -18701,6 +19086,101 @@ svg.icon {
   <a href="./catalog">Catalog</a>
 </div>`;
 
+  /*
+   * Paints search-term matches using the CSS Custom Highlight API
+   * (https://developer.mozilla.org/en-US/docs/Web/API/CSS_Custom_Highlight_API).
+   *
+   * Unlike wrapping matches in <mark>, this never mutates the DOM: it builds Range
+   * objects over the existing text nodes and registers them under a named
+   * highlight, painted by a matching `::highlight(name)` rule in the stylesheet.
+   * Post/setting structure, event handlers and other plugins are left untouched,
+   * which avoids the layout hacks and text save/restore that <mark> injection
+   * needed. The named highlights are global, so each caller owns one name.
+   */
+  // The realm whose highlight registry actually paints the page. We must use the
+  // document's own window: a userscript may run in a sandboxed scope whose `CSS`
+  // registry is a different object than the one styling the page, and bare globals
+  // like `Highlight` don't reliably resolve through that sandbox's scope chain
+  // anyway. Reaching them through `d.defaultView` (mirroring the `self.crypto ||
+  // window.crypto` / `unsafeWindow` pattern used elsewhere) fixes both.
+  function view() {
+    return d.defaultView || (typeof self !== 'undefined' ? self : null);
+  }
+  // Feature-detect the API on that realm. Firefox only shipped it unprefixed
+  // fairly recently, so callers fall back (or simply skip highlighting) when false.
+  function isSupported() {
+    const w = view();
+    return !!(w && w.CSS && w.CSS.highlights && w.Highlight);
+  }
+  // Declared with `var` (not `const`) and exported under the same name importers
+  // bind to: Settings.tsx sits in deep circular-dependency chains, and Rollup
+  // gives `const` bindings temporal-dead-zone treatment across cycles that left
+  // the cyclic importer's reference unrewritten — a runtime `ReferenceError`. The
+  // `var`-singleton shape (matching Time/Favicon/etc.) links cleanly.
+  // eslint-disable-next-line no-var
+  var SearchHighlight = {
+    get supported() {
+      return isSupported();
+    },
+    escape(s) {
+      return s.replace(/[.*+?^${}()|[\]\\]/g, '\\$&');
+    },
+    // Register, under `name`, a highlight covering every case-insensitive
+    // occurrence of any term within the text nodes under `roots` (one element or a
+    // list). Whatever was previously registered under `name` is replaced; an empty
+    // query — or no matches — clears it. Returns false when the API is unavailable.
+    apply(name, roots, terms) {
+      const w = view();
+      if (!w || !w.CSS || !w.CSS.highlights || !w.Highlight)
+        return false;
+      const registry = w.CSS.highlights;
+      const list = Array.isArray(roots) ? roots : [roots];
+      if (!terms.length || !list.length) {
+        registry.delete(name);
+        return true;
+      }
+      const rx = RegExp(terms.map(SearchHighlight.escape).join('|'), 'gi');
+      const ranges = [];
+      for (const root of list) {
+        if (!root)
+          continue;
+        const walker = d.createTreeWalker(root, NodeFilter.SHOW_TEXT);
+        let node;
+        while ((node = walker.nextNode())) {
+          const text = node.nodeValue;
+          if (!text)
+            continue;
+          rx.lastIndex = 0;
+          let m;
+          while ((m = rx.exec(text))) {
+            // Defensive: a zero-width match would loop forever and paint nothing.
+            if (!m[0]) {
+              rx.lastIndex++;
+              continue;
+            }
+            const range = d.createRange();
+            range.setStart(node, m.index);
+            range.setEnd(node, m.index + m[0].length);
+            ranges.push(range);
+          }
+        }
+      }
+      if (ranges.length) {
+        registry.set(name, new w.Highlight(...ranges));
+      } else {
+        registry.delete(name);
+      }
+      return true;
+    },
+    clear(name) {
+      const w = view();
+      if (w && w.CSS && w.CSS.highlights)
+        w.CSS.highlights.delete(name);
+    },
+  };
+
+  // Name of the CSS Custom Highlight that paints index/catalog search matches.
+  const INDEX_SEARCH_HL = 'fourchanx-index-search';
   var Index = {
     showHiddenThreads: false,
     changed: {},
@@ -19894,6 +20374,7 @@ svg.icon {
       if (Index.root.parentNode) {
         $.event('PostsInserted', null, Index.root);
       }
+      Index.highlightSearch();
       Index.loaded = true;
     },
     showHiddenThreadsWithYousInIndex(threads) {
@@ -19928,6 +20409,7 @@ svg.icon {
             $.event('PostsInserted', null, Index.root);
           }
           Index.groupHiddenCatalogThreads(threadIDs);
+          Index.highlightSearch();
           return Index.loaded = true;
         }
       };
@@ -20105,6 +20587,22 @@ svg.icon {
         return;
       }
       return Index.sortedThreadIDs.filter(ID => Index.searchMatch(Index.parsedThreads[ID], keywords));
+    },
+    // Keyword terms to highlight in the rendered results. Regex queries
+    // (`field:/pattern/flags`) match structurally rather than by literal text, so
+    // there's nothing meaningful to highlight — return none.
+    getSearchTerms() {
+      const query = Index.search;
+      if (!query || /^([\w+]+):\/(.*)\/(\w*)$/.test(query)) {
+        return [];
+      }
+      return query.toLowerCase().match(/\S+/g) || [];
+    },
+    // Paint the current search terms across the rendered threads. Re-run after
+    // every (re)build, since buildIndex replaces Index.root's contents and the old
+    // highlight ranges would point at detached nodes. An empty query clears it.
+    highlightSearch() {
+      SearchHighlight.apply(INDEX_SEARCH_HL, Index.root, Index.getSearchTerms());
     },
     searchMatch(obj, keywords) {
       const { info, file } = obj;
@@ -25206,6 +25704,28 @@ aero|asia|biz|cat|com|coop|dance|info|int|jobs|mobi|moe|museum|name|net|org|post
     heavyBatchSize: 64 * 1024 * 1024,
     metadataStrippedFlag: '__4chanXTMetadataStripped',
     commentPreviewInputBound: false,
+    // Page-stitched literal preview post (when style = 'thread')
+    previewPost: null,
+    // Floating window preview (the default placement)
+    previewFloat: null,
+    // Runtime-only toggle (never persisted): when true and we can actually stitch into
+    // the current thread, the preview is "docked" inline as a literal post instead of
+    // floating. Flipped by the header arrow icon and seeded from the default-mode setting
+    // each time QR opens.
+    previewInline: false,
+    commentPreviewModeInitialized: false,
+    commentPreviewDefaultModeApplied: '',
+    commentPreviewRestoreDetachedFloat: false,
+    // Internal: bound scroll/resize handler for the 'inplace' inline-follow behavior.
+    _inplaceScrollHandler: undefined,
+    _inplaceRafPending: false,
+    // Remembers a user-dragged float position so undocking (inline -> floating) returns
+    // the preview to where it was, instead of snapping back to the QR. Only set when the
+    // float was actually dragged. It is kept for the current QR session and optionally
+    // persisted when "Remember Floating Position" is enabled.
+    previewFloatPos: null,
+    // Internal: ResizeObserver for keeping floating preview docked to QR on size changes.
+    _qrResizeObs: undefined,
     req: undefined,
     selected: undefined,
     mimeTypes: ['image/jpeg', 'image/png', 'image/gif', 'application/pdf', 'application/vnd.adobe.flash.movie', 'application/x-shockwave-flash', 'video/webm', 'video/mp4'],
@@ -25339,13 +25859,35 @@ aero|asia|biz|cat|com|coop|dance|info|int|jobs|mobi|moe|museum|name|net|org|post
       $.on(d, 'QRDrawFile', QR.drawFile);
       $.on(d, 'QRSetFile', QR.setFile);
       $.on(d, 'QRCommentPreviewChanged', QR.applyCommentPreviewSettings);
+      $.on(d, 'PostsInserted', QR.onPostsInsertedPreview);
+      $.on(d, 'QRPostSuccessful', QR.removeThreadPreviewPost);
+      // The inline-toggle arrow lives inside the preview post shell (float + inline).
+      // The float is fully drag-grabbable, so intercept the icon's mousedown in the
+      // capture phase to stop a drag from starting, and handle the click to flip mode.
+      document.addEventListener('mousedown', QR.onPreviewInlineToggleMouseDown, true);
+      $.on(d, 'click', QR.onPreviewInlineToggleClick);
       $.sync('Comment Preview', (value) => {
         Conf['Comment Preview'] = !!value;
         QR.applyCommentPreviewSettings();
       });
-      $.sync('Comment Preview Position', (value) => {
-        Conf['Comment Preview Position'] = ['below', 'right', 'left'].includes(value || '') ? value : 'below';
+      $.sync('Comment Preview Default Mode', (value) => {
+        Conf['Comment Preview Default Mode'] = QR.normalizeCommentPreviewDefaultMode(value);
+        QR.commentPreviewModeInitialized = false;
         QR.applyCommentPreviewSettings();
+      });
+      $.sync('Comment Preview Attach Location', (value) => {
+        Conf['Comment Preview Attach Location'] = QR.normalizeCommentPreviewAttachLocation(value);
+        QR.repositionFloatingPreview();
+      });
+      $.sync('Comment Preview Inline Behavior', (value) => {
+        Conf['Comment Preview Inline Behavior'] = value === 'inplace' ? 'inplace' : 'scroll';
+        QR.applyCommentPreviewSettings();
+      });
+      $.sync('Comment Preview Remember Float Position', (value) => {
+        Conf['Comment Preview Remember Float Position'] = !!value;
+        if (!Conf['Comment Preview Remember Float Position']) {
+          QR.clearStoredCommentPreviewFloatPos(false);
+        }
       });
       $.sync('Show Comment Preview Header Icon', (value) => {
         Conf['Show Comment Preview Header Icon'] = value !== false;
@@ -25357,6 +25899,10 @@ aero|asia|biz|cat|com|coop|dance|info|int|jobs|mobi|moe|museum|name|net|org|post
       $.on(d, 'dragstart dragend', QR.drag);
       $.on(d, 'IndexRefreshInternal', QR.generatePostableThreadsList);
       $.on(d, 'ThreadUpdate', QR.statusCheck);
+      // Keep floating comment preview docked under the QR and keep the inline preview
+      // width cap current when the viewport/QR dimensions change.
+      $.on(d, '4chanXQRMove', QR.repositionFloatingPreview);
+      $.on(window, 'resize', QR.repositionFloatingPreview);
       if (!Conf['Persistent QR']) {
         return;
       }
@@ -25389,6 +25935,12 @@ aero|asia|biz|cat|com|coop|dance|info|int|jobs|mobi|moe|museum|name|net|org|post
         }
         QR.nodes.el.hidden = false;
         QR.unhide();
+        // Restore the comment preview if it was on when the QR was closed. The toggle
+        // (Conf['Comment Preview']) persists, but close()'s teardown left no preview node.
+        // Use the SAME full path dialog() uses on first open so the rebuilt preview is
+        // identical — including the inline/dock toggle icon, header toggle state, and the
+        // com input listener — not just refreshCommentPreview()'s lighter re-show.
+        QR.applyCommentPreviewSettings();
       } else {
         try {
           QR.dialog();
@@ -25413,6 +25965,17 @@ aero|asia|biz|cat|com|coop|dance|info|int|jobs|mobi|moe|museum|name|net|org|post
       QR.blur();
       $.rmClass(QR.nodes.el, 'dump');
       $.addClass(QR.shortcut, 'disabled');
+      QR.storeCommentPreviewLastMode();
+      QR.removeThreadPreviewPost();
+      QR.removeFloatingPreview();
+      if (!Conf['Comment Preview Remember Float Position']) {
+        QR.clearStoredCommentPreviewFloatPos();
+      }
+      // Startup placement is recalculated on the next QR open from the default-mode setting.
+      QR.previewInline = false;
+      QR.commentPreviewModeInitialized = false;
+      QR.commentPreviewDefaultModeApplied = '';
+      QR.commentPreviewRestoreDetachedFloat = false;
       new QR.post(true);
       for (var post of QR.posts.splice(0, QR.posts.length - 1)) {
         post.delete();
@@ -25467,6 +26030,34 @@ aero|asia|biz|cat|com|coop|dance|info|int|jobs|mobi|moe|museum|name|net|org|post
       QR.applyCommentPreviewSettings();
       return $.event('QRCommentPreviewChanged');
     },
+    // Capture-phase guard: the whole floating preview is grabbable for dragging, so we must
+    // stop the arrow icon's mousedown before it reaches the float's own drag handler.
+    onPreviewInlineToggleMouseDown(e) {
+      const t = e.target;
+      if (t && t.closest && t.closest('.qr-preview-inline-toggle, .qr-preview-gutter-toggle')) {
+        e.stopPropagation();
+        e.preventDefault();
+      }
+    },
+    onPreviewInlineToggleClick(e) {
+      const t = e.target;
+      if (t && t.closest && t.closest('.qr-preview-inline-toggle, .qr-preview-gutter-toggle')) {
+        QR.toggleInlinePreview(e);
+      }
+    },
+    // Flip between floating (default) and inline (stitched literal post in the thread).
+    // Only one is shown at a time; refreshCommentPreview() removes the other.
+    toggleInlinePreview(e) {
+      e?.preventDefault?.();
+      e?.stopPropagation?.();
+      QR.previewInline = !QR.previewInline;
+      // Defensive: can't dock inline where we can't stitch into the live thread.
+      if (QR.previewInline && !QR.canActuallyShowThreadPreview()) {
+        QR.previewInline = false;
+      }
+      QR.refreshCommentPreview();
+      QR.storeCommentPreviewLastMode();
+    },
     texPreviewShow() {
       if ($.hasClass(QR.nodes.el, 'tex-preview')) {
         return QR.texPreviewHide();
@@ -25479,6 +26070,14 @@ aero|asia|biz|cat|com|coop|dance|info|int|jobs|mobi|moe|museum|name|net|org|post
       return $.rmClass(QR.nodes.el, 'tex-preview');
     },
     updateComPreview() {
+      if (QR.usingThreadPreview()) {
+        QR.updateThreadPreviewPost();
+        return;
+      }
+      if (QR.usingFloatingPreview()) {
+        QR.updateFloatingPreview();
+        return;
+      }
       if (!QR.nodes?.comPreview)
         return;
       QR.updateComPreviewQuoteColor();
@@ -25508,30 +26107,945 @@ aero|asia|biz|cat|com|coop|dance|info|int|jobs|mobi|moe|museum|name|net|org|post
         QR.nodes.comPreview.style.setProperty('--xt-qr-com-preview-quote-color', color);
       }
     },
+    // The preview floats by default; it is only stitched inline when the user has
+    // explicitly toggled inline (the header arrow) AND we can stitch into the live thread.
+    usingThreadPreview() {
+      return !!Conf['Comment Preview'] &&
+        QR.previewInline === true &&
+        QR.canActuallyShowThreadPreview();
+    },
+    // Floating is the default and the automatic fallback whenever we're not inline
+    // (catalog, index, new thread from QR, replying to a different thread, etc.).
+    usingFloatingPreview() {
+      return !!Conf['Comment Preview'] && !QR.usingThreadPreview();
+    },
+    canActuallyShowThreadPreview() {
+      if (g.VIEW !== 'thread')
+        return false;
+      const currentThread = `${g.THREADID || g.threadID || ''}`;
+      if (!currentThread)
+        return false;
+      const qrThread = QR.posts?.[0]?.thread;
+      if (qrThread && qrThread !== 'new' && `${qrThread}` === currentThread)
+        return true;
+      // Fallback: the thread <select> (which may have been set by quote, catalog reply, or generatePostableThreadsList)
+      // currently targets this page's thread. Treat as "can show inline" even if the post model
+      // hasn't synced the .thread yet (programmatic value= does not fire change).
+      const uiThread = QR.nodes?.thread?.value;
+      if (uiThread && uiThread !== 'new' && `${uiThread}` === currentThread)
+        return true;
+      return false;
+    },
+    normalizeCommentPreviewDefaultMode(value) {
+      return value === 'inline' || value === 'remember' ? value : 'attached';
+    },
+    normalizeCommentPreviewAttachLocation(value) {
+      return value === 'bottom' || value === 'top' || value === 'left' || value === 'right'
+        ? value
+        : 'auto';
+    },
+    normalizeCommentPreviewMode(value) {
+      return value === 'inline' || value === 'detached' ? value : 'attached';
+    },
+    commentPreviewDefaultMode() {
+      return QR.normalizeCommentPreviewDefaultMode(Conf['Comment Preview Default Mode']);
+    },
+    commentPreviewLastMode() {
+      return QR.normalizeCommentPreviewMode(Conf['Comment Preview Last Mode']);
+    },
+    storeCommentPreviewLastMode(mode) {
+      const normalized = QR.normalizeCommentPreviewMode(mode || QR.currentCommentPreviewMode());
+      Conf['Comment Preview Last Mode'] = normalized;
+      $.set('Comment Preview Last Mode', normalized);
+    },
+    currentCommentPreviewMode() {
+      if (QR.usingThreadPreview())
+        return 'inline';
+      if (QR.previewFloat?.dataset.userDragged === 'true' || QR.previewFloatPos)
+        return 'detached';
+      return 'attached';
+    },
+    parseCommentPreviewFloatPos(raw) {
+      if (!raw || typeof raw !== 'object')
+        return null;
+      const { left, top } = raw;
+      return typeof left === 'string' && typeof top === 'string' && left && top
+        ? { left, top }
+        : null;
+    },
+    rememberedCommentPreviewFloatPos() {
+      return QR.previewFloatPos ||
+        (QR.commentPreviewRestoreDetachedFloat && Conf['Comment Preview Remember Float Position']
+          ? QR.parseCommentPreviewFloatPos(Conf['Comment Preview Float Position'])
+          : null);
+    },
+    setCommentPreviewFloatPos(pos) {
+      QR.previewFloatPos = pos;
+      if (Conf['Comment Preview Remember Float Position']) {
+        Conf['Comment Preview Float Position'] = pos;
+        $.set('Comment Preview Float Position', pos);
+      }
+    },
+    clearStoredCommentPreviewFloatPos(clearRuntime = true) {
+      if (clearRuntime) {
+        QR.previewFloatPos = null;
+      }
+      Conf['Comment Preview Float Position'] = {};
+      $.set('Comment Preview Float Position', {});
+    },
+    ensureCommentPreviewStartMode() {
+      const defaultMode = QR.commentPreviewDefaultMode();
+      if (QR.commentPreviewModeInitialized && QR.commentPreviewDefaultModeApplied === defaultMode)
+        return;
+      QR.commentPreviewModeInitialized = true;
+      QR.commentPreviewDefaultModeApplied = defaultMode;
+      const wantedMode = defaultMode === 'remember' ? QR.commentPreviewLastMode() : defaultMode;
+      const savedFloatPos = Conf['Comment Preview Remember Float Position']
+        ? QR.parseCommentPreviewFloatPos(Conf['Comment Preview Float Position'])
+        : null;
+      // "Remember Floating Position" is an explicit request to reopen at the dragged
+      // position. Keep inline as the only default mode that overrides that saved float.
+      QR.commentPreviewRestoreDetachedFloat =
+        wantedMode === 'detached' || (defaultMode === 'attached' && !!savedFloatPos);
+      if (wantedMode === 'inline' && QR.canActuallyShowThreadPreview()) {
+        QR.previewInline = true;
+        return;
+      }
+      QR.previewInline = false;
+      if (QR.commentPreviewRestoreDetachedFloat) {
+        const pos = QR.rememberedCommentPreviewFloatPos();
+        if (pos && QR.previewFloat) {
+          QR.previewFloat.style.left = pos.left;
+          QR.previewFloat.style.top = pos.top;
+          QR.previewFloat.style.right = '';
+          QR.previewFloat.style.bottom = '';
+          QR.previewFloat.dataset.userDragged = 'true';
+          QR.previewFloat.title = 'Double-click to attach to QR';
+        }
+      } else {
+        QR.previewFloatPos = null;
+        if (QR.previewFloat) {
+          delete QR.previewFloat.dataset.userDragged;
+          QR.previewFloat.removeAttribute('title');
+        }
+      }
+    },
+    refreshCommentPreview() {
+      // When the QR is closed (hidden), never (re)spawn a preview — tear it down instead.
+      // close() removes the previews and then creates a fresh blank post, whose load()
+      // calls back in here; without this guard the floating/inline preview reappears,
+      // orphaned under the now-hidden QR. autohide uses a class (not the hidden prop),
+      // so this only triggers on a real close.
+      if (!QR.nodes?.el || QR.nodes.el.hidden) {
+        QR.removeThreadPreviewPost();
+        QR.removeFloatingPreview();
+        return;
+      }
+      const wantThread = QR.usingThreadPreview();
+      const wantFloat = QR.usingFloatingPreview();
+      if (wantThread) {
+        QR.removeFloatingPreview();
+        QR.updateThreadPreviewPost();
+      } else if (wantFloat) {
+        QR.removeThreadPreviewPost();
+        QR.updateFloatingPreview();
+      } else if (Conf['Comment Preview']) {
+        QR.removeThreadPreviewPost();
+        QR.removeFloatingPreview();
+        QR.updateComPreview();
+      } else {
+        QR.removeThreadPreviewPost();
+        QR.removeFloatingPreview();
+      }
+    },
     applyCommentPreviewSettings() {
       if (!QR.nodes?.el || !QR.nodes?.com)
         return;
       const { classList } = QR.nodes.el;
       const enabled = !!Conf['Comment Preview'];
-      const pos = ['below', 'right', 'left'].includes(Conf['Comment Preview Position']) ? Conf['Comment Preview Position'] : 'below';
-      classList.toggle('has-com-preview', enabled);
+      if (!Conf['Comment Preview Remember Float Position'] && QR.parseCommentPreviewFloatPos(Conf['Comment Preview Float Position'])) {
+        QR.clearStoredCommentPreviewFloatPos(false);
+      }
+      if (enabled) {
+        QR.ensureCommentPreviewStartMode();
+      }
+      const isThread = QR.usingThreadPreview();
+      const isFloating = QR.usingFloatingPreview();
+      // The modern preview is always inline or floating; the legacy compact in-QR box is
+      // never used. Defensively clear any stale legacy classes and mark the inline state.
+      classList.toggle('has-com-preview', false);
+      classList.remove('com-preview-below', 'com-preview-right', 'com-preview-left', 'com-preview-thread');
+      if (isThread) {
+        classList.add('com-preview-thread');
+      }
       QR.nodes.previewToggle?.classList.toggle('enabled', enabled);
       QR.nodes.previewToggle?.setAttribute('aria-pressed', enabled ? 'true' : 'false');
       if (QR.nodes.previewToggle) {
         QR.nodes.previewToggle.hidden = Conf['Show Comment Preview Header Icon'] === false;
       }
-      classList.remove('com-preview-below', 'com-preview-right', 'com-preview-left');
-      classList.add(`com-preview-${pos}`);
+      // Cleanup when disabled or style switched
+      if (!enabled || !isThread) {
+        QR.stopInplaceFollow();
+        QR.removeThreadPreviewPost();
+      }
+      if (!enabled || !isFloating) {
+        QR.removeFloatingPreview();
+      }
       if (enabled) {
         if (!QR.commentPreviewInputBound) {
           $.on(QR.nodes.com, 'input', QR.updateComPreview);
           QR.commentPreviewInputBound = true;
         }
-        QR.updateComPreview();
+        QR.ensurePersonaPreviewListeners();
+        if (isThread) {
+          QR.updateThreadPreviewPost();
+        } else if (isFloating) {
+          QR.updateFloatingPreview();
+        } else {
+          QR.updateComPreview();
+        }
       } else if (QR.commentPreviewInputBound) {
         $.off(QR.nodes.com, 'input', QR.updateComPreview);
         QR.commentPreviewInputBound = false;
       }
+    },
+    personaPreviewListenersBound: false,
+    ensurePersonaPreviewListeners() {
+      if (QR.personaPreviewListenersBound || !QR.nodes)
+        return;
+      const fields = [QR.nodes.name, QR.nodes.sub, QR.nodes.email].filter(Boolean);
+      for (const f of fields) {
+        $.on(f, 'input', QR.onPersonaFieldInputForPreview);
+        $.on(f, 'change', QR.onPersonaFieldInputForPreview);
+      }
+      if (QR.nodes.thread) {
+        $.on(QR.nodes.thread, 'change', QR.onQRThreadChangeForPreview);
+      }
+      // Also react to file changes on the selected post (attach/remove/spoiler/filename edits)
+      $.on(d, 'QRSetFile', QR.onQRFileEventForPreview);
+      $.on(d, 'QRFileRemoved', QR.onQRFileEventForPreview); // best-effort; we also call refresh explicitly from post code
+      QR.personaPreviewListenersBound = true;
+    },
+    onPersonaFieldInputForPreview() {
+      QR.refreshCommentPreview();
+    },
+    onQRFileEventForPreview() {
+      QR.refreshCommentPreview();
+    },
+    onQRThreadChangeForPreview() {
+      // Target thread changed (replying to a different thread or "new thread").
+      // The shouldShow check inside update will clean it up if it no longer applies.
+      QR.refreshCommentPreview();
+    },
+    onPostsInsertedPreview() {
+      QR.repositionThreadPreviewPost();
+      // Thread content may have just been inserted (e.g. opening a thread from catalog/index).
+      // Re-evaluate whether we can/should show the "in thread" preview vs floating.
+      if (QR.nodes?.el)
+        QR.refreshCommentPreview();
+    },
+    // --- Thread (literal) preview post management ---
+    getThreadPreviewRoot() {
+      // The thread container that holds reply posts (same place ThreadUpdater appends new posts).
+      const threadEl = $(g.SITE?.selectors?.thread || '.thread');
+      if (threadEl)
+        return threadEl;
+      // Very late fallback (shouldn't normally be needed).
+      return document.querySelector('.thread');
+    },
+    shouldShowThreadPreview() {
+      if (!QR.usingThreadPreview())
+        return false;
+      return QR.canActuallyShowThreadPreview();
+    },
+    createThreadPreviewPost(includeSideArrows = false) {
+      const container = $.el('div', {
+        className: 'postContainer replyContainer qr-preview-post',
+      });
+      // Build a structure very close to a real reply post (desktop + mobile info)
+      // so both the stitched inline and the floating versions look authentic.
+      // The delete checkbox is included (on desktop postInfo) to match real posts.
+      // We avoid real numeric IDs so nothing treats it as a live post.
+      const now = new Date();
+      const utc = Math.floor(now.getTime() / 1000);
+      const timeStr = now.toLocaleString([], {
+        month: '2-digit', day: '2-digit', year: '2-digit',
+        hour: '2-digit', minute: '2-digit'
+      }).replace(',', '');
+      const sideArrows = includeSideArrows
+        ? `<div class="replacedSideArrows qr-preview-side-arrows" id="sa-preview"><a href="javascript:;" class="hide-post-button hide-reply-button qr-preview-gutter-toggle" title="Undock preview"><span class="stub-icon">${Icon.get('squareMinus')}</span></a></div>`
+        : '';
+      container.innerHTML = `
+   ${sideArrows}
+   <div class="post reply" id="p-preview">
+    <div class="postInfoM mobile" id="pim-preview">
+     <input type="checkbox" name="preview" value="delete">
+     <span class="nameBlock"><span class="name">Anonymous</span><br></span>
+     <span class="dateTime postNum" data-utc="${utc}">
+      <time datetime="${now.toISOString()}">${timeStr}</time>
+      <a href="javascript:;" rel="nofollow" title="Link to this post">No.</a><span class="qr-preview-inline-toggle" role="button" tabindex="0" title="Dock preview into the thread">preview</span>
+     </span>
+    </div>
+    <div class="postInfo desktop" id="pi-preview">
+     <input type="checkbox" name="preview" value="delete">
+     <span class="nameBlock">
+      <span class="name" itemprop="author" itemscope="" itemtype="https://schema.org/Person">
+       <span itemprop="name">Anonymous</span>
+      </span>
+     </span>
+     <span class="dateTime" data-utc="${utc}" title="just now">${timeStr}</span>&nbsp;
+     <span class="postNum desktop">
+      <a href="javascript:;" rel="nofollow" title="Link to this post">No.</a><span class="qr-preview-inline-toggle" role="button" tabindex="0" title="Dock preview into the thread">preview</span>
+     </span>
+    </div>
+    <blockquote class="postMessage" id="m-preview" itemprop="text"></blockquote>
+   </div>
+  `;
+      container.dataset.previewPost = 'true';
+      QR.refreshInlineToggleLabel(container);
+      return container;
+    },
+    // The dock toggle IS the "preview" link itself (no separate icon). Its label states the
+    // action a click performs: "dock preview" while floating, "undock preview" while docked
+    // inline. Outside a thread there's nothing to stitch into, so it falls back to a plain,
+    // non-actionable "preview" label (the click handler also no-ops to floating there).
+    refreshInlineToggleLabel(container) {
+      const inThreadView = g.VIEW === 'thread';
+      const toFloat = QR.previewInline; // currently inline -> next click pops back out to floating
+      for (const link of $$('.qr-preview-inline-toggle', container)) {
+        if (!inThreadView) {
+          link.textContent = 'preview';
+          link.title = 'Comment preview';
+          link.classList.toggle('is-dockable', false);
+          continue;
+        }
+        link.textContent = toFloat ? 'undock preview' : 'dock preview';
+        link.title = toFloat
+          ? 'Undock: pop the preview back out to a floating window'
+          : 'Dock the preview into the thread';
+        link.classList.toggle('is-dockable', true);
+      }
+    },
+    updateThreadPreviewPost() {
+      if (!QR.shouldShowThreadPreview()) {
+        QR.removeThreadPreviewPost();
+        return;
+      }
+      // Ensure we don't leave a stale floating preview when the inline one is active.
+      QR.removeFloatingPreview();
+      const root = QR.getThreadPreviewRoot();
+      if (!root) {
+        // No thread root yet (e.g. very early init); try again shortly.
+        setTimeout(() => QR.updateThreadPreviewPost(), 120);
+        return;
+      }
+      const isNew = !QR.previewPost;
+      if (isNew) {
+        QR.previewPost = QR.createThreadPreviewPost(true);
+        // Append; placement below depends on the chosen inline behavior.
+        $.add(root, QR.previewPost);
+      }
+      QR.populatePreviewPost(QR.previewPost);
+      if (Conf['Comment Preview Inline Behavior'] === 'inplace') {
+        // Insert the preview after the reply nearest the bottom of the viewport and keep
+        // it there as the user scrolls — no page jump.
+        QR.startInplaceFollow();
+      } else {
+        // 'scroll' (default): keep it stitched at the very end and jump there so the user
+        // sees the most literal end-of-thread result.
+        QR.stopInplaceFollow();
+        QR.repositionThreadPreviewPost();
+        if (isNew) {
+          QR.previewPost.scrollIntoView({ behavior: 'smooth', block: 'end' });
+        }
+      }
+    },
+    // Shared population for any preview post shell (thread or floating).
+    populatePreviewPost(container) {
+      const postEl = $('.post', container);
+      // Prefer the desktop postInfo for name/date so we match real desktop rendering.
+      const desktopInfo = $('.postInfo.desktop', container) || container;
+      const nameBlock = $('.nameBlock', desktopInfo) || $('.nameBlock', container);
+      const dateEl = $('.dateTime', desktopInfo) || $('.dateTime', container);
+      const msg = $('.postMessage', container);
+      // Persona (name / subject / trip etc). Keep it simple and literal-ish.
+      const nameVal = (QR.nodes.name?.value || '').trim() || 'Anonymous';
+      const subVal = (QR.nodes.sub?.value || '').trim();
+      const emailVal = (QR.nodes.email?.value || '').trim();
+      let nameHTML = `<span class="name">${E(nameVal)}</span>`;
+      if (subVal) {
+        const subj = $.el('span', { className: 'subject', textContent: subVal });
+        if (nameBlock.parentNode) {
+          const existingSub = $('.subject', container);
+          if (existingSub)
+            $.rm(existingSub);
+          $.before(nameBlock, subj);
+        }
+      } else {
+        const existingSub = $('.subject', container);
+        if (existingSub)
+          $.rm(existingSub);
+      }
+      if (emailVal) {
+        nameHTML = `<a href="mailto:${E(emailVal)}" class="useremail">${nameHTML}</a>`;
+      }
+      nameBlock.innerHTML = nameHTML;
+      // Timestamp
+      const now = new Date();
+      dateEl.textContent = now.toLocaleString([], { month: '2-digit', day: '2-digit', year: '2-digit', hour: '2-digit', minute: '2-digit' });
+      // The actual preview content
+      msg.innerHTML = QR.renderComPreview(QR.nodes.com.value || '');
+      if (g.BOARD.config.math_tags && /\[(math|eqn)\]/.test(QR.nodes.com.value || '')) {
+        QR.typesetMathjax(msg);
+      }
+      // Preserve typed newlines. Do not enable soft-breaking for long unspaced runs:
+      // that creates the visible "wrap, then jump back" while the width sync catches up.
+      msg.style.whiteSpace = 'pre-wrap';
+      msg.style.overflowWrap = 'normal';
+      msg.style.wordBreak = 'normal';
+      // Light file indicator
+      QR.updatePreviewFileIndicator(container, postEl);
+      QR.syncFloatingPreviewWidth(container);
+      // Keep the inline-toggle arrow pointing the right way for the current mode.
+      QR.refreshInlineToggleLabel(container);
+    },
+    syncFloatingPreviewWidth(container) {
+      const float = container.closest('.qr-preview-float');
+      const shell = container.closest('.qr-preview-post');
+      const reply = $('.reply', container);
+      if (!reply)
+        return;
+      const measureRoot = $.el('div', {
+        className: float?.className || '',
+        style: 'position:fixed;visibility:hidden;pointer-events:none;left:-10000px;top:0;width:auto;max-width:none;z-index:-1;'
+      });
+      const cloneShell = (shell || container).cloneNode(true);
+      cloneShell.style.width = 'auto';
+      cloneShell.style.maxWidth = 'none';
+      const cloneReply = $('.reply', cloneShell);
+      if (cloneReply) {
+        cloneReply.style.width = 'auto';
+        cloneReply.style.maxWidth = 'none';
+        cloneReply.style.display = 'inline-block';
+      }
+      const cloneMsg = $('.postMessage', cloneShell);
+      if (cloneMsg) {
+        cloneMsg.style.whiteSpace = 'pre';
+        cloneMsg.style.overflowWrap = 'normal';
+        cloneMsg.style.wordBreak = 'normal';
+        cloneMsg.style.maxWidth = 'none';
+      }
+      $.add(measureRoot, cloneShell);
+      $.add(d.body, measureRoot);
+      const px = (value) => parseFloat(value) || 0;
+      const measuredWidth = (el) => {
+        if (!el)
+          return 0;
+        const style = getComputedStyle(el);
+        return Math.max(el.scrollWidth, el.getBoundingClientRect().width, px(style.width), px(style.minWidth));
+      };
+      const horizontalExtras = (el, includePadding = false) => {
+        if (!el)
+          return 0;
+        const style = getComputedStyle(el);
+        let total = px(style.marginLeft) + px(style.marginRight);
+        if (includePadding) {
+          total += px(style.paddingLeft) + px(style.paddingRight) +
+            px(style.borderLeftWidth) + px(style.borderRightWidth);
+        }
+        return total;
+      };
+      const cloneThumb = $('.fileThumb', cloneShell);
+      const cloneFileText = $('.fileText', cloneShell);
+      const messageWidth = Math.ceil(measuredWidth(cloneMsg));
+      const thumbWidth = cloneThumb
+        ? Math.ceil(measuredWidth(cloneThumb) + horizontalExtras(cloneThumb))
+        : 0;
+      const fileTextWidth = cloneFileText
+        ? Math.ceil(measuredWidth(cloneFileText) + horizontalExtras(cloneFileText))
+        : 0;
+      const replyExtras = horizontalExtras(cloneReply, true);
+      const sideBySideWidth = thumbWidth + messageWidth + horizontalExtras(cloneMsg) + replyExtras;
+      const natural = Math.ceil(Math.max(measuredWidth(cloneReply), fileTextWidth + replyExtras, sideBySideWidth));
+      $.rm(measureRoot);
+      const visibleMsg = $('.postMessage', container);
+      const setWrapping = (isCapped) => {
+        if (!visibleMsg)
+          return;
+        visibleMsg.style.overflowWrap = isCapped ? 'anywhere' : 'normal';
+        visibleMsg.style.wordBreak = isCapped ? 'break-word' : 'normal';
+      };
+      if (!float) {
+        const minInlineWidth = 180;
+        const viewportPad = 8;
+        const shellRect = shell?.getBoundingClientRect();
+        const parentRect = shell?.parentElement?.getBoundingClientRect();
+        const gutter = shell ? $('.replacedSideArrows, .sideArrows', shell) : null;
+        const gutterRect = gutter?.getBoundingClientRect();
+        const gutterChild = gutter?.firstElementChild;
+        const gutterChildRect = gutterChild?.getBoundingClientRect();
+        const gutterVisualRight = Math.max(gutterRect?.right || 0, gutterChildRect?.right || 0);
+        const gutterRight = gutterVisualRight
+          ? gutterVisualRight + horizontalExtras(gutter) + horizontalExtras(gutterChild)
+          : 0;
+        const replyLeft = Math.max(viewportPad, gutterRight, shellRect?.left || 0);
+        const rightEdge = Math.min(window.innerWidth - viewportPad, parentRect?.right || window.innerWidth - viewportPad);
+        const inlineCap = Math.max(minInlineWidth, Math.floor(rightEdge - replyLeft));
+        const isCapped = natural > inlineCap;
+        setWrapping(isCapped);
+        if (shell)
+          shell.style.width = '';
+        reply.style.width = '';
+        reply.style.maxWidth = `${inlineCap}px`;
+        return;
+      }
+      const minFloatWidth = 180;
+      const viewportPad = 8;
+      const attachedLoc = float.dataset.userDragged === 'true' ? '' : float.dataset.attachLocation || '';
+      const qrRect = attachedLoc && QR.nodes?.el ? QR.nodes.el.getBoundingClientRect() : null;
+      const viewportWidth = d.documentElement.clientWidth || window.innerWidth;
+      let viewportCap;
+      if (qrRect && attachedLoc === 'left') {
+        viewportCap = Math.max(minFloatWidth, Math.floor(qrRect.left - viewportPad - 2));
+      } else if (qrRect && attachedLoc === 'right') {
+        viewportCap = Math.max(minFloatWidth, Math.floor(viewportWidth - qrRect.right - viewportPad - 2));
+      } else if (qrRect && (attachedLoc === 'top' || attachedLoc === 'bottom')) {
+        viewportCap = Math.max(minFloatWidth, Math.floor(viewportWidth - Math.max(viewportPad, qrRect.left) - viewportPad));
+      } else {
+        const floatLeft = float.getBoundingClientRect().left || px(float.style.left);
+        viewportCap = Math.max(minFloatWidth, Math.floor(viewportWidth - Math.max(viewportPad, floatLeft) - viewportPad));
+      }
+      const isCapped = natural > viewportCap;
+      const width = Math.max(minFloatWidth, Math.min(natural, viewportCap));
+      setWrapping(isCapped);
+      float.style.width = `${width}px`;
+      if (shell)
+        shell.style.width = `${width}px`;
+      reply.style.maxWidth = 'none';
+      reply.style.width = `${width}px`;
+      if (qrRect && attachedLoc) {
+        QR.applyFloatingPreviewAttachedPosition(float, attachedLoc, qrRect);
+      }
+    },
+    // Render (or update) an attached file as a realistic post file block (thumb + text)
+    // inside the preview post container. Supports images and videos with blob previews.
+    // Non-media files get a simple fileText line. Cleans up previous blob URLs.
+    updatePreviewFileIndicator(rootForQuery, postElForAppend) {
+      const container = rootForQuery;
+      const sel = QR.selected;
+      const file = sel && sel.file;
+      const hasPending = !!(sel && sel.pendingFile);
+      const hasFile = !!file || hasPending;
+      const targetParent = postElForAppend || $('.post', container) || container;
+      const msg = $('.postMessage', targetParent);
+      const fname = (QR.nodes?.filename?.value || (file && file.name) || (hasPending ? 'file' : 'file')).toString();
+      const sizeStr = file ? ($.bytesToString?.(file.size) || '') : (hasPending ? '' : '');
+      const fileKey = hasFile
+        ? [
+          fname,
+          file?.name || '',
+          file?.size || 0,
+          file?.lastModified || 0,
+          file?.type || '',
+          hasPending ? 'pending' : 'ready'
+        ].join('\x1f')
+        : '';
+      const removePreviewFileBlocks = () => {
+        $$('.qr-preview-file-block, .qr-preview-file-note', container).forEach((el) => {
+          $$('img, video', el).forEach((m) => {
+            if (m.src && m.src.startsWith('blob:')) {
+              try {
+                URL.revokeObjectURL(m.src);
+              } catch { }
+            }
+          });
+          if (el.dataset.previewBlobUrl) {
+            try {
+              URL.revokeObjectURL(el.dataset.previewBlobUrl);
+            } catch { }
+          }
+          $.rm(el);
+        });
+        $$('.qr-preview-file-thumb', container).forEach((el) => {
+          if (!el.closest('.qr-preview-file-block')) {
+            if (el.dataset.previewBlobUrl) {
+              try {
+                URL.revokeObjectURL(el.dataset.previewBlobUrl);
+              } catch { }
+            }
+            $.rm(el);
+          }
+        });
+      };
+      if (!hasFile) {
+        removePreviewFileBlocks();
+        return;
+      }
+      const existingBlock = $('.qr-preview-file-block', container);
+      if (existingBlock?.dataset.previewFileKey === fileKey) {
+        if (msg && existingBlock.nextElementSibling !== msg) {
+          $.before(msg, existingBlock);
+        }
+        return;
+      }
+      // Rebuild only when the selected file/filename actually changes. Recreating the
+      // <img> on every keystroke temporarily gives the floated thumbnail zero width,
+      // making the unbreakable comment line drop under it before the width sync catches up.
+      removePreviewFileBlocks();
+      // Caption ("File: name (size)") and thumb use the same sibling structure as a
+      // real 4chan post: .file before blockquote.postMessage.
+      const block = $.el('div', { className: 'file qr-preview-file-block' });
+      block.dataset.previewFileKey = fileKey;
+      const fileText = $.el('div', { className: 'fileText' });
+      fileText.innerHTML = `File: <a href="javascript:;" class="qr-preview-file-link">${E(fname)}</a>${sizeStr ? ` (${E(sizeStr)})` : ''}`;
+      $.add(block, fileText);
+      const isImage = file && /^image\//.test(file.type);
+      const isVideo = file && /^video\//.test(file.type);
+      let thumbLink = null;
+      if ((isImage || isVideo) && file) {
+        thumbLink = $.el('a', { className: 'fileThumb qr-preview-file-thumb' });
+        thumbLink.style.minWidth = '125px';
+        let media;
+        const url = URL.createObjectURL(file);
+        // Tag the thumb so removal can find/revoke if needed (belt + suspenders).
+        thumbLink.dataset.previewBlobUrl = url;
+        if (isVideo) {
+          media = $.el('video', {
+            src: url,
+            muted: true,
+            loop: true,
+            playsInline: true,
+            // Reasonable preview size; real CSS will constrain too.
+            style: 'max-width: 125px; max-height: 125px; display: block;'
+          });
+        } else {
+          media = $.el('img', {
+            src: url,
+            alt: fname,
+            style: 'max-width: 125px; max-height: 125px; display: block;'
+          });
+        }
+        $.on(media, isVideo ? 'loadedmetadata' : 'load', () => QR.syncFloatingPreviewWidth(container));
+        $.add(thumbLink, media);
+      }
+      if (thumbLink)
+        $.add(block, thumbLink);
+      if (msg && msg.parentNode) {
+        $.before(msg, block);
+      } else {
+        $.add(targetParent, block);
+      }
+    },
+    repositionThreadPreviewPost() {
+      if (!QR.previewPost)
+        return;
+      // In 'inplace' mode the scroll-follower owns placement; don't fight it.
+      if (Conf['Comment Preview Inline Behavior'] === 'inplace')
+        return;
+      const root = QR.getThreadPreviewRoot();
+      if (!root)
+        return;
+      // If it's not the last child, move it to the end.
+      if (root.lastElementChild !== QR.previewPost) {
+        $.add(root, QR.previewPost);
+      }
+    },
+    removeThreadPreviewPost() {
+      QR.stopInplaceFollow();
+      if (QR.previewPost && QR.previewPost.parentNode) {
+        QR.revokePreviewFileBlobs(QR.previewPost);
+        $.rm(QR.previewPost);
+      }
+      QR.previewPost = null;
+    },
+    // --- Inline 'inplace' follow: keep the stitched preview after the reply nearest the
+    //     bottom of the viewport, relocating it as the user scrolls (no page jump). ---
+    startInplaceFollow() {
+      if (QR._inplaceScrollHandler) {
+        QR.relocateInplacePreview();
+        return;
+      }
+      const handler = () => {
+        if (QR._inplaceRafPending)
+          return;
+        QR._inplaceRafPending = true;
+        requestAnimationFrame(QR.relocateInplacePreview);
+      };
+      QR._inplaceScrollHandler = handler;
+      window.addEventListener('scroll', handler, { passive: true });
+      window.addEventListener('resize', handler, { passive: true });
+      // Seed the initial position immediately.
+      QR.relocateInplacePreview();
+    },
+    stopInplaceFollow() {
+      if (!QR._inplaceScrollHandler)
+        return;
+      window.removeEventListener('scroll', QR._inplaceScrollHandler);
+      window.removeEventListener('resize', QR._inplaceScrollHandler);
+      QR._inplaceScrollHandler = undefined;
+      QR._inplaceRafPending = false;
+    },
+    relocateInplacePreview() {
+      QR._inplaceRafPending = false;
+      if (!QR.previewPost || !QR.usingThreadPreview() || Conf['Comment Preview Inline Behavior'] !== 'inplace') {
+        QR.stopInplaceFollow();
+        return;
+      }
+      const root = QR.getThreadPreviewRoot();
+      if (!root)
+        return;
+      // CSS selector for real (non-clone) replies; replyContainer in SITE is an XPath.
+      const sel = g.SITE?.selectors?.replyOriginal || '.replyContainer:not([data-clone])';
+      const vh = window.innerHeight;
+      let target = null;
+      // Last reply whose top is still above the bottom of the viewport = nearest the fold.
+      for (const reply of $$(sel, root)) {
+        if (reply === QR.previewPost)
+          continue;
+        if (reply.getBoundingClientRect().top < vh) {
+          target = reply;
+        } else {
+          break;
+        }
+      }
+      if (target) {
+        // Only move when needed, to avoid layout thrash every frame.
+        if (target.nextElementSibling !== QR.previewPost) {
+          $.after(target, QR.previewPost);
+        }
+      } else if (root.firstElementChild && root.firstElementChild !== QR.previewPost) {
+        // Above the first reply: sit at the very top.
+        $.prepend(root, QR.previewPost);
+      }
+      QR.syncFloatingPreviewWidth(QR.previewPost);
+    },
+    // --- Floating preview (just the post, no window frame, draggable, positioned near QR initially) ---
+    createFloatingPreview() {
+      // The root IS the floating post preview itself (no dialog chrome, no .move bar, no extra window).
+      // It is literally a realistic post (as it would appear in the thread) but taken out of flow,
+      // positioned near the QR, and draggable by its header.
+      const float = $.el('div', {
+        className: 'qr-preview-float',
+        style: 'position:fixed;'
+      });
+      // Create the post shell WITHOUT side arrows (floating standalone post).
+      const shell = QR.createThreadPreviewPost(false);
+      $.add(float, shell);
+      $.add(d.body, float);
+      // Restore a remembered drag position (e.g. undocking from inline) so the float
+      // reappears where the user last left it instead of jumping back to the QR.
+      const rememberedPos = QR.rememberedCommentPreviewFloatPos();
+      if (rememberedPos) {
+        QR.previewFloatPos = rememberedPos;
+        float.style.left = rememberedPos.left;
+        float.style.top = rememberedPos.top;
+        float.style.right = '';
+        float.style.bottom = '';
+        float.dataset.userDragged = 'true';
+        float.title = 'Double-click to attach to QR';
+      }
+      // Attach drag behavior (grab the postInfo area to move the whole preview).
+      QR.attachDragToFloatingPreview(float);
+      return float;
+    },
+    updateFloatingPreview() {
+      if (!QR.usingFloatingPreview()) {
+        QR.removeFloatingPreview();
+        return;
+      }
+      // Ensure we don't leave a stale inline thread preview when the floating one is active.
+      QR.removeThreadPreviewPost();
+      if (!QR.previewFloat) {
+        QR.previewFloat = QR.createFloatingPreview();
+      }
+      QR.previewFloat.hidden = false;
+      // Position or re-position against the configured QR side unless the user dragged it away.
+      if (QR.nodes?.el && QR.previewFloat.dataset.userDragged !== 'true') {
+        QR.positionFloatingPreviewNearQR(QR.previewFloat);
+      }
+      // Find the post shell we created and populate it.
+      const postShell = $('.qr-preview-post', QR.previewFloat);
+      if (postShell) {
+        QR.populatePreviewPost(postShell);
+      }
+    },
+    resolvedCommentPreviewAttachLocation() {
+      const preferred = QR.normalizeCommentPreviewAttachLocation(Conf['Comment Preview Attach Location']);
+      if (preferred !== 'auto')
+        return preferred;
+      const blocked = new Set();
+      if (Conf['Thread Watcher Attached']) {
+        const watcherLoc = Conf['Thread Watcher Attach Location'];
+        if (watcherLoc === 'bottom' || watcherLoc === 'top' || watcherLoc === 'left' || watcherLoc === 'right') {
+          blocked.add(watcherLoc);
+        }
+      }
+      return ['bottom', 'right', 'left', 'top'].find(loc => !blocked.has(loc)) || 'bottom';
+    },
+    applyFloatingPreviewAttachedPosition(float, loc, qrRect) {
+      const viewportWidth = d.documentElement.clientWidth || window.innerWidth;
+      const viewportHeight = d.documentElement.clientHeight || window.innerHeight;
+      float.style.position = 'fixed';
+      if (loc === 'top') {
+        float.style.left = `${qrRect.left}px`;
+        float.style.bottom = `${viewportHeight - qrRect.top}px`;
+        float.style.top = '';
+        float.style.right = '';
+      } else if (loc === 'left') {
+        float.style.top = `${qrRect.top}px`;
+        float.style.right = `${viewportWidth - qrRect.left + 2}px`;
+        float.style.left = '';
+        float.style.bottom = '';
+      } else if (loc === 'right') {
+        float.style.top = `${qrRect.top}px`;
+        float.style.left = `${qrRect.right + 2}px`;
+        float.style.right = '';
+        float.style.bottom = '';
+      } else {
+        float.style.left = `${qrRect.left}px`;
+        float.style.top = `${qrRect.bottom}px`;
+        float.style.right = '';
+        float.style.bottom = '';
+      }
+    },
+    positionFloatingPreviewNearQR(float) {
+      if (!QR.nodes?.el || !float)
+        return;
+      const qrRect = QR.nodes.el.getBoundingClientRect();
+      const loc = QR.resolvedCommentPreviewAttachLocation();
+      float.dataset.attachLocation = loc;
+      QR.applyFloatingPreviewAttachedPosition(float, loc, qrRect);
+    },
+    repositionFloatingPreview() {
+      const float = QR.previewFloat;
+      if (float && QR.nodes?.el && float.dataset.userDragged !== 'true') {
+        QR.positionFloatingPreviewNearQR(float);
+      }
+      const postShell = float ? $('.qr-preview-post', float) : null;
+      if (postShell) {
+        QR.syncFloatingPreviewWidth(postShell);
+      }
+      if (QR.previewPost) {
+        QR.syncFloatingPreviewWidth(QR.previewPost);
+      }
+    },
+    attachDragToFloatingPreview(float) {
+      let dragging = false;
+      let startClientX = 0;
+      let startClientY = 0;
+      let startLeft = 0;
+      let startTop = 0;
+      let moved = false;
+      let widthSyncRaf = 0;
+      const scheduleWidthSync = () => {
+        if (widthSyncRaf)
+          return;
+        widthSyncRaf = requestAnimationFrame(() => {
+          widthSyncRaf = 0;
+          const postShell = $('.qr-preview-post', float);
+          if (postShell) {
+            QR.syncFloatingPreviewWidth(postShell);
+          }
+        });
+      };
+      const onMouseDown = (e) => {
+        // The entire floating preview is grabbable for dragging (including the content area / postMessage),
+        // not just the header. This matches the desired behavior for positioning the preview anywhere.
+        if (!float.contains(e.target))
+          return;
+        dragging = true;
+        moved = false;
+        startClientX = e.clientX;
+        startClientY = e.clientY;
+        // Use viewport rect because we are position:fixed.
+        const rect = float.getBoundingClientRect();
+        startLeft = rect.left;
+        startTop = rect.top;
+        // Keep it fixed while the user drags it around the viewport.
+        float.style.position = 'fixed';
+        document.addEventListener('mousemove', onMouseMove, { passive: false });
+        document.addEventListener('mouseup', onMouseUp, { once: true, passive: false });
+        e.preventDefault();
+        e.stopPropagation();
+      };
+      const onMouseMove = (e) => {
+        if (!dragging)
+          return;
+        e.preventDefault();
+        const dx = e.clientX - startClientX;
+        const dy = e.clientY - startClientY;
+        if (!moved && Math.abs(dx) + Math.abs(dy) < 2)
+          return;
+        moved = true;
+        float.style.left = `${startLeft + dx}px`;
+        float.style.top = `${startTop + dy}px`;
+        float.style.right = '';
+        float.style.bottom = '';
+        delete float.dataset.attachLocation;
+        scheduleWidthSync();
+      };
+      const onMouseUp = () => {
+        dragging = false;
+        document.removeEventListener('mousemove', onMouseMove);
+        if (moved) {
+          // Mark so future content updates don't reset the user's chosen position.
+          float.dataset.userDragged = 'true';
+          float.title = 'Double-click to attach to QR';
+          QR.setCommentPreviewFloatPos({ left: float.style.left, top: float.style.top });
+          QR.storeCommentPreviewLastMode('detached');
+          scheduleWidthSync();
+        }
+      };
+      float.addEventListener('mousedown', onMouseDown);
+      // Double-click re-attaches the float to the QR (clears the dragged position).
+      // (mousedown preventDefault already blocks text selection, so dblclick is free.)
+      float.addEventListener('dblclick', (e) => {
+        if (e.target?.closest?.('.qr-preview-inline-toggle'))
+          return;
+        delete float.dataset.userDragged;
+        float.removeAttribute('title');
+        QR.clearStoredCommentPreviewFloatPos();
+        QR.storeCommentPreviewLastMode('attached');
+        QR.positionFloatingPreviewNearQR(float);
+        scheduleWidthSync();
+      });
+    },
+    removeFloatingPreview() {
+      if (QR.previewFloat) {
+        // Snapshot a user-dragged position so a later re-show (e.g. undocking from inline)
+        // returns the float to where it was rather than snapping back to the QR.
+        if (QR.previewFloat.dataset.userDragged === 'true') {
+          QR.setCommentPreviewFloatPos({ left: QR.previewFloat.style.left, top: QR.previewFloat.style.top });
+        }
+        if (QR.previewFloat.parentNode) {
+          QR.revokePreviewFileBlobs(QR.previewFloat);
+          $.rm(QR.previewFloat);
+        }
+      }
+      QR.previewFloat = null;
+    },
+    // Revoke any blob: URLs we created for file thumbs inside a preview post (thread or floating).
+    revokePreviewFileBlobs(root) {
+      if (!root)
+        return;
+      $$('img, video', root).forEach((m) => {
+        const src = m.src || m.currentSrc;
+        if (src && src.startsWith('blob:')) {
+          try {
+            URL.revokeObjectURL(src);
+          } catch { }
+        }
+      });
+      // Also check our tagged thumb links
+      $$('[data-preview-blob-url]', root).forEach((el) => {
+        const u = el.dataset.previewBlobUrl;
+        if (u && u.startsWith('blob:')) {
+          try {
+            URL.revokeObjectURL(u);
+          } catch { }
+        }
+        delete el.dataset.previewBlobUrl;
+      });
     },
     comPreviewTagWraps: {
       spoiler: { wrap: (i) => `<s>${i}</s>`, format: true },
@@ -25549,6 +27063,59 @@ aero|asia|biz|cat|com|coop|dance|info|int|jobs|mobi|moe|museum|name|net|org|post
     comPreviewBoardExtras: {
       mu: ['b', 'i', 'red', 'green', 'blue'],
       qst: ['b', 'i', 'red', 'green', 'blue'],
+    },
+    // Tags whose [tag]…[/tag] markup the current board actually renders. Shared by
+    // the comment-preview renderer and the auto-close-on-type behavior so both agree
+    // on what counts as a "real" tag here.
+    supportedTags() {
+      const config = g.BOARD?.config;
+      if (!config)
+        return [];
+      const names = [];
+      if (config.spoilers)
+        names.push('spoiler');
+      if (config.code_tags)
+        names.push('code');
+      if (config.math_tags)
+        names.push('math', 'eqn');
+      if (config.sjis_tags)
+        names.push('sjis');
+      const extras = QR.comPreviewBoardExtras[g.BOARD.ID] || [];
+      for (const t of extras)
+        if (!names.includes(t))
+          names.push(t);
+      return names;
+    },
+    // When the user finishes typing a supported opening tag (the `]` of `[code]`),
+    // insert the matching closing tag and leave the caret between the two.
+    onAutoCloseTag(e) {
+      if (Conf['Auto-close Tags'] === false)
+        return;
+      // Only react to a literally-typed character, never deletes/replacements. A
+      // synthetic 'input' (no inputType) is allowed through but is caught by the
+      // "already closed" guard below, so it can't recurse.
+      const inputType = e?.inputType;
+      if (inputType && inputType !== 'insertText')
+        return;
+      const ta = QR.nodes?.com;
+      if (!ta)
+        return;
+      const pos = ta.selectionStart;
+      if (pos !== ta.selectionEnd)
+        return; // a selection is active
+      if (ta.value[pos - 1] !== ']')
+        return; // last char typed wasn't `]`
+      const m = ta.value.slice(0, pos).match(/\[([a-z]+)\]$/i);
+      if (!m)
+        return; // not an opening tag (e.g. `[/code]`)
+      const tag = m[1].toLowerCase();
+      if (!QR.supportedTags().includes(tag))
+        return;
+      if (ta.value.slice(pos).startsWith(`[/${tag}]`))
+        return; // already closed
+      ta.value = ta.value.slice(0, pos) + `[/${tag}]` + ta.value.slice(pos);
+      ta.setSelectionRange(pos, pos); // caret between the tags
+      $.event('input', null, ta); // refresh preview / counters
     },
     renderComPreview(text) {
       const config = g.BOARD.config;
@@ -25592,8 +27159,9 @@ aero|asia|biz|cat|com|coop|dance|info|int|jobs|mobi|moe|museum|name|net|org|post
       const withLinks = withQuotes.replace(/(^|[\s(])((?:https?:\/\/|www\.)[^\s<>"']+)/g, (m, prefix, url) => `${prefix}${QR.renderComPreviewLink(url)}`);
       return withLinks.split('\n').map(line => {
         const quotePrefix = line.match(/^(&gt;)+(?!&gt;\/[a-z\d]+\/\d+)/)?.[0];
-        return quotePrefix ? `<span class="quote">${line}</span>` : line;
-      }).join('\n');
+        const content = quotePrefix ? `<span class="quote">${line}</span>` : line;
+        return content;
+      }).join('<br>');
     },
     renderComPreviewQuoteLink(text) {
       const match = text.match(/^&gt;&gt;(?:(\d+)|&gt;\/([a-z\d]+)\/(\d+)?)$/);
@@ -26140,6 +27708,13 @@ aero|asia|biz|cat|com|coop|dance|info|int|jobs|mobi|moe|museum|name|net|org|post
         g.THREADID
         :
           'new';
+      // Sync the model on the current draft post so canActuallyShowThreadPreview sees the right target thread.
+      // (programmatic .value = does not fire 'change', so explicit save is needed; used e.g. on catalog -> thread navigation)
+      if (QR.selected && list) {
+        QR.selected.save(list, true);
+      }
+      // Re-eval preview style (thread vs floating) now that thread context may have changed.
+      QR.refreshCommentPreview();
       return (g.VIEW === 'thread' ? $.addClass : $.rmClass)(QR.nodes.el, 'reply-to-thread');
     },
     dialog() {
@@ -26210,6 +27785,7 @@ aero|asia|biz|cat|com|coop|dance|info|int|jobs|mobi|moe|museum|name|net|org|post
       nodes.email.maxLength = QR.max_email;
       nodes.sub.maxLength = QR.max_sub;
       nodes.com.maxLength = QR.max_comment;
+      QR.disablePersonaFieldAutofill();
       $.on(nodes.autohide, 'change', QR.toggleHide);
       $.on(nodes.close, 'click', QR.close);
       $.on(nodes.status, 'click', QR.submit);
@@ -26296,6 +27872,8 @@ aero|asia|biz|cat|com|coop|dance|info|int|jobs|mobi|moe|museum|name|net|org|post
           $.set('QR Size', this.style.cssText);
         });
       }
+      // Auto-close supported board tags (e.g. [code] → [/code]) as they're typed.
+      $.on(nodes.com, 'input', QR.onAutoCloseTag);
       QR.generatePostableThreadsList();
       QR.persona.load();
       new QR.post(true);
@@ -26306,6 +27884,12 @@ aero|asia|biz|cat|com|coop|dance|info|int|jobs|mobi|moe|museum|name|net|org|post
       $.add(d.body, dialog);
       QR.captcha.setup();
       QR.oekaki.setup();
+      // Observe QR size changes (textarea resize, dump list growth, etc.) so a non-dragged
+      // floating comment preview stays precisely under the QR bottom edge.
+      if (typeof ResizeObserver === 'function' && !QR._qrResizeObs) {
+        QR._qrResizeObs = new ResizeObserver(() => QR.repositionFloatingPreview());
+        QR._qrResizeObs.observe(dialog);
+      }
       // Create a custom event when the QR dialog is first initialized.
       // Use it to extend the QR's functionalities, or for XTRM RICE.
       $.event('QRDialogCreation', null, dialog);
@@ -26550,6 +28134,42 @@ aero|asia|biz|cat|com|coop|dance|info|int|jobs|mobi|moe|museum|name|net|org|post
     },
     updateFlagSelector() {
       QR.nodes?.flag?._syncFlagPicker?.();
+    },
+    disablePersonaFieldAutofill() {
+      if (!QR.nodes) {
+        return;
+      }
+      QR.nodes.form.setAttribute('autocomplete', 'off');
+      const names = {
+        name: 'qr-no-autofill-name',
+        email: 'qr-no-autofill-options',
+        sub: 'qr-no-autofill-subject',
+      };
+      for (const key of ['name', 'email', 'sub']) {
+        const input = QR.nodes[key];
+        if (!input) {
+          continue;
+        }
+        input.name = names[key];
+        input.removeAttribute('list');
+        input.setAttribute('autocomplete', 'off');
+        input.setAttribute('autocapitalize', 'off');
+        input.setAttribute('autocorrect', 'off');
+        input.setAttribute('spellcheck', 'false');
+        input.setAttribute('aria-autocomplete', 'none');
+        input.setAttribute('data-lpignore', 'true');
+        input.setAttribute('data-1p-ignore', 'true');
+        input.setAttribute('data-bwignore', 'true');
+        input.setAttribute('data-protonpass-ignore', 'true');
+        input.setAttribute('data-form-type', 'other');
+        input.readOnly = true;
+        const unlock = () => { input.readOnly = false; };
+        const relock = () => { input.readOnly = true; };
+        $.on(input, 'pointerdown', unlock);
+        $.on(input, 'focus', unlock);
+        $.on(input, 'keydown', unlock);
+        $.on(input, 'blur', relock);
+      }
     },
     submit(e) {
       let captcha, err, filetag;
@@ -27520,8 +29140,9 @@ aero|asia|biz|cat|com|coop|dance|info|int|jobs|mobi|moe|museum|name|net|org|post
       }
     },
     // Auto-saved per-board draft of what's typed in the QR, so it survives a
-    // refresh/close/crash. Typed text + per-post state (subject, spoiler, flag,
-    // thread) are stored under `QR.drafts` as { '<siteID>/<boardID>': { posts } }.
+    // refresh/close/crash. Comment text + per-post state (spoiler, flag, thread)
+    // are stored under `QR.drafts` as { '<siteID>/<boardID>': { posts } }.
+    // Name/options/subject are deliberately not persisted or restored.
     // Attachments (images/videos) are stored separately in IndexedDB via
     // QRFileStore (the JSON layer can't hold blobs) and referenced by id; the
     // total kept per board is capped at FILE_CAP.
@@ -27571,7 +29192,6 @@ aero|asia|biz|cat|com|coop|dance|info|int|jobs|mobi|moe|museum|name|net|org|post
         const posts = QR.posts
           .map(post => ({
           thread: post.thread,
-          sub: post.sub || null,
           com: post.com || null,
           spoiler: post.spoiler ? true : undefined,
           flag: post.flag || undefined,
@@ -27674,7 +29294,6 @@ aero|asia|biz|cat|com|coop|dance|info|int|jobs|mobi|moe|museum|name|net|org|post
             if (QR.drafts.threadValid(draft.thread)) {
               post.thread = draft.thread;
             }
-            post.sub = draft.sub || null;
             post.setComment(draft.com || '');
             if (draft.spoiler) {
               post.spoiler = true;
@@ -27712,45 +29331,29 @@ aero|asia|biz|cat|com|coop|dance|info|int|jobs|mobi|moe|museum|name|net|org|post
           console.error('QR draft restoreFile failed', err);
         }
       },
-      // Discard the saved draft for this board AND empty the live Quick Reply:
-      // every queued post and its attachment is removed from the dump list,
-      // leaving a single blank post.
+      // Discard the current text/attachments and the saved draft for this board.
       discard() {
         clearTimeout(QR.drafts.timeout);
-        // Suspend auto-save so the removals below don't re-persist the draft
-        // we're about to delete.
-        QR.drafts._suspended = true;
-        try {
-          // Drop all but the first post (removes their thumbnails/attachments).
-          for (const p of QR.posts.slice(1)) {
-            delete p._draftFileId;
-            p.rm();
-          }
-          // Reset the remaining (selected) post: clear its file, text and state.
-          const last = QR.posts[0];
-          if (last) {
-            delete last._draftFileId;
-            if (last.file) {
-              last.rmFile();
-            }
-            last.setComment('');
-            last.sub = null;
-            last.spoiler = false;
-            if (last.nodes?.spoiler) {
-              last.nodes.spoiler.checked = false;
-            }
-          }
-          if (QR.nodes?.sub) {
-            QR.nodes.sub.value = '';
-          }
-          if (QR.nodes?.spoiler) {
-            QR.nodes.spoiler.checked = false;
+        for (const p of QR.posts) {
+          delete p._draftFileId;
+        }
+        // Reset every open post (and its attached image) back to a single blank
+        // post, mirroring QR.close()'s reset, so the trash icon clears posts and
+        // images from the window, not just the saved draft.
+        if (QR.nodes) {
+          new QR.post(true);
+          for (const post of QR.posts.splice(0, QR.posts.length - 1)) {
+            post.delete();
           }
           $.rmClass(QR.nodes.el, 'dump');
-        } finally {
-          QR.drafts._suspended = false;
+          if (QR.selected) {
+            QR.selected.setComment('');
+            QR.selected.sub = null;
+            if (QR.nodes.sub) {
+              QR.nodes.sub.value = '';
+            }
+          }
         }
-        // Remove the saved draft + every stored attachment for this board.
         QR.drafts.clearBoardFiles();
         $.get('QR.drafts', dict(), ({ 'QR.drafts': all }) => {
           delete all[QR.drafts.key()];
@@ -27865,6 +29468,9 @@ aero|asia|biz|cat|com|coop|dance|info|int|jobs|mobi|moe|museum|name|net|org|post
         for (var type in QR.persona.types) {
           var arr = QR.persona.types[type];
           var list = $(`#list-${type}`, QR.nodes.el);
+          if (!list) {
+            continue;
+          }
           for (var val of arr) {
             if (val) {
               $.add(list, $.el('option', { textContent: val }));
@@ -27888,7 +29494,6 @@ aero|asia|biz|cat|com|coop|dance|info|int|jobs|mobi|moe|museum|name|net|org|post
       set(post) {
         $.get('QR.persona', {}, function ({ 'QR.persona': persona }) {
           persona = {
-            name: post.name,
             flag: post.flag
           };
           $.set('QR.persona', persona);
@@ -27955,20 +29560,9 @@ aero|asia|biz|cat|com|coop|dance|info|int|jobs|mobi|moe|museum|name|net|org|post
         :
           false);
       QR.persona.get(persona => {
-        this.name = 'name' in QR.persona.always ?
-          QR.persona.always.name
-          : prev ?
-            prev.name
-            :
-              persona.name;
-        this.email = 'email' in QR.persona.always ?
-          QR.persona.always.email
-          :
-            '';
-        this.sub = 'sub' in QR.persona.always ?
-          QR.persona.always.sub
-          :
-            '';
+        this.name = '';
+        this.email = '';
+        this.sub = '';
         if (QR.nodes.flag) {
           this.flag = (() => {
             if (prev) {
@@ -28051,8 +29645,7 @@ aero|asia|biz|cat|com|coop|dance|info|int|jobs|mobi|moe|museum|name|net|org|post
       (this.thread !== 'new' ? $.addClass : $.rmClass)(QR.nodes.el, 'reply-to-thread');
       this.showFileData();
       QR.characterCount();
-      if (Conf['Comment Preview'])
-        QR.updateComPreview();
+      QR.refreshCommentPreview();
     }
     save(input, forced) {
       if (input.type === 'checkbox') {
@@ -28081,7 +29674,6 @@ aero|asia|biz|cat|com|coop|dance|info|int|jobs|mobi|moe|museum|name|net|org|post
           this.saveFilename();
           this.updateFilename();
           break;
-        case 'name':
         case 'flag':
           if (this[name] !== prev) { // only save manual changes, not values filled in by persona settings
             QR.persona.set(this);
@@ -28124,8 +29716,7 @@ aero|asia|biz|cat|com|coop|dance|info|int|jobs|mobi|moe|museum|name|net|org|post
     updateComment() {
       if (this === QR.selected) {
         QR.characterCount();
-        if (Conf['Comment Preview'])
-          QR.updateComPreview();
+        QR.refreshCommentPreview();
       }
       this.nodes.span.textContent = this.com;
       QR.captcha.moreNeeded();
@@ -30226,6 +31817,172 @@ $\
     }
   };
 
+  var nextSettingsDiff = {
+    "_comment": "GENERATED by tools/gen-next-settings-diff.js — do not edit by hand.",
+    "_generatedFrom": {
+      "next": "src/config/Config.ts",
+      "xt": "tools/baseline/xt-Config.js (4chan-XT @ ee5a63846)"
+    },
+    "counts": {
+      "xt": 259,
+      "next": 389,
+      "added": 125,
+      "changed": 2
+    },
+    "added": [
+      "Auto-close Tags",
+      "Catalog Highlight Border Width",
+      "Catalog Highlight Own Background",
+      "Catalog Highlight Own Border Style",
+      "Catalog Highlight Own Border Width",
+      "Catalog Highlight Own Color",
+      "Catalog Highlight Own Dead Link Color",
+      "Catalog Highlight Own Link Color",
+      "Catalog Highlight Own Opacity",
+      "Catalog Highlight Own Posts",
+      "Catalog Highlight Own Quote Color",
+      "Catalog Highlight Own Subject Color",
+      "Catalog Highlight Own Text Color",
+      "Catalog Highlight Own Text Mode",
+      "Catalog Highlight Watched Background",
+      "Catalog Highlight Watched Border Style",
+      "Catalog Highlight Watched Border Width",
+      "Catalog Highlight Watched Color",
+      "Catalog Highlight Watched Dead Link Color",
+      "Catalog Highlight Watched Link Color",
+      "Catalog Highlight Watched Opacity",
+      "Catalog Highlight Watched Quote Color",
+      "Catalog Highlight Watched Subject Color",
+      "Catalog Highlight Watched Text Color",
+      "Catalog Highlight Watched Text Mode",
+      "Catalog Highlight Watched Threads",
+      "Comment Preview",
+      "Comment Preview Attach Location",
+      "Comment Preview Default Mode",
+      "Comment Preview Inline Behavior",
+      "Comment Preview Last Mode",
+      "Comment Preview Position",
+      "Comment Preview Remember Float Position",
+      "Convert X to xcancel",
+      "Convert YouTube to yewtu.be",
+      "Dead Link Text Color",
+      "Download All Media",
+      "Download all media",
+      "Enable Catalog Highlights",
+      "Enable Thread Highlights",
+      "Fetch Ghost Posts",
+      "Gallery Columns",
+      "Gallery Thumbnails Position",
+      "Grid Thumbnails",
+      "Group Hidden Threads By Filter",
+      "Hide Original Post Form",
+      "Highlight Ghost Background",
+      "Highlight Ghost Border Style",
+      "Highlight Ghost Color",
+      "Highlight Ghost Dead Link Color",
+      "Highlight Ghost Edge Width",
+      "Highlight Ghost Link Color",
+      "Highlight Ghost Opacity",
+      "Highlight Ghost Posts",
+      "Highlight Ghost Quote Color",
+      "Highlight Ghost Text Auto",
+      "Highlight Ghost Text Color",
+      "Highlight Ghost Text Mode",
+      "Highlight Own Background",
+      "Highlight Own Border Style",
+      "Highlight Own Color",
+      "Highlight Own Dead Link Color",
+      "Highlight Own Edge Width",
+      "Highlight Own Link Color",
+      "Highlight Own Opacity",
+      "Highlight Own Quote Color",
+      "Highlight Own Text Auto",
+      "Highlight Own Text Color",
+      "Highlight Own Text Mode",
+      "Highlight You Background",
+      "Highlight You Border Style",
+      "Highlight You Color",
+      "Highlight You Dead Link Color",
+      "Highlight You Edge Width",
+      "Highlight You Link Color",
+      "Highlight You Opacity",
+      "Highlight You Quote Color",
+      "Highlight You Text Auto",
+      "Highlight You Text Color",
+      "Highlight You Text Mode",
+      "Link Text Color",
+      "Persistent Download Media",
+      "QR Thumbnail Remove File First",
+      "Quote Text Color",
+      "Remember QR State",
+      "Replace Thumbnails",
+      "Scroll Marker Ghost Color",
+      "Scroll Marker Ghost Match Highlight",
+      "Scroll Marker Ghost Opacity",
+      "Scroll Marker Match Highlights",
+      "Scroll Marker Own Color",
+      "Scroll Marker Own Match Highlight",
+      "Scroll Marker Own Opacity",
+      "Scroll Marker Unread Color",
+      "Scroll Marker Unread Opacity",
+      "Scroll Marker You Color",
+      "Scroll Marker You Match Highlight",
+      "Scroll Marker You Opacity",
+      "Scrollbar Mark Ghost Posts",
+      "Scrollbar Mark Own Posts",
+      "Scrollbar Mark Quotes You",
+      "Scrollbar Mark Unread Line",
+      "Scrollbar Marker Position",
+      "Scrollbar Markers",
+      "Settings Descriptions as Tooltips",
+      "Settings Menu Layout",
+      "Show Comment Preview Header Icon",
+      "Show Mark All Read Icon",
+      "Show Mark Thread Read Icons",
+      "Show OP Thumbnails",
+      "Show Threads With Yous",
+      "Spoiler Mode",
+      "Stacked TCaptcha",
+      "Strip Video Audio",
+      "Text Color",
+      "Thread Highlight Edge Width",
+      "Thread Watcher Attach Location",
+      "Thread Watcher Attached",
+      "Thread Watcher Max Height",
+      "Thread Watcher Max Width",
+      "Thread Watcher Sort",
+      "Thread Watcher Thumbnail Hover",
+      "Thread Watcher Thumbnail Preview Size",
+      "Thread Watcher Thumbnail Size",
+      "Watch (catalog click)"
+    ],
+    "changed": [
+      "Scroll Markers",
+      "Thread Updater"
+    ]
+  }
+  ;
+
+  // Name of the CSS Custom Highlight that paints settings-search term matches.
+  const SETTINGS_SEARCH_HL = 'fourchanx-settings-search';
+  // The visible text elements a search term can be highlighted within. Kept in
+  // sync between highlightSettingRow (what gets painted) and applySearch (deciding
+  // whether a row's match is visible or only on a hidden data-name field).
+  const SEARCH_HIGHLIGHT_SELECTOR = '.setting-title, .setting-description, .settings-section-header, .styling-section-summary-text, summary, th, h4';
+  // Settings neXT added or changed vs upstream 4chan-X (see
+  // tools/gen-next-settings-diff.js). Powers the "Highlight neXT" toggle.
+  const NEXT_ADDED = new Set(nextSettingsDiff.added);
+  const NEXT_CHANGED = new Set(nextSettingsDiff.changed);
+  // Classify a single setting key against the neXT diff.
+  function nextStatusOf(key) {
+    if (!key)
+      return '';
+    if (NEXT_ADDED.has(key))
+      return 'added';
+    if (NEXT_CHANGED.has(key))
+      return 'changed';
+    return '';
+  }
   var Settings = {
     dialog: undefined,
     searchQuery: '',
@@ -30233,6 +31990,7 @@ $\
     activeSection: null,
     renderedSection: null,
     rememberLayout: false,
+    highlightNext: false,
     savedWindowLayout: '',
     detailsState: dict(),
     pointerDownInsideDialog: false,
@@ -30513,6 +32271,7 @@ $\
       $.on($('.collapse-all', dialog), 'click', e => { e.preventDefault(); Settings.toggleAllDetails(false); });
       $.on($('.move', settingsWindow), 'touchstart mousedown', Settings.prepareDrag);
       $.on($('#settings-remember-layout', dialog), 'change', Settings.onRememberLayoutChange);
+      $.on($('#settings-highlight-next', dialog), 'change', Settings.onHighlightNextChange);
       for (const actionEl of $$('.settings-titlebar-actions > *', settingsWindow)) {
         $.on(actionEl, 'touchstart mousedown', e => e.stopPropagation());
       }
@@ -30595,8 +32354,16 @@ $\
           Settings.saveWindowLayout(settingsWindow);
       }
       Settings.closeImpExpPicker();
+      // The settings page node is a reused singleton, so the search field keeps
+      // its value across opens. Clear it (and the derived search state) so a
+      // stale query doesn't re-highlight matches on the next open.
+      const searchInput = $('.settings-search input', Settings.dialog);
+      if (searchInput)
+        searchInput.value = '';
+      SearchHighlight.clear(SETTINGS_SEARCH_HL);
       $.rm(Settings.dialog);
       Settings.searchQuery = '';
+      Settings.searchTerms = [];
       Settings.activeSection = null;
       Settings.renderedSection = null;
       Settings.rememberLayout = false;
@@ -30634,12 +32401,18 @@ $\
         return;
       $.get({
         'settings.rememberLayout': false,
+        'settings.highlightNext': false,
         'settings.windowLayout': '',
         'settings.detailsState': dict(),
       }, prefs => {
         if (!Settings.dialog)
           return;
         Settings.rememberLayout = !!prefs['settings.rememberLayout'];
+        Settings.highlightNext = !!prefs['settings.highlightNext'];
+        const highlightToggle = $('#settings-highlight-next', Settings.dialog);
+        if (highlightToggle)
+          highlightToggle.checked = Settings.highlightNext;
+        Settings.applyNextHighlight();
         Settings.savedWindowLayout = typeof prefs['settings.windowLayout'] === 'string' ? prefs['settings.windowLayout'] : '';
         const detailsState = prefs['settings.detailsState'];
         Settings.detailsState = (detailsState && typeof detailsState === 'object') ? detailsState : dict();
@@ -30657,6 +32430,54 @@ $\
           }
         }
       });
+    },
+    // Mark each setting row neXT added/changed vs upstream 4chan-X. Runs on every
+    // section render so the CSS-driven highlight is ready the moment it's toggled.
+    // Pick which element to highlight for a setting field. Standard rows wrap the
+    // field in a `[data-name]` div that IS the key — use that (so the badge lands
+    // on its .setting-title). Custom-template controls (Styling/Advanced) and
+    // composite rows have no per-key wrapper; their nearest `[data-name]` is a
+    // group/section, so highlight the field's own `<label>` row instead.
+    nextRowForField(field) {
+      const named = field.closest('[data-name]');
+      if (named && nextStatusOf(named.dataset.name || ''))
+        return named;
+      return field.closest('label') || named;
+    },
+    tagNextSettings(root) {
+      if (!root)
+        return;
+      for (const el of $$('[data-next-status]', root))
+        delete el.dataset.nextStatus;
+      // Standard rows: the wrapper's data-name is exactly one setting key.
+      for (const el of $$('[data-name]', root)) {
+        const status = nextStatusOf(el.dataset.name || '');
+        if (status)
+          el.dataset.nextStatus = status;
+      }
+      // Match each field by its exact `name` attribute, then highlight its row.
+      // Exact matching avoids ambiguity when one key is a word-prefix of another
+      // (e.g. "Comment Preview" vs "Comment Preview Position"). "added" outranks
+      // "changed" when a row mixes both.
+      for (const field of $$('[name]', root)) {
+        const status = nextStatusOf(field.getAttribute('name') || '');
+        if (!status)
+          continue;
+        const row = Settings.nextRowForField(field);
+        if (row && row.dataset.nextStatus !== 'added')
+          row.dataset.nextStatus = status;
+      }
+    },
+    applyNextHighlight() {
+      const settingsWindow = $('#fourchanx-settings', Settings.dialog || d);
+      if (settingsWindow)
+        settingsWindow.classList.toggle('highlight-next-settings', Settings.highlightNext);
+    },
+    onHighlightNextChange() {
+      const enabled = this.checked;
+      Settings.highlightNext = enabled;
+      $.set('settings.highlightNext', enabled);
+      Settings.applyNextHighlight();
     },
     onRememberLayoutChange() {
       const enabled = this.checked;
@@ -30848,8 +32669,10 @@ $\
         const rowEl = row;
         Settings.revealSearchMatch(rowEl, section);
         // The row matched, but the match may be on a hidden field (data-name)
-        // with nothing visible marked; flag it so the match isn't a mystery.
-        rowEl.classList.toggle('settings-search-keyword-match', !rowEl.querySelector('mark'));
+        // with nothing visible highlighted; flag it so the match isn't a mystery.
+        // (The highlight is painted ranges now, not <mark> nodes, so probe the
+        // visible text directly rather than looking for a marker element.)
+        rowEl.classList.toggle('settings-search-keyword-match', !Settings.hasVisibleMatch(rowEl));
         // Only reveal descendant rider settings when the setting's title itself
         // matched, to avoid broad description matches expanding unrelated rows.
         const titleMatched = Settings.matchesQuery(`${settingName} ${settingTitle}`);
@@ -30904,23 +32727,46 @@ $\
         cur = cur.parentElement;
       }
     },
+    // Visible text elements within `root` that a search term can be highlighted in.
+    // Styling summaries carry an injected section toggle plus a dedicated
+    // `.styling-section-summary-text` span for their title; highlight that span,
+    // not the bare summary, so the two don't paint the same text twice.
+    highlightableEls(root) {
+      return $$(SEARCH_HIGHLIGHT_SELECTOR, root).filter(el => !(el.tagName === 'SUMMARY' && el.querySelector('.styling-section-summary-text')));
+    },
+    // True when any search term appears in the row's visible text (as opposed to
+    // matching only a hidden data-name field), so the row's match is self-evident.
+    hasVisibleMatch(rowEl) {
+      if (!Settings.searchTerms.length)
+        return false;
+      return Settings.highlightableEls(rowEl).some(el => {
+        const text = (el.textContent || '').toLowerCase();
+        return Settings.searchTerms.some(term => text.indexOf(term) >= 0);
+      });
+    },
     highlightSettingRow(root, _query) {
-      // Highlight every matching term (order-independent), not just the whole
-      // query as one phrase, so multi-word searches still show what matched.
+      const els = Settings.highlightableEls(root);
+      // Preferred path: paint matches with the CSS Custom Highlight API, which
+      // covers every matching term (order-independent) without touching the DOM —
+      // no <mark> nodes, no flex-layout span wrappers, no text save/restore.
+      if (SearchHighlight.supported) {
+        SearchHighlight.apply(SETTINGS_SEARCH_HL, els, Settings.searchTerms);
+        return;
+      }
+      // Legacy fallback for browsers without the Highlight API: wrap matches in
+      // <mark>, stashing the original text so an empty query can restore it.
       const rx = Settings.searchTerms.length
         ? RegExp(`(${Settings.searchTerms.map(t => Settings.escapeRegExp(t)).join('|')})`, 'ig')
         : null;
-      for (const el of $$('.setting-title, .setting-description, .settings-section-header, .styling-section-summary-text, summary, th, h4', root)) {
-        // Styling summaries carry an injected section toggle plus a dedicated
-        // `.styling-section-summary-text` span for their title. Highlight that
-        // span, not the bare summary — resetting the summary's textContent here
-        // would destroy the toggle (and the title wrapper) on every render.
-        if (el.tagName === 'SUMMARY' && el.querySelector('.styling-section-summary-text'))
-          continue;
+      for (const el of els) {
         const source = el.dataset.rawText ?? el.textContent ?? '';
         el.dataset.rawText = source;
         if (rx) {
-          el.innerHTML = source.replace(rx, '<mark>$1</mark>');
+          // Summaries (and other headers) are `display:flex` rows; injecting the
+          // bare marked text would split the title into several flex items that
+          // `justify-content:space-between` spreads apart. Keep it as one inline
+          // unit by wrapping the highlighted text in a single span.
+          el.innerHTML = `<span class="settings-search-text">${source.replace(rx, '<mark>$1</mark>')}</span>`;
         } else {
           el.textContent = source;
         }
@@ -30984,6 +32830,7 @@ $\
       section.className = `section-${sectionInfo.hyphenatedTitle}`;
       sectionInfo.open(section, g);
       Settings.decorateDetailsWithKeys(section, sectionInfo);
+      Settings.tagNextSettings(section);
       section.scrollTop = 0;
       Settings.renderedSection = sectionInfo;
       Settings.applyDescriptionMode(section);
@@ -31279,8 +33126,11 @@ Enable it on boards.${location.hostname.split('.')[1]}.org in your browser's pri
           $.el('span', { className: 'description', textContent: row.description ? `: ${row.description}` : '' })
         ]);
         $.on(select, 'change', $.cb.value);
-        if (row.name === 'Comment Preview Position') {
-          $.on(select, 'change', () => $.event('QRCommentPreviewChanged'));
+        if (row.name === 'Comment Preview Position' || row.name === 'Comment Preview Inline Behavior') {
+          $.on(select, 'change', () => $.event('QRCommentPreviewChanged', null));
+        }
+        if (row.name === 'RelativeTime') {
+          $.on(select, 'change', () => $.event('RelativePostDatesChanged', null));
         }
         items[row.name] = Conf[row.name];
         inputs[row.name] = select;
@@ -31405,8 +33255,14 @@ Enable it on boards.${location.hostname.split('.')[1]}.org in your browser's pri
       const inputs = dict();
       const fsFmt = $.el('details', { open: true }, { innerHTML: '<summary>Formatting</summary>' });
       const lookup = Settings.getMainSettingLookup();
-      const fmtGroup = dict();
-      for (const key of [
+      const collectGroup = (keys) => {
+        const g = dict();
+        for (const key of keys)
+          if (lookup[key])
+            g[key] = lookup[key];
+        return g;
+      };
+      Settings.addCheckboxes(fsFmt, collectGroup([
         'Custom Board Titles',
         'Persistent Custom Board Titles',
         'Color User IDs',
@@ -31414,26 +33270,27 @@ Enable it on boards.${location.hostname.split('.')[1]}.org in your browser's pri
         'Remove Spoilers',
         'Reveal Spoilers',
         'Time Formatting',
-        'Relative Post Dates',
-        'Relative Date Title',
+      ]), items, inputs);
+      // Relative dates as a single dropdown. The earlier two-checkbox form could
+      // only reach No / Show / Hover; the renderer (RelativeDates.ts) also supports
+      // the two "Both" orderings, so a select exposes the full set. RelativeTime is
+      // the canonical value (legacy checkbox imports migrate to it at load).
+      Settings.addSelectRows(fsFmt, [{
+          name: 'RelativeTime',
+          label: 'Relative Post Dates',
+          description: 'Display dates like "3 minutes ago" inline, on hover, or both.',
+          options: [
+            ['No', 'Off'],
+            ['Hover', 'Show on hover'],
+            ['Show', 'Show inline (full date on hover)'],
+            ['Both', 'Show timestamp, then relative'],
+            ['BothRelativeFirst', 'Show relative, then timestamp'],
+          ],
+        }]);
+      Settings.addCheckboxes(fsFmt, collectGroup([
         'File Info Formatting',
         'Quote Backlinks',
-      ]) {
-        if (lookup[key])
-          fmtGroup[key] = lookup[key];
-      }
-      Settings.addCheckboxes(fsFmt, fmtGroup, items, inputs);
-      const syncRelativeTime = () => {
-        const value = inputs['Relative Post Dates']?.checked
-          ? (inputs['Relative Date Title']?.checked ? 'Hover' : 'Show')
-          : 'No';
-        Conf['RelativeTime'] = value;
-        $.set('RelativeTime', value);
-      };
-      if (inputs['Relative Post Dates'])
-        $.on(inputs['Relative Post Dates'], 'change', syncRelativeTime);
-      if (inputs['Relative Date Title'])
-        $.on(inputs['Relative Date Title'], 'change', syncRelativeTime);
+      ]), items, inputs);
       $.add(section, fsFmt);
       const stylingOnlyKeys = new Set([
         'Scrollbar Markers',
@@ -31761,7 +33618,13 @@ Enable it on boards.${location.hostname.split('.')[1]}.org in your browser's pri
     posting(section) {
       Settings.renderMainGroups(section, {
         categories: ['Posting and Captchas'],
-        includeSetting: key => !['Comment Preview', 'Show Comment Preview Header Icon'].includes(key),
+        includeSetting: key => ![
+          'Comment Preview',
+          'Comment Preview Default Mode',
+          'Comment Preview Attach Location',
+          'Comment Preview Remember Float Position',
+          'Show Comment Preview Header Icon',
+        ].includes(key),
       });
       // Let the Quick Reply react live (same tab) when the draft feature is
       // toggled, so turning it off can wipe saved drafts/attachments immediately.
@@ -31781,41 +33644,104 @@ Enable it on boards.${location.hostname.split('.')[1]}.org in your browser's pri
       $.on(toggle, 'change', function () { this.parentNode.parentNode.dataset.checked = this.checked; });
       $.on(toggle, 'change', () => $.event('QRCommentPreviewChanged'));
       const sub = $.el('div', { className: 'suboption-list' });
-      const positionRow = $.el('div');
-      positionRow.dataset.name = 'Comment Preview Position';
-      positionRow.dataset.settingTitle = 'Preview Position';
-      Settings.registerSettingDescription(positionRow, 'Where the live preview appears relative to the comment box (requires Comment Preview enabled).');
-      const label = $.el('label');
-      const select = $.el('select', { name: 'Comment Preview Position' });
+      const defaultModeDescription = String(Config.main['Posting and Captchas']['Comment Preview Default Mode'][1]);
+      const defaultModeRow = $.el('div');
+      defaultModeRow.dataset.name = 'Comment Preview Default Mode';
+      defaultModeRow.dataset.settingTitle = 'Default Preview Mode';
+      Settings.registerSettingDescription(defaultModeRow, defaultModeDescription);
+      const defaultModeLabel = $.el('label');
+      const defaultModeSelect = $.el('select', { name: 'Comment Preview Default Mode' });
       for (const [value, text] of [
-        ['below', 'Below the comment box'],
-        ['right', 'Right of the comment box'],
-        ['left', 'Left of the comment box'],
+        ['attached', 'Attached to QR'],
+        ['inline', 'Docked inline'],
+        ['remember', 'Remember last mode'],
+      ]) {
+        $.add(defaultModeSelect, $.el('option', { value, textContent: text }));
+      }
+      $.on(defaultModeSelect, 'change', $.cb.value);
+      $.on(defaultModeSelect, 'change', () => $.event('QRCommentPreviewChanged'));
+      $.add(defaultModeLabel, [$.el('span', { textContent: 'Default Preview Mode: ' }), defaultModeSelect]);
+      $.add(defaultModeRow, [
+        defaultModeLabel,
+        $.el('span', {
+          className: 'description',
+          textContent: `: ${defaultModeDescription}`,
+        }),
+      ]);
+      const attachLocationDescription = String(Config.main['Posting and Captchas']['Comment Preview Attach Location'][1]);
+      const attachLocationRow = $.el('div');
+      attachLocationRow.dataset.name = 'Comment Preview Attach Location';
+      attachLocationRow.dataset.settingTitle = 'Attach to QR Location';
+      Settings.registerSettingDescription(attachLocationRow, attachLocationDescription);
+      const attachLocationLabel = $.el('label');
+      const attachLocationSelect = $.el('select', { name: 'Comment Preview Attach Location' });
+      for (const [value, text] of [
+        ['auto', 'Auto (prefer bottom)'],
+        ['bottom', 'Bottom'],
+        ['top', 'Top'],
+        ['right', 'Right'],
+        ['left', 'Left'],
+      ]) {
+        $.add(attachLocationSelect, $.el('option', { value, textContent: text }));
+      }
+      $.on(attachLocationSelect, 'change', $.cb.value);
+      $.on(attachLocationSelect, 'change', () => $.event('QRCommentPreviewChanged'));
+      $.add(attachLocationLabel, [$.el('span', { textContent: 'Attach to QR Location: ' }), attachLocationSelect]);
+      $.add(attachLocationRow, [
+        attachLocationLabel,
+        $.el('span', {
+          className: 'description',
+          textContent: `: ${attachLocationDescription}`,
+        }),
+      ]);
+      const positionRow = $.el('div');
+      positionRow.dataset.name = 'Comment Preview Inline Behavior';
+      positionRow.dataset.settingTitle = 'Inline Behavior';
+      Settings.registerSettingDescription(positionRow, 'When you dock the floating preview into the thread (the arrow icon in the preview header), how it is inserted: "Scroll to bottom" stitches the preview at the very end of the thread and scrolls there so you see the literal end result; "Insert in place" drops it after the post nearest the bottom of your screen and keeps it there as you scroll (no page jump).');
+      const label = $.el('label');
+      const select = $.el('select', { name: 'Comment Preview Inline Behavior' });
+      for (const [value, text] of [
+        ['scroll', 'Scroll to bottom and dock at thread end'],
+        ['inplace', 'Insert in place near viewport (follow scroll)'],
       ]) {
         $.add(select, $.el('option', { value, textContent: text }));
       }
       $.on(select, 'change', $.cb.value);
       $.on(select, 'change', () => $.event('QRCommentPreviewChanged'));
-      $.add(label, [$.el('span', { textContent: 'Preview Position: ' }), select]);
+      $.add(label, [$.el('span', { textContent: 'Inline Behavior: ' }), select]);
       $.add(positionRow, [
         label,
         $.el('span', {
           className: 'description',
-          textContent: ': Where the live preview appears relative to the comment box (requires Comment Preview enabled).',
+          textContent: ': How the preview is inserted when you dock it into the thread (requires Comment Preview enabled).',
         }),
       ]);
+      const rememberFloatDescription = String(Config.main['Posting and Captchas']['Comment Preview Remember Float Position'][1]);
+      const rememberFloatRow = $.el('div', {
+        innerHTML: `<label><input type="checkbox" name="Comment Preview Remember Float Position"><span class="setting-title">Remember Floating Position</span></label><span class="description">: <span class="setting-description">${rememberFloatDescription}</span></span>`,
+      });
+      rememberFloatRow.dataset.name = 'Comment Preview Remember Float Position';
+      rememberFloatRow.dataset.settingTitle = 'Remember Floating Position';
+      Settings.registerSettingDescription(rememberFloatRow, rememberFloatDescription);
+      const rememberFloatToggle = $('input[name="Comment Preview Remember Float Position"]', rememberFloatRow);
+      $.on(rememberFloatToggle, 'change', $.cb.checked);
+      $.on(rememberFloatToggle, 'change', function () { this.parentNode.parentNode.dataset.checked = this.checked; });
+      $.on(rememberFloatToggle, 'change', () => $.event('QRCommentPreviewChanged'));
       const iconDescription = String(Config.main['Posting and Captchas']['Show Comment Preview Header Icon'][1]);
       const iconRow = $.el('div', {
-        innerHTML: `<label><input type="checkbox" name="Show Comment Preview Header Icon"><span class="setting-title">Show Header Icon</span></label><span class="description">: <span class="setting-description">${iconDescription}</span></span>`,
+        innerHTML: `<label><input type="checkbox" name="Show Comment Preview Header Icon"><span class="setting-title">Show QR Titlebar Toggle</span></label><span class="description">: <span class="setting-description">${iconDescription}</span></span>`,
       });
       iconRow.dataset.name = 'Show Comment Preview Header Icon';
-      iconRow.dataset.settingTitle = 'Show Header Icon';
+      iconRow.dataset.settingTitle = 'Show QR Titlebar Toggle';
       Settings.registerSettingDescription(iconRow, iconDescription);
       const iconToggle = $('input[name="Show Comment Preview Header Icon"]', iconRow);
       $.on(iconToggle, 'change', $.cb.checked);
       $.on(iconToggle, 'change', function () { this.parentNode.parentNode.dataset.checked = this.checked; });
       $.on(iconToggle, 'change', () => $.event('QRCommentPreviewChanged', null));
+      $.add(sub, defaultModeRow);
+      $.add(sub, attachLocationRow);
       $.add(sub, positionRow);
+      $.add(sub, rememberFloatRow);
       $.add(row, sub);
       $.add(fs, row);
       $.add(fs, iconRow);
@@ -31823,13 +33749,24 @@ Enable it on boards.${location.hostname.split('.')[1]}.org in your browser's pri
       const updateCommentPreviewSettings = (items) => {
         toggle.checked = !!items['Comment Preview'];
         row.dataset.checked = toggle.checked ? 'true' : 'false';
-        select.value = items['Comment Preview Position'] || 'below';
+        defaultModeSelect.value = ['inline', 'remember'].includes(items['Comment Preview Default Mode'])
+          ? items['Comment Preview Default Mode']
+          : 'attached';
+        attachLocationSelect.value = ['bottom', 'top', 'right', 'left'].includes(items['Comment Preview Attach Location'])
+          ? items['Comment Preview Attach Location']
+          : 'auto';
+        select.value = items['Comment Preview Inline Behavior'] === 'inplace' ? 'inplace' : 'scroll';
+        rememberFloatToggle.checked = !!items['Comment Preview Remember Float Position'];
+        rememberFloatRow.dataset.checked = rememberFloatToggle.checked ? 'true' : 'false';
         iconToggle.checked = items['Show Comment Preview Header Icon'] !== false;
         iconRow.dataset.checked = iconToggle.checked ? 'true' : 'false';
       };
       $.get({
         'Comment Preview': Conf['Comment Preview'],
-        'Comment Preview Position': Conf['Comment Preview Position'],
+        'Comment Preview Default Mode': Conf['Comment Preview Default Mode'],
+        'Comment Preview Attach Location': Conf['Comment Preview Attach Location'],
+        'Comment Preview Inline Behavior': Conf['Comment Preview Inline Behavior'],
+        'Comment Preview Remember Float Position': Conf['Comment Preview Remember Float Position'],
         'Show Comment Preview Header Icon': Conf['Show Comment Preview Header Icon'],
       }, updateCommentPreviewSettings);
     },
@@ -33493,6 +35430,7 @@ Enable it on boards.${location.hostname.split('.')[1]}.org in your browser's pri
       };
       $.on(textarea, 'input', () => Settings.renderCustomCSSHighlight(textarea, highlight));
       $.on(textarea, 'scroll', syncScroll);
+      Settings.bindCustomCSSEditorKeys(textarea, highlight);
       $.on(textarea, 'change', () => {
         Settings.renderCustomCSSHighlight(textarea, highlight);
         if (Conf['Custom CSS'])
@@ -33520,6 +35458,148 @@ Enable it on boards.${location.hostname.split('.')[1]}.org in your browser's pri
         updateExpandedState(expanded, false);
         Settings.renderCustomCSSHighlight(textarea, highlight);
         syncScroll();
+      });
+    },
+    // Lightweight IDE-style editing for the Custom CSS textarea: auto-closing
+    // pairs, skip-over, pair-deletion, selection-wrapping, Tab indent/dedent and
+    // brace-aware Enter. All edits go through document.execCommand('insertText'/
+    // 'delete') where possible so the browser's native undo stack stays intact;
+    // a direct value splice is the fallback only when execCommand is unavailable.
+    bindCustomCSSEditorKeys(textarea, highlight) {
+      const PAIRS = { '{': '}', '(': ')', '[': ']', '"': '"', "'": "'" };
+      const CLOSERS = new Set(['}', ')', ']']);
+      const isQuote = (ch) => ch === '"' || ch === "'";
+      const refresh = () => {
+        Settings.renderCustomCSSHighlight(textarea, highlight);
+        highlight.scrollTop = textarea.scrollTop;
+        highlight.scrollLeft = textarea.scrollLeft;
+      };
+      // Replace the current selection with `text`, then pull the caret back
+      // `caretBack` characters (so e.g. inserting "{}" can park the caret inside).
+      const insert = (text, caretBack = 0) => {
+        const start = textarea.selectionStart;
+        let ok = false;
+        try {
+          ok = d.execCommand('insertText', false, text);
+        } catch { }
+        if (!ok) {
+          const end = textarea.selectionEnd;
+          textarea.value = textarea.value.slice(0, start) + text + textarea.value.slice(end);
+        }
+        const caret = start + text.length - caretBack;
+        textarea.selectionStart = textarea.selectionEnd = caret;
+      };
+      // Wrap the current selection in open/close and keep the inner text selected.
+      const wrap = (open, close) => {
+        const start = textarea.selectionStart;
+        const inner = textarea.value.slice(start, textarea.selectionEnd);
+        let ok = false;
+        try {
+          ok = d.execCommand('insertText', false, open + inner + close);
+        } catch { }
+        if (!ok) {
+          const end = textarea.selectionEnd;
+          textarea.value = textarea.value.slice(0, start) + open + inner + close + textarea.value.slice(end);
+        }
+        textarea.selectionStart = start + open.length;
+        textarea.selectionEnd = start + open.length + inner.length;
+      };
+      // Leading whitespace of the line the caret sits on.
+      const lineIndent = (val, pos) => {
+        const lineStart = val.lastIndexOf('\n', pos - 1) + 1;
+        return (val.slice(lineStart, pos).match(/^[ \t]*/) || [''])[0];
+      };
+      $.on(textarea, 'keydown', (e) => {
+        if (e.ctrlKey || e.metaKey || e.altKey)
+          return;
+        const val = textarea.value;
+        const start = textarea.selectionStart;
+        const end = textarea.selectionEnd;
+        const hasSel = start !== end;
+        const before = val[start - 1];
+        const after = val[end];
+        if (e.key === 'Enter' && !e.shiftKey && !hasSel) {
+          const indent = lineIndent(val, start);
+          if (before === '{' && after === '}') {
+            // Expand "{|}" into a 3-line block with the caret indented inside.
+            insert(`\n${indent}  \n${indent}`, indent.length + 1);
+          } else {
+            insert(`\n${indent}${before === '{' ? '  ' : ''}`);
+          }
+          e.preventDefault();
+          refresh();
+          return;
+        }
+        if (e.key === 'Tab') {
+          e.preventDefault();
+          const blockStart = val.lastIndexOf('\n', start - 1) + 1;
+          const multiline = val.slice(start, end).includes('\n');
+          if (multiline) {
+            const block = val.slice(blockStart, end);
+            const next = e.shiftKey ? block.replace(/^[ \t]{1,2}/gm, '') : block.replace(/^/gm, '  ');
+            textarea.selectionStart = blockStart;
+            textarea.selectionEnd = end;
+            let ok = false;
+            try {
+              ok = d.execCommand('insertText', false, next);
+            } catch { }
+            if (!ok)
+              textarea.value = val.slice(0, blockStart) + next + val.slice(end);
+            textarea.selectionStart = blockStart;
+            textarea.selectionEnd = blockStart + next.length;
+          } else if (e.shiftKey) {
+            const lead = (val.slice(blockStart).match(/^[ \t]{1,2}/) || [''])[0];
+            if (lead) {
+              textarea.value = val.slice(0, blockStart) + val.slice(blockStart + lead.length);
+              const caret = Math.max(blockStart, start - lead.length);
+              textarea.selectionStart = textarea.selectionEnd = caret;
+            }
+          } else {
+            insert('  ');
+          }
+          refresh();
+          return;
+        }
+        if (e.key === 'Backspace' && !hasSel && before && PAIRS[before] === after) {
+          // Backspacing inside an empty pair removes both halves.
+          textarea.selectionStart = start - 1;
+          textarea.selectionEnd = start + 1;
+          let ok = false;
+          try {
+            ok = d.execCommand('delete', false);
+          } catch { }
+          if (!ok) {
+            textarea.value = val.slice(0, start - 1) + val.slice(start + 1);
+            textarea.selectionStart = textarea.selectionEnd = start - 1;
+          }
+          e.preventDefault();
+          refresh();
+          return;
+        }
+        if (e.key.length !== 1)
+          return;
+        // Skip over a closer/quote already typed by auto-close.
+        if (!hasSel && e.key === after && (CLOSERS.has(e.key) || isQuote(e.key))) {
+          textarea.selectionStart = textarea.selectionEnd = end + 1;
+          e.preventDefault();
+          refresh();
+          return;
+        }
+        if (PAIRS[e.key]) {
+          if (hasSel) {
+            wrap(e.key, PAIRS[e.key]);
+            e.preventDefault();
+            refresh();
+            return;
+          }
+          // Don't auto-close a quote that's likely an apostrophe inside a word.
+          const wordChar = before && /[\w'"]/.test(before);
+          if (isQuote(e.key) && wordChar)
+            return;
+          insert(e.key + PAIRS[e.key], 1);
+          e.preventDefault();
+          refresh();
+        }
       });
     },
     resolveCustomCSSEditorTheme(theme) {
@@ -34812,8 +36892,7 @@ Enable it on boards.${location.hostname.split('.')[1]}.org in your browser's pri
         'Remove Spoilers',
         'Reveal Spoilers',
         'Time Formatting',
-        'Relative Post Dates',
-        'Relative Date Title',
+        'RelativeTime',
         'File Info Formatting',
         'Quote Backlinks',
         ...keysIn('Filtering').filter(key => !stylingOnlyKeys.includes(key)),
@@ -34851,7 +36930,10 @@ Enable it on boards.${location.hostname.split('.')[1]}.org in your browser's pri
       ];
       options['Posting'] = [
         ...keysIn('Posting and Captchas'),
-        'Comment Preview Position',
+        'Comment Preview Position', // deprecated/unused, kept for back-compat export
+        'Comment Preview Inline Behavior',
+        'Comment Preview Last Mode',
+        'Comment Preview Float Position',
         'QR.personas'
       ];
       options['Filters'] = Object.keys(Config.filter).concat(['easyFilters']);
@@ -42233,6 +44315,12 @@ Enable it on boards.${location.hostname.split('.')[1]}.org in your browser's pri
     },
     parsePosts(postRoots, thread, posts, errors) {
       for (var postRoot of postRoots) {
+        // The QR comment preview is a fake post stitched into the thread (no real ID, no
+        // quote link). It carries .postContainer for styling, so the observer hands it here —
+        // never build a real Post from it (Post.node() would crash on its null quote anchor).
+        if (postRoot.classList?.contains('qr-preview-post')) {
+          continue;
+        }
         if (!(postRoot.dataset.fullID && g.posts.get(postRoot.dataset.fullID)) && $(g.SITE.selectors.comment, postRoot)) {
           try {
             posts.push(new Post(postRoot, thread, thread.board));

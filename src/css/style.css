@@ -597,6 +597,7 @@ audio.controls-added {
   content: 'neXT';
   color: #fff;
   background: #3fb950;
+  text-transform: none;
 }
 .highlight-next-settings [data-next-status="changed"] .setting-title::after,
 .highlight-next-settings label[data-next-status="changed"]::after,
