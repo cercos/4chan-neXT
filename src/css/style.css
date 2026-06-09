@@ -577,6 +577,7 @@ audio.controls-added {
      "<span>Label: </span><select>"; checkbox labels start with <input>, so
      their span is not :first-child and never double-badges). */
 .highlight-next-settings [data-next-status] .setting-title::after,
+.highlight-next-settings summary[data-next-status]::after,
 .highlight-next-settings label[data-next-status]::after,
 .highlight-next-settings [data-next-status] > label > span:first-child::after {
   display: inline-block;
@@ -592,6 +593,7 @@ audio.controls-added {
   white-space: nowrap;
 }
 .highlight-next-settings [data-next-status="added"] .setting-title::after,
+.highlight-next-settings summary[data-next-status="added"]::after,
 .highlight-next-settings label[data-next-status="added"]::after,
 .highlight-next-settings [data-next-status="added"] > label > span:first-child::after {
   content: 'neXT';
@@ -600,6 +602,7 @@ audio.controls-added {
   text-transform: none;
 }
 .highlight-next-settings [data-next-status="changed"] .setting-title::after,
+.highlight-next-settings summary[data-next-status="changed"]::after,
 .highlight-next-settings label[data-next-status="changed"]::after,
 .highlight-next-settings [data-next-status="changed"] > label > span:first-child::after {
   content: 'changed';

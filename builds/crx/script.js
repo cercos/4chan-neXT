@@ -3208,7 +3208,7 @@ current-archive-text:"Archive"]
 </details>
 
 <details open>
-  <summary>Thread updater sound</summary>
+  <summary data-next-manual-status="changed">Thread updater sound</summary>
 
   <div class="sound-row sound-row--field">
     <label for="beepVolume">Sound volume</label>
@@ -4864,6 +4864,7 @@ audio.controls-added {
      "<span>Label: </span><select>"; checkbox labels start with <input>, so
      their span is not :first-child and never double-badges). */
 .highlight-next-settings [data-next-status] .setting-title::after,
+.highlight-next-settings summary[data-next-status]::after,
 .highlight-next-settings label[data-next-status]::after,
 .highlight-next-settings [data-next-status] > label > span:first-child::after {
   display: inline-block;
@@ -4879,6 +4880,7 @@ audio.controls-added {
   white-space: nowrap;
 }
 .highlight-next-settings [data-next-status="added"] .setting-title::after,
+.highlight-next-settings summary[data-next-status="added"]::after,
 .highlight-next-settings label[data-next-status="added"]::after,
 .highlight-next-settings [data-next-status="added"] > label > span:first-child::after {
   content: 'neXT';
@@ -4887,6 +4889,7 @@ audio.controls-added {
   text-transform: none;
 }
 .highlight-next-settings [data-next-status="changed"] .setting-title::after,
+.highlight-next-settings summary[data-next-status="changed"]::after,
 .highlight-next-settings label[data-next-status="changed"]::after,
 .highlight-next-settings [data-next-status="changed"] > label > span:first-child::after {
   content: 'changed';
@@ -32473,6 +32476,13 @@ $\
         const row = Settings.nextRowForField(field);
         if (row && row.dataset.nextStatus !== 'added')
           row.dataset.nextStatus = status;
+      }
+      // Custom template-only UI that does not map cleanly to a single persisted
+      // setting key can opt into the same visual treatment.
+      for (const el of $$('[data-next-manual-status]', root)) {
+        const status = el.dataset.nextManualStatus;
+        if (status === 'added' || status === 'changed')
+          el.dataset.nextStatus = status;
       }
     },
     applyNextHighlight() {

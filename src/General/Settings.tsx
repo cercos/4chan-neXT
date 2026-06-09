@@ -545,6 +545,12 @@ var Settings = {
       const row = Settings.nextRowForField(field);
       if (row && row.dataset.nextStatus !== 'added') row.dataset.nextStatus = status;
     }
+    // Custom template-only UI that does not map cleanly to a single persisted
+    // setting key can opt into the same visual treatment.
+    for (const el of $$('[data-next-manual-status]', root) as HTMLElement[]) {
+      const status = el.dataset.nextManualStatus;
+      if (status === 'added' || status === 'changed') el.dataset.nextStatus = status;
+    }
   },
 
   applyNextHighlight() {
