@@ -6,11 +6,12 @@
   },
   "counts": {
     "xt": 259,
-    "next": 383,
-    "added": 119,
+    "next": 389,
+    "added": 125,
     "changed": 2
   },
   "added": [
+    "Auto-close Tags",
     "Catalog Highlight Border Width",
     "Catalog Highlight Own Background",
     "Catalog Highlight Own Border Style",
@@ -37,7 +38,12 @@
     "Catalog Highlight Watched Text Mode",
     "Catalog Highlight Watched Threads",
     "Comment Preview",
+    "Comment Preview Attach Location",
+    "Comment Preview Default Mode",
+    "Comment Preview Inline Behavior",
+    "Comment Preview Last Mode",
     "Comment Preview Position",
+    "Comment Preview Remember Float Position",
     "Convert X to xcancel",
     "Convert YouTube to yewtu.be",
     "Dead Link Text Color",

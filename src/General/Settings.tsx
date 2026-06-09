@@ -1237,8 +1237,11 @@ Enable it on boards.${location.hostname.split('.')[1]}.org in your browser's pri
         $.el('span', { className: 'description', textContent: row.description ? `: ${row.description}` : '' })
       ]);
       $.on(select, 'change', $.cb.value);
-      if (row.name === 'Comment Preview Position') {
-        $.on(select, 'change', () => $.event('QRCommentPreviewChanged'));
+      if (row.name === 'Comment Preview Position' || row.name === 'Comment Preview Inline Behavior') {
+        $.on(select, 'change', () => $.event('QRCommentPreviewChanged', null));
+      }
+      if (row.name === 'RelativeTime') {
+        $.on(select, 'change', () => $.event('RelativePostDatesChanged', null));
       }
       items[row.name] = Conf[row.name];
       inputs[row.name] = select;
@@ -1753,10 +1756,16 @@ Enable it on boards.${location.hostname.split('.')[1]}.org in your browser's pri
   },
 
   posting(section) {
-    Settings.renderMainGroups(section, {
-      categories: ['Posting and Captchas'],
-      includeSetting: key => !['Comment Preview', 'Show Comment Preview Header Icon'].includes(key),
-    });
+      Settings.renderMainGroups(section, {
+        categories: ['Posting and Captchas'],
+        includeSetting: key => ![
+          'Comment Preview',
+          'Comment Preview Default Mode',
+          'Comment Preview Attach Location',
+          'Comment Preview Remember Float Position',
+          'Show Comment Preview Header Icon',
+        ].includes(key),
+      });
 
     // Let the Quick Reply react live (same tab) when the draft feature is
     // toggled, so turning it off can wipe saved drafts/attachments immediately.
@@ -1779,58 +1788,137 @@ Enable it on boards.${location.hostname.split('.')[1]}.org in your browser's pri
     $.on(toggle, 'change', function() { this.parentNode.parentNode.dataset.checked = this.checked; });
     $.on(toggle, 'change', () => $.event('QRCommentPreviewChanged'));
 
-    const sub = $.el('div', { className: 'suboption-list' });
-    const positionRow = $.el('div') as HTMLDivElement;
-    positionRow.dataset.name = 'Comment Preview Position';
-    positionRow.dataset.settingTitle = 'Preview Style';
-    Settings.registerSettingDescription(positionRow, 'How the live comment preview is displayed when the preview toggle is on: "In the thread" stitches a literal post at the bottom of the thread (real width/wrapping, locked last); "Floating window" shows a draggable window containing the post preview (similar to quote hovers or the thread watcher). The old compact in-QR boxes are no longer offered.');
+      const sub = $.el('div', { className: 'suboption-list' });
+
+      const defaultModeDescription = String(Config.main['Posting and Captchas']['Comment Preview Default Mode'][1]);
+      const defaultModeRow = $.el('div') as HTMLDivElement;
+      defaultModeRow.dataset.name = 'Comment Preview Default Mode';
+      defaultModeRow.dataset.settingTitle = 'Default Preview Mode';
+      Settings.registerSettingDescription(defaultModeRow, defaultModeDescription);
+      const defaultModeLabel = $.el('label');
+      const defaultModeSelect = $.el('select', { name: 'Comment Preview Default Mode' }) as HTMLSelectElement;
+      for (const [value, text] of [
+        ['attached', 'Attached to QR'],
+        ['inline', 'Docked inline'],
+        ['remember', 'Remember last mode'],
+      ] as const) {
+        $.add(defaultModeSelect, $.el('option', { value, textContent: text }));
+      }
+      $.on(defaultModeSelect, 'change', $.cb.value);
+      $.on(defaultModeSelect, 'change', () => $.event('QRCommentPreviewChanged'));
+      $.add(defaultModeLabel, [$.el('span', { textContent: 'Default Preview Mode: ' }), defaultModeSelect]);
+      $.add(defaultModeRow, [
+        defaultModeLabel,
+        $.el('span', {
+          className: 'description',
+          textContent: `: ${defaultModeDescription}`,
+        }),
+      ]);
+
+      const attachLocationDescription = String(Config.main['Posting and Captchas']['Comment Preview Attach Location'][1]);
+      const attachLocationRow = $.el('div') as HTMLDivElement;
+      attachLocationRow.dataset.name = 'Comment Preview Attach Location';
+      attachLocationRow.dataset.settingTitle = 'Attach to QR Location';
+      Settings.registerSettingDescription(attachLocationRow, attachLocationDescription);
+      const attachLocationLabel = $.el('label');
+      const attachLocationSelect = $.el('select', { name: 'Comment Preview Attach Location' }) as HTMLSelectElement;
+      for (const [value, text] of [
+        ['auto', 'Auto (prefer bottom)'],
+        ['bottom', 'Bottom'],
+        ['top', 'Top'],
+        ['right', 'Right'],
+        ['left', 'Left'],
+      ] as const) {
+        $.add(attachLocationSelect, $.el('option', { value, textContent: text }));
+      }
+      $.on(attachLocationSelect, 'change', $.cb.value);
+      $.on(attachLocationSelect, 'change', () => $.event('QRCommentPreviewChanged'));
+      $.add(attachLocationLabel, [$.el('span', { textContent: 'Attach to QR Location: ' }), attachLocationSelect]);
+      $.add(attachLocationRow, [
+        attachLocationLabel,
+        $.el('span', {
+          className: 'description',
+          textContent: `: ${attachLocationDescription}`,
+        }),
+      ]);
+
+      const positionRow = $.el('div') as HTMLDivElement;
+      positionRow.dataset.name = 'Comment Preview Inline Behavior';
+      positionRow.dataset.settingTitle = 'Inline Behavior';
+    Settings.registerSettingDescription(positionRow, 'When you dock the floating preview into the thread (the arrow icon in the preview header), how it is inserted: "Scroll to bottom" stitches the preview at the very end of the thread and scrolls there so you see the literal end result; "Insert in place" drops it after the post nearest the bottom of your screen and keeps it there as you scroll (no page jump).');
     const label = $.el('label');
-    const select = $.el('select', { name: 'Comment Preview Position' }) as HTMLSelectElement;
+    const select = $.el('select', { name: 'Comment Preview Inline Behavior' }) as HTMLSelectElement;
     for (const [value, text] of [
-      ['thread', 'In the thread (literal post at bottom)'],
-      ['floating', 'Floating window (like a quote preview or thread watcher)'],
+      ['scroll', 'Scroll to bottom and dock at thread end'],
+      ['inplace', 'Insert in place near viewport (follow scroll)'],
     ] as const) {
       $.add(select, $.el('option', { value, textContent: text }));
     }
     $.on(select, 'change', $.cb.value);
     $.on(select, 'change', () => $.event('QRCommentPreviewChanged'));
-    $.add(label, [$.el('span', { textContent: 'Preview Position: ' }), select]);
+    $.add(label, [$.el('span', { textContent: 'Inline Behavior: ' }), select]);
     $.add(positionRow, [
       label,
       $.el('span', {
         className: 'description',
-        textContent: ': Where the live preview appears relative to the comment box (requires Comment Preview enabled).',
-      }),
-    ]);
-    const iconDescription = String(Config.main['Posting and Captchas']['Show Comment Preview Header Icon'][1]);
-    const iconRow = $.el('div', {
-      innerHTML: `<label><input type="checkbox" name="Show Comment Preview Header Icon"><span class="setting-title">Show Header Icon</span></label><span class="description">: <span class="setting-description">${iconDescription}</span></span>`,
-    }) as HTMLDivElement;
-    iconRow.dataset.name = 'Show Comment Preview Header Icon';
-    iconRow.dataset.settingTitle = 'Show Header Icon';
-    Settings.registerSettingDescription(iconRow, iconDescription);
-    const iconToggle = $('input[name="Show Comment Preview Header Icon"]', iconRow) as HTMLInputElement;
+        textContent: ': How the preview is inserted when you dock it into the thread (requires Comment Preview enabled).',
+        }),
+      ]);
+      const rememberFloatDescription = String(Config.main['Posting and Captchas']['Comment Preview Remember Float Position'][1]);
+      const rememberFloatRow = $.el('div', {
+        innerHTML: `<label><input type="checkbox" name="Comment Preview Remember Float Position"><span class="setting-title">Remember Floating Position</span></label><span class="description">: <span class="setting-description">${rememberFloatDescription}</span></span>`,
+      }) as HTMLDivElement;
+      rememberFloatRow.dataset.name = 'Comment Preview Remember Float Position';
+      rememberFloatRow.dataset.settingTitle = 'Remember Floating Position';
+      Settings.registerSettingDescription(rememberFloatRow, rememberFloatDescription);
+      const rememberFloatToggle = $('input[name="Comment Preview Remember Float Position"]', rememberFloatRow) as HTMLInputElement;
+      $.on(rememberFloatToggle, 'change', $.cb.checked);
+      $.on(rememberFloatToggle, 'change', function() { this.parentNode.parentNode.dataset.checked = this.checked; });
+      $.on(rememberFloatToggle, 'change', () => $.event('QRCommentPreviewChanged'));
+
+      const iconDescription = String(Config.main['Posting and Captchas']['Show Comment Preview Header Icon'][1]);
+      const iconRow = $.el('div', {
+        innerHTML: `<label><input type="checkbox" name="Show Comment Preview Header Icon"><span class="setting-title">Show QR Titlebar Toggle</span></label><span class="description">: <span class="setting-description">${iconDescription}</span></span>`,
+      }) as HTMLDivElement;
+      iconRow.dataset.name = 'Show Comment Preview Header Icon';
+      iconRow.dataset.settingTitle = 'Show QR Titlebar Toggle';
+      Settings.registerSettingDescription(iconRow, iconDescription);
+      const iconToggle = $('input[name="Show Comment Preview Header Icon"]', iconRow) as HTMLInputElement;
     $.on(iconToggle, 'change', $.cb.checked);
     $.on(iconToggle, 'change', function() { this.parentNode.parentNode.dataset.checked = this.checked; });
     $.on(iconToggle, 'change', () => $.event('QRCommentPreviewChanged', null));
-    $.add(sub, positionRow);
-    $.add(row, sub);
+      $.add(sub, defaultModeRow);
+      $.add(sub, attachLocationRow);
+      $.add(sub, positionRow);
+      $.add(sub, rememberFloatRow);
+      $.add(row, sub);
     $.add(fs, row);
     $.add(fs, iconRow);
     $.add(section, fs);
 
     const updateCommentPreviewSettings = (items: Record<string, any>) => {
-      toggle.checked = !!items['Comment Preview'];
-      row.dataset.checked = toggle.checked ? 'true' : 'false';
-      select.value = items['Comment Preview Position'] === 'thread' ? 'thread' : 'floating';
-      iconToggle.checked = items['Show Comment Preview Header Icon'] !== false;
-      iconRow.dataset.checked = iconToggle.checked ? 'true' : 'false';
-    };
-    $.get({
-      'Comment Preview': Conf['Comment Preview'],
-      'Comment Preview Position': Conf['Comment Preview Position'],
-      'Show Comment Preview Header Icon': Conf['Show Comment Preview Header Icon'],
-    }, updateCommentPreviewSettings as any);
+        toggle.checked = !!items['Comment Preview'];
+        row.dataset.checked = toggle.checked ? 'true' : 'false';
+        defaultModeSelect.value = ['inline', 'remember'].includes(items['Comment Preview Default Mode'])
+          ? items['Comment Preview Default Mode']
+          : 'attached';
+        attachLocationSelect.value = ['bottom', 'top', 'right', 'left'].includes(items['Comment Preview Attach Location'])
+          ? items['Comment Preview Attach Location']
+          : 'auto';
+        select.value = items['Comment Preview Inline Behavior'] === 'inplace' ? 'inplace' : 'scroll';
+        rememberFloatToggle.checked = !!items['Comment Preview Remember Float Position'];
+        rememberFloatRow.dataset.checked = rememberFloatToggle.checked ? 'true' : 'false';
+        iconToggle.checked = items['Show Comment Preview Header Icon'] !== false;
+        iconRow.dataset.checked = iconToggle.checked ? 'true' : 'false';
+      };
+      $.get({
+        'Comment Preview': Conf['Comment Preview'],
+        'Comment Preview Default Mode': Conf['Comment Preview Default Mode'],
+        'Comment Preview Attach Location': Conf['Comment Preview Attach Location'],
+        'Comment Preview Inline Behavior': Conf['Comment Preview Inline Behavior'],
+        'Comment Preview Remember Float Position': Conf['Comment Preview Remember Float Position'],
+        'Show Comment Preview Header Icon': Conf['Show Comment Preview Header Icon'],
+      }, updateCommentPreviewSettings as any);
 
   },
 
@@ -3489,6 +3577,7 @@ Enable it on boards.${location.hostname.split('.')[1]}.org in your browser's pri
 
     $.on(textarea, 'input', () => Settings.renderCustomCSSHighlight(textarea, highlight));
     $.on(textarea, 'scroll', syncScroll);
+    Settings.bindCustomCSSEditorKeys(textarea, highlight);
     $.on(textarea, 'change', () => {
       Settings.renderCustomCSSHighlight(textarea, highlight);
       if (Conf['Custom CSS']) CustomCSS.update();
@@ -3517,6 +3606,148 @@ Enable it on boards.${location.hostname.split('.')[1]}.org in your browser's pri
       updateExpandedState(expanded, false);
       Settings.renderCustomCSSHighlight(textarea, highlight);
       syncScroll();
+    });
+  },
+
+  // Lightweight IDE-style editing for the Custom CSS textarea: auto-closing
+  // pairs, skip-over, pair-deletion, selection-wrapping, Tab indent/dedent and
+  // brace-aware Enter. All edits go through document.execCommand('insertText'/
+  // 'delete') where possible so the browser's native undo stack stays intact;
+  // a direct value splice is the fallback only when execCommand is unavailable.
+  bindCustomCSSEditorKeys(textarea: HTMLTextAreaElement, highlight: HTMLPreElement) {
+    const PAIRS: Record<string, string> = { '{': '}', '(': ')', '[': ']', '"': '"', "'": "'" };
+    const CLOSERS = new Set(['}', ')', ']']);
+    const isQuote = (ch: string) => ch === '"' || ch === "'";
+
+    const refresh = () => {
+      Settings.renderCustomCSSHighlight(textarea, highlight);
+      highlight.scrollTop = textarea.scrollTop;
+      highlight.scrollLeft = textarea.scrollLeft;
+    };
+
+    // Replace the current selection with `text`, then pull the caret back
+    // `caretBack` characters (so e.g. inserting "{}" can park the caret inside).
+    const insert = (text: string, caretBack = 0) => {
+      const start = textarea.selectionStart;
+      let ok = false;
+      try { ok = d.execCommand('insertText', false, text); } catch {}
+      if (!ok) {
+        const end = textarea.selectionEnd;
+        textarea.value = textarea.value.slice(0, start) + text + textarea.value.slice(end);
+      }
+      const caret = start + text.length - caretBack;
+      textarea.selectionStart = textarea.selectionEnd = caret;
+    };
+
+    // Wrap the current selection in open/close and keep the inner text selected.
+    const wrap = (open: string, close: string) => {
+      const start = textarea.selectionStart;
+      const inner = textarea.value.slice(start, textarea.selectionEnd);
+      let ok = false;
+      try { ok = d.execCommand('insertText', false, open + inner + close); } catch {}
+      if (!ok) {
+        const end = textarea.selectionEnd;
+        textarea.value = textarea.value.slice(0, start) + open + inner + close + textarea.value.slice(end);
+      }
+      textarea.selectionStart = start + open.length;
+      textarea.selectionEnd = start + open.length + inner.length;
+    };
+
+    // Leading whitespace of the line the caret sits on.
+    const lineIndent = (val: string, pos: number) => {
+      const lineStart = val.lastIndexOf('\n', pos - 1) + 1;
+      return (val.slice(lineStart, pos).match(/^[ \t]*/) || [''])[0];
+    };
+
+    $.on(textarea, 'keydown', (e: KeyboardEvent) => {
+      if (e.ctrlKey || e.metaKey || e.altKey) return;
+      const val = textarea.value;
+      const start = textarea.selectionStart;
+      const end = textarea.selectionEnd;
+      const hasSel = start !== end;
+      const before = val[start - 1];
+      const after = val[end];
+
+      if (e.key === 'Enter' && !e.shiftKey && !hasSel) {
+        const indent = lineIndent(val, start);
+        if (before === '{' && after === '}') {
+          // Expand "{|}" into a 3-line block with the caret indented inside.
+          insert(`\n${indent}  \n${indent}`, indent.length + 1);
+        } else {
+          insert(`\n${indent}${before === '{' ? '  ' : ''}`);
+        }
+        e.preventDefault();
+        refresh();
+        return;
+      }
+
+      if (e.key === 'Tab') {
+        e.preventDefault();
+        const blockStart = val.lastIndexOf('\n', start - 1) + 1;
+        const multiline = val.slice(start, end).includes('\n');
+        if (multiline) {
+          const block = val.slice(blockStart, end);
+          const next = e.shiftKey ? block.replace(/^[ \t]{1,2}/gm, '') : block.replace(/^/gm, '  ');
+          textarea.selectionStart = blockStart;
+          textarea.selectionEnd = end;
+          let ok = false;
+          try { ok = d.execCommand('insertText', false, next); } catch {}
+          if (!ok) textarea.value = val.slice(0, blockStart) + next + val.slice(end);
+          textarea.selectionStart = blockStart;
+          textarea.selectionEnd = blockStart + next.length;
+        } else if (e.shiftKey) {
+          const lead = (val.slice(blockStart).match(/^[ \t]{1,2}/) || [''])[0];
+          if (lead) {
+            textarea.value = val.slice(0, blockStart) + val.slice(blockStart + lead.length);
+            const caret = Math.max(blockStart, start - lead.length);
+            textarea.selectionStart = textarea.selectionEnd = caret;
+          }
+        } else {
+          insert('  ');
+        }
+        refresh();
+        return;
+      }
+
+      if (e.key === 'Backspace' && !hasSel && before && PAIRS[before] === after) {
+        // Backspacing inside an empty pair removes both halves.
+        textarea.selectionStart = start - 1;
+        textarea.selectionEnd = start + 1;
+        let ok = false;
+        try { ok = d.execCommand('delete', false); } catch {}
+        if (!ok) {
+          textarea.value = val.slice(0, start - 1) + val.slice(start + 1);
+          textarea.selectionStart = textarea.selectionEnd = start - 1;
+        }
+        e.preventDefault();
+        refresh();
+        return;
+      }
+
+      if (e.key.length !== 1) return;
+
+      // Skip over a closer/quote already typed by auto-close.
+      if (!hasSel && e.key === after && (CLOSERS.has(e.key) || isQuote(e.key))) {
+        textarea.selectionStart = textarea.selectionEnd = end + 1;
+        e.preventDefault();
+        refresh();
+        return;
+      }
+
+      if (PAIRS[e.key]) {
+        if (hasSel) {
+          wrap(e.key, PAIRS[e.key]);
+          e.preventDefault();
+          refresh();
+          return;
+        }
+        // Don't auto-close a quote that's likely an apostrophe inside a word.
+        const wordChar = before && /[\w'"]/.test(before);
+        if (isQuote(e.key) && wordChar) return;
+        insert(e.key + PAIRS[e.key], 1);
+        e.preventDefault();
+        refresh();
+      }
     });
   },
 
@@ -4960,9 +5191,12 @@ Enable it on boards.${location.hostname.split('.')[1]}.org in your browser's pri
       'selectedArchives'
     ];
 
-    options['Posting'] = [
+	    options['Posting'] = [
       ...keysIn('Posting and Captchas'),
-      'Comment Preview Position',
+      'Comment Preview Position', // deprecated/unused, kept for back-compat export
+      'Comment Preview Inline Behavior',
+      'Comment Preview Last Mode',
+      'Comment Preview Float Position',
       'QR.personas'
     ];
 

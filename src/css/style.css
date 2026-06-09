@@ -4160,7 +4160,9 @@ body:not(.board_f) #qr select[name="filetag"],
     rgba(0,0,0,0.025) 3px,
     rgba(0,0,0,0.025) 6px
   );
-  max-width: 100%;
+  /* Keep the docked preview on the site's native reply layout (display: table)
+     so the left collapse gutter reserves the same space as a real reply. */
+  box-sizing: border-box;
 }
 .postContainer.qr-preview-post .postInfo .preview-no .preview-label {
   font-style: italic;
@@ -4179,21 +4181,28 @@ body:not(.board_f) #qr select[name="filetag"],
 }
 
 /* Floating preview: just the post itself (no window frame), absolutely positioned + draggable */
-#qr-preview-float {
+.qr-preview-float {
   /* The element is the postContainer; it carries its own post styling */
-  min-width: 280px;
-  max-width: 520px;
-  z-index: 99999;
+  min-width: 180px;
+  max-width: none; /* no cap: expand as wide as the comment needs (wide screens included) */
+  z-index: 21; /* just above QR (20), below Settings overlay (999) */
   cursor: move; /* entire floating post (including content area) is grabbable for dragging */
 }
-#qr-preview-float .qr-preview-post {
+.qr-preview-float .qr-preview-post {
   margin: 0;
   opacity: 1;
 }
-#qr-preview-float .qr-preview-post > .reply {
-  border: 1px solid rgba(120,120,120,0.45);
+.qr-preview-float .qr-preview-post > .reply {
+  /* Only add a drop shadow so the float reads as a lifted panel. Do NOT set border/background
+     here: that would override the shared orange dashed "preview" edge above and (because the
+     float lives on <body>, outside the themed board) replace the inherited reply background
+     with a hard-coded light color — which is what made the floating preview render all-white
+     with no orange border. Let it inherit the theme's reply colors like the in-thread preview. */
   box-shadow: 0 2px 8px rgba(0,0,0,0.18);
-  background: var(--reply-background-color, #f0f0f0);
+  /* JS pins an explicit pixel width after measuring the unwrapped preview. Keeping
+     CSS auto avoids reintroducing shrink-to-fit feedback while the measurement runs. */
+  display: inline-block;
+  width: auto;
 }
 /* Hide only the post menu dropdown button on preview posts.
    The delete checkbox is intentionally kept so the in-thread preview
@@ -4203,38 +4212,54 @@ body:not(.board_f) #qr select[name="filetag"],
 }
 
 /* Links inside the preview should still behave normally */
-#qr-preview-float a {
+.qr-preview-float a {
   cursor: pointer;
 }
 
-/* File attachments (images/video) in the live QR comment previews (thread-stitched or floating).
-   We now let the native .fileThumb float + margin rules from the site theme apply inside
-   the preview .post so the comment text flows/wraps beside the thumb (just like the final post).
-   This fixes the "weird page break" / strange wrapping / extra gap below the image that
-   happened with the previous stacked inline-block layout. Thumb size is still capped for
-   the compact preview. The whole preview post is self-contained (dashed border or floating
-   box + our max-width caps + clearfix) so the float doesn't steal layout from the thread. */
+/* The dock toggle is the "preview" link itself (No.<preview>): clicking it docks the
+   floating preview into the thread and back. Reads "dock preview" / "undock preview"
+   in a thread, plain "preview" elsewhere. Keep it a pointer even inside the floating
+   preview (whose body is cursor:move for dragging). */
+.qr-preview-inline-toggle {
+  cursor: pointer;
+  /* It's a <span>, not an <a>, on purpose: the quote link is matched positionally as
+     .postNum > a:nth-of-type(2), so an anchor here gets wired to quoting and inserts >>0.
+     A span keeps the link look without being quotable. */
+  color: var(--xt-link-text-color, inherit);
+}
+.qr-preview-inline-toggle.is-dockable {
+  text-decoration: underline dotted;
+  text-underline-offset: 2px;
+}
+.qr-preview-inline-toggle.is-dockable:hover {
+  text-decoration: underline;
+}
+
+/* File attachments in live QR previews use the real post structure:
+   .file before blockquote.postMessage, with the site theme's .fileThumb float
+   controlling text flow. */
 .qr-preview-post .file,
-#qr-preview-float .file {
-  margin: 2px 0 4px;
-  font-size: 90%;
+.qr-preview-float .file {
+  margin-top: 2px;
+  margin-bottom: 4px;
   max-width: 100%;
 }
 .qr-preview-post .fileText,
-#qr-preview-float .fileText {
+.qr-preview-float .fileText {
   margin-bottom: 1px;
   /* Long filenames ... break instead of forcing width. */
   word-break: break-all;
   overflow-wrap: break-word;
 }
-/* Do NOT force inline-block here anymore — let the theme's normal floated .fileThumb
-   (with its left float + margins) apply so text in the following postMessage can sit
-   beside the thumbnail for the first few lines, matching real post rendering.
-   We only override the rendered size + border for preview niceness. */
+/* Keep preview media compact while preserving the native floated fileThumb layout. */
+.qr-preview-post .qr-preview-file-thumb,
+.qr-preview-float .qr-preview-file-thumb {
+  min-width: 125px;
+}
 .qr-preview-post .fileThumb img,
 .qr-preview-post .fileThumb video,
-#qr-preview-float .fileThumb img,
-#qr-preview-float .fileThumb video {
+.qr-preview-float .fileThumb img,
+.qr-preview-float .fileThumb video {
   max-width: 125px;
   max-height: 125px;
   display: block;
@@ -4242,22 +4267,20 @@ body:not(.board_f) #qr select[name="filetag"],
   background: #fff;
 }
 
-/* Ensure newlines and wrapping behave in our injected preview posts (the renderer now uses <br> but this helps code blocks etc.)
-   Use strong breaking so holding a key (long runs of the same char with no spaces) does not make
-   the preview post body grow rightward or cause strange "page break"/wrapping artifacts,
-   especially when a file/image is also shown in the preview. */
+/* Preserve typed newlines but do not soft-break long unspaced runs. Width sync
+   expands the preview; allowing anywhere-breaks causes the visible wrap-then-jump. */
 .postContainer.qr-preview-post .postMessage,
-#qr-preview-float .postMessage {
+.qr-preview-float .postMessage {
   white-space: pre-wrap;
-  overflow-wrap: break-word;
-  word-break: break-all;
-  word-wrap: break-word; /* legacy alias */
+  overflow-wrap: normal;
+  word-break: normal;
+  word-wrap: normal; /* legacy alias */
 }
 /* Clearfix for the preview post containers so floated thumbnails (when an image/file
    is attached in the QR) are properly contained for height. Prevents the preview box
    from collapsing or showing odd "page break" gaps below the image area. */
 .postContainer.qr-preview-post::after,
-#qr-preview-float .qr-preview-post::after {
+.qr-preview-float .qr-preview-post::after {
   content: '';
   clear: both;
   display: table;
@@ -4331,7 +4354,8 @@ input.field.tripped:not(:hover):not(:focus) {
   height: 18px;
   justify-content: center;
   line-height: inherit;
-  margin: 0 1px;
+  /* A touch of breathing room from the "QR" label it sits next to. */
+  margin: 0 1px 0 6px;
   opacity: .45;
   padding: 0;
   width: 18px;
@@ -4341,9 +4365,7 @@ input.field.tripped:not(:hover):not(:focus) {
   height: 1em;
   width: auto;
 }
-#qr-preview-toggle.enabled,
-#qr-preview-toggle:hover,
-#qr-preview-toggle:focus {
+#qr-preview-toggle.enabled {
   opacity: 1;
 }
 /* The clear-draft trash is a raw emoji <a>, so it rides high on the text
@@ -4356,7 +4378,7 @@ input.field.tripped:not(:hover):not(:focus) {
   height: 18px;
   justify-content: center;
   line-height: 1;
-  margin: 0 1px;
+  margin: 0 4px 0 1px;
   text-decoration: none;
   width: 18px;
 }
@@ -4378,9 +4400,17 @@ input.field.tripped:not(:hover):not(:focus) {
 #qr > .move .close > .icon {
   display: block;
 }
-/* When the thread select is hidden, the close button takes over right-anchoring */
+/* When the thread select is hidden, keep the draft trash grouped with close
+   instead of leaving it beside the left-side QR header controls. */
+:root.thread-view #qr:not(.show-new-thread-option) > .move .qr-clear-draft:not([hidden]) {
+  margin-left: auto;
+}
+/* If there is no draft trash, the close button still takes over right-anchoring. */
 :root.thread-view #qr:not(.show-new-thread-option) > .move .close {
   margin-left: auto;
+}
+:root.thread-view #qr:not(.show-new-thread-option) > .move .qr-clear-draft:not([hidden]) + .close {
+  margin-left: 0;
 }
 
 /* Recaptcha v2 */
@@ -4433,30 +4463,40 @@ input.field.tripped:not(:hover):not(:focus) {
   display: inline-flex;
   align-items: center;
   gap: 5px;
+  align-self: center;
   flex: 1 1 140px;
   min-width: 0;
+  height: 18px;
   margin-left: 6px;
   font-size: 11px;
-  line-height: 1.35;
+  line-height: 18px;
   opacity: .8;
   white-space: normal;
   overflow-wrap: anywhere;
 }
 #qr.captcha-t .fourchanx-captcha-status-text {
+  display: inline-flex;
+  align-items: center;
+  align-self: center;
   min-width: 0;
+  height: 18px;
+  line-height: inherit;
 }
 #qr.captcha-t .fourchanx-captcha-status-icon {
   display: inline-flex;
   align-items: center;
   justify-content: center;
-  width: 1.2em;
-  height: 1.2em;
-  border: 2px solid currentColor;
-  border-radius: 50%;
-  font-weight: bold;
-  font-size: 9px;
-  line-height: 1;
+  flex: 0 0 auto;
+  width: 13px;
+  height: 13px;
+  line-height: 0;
+  transform: translateY(-.5px);
   box-sizing: border-box;
+}
+#qr.captcha-t .fourchanx-captcha-status-svg {
+  display: block;
+  width: 100%;
+  height: 100%;
 }
 #qr.captcha-t .fourchanx-captcha-status-icon.state-complete {
   color: #2c9c47;
@@ -4467,6 +4507,12 @@ input.field.tripped:not(:hover):not(:focus) {
 #qr.captcha-t .fourchanx-captcha-status-icon.state-expired {
   color: #c38c2f;
 }
+#qr.captcha-t .fourchanx-captcha-status-icon.state-loading {
+  color: #4f7eaa;
+}
+#qr.captcha-t .fourchanx-captcha-status-icon.state-idle {
+  color: #6f7c8f;
+}
 #qr.captcha-t .fourchanx-captcha-progress {
   font-size: 11px;
   line-height: 18px;
@@ -4476,6 +4522,13 @@ input.field.tripped:not(:hover):not(:focus) {
 #qr.captcha-t :is(#t-ctrl, #t-msg, #t-desc, #t-task, #t-load, #t-next, .fourchanx-captcha-load-hint, .fourchanx-captcha-status-text, .fourchanx-captcha-progress) {
   color: inherit !important;
   -webkit-text-fill-color: currentColor !important;
+}
+/* Native t-captcha sets an inline `padding: 4px` on #t-ctrl; drop the left padding
+   (!important to beat the inline style) so the Get Captcha button lines up with the
+   left edge of the comment textarea. */
+#qr.captcha-t #t-ctrl {
+  padding-left: 0 !important;
+  align-items: center !important;
 }
 /* The native TCaptcha root is a bare <div> (its className is wiped to "") inside
    .captcha-root, carrying an INLINE light background (rgb(238,238,238)). Target

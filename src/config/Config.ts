@@ -604,6 +604,11 @@ const Config = {
         'Remember the spoiler state, instead of resetting after posting.',
         1
       ],
+      'Auto-close Tags': [
+        true,
+        'In the Quick Reply comment field, automatically insert the matching closing tag when you type a supported opening tag (e.g. typing [code] on /g/ inserts [/code] and parks the cursor between them). Only fires for tags the current board actually supports ([code], [math]/[eqn], [spoiler], [sjis], and the /mu/ & /qst/ color tags).',
+        1
+      ],
       'Remember QR State': [
         false,
         'Auto-save your Quick Reply (per board) so it survives a refresh, close or crash, including all queued posts and their attachments (images and videos, up to ~100 MB per board). Restores into an empty Quick Reply when you return to the board; cleared after you post.',
@@ -672,8 +677,23 @@ const Config = {
       ],
       'Comment Preview': [
         false,
-        'Toggle (via button in QR titlebar) a live preview of how your comment will render. Two styles via "Preview Style": "In the thread" (literal post stitched at the very bottom of the thread when possible; automatically uses floating on catalog/index) or "Floating window" (draggable post-like panel similar to quote hovers or thread watcher; controlled only by the toggle).',
+        'Toggle (via button in QR titlebar) a live preview of how your comment will render. The preview shows as a draggable floating window by default; an arrow icon in the preview\'s header docks it inline as a literal post in the thread (and back). "Inline Behavior" controls whether docking scrolls to the thread end or inserts in place and follows your scroll.',
         1
+      ],
+      'Comment Preview Default Mode': [
+        'attached',
+        'Choose where the comment preview starts when Quick Reply opens.',
+        2
+      ],
+      'Comment Preview Attach Location': [
+        'auto',
+        'Where the attached floating preview docks to Quick Reply. Auto prefers bottom, but avoids the Thread Watcher when it is already attached there.',
+        2
+      ],
+      'Comment Preview Remember Float Position': [
+        false,
+        'Remember a manually dragged floating preview position when Quick Reply is closed and reopened.',
+        2
       ],
       'Show Comment Preview Header Icon': [
         true,
@@ -862,7 +882,13 @@ const Config = {
   'Thread Watcher Attach Location': 'bottom',
   'Thread Title': 'excerpt',
   'Unread Title Count': 'always',
-  'Comment Preview Position': 'thread',
+  'Comment Preview Position': 'thread', // deprecated/unused: preview is always floating + on-demand inline
+  'Comment Preview Default Mode': 'attached', // 'attached' | 'inline' | 'remember'
+  'Comment Preview Last Mode': 'attached', // internal state for Default Mode = remember
+  'Comment Preview Attach Location': 'auto', // 'auto' | 'bottom' | 'top' | 'right' | 'left'
+  'Comment Preview Inline Behavior': 'scroll', // 'scroll' = dock at thread end + scroll to it; 'inplace' = insert near viewport and follow scroll
+  'Comment Preview Remember Float Position': false,
+  'Comment Preview Float Position': {}, // internal state: { left: string, top: string }
   'Show Comment Preview Header Icon': true,
   'Spoiler Mode': 'default',
   'Settings Menu Layout': 'vertical',

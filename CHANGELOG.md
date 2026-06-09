@@ -3,10 +3,16 @@
 ### Unreleased
 
 - Added a "Highlight neXT" settings toggle that marks settings added or changed compared to upstream 4chan-X.
+- Hardened Quick Reply Name, Options, and Subject fields against browser autofill/autocomplete and stopped restoring saved values into those fields.
 - Removed the Quick Reply media metadata stripping settings.
-- Fixed Quick Reply comment preview to stay hidden on load when empty (only shows once there is text or a file, or after an explicit preview toggle).
+- Changed the Quick Reply comment preview visual style to match an actual thread post, with docked, QR-attached, and floating view modes.
+- Added Quick Reply comment preview settings for default mode, attach location, inline behavior, remembering floating position, and showing the QR titlebar toggle.
+- Added Quick Reply docking alignment, QR/window resize handling, Settings overlay stacking, and QR reopen behavior for remembered floating positions.
+- Moved the Quick Reply saved-draft trash button next to the close button when the thread selector is hidden.
 - Fixed console spam from JSON.parse on non-2xx CrossOrigin responses.
 - Added CSS Custom Highlight API search highlighting for thread index and settings search.
+- Added IDE-style editing to the Custom CSS editor: auto-closing brackets/quotes, skip-over and empty-pair deletion, selection wrapping, Tab/Shift+Tab indent and dedent, and brace-aware auto-indent on Enter.
+- Added an "Auto-close Tags" option that closes supported board tags (`[code]`, `[spoiler]`, `[math]`/`[eqn]`, `[sjis]`, etc.) in the Quick Reply comment box, inserting the matching closing tag.
 
 ### 1.1.0 (2026-06-08)
 

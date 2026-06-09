@@ -7,32 +7,43 @@ import { DAY, HOUR, MINUTE, SECOND } from "../platform/helpers";
 
 var RelativeDates = {
   INTERVAL: 30000,
+  callbackRegistered: false,
+  listenersBound: false,
 
   init() {
-    if (
-      (
-        ['index', 'thread', 'archive'].includes(g.VIEW) &&
-        ['Show', 'Both', 'BothRelativeFirst'].includes(Conf.RelativeTime)
-      ) ||
-      Index.enabled
-    ) {
-      this.flush();
-      $.on(d, 'visibilitychange PostsInserted', this.flush);
-    }
+    RelativeDates.ensureListeners();
+    $.on(d, 'RelativePostDatesChanged', RelativeDates.reapply);
+    $.sync('RelativeTime', (RelativeTime) => {
+      Conf.RelativeTime = RelativeTime;
+      RelativeDates.reapply();
+    });
 
     if (Conf.RelativeTime !== 'No') {
-      return Callbacks.Post.push({
-        name: 'Relative Post Dates',
-        cb:   this.node
-      });
+      return RelativeDates.ensureCallback();
     }
   },
 
+  ensureListeners() {
+    if (RelativeDates.listenersBound) return;
+    RelativeDates.listenersBound = true;
+    $.on(d, 'visibilitychange PostsInserted', RelativeDates.flush);
+  },
+
+  ensureCallback() {
+    if (RelativeDates.callbackRegistered) return;
+    RelativeDates.callbackRegistered = true;
+    return Callbacks.Post.push({
+      name: 'Relative Post Dates',
+      cb:   RelativeDates.node
+    });
+  },
+
   node(this: Post) {
+    if (Conf.RelativeTime === 'No') { return; }
     if (!this.info.date) { return; }
     const dateEl = this.nodes.date;
     if (Conf.RelativeTime === 'Hover') {
-      $.on(dateEl, 'mouseover', () => RelativeDates.hover(this));
+      RelativeDates.bindHover(this);
       return;
     }
     if (this.isClone) { return; }
@@ -48,8 +59,53 @@ var RelativeDates = {
     return RelativeDates.update(this);
   },
 
+  bindHover(post: Post) {
+    const dateEl = post.nodes.date;
+    if (dateEl.dataset.relativeHoverBound) return;
+    dateEl.dataset.relativeHoverBound = '1';
+    $.on(dateEl, 'mouseover', () => RelativeDates.hover(post));
+  },
+
+  reapply() {
+    clearTimeout(RelativeDates.timeout);
+    RelativeDates.timeout = undefined;
+    RelativeDates.stale = [];
+
+    if (!['index', 'thread', 'archive'].includes(g.VIEW)) return;
+
+    const mode = Conf.RelativeTime;
+    if (mode !== 'No') {
+      RelativeDates.ensureListeners();
+      RelativeDates.ensureCallback();
+    }
+
+    g.posts.forEach((post: Post) => {
+      if (!post.info.date || post.isFetchedQuote || !doc.contains(post.nodes.root)) return;
+      RelativeDates.restore(post);
+      if (mode === 'No') return;
+      if (mode === 'Hover') {
+        RelativeDates.bindHover(post);
+        return;
+      }
+      if (!post.isClone) RelativeDates.update(post);
+    });
+
+    if (['Show', 'Both', 'BothRelativeFirst'].includes(mode)) {
+      RelativeDates.flush();
+    }
+  },
+
+  restore(post: Post) {
+    for (const singlePost of [post].concat(post.clones)) {
+      const node = singlePost.nodes.date;
+      const full = node.dataset.fullTime;
+      if (full) node.textContent = full;
+      node.removeAttribute('title');
+    }
+  },
+
   /** @param diff is milliseconds from now. */
-  relative(diff: number, now: Date, date: Date, abbrev: boolean): string {
+  relative(diff: number, now: Date, date: Date, abbrev = false): string {
     let number: number;
     let unit: string;
         if ((number = (diff / DAY)) >= 1) {
@@ -57,13 +113,13 @@ var RelativeDates = {
       let months = now.getMonth() - date.getMonth();
       const days = now.getDate() - date.getDate();
       if (years > 1) {
-        number = years - ((months < 0) || ((months === 0) && (days < 0)));
+        number = years - ((months < 0) || ((months === 0) && (days < 0)) ? 1 : 0);
         unit = 'year';
       } else if ((years === 1) && ((months > 0) || ((months === 0) && (days >= 0)))) {
         number = years;
         unit = 'year';
       } else if ((months = months + (12*years)) > 1) {
-        number = months - (days < 0);
+        number = months - (days < 0 ? 1 : 0);
         unit = 'month';
       } else if ((months === 1) && (days >= 0)) {
         number = months;
@@ -118,7 +174,7 @@ var RelativeDates = {
   hover(post) {
     const { date } = post.info;
     const now  = new Date();
-    const diff = now - date;
+    const diff = now.getTime() - date.getTime();
     post.nodes.date.title = RelativeDates.relative(diff, now, date);
   },
 
@@ -134,7 +190,7 @@ var RelativeDates = {
       date = new Date(+data.dataset.utc);
       abbrev = !!data.dataset.abbrev;
     }
-    const diff = now - date;
+    const diff = now.getTime() - date.getTime();
     const relative = RelativeDates.relative(diff, now, date, abbrev);
     if (isPost) {
       for (var singlePost of [data].concat(data.clones)) {

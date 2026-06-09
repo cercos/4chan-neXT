@@ -1308,6 +1308,7 @@ var ThreadWatcher = {
         dialog.style.setProperty('--watcher-max-width', `${Math.max(120, targetW - 12)}px`);
       }
     }
+    QR?.repositionFloatingPreview?.();
   },
 
   restorePosition() {
@@ -1325,6 +1326,7 @@ var ThreadWatcher = {
     dialog.style.height = '';
     dialog.style.position = Conf['Fixed Thread Watcher'] ? 'fixed' : 'absolute';
     ThreadWatcher.applyLayout();
+    QR?.repositionFloatingPreview?.();
   },
 
   onQRDialogCreation() {

@@ -1,8 +1,27 @@
 import { Conf, d, g } from "../globals/globals";
 import $ from "../platform/$";
 import QR from "./QR";
+import { svgPathData as circleSvg, width as circleW, height as circleH } from "@fas/faCircle";
+import { svgPathData as circleCheckSvg, width as circleCheckW, height as circleCheckH } from "@fas/faCircleCheck";
+import { svgPathData as circleExclamationSvg, width as circleExclamationW, height as circleExclamationH } from "@fas/faCircleExclamation";
+import { svgPathData as circleNotchSvg, width as circleNotchW, height as circleNotchH } from "@fas/faCircleNotch";
+import { svgPathData as circleXmarkSvg, width as circleXmarkW, height as circleXmarkH } from "@fas/faCircleXmark";
 
 const getTCaptcha = () => window.TCaptcha || window.wrappedJSObject?.TCaptcha || (typeof unsafeWindow !== 'undefined' ? unsafeWindow.TCaptcha : undefined);
+
+const captchaStatusIcon = (svgPathData: string, width: string | number, height: string | number) => (
+  `<svg xmlns="http://www.w3.org/2000/svg" class="fourchanx-captcha-status-svg" viewBox="0 0 ${width} ${height}" aria-hidden="true">` +
+    `<path d="${svgPathData}" fill="currentColor" />` +
+  `</svg>`
+);
+
+const captchaStatusIcons = {
+  idle: captchaStatusIcon(circleSvg, circleW, circleH),
+  loading: captchaStatusIcon(circleNotchSvg, circleNotchW, circleNotchH),
+  complete: captchaStatusIcon(circleCheckSvg, circleCheckW, circleCheckH),
+  failed: captchaStatusIcon(circleXmarkSvg, circleXmarkW, circleXmarkH),
+  expired: captchaStatusIcon(circleExclamationSvg, circleExclamationW, circleExclamationH),
+};
 
 const CaptchaT = {
   init() {
@@ -285,11 +304,18 @@ const CaptchaT = {
       failed: '#cf4a4a',
       expired: '#d0a64d',
     };
-    const borderColor = borderColors[state] || borderColors.idle;
     const showBorder = state === 'complete' || state === 'failed' || state === 'expired';
-    container.style.border = showBorder ? `2px solid ${borderColor}` : '2px solid transparent';
+    const borderColor = borderColors[state] || borderColors.idle;
+    const loadButton = $('#t-load', container);
+    container.style.border = '2px solid transparent';
     container.style.borderRadius = '4px';
     container.style.transition = 'border-color .2s ease';
+    if (loadButton) {
+      loadButton.style.border = showBorder ? `2px solid ${borderColor}` : '';
+      loadButton.style.borderRadius = '4px';
+      loadButton.style.transition = 'border-color .2s ease';
+      loadButton.style.opacity = showBorder ? '1' : '';
+    }
     this.setStatusMessage({
       idle: '',
       loading: '',
@@ -339,18 +365,14 @@ const CaptchaT = {
     statusNode.classList.add(`state-${state}`);
     statusNode.replaceChildren();
 
-    const iconByState = {
-      complete: '✓',
-      failed: '✕',
-      expired: '!'
-    };
-    const icon = iconByState[state];
+    const icon = captchaStatusIcons[state];
     if (icon) {
-      statusNode.appendChild($.el('span', {
+      const iconNode = $.el('span', {
         className: `fourchanx-captcha-status-icon state-${state}`,
-        textContent: icon,
         title: this.plainStatusMessage(text)
-      }));
+      });
+      iconNode.innerHTML = icon;
+      statusNode.appendChild(iconNode);
     }
 
     const message = $.el('span', {
@@ -415,13 +437,7 @@ const CaptchaT = {
   },
 
   formatTaskMessage(text, state) {
-    const icon = {
-      loading: '◔',
-      complete: '✓',
-      failed: '✕',
-      expired: '⏱',
-      idle: '○'
-    }[state] || '○';
+    const icon = captchaStatusIcons[state] || captchaStatusIcons.idle;
     return `<div id="t-desc" class="tcaptcha-message state-${state}">` +
       `<span class="tcaptcha-message-icon" aria-hidden="true">${icon}</span>` +
       `<span class="tcaptcha-message-text">${text || ''}</span>` +
@@ -722,7 +738,8 @@ const CaptchaT = {
         #qr.fourchanx-stacked-captcha .tcaptcha-image.active { outline: 4px solid var(--xt-variant-accent, #00c06f); outline-offset: -3px; box-shadow: 0 0 10px 2px color-mix(in srgb, var(--xt-variant-accent, #00c06f) 70%, transparent); border-radius: 2px; }
         #qr.fourchanx-stacked-captcha #t-desc { white-space: pre-line; text-align: center; font-size: 14px; user-select: none; width: 100%; }
         #qr.fourchanx-stacked-captcha #t-desc.tcaptcha-message { padding-bottom: 15px; box-sizing: border-box; display: inline-flex; align-items: center; justify-content: center; gap: 6px; }
-        #qr.fourchanx-stacked-captcha #t-desc.tcaptcha-message .tcaptcha-message-icon { display: inline-flex; align-items: center; justify-content: center; width: 1.2em; height: 1.2em; border: 2px solid currentColor; border-radius: 50%; font-weight: bold; font-size: 11px; line-height: 1; box-sizing: border-box; }
+        #qr.fourchanx-stacked-captcha #t-desc.tcaptcha-message .tcaptcha-message-icon { display: inline-flex; align-items: center; justify-content: center; flex: 0 0 auto; width: 1.15em; height: 1.15em; line-height: 0; transform: translateY(-.5px); box-sizing: border-box; }
+        #qr.fourchanx-stacked-captcha #t-desc.tcaptcha-message .tcaptcha-message-icon > .fourchanx-captcha-status-svg { display: block; width: 100%; height: 100%; }
         #qr.fourchanx-stacked-captcha #t-desc.tcaptcha-message.state-complete .tcaptcha-message-icon { color: #2c9c47; }
         #qr.fourchanx-stacked-captcha #t-desc.tcaptcha-message.state-failed .tcaptcha-message-icon { color: #cf4a4a; }
         #qr.fourchanx-stacked-captcha #t-desc.tcaptcha-message.state-expired .tcaptcha-message-icon { color: #c38c2f; }

@@ -983,6 +983,10 @@ var Main = {
 
   parsePosts(postRoots, thread, posts, errors) {
     for (var postRoot of postRoots) {
+      // The QR comment preview is a fake post stitched into the thread (no real ID, no
+      // quote link). It carries .postContainer for styling, so the observer hands it here —
+      // never build a real Post from it (Post.node() would crash on its null quote anchor).
+      if (postRoot.classList?.contains('qr-preview-post')) { continue; }
       if (!(postRoot.dataset.fullID && g.posts.get(postRoot.dataset.fullID)) && $(g.SITE.selectors.comment, postRoot)) {
         try {
           posts.push(new Post(postRoot, thread, thread.board));
