@@ -368,9 +368,13 @@ var QR = {
 
   open() {
     if (QR.nodes) {
-      if (QR.nodes.el.hidden) { QR.captcha.setup(); }
+      const wasHidden = QR.nodes.el.hidden;
+      if (wasHidden) { QR.captcha.setup(); }
       QR.nodes.el.hidden = false;
       QR.unhide();
+      // close() resets the in-memory QR post list to a blank post while the
+      // saved draft stays in storage. Rehydrate it before rebuilding previews.
+      if (wasHidden) { QR.drafts.restore(); }
       // Restore the comment preview if it was on when the QR was closed. The toggle
       // (Conf['Comment Preview']) persists, but close()'s teardown left no preview node.
       // Use the SAME full path dialog() uses on first open so the rebuilt preview is
@@ -402,6 +406,7 @@ var QR = {
 	    QR.blur();
 	    $.rmClass(QR.nodes.el, 'dump');
 	    $.addClass(QR.shortcut, 'disabled');
+	    QR.drafts.flush();
 	    QR.storeCommentPreviewLastMode();
 	    QR.removeThreadPreviewPost();
 	    QR.removeFloatingPreview();
