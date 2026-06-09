@@ -15,6 +15,19 @@ When enabled, it loads after 4chan-neXT's built-in CSS. That means it can
 override neXT feature styling, but the safest changes are still scoped and
 variable-based.
 
+The Custom CSS editor is more than a plain textarea:
+
+- Syntax themes are available from the editor toolbar (`System`, `Light`,
+  `Dark`, and `Solarized`).
+- `Expand editor` increases the editor height for larger userstyles.
+- `{`, `(`, `[`, `"`, and `'` auto-close; typing the closer again skips over
+  the existing character.
+- Selecting text and typing an opening pair wraps the selection.
+- Backspace inside an empty pair removes both halves.
+- `Tab` indents with two spaces; `Shift+Tab` dedents. Multi-line selections are
+  indented or dedented line-by-line.
+- Enter preserves indentation, and `{|}` expands into a brace block.
+
 Custom CSS is the user escape hatch, but CSS cascade rules still apply:
 
 - A normal `:root { --xt-name: value; }` override beats built-in theme defaults.
@@ -163,6 +176,68 @@ yourself.
 .important.opContainer,
 .important > .reply {
   box-shadow: inset 5px 0 gold;
+}
+```
+
+## Quick Reply Comment Preview
+
+The Quick Reply comment preview uses real post-like markup in both inline and
+floating modes. It is intentionally distinct from real posts by default, using a
+dashed border and an accent edge.
+
+Useful preview hooks:
+
+| Hook | Meaning |
+|---|---|
+| `.postContainer.qr-preview-post` | Inline thread preview post container |
+| `.qr-preview-float` | Floating preview root |
+| `.qr-preview-post > .reply` | Preview reply body |
+| `.qr-preview-inline-toggle` | The `preview` header control that docks or undocks the preview |
+| `--xt-qr-preview-accent` | Preview accent edge and inner glow color |
+
+Example:
+
+```css
+:root {
+  --xt-qr-preview-accent: #2aa198;
+}
+```
+
+```css
+.qr-preview-float {
+  filter: drop-shadow(0 6px 18px rgba(0, 0, 0, .24));
+}
+```
+
+## Search Highlights
+
+Settings search and thread-index/catalog search use the CSS Custom Highlight
+API when the browser supports it. These highlights do not insert DOM nodes; they
+paint text ranges through named `::highlight()` pseudo-elements.
+
+Available names:
+
+| Pseudo-element | Used by |
+|---|---|
+| `::highlight(fourchanx-settings-search)` | Settings search |
+| `::highlight(fourchanx-index-search)` | Thread index/catalog search |
+
+Example:
+
+```css
+::highlight(fourchanx-settings-search),
+::highlight(fourchanx-index-search) {
+  background: rgba(255, 180, 0, .35);
+  color: inherit;
+}
+```
+
+Browsers without the API fall back to `<mark>` in Settings, so keep any
+legacy fallback styling scoped:
+
+```css
+.section-container mark {
+  background: rgba(255, 180, 0, .35);
 }
 ```
 

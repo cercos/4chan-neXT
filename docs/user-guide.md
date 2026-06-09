@@ -14,13 +14,13 @@ If you use StyleChan, read Styling And Themes before tuning colors. 4chan-neXT d
 
 A settings-level comparison against 4chan XT shows these main 4chan-neXT additions:
 
-- **Quick Reply and posting:** `Remember QR State` draft restore with attachment persistence, native board-index form hiding, upload progress, thumbnail remove-file-first behavior, image auto-processing, board-aware video audio stripping, stacked TCaptcha answer editing, and comment preview.
+- **Quick Reply and posting:** `Remember QR State` draft restore with attachment persistence, native board-index form hiding, upload progress, thumbnail remove-file-first behavior, image auto-processing, board-aware video audio stripping, stacked TCaptcha answer editing, autofill-resistant QR identity fields, auto-closing board tags, and post-styled comment preview modes.
 - **Thread Watcher and monitoring:** Quick Reply docking, attach location controls, manual max size controls, OP thumbnails, hover thumbnail previews, mark-all-read and per-thread mark-read icons, detailed thread stats, and replies-to-you watcher link state.
 - **Styling and themes:** built-in themes, SFW/NSFW styling variants, StyleChan section ownership, home-page StyleChan mirroring, highlight color controls, text color modes, edge/background modes, edge and border styles, catalog own/watched highlights, saved palettes, and local styling docs.
 - **Scrollbar markers:** own-post, quotes-you, ghost-post, and unread-line markers with per-marker colors, opacity, match-highlight controls, plus beside-scrollbar and IDE-style over-scrollbar layouts.
 - **Filters:** responsive Simple Filters, auto-save, color swatches plus custom CSS classes, combined preview, hidden-thread grouping, showing hidden threads with unread replies to you, `highlight:` class lists, and catalog `tile` highlight glow.
 - **Gallery and media:** grid gallery thumbnails, configurable columns and thumbnail dock position, ZIP-based download-all-media support, persistent download dialog behavior, thumbnail replacement controls, and metadata visibility controls.
-- **Linkification and UI:** YouTube -> yewtu.be rewriting, X/Twitter -> xcancel rewriting, visible or tooltip setting descriptions, vertical or horizontal Settings navigation, relative post dates, and relative-date title mode.
+- **Linkification and UI:** YouTube -> yewtu.be rewriting, X/Twitter -> xcancel rewriting, visible or tooltip setting descriptions, vertical or horizontal Settings navigation, `Highlight neXT` settings comparison markers, CSS Custom Highlight API search highlighting, relative post dates, and relative-date title mode.
 
 ## Settings Window
 
@@ -30,8 +30,11 @@ Important settings:
 
 - Settings -> Interface -> `Settings Descriptions as Tooltips`: switches setting descriptions from inline text to browser tooltips.
 - Settings -> Interface -> `Navigation menu`: chooses `Vertical` sidebar navigation or `Horizontal` titlebar navigation.
+- Settings footer -> `Highlight neXT`: highlights settings that 4chan-neXT added or changed compared to upstream 4chan X. Added settings are marked green; changed defaults are marked amber.
 
 The horizontal navigation layout puts the search box and section links in the titlebar. It is useful on wide windows, but the vertical layout remains the default.
+
+Settings search paints matched text with the browser CSS Custom Highlight API when available. This avoids injecting temporary `<mark>` elements into settings rows; older browsers fall back to the legacy `<mark>` highlight.
 
 ## Thread Watcher
 
@@ -177,6 +180,7 @@ Key concepts:
 - `Apply StyleChan's theme on home page` mirrors StyleChan's current theme and Custom CSS onto the 4chan home page, where StyleChan does not run.
 - `Apply on home page` applies the selected site style on the 4chan home page.
 - Custom CSS loads after 4chan-neXT CSS and can override feature styles.
+- The Custom CSS editor has syntax highlighting, theme selection, an expand/collapse control, auto-closing brackets and quotes, skip-over for existing closers, empty-pair deletion, selection wrapping, Tab/Shift+Tab indent and dedent, and brace-aware Enter indentation.
 - The Custom CSS help link points to the local [Styling Guide](./styling-guide.md).
 
 If something looks wrong with StyleChan enabled, check whether the same issue happens with StyleChan disabled. If disabling StyleChan fixes it, the issue is likely CSS order or a stronger selector from the StyleChan theme.
@@ -241,11 +245,27 @@ Important settings:
 - `Auto-process Images`: converts/resizes unsupported or oversized images.
 - `Strip Video Audio`: removes audio when the board does not allow audio.
 - `Comment Preview`: adds a preview mode for the QR comment box.
+- `Comment Preview Default Mode`: starts the preview attached to QR, docked inline in the thread, or in the last mode you used.
+- `Comment Preview Attach Location`: chooses where an attached floating preview docks to QR (`Auto`, bottom, top, right, or left). Auto prefers the bottom but avoids the Thread Watcher when it is already attached there.
+- `Comment Preview Inline Behavior`: controls the inline dock action. It can scroll to the thread end or insert near the current viewport and follow your scroll.
+- `Comment Preview Remember Float Position`: remembers a manually dragged floating preview position across QR closes and reopens.
 - `Show Comment Preview Header Icon`: adds the preview toggle to the QR titlebar.
+- `Auto-close Tags`: automatically inserts matching closing tags for supported board tags in the QR comment box.
 
 Thread Watcher can be attached to Quick Reply. When attached, dragging either title bar moves both dialogs. Use the attach button to detach.
 
-Comment Preview renders quote links, cross-board quote links, programmatic quote insertion refreshes, and `[math]` / `[eqn]` blocks in the preview pane. The preview pane uses post-message styling so quote text and links match the active theme more closely.
+Comment Preview renders quote links, cross-board quote links, programmatic quote insertion refreshes, and `[math]` / `[eqn]` blocks in the preview pane. The preview is styled as an actual post, with a dashed preview border and accent edge so it is visually distinct from real posts.
+
+Preview modes:
+
+- **Attached to QR:** a floating post preview docks to the selected side of the QR and follows QR/window resizing.
+- **Docked inline:** the preview is inserted into the thread as a literal preview post. The preview header link toggles it back out.
+- **Floating:** dragging the preview detaches it from QR. If float-position remembering is enabled, QR reopens it at that dragged position.
+- **Remember last mode:** QR starts the preview in the last attached/inline/floating mode you used.
+
+The Name, Options, and Subject fields deliberately disable browser autofill/autocomplete and are no longer restored from saved values. This avoids stale browser profile data or old QR field values being silently reused.
+
+Auto-close Tags works only for tags supported by the current board. Examples include `[code]`, `[spoiler]`, `[math]` / `[eqn]`, `[sjis]`, and board-specific tags such as `/mu/` and `/qst/` color tags.
 
 ### Quick Reply Draft Restore (Remember QR State)
 

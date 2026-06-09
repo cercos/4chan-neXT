@@ -46,6 +46,7 @@ unlock behavior. They gate the rules below.
 | `xt-highlight-catalog-own` / `xt-highlight-catalog-watched` | Catalog-tile highlighting for own/watched threads |
 | `xt-catalog-edge-own` / `xt-catalog-edge-watched` | Catalog edge mode (**the default**) - border, no fill. Present unless the tile's *Highlight background* toggle is on |
 | `xt-catalog-own-text-colors` / `xt-catalog-watched-text-colors` | Catalog per-highlight text recoloring |
+| `highlight-next-settings` | Settings window has the `Highlight neXT` comparison overlay enabled |
 
 ---
 
@@ -71,7 +72,82 @@ unlock behavior. They gate the rules below.
 
 ---
 
-## 3. Highlight color variables
+## 3. Quick Reply preview hooks
+
+The Quick Reply comment preview is styled as a real post. The same preview post
+shell is used when the preview is docked inline in the thread or displayed as a
+floating post near QR.
+
+| Hook | Applied to | Notes |
+|---|---|---|
+| `.postContainer.qr-preview-post` | Inline thread preview post container | Inserted into the thread when the preview is docked inline |
+| `.qr-preview-float` | Floating preview root | Fixed-position draggable wrapper |
+| `.qr-preview-float .qr-preview-post` | Post shell inside the floating preview | Uses the same post styling as inline preview |
+| `.qr-preview-post > .reply` | Preview reply body | Carries the dashed preview border and accent edge |
+| `.qr-preview-file-note` | File note inside the preview | Used for attachment preview metadata |
+| `.qr-preview-inline-toggle` | Header `preview` text | Toggles docked inline/floating state when dockable |
+| `.qr-preview-inline-toggle.is-dockable` | Header `preview` text in a thread | Shows the dock/undock affordance |
+
+| Variable | Controls | Fallback |
+|---|---|---|
+| `--xt-qr-preview-accent` | Preview accent edge and inner glow | `#ff8c00` |
+
+Example:
+
+```css
+:root {
+  --xt-qr-preview-accent: #2aa198;
+}
+
+.qr-preview-float {
+  filter: drop-shadow(0 6px 18px rgba(0, 0, 0, .24));
+}
+```
+
+---
+
+## 4. Settings and search hooks
+
+`Highlight neXT` marks settings that 4chan-neXT added or whose defaults differ
+from upstream 4chan X.
+
+| Hook | Meaning |
+|---|---|
+| `#fourchanx-settings.highlight-next-settings` | Settings dialog with the overlay enabled |
+| `[data-next-status="added"]` | Setting added by 4chan-neXT |
+| `[data-next-status="changed"]` | Setting whose default differs from upstream |
+
+Settings search and index/catalog search use the CSS Custom Highlight API where
+available. These are pseudo-elements, not real DOM classes:
+
+| Pseudo-element | Used by |
+|---|---|
+| `::highlight(fourchanx-settings-search)` | Settings search |
+| `::highlight(fourchanx-index-search)` | Thread index/catalog search |
+
+Legacy Settings search fallback:
+
+| Hook | Meaning |
+|---|---|
+| `.section-container mark` | Browser fallback when CSS Custom Highlight API is unavailable |
+
+Example:
+
+```css
+::highlight(fourchanx-settings-search),
+::highlight(fourchanx-index-search) {
+  background: rgba(255, 180, 0, .35);
+  color: inherit;
+}
+
+#fourchanx-settings.highlight-next-settings [data-next-status="added"] {
+  box-shadow: inset 4px 0 0 #2aa198;
+}
+```
+
+---
+
+## 5. Highlight color variables
 
 Set any of these on `:root` (or scope to `:root.tomorrow`, etc.) to recolor.
 Each falls back to `--xt-border-highlight` (the theme's master highlight color)
@@ -120,7 +196,7 @@ For each of `you` / `own` / `ghost`:
 
 ---
 
-## 4. Catalog highlight variables
+## 6. Catalog highlight variables
 
 Own-thread (needs `:root.xt-highlight-catalog-own`) and watched-thread
 (needs `:root.xt-highlight-catalog-watched`):
@@ -135,7 +211,7 @@ Own-thread (needs `:root.xt-highlight-catalog-own`) and watched-thread
 
 ---
 
-## 5. "Fits the theme as a hint, not a takeover" - the design rule
+## 7. "Fits the theme as a hint, not a takeover" - the design rule
 
 A highlight should *signal* a post, not repaint it. neXT does this two ways, and
 any new highlight color should follow the same pattern:
@@ -160,7 +236,7 @@ rather than a flat fill.
 
 ---
 
-## 6. Examples
+## 8. Examples
 
 ```css
 /* Recolor (You) highlights to amber, everywhere */
