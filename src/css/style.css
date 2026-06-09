@@ -3614,9 +3614,13 @@ textarea.copy-text-element {
   border: 1px solid;
   margin: 2px 0;
   /* Shrink-to-fit bordered container for inlined quotes.
-     display:table + display:table on inner .post previously broke normal
-     float layout for .fileThumb + text wrapping in .postMessage. */
-  display: block;
+     Must establish a block formatting context so the bordered box sits BESIDE
+     the parent post's floated .fileThumb (matching XT's old display:table)
+     instead of sliding under the image. display:block alone is NOT a BFC, so the
+     box overlapped the float. flow-root gives the BFC while keeping normal block
+     flow inside, so floated thumbnails + text wrapping inside the inlined .post
+     still behave correctly (the reason inner .post display:table was dropped). */
+  display: flow-root;
   width: fit-content;
   max-width: 100%;
 }
