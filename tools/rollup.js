@@ -15,6 +15,7 @@ import alias from '@rollup/plugin-alias';
 import platformSpecific from './rollup-plugin-platform-specific.js';
 import removeDecaffeinateComments from './rollup-plugin-remove-decaffeinate-comments.js';
 import removeTestCode from './rollup-plugin-remove-test-code.js';
+import tabIndent from './rollup-plugin-tab-indent.js';
 
 const __dirname = dirname(fileURLToPath(import.meta.url));
 
@@ -28,6 +29,10 @@ if (platform !== undefined && platform !== 'crx' && platform !== 'userscript') {
   throw new Error('incorrect value for the platform argument');
 }
 const buildForTest = process.argv.includes('-test');
+// Code comments are stripped from the unminified build by default (userscript header +
+// license banner are added after this runs, so they're unaffected). Saves ~7%.
+// Pass -keep-comments for a fully commented build.
+const stripComments = !process.argv.includes('-keep-comments');
 
 // https://github.com/rollup/plugins/discussions/1777
 const tsPlugin = typescript({
@@ -50,7 +55,7 @@ const tsPlugin = typescript({
 
   const cleanupPlugin = noFormat ? undefined : cleanup({
     extensions: minify ? ['html', 'css'] : ['js', 'ts', 'tsx', 'json', 'html', 'css'],
-    comments: 'all',
+    comments: stripComments ? 'none' : 'all',
     lineEndings: 'unix',
     maxEmptyLines: 1,
     sourcemap: minify,
@@ -177,7 +182,7 @@ const tsPlugin = typescript({
           max_line_len: 1000,
           comments: /^(?: ==\/?UserScript==| @|!)|license|\bcc\b|copyright/i,
         },
-      })] : [],
+      })] : [tabIndent()],
       sourcemap: minify,
     });
 
@@ -192,6 +197,7 @@ const tsPlugin = typescript({
       ...sharedBundleOpts,
       banner: license.replace(/\r\n/g, '\n'),
       file: resolve(crxDir, 'script.js'),
+      plugins: minify ? [] : [tabIndent()],
     });
 
     const eventPage = await rollup({
