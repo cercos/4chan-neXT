@@ -1893,6 +1893,24 @@ Enable it on boards.${location.hostname.split('.')[1]}.org in your browser's pri
     $.on(iconToggle, 'change', $.cb.checked);
     $.on(iconToggle, 'change', function() { this.parentNode.parentNode.dataset.checked = this.checked; });
     $.on(iconToggle, 'change', () => $.event('QRCommentPreviewChanged', null));
+      // Only show the sub-settings that actually apply to the chosen Default Preview Mode:
+      //   inline   -> Inline Behavior only
+      //   attached -> Attach to QR Location + Remember Floating Position only
+      //   remember -> all (last mode could be either)
+      const updateCommentPreviewModeRows = (mode: string) => {
+        const m = ['inline', 'remember'].includes(mode) ? mode : 'attached';
+        const showInline = m === 'inline' || m === 'remember';      // Inline Behavior
+        const showAttachLoc = m === 'attached' || m === 'remember'; // Attach to QR Location
+        // "Remember last mode" already remembers a floated preview's position, so the
+        // explicit toggle is redundant there — show it only for plain "Attached to QR".
+        const showRememberFloat = m === 'attached';
+        positionRow.hidden = !showInline;
+        attachLocationRow.hidden = !showAttachLoc;
+        rememberFloatRow.hidden = !showRememberFloat;
+      };
+      $.on(defaultModeSelect, 'change', () => updateCommentPreviewModeRows(defaultModeSelect.value));
+      updateCommentPreviewModeRows(defaultModeSelect.value);
+
       $.add(sub, defaultModeRow);
       $.add(sub, attachLocationRow);
       $.add(sub, positionRow);
@@ -1908,6 +1926,7 @@ Enable it on boards.${location.hostname.split('.')[1]}.org in your browser's pri
         defaultModeSelect.value = ['inline', 'remember'].includes(items['Comment Preview Default Mode'])
           ? items['Comment Preview Default Mode']
           : 'attached';
+        updateCommentPreviewModeRows(defaultModeSelect.value);
         attachLocationSelect.value = ['bottom', 'top', 'right', 'left'].includes(items['Comment Preview Attach Location'])
           ? items['Comment Preview Attach Location']
           : 'auto';

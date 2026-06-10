@@ -1,5 +1,17 @@
 ## 4chan-neXT changelog
 
+### Unreleased
+
+- Fixed inlined quotes (clicking a quote link) rendering under the post's floated image instead of beside it; the inline box now establishes a block formatting context (`display: flow-root`).
+- Fixed Quick Reply personas not applying; `always` persona defaults (name/options/subject) again pre-fill the Quick Reply fields while the browser-autofill hardening stays in place.
+- Improved Quick Reply comment preview performance (notably on Firefox): removed a duplicate per-keystroke render path and stopped the expensive width measurement from running on every mouse move while dragging the QR or the floating preview, so typing and toggling the preview are no longer laggy.
+- Added an "Allow Browser Autofill" Quick Reply setting (off by default) that lets the browser and password managers autofill/suggest the Name, Options, and Subject fields for users who prefer it; the fields stay hardened against autofill when it's off.
+- Made the comment preview "Docked inline" default mode load already docked inline (no floating-then-dock flash) and re-dock after posting, instead of floating first and only docking after a delay.
+- Stopped the comment preview from scrolling the page to the bottom when it auto-docks on open; the scroll-to-bottom now happens only when you manually dock the preview.
+- Improved the comment preview "Insert in place" behavior so the preview rides one post above the viewport fold (staying visible while you scroll) and docks as the true last post once you reach the bottom of the thread.
+- Made "Remember last mode" also restore a floating preview's dragged-off position across page reloads, and fixed the underlying bug where object-valued settings (such as the saved floating position) were written to storage but never loaded back on reload.
+- Hid comment preview sub-settings in Settings that don't apply to the selected default mode (e.g. attach location is hidden for "Docked inline").
+
 ### 1.1.1 (2026-06-09)
 
 - Added a "Highlight neXT" settings toggle that marks settings added or changed compared to upstream 4chan-X.

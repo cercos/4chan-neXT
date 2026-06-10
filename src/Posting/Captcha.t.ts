@@ -537,6 +537,37 @@ const CaptchaT = {
     this.applyAdaptiveTextColors();
   },
 
+  // True once we've fired an auto-submit for the current captcha state, so the
+  // solved-challenge path and the "verification not required" path can't both
+  // submit the same post. Cleared whenever the captcha leaves the complete state.
+  _autoSubmitted: false,
+
+  // Auto-submit the post when "Post on Captcha Completion" is on and the captcha
+  // is satisfied -- whether that's a solved challenge or 4chan reporting that no
+  // verification is required. Only fires when the QR actually has something to
+  // post (a real comment or a file), so an auto-loaded "not required" on an
+  // empty QR -- or one holding only an inserted quote -- doesn't submit.
+  maybeAutoSubmit() {
+    if (this._autoSubmitted) { return false; }
+    if (!Conf['Post on Captcha Completion'] || QR.cooldown.auto) { return false; }
+    // Only auto-submit a "no captcha required" when the user loaded the captcha
+    // themselves. With Auto-load on, the captcha loads on QR open, so a "not
+    // required" there would fire a restored draft nobody asked to send -- skip it.
+    // (Auto-load off => the captcha only loads on a manual "get captcha" click,
+    // which is the user signalling intent to post.) Solving an actual challenge
+    // submits via submitCaptchaAnswer regardless of this.
+    if (Conf['Auto-load captcha']) { return false; }
+    const post = QR.posts?.[0];
+    const com = (QR.nodes?.com?.value || '').trim();
+    const quoted = (post?.quotedText || '').trim();
+    // Don't fire on an empty/quote-only QR (e.g. an accidental get-captcha click).
+    const hasContent = (com.length > 0 && com !== quoted) || !!post?.file;
+    if (!hasContent) { return false; }
+    this._autoSubmitted = true;
+    QR.submit();
+    return true;
+  },
+
   submitCaptchaAnswer(imageNumber, TCaptcha) {
     if (!TCaptcha?.respNode || !TCaptcha.tasks || imageNumber < 0) { return; }
     const lastIndex = TCaptcha.tasks.length - 1;
@@ -559,6 +590,9 @@ const CaptchaT = {
       TCaptcha.setTaskId(nextId);
       this.createImageGrid(TCaptcha);
     } else if (Conf['Post on Captcha Completion'] && !QR.cooldown.auto) {
+      // Claim the one-shot before the 'Done.' message below: that text also maps
+      // to the 'complete' state and would otherwise trigger maybeAutoSubmit too.
+      this._autoSubmitted = true;
       TCaptcha.taskId = TCaptcha.tasks.length;
       TCaptcha.setTaskNodeContent('Done.');
       this.setState('complete');
@@ -826,6 +860,9 @@ const CaptchaT = {
 
     const o = TCaptcha.__fourchanXOriginal;
     TCaptcha.setChallenge = function(challenge) {
+      // A fresh challenge (or a fresh "not required" reply, handled natively
+      // below) is a new completion cycle -- allow auto-submit to fire again.
+      CaptchaT._autoSubmitted = false;
       if (!challenge?.tasks) { return o.setChallenge.call(this, challenge); }
       this.challengeIdNode.value = challenge.challenge;
       this.respNode.value = '';
@@ -852,6 +889,15 @@ const CaptchaT = {
       CaptchaT.editingIndex = null;
       CaptchaT.renderCrumbs(this);
       CaptchaT.updateProgress();
+      // 4chan reporting "verification not required" (or "done") arrives here as a
+      // 'complete' state with no challenge to solve -- treat it as a completion
+      // event so "Post on Captcha Completion" submits even when no captcha was
+      // needed. Any other state means we're not done, so clear the one-shot.
+      if (state === 'complete') {
+        CaptchaT.maybeAutoSubmit();
+      } else {
+        CaptchaT._autoSubmitted = false;
+      }
     };
     TCaptcha.buildSliderNode = function() {
       const slider = document.createElement('span');

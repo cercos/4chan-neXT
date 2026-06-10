@@ -111,7 +111,6 @@ var QR = {
   heavyBatchFileCount: 8,
   heavyBatchSize: 64 * 1024 * 1024,
   metadataStrippedFlag: '__4chanXTMetadataStripped',
-  commentPreviewInputBound: false,
 
   // Page-stitched literal preview post (when style = 'thread')
   previewPost: null as HTMLDivElement | null,
@@ -127,6 +126,16 @@ var QR = {
   commentPreviewModeInitialized: false,
   commentPreviewDefaultModeApplied: '',
   commentPreviewRestoreDetachedFloat: false,
+
+  // While an inline-default preview is waiting for the QR's target thread to sync to
+  // this page (right at open), we suppress the floating fallback so the user never sees
+  // a float-then-dock flash — it just loads docked. Cleared once it docks or gives up.
+  commentPreviewInlinePending: false,
+  _inlineStartRetryPending: false,
+  _inlineStartTries: 0,
+  // Set only by a manual "dock preview" click so the scroll-to-bottom inline behavior
+  // fires on an explicit dock, never on the automatic startup dock.
+  _scrollPreviewOnDock: false,
 
   // Internal: bound scroll/resize handler for the 'inplace' inline-follow behavior.
   _inplaceScrollHandler: undefined as ((e?: Event) => void) | undefined,
@@ -324,7 +333,7 @@ var QR = {
     });
     $.sync('Comment Preview Remember Float Position', (value: boolean | undefined) => {
       Conf['Comment Preview Remember Float Position'] = !!value;
-      if (!Conf['Comment Preview Remember Float Position']) {
+      if (!QR.commentPreviewRemembersFloat()) {
         QR.clearStoredCommentPreviewFloatPos(false);
       }
     });
@@ -410,7 +419,7 @@ var QR = {
 	    QR.storeCommentPreviewLastMode();
 	    QR.removeThreadPreviewPost();
 	    QR.removeFloatingPreview();
-	    if (!Conf['Comment Preview Remember Float Position']) {
+	    if (!QR.commentPreviewRemembersFloat()) {
 	      QR.clearStoredCommentPreviewFloatPos();
 	    }
 	    // Startup placement is recalculated on the next QR open from the default-mode setting.
@@ -418,6 +427,9 @@ var QR = {
 	    QR.commentPreviewModeInitialized = false;
 	    QR.commentPreviewDefaultModeApplied = '';
 	    QR.commentPreviewRestoreDetachedFloat = false;
+	    QR.commentPreviewInlinePending = false;
+	    QR._inlineStartTries = 0;
+	    QR._scrollPreviewOnDock = false;
 	    new QR.post(true);
     for (var post of QR.posts.splice(0, QR.posts.length - 1)) {
       post.delete();
@@ -475,8 +487,7 @@ var QR = {
     e.preventDefault();
     Conf['Comment Preview'] = !Conf['Comment Preview'];
     $.set('Comment Preview', Conf['Comment Preview']);
-    QR.applyCommentPreviewSettings();
-    return $.event('QRCommentPreviewChanged');
+    return $.event('QRCommentPreviewChanged', null);
   },
 
   // Capture-phase guard: the whole floating preview is grabbable for dragging, so we must
@@ -505,6 +516,11 @@ var QR = {
     // Defensive: can't dock inline where we can't stitch into the live thread.
 	    if (QR.previewInline && !QR.canActuallyShowThreadPreview()) {
 	      QR.previewInline = false;
+	    }
+	    // A manual dock is the only time the 'scroll to bottom' inline behavior should
+	    // fire — the automatic startup dock must not scroll the page.
+	    if (QR.previewInline) {
+	      QR._scrollPreviewOnDock = true;
 	    }
 	    QR.refreshCommentPreview();
 	    QR.storeCommentPreviewLastMode();
@@ -570,7 +586,9 @@ var QR = {
   // Floating is the default and the automatic fallback whenever we're not inline
   // (catalog, index, new thread from QR, replying to a different thread, etc.).
   usingFloatingPreview(): boolean {
-    return !!Conf['Comment Preview'] && !QR.usingThreadPreview();
+    // While an inline-default dock is pending we deliberately show nothing (not the
+    // floating fallback) so the preview loads straight into its docked position.
+    return !!Conf['Comment Preview'] && !QR.usingThreadPreview() && !QR.commentPreviewInlinePending;
   },
 
     canActuallyShowThreadPreview(): boolean {
@@ -607,6 +625,14 @@ var QR = {
       return QR.normalizeCommentPreviewDefaultMode(Conf['Comment Preview Default Mode']);
     },
 
+    // The dragged float position is persisted/restored when either the explicit
+    // "Remember Floating Position" setting is on, OR the default mode is "Remember last
+    // mode" — for which remembering *where* you left a floated preview is the whole point.
+    commentPreviewRemembersFloat(): boolean {
+      return !!Conf['Comment Preview Remember Float Position'] ||
+        QR.commentPreviewDefaultMode() === 'remember';
+    },
+
     commentPreviewLastMode(): string {
       return QR.normalizeCommentPreviewMode(Conf['Comment Preview Last Mode']);
     },
@@ -632,15 +658,23 @@ var QR = {
     },
 
     rememberedCommentPreviewFloatPos(): { left: string, top: string } | null {
-      return QR.previewFloatPos ||
-        (QR.commentPreviewRestoreDetachedFloat && Conf['Comment Preview Remember Float Position']
-          ? QR.parseCommentPreviewFloatPos(Conf['Comment Preview Float Position'])
-          : null);
+      if (QR.previewFloatPos) return QR.previewFloatPos;
+      if (!QR.commentPreviewRemembersFloat()) return null;
+      // Decide from persistent state, not just the transient restore flag: on reload the
+      // float can be (re)created before ensureCommentPreviewStartMode() sets that flag,
+      // which would otherwise lose a remembered detached position. Restore the saved drag
+      // position when this session flagged a detached restore OR the remembered last mode
+      // was a detached float. (Attached mode clears the saved position, so it won't leak.)
+      const wantsDetached = QR.commentPreviewRestoreDetachedFloat ||
+        (QR.commentPreviewDefaultMode() === 'remember' && QR.commentPreviewLastMode() === 'detached');
+      return wantsDetached
+        ? QR.parseCommentPreviewFloatPos(Conf['Comment Preview Float Position'])
+        : null;
     },
 
     setCommentPreviewFloatPos(pos: { left: string, top: string }) {
       QR.previewFloatPos = pos;
-      if (Conf['Comment Preview Remember Float Position']) {
+      if (QR.commentPreviewRemembersFloat()) {
         Conf['Comment Preview Float Position'] = pos;
         $.set('Comment Preview Float Position', pos);
       }
@@ -669,9 +703,35 @@ var QR = {
 	    // position. Keep inline as the only default mode that overrides that saved float.
 	    QR.commentPreviewRestoreDetachedFloat =
 	      wantedMode === 'detached' || (defaultMode === 'attached' && !!savedFloatPos);
-	    if (wantedMode === 'inline' && QR.canActuallyShowThreadPreview()) {
-	      QR.previewInline = true;
-	      return;
+	    if (wantedMode === 'inline') {
+	      if (QR.canActuallyShowThreadPreview()) {
+	        // Inline is possible now: dock and keep the latch set above for this session.
+	        QR.commentPreviewInlinePending = false;
+	        QR.previewInline = true;
+	        return;
+	      }
+	      // Inline wanted but we can't stitch yet. Distinguish "target thread just hasn't
+	      // synced to this page yet" (dock as soon as it does) from "inline can't apply
+	      // here at all" (catalog/index/new-thread, or replying to a *different* thread).
+	      const cur = `${g.THREADID || g.threadID || ''}`;
+	      const tgt = `${QR.posts?.[0]?.thread ?? ''}`;
+	      const uiTgt = `${QR.nodes?.thread?.value ?? ''}`;
+	      const otherThread = (v: string) => !!v && v !== 'new' && v !== cur;
+	      if (g.VIEW === 'thread' && cur && !otherThread(tgt) && !otherThread(uiTgt)) {
+	        // Pending sync: do NOT show the floating fallback (avoids the float-then-dock
+	        // flash) and re-check on a fast timer so it docks promptly, not after the next
+	        // thread update. Un-latch so a later apply re-runs this.
+	        QR.commentPreviewInlinePending = true;
+	        QR.previewInline = false;
+	        QR.commentPreviewModeInitialized = false;
+	        QR.commentPreviewDefaultModeApplied = '';
+	        QR.scheduleInlineStartRetry();
+	        return;
+	      }
+	      // Inline can never apply on this view: fall through to the floating fallback.
+	      QR.commentPreviewInlinePending = false;
+	    } else {
+	      QR.commentPreviewInlinePending = false;
 	    }
 
 	    QR.previewInline = false;
@@ -692,6 +752,40 @@ var QR = {
           QR.previewFloat.removeAttribute('title');
         }
       }
+    },
+
+    // Fast, bounded poll used while an inline-default dock is pending: re-apply every
+    // ~50ms (cap ~2s) until the target thread syncs and the preview docks. If it never
+    // becomes possible (give up), settle on the floating fallback so it's never blank.
+    scheduleInlineStartRetry() {
+      if (QR._inlineStartRetryPending) return;
+      QR._inlineStartRetryPending = true;
+      const tick = () => {
+        QR._inlineStartRetryPending = false;
+        // Stop if the preview was turned off, the QR closed, or it already settled.
+        if (!Conf['Comment Preview'] || !QR.nodes?.el || QR.nodes.el.hidden || QR.commentPreviewModeInitialized) {
+          QR._inlineStartTries = 0;
+          return;
+        }
+        if (QR._inlineStartTries++ >= 40) {
+          // Gave up waiting (~2s). Latch the floating fallback so nothing stays blank.
+          QR._inlineStartTries = 0;
+          QR.commentPreviewInlinePending = false;
+          QR.previewInline = false;
+          QR.commentPreviewModeInitialized = true;
+          QR.commentPreviewDefaultModeApplied = QR.commentPreviewDefaultMode();
+          QR.refreshCommentPreview();
+          return;
+        }
+        QR.applyCommentPreviewSettings();
+        if (!QR.commentPreviewModeInitialized) {
+          QR._inlineStartRetryPending = true;
+          setTimeout(tick, 50);
+        } else {
+          QR._inlineStartTries = 0;
+        }
+      };
+      setTimeout(tick, 30);
     },
 
     refreshCommentPreview() {
@@ -729,7 +823,7 @@ var QR = {
 	    if (!QR.nodes?.el || !QR.nodes?.com) return;
 	    const { classList } = QR.nodes.el;
 	    const enabled = !!Conf['Comment Preview'];
-	    if (!Conf['Comment Preview Remember Float Position'] && QR.parseCommentPreviewFloatPos(Conf['Comment Preview Float Position'])) {
+	    if (!QR.commentPreviewRemembersFloat() && QR.parseCommentPreviewFloatPos(Conf['Comment Preview Float Position'])) {
 	      QR.clearStoredCommentPreviewFloatPos(false);
 	    }
 	    if (enabled) {
@@ -762,10 +856,9 @@ var QR = {
     }
 
     if (enabled) {
-      if (!QR.commentPreviewInputBound) {
-        $.on(QR.nodes.com, 'input', QR.updateComPreview);
-        QR.commentPreviewInputBound = true;
-      }
+      // The normal QR input save path already refreshes the selected post preview
+      // through post.updateComment(). Binding a second input listener here makes
+      // Firefox do the expensive floating-preview render/measure path twice per key.
       QR.ensurePersonaPreviewListeners();
       if (isThread) {
         QR.updateThreadPreviewPost();
@@ -774,9 +867,6 @@ var QR = {
       } else {
         QR.updateComPreview();
       }
-    } else if (QR.commentPreviewInputBound) {
-      $.off(QR.nodes.com, 'input', QR.updateComPreview);
-      QR.commentPreviewInputBound = false;
     }
   },
 
@@ -808,6 +898,12 @@ var QR = {
   onQRThreadChangeForPreview() {
     // Target thread changed (replying to a different thread or "new thread").
     // The shouldShow check inside update will clean it up if it no longer applies.
+    // If an inline default is still waiting to engage (the target only just became this
+    // page's thread), re-run the full apply so it can dock inline now.
+    if (Conf['Comment Preview'] && !QR.commentPreviewModeInitialized) {
+      QR.applyCommentPreviewSettings();
+      return;
+    }
     QR.refreshCommentPreview();
   },
 
@@ -815,7 +911,14 @@ var QR = {
     QR.repositionThreadPreviewPost();
     // Thread content may have just been inserted (e.g. opening a thread from catalog/index).
     // Re-evaluate whether we can/should show the "in thread" preview vs floating.
-    if (QR.nodes?.el) QR.refreshCommentPreview();
+    if (QR.nodes?.el) {
+      // An inline default still waiting to engage can dock now that thread content exists.
+      if (Conf['Comment Preview'] && !QR.commentPreviewModeInitialized) {
+        QR.applyCommentPreviewSettings();
+      } else {
+        QR.refreshCommentPreview();
+      }
+    }
   },
 
   // --- Thread (literal) preview post management ---
@@ -937,11 +1040,13 @@ var QR = {
       // it there as the user scrolls — no page jump.
       QR.startInplaceFollow();
     } else {
-      // 'scroll' (default): keep it stitched at the very end and jump there so the user
-      // sees the most literal end-of-thread result.
+      // 'scroll': keep it stitched at the very end. Only jump there when the user just
+      // manually docked — never on the automatic startup dock (which would yank the page
+      // to the bottom on load).
       QR.stopInplaceFollow();
       QR.repositionThreadPreviewPost();
-      if (isNew) {
+      if (QR._scrollPreviewOnDock) {
+        QR._scrollPreviewOnDock = false;
         QR.previewPost.scrollIntoView({ behavior: 'smooth', block: 'end' });
       }
     }
@@ -1309,20 +1414,29 @@ var QR = {
     // CSS selector for real (non-clone) replies; replyContainer in SITE is an XPath.
     const sel = (g.SITE?.selectors?.replyOriginal as string) || '.replyContainer:not([data-clone])';
     const vh = window.innerHeight;
+    const replies = ($$(sel, root) as HTMLElement[]).filter(r => r !== QR.previewPost);
+    const lastReply = replies[replies.length - 1] || null;
     let target: HTMLElement | null = null;
     // Last reply whose top is still above the bottom of the viewport = nearest the fold.
-    for (const reply of $$(sel, root) as HTMLElement[]) {
-      if (reply === QR.previewPost) continue;
+    for (const reply of replies) {
       if (reply.getBoundingClientRect().top < vh) {
         target = reply;
       } else {
         break;
       }
     }
-    if (target) {
-      // Only move when needed, to avoid layout thrash every frame.
-      if (target.nextElementSibling !== QR.previewPost) {
-        $.after(target, QR.previewPost);
+    // When the thread's final reply is fully on screen (scrolled to the bottom), dock the
+    // preview as the genuine last post so the real end of the thread is reachable.
+    // Otherwise keep it one post ABOVE the reply nearest the fold: inserting it *after*
+    // that reply would drop it below the viewport where it's hidden. The ~preview-height
+    // gap between the two conditions gives natural hysteresis (no flicker at the seam).
+    if (lastReply && lastReply.getBoundingClientRect().bottom <= vh) {
+      if (lastReply.nextElementSibling !== QR.previewPost) {
+        $.after(lastReply, QR.previewPost);
+      }
+    } else if (target) {
+      if (target.previousElementSibling !== QR.previewPost) {
+        $.before(target, QR.previewPost);
       }
     } else if (root.firstElementChild && root.firstElementChild !== QR.previewPost) {
       // Above the first reply: sit at the very top.
@@ -1443,16 +1557,17 @@ var QR = {
     QR.applyFloatingPreviewAttachedPosition(float, loc, qrRect);
   },
 
-  repositionFloatingPreview() {
+  repositionFloatingPreview(e?: Event | boolean) {
+    const skipWidthSync = e === true || !!((e as CustomEvent | undefined)?.detail?.dragging);
     const float = QR.previewFloat;
     if (float && QR.nodes?.el && float.dataset.userDragged !== 'true') {
       QR.positionFloatingPreviewNearQR(float);
     }
     const postShell = float ? $('.qr-preview-post', float) as HTMLDivElement | null : null;
-    if (postShell) {
+    if (!skipWidthSync && postShell) {
       QR.syncFloatingPreviewWidth(postShell);
     }
-    if (QR.previewPost) {
+    if (!skipWidthSync && QR.previewPost) {
       QR.syncFloatingPreviewWidth(QR.previewPost);
     }
   },
@@ -1516,7 +1631,6 @@ var QR = {
       float.style.right = '';
       float.style.bottom = '';
       delete float.dataset.attachLocation;
-      scheduleWidthSync();
     };
 
     const onMouseUp = () => {
@@ -2698,6 +2812,38 @@ var QR = {
 
   disablePersonaFieldAutofill() {
     if (!QR.nodes) { return; }
+
+    // Opt-in: when the user prefers browser/password-manager autofill, undo the
+    // suppression baked into the QuickReply template so the Name, Options and
+    // Subject fields can be autofilled and remembered.
+    if (Conf['Allow Browser Autofill']) {
+      QR.nodes.form.removeAttribute('autocomplete');
+
+      const enabledNames = {
+        name: 'qr-name',
+        email: 'qr-options',
+        sub: 'qr-subject',
+      };
+
+      for (const key of ['name', 'email', 'sub'] as const) {
+        const input = QR.nodes[key];
+        if (!input) { continue; }
+
+        input.name = enabledNames[key];
+        input.readOnly = false;
+        input.removeAttribute('data-no-autofill');
+        input.setAttribute('autocomplete', 'on');
+        input.removeAttribute('aria-autocomplete');
+        for (const attr of [
+          'data-lpignore', 'data-1p-ignore', 'data-bwignore',
+          'data-protonpass-ignore', 'data-form-type',
+        ]) {
+          input.removeAttribute(attr);
+        }
+      }
+      return;
+    }
+
     QR.nodes.form.setAttribute('autocomplete', 'off');
 
     const names = {
@@ -4134,9 +4280,12 @@ class post {
       :
       false);
     QR.persona.get(persona => {
-      this.name = '';
-      this.email = '';
-      this.sub = '';
+      // Apply user-configured persona "always" defaults (QR.personas setting).
+      // Saved/previous values are intentionally NOT restored here (autofill hardening),
+      // but the persona feature's always-on defaults must still pre-fill the fields.
+      this.name  = 'name'  in QR.persona.always ? QR.persona.always.name  : '';
+      this.email = 'email' in QR.persona.always ? QR.persona.always.email : '';
+      this.sub   = 'sub'   in QR.persona.always ? QR.persona.always.sub   : '';
 
       if (QR.nodes.flag) {
         this.flag = (() => {

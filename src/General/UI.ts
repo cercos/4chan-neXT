@@ -388,7 +388,7 @@ export var drag = function (e) {
   style.bottom = bottom;
 
   if (this.id === 'qr') {
-    $.event('4chanXQRMove');  // attached watcher listens directly for tight following (no rAF lag)
+    $.event('4chanXQRMove', { dragging: true });  // attached watcher listens directly for tight following (no rAF lag)
   }
 };
 
@@ -425,7 +425,7 @@ export var dragend = function () {
     $.event('4chanXDragend', {id: this.id});
   }
   if (this.id === 'qr') {
-    $.event('4chanXQRMove');
+    $.event('4chanXQRMove', { dragging: false });
   }
 };
 

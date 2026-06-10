@@ -614,6 +614,11 @@ const Config = {
         'Auto-save your Quick Reply (per board) so it survives a refresh, close or crash, including all queued posts and their attachments (images and videos, up to ~100 MB per board). Restores into an empty Quick Reply when you return to the board; cleared after you post.',
         1
       ],
+      'Allow Browser Autofill': [
+        false,
+        'Let the browser and password managers autofill / suggest values for the Quick Reply Name, Options (email) and Subject fields. Off by default to keep these fields clean.',
+        1
+      ],
       'QR Thumbnail Remove File First': [
         true,
         'In Quick Reply thumbnails, first click on Remove clears the file, second click removes the post. Disable for single-click post removal.',

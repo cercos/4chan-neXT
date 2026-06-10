@@ -117,10 +117,10 @@ var ThreadWatcher = {
 
     this.menu.addHeaderMenuEntry();
     $.on(d, 'QRDialogCreation', ThreadWatcher.onQRDialogCreation);
-    $.on(d, '4chanXQRMove', () => {
+    $.on(d, '4chanXQRMove', (e: CustomEvent) => {
       if (ThreadWatcher.attached()) {
         // Direct for tight sync during QR drag (mousemove rate); rAF would add visible lag/glitch to follower.
-        ThreadWatcher._doPositionAttached();
+        ThreadWatcher._doPositionAttached(!!e.detail?.dragging);
       }
     });
     $.on(window, 'resize', () => { if (ThreadWatcher.attached()) ThreadWatcher.positionIfAttached(); });
@@ -1236,7 +1236,7 @@ var ThreadWatcher = {
     });
   },
 
-  _doPositionAttached() {
+  _doPositionAttached(skipPreviewWidthSync = false) {
     const dialog = ThreadWatcher.dialog;
     if (!dialog) { return; }
     const qr = QR?.nodes?.el;
@@ -1308,7 +1308,7 @@ var ThreadWatcher = {
         dialog.style.setProperty('--watcher-max-width', `${Math.max(120, targetW - 12)}px`);
       }
     }
-    QR?.repositionFloatingPreview?.();
+    QR?.repositionFloatingPreview?.(skipPreviewWidthSync);
   },
 
   restorePosition() {

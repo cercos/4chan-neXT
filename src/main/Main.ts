@@ -203,6 +203,11 @@ var Main = {
     Conf['Index Sort'] = dict();
     for (let i = 0; i < 2; i++) { Conf[`Last Long Reply Thresholds ${i}`] = dict(); }
     Conf['siteProperties'] = dict();
+    // Object-valued Conf keys must be initialized here, not via the Config defaults map:
+    // flatten() recurses INTO an object default instead of storing it, so an entry like
+    // 'Comment Preview Float Position': {} never lands in Conf and is therefore never
+    // requested from storage on load (the saved value would be silently dropped).
+    Conf['Comment Preview Float Position'] = dict();
     // XXX old key names
     Conf['Except Archives from Encryption'] = false;
     Conf['JSON Navigation'] = true;
