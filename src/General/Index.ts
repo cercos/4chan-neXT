@@ -1410,9 +1410,39 @@ var Index = {
     return Index.pageLoad(false);
   },
 
+  // Parse a `field:/pattern/flags` regex query, e.g. `comment:/foo/i`. Only
+  // treated as a regex search when every `+`-joined field is a recognised filter
+  // field — otherwise a pasted URL like `https://…` (field `https`, empty
+  // pattern) would be misread as a regex matching every thread while
+  // highlighting nothing. Returns the RegExpMatchArray, or null for a plain
+  // keyword search.
+  parseRegexQuery(query) {
+    const match = query.match(/^([\w+]+):\/(.*)\/(\w*)$/);
+    if (!match) { return null; }
+    if (!match[1].split('+').every(k => $.hasOwn(Filter.valueF, k))) { return null; }
+    return match;
+  },
+
+  // Split a keyword query into its terms and any flags. A leading `op:` prefix
+  // restricts matching to OP text only, ignoring the preview replies that are
+  // searched by default. It works glued or spaced (`op:catfish`, `op: catfish`)
+  // since the colon makes a separating space feel unnatural. Only the leading
+  // occurrence is the flag and the rest is taken verbatim, so `op:op:` searches
+  // OP text for the literal `op:`.
+  parseKeywordQuery(query) {
+    let opOnly = false;
+    const m = query.match(/^op:\s*/i);
+    if (m) {
+      opOnly = true;
+      query = query.slice(m[0].length);
+    }
+    const keywords = query.toLowerCase().match(/\S+/g) || [];
+    return { opOnly, keywords };
+  },
+
   querySearch(query) {
-    let keywords, match;
-    if (match = query.match(/^([\w+]+):\/(.*)\/(\w*)$/)) {
+    let match;
+    if (match = Index.parseRegexQuery(query)) {
       let regexp;
       try {
         regexp = RegExp(match[2], match[3]);
@@ -1421,17 +1451,19 @@ var Index = {
       }
       return Index.sortedThreadIDs.filter(ID => regexp.test(Filter.values(match[1], Index.parsedThreads[ID]).join('\n')));
     }
-    if (!(keywords = query.toLowerCase().match(/\S+/g))) { return; }
-    return Index.sortedThreadIDs.filter(ID => Index.searchMatch(Index.parsedThreads[ID], keywords));
+    const { opOnly, keywords } = Index.parseKeywordQuery(query);
+    if (!keywords.length) { return; }
+    return Index.sortedThreadIDs.filter(ID => Index.searchMatch(Index.parsedThreads[ID], keywords, opOnly));
   },
 
   // Keyword terms to highlight in the rendered results. Regex queries
   // (`field:/pattern/flags`) match structurally rather than by literal text, so
-  // there's nothing meaningful to highlight — return none.
+  // there's nothing meaningful to highlight — return none. Flag tokens like
+  // `op:` are stripped so they aren't painted as literal text.
   getSearchTerms() {
     const query = Index.search;
-    if (!query || /^([\w+]+):\/(.*)\/(\w*)$/.test(query)) { return []; }
-    return query.toLowerCase().match(/\S+/g) || [];
+    if (!query || Index.parseRegexQuery(query)) { return []; }
+    return Index.parseKeywordQuery(query).keywords;
   },
 
   // Paint the current search terms across the rendered threads. Re-run after
@@ -1441,19 +1473,46 @@ var Index = {
     SearchHighlight.apply(INDEX_SEARCH_HL, Index.root, Index.getSearchTerms());
   },
 
-  searchMatch(obj, keywords) {
-    const {info, file} = obj;
-    if (info.comment == null) { info.comment = g.SITE.Build.parseComment(info.commentHTML.innerHTML); }
-    let text = [];
-    for (var key of ['comment', 'subject', 'name', 'tripcode']) {
-      if (key in info) { text.push(info[key]); }
-    }
-    if (file) { text.push(file.name); }
-    text = text.join(' ').toLowerCase();
+  searchMatch(obj, keywords, opOnly) {
+    const text = Index.searchText(obj, opOnly);
     for (var keyword of keywords) {
       if (-1 === text.indexOf(keyword)) { return false; }
     }
     return true;
+  },
+
+  // Lowercased haystack for an OP. By default it folds in the text of every
+  // preview reply the index shows, so a term that appears only in a reply still
+  // keeps the thread in the results (and gets painted by highlightSearch); the
+  // `op:` flag asks for OP text alone. Both variants are cached on the
+  // parsed-thread object, which parseThreadList rebuilds on every refresh.
+  searchText(obj, opOnly) {
+    if (obj._searchTextOP == null) {
+      const {info, file} = obj;
+      if (info.comment == null) { info.comment = g.SITE.Build.parseComment(info.commentHTML.innerHTML); }
+      const parts = [];
+      for (var key of ['comment', 'subject', 'name', 'tripcode']) {
+        if (key in info) { parts.push(info[key]); }
+      }
+      if (file) { parts.push(file.name); }
+      obj._searchTextOP = parts.join(' ').toLowerCase();
+    }
+    if (opOnly) { return obj._searchTextOP; }
+    if (obj._searchText == null) {
+      const parts = [obj._searchTextOP];
+      const replies = Index.liveThreadDict[obj.threadID]?.last_replies;
+      if (replies) {
+        for (var reply of replies) {
+          if (reply.sub) { parts.push(reply.sub); }
+          if (reply.name) { parts.push(reply.name); }
+          if (reply.trip) { parts.push(reply.trip); }
+          if (reply.filename) { parts.push(reply.filename + (reply.ext || '')); }
+          if (reply.com) { parts.push(g.SITE.Build.parseComment(reply.com)); }
+        }
+      }
+      obj._searchText = parts.join(' ').toLowerCase();
+    }
+    return obj._searchText;
   }
 };
 export default Index;

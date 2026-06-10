@@ -151,6 +151,10 @@ var ExpandThread = {
     $.after(a, postsRoot);
     $.event('PostsInserted', null, a.parentNode);
 
+    // The newly inserted replies are fresh DOM the index's search highlighter
+    // never walked, so repaint to cover them while a search is active.
+    if (Index.enabled && Index.search) { Index.highlightSearch(); }
+
     const postsCount    = postsRoot.length;
     a.textContent = g.SITE.Build.summaryText('-', postsCount, filesCount);
 
