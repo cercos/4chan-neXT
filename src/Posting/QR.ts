@@ -4538,17 +4538,41 @@ var QR = {
     },
 
     load() {
-      for (var type in QR.persona.types) {
-        var arr = QR.persona.types[type];
-        var list = $(`#list-${type}`, QR.nodes.el);
-        if (!list) { continue; }
-        for (var val of arr) {
-          if (val) {
-            $.add(list, $.el('option',
-              { textContent: val })
-            );
-          }
+      if (!QR.nodes) { return; }
+
+      // Build a dedicated persona chooser next to each field that has saved
+      // personas for this board. We can't use a native <datalist> here: its
+      // suggestions are filtered by the field's current text, so once the
+      // `always` persona pre-fills a field the datalist only ever offers the
+      // matching (always) value and hides the rest. A <select> always lists
+      // every persona regardless of the field value, on every browser.
+      for (const type of ['name', 'email', 'sub'] as const) {
+        const input = QR.nodes[type] as HTMLInputElement;
+        if (!input) { continue; }
+
+        // Idempotent across re-loads (e.g. board changes): drop a stale picker.
+        const stale = input.nextElementSibling as HTMLElement | null;
+        if (stale && stale.classList.contains('qr-persona-picker')) { $.rm(stale); }
+
+        const values = (QR.persona.types[type] || []).filter(Boolean);
+        if (!values.length) { continue; }
+
+        const picker = $.el('select', {
+          className: 'qr-persona-picker',
+          title: 'Choose a saved persona'
+        }) as HTMLSelectElement;
+        // Empty placeholder so the collapsed select just shows the arrow.
+        $.add(picker, $.el('option', { value: '', textContent: '' }));
+        for (const val of values) {
+          $.add(picker, $.el('option', { value: val, textContent: val }));
         }
+        $.on(picker, 'change', function (this: HTMLSelectElement) {
+          if (!this.value) { return; }
+          input.value = this.value;
+          this.selectedIndex = 0;          // reset back to the placeholder arrow
+          $.event('input', null, input);   // run the normal save / preview path
+        });
+        $.after(input, picker);
       }
     },
 

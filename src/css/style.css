@@ -4008,6 +4008,15 @@ $site$thread[hidden] + hr {
   flex: 1;
   width: 0;
 }
+.persona .qr-persona-picker {
+  flex: 0 0 auto;
+  width: 1.5em;
+  min-width: 1.5em;
+  margin-left: -1px;
+  padding: 0;
+  cursor: pointer;
+  box-sizing: border-box;
+}
 select.flagSelector {
   position: absolute;
   width: 1px;
