@@ -105,16 +105,18 @@ const tsPlugin = typescript({
       inlineFile({
         include: ["**/*.html"],
         transformer(html) {
-          if (!minify) return html;
-
+          // Collapse indentation/newlines to single spaces. Applied to readable
+          // builds too: rendering is identical and inlined HTML isn't hand-edited
+          // in the bundle. (Same transform the minified build uses.)
           return html.replace(/\n */g, ' ');
         },
       }),
       inlineFile({
         include: ["**/*.css"],
         transformer(css) {
-          if (!minify) return css;
-
+          // Compress inlined CSS in every build. Output is functionally identical
+          // and bundle CSS isn't hand-edited; keeps the readable build smaller
+          // while leaving JS untouched. (Same transform the minified build uses.)
           return css
             // Remove whitespace after colon in css rules.
             .replace(/^ {2,}([a-z\-]+:) +/gm, '$1')

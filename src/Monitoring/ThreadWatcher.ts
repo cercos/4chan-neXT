@@ -164,6 +164,8 @@ var ThreadWatcher = {
       }
     });
     $.sync('Thread Watcher Attach Location', (val) => {
+      Conf['Thread Watcher Attach Location'] = val;
+      ThreadWatcher.menu?.updateAttachLocationChecks?.();
       if (ThreadWatcher.attached()) {
         // Force re-compute size targets (sides no longer match height).
         ThreadWatcher._lastAttachedW = null;
@@ -1186,7 +1188,8 @@ var ThreadWatcher = {
   },
 
   attachLocation() {
-    return 'bottom';
+    const loc = Conf['Thread Watcher Attach Location'];
+    return (loc === 'top' || loc === 'left' || loc === 'right') ? loc : 'bottom';
   },
 
   updateAttachButton() {
@@ -1453,6 +1456,9 @@ var ThreadWatcher = {
   },
 
   menu: {
+    // Reassigned by addAttachLocationEntry() to refresh the location checkmarks;
+    // declared here so the cross-tab sync handler can call it without type errors.
+    updateAttachLocationChecks() {},
     init() {
       if (!Conf['Thread Watcher']) { return; }
       const menu = (this.menu = new UI.Menu('thread watcher'));
@@ -1591,6 +1597,7 @@ var ThreadWatcher = {
       }
 
       this.addSortEntry();
+      this.addAttachLocationEntry();
 
       // Settings checkbox entries, grouped into submenus to save vertical space:
       const automationNames = ['Auto Update Thread Watcher', 'Auto Watch', 'Auto Watch Reply', 'Auto Prune'];
@@ -1697,6 +1704,64 @@ var ThreadWatcher = {
         subEntries,
         open() {
           this.el.classList.toggle('disabled', !ThreadWatcher.list.firstElementChild);
+          return true;
+        }
+      });
+    },
+
+    addAttachLocationEntry() {
+      const locationOptions = [
+        ['bottom', 'Bottom'],
+        ['top',    'Top'],
+        ['left',   'Left'],
+        ['right',  'Right'],
+      ];
+      const subEntries = [];
+      // Exposed so the cross-tab sync handler can refresh the checkmarks live.
+      this.updateAttachLocationChecks = () => {
+        for (const entry of subEntries) { entry.updateCheck(); }
+      };
+      locationOptions.forEach(([value, label]) => {
+        const el = $.el('a', {
+          href: 'javascript:;',
+          innerHTML: '<span class="watcher-sort-check"></span><span class="watcher-sort-label"></span>'
+        });
+        const check = $('.watcher-sort-check', el);
+        const labelEl = $('.watcher-sort-label', el);
+        labelEl.textContent = label;
+        const updateCheck = () => {
+          check.textContent = ThreadWatcher.attachLocation() === value ? '✓' : '';
+        };
+        $.on(el, 'mousedown', e => e.stopPropagation());
+        $.on(el, 'click', function(e) {
+          e.stopPropagation();
+          $.set('Thread Watcher Attach Location', value);
+          Conf['Thread Watcher Attach Location'] = value;
+          if (ThreadWatcher.attached()) {
+            // Force re-compute size targets (sides no longer match height).
+            ThreadWatcher._lastAttachedW = null;
+            ThreadWatcher._doPositionAttached();
+          }
+          for (const entry of subEntries) { entry.updateCheck(); }
+        });
+        subEntries.push({
+          el,
+          updateCheck,
+          open() {
+            updateCheck();
+            return true;
+          }
+        });
+      });
+      this.menu.addEntry({
+        el: $.el('a', {
+          href: 'javascript:;',
+          textContent: 'Attach Location'
+        }),
+        order: 51,
+        subEntries,
+        open() {
+          this.el.title = 'Where to attach the watcher relative to the Quick Reply when attached.\nBottom/top: width follows the QR. Left/right: width uses the manual Max W; height sizes to content.';
           return true;
         }
       });

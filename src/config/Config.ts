@@ -517,7 +517,7 @@ const Config = {
       ],
       'Thread Watcher Attached': [
         false,
-        'Attach the thread watcher below the Quick Reply. Drag either title bar to move both dialogs; use the attach button to detach.',
+        'Attach the thread watcher to the Quick Reply (position is set via "Attach Location" in the watcher menu). Drag either title bar to move both dialogs; use the attach button to detach.',
         2
       ],
       'Mark New IPs': [
@@ -702,12 +702,12 @@ const Config = {
       ],
       'Comment Preview Thread Behavior': [
         'normal',
-        'How the preview behaves in a thread. Normal: shows as usual. Hide until content: hidden until your post has a comment or file. Manual: hidden until you reveal it with the titlebar icon.',
+        'Preview behavior in threads.',
         2
       ],
       'Comment Preview Catalog Behavior': [
         'normal',
-        'How the preview behaves outside a thread (catalog, index, archive). Normal: floats as usual. Hide until content: hidden until your post has a comment or file. Manual: hidden until you reveal it with the titlebar icon.',
+        'Preview behavior on catalog/index/archive.',
         2
       ],
       'Show Comment Preview Header Icon': [
@@ -895,6 +895,7 @@ const Config = {
   'Thread Watcher Max Width': 250,
   'Thread Watcher Sort': 'manual',
   'Thread Watcher Attached': false,
+  'Thread Watcher Attach Location': 'bottom',
   'Thread Title': 'excerpt',
   'Unread Title Count': 'always',
   'Comment Preview Position': 'thread', // deprecated/unused: preview is always floating + on-demand inline
