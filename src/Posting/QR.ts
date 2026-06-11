@@ -1607,7 +1607,8 @@ var QR = {
 
     const blocked = new Set<string>();
     if (Conf['Thread Watcher Attached']) {
-      blocked.add('bottom');
+      const watcherLoc = Conf['Thread Watcher Attach Location'];
+      blocked.add((watcherLoc === 'top' || watcherLoc === 'left' || watcherLoc === 'right') ? watcherLoc : 'bottom');
     }
     return ['bottom', 'right', 'left', 'top'].find(loc => !blocked.has(loc)) || 'bottom';
   },

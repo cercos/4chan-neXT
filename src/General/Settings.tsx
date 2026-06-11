@@ -372,8 +372,17 @@ var Settings = {
         href: '#'
       }
       );
+      // Links live in the draggable titlebar (horizontal layout), so a drag
+      // that starts on a link moves the window. Track the pointer-down position
+      // and treat the click as a drag (don't navigate) if it moved past a few px.
+      let downX = null, downY = null;
+      $.on(link, 'mousedown', e => { downX = e.clientX; downY = e.clientY; });
       $.on(link, 'click', e => {
         e.preventDefault();
+        if (downX !== null && (Math.abs(e.clientX - downX) > 4 || Math.abs(e.clientY - downY) > 4)) {
+          downX = downY = null;
+          return;
+        }
         Settings.openSection.call(section);
       });
       links.push(link);
@@ -386,10 +395,11 @@ var Settings = {
     }
     $.add($('.sections-list', dialog), links);
     // In horizontal layout the search box and section links sit inside the
-    // draggable titlebar; stop pointer events from starting a window drag.
-    for (const navEl of [$('.settings-search', dialog), $('.sections-list', dialog)]) {
-      $.on(navEl, 'touchstart mousedown', e => e.stopPropagation());
-    }
+    // draggable titlebar. Only stop pointer events on the search box (so text
+    // selection works); the section links and surrounding empty space are left
+    // draggable — a click still navigates, but a drag moves the window since
+    // the horizontal titlebar has little blank room to grab.
+    $.on($('.settings-search', dialog), 'touchstart mousedown', e => e.stopPropagation());
     Settings.setNavLayout(settingsWindow, Conf['Settings Menu Layout']);
     // Opening on "All Settings" eagerly renders every section, which is
     // noticeably slower in Firefox. Default to the lightweight General view
@@ -6410,9 +6420,9 @@ Enable it on boards.${location.hostname.split('.')[1]}.org in your browser's pri
         <label class="easy-filter-field"><select class="field easy-filter-type" aria-label="Filter type" title="Filter type"></select></label>
         <label class="easy-filter-field"><span class="easy-filter-color-cell"><input class="easy-filter-color-on" type="checkbox" title="Apply this color (off = theme default)"><input class="easy-filter-color" type="color" title="Highlight color"></span></label>
         <label class="easy-filter-field"><input class="field easy-filter-class" type="text" placeholder="CSS class" aria-label="CSS class" title="Optional custom CSS class, applied alongside the color"></label>
-        <label class="easy-filter-field" title="Auto: move highlighted OPs to top"><span>A</span><input class="easy-filter-auto" type="checkbox" title="Auto: move highlighted OPs to top"></label>
-        <label class="easy-filter-field" title="Hide"><span>H</span><input class="easy-filter-hide" type="checkbox" title="Hide"></label>
-        <label class="easy-filter-field" title="Override: matching highlight prevents this thread from being hidden by other rules"><span>O</span><input class="easy-filter-override" type="checkbox" title="Override: matching highlight prevents this thread from being hidden by other rules"></label>
+        <label class="easy-filter-field" title="Auto: move highlighted OPs to top"><span data-abbr="A" data-full="Auto"></span><input class="easy-filter-auto" type="checkbox" title="Auto: move highlighted OPs to top"></label>
+        <label class="easy-filter-field" title="Hide"><span data-abbr="H" data-full="Hide"></span><input class="easy-filter-hide" type="checkbox" title="Hide"></label>
+        <label class="easy-filter-field" title="Override: matching highlight prevents this thread from being hidden by other rules"><span data-abbr="O" data-full="Override"></span><input class="easy-filter-override" type="checkbox" title="Override: matching highlight prevents this thread from being hidden by other rules"></label>
       `,
     }) as HTMLElement;
 

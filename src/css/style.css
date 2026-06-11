@@ -757,6 +757,15 @@ audio.controls-added {
 }
 #fourchanx-settings.settings-nav-horizontal .settings-titlebar > .sections-list > a {
   padding: 3px 7px;
+  border-radius: 0;
+}
+#fourchanx-settings.settings-nav-horizontal .settings-titlebar > .sections-list > a:hover,
+#fourchanx-settings.settings-nav-horizontal .settings-titlebar > .sections-list > a:focus {
+  background: none;
+  text-decoration: underline;
+}
+#fourchanx-settings.settings-nav-horizontal .settings-titlebar > .sections-list > a.tab-selected {
+  background: none;
 }
 #fourchanx-settings.settings-nav-horizontal .settings-titlebar > .sections-list > a + a {
   border-left: 1px solid rgba(128, 128, 128, .4);
@@ -1084,6 +1093,14 @@ div[data-checked="false"] > .suboption-list {
 .section-filters .easy-filter-field > span {
   flex: 0 0 auto;
   opacity: .85;
+}
+/* A/H/O toggles: abbreviated in the inline row, full name in the grid cards
+   where there's room (label and checkbox sit at opposite ends of the cell). */
+.section-filters .easy-filter-field > span[data-abbr]::after {
+  content: attr(data-abbr);
+}
+.section-filters .layout-grid .easy-filter-field > span[data-abbr]::after {
+  content: attr(data-full);
 }
 
 /* Card (vertical) layout — "grid", and "auto" when a row would wrap. */
