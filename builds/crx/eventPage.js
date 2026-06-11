@@ -1,12 +1,3 @@
-/**
- * Because of increased security in manifest v3, scripts can no longer just inject a script tag into the main page.
- * Functions to be called in the main context must be predefined. Those functions should be in this file, and they will
- * be loaded in the worker context in the extension version.
- *
- * These are the functions for `$.global`. They will be called by name.
- *
- * They are stringified, so don't use the short `fnName() {` notation.
- */
 const PageContextFunctions = {
   stubCloneTopNav: () => { window.cloneTopNav = function () { }; },
   disableNativeExtension: () => {
@@ -22,7 +13,7 @@ const PageContextFunctions = {
   },
   disableNativeExtensionNoStorage: () => { Object.defineProperty(window, 'Config', { value: { disableAll: true } }); },
   prettyPrint: ({ id }) => {
-    // @ts-ignore
+
     window.prettyPrint?.((function () { }), document.getElementById(id).parentNode);
   },
   exposeVersion: ({ buildDate, version }) => {
@@ -30,7 +21,7 @@ const PageContextFunctions = {
     Object.defineProperty(window, 'fourchanXT', {
       value: Object.freeze({
         version,
-        // Getter to prevent mutations.
+
         get buildDate() { return new Date(date); },
       }),
       writable: false,
@@ -296,8 +287,6 @@ const PageContextFunctions = {
   },
 };
 
-// This requestId workaround isn't needed in manifest V3, since returning true in the event listener works.
-// But we keep it for manifest V2.
 let requestID = 0;
 chrome.runtime.onMessage.addListener(function (request, sender, sendResponse) {
   const id = requestID;
