@@ -1,5 +1,9 @@
 ## 4chan-neXT changelog
 
+### 1.1.3 (2026-06-11)
+
+- Fixed the persona picker beside the Quick Reply Name, Options, and Subject fields so it lists every saved persona for the board.
+
 ### 1.1.2 (2026-06-11)
 
 - Index/catalog search now also matches the preview replies shown under each thread, not just the OP, so a thread no longer vanishes when your term appears only in a reply.

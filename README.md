@@ -17,24 +17,9 @@ You will need a userscript manager:
 
 ## Latest Version
 
-`1.1.2` (2026-06-11)
+`1.1.3` (2026-06-11)
 
-- Index/catalog search now also matches the preview replies shown under each thread, not just the OP, so a thread no longer vanishes when your term appears only in a reply.
-- Added an `op:` search prefix that restricts index/catalog search to OP text only (e.g. `op:catfish`); works glued or spaced, and `op:op:` searches OP text for the literal `op:`.
-- Fixed index/catalog search misreading a pasted URL like `https://...` as a regex query, which matched every thread while highlighting nothing; `field:/regex/` queries are now only recognized for real filter fields.
-- Fixed expanding a thread in the index not highlighting search matches in the newly loaded replies.
-- Stopped the index search field from saving every keystroke to the browser's autocomplete history.
-- Fixed inlined quotes (clicking a quote link) rendering under the post's floated image instead of beside it; the inline box now establishes a block formatting context (`display: flow-root`).
-- Fixed Quick Reply personas not applying; `always` persona defaults (name/options/subject) again pre-fill the Quick Reply fields while the browser-autofill hardening stays in place.
-- Improved Quick Reply comment preview performance (notably on Firefox): removed a duplicate per-keystroke render path and stopped the expensive width measurement from running on every mouse move while dragging the QR or the floating preview, so typing and toggling the preview are no longer laggy.
-- Added an "Allow Browser Autofill" Quick Reply setting (off by default) that lets the browser and password managers autofill/suggest the Name, Options, and Subject fields for users who prefer it.
-- Reworked QR Drafts to save drafts per-thread instead of per-board, so reopening a thread restores that thread's own draft; the setting was renamed from "Remember QR State" to "QR Drafts" (existing value carried over) and the ~100 MB attachment cap is now per-thread.
-- Added a drafts discard bin: when a thread 404s/archives, or you discard manually, the unsent draft is moved to a recoverable bin instead of being lost, with a toast offering a one-click "Keep it" to pin it past the 24-hour auto-purge.
-- Renamed the QR "remove file first" option to "Dump List Remove File First" (value migrated from the old setting keys).
-- Added per-context "Comment Preview Thread Behavior" and "Comment Preview Catalog/Index Behavior" settings.
-- Added a "Toggle comment preview" keybind (default Alt+V).
-- Added a "Highlight brackets" toggle (off by default) to the Custom CSS editor that highlights the matching bracket.
-- Shortened and clarified the wording of various settings descriptions.
+- Fixed the persona picker beside the Quick Reply Name, Options, and Subject fields so it lists every saved persona for the board.
 
 
 ## Migration from 4chan X / 4chan XT
