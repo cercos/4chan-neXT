@@ -616,7 +616,7 @@ const Config = {
       ],
       'Allow Browser Autofill': [
         false,
-        'Let the browser and password managers autofill / suggest values for the Quick Reply Name, Options (email) and Subject fields. Off by default to keep these fields clean.',
+        'Allow browser/password-manager suggestions for Quick Reply text fields.',
         1
       ],
       'Dump List Remove File First': [
@@ -1338,7 +1338,7 @@ current-archive-text:"Archive"]
     ],
     'Watch (catalog click)': [
       'Ctrl+Shift',
-      'Modifier keys to hold while clicking a catalog thread to watch/unwatch it. Leave empty to disable.'
+      'Catalog-click modifiers for watching threads. Leave empty to disable.'
     ],
     'Update': [
       'r',
