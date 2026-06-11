@@ -85,8 +85,8 @@
   'use strict';
 
   var version = {
-    "version": "1.1.1",
-    "date": "2026-06-09T00:00:00Z"
+    "version": "1.1.2",
+    "date": "2026-06-11T00:00:00Z"
   }
   ;
 

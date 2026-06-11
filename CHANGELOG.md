@@ -1,6 +1,6 @@
 ## 4chan-neXT changelog
 
-### Unreleased
+### 1.1.2 (2026-06-11)
 
 - Index/catalog search now also matches the preview replies shown under each thread, not just the OP, so a thread no longer vanishes when your term appears only in a reply.
 - Added an `op:` search prefix that restricts index/catalog search to OP text only (e.g. `op:catfish`); works glued or spaced, and `op:op:` searches OP text for the literal `op:`.

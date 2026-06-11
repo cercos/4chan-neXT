@@ -1,6 +1,6 @@
 // ==UserScript==
 // @name         4chan-neXT
-// @version      1.1.1
+// @version      1.1.2
 // @minGMVer     1.14
 // @minFFVer     78
 // @namespace    4chan-neXT
@@ -203,8 +203,8 @@
   'use strict';
 
   var version = {
-    "version": "1.1.1",
-    "date": "2026-06-09T00:00:00Z"
+    "version": "1.1.2",
+    "date": "2026-06-11T00:00:00Z"
   }
   ;
 
