@@ -11,11 +11,13 @@
 - Fixed Quick Reply personas not applying; `always` persona defaults (name/options/subject) again pre-fill the Quick Reply fields while the browser-autofill hardening stays in place.
 - Improved Quick Reply comment preview performance (notably on Firefox): removed a duplicate per-keystroke render path and stopped the expensive width measurement from running on every mouse move while dragging the QR or the floating preview, so typing and toggling the preview are no longer laggy.
 - Added an "Allow Browser Autofill" Quick Reply setting (off by default) that lets the browser and password managers autofill/suggest the Name, Options, and Subject fields for users who prefer it.
-- Made the comment preview "Docked inline" default mode load already docked inline (no floating-then-dock flash) and re-dock after posting, instead of floating first and only docking after a delay.
-- Stopped the comment preview from scrolling the page to the bottom when it auto-docks on open; the scroll-to-bottom now happens only when you manually dock the preview.
-- Improved the comment preview "Insert in place" behavior so the preview rides one post above the viewport fold (staying visible while you scroll) and docks as the true last post once you reach the bottom of the thread.
-- Fixed "Remember last mode" to also restore a floating preview's dragged-off position across page reloads.
-- Hid comment preview sub-settings in Settings that don't apply to the selected default mode (e.g. attach location is hidden for "Docked inline").
+- Reworked QR Drafts to save drafts per-thread instead of per-board, so reopening a thread restores that thread's own draft; the setting was renamed from "Remember QR State" to "QR Drafts" (existing value carried over) and the ~100 MB attachment cap is now per-thread.
+- Added a drafts discard bin: when a thread 404s/archives, or you discard manually, the unsent draft is moved to a recoverable bin instead of being lost, with a toast offering a one-click "Keep it" to pin it past the 24-hour auto-purge.
+- Renamed the QR "remove file first" option to "Dump List Remove File First" (value migrated from the old setting keys).
+- Added per-context "Comment Preview Thread Behavior" and "Comment Preview Catalog/Index Behavior" settings
+- Added a "Toggle comment preview" keybind (default Alt+V).
+- Added a "Highlight brackets" toggle (off by default) to the Custom CSS editor that highlights the matching bracket
+- Shortened and clarified the wording of various settings descriptions.
 
 ### 1.1.1 (2026-06-09)
 
@@ -42,7 +44,7 @@
 - Tweaked the Styling settings page layout.
 - Fixed Quick Reply comment preview quote text coloring.
 - Fixed Quick Reply comment preview links, cross-board quote links, programmatic quote insertion refreshes, and `[math]` / `[eqn]` preview rendering.
-- Added `Remember QR State`, a per-board Quick Reply draft system that restores all queued posts — subject/comment text, spoiler, flag, thread, and attachments (images/videos, stored in IndexedDB up to ~100 MB per board), and after refreshes, closes, and crashes.
+- Added `QR Drafts`, a per-thread Quick Reply draft system that restores queued posts and attachments after refreshes, closes, and crashes.
 - Added an option to hide the native board-index post form by default; the existing Original Form toggle can still show it.
 - Fixed the `/pol/` Quick Reply flag selector to use the existing board flag CSS instead of duplicating sprite offsets.
 - Added a Settings Window navigation layout option for switching between the vertical sidebar and horizontal titlebar navigation.

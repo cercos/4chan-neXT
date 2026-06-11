@@ -7,7 +7,7 @@
   <select data-name="thread" title="Create a new thread / Reply">
     <option value="new">New thread</option>
   </select>
-  <a href="javascript:;" class="qr-clear-draft" title="Discard saved draft for this board" hidden>🗑︎</a>
+  <a href="javascript:;" id="qr-drafts-button" title="Saved drafts" hidden>🗂︎<span id="qr-drafts-badge" hidden></span></a>
   <a href="javascript:;" class="close" title="Close">✕</a>
 </div>
 <form autocomplete="off">
@@ -72,3 +72,4 @@
   </select>
   <input type="file" multiple>
 </form>
+<div id="qr-drafts-panel" class="qr-drafts-panel" hidden></div>

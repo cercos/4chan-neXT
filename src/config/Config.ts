@@ -313,7 +313,7 @@ const Config = {
       ],
       'Replace Thumbnails': [
         false,
-        'Replace image and video thumbnails with the original media. Probably will degrade browser performance ;)'
+        'Replace thumbnails with full-size media inline. Will degrade performance.'
       ],
       'Replace GIF': [
         false,
@@ -517,12 +517,7 @@ const Config = {
       ],
       'Thread Watcher Attached': [
         false,
-        'Attach the thread watcher to the Quick Reply (at the location below). Drag either title bar to move both dialogs; use the attach button to detach.',
-        2
-      ],
-      'Thread Watcher Attach Location': [
-        'bottom',
-        'Position to attach the thread watcher relative to the Quick Reply dialog (bottom/top: width follows QR; left/right: width uses manual max W, height sizes to content).',
+        'Attach the thread watcher below the Quick Reply. Drag either title bar to move both dialogs; use the attach button to detach.',
         2
       ],
       'Mark New IPs': [
@@ -606,22 +601,27 @@ const Config = {
       ],
       'Auto-close Tags': [
         true,
-        'In the Quick Reply comment field, automatically insert the matching closing tag when you type a supported opening tag (e.g. typing [code] on /g/ inserts [/code] and parks the cursor between them). Only fires for tags the current board actually supports ([code], [math]/[eqn], [spoiler], [sjis], and the /mu/ & /qst/ color tags).',
+        'Auto-insert matching closing tags in Quick Reply for board-supported tags like [code], [spoiler], [math], and [sjis].',
         1
       ],
-      'Remember QR State': [
+      'QR Drafts': [
         false,
-        'Auto-save your Quick Reply (per board) so it survives a refresh, close or crash, including all queued posts and their attachments (images and videos, up to ~100 MB per board). Restores into an empty Quick Reply when you return to the board; cleared after you post.',
+        'Auto-save your Quick Reply per thread, including attachments up to ~100 MB. Dead-thread drafts auto-clear from the discard bin after a day.',
         1
+      ],
+      'Show QR Drafts Icon': [
+        true,
+        'Show the drafts icon in the Quick Reply. Turn off to declutter and use the "Toggle drafts" keybind instead.',
+        2
       ],
       'Allow Browser Autofill': [
         false,
         'Let the browser and password managers autofill / suggest values for the Quick Reply Name, Options (email) and Subject fields. Off by default to keep these fields clean.',
         1
       ],
-      'QR Thumbnail Remove File First': [
+      'Dump List Remove File First': [
         true,
-        'In Quick Reply thumbnails, first click on Remove clears the file, second click removes the post. Disable for single-click post removal.',
+        'Dump-list Remove clears the file before removing the queued post.',
         1
       ],
       'Randomize Filename': [
@@ -636,7 +636,7 @@ const Config = {
       ],
       'Hide Original Post Form': [
         true,
-        'Hide the native post form that sits at the top of board index pages by default, like on threads. Use the "Original Form" link or "Start a Thread" to show it.',
+        'Hide the native board-index post form until you open Original Form or Start a Thread.',
         1
       ],
       'Show Upload Progress': [
@@ -682,7 +682,7 @@ const Config = {
       ],
       'Comment Preview': [
         false,
-        'Toggle (via button in QR titlebar) a live preview of how your comment will render. The preview shows as a draggable floating window by default; an arrow icon in the preview\'s header docks it inline as a literal post in the thread (and back). "Inline Behavior" controls whether docking scrolls to the thread end or inserts in place and follows your scroll.',
+        'Live preview of how your comment will render. Shows as a draggable floating window; the arrow in its header docks it inline as a literal post in the thread (and back).',
         1
       ],
       'Comment Preview Default Mode': [
@@ -698,6 +698,16 @@ const Config = {
       'Comment Preview Remember Float Position': [
         false,
         'Remember a manually dragged floating preview position when Quick Reply is closed and reopened.',
+        2
+      ],
+      'Comment Preview Thread Behavior': [
+        'normal',
+        'How the preview behaves in a thread. Normal: shows as usual. Hide until content: hidden until your post has a comment or file. Manual: hidden until you reveal it with the titlebar icon.',
+        2
+      ],
+      'Comment Preview Catalog Behavior': [
+        'normal',
+        'How the preview behaves outside a thread (catalog, index, archive). Normal: floats as usual. Hide until content: hidden until your post has a comment or file. Manual: hidden until you reveal it with the titlebar icon.',
         2
       ],
       'Show Comment Preview Header Icon': [
@@ -768,7 +778,8 @@ const Config = {
       ],
       'Fetch Ghost Posts': [
         false,
-        'When opening a thread, fetch deleted posts from the configured archive and insert them inline. Requires Resurrect Quotes and a Foolfuuka archive for the board.'
+        'Fetch deleted posts from the configured archive and insert them inline.',
+        1
       ],
       'Remember Your Posts': [
         true,
@@ -884,7 +895,6 @@ const Config = {
   'Thread Watcher Max Width': 250,
   'Thread Watcher Sort': 'manual',
   'Thread Watcher Attached': false,
-  'Thread Watcher Attach Location': 'bottom',
   'Thread Title': 'excerpt',
   'Unread Title Count': 'always',
   'Comment Preview Position': 'thread', // deprecated/unused: preview is always floating + on-demand inline
@@ -894,6 +904,8 @@ const Config = {
   'Comment Preview Inline Behavior': 'scroll', // 'scroll' = dock at thread end + scroll to it; 'inplace' = insert near viewport and follow scroll
   'Comment Preview Remember Float Position': false,
   'Comment Preview Float Position': {}, // internal state: { left: string, top: string }
+  'Comment Preview Thread Behavior': 'normal', // 'normal' | 'until-content' | 'manual' — thread view only
+  'Comment Preview Catalog Behavior': 'normal', // 'normal' | 'until-content' | 'manual' — non-thread (catalog/index/archive) only
   'Show Comment Preview Header Icon': true,
   'Spoiler Mode': 'default',
   'Settings Menu Layout': 'vertical',
@@ -1293,6 +1305,14 @@ current-archive-text:"Archive"]
     'Toggle sage': [
       'Alt+s',
       'Toggle sage in options field.'
+    ],
+    'Toggle comment preview': [
+      'Alt+v',
+      'Toggle the QR comment preview.'
+    ],
+    'Toggle drafts': [
+      'Alt+d',
+      'Toggle the QR drafts panel.'
     ],
     'Toggle Cooldown': [
       'Alt+Comma',

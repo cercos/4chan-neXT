@@ -59,7 +59,9 @@ var QR = {
     autohide: HTMLInputElement,
     previewToggle: HTMLButtonElement,
     close: HTMLAnchorElement,
-    clearDraft: HTMLAnchorElement,
+    draftsButton: HTMLAnchorElement,
+    draftsBadge: HTMLSpanElement,
+    draftsPanel: HTMLDivElement,
     thread: HTMLSelectElement,
     form: HTMLFormElement,
     sjisToggle: HTMLButtonElement,
@@ -133,6 +135,10 @@ var QR = {
   commentPreviewInlinePending: false,
   _inlineStartRetryPending: false,
   _inlineStartTries: 0,
+  // Runtime-only (never persisted): in the 'manual' visibility behavior the preview stays
+  // hidden until the user reveals it with the titlebar icon. Reset on every QR close so
+  // each fresh open starts hidden again.
+  commentPreviewManualRevealed: false,
   // Set only by a manual "dock preview" click so the scroll-to-bottom inline behavior
   // fires on an explicit dock, never on the automatic startup dock.
   _scrollPreviewOnDock: false,
@@ -337,9 +343,21 @@ var QR = {
         QR.clearStoredCommentPreviewFloatPos(false);
       }
     });
+    $.sync('Comment Preview Thread Behavior', (value: string | undefined) => {
+      Conf['Comment Preview Thread Behavior'] = QR.normalizeCommentPreviewVisibility(value);
+      QR.applyCommentPreviewSettings();
+    });
+    $.sync('Comment Preview Catalog Behavior', (value: string | undefined) => {
+      Conf['Comment Preview Catalog Behavior'] = QR.normalizeCommentPreviewVisibility(value);
+      QR.applyCommentPreviewSettings();
+    });
     $.sync('Show Comment Preview Header Icon', (value: boolean | undefined) => {
       Conf['Show Comment Preview Header Icon'] = value !== false;
       QR.applyCommentPreviewSettings();
+    });
+    $.sync('Show QR Drafts Icon', (value: boolean | undefined) => {
+      Conf['Show QR Drafts Icon'] = value !== false;
+      QR.drafts.updateButton();
     });
 
     $.on(d, 'paste',              QR.paste);
@@ -349,6 +367,8 @@ var QR = {
 
     $.on(d, 'IndexRefreshInternal', QR.generatePostableThreadsList);
     $.on(d, 'ThreadUpdate', QR.statusCheck);
+    // When a thread 404s/archives, move its unsent draft to the discard bin.
+    $.on(d, 'ThreadUpdate', QR.drafts.onThreadUpdate);
 
     // Keep floating comment preview docked under the QR and keep the inline preview
     // width cap current when the viewport/QR dimensions change.
@@ -428,6 +448,7 @@ var QR = {
 	    QR.commentPreviewDefaultModeApplied = '';
 	    QR.commentPreviewRestoreDetachedFloat = false;
 	    QR.commentPreviewInlinePending = false;
+	    QR.commentPreviewManualRevealed = false;
 	    QR._inlineStartTries = 0;
 	    QR._scrollPreviewOnDock = false;
 	    new QR.post(true);
@@ -485,8 +506,20 @@ var QR = {
 
   toggleCommentPreview(e) {
     e.preventDefault();
+    // 'manual' visibility mode: when the feature is already enabled but the preview is
+    // being withheld, the icon reveals/hides it for this session rather than disabling the
+    // whole feature (which persists and would also affect the other view).
+    if (Conf['Comment Preview'] && QR.commentPreviewVisibility() === 'manual') {
+      QR.commentPreviewManualRevealed = !QR.commentPreviewManualRevealed;
+      return $.event('QRCommentPreviewChanged', null);
+    }
     Conf['Comment Preview'] = !Conf['Comment Preview'];
     $.set('Comment Preview', Conf['Comment Preview']);
+    // Enabling in a manual-mode view should visibly do something: reveal the preview
+    // straight away instead of leaving it withheld.
+    if (Conf['Comment Preview'] && QR.commentPreviewVisibility() === 'manual') {
+      QR.commentPreviewManualRevealed = true;
+    }
     return $.event('QRCommentPreviewChanged', null);
   },
 
@@ -580,7 +613,8 @@ var QR = {
   usingThreadPreview(): boolean {
     return !!Conf['Comment Preview'] &&
            QR.previewInline === true &&
-           QR.canActuallyShowThreadPreview();
+           QR.canActuallyShowThreadPreview() &&
+           !QR.shouldSuppressCommentPreview();
   },
 
   // Floating is the default and the automatic fallback whenever we're not inline
@@ -588,7 +622,46 @@ var QR = {
   usingFloatingPreview(): boolean {
     // While an inline-default dock is pending we deliberately show nothing (not the
     // floating fallback) so the preview loads straight into its docked position.
-    return !!Conf['Comment Preview'] && !QR.usingThreadPreview() && !QR.commentPreviewInlinePending;
+    if (!Conf['Comment Preview'] || QR.usingThreadPreview() || QR.commentPreviewInlinePending) return false;
+    // The visibility setting for the current view can withhold the preview entirely.
+    if (QR.shouldSuppressCommentPreview()) return false;
+    return true;
+  },
+
+  normalizeCommentPreviewVisibility(value?: string): string {
+    return value === 'until-content' || value === 'manual' ? value : 'normal';
+  },
+
+  // The visibility behavior for the current view: thread view has its own setting,
+  // everywhere else (catalog, board index, archive) uses the catalog setting. Either
+  // is independent of the placement settings (attach/inline/remember) — it only
+  // decides *whether* the preview shows, not where.
+  commentPreviewVisibility(): string {
+    const key = g.VIEW === 'thread'
+      ? 'Comment Preview Thread Behavior'
+      : 'Comment Preview Catalog Behavior';
+    return QR.normalizeCommentPreviewVisibility(Conf[key]);
+  },
+
+  // True when the post being composed has something to preview (comment text or a file).
+  commentPreviewHasContent(): boolean {
+    if ((QR.nodes?.com?.value || '').trim()) return true;
+    return !!(QR.selected?.file || QR.selected?.pendingFile);
+  },
+
+  shouldSuppressCommentPreview(): boolean {
+    switch (QR.commentPreviewVisibility()) {
+      case 'manual':        return !QR.commentPreviewManualRevealed;
+      case 'until-content': return !QR.commentPreviewHasContent();
+      default:              return false; // 'normal'
+    }
+  },
+
+  // In 'manual' mode the titlebar icon reveals/hides the preview for this QR session
+  // instead of disabling the whole feature, so the icon is "active" only when the
+  // preview is actually being shown.
+  commentPreviewManualHidden(): boolean {
+    return QR.commentPreviewVisibility() === 'manual' && !QR.commentPreviewManualRevealed;
   },
 
     canActuallyShowThreadPreview(): boolean {
@@ -840,8 +913,11 @@ var QR = {
       classList.add('com-preview-thread');
     }
 
-    QR.nodes.previewToggle?.classList.toggle('enabled', enabled);
-    QR.nodes.previewToggle?.setAttribute('aria-pressed', enabled ? 'true' : 'false');
+    // In manual catalog mode the icon reflects whether the preview is currently revealed,
+    // not just whether the feature is enabled, so the icon's lit state tracks what's shown.
+    const iconActive = enabled && !QR.commentPreviewManualHidden();
+    QR.nodes.previewToggle?.classList.toggle('enabled', iconActive);
+    QR.nodes.previewToggle?.setAttribute('aria-pressed', iconActive ? 'true' : 'false');
     if (QR.nodes.previewToggle) {
       QR.nodes.previewToggle.hidden = Conf['Show Comment Preview Header Icon'] === false;
     }
@@ -1438,9 +1514,26 @@ var QR = {
       if (target.previousElementSibling !== QR.previewPost) {
         $.before(target, QR.previewPost);
       }
-    } else if (root.firstElementChild && root.firstElementChild !== QR.previewPost) {
-      // Above the first reply: sit at the very top.
-      $.prepend(root, QR.previewPost);
+    } else {
+      // No reply sits above the fold (we're scrolled up near the top, e.g. an OP-only
+      // thread or one with a single reply still below the fold). Keep the preview just
+      // below the OP — never above it. We can't use root.firstElementChild here: the
+      // thread root's first child may be a prepended seasonal "hat" <img>, a thread-hide
+      // stub, etc., so anchoring there drops the preview between that node and the OP
+      // (i.e. above the OP). Anchor on the first real post container instead — the OP —
+      // skipping the preview (also a .postContainer) and any clones.
+      const pcSel = (g.SITE?.selectors?.postContainer as string) || '.postContainer';
+      let op: HTMLElement | null = null;
+      for (const pc of $$(pcSel, root) as HTMLElement[]) {
+        if (pc === QR.previewPost || pc.hasAttribute('data-clone')) continue;
+        op = pc;
+        break;
+      }
+      if (op) {
+        if (op.nextElementSibling !== QR.previewPost) $.after(op, QR.previewPost);
+      } else if (root.firstElementChild && root.firstElementChild !== QR.previewPost) {
+        $.prepend(root, QR.previewPost);
+      }
     }
     QR.syncFloatingPreviewWidth(QR.previewPost);
   },
@@ -1514,10 +1607,7 @@ var QR = {
 
     const blocked = new Set<string>();
     if (Conf['Thread Watcher Attached']) {
-      const watcherLoc = Conf['Thread Watcher Attach Location'];
-      if (watcherLoc === 'bottom' || watcherLoc === 'top' || watcherLoc === 'left' || watcherLoc === 'right') {
-        blocked.add(watcherLoc);
-      }
+      blocked.add('bottom');
     }
     return ['bottom', 'right', 'left', 'top'].find(loc => !blocked.has(loc)) || 'bottom';
   },
@@ -2379,7 +2469,9 @@ var QR = {
     setNode('move',           '.move');
     setNode('autohide',       '#autohide');
     setNode('previewToggle',  '#qr-preview-toggle');
-    setNode('clearDraft',     '.qr-clear-draft');
+    setNode('draftsButton',   '#qr-drafts-button');
+    setNode('draftsBadge',    '#qr-drafts-badge');
+    setNode('draftsPanel',    '#qr-drafts-panel');
     setNode('close',          '.close');
     setNode('thread',         'select');
     setNode('form',           'form');
@@ -2511,12 +2603,12 @@ var QR = {
       $.on(nodes[name], event, save);
     }
 
-    $.on(nodes.clearDraft, 'click', QR.drafts.discard);
-    nodes.clearDraft.hidden = !Conf['Remember QR State'];
+    $.on(nodes.draftsButton, 'click', QR.drafts.togglePanel);
+    QR.drafts.updateButton();
     // React when the draft feature is toggled (same tab via the settings event,
     // other tabs via storage sync): turning it off wipes saved drafts + files.
     $.on(d, 'QRStateChanged', QR.drafts.onSettingChanged);
-    $.sync('Remember QR State', QR.drafts.onSettingChanged);
+    $.sync('QR Drafts', QR.drafts.onSettingChanged);
 
     if (Conf['Remember QR Size']) {
       $.get('QR Size', '', item => nodes.com.style.cssText = item['QR Size']);
@@ -3864,25 +3956,35 @@ var QR = {
     }
   },
 
-  // Auto-saved per-board draft of what's typed in the QR, so it survives a
+  // Auto-saved per-thread draft of what's typed in the QR, so it survives a
   // refresh/close/crash. Comment text + per-post state (spoiler, flag, thread)
-  // are stored under `QR.drafts` as { '<siteID>/<boardID>': { posts } }.
-  // Name/options/subject are deliberately not persisted or restored.
-  // Attachments (images/videos) are stored separately in IndexedDB via
-  // QRFileStore (the JSON layer can't hold blobs) and referenced by id; the
-  // total kept per board is capped at FILE_CAP.
+  // are stored under `QR.drafts` as { '<siteID>/<boardID>/<threadID>': { posts } }.
+  // The thread you're viewing keys the bucket ('index' off a thread page), so
+  // reopening a thread restores only that thread's draft — not whatever you last
+  // typed elsewhere on the board. Name/options/subject are deliberately not
+  // persisted or restored. Attachments (images/videos) are stored separately in
+  // IndexedDB via QRFileStore (the JSON layer can't hold blobs) and referenced
+  // by id; the total kept per thread is capped at FILE_CAP.
   drafts: {
     timeout: undefined as ReturnType<typeof setTimeout> | undefined,
-    // Cap on total attachment bytes persisted per board. Files past the cap
+    // Cap on total attachment bytes persisted per thread. Files past the cap
     // (largest first) are not saved; the user is warned once.
     FILE_CAP: 100 * 1024 * 1024,
     _warnedCap: false,
     // Set while discard() tears the QR down, so the post/file removals it
     // triggers don't re-persist a draft we're deleting.
     _suspended: false,
+    // Discarded drafts kept past thread death are stored under this key as an
+    // array of bin entries; pruned after BIN_TTL unless the user pinned them.
+    BIN_KEY: 'QR.drafts.bin',
+    BIN_TTL: 24 * 60 * 60 * 1000,
 
+    // Drafts key off the thread you're looking at. Off a thread page (index,
+    // catalog, archive) there's no single thread, so replies share one 'index'
+    // bucket per board.
     key() {
-      return `${g.SITE.ID}/${g.BOARD.ID}`;
+      const tid = (g.VIEW === 'thread' && g.threadID) ? g.threadID : 'index';
+      return `${g.SITE.ID}/${g.BOARD.ID}/${tid}`;
     },
 
     // File-store ids start with the board key + a space so they can be
@@ -3902,7 +4004,7 @@ var QR = {
 
     // Debounced text/state auto-save while typing.
     save() {
-      if (!Conf['Remember QR State'] || QR.drafts._suspended) { return; }
+      if (!Conf['QR Drafts'] || QR.drafts._suspended) { return; }
       clearTimeout(QR.drafts.timeout);
       QR.drafts.timeout = setTimeout(QR.drafts.flush, 500);
     },
@@ -3912,7 +4014,7 @@ var QR = {
     // left, the board's saved draft is removed.
     flush() {
       clearTimeout(QR.drafts.timeout);
-      if (!Conf['Remember QR State'] || !QR.nodes || QR.drafts._suspended) { return; }
+      if (!Conf['QR Drafts'] || !QR.nodes || QR.drafts._suspended) { return; }
       QR.selected?.forceSave();
       const posts = QR.posts
         .map(post => ({
@@ -3936,10 +4038,10 @@ var QR = {
     },
 
     // Persist current attachments to IndexedDB (only newly added ones are
-    // written), enforce the per-board size cap, then flush the JSON refs.
+    // written), enforce the per-thread size cap, then flush the JSON refs.
     // Called when a file is added/removed; safe to call any time.
     async persistFiles() {
-      if (!Conf['Remember QR State'] || !QR.nodes || QR.drafts._suspended) { return; }
+      if (!Conf['QR Drafts'] || !QR.nodes || QR.drafts._suspended) { return; }
       try {
         const withFiles = QR.posts.filter(p => p.file);
         // Keep smallest-first up to the cap, i.e. skip the largest over it.
@@ -3964,7 +4066,7 @@ var QR = {
         }
         if (skipped && !QR.drafts._warnedCap) {
           QR.drafts._warnedCap = true;
-          new Notice('warning', `Draft attachments over ~${Math.round(QR.drafts.FILE_CAP / 1048576)} MB total aren't saved for this board; ${skipped} file(s) skipped.`, 6);
+          new Notice('warning', `Draft attachments over ~${Math.round(QR.drafts.FILE_CAP / 1048576)} MB total aren't saved for this thread; ${skipped} file(s) skipped.`, 6);
         }
       } catch (err) {
         console.error('QR draft persistFiles failed', err);
@@ -3984,9 +4086,11 @@ var QR = {
       }
     },
 
-    // Restore this board's saved draft into an empty Quick Reply.
+    // Restore this thread's saved draft into an empty Quick Reply.
     restore() {
-      if (!Conf['Remember QR State'] || !QR.nodes) { return; }
+      if (!Conf['QR Drafts'] || !QR.nodes) { return; }
+      QR.drafts.migrateLegacy();
+      QR.drafts.pruneBin();
       $.get('QR.drafts', dict(), ({ 'QR.drafts': all }) => {
         QR.drafts.updateButton();
         const data = all?.[QR.drafts.key()];
@@ -4074,15 +4178,16 @@ var QR = {
     // the same-tab change event passes an Event, which we ignore since Conf is
     // already fresh from $.cb.checked.
     onSettingChanged(value?: any) {
-      if (typeof value === 'boolean') { Conf['Remember QR State'] = value; }
-      if (!Conf['Remember QR State']) {
+      if (typeof value === 'boolean') { Conf['QR Drafts'] = value; }
+      if (!Conf['QR Drafts']) {
         for (const p of (QR.posts || [])) { delete p._draftFileId; }
         QR.drafts.clearAll();
       }
       QR.drafts.updateButton();
     },
 
-    // Remove all saved drafts (every board) and all stored attachments.
+    // Remove all saved drafts (every thread), the discard bin, and all stored
+    // attachments.
     async clearAll() {
       try {
         const keys = await QRFileStore.keys();
@@ -4091,17 +4196,296 @@ var QR = {
         console.error('QR draft clearAll failed', err);
       }
       $.delete('QR.drafts');
+      $.delete(QR.drafts.BIN_KEY);
     },
 
-    // Show the discard button only when there's a saved draft for this board.
-    updateButton() {
-      const btn = QR.nodes?.clearDraft;
-      if (!btn) { return; }
-      if (!Conf['Remember QR State']) { btn.hidden = true; return; }
+    // ---- Discard bin -------------------------------------------------------
+    // When a thread dies (or you discard manually) the unsent draft isn't
+    // deleted outright — its TEXT/state (comment, spoiler, flag, target thread)
+    // is moved here so a 404 or a misclick stays recoverable. Entries auto-purge
+    // after BIN_TTL unless pinned. Attachments are deliberately NOT kept in the
+    // bin: recovering a file to a dead thread is moot, and keeping blobs alive
+    // across per-thread file cleanup is a lifecycle hazard — only the
+    // hard-to-recreate text is preserved.
+
+    getBin(cb: (bin: any[]) => void) {
+      $.get(QR.drafts.BIN_KEY, [], (o) => cb(o[QR.drafts.BIN_KEY] || []));
+    },
+
+    // A short human label for a bin entry. Whether it reads as a new thread or
+    // a reply comes from the post's target thread ('new' vs a number), not the
+    // storage key — the key only records where it was composed.
+    //   new thread:  "New thread /pol/ — first words…"
+    //   reply:       "/g/ →12345 — first words…"
+    binLabel(key: string, posts: any[]) {
+      const board = key.split('/')[1];
+      const primary = posts.find(p => p.com) || posts[0] || {};
+      const target = primary.thread;
+      const where = (target == null || target === 'new')
+        ? `New thread /${board}/`
+        : `/${board}/ →${target}`;
+      const raw = (primary.com || '').replace(/\s+/g, ' ').trim();
+      const snippet = raw ? ` — ${raw.slice(0, 36)}${raw.length > 36 ? '…' : ''}` : '';
+      return `${where}${snippet}`;
+    },
+
+    // Reduce live/stored posts to the text-only shape the bin keeps (drop files
+    // and empty posts).
+    toBinPosts(posts: any[]) {
+      return posts
+        .map(p => ({ thread: p.thread, com: p.com || null, spoiler: p.spoiler ? true : undefined, flag: p.flag || undefined }))
+        .filter(p => p.com);
+    },
+
+    // Append a bin entry for `key` from raw draft posts. No-op when there's no
+    // text worth keeping.
+    binPush(key: string, posts: any[], opts: { notify?: boolean } = {}) {
+      const kept = QR.drafts.toBinPosts(posts);
+      if (!kept.length) { return; }
+      QR.drafts.getBin((bin) => {
+        const entry = {
+          id: `${Date.now().toString(36)}${Math.random().toString(36).slice(2, 6)}`,
+          key, label: QR.drafts.binLabel(key, kept), posts: kept, ts: Date.now(), pinned: false,
+        };
+        bin.push(entry);
+        $.set(QR.drafts.BIN_KEY, bin, () => {
+          QR.drafts.updateButton();
+          QR.drafts.renderPanel();
+          if (opts.notify) { QR.drafts.notifyBinned(entry); }
+        });
+      });
+    },
+
+    // Move the stored draft for `key` (e.g. a dead thread's) into the bin, then
+    // drop it and its now-unreferenced attachment blobs from storage.
+    moveToBin(key: string, opts: { notify?: boolean } = {}) {
+      if (!Conf['QR Drafts']) { return; }
       $.get('QR.drafts', dict(), ({ 'QR.drafts': all }) => {
-        if (QR.nodes?.clearDraft) {
-          QR.nodes.clearDraft.hidden = !all?.[QR.drafts.key()]?.posts?.length;
+        const data = all?.[key];
+        if (!data?.posts?.length) { return; }
+        delete all[key];
+        $.set('QR.drafts', all, QR.drafts.updateButton);
+        QR.drafts.deleteKeyFiles(key);
+        QR.drafts.binPush(key, data.posts, opts);
+      });
+    },
+
+    // Move what's currently typed in the QR to the bin, then clear the QR.
+    binCurrent() {
+      QR.selected?.forceSave();
+      QR.drafts.binPush(QR.drafts.key(), QR.posts);
+      QR.drafts.discard();
+    },
+
+    // Delete every stored attachment under `key`'s file prefix. Fails soft.
+    async deleteKeyFiles(key: string) {
+      try {
+        const prefix = `${key} `;
+        const mine = (await QRFileStore.keys()).filter(k => k.startsWith(prefix));
+        if (mine.length) { await QRFileStore.delete(mine); }
+      } catch (err) {
+        console.error('QR draft deleteKeyFiles failed', err);
+      }
+    },
+
+    // Toast shown when a dead thread's draft is binned, with a one-click Keep
+    // that pins it past the auto-purge window.
+    notifyBinned(entry: any) {
+      const el = $.el('div');
+      $.add(el, $.tn(`Thread died — your unsent draft (${entry.label}) was moved to the QR drafts bin. `));
+      const keep = $.el('a', { href: 'javascript:;', textContent: 'Keep it' }) as HTMLAnchorElement;
+      $.add(el, keep);
+      $.add(el, $.tn(' so it won\'t auto-clear.'));
+      const notice = new Notice('info', el, 30);
+      $.on(keep, 'click', () => {
+        QR.drafts.pinBinEntry(entry.id, true);
+        keep.textContent = 'Kept ✓';
+        keep.removeAttribute('href');
+        setTimeout(() => notice.close(), 1200);
+      });
+    },
+
+    pinBinEntry(id: string, pinned: boolean) {
+      QR.drafts.getBin((bin) => {
+        const entry = bin.find(e => e.id === id);
+        if (!entry) { return; }
+        entry.pinned = pinned;
+        $.set(QR.drafts.BIN_KEY, bin, () => QR.drafts.renderPanel());
+      });
+    },
+
+    // Drop expired (older than BIN_TTL, unpinned) entries. Runs on QR init.
+    pruneBin() {
+      QR.drafts.getBin((bin) => {
+        const now = Date.now();
+        const fresh = bin.filter(e => e.pinned || (now - e.ts) <= QR.drafts.BIN_TTL);
+        if (fresh.length === bin.length) { return; }
+        $.set(QR.drafts.BIN_KEY, fresh, QR.drafts.updateButton);
+      });
+    },
+
+    deleteBinEntry(id: string) {
+      QR.drafts.getBin((bin) => {
+        const fresh = bin.filter(e => e.id !== id);
+        if (fresh.length === bin.length) { return; }
+        $.set(QR.drafts.BIN_KEY, fresh, () => { QR.drafts.updateButton(); QR.drafts.renderPanel(); });
+      });
+    },
+
+    // Restore a bin entry's text into the (empty) Quick Reply, then drop it.
+    restoreFromBin(id: string) {
+      if (!QR.nodes) { return; }
+      if (QR.posts.some(post => post.com || post.sub || post.file)) {
+        new Notice('warning', 'Clear the Quick Reply first, then recover the draft.', 5);
+        return;
+      }
+      QR.drafts.getBin((bin) => {
+        const entry = bin.find(e => e.id === id);
+        if (!entry?.posts?.length) { return; }
+        for (let i = 0; i < entry.posts.length; i++) {
+          const draft = entry.posts[i];
+          const post = i === 0 ? QR.posts[0] : new QR.post();
+          if (!post) { continue; }
+          if (QR.drafts.threadValid(draft.thread)) { post.thread = draft.thread; }
+          post.setComment(draft.com || '');
+          if (draft.spoiler) {
+            post.spoiler = true;
+            if (post.nodes?.spoiler) { post.nodes.spoiler.checked = true; }
+          }
+          if (draft.flag) { post.flag = draft.flag; }
         }
+        if (entry.posts.length > 1) { $.addClass(QR.nodes.el, 'dump'); }
+        QR.selected?.load();
+        QR.drafts.deleteBinEntry(id);
+        QR.drafts.closePanel();
+      });
+    },
+
+    // ThreadUpdate fires for the open thread; when it 404s/archives, bin its
+    // draft (with a toast). The dead thread is the one we're viewing, so key()
+    // already points at it.
+    onThreadUpdate(e: any) {
+      if (!Conf['QR Drafts'] || !e?.detail?.[404]) { return; }
+      if (g.VIEW !== 'thread' || !g.threadID) { return; }
+      QR.drafts.moveToBin(QR.drafts.key(), { notify: true });
+    },
+
+    // One-time move of pre-rename per-board drafts ({site/board}) into the bin
+    // so nothing typed before the per-thread switch is silently lost. Legacy
+    // attachment blobs (under the old 2-segment prefix) are dropped.
+    migrateLegacy() {
+      if (!Conf['QR Drafts']) { return; }
+      $.get('QR.drafts', dict(), ({ 'QR.drafts': all }) => {
+        const legacy = Object.keys(all || {}).filter(k => k.split('/').length === 2);
+        if (!legacy.length) { return; }
+        QR.drafts.getBin((bin) => {
+          for (const key of legacy) {
+            const posts = QR.drafts.toBinPosts(all[key]?.posts || []);
+            if (posts.length) {
+              bin.push({
+                id: `${Date.now().toString(36)}${Math.random().toString(36).slice(2, 6)}${key}`,
+                key: `${key}/index`,
+                label: QR.drafts.binLabel(`${key}/index`, posts),
+                posts, ts: Date.now(), pinned: false,
+              });
+            }
+            delete all[key];
+            QR.drafts.deleteKeyFiles(key);
+          }
+          $.set('QR.drafts', all);
+          $.set(QR.drafts.BIN_KEY, bin, QR.drafts.updateButton);
+        });
+      });
+    },
+
+    // ---- Drafts button + bin panel ----------------------------------------
+
+    // The header drafts button (next to close): visible when the feature is on
+    // and the 'Show QR Drafts Icon' setting is enabled, with a count badge when
+    // the bin holds recoverable drafts.
+    updateButton() {
+      const btn = QR.nodes?.draftsButton;
+      if (!btn) { return; }
+      btn.hidden = !Conf['QR Drafts'] || Conf['Show QR Drafts Icon'] === false;
+      if (!Conf['QR Drafts']) { return; }
+      QR.drafts.getBin((bin) => {
+        const badge = QR.nodes?.draftsBadge;
+        if (badge) {
+          badge.textContent = bin.length ? `${bin.length}` : '';
+          badge.hidden = !bin.length;
+        }
+      });
+    },
+
+    togglePanel() {
+      const panel = QR.nodes?.draftsPanel;
+      if (!panel) { return; }
+      if (panel.hidden) {
+        panel.hidden = false;
+        QR.drafts.renderPanel();
+        // Close on the next click outside the panel or its button.
+        setTimeout(() => $.on(d, 'mousedown', QR.drafts.onOutsideClick));
+      } else {
+        QR.drafts.closePanel();
+      }
+    },
+
+    onOutsideClick(e: MouseEvent) {
+      const panel = QR.nodes?.draftsPanel;
+      const btn = QR.nodes?.draftsButton;
+      const t = e.target as Node;
+      if (panel && !panel.contains(t) && btn && !btn.contains(t)) { QR.drafts.closePanel(); }
+    },
+
+    closePanel() {
+      if (QR.nodes?.draftsPanel) { QR.nodes.draftsPanel.hidden = true; }
+      $.off(d, 'mousedown', QR.drafts.onOutsideClick);
+    },
+
+    // (Re)build the bin panel: a "discard current draft" action plus a list of
+    // recoverable drafts, each with restore / pin / delete.
+    renderPanel() {
+      const panel = QR.nodes?.draftsPanel;
+      if (!panel || panel.hidden) { return; }
+      panel.textContent = '';
+
+      const discard = $.el('a', {
+        href: 'javascript:;', className: 'qr-drafts-discard',
+        textContent: '🗑︎ Discard current draft',
+        title: 'Move what\'s in the Quick Reply now to the bin',
+      });
+      $.on(discard, 'click', () => QR.drafts.binCurrent());
+      $.add(panel, discard);
+
+      QR.drafts.getBin((bin) => {
+        if (QR.nodes?.draftsPanel !== panel || panel.hidden) { return; }
+        const list = $.el('div', { className: 'qr-drafts-list' });
+        if (!bin.length) {
+          $.add(list, $.el('div', { className: 'qr-drafts-empty', textContent: 'No discarded drafts.' }));
+        }
+        // Most relevant first: this thread, then this board, then elsewhere —
+        // newest-first within each tier. Nothing is hidden; the bin is a
+        // recovery tool, so cross-context drafts must stay reachable.
+        const curKey = QR.drafts.key();
+        const curBoard = curKey.split('/').slice(0, 2).join('/');
+        const rank = (e: any) => e.key === curKey ? 0 : (e.key.startsWith(`${curBoard}/`) ? 1 : 2);
+        const ordered = bin.slice().sort((a, b) => rank(a) - rank(b) || b.ts - a.ts);
+        for (const entry of ordered) {
+          const row = $.el('div', { className: 'qr-drafts-row' });
+          // The label is the recover affordance — clicking it loads the draft
+          // back into the QR. Pin and delete stay as their own controls.
+          const label = $.el('a', { href: 'javascript:;', className: 'qr-drafts-label', textContent: entry.label, title: 'Recover into Quick Reply' });
+          const pin = $.el('a', { href: 'javascript:;', className: `qr-drafts-act${entry.pinned ? ' pinned' : ''}`, textContent: '📌', title: entry.pinned ? 'Pinned (won\'t auto-clear). Click to unpin.' : 'Keep past auto-clear' });
+          const del = $.el('a', { href: 'javascript:;', className: 'qr-drafts-act', textContent: '✕', title: 'Delete permanently' });
+          $.on(label, 'click', () => QR.drafts.restoreFromBin(entry.id));
+          $.on(pin, 'click', () => QR.drafts.pinBinEntry(entry.id, !entry.pinned));
+          $.on(del, 'click', () => QR.drafts.deleteBinEntry(entry.id));
+          $.add(row, label);
+          $.add(row, pin);
+          $.add(row, del);
+          $.add(list, row);
+        }
+        $.add(panel, list);
       });
     },
   },
@@ -4248,7 +4632,7 @@ class post {
     $.on(this.nodes.rm, 'click', e => {
       e.stopPropagation();
       if (!QR.posts.includes(this)) { return; }
-      if (Conf['QR Thumbnail Remove File First'] && this.file) {
+      if (Conf['Dump List Remove File First'] && this.file) {
         this.rmFile();
       } else {
         this.rm();

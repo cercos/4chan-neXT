@@ -157,7 +157,10 @@ const isDialogSetting = (key) => !(key.includes('.') && !/\s/.test(key));
 // Manual curation overrides — the maintainer's call beats the heuristic. Keys
 // are final (resolved) setting keys, by KEY not dialog label (e.g. the row
 // labelled "Title Content" is key "Thread Title"). FORCE_REMOVE un-highlights a
-// flagged setting; FORCE_ADD highlights one the diff misses.
+// flagged setting; FORCE_ADD highlights one the diff misses as "added";
+// FORCE_CHANGED highlights one as "changed" (and pulls it out of "added") — for
+// settings that are a behavioral reworking of XT functionality rather than a new
+// key, which the default/description heuristic can't infer on its own.
 const FORCE_REMOVE = new Set([
   'Detailed Thread Stats',
   'Relative Post Dates',
@@ -167,6 +170,11 @@ const FORCE_REMOVE = new Set([
   'Auto-process Images',
 ]);
 const FORCE_ADD = new Set([
+]);
+const FORCE_CHANGED = new Set([
+  // neXT-combined toggle for all media types; supersedes XT's per-extension
+  // Replace GIF/JPG/PNG/WEBM, so it reads as a change to existing behavior.
+  'Replace Thumbnails',
 ]);
 
 const added = [];
@@ -183,11 +191,15 @@ for (const [normKey, { rawKey, def, desc }] of next) {
   if (defChanged || descChanged) changed.push(rawKey);
 }
 
-// Apply curation overrides.
-let addedFinal = added.filter(k => !FORCE_REMOVE.has(k));
+// Apply curation overrides. FORCE_CHANGED also pulls the key out of "added" so a
+// reworked-behavior setting reads as changed, not new.
+let addedFinal = added.filter(k => !FORCE_REMOVE.has(k) && !FORCE_CHANGED.has(k));
 let changedFinal = changed.filter(k => !FORCE_REMOVE.has(k));
 for (const k of FORCE_ADD) {
   if (!addedFinal.includes(k) && !changedFinal.includes(k)) addedFinal.push(k);
+}
+for (const k of FORCE_CHANGED) {
+  if (!FORCE_REMOVE.has(k) && !changedFinal.includes(k)) changedFinal.push(k);
 }
 addedFinal.sort();
 changedFinal.sort();
@@ -201,7 +213,7 @@ const out = {
 };
 fs.writeFileSync(OUT, JSON.stringify(out, null, 2) + '\n');
 console.log(`XT keys: ${xt.size}  neXT keys: ${next.size}`);
-console.log(`added: ${addedFinal.length}  changed: ${changedFinal.length} (FORCE_REMOVE ${FORCE_REMOVE.size}, FORCE_ADD ${FORCE_ADD.size})`);
+console.log(`added: ${addedFinal.length}  changed: ${changedFinal.length} (FORCE_REMOVE ${FORCE_REMOVE.size}, FORCE_ADD ${FORCE_ADD.size}, FORCE_CHANGED ${FORCE_CHANGED.size})`);
 console.log(`wrote ${path.relative(ROOT, OUT)}`);
 console.log('\nADDED:\n  ' + addedFinal.join('\n  '));
 console.log('\nCHANGED:\n  ' + changedFinal.join('\n  '));

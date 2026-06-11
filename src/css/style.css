@@ -552,32 +552,26 @@ audio.controls-added {
 .highlight-next-toggle input {
   margin: 0;
 }
-/* "Highlight neXT" — settings neXT added (green) or changed the default of
-   (amber). The left bar is an inset box-shadow (no layout shift), so it works
-   on plain rows, suboptions, and bare <label> controls alike. Intentionally
-   does NOT set padding so it never fights the .suboption-list indent. */
-#fourchanx-settings.highlight-next-settings [data-next-status] {
-  border-radius: 2px;
-}
-/* Alpha is high enough to read clearly on the dark dialog base (a faint tint
-   only showed on lighter/checked rows, which looked inconsistent). The
-   #fourchanx-settings prefix raises specificity above per-section/theme rules. */
-#fourchanx-settings.highlight-next-settings [data-next-status="added"] {
-  background: rgba(63, 185, 80, .24);
-  box-shadow: inset 4px 0 0 #3fb950;
-}
-#fourchanx-settings.highlight-next-settings [data-next-status="changed"] {
-  background: rgba(210, 153, 34, .26);
-  box-shadow: inset 4px 0 0 #d29922;
-}
+/* "Highlight neXT" — settings neXT added or changed the default of are flagged
+   with a small badge only (no row fill or left bar, which stacked into uneven
+   tints on nested rows). A <details> section that is entirely neXT collapses to
+   a single badge on its <summary> header (see Settings.tagNextSettings), so a
+   whole new section reads as one badge instead of a wall of per-row badges. */
 /* Badge anchors, covering every row shape:
    - .setting-title::after            -> standard checkbox rows
+   - .next-summary-title::after       -> collapsed <details> sections: the badge
+     sits on the title-text span (not the bare <summary>), so it stays beside the
+     title instead of being shoved to the far edge by the summary's
+     justify-content:space-between, and it no longer clobbers the disclosure
+     caret that also lives on summary::after.
+   - .styling-section-summary-text::after -> same, for Styling section summaries
    - label[data-next-status]::after   -> bare-label Styling/Advanced controls
    - > label > span:first-child::after -> select rows (addSelectRows: label is
      "<span>Label: </span><select>"; checkbox labels start with <input>, so
      their span is not :first-child and never double-badges). */
 .highlight-next-settings [data-next-status] .setting-title::after,
-.highlight-next-settings summary[data-next-status]::after,
+.highlight-next-settings .next-summary-title[data-next-status]::after,
+.highlight-next-settings .styling-section-summary-text[data-next-status]::after,
 .highlight-next-settings label[data-next-status]::after,
 .highlight-next-settings [data-next-status] > label > span:first-child::after {
   display: inline-block;
@@ -593,7 +587,8 @@ audio.controls-added {
   white-space: nowrap;
 }
 .highlight-next-settings [data-next-status="added"] .setting-title::after,
-.highlight-next-settings summary[data-next-status="added"]::after,
+.highlight-next-settings .next-summary-title[data-next-status="added"]::after,
+.highlight-next-settings .styling-section-summary-text[data-next-status="added"]::after,
 .highlight-next-settings label[data-next-status="added"]::after,
 .highlight-next-settings [data-next-status="added"] > label > span:first-child::after {
   content: 'neXT';
@@ -602,7 +597,8 @@ audio.controls-added {
   text-transform: none;
 }
 .highlight-next-settings [data-next-status="changed"] .setting-title::after,
-.highlight-next-settings summary[data-next-status="changed"]::after,
+.highlight-next-settings .next-summary-title[data-next-status="changed"]::after,
+.highlight-next-settings .styling-section-summary-text[data-next-status="changed"]::after,
 .highlight-next-settings label[data-next-status="changed"]::after,
 .highlight-next-settings [data-next-status="changed"] > label > span:first-child::after {
   content: 'changed';
@@ -2401,6 +2397,10 @@ body > #overlay:not(.media-preview) {
   --custom-css-text: #1f2731;
   --custom-css-caret: #1f2731;
   --custom-css-border: rgba(128, 128, 128, .35);
+  --custom-css-bracket-bg: rgba(255, 214, 76, .42);
+  --custom-css-bracket-border: rgba(166, 118, 0, .65);
+  --custom-css-bracket-error-bg: rgba(220, 38, 38, .28);
+  --custom-css-bracket-error-border: rgba(190, 18, 60, .72);
   --custom-css-font: 12px/1.42 ui-monospace, SFMono-Regular, Menlo, Monaco, Consolas, "Liberation Mono", "Courier New", monospace;
   background: var(--custom-css-bg);
   border: 1px solid var(--custom-css-border);
@@ -2421,6 +2421,10 @@ body > #overlay:not(.media-preview) {
   --custom-css-text: #d6deeb;
   --custom-css-caret: #d6deeb;
   --custom-css-border: rgba(143, 164, 194, .45);
+  --custom-css-bracket-bg: rgba(255, 214, 76, .26);
+  --custom-css-bracket-border: rgba(255, 214, 76, .65);
+  --custom-css-bracket-error-bg: rgba(248, 81, 73, .26);
+  --custom-css-bracket-error-border: rgba(248, 81, 73, .7);
   color-scheme: dark;
 }
 .section-styling .custom-css-editor[data-theme="xt-solarized"] {
@@ -2428,6 +2432,10 @@ body > #overlay:not(.media-preview) {
   --custom-css-text: #586e75;
   --custom-css-caret: #586e75;
   --custom-css-border: rgba(101, 123, 131, .45);
+  --custom-css-bracket-bg: rgba(181, 137, 0, .26);
+  --custom-css-bracket-border: rgba(181, 137, 0, .7);
+  --custom-css-bracket-error-bg: rgba(220, 50, 47, .24);
+  --custom-css-bracket-error-border: rgba(220, 50, 47, .72);
 }
 .section-styling .custom-css-editor[data-theme^="xt-system-"] {
   --custom-css-bg: var(--xt-background, #fbfbfb);
@@ -2519,6 +2527,18 @@ body > #overlay:not(.media-preview) {
 .section-styling .custom-css-highlight .css-token-important {
   color: #b54a00;
   font-weight: 700;
+}
+.section-styling .custom-css-highlight .css-token-bracket-match,
+.section-styling .custom-css-highlight .css-token-bracket-mismatch {
+  border-radius: 2px;
+}
+.section-styling .custom-css-highlight .css-token-bracket-match {
+  background: var(--custom-css-bracket-bg);
+  box-shadow: inset 0 0 0 1px var(--custom-css-bracket-border);
+}
+.section-styling .custom-css-highlight .css-token-bracket-mismatch {
+  background: var(--custom-css-bracket-error-bg);
+  box-shadow: inset 0 0 0 1px var(--custom-css-bracket-error-border);
 }
 .section-styling .custom-css-editor[data-theme="xt-dark"] .custom-css-highlight .css-token-comment,
 .section-styling .custom-css-editor[data-theme="xt-system-tomorrow"] .custom-css-highlight .css-token-comment,
@@ -4378,19 +4398,113 @@ input.field.tripped:not(:hover):not(:focus) {
 #qr-preview-toggle.enabled {
   opacity: 1;
 }
-/* The clear-draft trash is a raw emoji <a>, so it rides high on the text
-   baseline; flex-center it like the preview toggle / close so it sits on the
-   same vertical line. Scoped to :not([hidden]) so it stays hidden when the JS
-   toggles its `hidden` property and no draft exists. */
-#qr > .move .qr-clear-draft:not([hidden]) {
-  align-items: center;
+/* Drafts button: a faint header icon next to the close button, matching the
+   comment-preview toggle's idle look. It sharpens on hover, and stays legible
+   while idle whenever the bin actually holds recoverable drafts. */
+#qr-drafts-button {
+  position: relative;
   display: inline-flex;
-  height: 18px;
+  align-items: center;
   justify-content: center;
-  line-height: 1;
-  margin: 0 4px 0 1px;
-  text-decoration: none;
+  height: 18px;
   width: 18px;
+  margin: 0 1px;
+  line-height: 1;
+  text-decoration: none;
+  color: inherit;
+  opacity: .45;
+  transition: opacity .12s;
+}
+#qr-drafts-button:hover {
+  opacity: 1;
+}
+#qr-drafts-button:has(#qr-drafts-badge:not([hidden])) {
+  opacity: .9;
+}
+#qr-drafts-badge:not([hidden]) {
+  position: absolute;
+  top: -4px;
+  right: -4px;
+  min-width: 12px;
+  height: 12px;
+  padding: 0 2px;
+  box-sizing: border-box;
+  border-radius: 6px;
+  background: #d33;
+  color: #fff;
+  font-size: 8px;
+  line-height: 12px;
+  text-align: center;
+  pointer-events: none;
+}
+/* The recoverable-drafts flyout docks to the LEFT of the QR (anchored to #qr,
+   which is position:fixed) so it leaves the Quick Reply fully exposed instead
+   of overlapping the comment. Themed with the same vars the settings/menu
+   dialogs use so text stays legible on every board theme. */
+.qr-drafts-panel:not([hidden]) {
+  position: absolute;
+  top: 0;
+  right: calc(100% + 4px);
+  z-index: 3;
+  display: flex;
+  flex-direction: column;
+  width: 280px;
+  max-height: calc(100vh - 75px);
+  overflow-y: auto;
+  padding: 4px;
+  border: 1px solid var(--xt-border, rgba(0, 0, 0, .35));
+  border-radius: 3px;
+  background: var(--xt-dialog-bg, var(--background, Canvas));
+  color: var(--xt-menu-fg, var(--xt-header-dialog-fg, inherit));
+  box-shadow: -2px 2px 8px rgba(0, 0, 0, .35);
+  font-size: 11px;
+}
+.qr-drafts-discard {
+  display: block;
+  padding: 3px 4px;
+  margin-bottom: 3px;
+  border-bottom: 1px solid color-mix(in srgb, currentColor 25%, transparent);
+  text-decoration: none;
+  color: inherit;
+}
+.qr-drafts-discard:hover,
+.qr-drafts-row:hover {
+  background: color-mix(in srgb, currentColor 12%, transparent);
+}
+.qr-drafts-empty {
+  padding: 4px;
+  opacity: .6;
+}
+.qr-drafts-row {
+  display: flex;
+  align-items: center;
+  gap: 3px;
+  padding: 2px;
+}
+.qr-drafts-label {
+  flex: 1 1 auto;
+  overflow: hidden;
+  white-space: nowrap;
+  text-overflow: ellipsis;
+  color: inherit;
+  text-decoration: none;
+  cursor: pointer;
+}
+.qr-drafts-label:hover {
+  text-decoration: underline;
+}
+.qr-drafts-act {
+  flex: 0 0 auto;
+  text-decoration: none;
+  color: inherit;
+  opacity: .55;
+  padding: 0 1px;
+}
+.qr-drafts-act:hover {
+  opacity: 1;
+}
+.qr-drafts-act.pinned {
+  opacity: 1;
 }
 #qr > .move select[data-name="thread"] {
   margin-left: auto;
@@ -4410,17 +4524,16 @@ input.field.tripped:not(:hover):not(:focus) {
 #qr > .move .close > .icon {
   display: block;
 }
-/* When the thread select is hidden, keep the draft trash grouped with close
-   instead of leaving it beside the left-side QR header controls. */
-:root.thread-view #qr:not(.show-new-thread-option) > .move .qr-clear-draft:not([hidden]) {
+/* With the thread select right-anchored (margin-left:auto), the drafts icon and
+   close button trail it on the right. When that select is hidden (replying
+   within a thread), nothing right-anchors the row, so the leftmost visible
+   member of the trailing group (drafts icon if shown, else close) takes the
+   margin-left:auto and carries the pair over to the right. */
+:root.thread-view #qr:not(.show-new-thread-option) > .move #qr-drafts-button:not([hidden]) {
   margin-left: auto;
 }
-/* If there is no draft trash, the close button still takes over right-anchoring. */
-:root.thread-view #qr:not(.show-new-thread-option) > .move .close {
+:root.thread-view #qr:not(.show-new-thread-option) > .move:has(#qr-drafts-button[hidden]) .close {
   margin-left: auto;
-}
-:root.thread-view #qr:not(.show-new-thread-option) > .move .qr-clear-draft:not([hidden]) + .close {
-  margin-left: 0;
 }
 
 /* Recaptcha v2 */

@@ -132,6 +132,14 @@ var Keybinds = {
       Keybinds.sage();
       hasAction = true;
     }
+    if (key === Conf['Toggle comment preview'] && QR.nodes && !QR.nodes.el.hidden) {
+      QR.toggleCommentPreview(e);
+      hasAction = true;
+    }
+    if (key === Conf['Toggle drafts'] && QR.nodes && !QR.nodes.el.hidden) {
+      QR.drafts.togglePanel();
+      hasAction = true;
+    }
     if (key === Conf['Toggle Cooldown'] && QR.nodes && !QR.nodes.el.hidden
       && $.hasClass(QR.nodes.fileSubmit, 'custom-cooldown')) {
       QR.toggleCustomCooldown();

@@ -164,7 +164,6 @@ var ThreadWatcher = {
       }
     });
     $.sync('Thread Watcher Attach Location', (val) => {
-      Conf['Thread Watcher Attach Location'] = val || 'bottom';
       if (ThreadWatcher.attached()) {
         // Force re-compute size targets (sides no longer match height).
         ThreadWatcher._lastAttachedW = null;
@@ -1187,9 +1186,7 @@ var ThreadWatcher = {
   },
 
   attachLocation() {
-    let loc = Conf['Thread Watcher Attach Location'];
-    if (!['bottom', 'top', 'left', 'right'].includes(loc)) { loc = 'bottom'; }
-    return loc;
+    return 'bottom';
   },
 
   updateAttachButton() {
@@ -1595,8 +1592,6 @@ var ThreadWatcher = {
 
       this.addSortEntry();
 
-      this.addAttachLocationEntry();
-
       // Settings checkbox entries, grouped into submenus to save vertical space:
       const automationNames = ['Auto Update Thread Watcher', 'Auto Watch', 'Auto Watch Reply', 'Auto Prune'];
       const displayNames = ['Show Page', 'Show Unread Count', 'Show Mark All Read Icon', 'Show Mark Thread Read Icons', 'Show Site Prefix'];
@@ -1702,57 +1697,6 @@ var ThreadWatcher = {
         subEntries,
         open() {
           this.el.classList.toggle('disabled', !ThreadWatcher.list.firstElementChild);
-          return true;
-        }
-      });
-    },
-
-    addAttachLocationEntry() {
-      const locOptions = [
-        ['bottom', 'Bottom (QR width)'],
-        ['top',    'Top (QR width)'],
-        ['left',   'Left (manual W, auto H)'],
-        ['right',  'Right (manual W, auto H)'],
-      ];
-      const subEntries = [];
-      locOptions.forEach(([value, label]) => {
-        const el = $.el('a', {
-          href: 'javascript:;',
-          innerHTML: '<span class="watcher-sort-check"></span><span class="watcher-loc-label"></span>'
-        });
-        const check = $('.watcher-sort-check', el);
-        const labelEl = $('.watcher-loc-label', el);
-        labelEl.textContent = label;
-        const updateCheck = () => {
-          check.textContent = ThreadWatcher.attachLocation() === value ? '✓' : '';
-        };
-        $.on(el, 'mousedown', e => e.stopPropagation());
-        $.on(el, 'click', function(e) {
-          e.stopPropagation();
-          $.set('Thread Watcher Attach Location', value);
-          Conf['Thread Watcher Attach Location'] = value;
-          if (ThreadWatcher.attached()) {
-            ThreadWatcher.positionIfAttached(true);
-          }
-          subEntries.forEach(s => s.updateCheck && s.updateCheck());
-        });
-        subEntries.push({
-          el,
-          updateCheck,
-          open() {
-            updateCheck();
-            return true;
-          }
-        });
-      });
-      this.menu.addEntry({
-        el: $.el('a', {
-          href: 'javascript:;',
-          textContent: 'Attach Location'
-        }),
-        subEntries,
-        open() {
-          // always allow changing location
           return true;
         }
       });

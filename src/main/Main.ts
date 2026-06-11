@@ -191,6 +191,7 @@ var Main = {
 
     flatten(null, Config);
     const legacyReplaceThumbnailKeys = ['Replace GIF', 'Replace JPG', 'Replace PNG', 'Replace WEBM'];
+    const legacyQRRemoveFileFirstKeys = ['QR Remove Button Clears File First', 'QR Thumbnail Remove File First'];
 
     for (var db of DataBoard.keys) {
       Conf[db] = dict();
@@ -249,6 +250,7 @@ var Main = {
     const items = dict();
     for (const key in Conf) items[key] = undefined;
     for (const key of legacyReplaceThumbnailKeys) items[key] = undefined;
+    for (const key of legacyQRRemoveFileFirstKeys) items[key] = undefined;
     items['previousversion'] = undefined;
     ($.getSync || $.get)(items, function(items) {
       $.asap(docSet, function() {
@@ -277,6 +279,16 @@ var Main = {
         if (!Conf['Replace Thumbnails'] && legacyReplaceThumbnailKeys.some((key) => items[key] === true)) {
           Conf['Replace Thumbnails'] = true;
           $.set('Replace Thumbnails', true);
+        }
+        const legacyQRRemoveFileFirst = legacyQRRemoveFileFirstKeys
+          .map(key => items[key])
+          .find(value => value !== undefined);
+        if (
+          legacyQRRemoveFileFirst !== undefined &&
+          items['Dump List Remove File First'] === undefined
+        ) {
+          Conf['Dump List Remove File First'] = legacyQRRemoveFileFirst;
+          $.set('Dump List Remove File First', legacyQRRemoveFileFirst);
         }
 
         Site.init(Main.initFeatures);

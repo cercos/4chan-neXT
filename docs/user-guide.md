@@ -14,7 +14,7 @@ If you use StyleChan, read Styling And Themes before tuning colors. 4chan-neXT d
 
 A settings-level comparison against 4chan XT shows these main 4chan-neXT additions:
 
-- **Quick Reply and posting:** `Remember QR State` draft restore with attachment persistence, native board-index form hiding, upload progress, thumbnail remove-file-first behavior, image auto-processing, board-aware video audio stripping, stacked TCaptcha answer editing, autofill-resistant QR identity fields, auto-closing board tags, and post-styled comment preview modes.
+- **Quick Reply and posting:** `QR Drafts` restore with attachment persistence, native board-index form hiding, upload progress, dump-list file-first removal, image auto-processing, board-aware video audio stripping, stacked TCaptcha answer editing, autofill-resistant QR identity fields, auto-closing board tags, and post-styled comment preview modes.
 - **Thread Watcher and monitoring:** Quick Reply docking, attach location controls, manual max size controls, OP thumbnails, hover thumbnail previews, mark-all-read and per-thread mark-read icons, detailed thread stats, and replies-to-you watcher link state.
 - **Styling and themes:** built-in themes, SFW/NSFW styling variants, StyleChan section ownership, home-page StyleChan mirroring, highlight color controls, text color modes, edge/background modes, edge and border styles, catalog own/watched highlights, saved palettes, and local styling docs.
 - **Scrollbar markers:** own-post, quotes-you, ghost-post, and unread-line markers with per-marker colors, opacity, match-highlight controls, plus beside-scrollbar and IDE-style over-scrollbar layouts.
@@ -234,8 +234,8 @@ Important settings:
 - `Auto Hide QR`: hides QR after posting.
 - `Open Post in New Tab`: opens new threads and cross-thread replies in a new tab.
 - `Remember QR Size`: saves QR dimensions.
-- `Remember QR State`: auto-saves your queued posts (text and attachments) per board so they survive a refresh, close, or crash (off by default). See [Quick Reply Draft Restore](#quick-reply-draft-restore-remember-qr-state) below.
-- `QR Thumbnail Remove File First`: first remove click clears the file; second removes the queued post.
+- `QR Drafts`: auto-saves your Quick Reply per thread, including attachments up to ~100 MB. Dead-thread drafts auto-clear from the discard bin after a day.
+- `Dump List Remove File First`: dump-list Remove clears the file before removing the queued post.
 - `Show New Thread Option in Threads`: allows starting another thread from a thread page.
 - `Hide Original Post Form`: hides the native board-index post form by default. Use `Original Form` or `Start a Thread` to show it.
 - `Show Upload Progress`: shows upload progress in the submit button.
@@ -267,19 +267,19 @@ The Name, Options, and Subject fields deliberately disable browser autofill/auto
 
 Auto-close Tags works only for tags supported by the current board. Examples include `[code]`, `[spoiler]`, `[math]` / `[eqn]`, `[sjis]`, and board-specific tags such as `/mu/` and `/qst/` color tags.
 
-### Quick Reply Draft Restore (Remember QR State)
+### Quick Reply Draft Restore (QR Drafts)
 
-`Remember QR State` (Settings -> Posting and Captchas -> `Remember QR State`) keeps what you have typed in the Quick Reply so it is not lost to a refresh, an accidental close, or a browser crash. It is **off by default**; turn it on if you want drafts to persist.
+`QR Drafts` (Settings -> Posting and Captchas -> `QR Drafts`) keeps what you have typed in the Quick Reply so it is not lost to a refresh, an accidental close, or a browser crash. It is **off by default**; turn it on if you want drafts to persist.
 
 How it behaves:
 
-- **Per board.** Each board keeps its own draft, so a draft on one board never shows up on another. **All queued posts in the dump list are saved**, not just the first: subject, comment, spoiler state, flag, and the selected thread.
-- **Attachments are saved too.** Each post's attached **image or video** is remembered and re-attached on restore, and its thumbnail is regenerated. Files are stored in your browser's IndexedDB, separate from the text. There is a **~100 MB per-board cap**: if a draft's attachments total more than that, the largest files are skipped and you get a one-time notice. Their posts still come back, just without the file.
+- **Per thread.** Each thread keeps its own draft, so reopening a thread restores that thread's draft instead of whatever you typed elsewhere. **All queued posts in the dump list are saved**, not just the first: subject, comment, spoiler state, flag, and the selected thread.
+- **Attachments are saved too.** Each post's attached **image or video** is remembered and re-attached on restore, and its thumbnail is regenerated. Files are stored in your browser's IndexedDB, separate from the text. There is a **~100 MB per-thread cap**: if a draft's attachments total more than that, the largest files are skipped and you get a one-time notice. Their posts still come back, just without the file.
 - **Auto-saved.** Text changes are written a moment after you stop typing (debounced); attachments are written when you add or remove them. You do not need to do anything to save.
 - **Restores into an empty Quick Reply only.** When you return to the board and open the Quick Reply, the draft repopulates **only if you have not already started typing or attached** something. It will never overwrite work you are in the middle of. (A saved reply draft is restored only if its thread is still alive.)
 - **Cleared after you post.** A successful post removes that post's saved draft and its stored attachment automatically, so nothing lingers.
-- **Discard manually.** The **Clear draft** button in the Quick Reply title bar throws away the saved draft (text and files) for the current board **and empties the open Quick Reply**. Every queued post and attachment is removed from the dump list, leaving one blank post. It only appears when `Remember QR State` is on and a draft exists.
-- **Turning the setting off clears storage.** Disabling `Remember QR State` removes all saved QR drafts and stored draft attachments across boards.
+- **Discard manually.** The drafts panel can move the current Quick Reply text into the discard bin and clear the open QR.
+- **Turning the setting off clears storage.** Disabling `QR Drafts` removes all saved QR drafts and stored draft attachments across boards.
 
 If drafts still do not return after enabling this, make sure the Quick Reply is empty when you reopen it (existing text or a file blocks the restore).
 
