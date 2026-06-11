@@ -2780,6 +2780,12 @@ Enable it on boards.${location.hostname.split('.')[1]}.org in your browser's pri
           inp.value = val ?? '';
         }
         inp.hidden = false;
+        // Don't let merely opening the Styling section apply a *fallback* site
+        // theme onto the live page. With no saved siteStyle for this variant the
+        // picker shows its first option (e.g. Yotsuba); calling Settings.siteStyle
+        // here would push that onto the page, hijacking the theme that's actually
+        // rendered. Only (re-)apply when the user has an explicit saved value.
+        if (baseName === 'siteStyle' && !val) continue;
         if (baseName in Settings) Settings[baseName].call(inp);
       }
       syncMarkerColorControls();
@@ -5076,8 +5082,16 @@ Enable it on boards.${location.hostname.split('.')[1]}.org in your browser's pri
     const desired = Settings.styleConf<string>('siteStyle');
     if (desired && seen.has(desired)) {
       select.value = desired;
-    } else if (!noOptions && select.selectedIndex < 0) {
-      select.selectedIndex = 0;
+    } else if (!noOptions) {
+      // No saved preference for this variant: reflect whatever theme is actually
+      // rendered right now (4chan's own selector) rather than defaulting to the
+      // first option, so the picker doesn't misreport the active theme.
+      const current = ($.id('styleSelector') as HTMLSelectElement | null)?.value?.trim();
+      if (current && seen.has(current)) {
+        select.value = current;
+      } else if (select.selectedIndex < 0) {
+        select.selectedIndex = 0;
+      }
     }
 
     if (picker && menu && currentLabel) {

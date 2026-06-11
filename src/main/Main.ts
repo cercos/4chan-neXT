@@ -840,7 +840,12 @@ var Main = {
           const activeSiteStyle = Settings.styleConf('siteStyle');
           // Don't clobber a custom theme selection with the native dropdown's value.
           if (isCustomSiteStyle(activeSiteStyle)) { return; }
-          if (activeSiteStyle !== selected) {
+          // Only mirror the native dropdown back into the saved slot while our
+          // Site Style section is actually in charge. When it's been handed off
+          // to StyleChan (section off), StyleChan drives the native selector, so
+          // capturing its value here would clobber the user's stored theme — the
+          // theme would then fail to come back after StyleChan is removed.
+          if (activeSiteStyle !== selected && Settings.stylingSectionEnabled('siteStyle')) {
             const siteStyleKey = Settings.variantKey('siteStyle');
             Conf[siteStyleKey] = selected;
             $.set(siteStyleKey, selected);
