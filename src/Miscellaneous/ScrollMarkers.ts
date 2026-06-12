@@ -9,9 +9,13 @@ import type Thread from '../classes/Thread';
 
 type ScrollMarkerPosition = 'offset' | 'offset-single' | 'over' | 'over-columns';
 
+type MarkerType = 'you' | 'own' | 'ghost';
+type MarkerItem = { post: Post; type: MarkerType; cls: string; topPct: number; heightStyle: string };
+
 const ScrollMarkers = {
   container: undefined as HTMLElement | undefined,
   thread: undefined as Thread | undefined,
+  wired: false,
   flashPost: undefined as Post | undefined,
   flashTimer: 0 as ReturnType<typeof setTimeout> | 0,
   preview: undefined as { el: HTMLElement; post: Post; marker: HTMLElement } | undefined,
@@ -245,7 +249,7 @@ const ScrollMarkers = {
     entry: undefined as { el: HTMLElement; order: number; open: () => boolean; subEntries: { el: HTMLElement }[] } | undefined,
 
     init() {
-      if (!['thread', 'index'].includes(g.VIEW)) return;
+      if (!['thread', 'index', 'archive', 'catalog'].includes(g.VIEW)) return;
       const el = $.el('span', { textContent: 'Scroll markers' });
       const entry = {
         el,
@@ -301,7 +305,7 @@ const ScrollMarkers = {
 
   init() {
     ScrollMarkers.menu.init();
-    if (g.VIEW !== 'thread') return;
+    if (!['thread', 'index', 'archive', 'catalog'].includes(g.VIEW)) return;
 
     ScrollMarkers.container = $.el('div', { id: 'scroll-markers' });
     ScrollMarkers.container.hidden = true;
@@ -334,37 +338,107 @@ const ScrollMarkers = {
       });
     }
 
-    Callbacks.Thread.push({
-      name: 'Scroll Markers',
-      cb: ScrollMarkers.node,
-    });
+    // thread/archive get a per-Thread callback (to capture the Thread object);
+    // index/catalog have many/no threads, so mount directly — the
+    // 4chanXInitFinished + PostsInserted listeners drive the first draw.
+    if (['thread', 'archive'].includes(g.VIEW)) {
+      Callbacks.Thread.push({
+        name: 'Scroll Markers',
+        cb: ScrollMarkers.node,
+      });
+    } else {
+      // init() can run before <body> exists; mount() appends to it, so defer.
+      $.onExists(doc, 'body', () => ScrollMarkers.mount());
+    }
   },
 
   node(this: Thread) {
     ScrollMarkers.thread = this;
+    ScrollMarkers.mount();
+  },
+
+  // Append the marker container to <body> (not the view root, so it survives
+  // index/catalog re-renders) and wire refresh listeners exactly once.
+  // Idempotent: safe to call from a Thread callback, init(), or a rebuild.
+  mount() {
     if (!ScrollMarkers.container) return;
+    if (ScrollMarkers.container.parentNode) {
+      ScrollMarkers.applyPosition();
+      ScrollMarkers.refreshDeferred();
+      return;
+    }
     ScrollMarkers.applyPosition();
     $.add(d.body, ScrollMarkers.container);
     ScrollMarkers.container.hidden = true;
 
-    $.on(d, '4chanXInitFinished', ScrollMarkers.refreshDeferred);
-    $.on(d, 'PostsInserted', ScrollMarkers.refreshDeferred);
-    $.on(d, 'ThreadUpdate', ScrollMarkers.refreshDeferred);
-    $.on(d, 'RefreshScrollMarkers', ScrollMarkers.refreshDeferred);
-    $.on(window, 'resize', () => {
-      ScrollMarkers.updateScrollbarMetrics();
-      ScrollMarkers.refreshDeferred();
-    });
-    $.on(window, 'load', ScrollMarkers.refreshDeferred);
+    if (!ScrollMarkers.wired) {
+      ScrollMarkers.wired = true;
+      // One listener set for all views. IndexRefresh/ThreadUpdate are
+      // harmless no-ops in the views where they never fire.
+      $.on(d, '4chanXInitFinished', ScrollMarkers.refreshDeferred);
+      $.on(d, 'PostsInserted', ScrollMarkers.refreshDeferred);
+      $.on(d, 'IndexRefresh', ScrollMarkers.refreshDeferred);
+      $.on(d, 'ThreadUpdate', ScrollMarkers.refreshDeferred);
+      $.on(d, 'RefreshScrollMarkers', ScrollMarkers.refreshDeferred);
+      $.on(window, 'resize', () => {
+        ScrollMarkers.updateScrollbarMetrics();
+        ScrollMarkers.refreshDeferred();
+      });
+      $.on(window, 'load', ScrollMarkers.refreshDeferred);
+    }
 
     ScrollMarkers.refreshDeferred();
   },
 
   refreshDeferred: debounce(150, () => ScrollMarkers.refresh(), false),
 
+  // Collect marker descriptors for the current view. Thread/archive read the
+  // active thread's posts; index (including the JSON catalog mode) sweeps all
+  // visible posts via g.posts. Native catalog has no Post objects or "(You)"
+  // data, so it yields nothing — the custom scrollbar still installs.
+  // TODO: native-catalog "your thread" markers could be derived from QuoteYou.db.
+  collectMarkerItems(
+    docHeight: number, onTrack: boolean,
+    showOwn: boolean, showYou: boolean, showGhost: boolean,
+  ): { items: MarkerItem[]; hasYou: boolean; hasOwn: boolean; hasGhost: boolean } {
+    const items: MarkerItem[] = [];
+    let hasYou = false, hasOwn = false, hasGhost = false;
+    if (g.VIEW === 'catalog' || (!showOwn && !showYou && !showGhost)) {
+      return { items, hasYou, hasOwn, hasGhost };
+    }
+
+    const source = g.VIEW === 'index' ? g.posts : ScrollMarkers.thread?.posts;
+    source?.forEach((post: Post) => {
+      if (post.isHidden || post.isClone || post.isFetchedQuote) return;
+      const root = post.nodes.root as HTMLElement;
+      if (!root) return;
+
+      // Cheap class checks first; only force layout (getBoundingClientRect)
+      // for the few posts that actually carry a marker — matters on large
+      // "all pages" indexes where g.posts can hold thousands of posts.
+      const isOwn = showOwn && root.classList.contains('yourPost');
+      const isYou = showYou && root.classList.contains('quotesYou');
+      const isGhost = showGhost && root.classList.contains('from-archive');
+      if (!isOwn && !isYou && !isGhost) return;
+      if (root.offsetParent == null || !root.getClientRects().length) return;
+
+      const rect = root.getBoundingClientRect();
+      const topInDoc = rect.top + window.scrollY;
+      const topPct = (topInDoc / docHeight) * 100;
+      const heightPct = Math.max((rect.height / docHeight) * 100, 0.15);
+      const heightStyle = onTrack ? 'height:3px' : `height:${heightPct}%`;
+
+      if (isYou) { items.push({ post, type: 'you', cls: 'scroll-marker-you', topPct, heightStyle }); hasYou = true; }
+      if (isOwn) { items.push({ post, type: 'own', cls: 'scroll-marker-own', topPct, heightStyle }); hasOwn = true; }
+      if (isGhost) { items.push({ post, type: 'ghost', cls: 'scroll-marker-ghost', topPct, heightStyle }); hasGhost = true; }
+    });
+
+    return { items, hasYou, hasOwn, hasGhost };
+  },
+
   refresh() {
     const container = ScrollMarkers.container;
-    if (!ScrollMarkers.thread || !container?.parentNode) return;
+    if (!container?.parentNode) return;
     // `stylingSectionScrollbarMarkers` is the Styling page's per-section master
     // switch (only ever off when StyleChan is installed). Read Conf directly to
     // avoid a Settings <-> ScrollMarkers import cycle.
@@ -390,34 +464,11 @@ const ScrollMarkers = {
     const showGhost = Conf['Scrollbar Mark Ghost Posts'];
     const showUnread = Conf['Unread Line'] && Conf['Scrollbar Mark Unread Line'];
 
-    // First pass: collect the marker descriptors and note which types
-    // actually have any content. Absent types are left out so the
+    // First pass: collect the marker descriptors (view-aware) and note which
+    // types actually have any content. Absent types are left out so the
     // remaining types can split the gutter equally.
-    type MarkerType = 'you' | 'own' | 'ghost';
-    type Item = { post: Post; type: MarkerType; cls: string; topPct: number; heightStyle: string };
-    const items: Item[] = [];
-    let hasYou = false, hasOwn = false, hasGhost = false;
-
-    ScrollMarkers.thread.posts.forEach((post: Post) => {
-      if (post.isHidden || post.isClone || post.isFetchedQuote) return;
-      const root = post.nodes.root as HTMLElement;
-      if (!root || root.offsetParent == null || !root.getClientRects().length) return;
-
-      const isOwn = showOwn && root.classList.contains('yourPost');
-      const isYou = showYou && root.classList.contains('quotesYou');
-      const isGhost = showGhost && root.classList.contains('from-archive');
-      if (!isOwn && !isYou && !isGhost) return;
-
-      const rect = root.getBoundingClientRect();
-      const topInDoc = rect.top + window.scrollY;
-      const topPct = (topInDoc / docHeight) * 100;
-      const heightPct = Math.max((rect.height / docHeight) * 100, 0.15);
-      const heightStyle = onTrack ? 'height:3px' : `height:${heightPct}%`;
-
-      if (isYou) { items.push({ post, type: 'you', cls: 'scroll-marker-you', topPct, heightStyle }); hasYou = true; }
-      if (isOwn) { items.push({ post, type: 'own', cls: 'scroll-marker-own', topPct, heightStyle }); hasOwn = true; }
-      if (isGhost) { items.push({ post, type: 'ghost', cls: 'scroll-marker-ghost', topPct, heightStyle }); hasGhost = true; }
-    });
+    const { items, hasYou, hasOwn, hasGhost } =
+      ScrollMarkers.collectMarkerItems(docHeight, onTrack, showOwn, showYou, showGhost);
 
     // Slot 0 = rightmost (nearest the scrollbar). Priority order:
     // you > own > ghost. Only present types consume a slot.
@@ -441,7 +492,7 @@ const ScrollMarkers = {
       $.add(frag, marker);
     }
 
-    if (showUnread && Unread?.hr?.isConnected && !Unread.hr.hidden) {
+    if (g.VIEW === 'thread' && showUnread && Unread?.hr?.isConnected && !Unread.hr.hidden) {
       const rect = Unread.hr.getBoundingClientRect();
       const topInDoc = rect.top + window.scrollY;
       const topPct = (topInDoc / docHeight) * 100;

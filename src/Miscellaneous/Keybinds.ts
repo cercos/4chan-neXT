@@ -136,7 +136,7 @@ var Keybinds = {
       QR.toggleCommentPreview(e);
       hasAction = true;
     }
-    if (key === Conf['Toggle drafts'] && QR.nodes && !QR.nodes.el.hidden) {
+    if (key === Conf['Toggle drafts'] && Conf['QR Drafts'] && QR.nodes && !QR.nodes.el.hidden) {
       QR.drafts.togglePanel();
       hasAction = true;
     }
