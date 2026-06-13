@@ -293,26 +293,71 @@
 :root.werkTyme:not(.catalog-hover-expand) .catalog-thread.filter-highlight,
 :root.werkTyme.catalog-hover-expand .catalog-thread.filter-highlight > .catalog-container:hover > .catalog-post,
 :root.catalog $site$catalog$thread.filter-highlight:not(.filter-glow-tile)$site$highlightable$catalog {
-  box-shadow: 0 0 3px 3px var(--xt-highlight-shadow, rgba(255, 0, 0, .5));
+  box-shadow: 0 0 calc(var(--xt-catalog-filter-glow-intensity, .5) * 6px) calc(var(--xt-catalog-filter-glow-intensity, .5) * 6px) var(--xt-catalog-filter-highlight, var(--xt-highlight-shadow, rgba(255, 0, 0, .5)));
 }
 /* Per-filter `;tile` keyword: glow around the whole catalog entry (image +
    text) instead of just the thumbnail. Filter.ts adds .filter-glow-tile. */
 :root:not(.werkTyme) .catalog-thread.filter-highlight.filter-glow-tile {
-  box-shadow: 0 0 3px 3px var(--xt-highlight-shadow, rgba(255, 0, 0, .5));
+  box-shadow: 0 0 calc(var(--xt-catalog-filter-glow-intensity, .5) * 6px) calc(var(--xt-catalog-filter-glow-intensity, .5) * 6px) var(--xt-catalog-filter-highlight, var(--xt-highlight-shadow, rgba(255, 0, 0, .5)));
+}
+/* Filtered-thread row → Glow off: drop the eX glow for filter-highlighted
+   catalog threads (and their thumbnails). */
+:root.xt-catalog-filter-glow-off .catalog-thread.filter-highlight,
+:root.xt-catalog-filter-glow-off .catalog-thread.filter-highlight .catalog-thumb {
+  box-shadow: none !important;
+}
+/* Filtered-thread row → border / background fill. Opt-in: only once a catalog
+   filter color is set (otherwise the row stays glow-only). Mirrors the
+   Own/Watched tile rules but targets filter-highlighted threads. */
+:root.xt-set-catalog-filter-highlight:not(.xt-catalog-edge-filter):not(.xt-catalog-filter-loc-image) .catalog-thread.filter-highlight {
+  background: color-mix(in srgb, var(--xt-catalog-filter-highlight, var(--xt-highlight-shadow, rgba(255, 0, 0, .75))) calc(var(--xt-catalog-filter-highlight-opacity, 1) * 100%), var(--xt-post-background, var(--xt-background, #d6daf0))) !important;
+}
+:root.xt-set-catalog-filter-highlight.xt-catalog-edge-filter:not(.xt-catalog-filter-loc-image) .catalog-thread.filter-highlight {
+  border-color: color-mix(in srgb, var(--xt-catalog-filter-highlight, var(--xt-highlight-shadow, rgba(255, 0, 0, .75))) calc(var(--xt-catalog-filter-highlight-opacity, 1) * 100%), transparent) !important;
+  border-style: var(--xt-catalog-border-style-filter, solid) !important;
+  border-width: var(--xt-catalog-border-width-filter, var(--xt-catalog-border-width, 3px)) !important;
+}
+/* Image location: draw the border/mat on the thumbnail instead of the tile. */
+:root.xt-set-catalog-filter-highlight.xt-catalog-filter-loc-image.xt-catalog-edge-filter .catalog-thread.filter-highlight .catalog-thumb {
+  border: var(--xt-catalog-border-width-filter, var(--xt-catalog-border-width, 3px)) var(--xt-catalog-border-style-filter, solid) color-mix(in srgb, var(--xt-catalog-filter-highlight, var(--xt-highlight-shadow, rgba(255, 0, 0, .75))) calc(var(--xt-catalog-filter-highlight-opacity, 1) * 100%), transparent) !important;
+  box-sizing: border-box;
+}
+:root.xt-set-catalog-filter-highlight.xt-catalog-filter-loc-image:not(.xt-catalog-edge-filter) .catalog-thread.filter-highlight .catalog-thumb {
+  background: color-mix(in srgb, var(--xt-catalog-filter-highlight, var(--xt-highlight-shadow, rgba(255, 0, 0, .75))) calc(var(--xt-catalog-filter-highlight-opacity, 1) * 100%), var(--xt-post-background, var(--xt-background, #d6daf0))) !important;
+  box-sizing: border-box;
+  padding: var(--xt-catalog-border-width-filter, var(--xt-catalog-border-width, 3px)) !important;
+}
+/* Keep the tile fill from bleeding into inner containers/posts. */
+:root.xt-set-catalog-filter-highlight:not(.xt-catalog-edge-filter):not(.xt-catalog-filter-loc-image) .catalog-thread.filter-highlight > .catalog-container,
+:root.xt-set-catalog-filter-highlight:not(.xt-catalog-edge-filter):not(.xt-catalog-filter-loc-image) .catalog-thread.filter-highlight .post.catalog-post {
+  background: transparent !important;
+  border-color: transparent !important;
 }
 /* Tint the catalog tile (.catalog-thread), not .catalog-post — post negative margins bleed upward. */
-:root.xt-highlight-catalog-own:not(.xt-catalog-edge-own) .catalog-thread:has(.yourPost),
-:root.xt-highlight-catalog-own:not(.xt-catalog-edge-own) .catalog-thread.yourPost {
+:root.xt-highlight-catalog-own:not(.xt-catalog-edge-own):not(.xt-catalog-own-loc-image) .catalog-thread:has(.yourPost),
+:root.xt-highlight-catalog-own:not(.xt-catalog-edge-own):not(.xt-catalog-own-loc-image) .catalog-thread.yourPost {
   background: color-mix(in srgb, var(--xt-catalog-own-highlight, var(--xt-highlight-own)) calc(var(--xt-catalog-own-highlight-opacity, 1) * 100%), var(--xt-post-background, var(--xt-background, #d6daf0))) !important;
 }
-:root.xt-highlight-catalog-own.xt-catalog-edge-own .catalog-thread:has(.yourPost),
-:root.xt-highlight-catalog-own.xt-catalog-edge-own .catalog-thread.yourPost {
+:root.xt-highlight-catalog-own.xt-catalog-edge-own:not(.xt-catalog-own-loc-image) .catalog-thread:has(.yourPost),
+:root.xt-highlight-catalog-own.xt-catalog-edge-own:not(.xt-catalog-own-loc-image) .catalog-thread.yourPost {
   border-color: color-mix(in srgb, var(--xt-catalog-own-highlight, var(--xt-highlight-own, var(--xt-border-highlight))) calc(var(--xt-catalog-own-highlight-opacity, 1) * 100%), transparent) !important;
   border-style: var(--xt-catalog-border-style-own, solid) !important;
   border-width: var(--xt-catalog-border-width-own, var(--xt-catalog-border-width, 3px)) !important;
 }
-:root:not(.catalog-hover-expand).xt-highlight-catalog-own .catalog-thread:has(.yourPost),
-:root:not(.catalog-hover-expand).xt-highlight-catalog-own .catalog-thread.yourPost {
+/* Image location: draw the highlight on the thumbnail instead of the tile. */
+:root.xt-highlight-catalog-own.xt-catalog-own-loc-image.xt-catalog-edge-own .catalog-thread:has(.yourPost) .catalog-thumb,
+:root.xt-highlight-catalog-own.xt-catalog-own-loc-image.xt-catalog-edge-own .catalog-thread.yourPost .catalog-thumb {
+  border: var(--xt-catalog-border-width-own, var(--xt-catalog-border-width, 3px)) var(--xt-catalog-border-style-own, solid) color-mix(in srgb, var(--xt-catalog-own-highlight, var(--xt-highlight-own, var(--xt-border-highlight))) calc(var(--xt-catalog-own-highlight-opacity, 1) * 100%), transparent) !important;
+  box-sizing: border-box;
+}
+:root.xt-highlight-catalog-own.xt-catalog-own-loc-image:not(.xt-catalog-edge-own) .catalog-thread:has(.yourPost) .catalog-thumb,
+:root.xt-highlight-catalog-own.xt-catalog-own-loc-image:not(.xt-catalog-edge-own) .catalog-thread.yourPost .catalog-thumb {
+  background: color-mix(in srgb, var(--xt-catalog-own-highlight, var(--xt-highlight-own)) calc(var(--xt-catalog-own-highlight-opacity, 1) * 100%), var(--xt-post-background, var(--xt-background, #d6daf0))) !important;
+  box-sizing: border-box;
+  padding: var(--xt-catalog-border-width-own, var(--xt-catalog-border-width, 3px)) !important;
+}
+:root:not(.catalog-hover-expand).xt-highlight-catalog-own:not(.xt-catalog-own-loc-image) .catalog-thread:has(.yourPost),
+:root:not(.catalog-hover-expand).xt-highlight-catalog-own:not(.xt-catalog-own-loc-image) .catalog-thread.yourPost {
   overflow: hidden;
 }
 :root.xt-highlight-catalog-own:not(.xt-catalog-edge-own) .catalog-thread:has(.yourPost) > .catalog-container,
@@ -374,15 +419,25 @@
 :root.xt-highlight-catalog-own:not(.xt-catalog-edge-own) .catalog-thread > .catalog-container.yourPost .post.catalog-post .postMessage {
   background: transparent !important;
 }
-:root.xt-highlight-catalog-watched:not(.xt-catalog-edge-watched) .catalog-thread.watched:not(:has(.yourPost)) {
+:root.xt-highlight-catalog-watched:not(.xt-catalog-edge-watched):not(.xt-catalog-watched-loc-image) .catalog-thread.watched:not(:has(.yourPost)) {
   background: color-mix(in srgb, var(--xt-catalog-watched-highlight, var(--xt-watched-border, rgba(255, 0, 0, .75))) calc(var(--xt-catalog-watched-highlight-opacity, 0.2) * 100%), var(--xt-post-background, var(--xt-background, #d6daf0))) !important;
 }
-:root.xt-highlight-catalog-watched.xt-catalog-edge-watched .catalog-thread.watched:not(:has(.yourPost)) {
+:root.xt-highlight-catalog-watched.xt-catalog-edge-watched:not(.xt-catalog-watched-loc-image) .catalog-thread.watched:not(:has(.yourPost)) {
   border-color: color-mix(in srgb, var(--xt-catalog-watched-highlight, var(--xt-watched-border, rgba(255, 0, 0, .75))) calc(var(--xt-catalog-watched-highlight-opacity, 0.2) * 100%), transparent) !important;
   border-style: var(--xt-catalog-border-style-watched, solid) !important;
   border-width: var(--xt-catalog-border-width-watched, var(--xt-catalog-border-width, 3px)) !important;
 }
-:root:not(.catalog-hover-expand).xt-highlight-catalog-watched .catalog-thread.watched:not(:has(.yourPost)) {
+/* Image location: draw the highlight on the thumbnail instead of the tile. */
+:root.xt-highlight-catalog-watched.xt-catalog-watched-loc-image.xt-catalog-edge-watched .catalog-thread.watched:not(:has(.yourPost)) .catalog-thumb {
+  border: var(--xt-catalog-border-width-watched, var(--xt-catalog-border-width, 3px)) var(--xt-catalog-border-style-watched, solid) color-mix(in srgb, var(--xt-catalog-watched-highlight, var(--xt-watched-border, rgba(255, 0, 0, .75))) calc(var(--xt-catalog-watched-highlight-opacity, 0.2) * 100%), transparent) !important;
+  box-sizing: border-box;
+}
+:root.xt-highlight-catalog-watched.xt-catalog-watched-loc-image:not(.xt-catalog-edge-watched) .catalog-thread.watched:not(:has(.yourPost)) .catalog-thumb {
+  background: color-mix(in srgb, var(--xt-catalog-watched-highlight, var(--xt-watched-border, rgba(255, 0, 0, .75))) calc(var(--xt-catalog-watched-highlight-opacity, 0.2) * 100%), var(--xt-post-background, var(--xt-background, #d6daf0))) !important;
+  box-sizing: border-box;
+  padding: var(--xt-catalog-border-width-watched, var(--xt-catalog-border-width, 3px)) !important;
+}
+:root:not(.catalog-hover-expand).xt-highlight-catalog-watched:not(.xt-catalog-watched-loc-image) .catalog-thread.watched:not(:has(.yourPost)) {
   overflow: hidden;
 }
 :root.xt-highlight-catalog-watched:not(.xt-catalog-edge-watched) .catalog-thread.watched:not(:has(.yourPost)) > .catalog-container,
@@ -415,6 +470,49 @@
 :root.xt-highlight-catalog-watched:not(.xt-catalog-edge-watched) .catalog-thread.watched:not(:has(.yourPost)) .post.catalog-post > *,
 :root.xt-highlight-catalog-watched:not(.xt-catalog-edge-watched) .catalog-thread.watched:not(:has(.yourPost)) .post.catalog-post .postMessage {
   background: transparent !important;
+}
+/* Filtered-thread row → manual/auto text colors (only with a background fill). */
+:root.xt-highlight-catalog-filter.xt-catalog-filter-text-colors .catalog-thread.filter-highlight .post.catalog-post,
+:root.xt-highlight-catalog-filter.xt-catalog-filter-text-colors .catalog-thread.filter-highlight .post.catalog-post .postInfo,
+:root.xt-highlight-catalog-filter.xt-catalog-filter-text-colors .catalog-thread.filter-highlight .post.catalog-post .postMessage,
+:root.xt-highlight-catalog-filter.xt-catalog-filter-text-colors .catalog-thread.filter-highlight .post.catalog-post .summary,
+:root.xt-highlight-catalog-filter.xt-catalog-filter-text-colors .catalog-thread.filter-highlight .post.catalog-post .fileText,
+:root.xt-highlight-catalog-filter.xt-catalog-filter-text-colors .catalog-thread.filter-highlight .post.catalog-post .catalog-stats {
+  color: var(--xt-catalog-filter-text, var(--xt-text-color)) !important;
+}
+:root.xt-highlight-catalog-filter.xt-catalog-filter-text-colors .catalog-thread.filter-highlight .post.catalog-post a {
+  color: var(--xt-catalog-filter-link, var(--xt-link-text-color)) !important;
+}
+:root.xt-highlight-catalog-filter.xt-catalog-filter-text-colors .catalog-thread.filter-highlight .post.catalog-post .quote {
+  color: var(--xt-catalog-filter-quote, var(--xt-quote-text-color)) !important;
+}
+:root.xt-highlight-catalog-filter.xt-catalog-filter-text-colors .catalog-thread.filter-highlight .post.catalog-post .subject {
+  color: var(--xt-catalog-filter-subject, var(--xt-catalog-filter-text, var(--xt-text-color))) !important;
+}
+:root.xt-highlight-catalog-filter.xt-catalog-filter-text-colors .catalog-thread.filter-highlight .post.catalog-post .deadlink {
+  color: var(--xt-catalog-filter-dead-link, var(--xt-dead-link-text-color, var(--xt-dead-link))) !important;
+}
+:root.xt-set-catalog-filter-highlight:not(.xt-catalog-edge-filter):not(.xt-catalog-filter-loc-image) .catalog-thread.filter-highlight .post.catalog-post > *,
+:root.xt-set-catalog-filter-highlight:not(.xt-catalog-edge-filter):not(.xt-catalog-filter-loc-image) .catalog-thread.filter-highlight .post.catalog-post .postMessage {
+  background: transparent !important;
+}
+
+/* Optional glow effect (box-shadow in the highlight color). Intensity scales
+   the blur + spread; ~0.5 matches the classic filter glow. Follows the same
+   tile/thumbnail target as the highlight itself. */
+:root.xt-highlight-catalog-own.xt-catalog-own-glow:not(.xt-catalog-own-loc-image) .catalog-thread:has(.yourPost),
+:root.xt-highlight-catalog-own.xt-catalog-own-glow:not(.xt-catalog-own-loc-image) .catalog-thread.yourPost {
+  box-shadow: 0 0 calc(var(--xt-catalog-own-glow-intensity, .5) * 6px) calc(var(--xt-catalog-own-glow-intensity, .5) * 6px) color-mix(in srgb, var(--xt-catalog-own-highlight, var(--xt-highlight-own)) 70%, transparent) !important;
+}
+:root.xt-highlight-catalog-own.xt-catalog-own-glow.xt-catalog-own-loc-image .catalog-thread:has(.yourPost) .catalog-thumb,
+:root.xt-highlight-catalog-own.xt-catalog-own-glow.xt-catalog-own-loc-image .catalog-thread.yourPost .catalog-thumb {
+  box-shadow: 0 0 calc(var(--xt-catalog-own-glow-intensity, .5) * 6px) calc(var(--xt-catalog-own-glow-intensity, .5) * 6px) color-mix(in srgb, var(--xt-catalog-own-highlight, var(--xt-highlight-own)) 70%, transparent) !important;
+}
+:root.xt-highlight-catalog-watched.xt-catalog-watched-glow:not(.xt-catalog-watched-loc-image) .catalog-thread.watched:not(:has(.yourPost)) {
+  box-shadow: 0 0 calc(var(--xt-catalog-watched-glow-intensity, .5) * 6px) calc(var(--xt-catalog-watched-glow-intensity, .5) * 6px) color-mix(in srgb, var(--xt-catalog-watched-highlight, var(--xt-watched-border, rgba(255, 0, 0, .75))) 70%, transparent) !important;
+}
+:root.xt-highlight-catalog-watched.xt-catalog-watched-glow.xt-catalog-watched-loc-image .catalog-thread.watched:not(:has(.yourPost)) .catalog-thumb {
+  box-shadow: 0 0 calc(var(--xt-catalog-watched-glow-intensity, .5) * 6px) calc(var(--xt-catalog-watched-glow-intensity, .5) * 6px) color-mix(in srgb, var(--xt-catalog-watched-highlight, var(--xt-watched-border, rgba(255, 0, 0, .75))) 70%, transparent) !important;
 }
 
 .unread-line {

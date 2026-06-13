@@ -2,8 +2,11 @@
 
 ### Unreleased
 
+- Added a "Filtered thread" row to the catalog Highlights settings that configures how filter-highlighted threads look in the catalog (color, opacity, background, location, border, glow, text colors), with a "Use defaults" button. The color shows the theme's own filter color when left blank.
+- Added an optional glow effect with adjustable intensity to the catalog highlight rows (Your post, Watched thread, Filtered thread).
+- Added a "Highlight location" option (Tile or Image) to the catalog highlight rows, so the highlight can be drawn on just the thumbnail instead of the whole tile.
+- Adjusted the Styling settings page layout and color controls.
 - Added a "Format CSS" button and Shift+Alt+F shortcut to the Custom CSS editor that tidies indentation, braces, and spacing, and puts each selector of a comma list on its own line.
-- Moved the Custom CSS "Detach" button into the section header and removed the "Expand editor" button. Use Detach for more room, or drag the editor's bottom edge to resize.
 
 ### 1.1.4 (2026-06-12)
 

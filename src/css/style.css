@@ -2285,6 +2285,15 @@ body > #overlay:not(.media-preview) {
   min-height: 18px;
   white-space: nowrap;
 }
+/* Plain group title (no master toggle), matching the weight of the toggle
+   labels so a checkbox-less group like the palette tools still reads as a
+   peer subsection of Thread/Catalog highlights. */
+#fourchanx-settings .section-styling .styling-hl-grouptitle {
+  font-weight: 600;
+  line-height: 16px;
+  min-height: 18px;
+  white-space: nowrap;
+}
 #fourchanx-settings .section-styling .styling-hl-master input[type="checkbox"] {
   align-self: center;
   display: block;
@@ -2309,6 +2318,13 @@ body > #overlay:not(.media-preview) {
   border-radius: 6px;
   margin: 3px 0;
   overflow: hidden;
+}
+/* An expanded row reads as a raised, self-contained panel — stronger border
+   and a soft drop shadow — so its body doesn't blend into the sections below. */
+.section-styling .styling-hl-acc-item.styling-hl-open {
+  border-color: color-mix(in srgb, currentColor 34%, transparent);
+  box-shadow: 0 1px 3px color-mix(in srgb, currentColor 10%, transparent);
+  margin: 8px 0;
 }
 .section-styling .styling-hl-acc-head {
   align-items: center;
@@ -2359,6 +2375,7 @@ body > #overlay:not(.media-preview) {
   padding: 1px 12px 4px;
 }
 .section-styling .styling-hl-acc-item.styling-hl-open .styling-hl-acc-body {
+  background: color-mix(in srgb, currentColor 5%, transparent);
   display: block;
 }
 /* ID prefix beats `#fourchanx-settings label { display: inline }`, so the
@@ -2397,6 +2414,14 @@ body > #overlay:not(.media-preview) {
   min-height: 16px;
   opacity: .6;
   text-transform: uppercase;
+}
+.section-styling .styling-hl-rowactions {
+  border-bottom: 0;
+  justify-content: flex-end;
+  padding-top: 6px;
+}
+.section-styling .styling-hl-rowactions button {
+  font-size: 11px;
 }
 .section-styling .styling-hl-orow {
   align-items: center;
@@ -2482,6 +2507,59 @@ body > #overlay:not(.media-preview) {
   border-color: #d33;
   box-shadow: 0 0 0 1px color-mix(in srgb, #d33 45%, transparent);
 }
+/* ── Merged colour control ──────────────────────────────────────────
+   The swatch and hex field are fused into a single box: the hex field
+   carries the chosen colour as its background, and the native picker is
+   collapsed into a small blank strip on the right, divider-separated, that
+   opens the picker on click. */
+.section-styling .styling-color-merged {
+  align-items: stretch;
+  border: 1px solid rgba(128, 128, 128, .45);
+  border-radius: 3px;
+  display: inline-flex;
+  height: 22px;
+  overflow: hidden;
+  vertical-align: middle;
+}
+.section-styling .styling-color-merged .styling-color-hex {
+  background: transparent;
+  border: 0;
+  border-radius: 0;
+  height: 100%;
+  margin: 0;
+  text-align: center;
+  width: 72px;
+}
+/* Keep the typed hex legible while focused without losing the colour fill. */
+.section-styling .styling-color-merged .styling-color-hex:focus {
+  outline: 1px solid rgba(255, 255, 255, .65);
+  outline-offset: -2px;
+}
+.section-styling .styling-color-merged .styling-color-trigger {
+  background: transparent;
+  /* Thin divider hints the strip is its own click target without breaking the
+     seamless colour fill; a neutral translucent line reads on light and dark. */
+  border-left: 1px solid rgba(128, 128, 128, .55);
+  cursor: pointer;
+  flex: none;
+  position: relative;
+  width: 18px;
+}
+.section-styling .styling-color-merged .styling-color-trigger input[type="color"] {
+  border: 0;
+  cursor: pointer;
+  height: 100%;
+  inset: 0;
+  margin: 0;
+  opacity: 0;
+  padding: 0;
+  position: absolute;
+  width: 100%;
+}
+/* The whole control dims together when disabled or colour-linked. */
+.section-styling .styling-color-merged:has(.styling-color-hex:disabled) {
+  opacity: .5;
+}
 /* Manual highlight text colours sit inline, just left of the mode dropdown,
    and only appear when the row's text mode is "Manual" (toggled via [hidden]). */
 .section-styling .styling-hl-inlinecolors {
@@ -2500,8 +2578,7 @@ body > #overlay:not(.media-preview) {
   width: 24px;
 }
 /* Marker color slaved to its highlight colour → dim the now-inert picker. */
-.section-styling .styling-hl-mkcolor[data-color-linked="true"] input[type="color"],
-.section-styling .styling-hl-mkcolor[data-color-linked="true"] .styling-color-hex {
+.section-styling .styling-hl-mkcolor[data-color-linked="true"] .styling-color-merged {
   opacity: .45;
 }
 /* Disabled controls (gated by a master/per-row switch) read as muted, and

@@ -137,11 +137,14 @@
         </div>
         <div class="styling-hl-acc-body">
           <label class="styling-hl-sub styling-hl-subtoggle" title="Highlight your own posts in the catalog"><input type="checkbox" name="Catalog Highlight Own Posts"><span class="styling-hl-sub-text">Highlight</span></label>
+          <div class="styling-hl-orow"><span class="styling-hl-olabel" title="Draw the highlight around the whole catalog tile, or just the thumbnail image">Highlight location</span><span class="styling-hl-octl"><select name="Catalog Highlight Own Location" title="Where to draw the highlight"><option value="tile">Tile</option><option value="image">Image</option></select></span></div>
           <div class="styling-hl-orow"><span class="styling-hl-olabel">Text colors</span><span class="styling-hl-octl"><span class="styling-hl-inlinecolors" data-highlight-text-manual="catalog-own" hidden><input type="color" name="Catalog Highlight Own Text Color" title="Text color"><input type="color" name="Catalog Highlight Own Subject Color" title="Subject color"><input type="color" name="Catalog Highlight Own Link Color" title="Link color"><input type="color" name="Catalog Highlight Own Quote Color" title="Quote color"><input type="color" name="Catalog Highlight Own Dead Link Color" title="Dead link color"></span><select name="Catalog Highlight Own Text Mode" title="Defaults: keep the theme's colors; Auto: pick readable colors; Manual: choose your own"><option value="default">Defaults</option><option value="auto">Auto</option><option value="manual">Manual</option></select></span></div>
           <div class="styling-hl-orow"><span class="styling-hl-olabel" title="Fill the whole catalog tile background instead of just the colored border (the border always shows)">Highlight background</span><span class="styling-hl-octl"><input type="checkbox" name="Catalog Highlight Own Background"></span></div>
           <div class="styling-hl-orow"><span class="styling-hl-olabel" title="Width of the colored border">Border width</span><span class="styling-hl-octl"><input type="number" min="1" max="12" step="1" class="field styling-hl-widthnum" name="Catalog Highlight Own Border Width"><span class="styling-hl-unit">px</span></span></div>
           <div class="styling-hl-orow"><span class="styling-hl-olabel" title="CSS border style for the colored border">Border style</span><span class="styling-hl-octl"><select name="Catalog Highlight Own Border Style"><option value="solid">Solid</option><option value="dashed">Dashed</option><option value="dotted">Dotted</option><option value="double">Double</option><option value="groove">Groove</option><option value="ridge">Ridge</option><option value="inset">Inset</option><option value="outset">Outset</option></select></span></div>
           <div class="styling-hl-orow"><span class="styling-hl-olabel">Opacity</span><span class="styling-hl-octl"><input type="range" name="Catalog Highlight Own Opacity" min="0" max="1" step="0.05" title="Highlight opacity"></span></div>
+          <div class="styling-hl-orow"><span class="styling-hl-olabel" title="Add a colored glow around the highlight">Glow</span><span class="styling-hl-octl"><input type="checkbox" name="Catalog Highlight Own Glow"></span></div>
+          <div class="styling-hl-orow"><span class="styling-hl-olabel">Glow intensity</span><span class="styling-hl-octl"><input type="range" name="Catalog Highlight Own Glow Intensity" min="0" max="1" step="0.05" title="Glow intensity"></span></div>
         </div>
       </div>
 
@@ -153,11 +156,34 @@
         </div>
         <div class="styling-hl-acc-body">
           <label class="styling-hl-sub styling-hl-subtoggle" title="Highlight watched threads in the catalog"><input type="checkbox" name="Catalog Highlight Watched Threads"><span class="styling-hl-sub-text">Highlight</span></label>
+          <div class="styling-hl-orow"><span class="styling-hl-olabel" title="Draw the highlight around the whole catalog tile, or just the thumbnail image">Highlight location</span><span class="styling-hl-octl"><select name="Catalog Highlight Watched Location" title="Where to draw the highlight"><option value="tile">Tile</option><option value="image">Image</option></select></span></div>
           <div class="styling-hl-orow"><span class="styling-hl-olabel">Text colors</span><span class="styling-hl-octl"><span class="styling-hl-inlinecolors" data-highlight-text-manual="catalog-watched" hidden><input type="color" name="Catalog Highlight Watched Text Color" title="Text color"><input type="color" name="Catalog Highlight Watched Subject Color" title="Subject color"><input type="color" name="Catalog Highlight Watched Link Color" title="Link color"><input type="color" name="Catalog Highlight Watched Quote Color" title="Quote color"><input type="color" name="Catalog Highlight Watched Dead Link Color" title="Dead link color"></span><select name="Catalog Highlight Watched Text Mode" title="Defaults: keep the theme's colors; Auto: pick readable colors; Manual: choose your own"><option value="default">Defaults</option><option value="auto">Auto</option><option value="manual">Manual</option></select></span></div>
           <div class="styling-hl-orow"><span class="styling-hl-olabel" title="Fill the whole catalog tile background instead of just the colored border (the border always shows)">Highlight background</span><span class="styling-hl-octl"><input type="checkbox" name="Catalog Highlight Watched Background"></span></div>
           <div class="styling-hl-orow"><span class="styling-hl-olabel" title="Width of the colored border">Border width</span><span class="styling-hl-octl"><input type="number" min="1" max="12" step="1" class="field styling-hl-widthnum" name="Catalog Highlight Watched Border Width"><span class="styling-hl-unit">px</span></span></div>
           <div class="styling-hl-orow"><span class="styling-hl-olabel" title="CSS border style for the colored border">Border style</span><span class="styling-hl-octl"><select name="Catalog Highlight Watched Border Style"><option value="solid">Solid</option><option value="dashed">Dashed</option><option value="dotted">Dotted</option><option value="double">Double</option><option value="groove">Groove</option><option value="ridge">Ridge</option><option value="inset">Inset</option><option value="outset">Outset</option></select></span></div>
           <div class="styling-hl-orow"><span class="styling-hl-olabel">Opacity</span><span class="styling-hl-octl"><input type="range" name="Catalog Highlight Watched Opacity" min="0" max="1" step="0.05" title="Highlight opacity"></span></div>
+          <div class="styling-hl-orow"><span class="styling-hl-olabel" title="Add a colored glow around the highlight">Glow</span><span class="styling-hl-octl"><input type="checkbox" name="Catalog Highlight Watched Glow"></span></div>
+          <div class="styling-hl-orow"><span class="styling-hl-olabel">Glow intensity</span><span class="styling-hl-octl"><input type="range" name="Catalog Highlight Watched Glow Intensity" min="0" max="1" step="0.05" title="Glow intensity"></span></div>
+        </div>
+      </div>
+
+      <div class="styling-hl-acc-item" data-highlight-row="catalog-filter">
+        <div class="styling-hl-acc-head">
+          <span class="styling-hl-acc-name">Filtered thread</span>
+          <span class="styling-hl-color"><input type="color" name="Catalog Highlight Filter Color" title="Catalog filtered-thread highlight color"></span>
+          <button type="button" class="styling-hl-acc-chev" aria-label="Expand row">&#9656;</button>
+        </div>
+        <div class="styling-hl-acc-body">
+          <label class="styling-hl-sub styling-hl-subtoggle" title="Highlight catalog threads matched by a highlighting filter"><input type="checkbox" name="Catalog Highlight Filter Posts"><span class="styling-hl-sub-text">Highlight</span></label>
+          <div class="styling-hl-orow"><span class="styling-hl-olabel" title="Draw the highlight around the whole catalog tile, or just the thumbnail image">Highlight location</span><span class="styling-hl-octl"><select name="Catalog Highlight Filter Location" title="Where to draw the highlight"><option value="tile">Tile</option><option value="image">Image</option></select></span></div>
+          <div class="styling-hl-orow"><span class="styling-hl-olabel">Text colors</span><span class="styling-hl-octl"><span class="styling-hl-inlinecolors" data-highlight-text-manual="catalog-filter" hidden><input type="color" name="Catalog Highlight Filter Text Color" title="Text color"><input type="color" name="Catalog Highlight Filter Subject Color" title="Subject color"><input type="color" name="Catalog Highlight Filter Link Color" title="Link color"><input type="color" name="Catalog Highlight Filter Quote Color" title="Quote color"><input type="color" name="Catalog Highlight Filter Dead Link Color" title="Dead link color"></span><select name="Catalog Highlight Filter Text Mode" title="Defaults: keep the theme's colors; Auto: pick readable colors; Manual: choose your own"><option value="default">Defaults</option><option value="auto">Auto</option><option value="manual">Manual</option></select></span></div>
+          <div class="styling-hl-orow"><span class="styling-hl-olabel" title="Fill the whole catalog tile background instead of just the colored border (the border always shows)">Highlight background</span><span class="styling-hl-octl"><input type="checkbox" name="Catalog Highlight Filter Background"></span></div>
+          <div class="styling-hl-orow"><span class="styling-hl-olabel" title="Width of the colored border">Border width</span><span class="styling-hl-octl"><input type="number" min="1" max="12" step="1" class="field styling-hl-widthnum" name="Catalog Highlight Filter Border Width"><span class="styling-hl-unit">px</span></span></div>
+          <div class="styling-hl-orow"><span class="styling-hl-olabel" title="CSS border style for the colored border">Border style</span><span class="styling-hl-octl"><select name="Catalog Highlight Filter Border Style"><option value="solid">Solid</option><option value="dashed">Dashed</option><option value="dotted">Dotted</option><option value="double">Double</option><option value="groove">Groove</option><option value="ridge">Ridge</option><option value="inset">Inset</option><option value="outset">Outset</option></select></span></div>
+          <div class="styling-hl-orow"><span class="styling-hl-olabel">Opacity</span><span class="styling-hl-octl"><input type="range" name="Catalog Highlight Filter Opacity" min="0" max="1" step="0.05" title="Highlight opacity"></span></div>
+          <div class="styling-hl-orow"><span class="styling-hl-olabel" title="Add a colored glow around the highlight">Glow</span><span class="styling-hl-octl"><input type="checkbox" name="Catalog Highlight Filter Glow"></span></div>
+          <div class="styling-hl-orow"><span class="styling-hl-olabel">Glow intensity</span><span class="styling-hl-octl"><input type="range" name="Catalog Highlight Filter Glow Intensity" min="0" max="1" step="0.05" title="Glow intensity"></span></div>
+          <div class="styling-hl-orow styling-hl-rowactions"><button type="button" id="styling-filter-defaults" title="Reset the filtered-thread highlight (color, glow, border, location) to its defaults">Use defaults</button></div>
         </div>
       </div>
 
@@ -165,6 +191,9 @@
   </div>
 
   <div class="styling-hl-group styling-hl-group-palette">
+    <div class="styling-hl-grouphead">
+      <span class="styling-hl-grouptitle">Color tools</span>
+    </div>
     <div class="styling-hl-acc">
       <div class="styling-hl-acc-item styling-hl-acc-item-palette">
         <div class="styling-hl-acc-head">

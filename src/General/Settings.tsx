@@ -2272,6 +2272,14 @@ Enable it on boards.${location.hostname.split('.')[1]}.org in your browser's pri
         bgKey: 'Catalog Highlight Watched Background',
         keys: ['Catalog Highlight Watched Text Color', 'Catalog Highlight Watched Subject Color', 'Catalog Highlight Watched Link Color', 'Catalog Highlight Watched Quote Color', 'Catalog Highlight Watched Dead Link Color'] as const,
       },
+      {
+        manualGroup: 'catalog-filter',
+        modeKey: 'Catalog Highlight Filter Text Mode',
+        colorKey: 'Catalog Highlight Filter Color',
+        opacityKey: 'Catalog Highlight Filter Opacity',
+        bgKey: 'Catalog Highlight Filter Background',
+        keys: ['Catalog Highlight Filter Text Color', 'Catalog Highlight Filter Subject Color', 'Catalog Highlight Filter Link Color', 'Catalog Highlight Filter Quote Color', 'Catalog Highlight Filter Dead Link Color'] as const,
+      },
     ] as const;
     const textColorKeys = [
       'Text Color',
@@ -2285,6 +2293,7 @@ Enable it on boards.${location.hostname.split('.')[1]}.org in your browser's pri
       'Highlight Ghost Color',
       'Catalog Highlight Own Color',
       'Catalog Highlight Watched Color',
+      'Catalog Highlight Filter Color',
       'Scroll Marker Own Color',
       'Scroll Marker You Color',
       'Scroll Marker Ghost Color',
@@ -2406,6 +2415,24 @@ Enable it on boards.${location.hostname.split('.')[1]}.org in your browser's pri
     };
     const refreshStylingPreview = () => Settings.refreshStylingPreviewFromDialog();
     const colorHexInputs: Record<string, HTMLInputElement> = dict();
+    // Paint the merged control: the hex field carries the chosen color as its
+    // own background, with text flipped to black/white for whichever reads
+    // better against it.
+    const applyMergedSwatch = (hexInput: HTMLInputElement, value: string) => {
+      // Paint the whole wrapper (hex field + picker strip share it) so the
+      // control reads as one seamless color-filled input.
+      const merged = hexInput.parentElement as HTMLElement | null;
+      const rgb = value ? Settings.hexToRgb(value) : null;
+      if (!rgb) {
+        if (merged) merged.style.background = '';
+        hexInput.style.color = '';
+        return;
+      }
+      if (merged) merged.style.background = value;
+      const onWhite = Settings.contrastRatio([255, 255, 255], rgb);
+      const onBlack = Settings.contrastRatio([17, 17, 17], rgb);
+      hexInput.style.color = onWhite >= onBlack ? '#fff' : '#111';
+    };
     const syncColorHexInput = (baseKey: string) => {
       const colorInput = inputs[baseKey];
       const hexInput = colorHexInputs[baseKey];
@@ -2413,6 +2440,7 @@ Enable it on boards.${location.hostname.split('.')[1]}.org in your browser's pri
       hexInput.value = colorInput.value || '';
       hexInput.disabled = colorInput.disabled;
       hexInput.classList.remove('styling-color-hex-invalid');
+      applyMergedSwatch(hexInput, hexInput.value);
     };
     const syncColorHexInputs = () => {
       for (const baseKey in colorHexInputs) syncColorHexInput(baseKey);
@@ -2420,15 +2448,34 @@ Enable it on boards.${location.hostname.split('.')[1]}.org in your browser's pri
     for (const baseKey of hexEditableColorKeys) {
       const colorInput = inputs[baseKey];
       if (!colorInput || colorInput.type !== 'color') continue;
+      // The swatch's own title (e.g. "Highlight background color" vs
+      // "Scrollbar marker color") names which colour this is — carry it onto
+      // the merged parts so the tooltip stays clear when both swatches share
+      // the collapsed header (e.g. with "match highlight colour" off).
+      const label = colorInput.title || '';
       const hexInput = $.el('input', {
         type: 'text',
         className: 'field styling-color-hex',
         placeholder: '#rrggbb',
-        title: 'Hex color, e.g. #ff5050',
+        title: label ? `${label} — type a hex value` : 'Hex color, e.g. #ff5050',
       }) as HTMLInputElement;
       hexInput.maxLength = 7;
       hexInput.setAttribute('spellcheck', 'false');
-      colorInput.insertAdjacentElement('afterend', hexInput);
+      // Fuse the swatch and hex field into one control: the hex field shows the
+      // colour as its own background, and the native picker collapses into a
+      // small blank strip on the right (divider-separated) that opens on click.
+      const merged = $.el('span', {
+        className: 'styling-color-merged',
+        title: label,
+      }) as HTMLElement;
+      const trigger = $.el('span', {
+        className: 'styling-color-trigger',
+        title: label ? `${label} — open picker` : 'Pick a color',
+      }) as HTMLElement;
+      colorInput.replaceWith(merged);
+      trigger.appendChild(colorInput);
+      merged.appendChild(hexInput);
+      merged.appendChild(trigger);
       colorHexInputs[baseKey] = hexInput;
       $.on(hexInput, 'input', () => {
         const raw = hexInput.value.trim();
@@ -2463,11 +2510,11 @@ Enable it on boards.${location.hostname.split('.')[1]}.org in your browser's pri
         const enabled = catalogEnabled && !!inputs[key]?.checked;
         const controls = key === 'Catalog Highlight Own Posts' ?
           [
-            'Catalog Highlight Own Color', 'Catalog Highlight Own Opacity', 'Catalog Highlight Own Background', 'Catalog Highlight Own Border Width', 'Catalog Highlight Own Border Style', 'Catalog Highlight Own Text Mode',
+            'Catalog Highlight Own Color', 'Catalog Highlight Own Opacity', 'Catalog Highlight Own Background', 'Catalog Highlight Own Location', 'Catalog Highlight Own Border Width', 'Catalog Highlight Own Border Style', 'Catalog Highlight Own Glow', 'Catalog Highlight Own Glow Intensity', 'Catalog Highlight Own Text Mode',
             'Catalog Highlight Own Text Color', 'Catalog Highlight Own Subject Color', 'Catalog Highlight Own Link Color', 'Catalog Highlight Own Quote Color', 'Catalog Highlight Own Dead Link Color',
           ] :
           [
-            'Catalog Highlight Watched Color', 'Catalog Highlight Watched Opacity', 'Catalog Highlight Watched Background', 'Catalog Highlight Watched Border Width', 'Catalog Highlight Watched Border Style', 'Catalog Highlight Watched Text Mode',
+            'Catalog Highlight Watched Color', 'Catalog Highlight Watched Opacity', 'Catalog Highlight Watched Background', 'Catalog Highlight Watched Location', 'Catalog Highlight Watched Border Width', 'Catalog Highlight Watched Border Style', 'Catalog Highlight Watched Glow', 'Catalog Highlight Watched Glow Intensity', 'Catalog Highlight Watched Text Mode',
             'Catalog Highlight Watched Text Color', 'Catalog Highlight Watched Subject Color', 'Catalog Highlight Watched Link Color', 'Catalog Highlight Watched Quote Color', 'Catalog Highlight Watched Dead Link Color',
           ];
         for (const controlKey of controls) {
@@ -2475,6 +2522,25 @@ Enable it on boards.${location.hostname.split('.')[1]}.org in your browser's pri
           if (control) control.disabled = !enabled;
         }
       }
+      // The Filtered-thread row is independent of the catalog master (filter
+      // highlights work regardless of the Own/Watched feature), so it's gated by
+      // its own toggle only.
+      const filterRowOn = !!inputs['Catalog Highlight Filter Posts']?.checked;
+      for (const controlKey of [
+        'Catalog Highlight Filter Color', 'Catalog Highlight Filter Opacity', 'Catalog Highlight Filter Background', 'Catalog Highlight Filter Location', 'Catalog Highlight Filter Border Width', 'Catalog Highlight Filter Border Style', 'Catalog Highlight Filter Glow', 'Catalog Highlight Filter Glow Intensity', 'Catalog Highlight Filter Text Mode',
+        'Catalog Highlight Filter Text Color', 'Catalog Highlight Filter Subject Color', 'Catalog Highlight Filter Link Color', 'Catalog Highlight Filter Quote Color', 'Catalog Highlight Filter Dead Link Color',
+      ]) {
+        const control = inputs[controlKey];
+        if (control) control.disabled = !filterRowOn;
+      }
+      // Glow intensity is only live when that row's glow is switched on.
+      const gateGlow = (rowOn: boolean, glowKey: string, intensityKey: string) => {
+        const intensity = inputs[intensityKey];
+        if (intensity) intensity.disabled = !(rowOn && !!inputs[glowKey]?.checked);
+      };
+      gateGlow(catalogEnabled && !!inputs['Catalog Highlight Own Posts']?.checked, 'Catalog Highlight Own Glow', 'Catalog Highlight Own Glow Intensity');
+      gateGlow(catalogEnabled && !!inputs['Catalog Highlight Watched Threads']?.checked, 'Catalog Highlight Watched Glow', 'Catalog Highlight Watched Glow Intensity');
+      gateGlow(filterRowOn, 'Catalog Highlight Filter Glow', 'Catalog Highlight Filter Glow Intensity');
       syncColorHexInputs();
     };
     // The editable marker colour swatch (+ hex) normally lives in the body's
@@ -2608,11 +2674,13 @@ Enable it on boards.${location.hostname.split('.')[1]}.org in your browser's pri
     // colour/range apply handler, so wire live apply + clamp here.
     const widthInputKeys = [
       'Highlight Own Edge Width', 'Highlight You Edge Width', 'Highlight Ghost Edge Width',
-      'Catalog Highlight Own Border Width', 'Catalog Highlight Watched Border Width',
+      'Catalog Highlight Own Border Width', 'Catalog Highlight Watched Border Width', 'Catalog Highlight Filter Border Width',
     ];
     const borderStyleInputKeys = new Set([
       'Highlight Own Border Style', 'Highlight You Border Style', 'Highlight Ghost Border Style',
-      'Catalog Highlight Own Border Style', 'Catalog Highlight Watched Border Style',
+      'Catalog Highlight Own Border Style', 'Catalog Highlight Watched Border Style', 'Catalog Highlight Filter Border Style',
+      // Plain variant <select>s that just need persist + re-apply on change.
+      'Catalog Highlight Own Location', 'Catalog Highlight Watched Location', 'Catalog Highlight Filter Location',
     ]);
     for (const key of widthInputKeys) {
       const inp = inputs[key];
@@ -2714,7 +2782,9 @@ Enable it on boards.${location.hostname.split('.')[1]}.org in your browser's pri
           Settings.applyStylingVars();
           refreshStylingPreview();
         });
-        if (catalogHighlightKeys.includes(name as typeof catalogHighlightKeys[number])) {
+        if (catalogHighlightKeys.includes(name as typeof catalogHighlightKeys[number])
+          || name === 'Catalog Highlight Own Glow' || name === 'Catalog Highlight Watched Glow'
+          || name === 'Catalog Highlight Filter Posts' || name === 'Catalog Highlight Filter Glow') {
           $.on(input, 'change', syncCatalogHighlightControls);
         }
         if (markerToggleKeys.has(name)) {
@@ -2864,6 +2934,55 @@ Enable it on boards.${location.hostname.split('.')[1]}.org in your browser's pri
         updatePreviewStateFromRows();
         refreshSuggestedPalettesIfOpen();
         $.event('RefreshScrollMarkers');
+      });
+    }
+
+    // Per-row reset for the Filtered-thread highlight back to its shipped
+    // defaults (blank color ⇒ the theme's own filter color, glow on, etc.).
+    const filterDefaultsBtn = $('#styling-filter-defaults', section) as HTMLButtonElement | null;
+    if (filterDefaultsBtn) {
+      const filterDefaults: Array<[string, any]> = [
+        ['Catalog Highlight Filter Posts', true],
+        ['Catalog Highlight Filter Color', ''],
+        ['Catalog Highlight Filter Opacity', ''],
+        ['Catalog Highlight Filter Background', false],
+        ['Catalog Highlight Filter Location', 'image'],
+        ['Catalog Highlight Filter Border Width', 2],
+        ['Catalog Highlight Filter Border Style', 'solid'],
+        ['Catalog Highlight Filter Glow', true],
+        ['Catalog Highlight Filter Glow Intensity', 0.5],
+        ['Catalog Highlight Filter Text Mode', 'default'],
+        ['Catalog Highlight Filter Text Color', ''],
+        ['Catalog Highlight Filter Subject Color', ''],
+        ['Catalog Highlight Filter Link Color', ''],
+        ['Catalog Highlight Filter Quote Color', ''],
+        ['Catalog Highlight Filter Dead Link Color', ''],
+      ];
+      $.on(filterDefaultsBtn, 'click', (e: Event) => {
+        e.preventDefault();
+        for (const [baseKey, value] of filterDefaults) {
+          writeEditConf(baseKey, value);
+          const input = inputs[baseKey];
+          if (!input) continue;
+          if (input.type === 'checkbox') {
+            input.checked = !!value;
+            setCheckedState(input);
+          } else if (input.type === 'color') {
+            Settings.setColorInputValue(input, baseKey, value);
+          } else if (input.type === 'range') {
+            input.value = value === '' ? '1' : String(value);
+          } else {
+            input.value = String(value ?? '');
+          }
+        }
+        syncCatalogHighlightControls();
+        syncHighlightTextControls();
+        syncAutoHighlightPreviewInputs();
+        Settings.applyStylingVars();
+        refreshUnsetColorInputs();
+        syncColorHexInputs();
+        refreshOpacityReadouts();
+        updatePreviewStateFromRows();
       });
     }
 
@@ -4936,6 +5055,10 @@ Enable it on boards.${location.hostname.split('.')[1]}.org in your browser's pri
     const catalogHighlightsEnabled = highlightsOn && Conf['Enable Catalog Highlights'] !== false;
     const catalogOwnEnabled = catalogHighlightsEnabled && Conf['Catalog Highlight Own Posts'] !== false;
     const catalogWatchedEnabled = catalogHighlightsEnabled && Conf['Catalog Highlight Watched Threads'] !== false;
+    // Filtered-thread catalog highlight is independent of the Own/Watched master
+    // (so the classic filter glow survives with catalog highlights off), gated
+    // only by the highlights section + its own toggle.
+    const catalogFilterEnabled = highlightsOn && Conf['Catalog Highlight Filter Posts'] !== false;
     if (updateRootClasses) {
       doc.classList.toggle('highlight-own', threadHighlightsEnabled && !!Conf['Highlight Own Posts']);
       doc.classList.toggle('highlight-you', threadHighlightsEnabled && !!Conf['Highlight Posts Quoting You']);
@@ -4951,6 +5074,23 @@ Enable it on boards.${location.hostname.split('.')[1]}.org in your browser's pri
       // xt-(catalog-)edge-* suppress the background fill, so they apply when "background" is off.
       doc.classList.toggle('xt-catalog-edge-own', catalogOwnEnabled && !cv('Catalog Highlight Own Background'));
       doc.classList.toggle('xt-catalog-edge-watched', catalogWatchedEnabled && !cv('Catalog Highlight Watched Background'));
+      // loc-image redirects the highlight from the whole tile onto the thumbnail.
+      doc.classList.toggle('xt-catalog-own-loc-image', catalogOwnEnabled && cv('Catalog Highlight Own Location') === 'image');
+      doc.classList.toggle('xt-catalog-watched-loc-image', catalogWatchedEnabled && cv('Catalog Highlight Watched Location') === 'image');
+      doc.classList.toggle('xt-catalog-own-glow', catalogOwnEnabled && !!cv('Catalog Highlight Own Glow'));
+      doc.classList.toggle('xt-catalog-watched-glow', catalogWatchedEnabled && !!cv('Catalog Highlight Watched Glow'));
+      // Filtered-thread catalog highlight. The border/fill is opt-in (only with
+      // a color set), so the default look stays the classic glow-only. The glow
+      // is on unless the row explicitly turns it off (glow-off opt-out keeps the
+      // eX glow working without depending on these classes for the common case).
+      doc.classList.toggle('xt-highlight-catalog-filter', catalogFilterEnabled);
+      doc.classList.toggle('xt-set-catalog-filter-highlight', catalogFilterEnabled && !!cv('Catalog Highlight Filter Color'));
+      doc.classList.toggle('xt-catalog-edge-filter', catalogFilterEnabled && !cv('Catalog Highlight Filter Background'));
+      doc.classList.toggle('xt-catalog-filter-loc-image', catalogFilterEnabled && cv('Catalog Highlight Filter Location') === 'image');
+      // Suppress the eX filter glow whenever the row isn't actively glowing
+      // (row off, or Glow unchecked) so the row fully governs it; defaults
+      // (enabled + glow on) leave the classic glow untouched.
+      doc.classList.toggle('xt-catalog-filter-glow-off', !(catalogFilterEnabled && !!cv('Catalog Highlight Filter Glow')));
       doc.classList.toggle('xt-edge-own', highlightsOn && !Conf['Highlight Own Background']);
       doc.classList.toggle('xt-edge-you', highlightsOn && !Conf['Highlight You Background']);
       doc.classList.toggle('xt-edge-ghost', highlightsOn && !Conf['Highlight Ghost Background']);
@@ -4990,6 +5130,8 @@ Enable it on boards.${location.hostname.split('.')[1]}.org in your browser's pri
     setWidthVar('Catalog Highlight Watched Border Width', '--xt-catalog-border-width-watched');
     setStyleVar('Catalog Highlight Own Border Style', '--xt-catalog-border-style-own');
     setStyleVar('Catalog Highlight Watched Border Style', '--xt-catalog-border-style-watched');
+    setWidthVar('Catalog Highlight Filter Border Width', '--xt-catalog-border-width-filter');
+    setStyleVar('Catalog Highlight Filter Border Style', '--xt-catalog-border-style-filter');
     // Set catalog highlight colours unconditionally: the real board only paints them
     // under the enable-gated .xt-highlight-catalog-* classes, so an unused var is
     // harmless, while the styling preview (always-on demonstrator) can show them.
@@ -4999,6 +5141,16 @@ Enable it on boards.${location.hostname.split('.')[1]}.org in your browser's pri
     setVar('--xt-catalog-watched-highlight', cv('Catalog Highlight Watched Color'));
     setVar('--xt-catalog-watched-highlight-opacity',
       cv('Catalog Highlight Watched Opacity') !== '' ? String(cv('Catalog Highlight Watched Opacity')) : '');
+    // Filter color stays unset when blank so the glow/border fall back to each
+    // filter's own color (--xt-filter-highlight / --xt-highlight-shadow).
+    setVar('--xt-catalog-filter-highlight', cv('Catalog Highlight Filter Color'));
+    setVar('--xt-catalog-filter-highlight-opacity',
+      cv('Catalog Highlight Filter Opacity') !== '' ? String(cv('Catalog Highlight Filter Opacity')) : '');
+    const glowVar = (cssVar: string, key: string) =>
+      setVar(cssVar, cv(key) !== '' && cv(key) != null ? String(cv(key)) : '');
+    glowVar('--xt-catalog-own-glow-intensity', 'Catalog Highlight Own Glow Intensity');
+    glowVar('--xt-catalog-watched-glow-intensity', 'Catalog Highlight Watched Glow Intensity');
+    glowVar('--xt-catalog-filter-glow-intensity', 'Catalog Highlight Filter Glow Intensity');
     const ownMarkerLinked = !!cv('Scroll Marker Own Match Highlight');
     const youMarkerLinked = !!cv('Scroll Marker You Match Highlight');
     const ghostMarkerLinked = !!cv('Scroll Marker Ghost Match Highlight');
@@ -5062,10 +5214,11 @@ Enable it on boards.${location.hostname.split('.')[1]}.org in your browser's pri
     const ghostEdgeOnly = highlightsOn && !Conf['Highlight Ghost Background'];
     const catalogOwnBorderOnly = catalogOwnEnabled && !cv('Catalog Highlight Own Background');
     const catalogWatchedBorderOnly = catalogWatchedEnabled && !cv('Catalog Highlight Watched Background');
+    const catalogFilterBorderOnly = catalogFilterEnabled && !cv('Catalog Highlight Filter Background');
     const highlightOpacity = (
       opacityKey:
         | 'Highlight Own Opacity' | 'Highlight You Opacity' | 'Highlight Ghost Opacity'
-        | 'Catalog Highlight Own Opacity' | 'Catalog Highlight Watched Opacity',
+        | 'Catalog Highlight Own Opacity' | 'Catalog Highlight Watched Opacity' | 'Catalog Highlight Filter Opacity',
     ) => {
       const opacity = cv(opacityKey);
       if (opacity === '' || opacity == null) return 1;
@@ -5076,22 +5229,22 @@ Enable it on boards.${location.hostname.split('.')[1]}.org in your browser's pri
       autoPalette: ReturnType<typeof Settings.autoTextPalette> | null,
       modeKey:
         | 'Highlight Own Text Mode' | 'Highlight You Text Mode' | 'Highlight Ghost Text Mode'
-        | 'Catalog Highlight Own Text Mode' | 'Catalog Highlight Watched Text Mode',
+        | 'Catalog Highlight Own Text Mode' | 'Catalog Highlight Watched Text Mode' | 'Catalog Highlight Filter Text Mode',
       textKey:
         | 'Highlight Own Text Color' | 'Highlight You Text Color' | 'Highlight Ghost Text Color'
-        | 'Catalog Highlight Own Text Color' | 'Catalog Highlight Watched Text Color',
+        | 'Catalog Highlight Own Text Color' | 'Catalog Highlight Watched Text Color' | 'Catalog Highlight Filter Text Color',
       subjectKey:
         | null
-        | 'Catalog Highlight Own Subject Color' | 'Catalog Highlight Watched Subject Color',
+        | 'Catalog Highlight Own Subject Color' | 'Catalog Highlight Watched Subject Color' | 'Catalog Highlight Filter Subject Color',
       linkKey:
         | 'Highlight Own Link Color' | 'Highlight You Link Color' | 'Highlight Ghost Link Color'
-        | 'Catalog Highlight Own Link Color' | 'Catalog Highlight Watched Link Color',
+        | 'Catalog Highlight Own Link Color' | 'Catalog Highlight Watched Link Color' | 'Catalog Highlight Filter Link Color',
       quoteKey:
         | 'Highlight Own Quote Color' | 'Highlight You Quote Color' | 'Highlight Ghost Quote Color'
-        | 'Catalog Highlight Own Quote Color' | 'Catalog Highlight Watched Quote Color',
+        | 'Catalog Highlight Own Quote Color' | 'Catalog Highlight Watched Quote Color' | 'Catalog Highlight Filter Quote Color',
       deadKey:
         | 'Highlight Own Dead Link Color' | 'Highlight You Dead Link Color' | 'Highlight Ghost Dead Link Color'
-        | 'Catalog Highlight Own Dead Link Color' | 'Catalog Highlight Watched Dead Link Color',
+        | 'Catalog Highlight Own Dead Link Color' | 'Catalog Highlight Watched Dead Link Color' | 'Catalog Highlight Filter Dead Link Color',
     ) => {
       const base = autoPalette || {
         text: textColor || '',
@@ -5144,9 +5297,12 @@ Enable it on boards.${location.hostname.split('.')[1]}.org in your browser's pri
       && Settings.resolveTextMode(cv('Catalog Highlight Own Text Mode')) !== 'default';
     const catalogWatchedTextActive = catalogWatchedEnabled && !catalogWatchedBorderOnly && highlightOpacity('Catalog Highlight Watched Opacity') > 0
       && Settings.resolveTextMode(cv('Catalog Highlight Watched Text Mode')) !== 'default';
+    const catalogFilterTextActive = catalogFilterEnabled && !catalogFilterBorderOnly && highlightOpacity('Catalog Highlight Filter Opacity') > 0
+      && Settings.resolveTextMode(cv('Catalog Highlight Filter Text Mode')) !== 'default';
     if (updateRootClasses) {
       doc.classList.toggle('xt-catalog-own-text-colors', catalogOwnTextActive);
       doc.classList.toggle('xt-catalog-watched-text-colors', catalogWatchedTextActive);
+      doc.classList.toggle('xt-catalog-filter-text-colors', catalogFilterTextActive);
     }
     const catalogOwnPalette = withManual(
       catalogOwnTextActive ? Settings.autoHighlightTextPalette('Catalog Highlight Own Color', 'Catalog Highlight Own Opacity', postBackground, variant) : null,
@@ -5165,6 +5321,15 @@ Enable it on boards.${location.hostname.split('.')[1]}.org in your browser's pri
       'Catalog Highlight Watched Link Color',
       'Catalog Highlight Watched Quote Color',
       'Catalog Highlight Watched Dead Link Color',
+    );
+    const catalogFilterPalette = withManual(
+      catalogFilterTextActive ? Settings.autoHighlightTextPalette('Catalog Highlight Filter Color', 'Catalog Highlight Filter Opacity', postBackground, variant) : null,
+      'Catalog Highlight Filter Text Mode',
+      'Catalog Highlight Filter Text Color',
+      'Catalog Highlight Filter Subject Color',
+      'Catalog Highlight Filter Link Color',
+      'Catalog Highlight Filter Quote Color',
+      'Catalog Highlight Filter Dead Link Color',
     );
     setVar('--xt-highlight-own-text', ownPalette?.text || '');
     setVar('--xt-highlight-own-link', ownPalette?.link || '');
@@ -5188,6 +5353,11 @@ Enable it on boards.${location.hostname.split('.')[1]}.org in your browser's pri
     setVar('--xt-catalog-watched-link', catalogWatchedPalette?.link || '');
     setVar('--xt-catalog-watched-quote', catalogWatchedPalette?.quote || '');
     setVar('--xt-catalog-watched-dead-link', catalogWatchedPalette?.deadLink || '');
+    setVar('--xt-catalog-filter-text', catalogFilterPalette?.text || '');
+    setVar('--xt-catalog-filter-subject', catalogFilterPalette?.subject || '');
+    setVar('--xt-catalog-filter-link', catalogFilterPalette?.link || '');
+    setVar('--xt-catalog-filter-quote', catalogFilterPalette?.quote || '');
+    setVar('--xt-catalog-filter-dead-link', catalogFilterPalette?.deadLink || '');
   },
 
   autoTextPalette(rgb?: [number, number, number]) {
@@ -5413,6 +5583,11 @@ Enable it on boards.${location.hostname.split('.')[1]}.org in your browser's pri
         return 'var(--xt-catalog-own-highlight, var(--xt-highlight-own, #d83030))';
       case 'Catalog Highlight Watched Color':
         return 'var(--xt-catalog-watched-highlight, var(--xt-watched-border, rgba(255, 0, 0, .75)))';
+      case 'Catalog Highlight Filter Color':
+        // Blank ⇒ show the active theme's own filter glow color (the blue on
+        // dark themes, red on Yotsuba, etc.) so the swatch isn't empty and
+        // matches what the catalog actually draws.
+        return 'var(--xt-catalog-filter-highlight, var(--xt-highlight-shadow, var(--xt-filter-highlight, rgba(221, 0, 0, .75))))';
       case 'Scroll Marker Own Color':
         return 'var(--xt-scroll-marker-own, var(--xt-border-highlight, #d83030))';
       case 'Scroll Marker You Color':
