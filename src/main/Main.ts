@@ -262,8 +262,13 @@ var Main = {
         // Fresh install
         } else if ((items.previousversion == null)) {
           Main.isFirstRun = true;
+          // New-install-only defaults. Existing users keep their current value on update,
+          // since this branch never runs for them. Apply in-memory for this session and
+          // persist so it survives once `previousversion` is set below.
+          items['Stacked TCaptcha'] = true;
           Main.ready(function() {
             $.set('previousversion', g.VERSION);
+            $.set('Stacked TCaptcha', true);
             return Settings.open();
           });
 
