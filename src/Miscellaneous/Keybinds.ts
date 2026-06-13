@@ -7,6 +7,7 @@ import Get from "../General/Get";
 import Header from "../General/Header";
 import Index from "../General/Index";
 import Settings from "../General/Settings";
+import UndoStack from "../General/UndoStack";
 import { Conf, d, g } from "../globals/globals";
 import DownloadAll from "../Images/DownloadAll";
 import FappeTyme from "../Images/FappeTyme";
@@ -171,6 +172,14 @@ var Keybinds = {
     }
     if (key === Conf['Watch'] && ThreadWatcher.enabled && thread) {
       ThreadWatcher.toggle(thread);
+      hasAction = true;
+    }
+    // Undo last hide/MD5-filter. Skipped while focused in a text field so the
+    // browser's native text undo (Ctrl+Z) keeps working there.
+    if (key === Conf['Undo last hide/filter']
+        && target.nodeName !== 'INPUT' && target.nodeName !== 'TEXTAREA'
+        && !(target as HTMLElement).isContentEditable) {
+      UndoStack.undo();
       hasAction = true;
     }
     if (key === Conf['Update thread watcher'] && ThreadWatcher.enabled) {

@@ -359,6 +359,10 @@ var QR = {
       Conf['Show QR Drafts Icon'] = value !== false;
       QR.drafts.updateButton();
     });
+    $.sync('Allow Browser Autofill', (value: boolean | undefined) => {
+      Conf['Allow Browser Autofill'] = !!value;
+      QR.disablePersonaFieldAutofill();
+    });
 
     $.on(d, 'paste',              QR.paste);
     $.on(d, 'dragover',           QR.dragOver);
@@ -2912,10 +2916,13 @@ var QR = {
     if (Conf['Allow Browser Autofill']) {
       QR.nodes.form.removeAttribute('autocomplete');
 
+      // Restore the original 4chan field names so the browser/password manager
+      // actually recognises them — `qr-*` tokens are unfamiliar and won't match
+      // saved values.
       const enabledNames = {
-        name: 'qr-name',
-        email: 'qr-options',
-        sub: 'qr-subject',
+        name: 'name',
+        email: 'email',
+        sub: 'sub',
       };
 
       for (const key of ['name', 'email', 'sub'] as const) {
@@ -2927,6 +2934,11 @@ var QR = {
         input.removeAttribute('data-no-autofill');
         input.setAttribute('autocomplete', 'on');
         input.removeAttribute('aria-autocomplete');
+        // Strip the rest of the suppression baked into the template so the
+        // fields behave like plain default inputs.
+        input.removeAttribute('autocapitalize');
+        input.removeAttribute('autocorrect');
+        input.removeAttribute('spellcheck');
         for (const attr of [
           'data-lpignore', 'data-1p-ignore', 'data-bwignore',
           'data-protonpass-ignore', 'data-form-type',
@@ -2961,14 +2973,10 @@ var QR = {
       input.setAttribute('data-bwignore', 'true');
       input.setAttribute('data-protonpass-ignore', 'true');
       input.setAttribute('data-form-type', 'other');
-      input.readOnly = true;
-
-      const unlock = () => { input.readOnly = false; };
-      const relock = () => { input.readOnly = true; };
-      $.on(input, 'pointerdown', unlock);
-      $.on(input, 'focus', unlock);
-      $.on(input, 'keydown', unlock);
-      $.on(input, 'blur', relock);
+      // No readonly lock: renaming + autocomplete=off + the password-manager
+      // ignore attrs already suppress autofill, and locking the field broke
+      // normal typing/selection.
+      input.readOnly = false;
     }
   },
 

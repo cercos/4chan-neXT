@@ -27,6 +27,18 @@ The Custom CSS editor is more than a plain textarea:
 - `Tab` indents with two spaces; `Shift+Tab` dedents. Multi-line selections are
   indented or dedented line-by-line.
 - Enter preserves indentation, and `{|}` expands into a brace block.
+- `Ctrl+/` comments and uncomments the selection; multi-line selections are
+  wrapped in a single block comment, and comments nested inside it survive the
+  round-trip.
+- Class-name autocomplete suggests classes that exist on the page as you type,
+  with a toolbar toggle to turn it off.
+- Each line containing a color (hex, `rgb`/`rgba`, `hsl`/`hsla`) shows a
+  clickable swatch in the left gutter; clicking it opens the native color picker
+  and writes the result back in the line's original format, preserving any alpha.
+- `Detach` pops the whole Custom CSS section into a floating, draggable,
+  resizable window for editing with more room.
+- The editor flashes a `Saved` confirmation when it autosaves, and `Ctrl+S`
+  forces an immediate save.
 
 Custom CSS is the user escape hatch, but CSS cascade rules still apply:
 

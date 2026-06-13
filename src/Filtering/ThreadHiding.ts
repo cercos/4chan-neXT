@@ -3,6 +3,7 @@ import DataBoard from "../classes/DataBoard";
 import Thread from "../classes/Thread";
 import Index from "../General/Index";
 import UI from "../General/UI";
+import UndoStack from "../General/UndoStack";
 import { g, Conf, d, doc } from "../globals/globals";
 import Main from "../main/Main";
 import Menu from "../Menu/Menu";
@@ -264,6 +265,13 @@ var ThreadHiding = {
         boardID:  thread.board.ID,
         threadID: thread.ID,
         val: {makeStub}});
+      // Only user actions reach saveHiddenState (load-time re-hiding goes
+      // straight through hide()), so this is the right place to make the hide
+      // undoable. The reversal shows the thread and clears its saved state.
+      UndoStack.record('Restored hidden thread', () => {
+        ThreadHiding.show(thread);
+        ThreadHiding.saveHiddenState(thread);
+      });
     } else {
       ThreadHiding.db.delete({
         boardID:  thread.board.ID,

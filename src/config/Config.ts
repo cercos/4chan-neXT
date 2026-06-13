@@ -1073,13 +1073,6 @@ http://eye.swfchan.com/search/?q=%name;types:swf
   customCSSHome: false,
   siteStyle: '',
   siteStyleHome: false,
-  // StyleChan bridge: when StyleChan is managing site themes (it excludes the
-  // 4chan home page), this opt-in replays StyleChan's injected stylesheet on the
-  // home page. styleChanThemeCSS / styleChanVarsCSS hold the snapshot captured
-  // on board pages (where StyleChan runs) so the home page can reuse it.
-  styleChanThemeHome: false,
-  styleChanThemeCSS: '',
-  styleChanVarsCSS: '',
   // Per-section master switches for the Styling page. Each gates one Styling
   // subsection (Site Style, Highlight Colors, Scrollbar Markers, Text Colors,
   // Custom CSS) at runtime *without* touching the section's inner settings, so
@@ -1339,6 +1332,14 @@ current-archive-text:"Archive"]
     'Watch (catalog click)': [
       'Ctrl+Shift',
       'Catalog-click modifiers for watching threads. Leave empty to disable.'
+    ],
+    'Hide thread (catalog click)': [
+      'Shift',
+      'Hold these modifier(s) and click a catalog thread to hide it. Leave empty to disable.'
+    ],
+    'Undo last hide/filter': [
+      'Ctrl+z',
+      'Undo your most recent thread hide or MD5 quick-filter. Repeat to undo earlier ones (up to 10). Ignored while typing in a text field.'
     ],
     'Update': [
       'r',

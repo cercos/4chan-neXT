@@ -180,7 +180,7 @@ Key concepts:
 - `Apply StyleChan's theme on home page` mirrors StyleChan's current theme and Custom CSS onto the 4chan home page, where StyleChan does not run.
 - `Apply on home page` applies the selected site style on the 4chan home page.
 - Custom CSS loads after 4chan-neXT CSS and can override feature styles.
-- The Custom CSS editor has syntax highlighting, theme selection, an expand/collapse control, auto-closing brackets and quotes, skip-over for existing closers, empty-pair deletion, selection wrapping, Tab/Shift+Tab indent and dedent, and brace-aware Enter indentation.
+- The Custom CSS editor has syntax highlighting, theme selection, an expand/collapse control, a Detach button that pops it into a floating window, auto-closing brackets and quotes, skip-over for existing closers, empty-pair deletion, selection wrapping, Tab/Shift+Tab indent and dedent, brace-aware Enter indentation, Ctrl+/ comment toggling, class-name autocomplete, clickable gutter color swatches, and a Saved confirmation with Ctrl+S to force a save.
 - The Custom CSS help link points to the local [Styling Guide](./styling-guide.md).
 
 If something looks wrong with StyleChan enabled, check whether the same issue happens with StyleChan disabled. If disabling StyleChan fixes it, the issue is likely CSS order or a stronger selector from the StyleChan theme.
@@ -222,6 +222,11 @@ Advanced Filters:
 - `highlight:` accepts a comma-separated class list, for example `highlight:xt-hl-ff0000,my-class`.
 - `tile` makes catalog highlight filters glow the whole catalog tile instead of only the thumbnail. Example: `/4chan X/i;highlight;tile`.
 - The filter preview combines Simple Filters and the selected Advanced filter type so you can see expected matches before closing Settings.
+
+Hiding threads:
+
+- Shift+click the hide button to hide a thread (the default). The modifier is configurable through a keybind, so you can reassign it to whatever modifier(s) you prefer.
+- The `Undo last hide/filter` keybind (default `Ctrl+Z`) undoes recent thread hides and MD5 filters.
 
 ## Quick Reply And Posting
 

@@ -64,6 +64,14 @@ var Settings = {
   searchTerms: [] as string[],
   activeSection: null as any,
   renderedSection: null as any,
+  // Keybinds that are modifier-only and applied with a mouse click (e.g. hold
+  // Shift and click a catalog thread to hide it), not a keypress. They share the
+  // modifier-only input handling in Settings.keybind and get a "hold + click"
+  // badge so they aren't mistaken for ordinary keyboard shortcuts.
+  clickKeybinds: ['Watch (catalog click)', 'Hide thread (catalog click)'],
+  isClickKeybind(name: string): boolean {
+    return Settings.clickKeybinds.includes(name);
+  },
   rememberLayout: false,
   highlightNext: false,
   savedWindowLayout: '',
@@ -199,10 +207,6 @@ var Settings = {
     if (!link) return false;
     link.click();
     return true;
-  },
-
-  shouldDeferStylingToStylechan(): boolean {
-    return Settings.isStylechanInstalled();
   },
 
   // Maps a Styling subsection id to its master-switch Conf key. The title
@@ -2057,8 +2061,8 @@ Enable it on boards.${location.hostname.split('.')[1]}.org in your browser's pri
     // When StyleChan is present, each Styling subsection gets a master-switch
     // checkbox in its title (see setupStylingSectionToggles) so the user can
     // hand individual sections over to StyleChan. We surface a small info box at
-    // the top with shortcuts and the home-page mirror opt-in. Sections are no
-    // longer hidden — the per-section gates remove their effect when toggled off.
+    // the top with shortcuts. Sections are no longer hidden — the per-section
+    // gates remove their effect when toggled off.
     if (Settings.isStylechanInstalled()) {
       const refreshToggles = Settings.setupStylingSectionToggles(section);
 
@@ -2093,14 +2097,7 @@ Enable it on boards.${location.hostname.split('.')[1]}.org in your browser's pri
         Settings.applyStylingSectionRuntime();
       });
       $.add(buttons, [openButton, recommendButton]);
-      // Home-page mirror opt-in. The checkbox carries a real `name`, so the
-      // generic input wiring below binds/persists it like any other control.
-      const homeRow = $.el('label', {
-        className: 'styling-stylechan-home',
-        title: "Mirror StyleChan's current theme (and its custom CSS) on the 4chan home page, where StyleChan doesn't run. Captured while you browse a board, so visit one after switching themes.",
-        innerHTML: '<input type="checkbox" name="styleChanThemeHome"> Apply StyleChan\'s theme on home page',
-      });
-      $.add(box, [text, buttons, homeRow]);
+      $.add(box, [text, buttons]);
       section.insertBefore(box, section.firstChild);
     }
 
@@ -3689,12 +3686,352 @@ Enable it on boards.${location.hostname.split('.')[1]}.org in your browser's pri
     const themeSelect = $('#custom-css-theme', section) as HTMLSelectElement | null;
     const expandButton = $('#custom-css-expand', section) as HTMLButtonElement | null;
     const bracketToggle = $('#custom-css-bracket-highlight', section) as HTMLInputElement | null;
-    if (!editor || !highlight || !themeSelect || !expandButton || !bracketToggle) return;
+    const autocompleteToggle = $('#custom-css-autocomplete', section) as HTMLInputElement | null;
+    if (!editor || !highlight || !themeSelect || !expandButton || !bracketToggle || !autocompleteToggle) return;
+
+    const gutter = $('.custom-css-gutter', editor) as HTMLElement | null;
+    const gutterInner = gutter ? ($('.custom-css-gutter-inner', gutter) as HTMLElement | null) : null;
+    const colorInput = $('.ccss-color-input', editor) as HTMLInputElement | null;
 
     const syncScroll = () => {
       highlight.scrollTop = textarea.scrollTop;
       highlight.scrollLeft = textarea.scrollLeft;
+      if (gutterInner) gutterInner.style.transform = `translateY(${-textarea.scrollTop}px)`;
     };
+
+    // ── Colour swatches ────────────────────────────────────────────────────
+    // A clickable swatch in the left gutter on each line that contains a colour
+    // (hex / rgb(a) / hsl(a), outside comments & strings). Clicking opens the
+    // native picker; the chosen colour is written back in the line's original
+    // format, preserving any alpha the native picker can't edit. Lines never wrap
+    // (white-space:pre) so a swatch's Y is just lineIndex × line-height — no DOM
+    // measurement needed; the gutter scrolls via the transform in syncScroll.
+    const COLOR_RE = /#(?:[0-9a-f]{8}|[0-9a-f]{6}|[0-9a-f]{4}|[0-9a-f]{3})\b|(?:rgba?|hsla?)\([^)]*\)/gi;
+    const clamp255 = (n: number) => Math.max(0, Math.min(255, Math.round(n)));
+    const toHex2 = (n: number) => clamp255(n).toString(16).padStart(2, '0');
+    const rgbToHex = (r: number, g: number, b: number) => `#${toHex2(r)}${toHex2(g)}${toHex2(b)}`;
+    const fmtA = (a: number) => String(Math.round(a * 1000) / 1000);
+
+    const hslToRgb = (h: number, s: number, l: number) => {
+      h = (((h % 360) + 360) % 360) / 360;
+      if (s === 0) { const v = l * 255; return { r: v, g: v, b: v }; }
+      const hue = (p: number, q: number, t: number) => {
+        if (t < 0) t += 1; if (t > 1) t -= 1;
+        if (t < 1 / 6) return p + (q - p) * 6 * t;
+        if (t < 1 / 2) return q;
+        if (t < 2 / 3) return p + (q - p) * (2 / 3 - t) * 6;
+        return p;
+      };
+      const q = l < 0.5 ? l * (1 + s) : l + s - l * s;
+      const p = 2 * l - q;
+      return { r: hue(p, q, h + 1 / 3) * 255, g: hue(p, q, h) * 255, b: hue(p, q, h - 1 / 3) * 255 };
+    };
+    const rgbToHsl = (r: number, g: number, b: number) => {
+      r /= 255; g /= 255; b /= 255;
+      const max = Math.max(r, g, b), min = Math.min(r, g, b);
+      let h = 0, s = 0; const l = (max + min) / 2;
+      if (max !== min) {
+        const dd = max - min;
+        s = l > 0.5 ? dd / (2 - max - min) : dd / (max + min);
+        h = max === r ? (g - b) / dd + (g < b ? 6 : 0)
+          : max === g ? (b - r) / dd + 2
+          : (r - g) / dd + 4;
+        h /= 6;
+      }
+      return { h: Math.round(h * 360), s: Math.round(s * 100), l: Math.round(l * 100) };
+    };
+
+    type ParsedColor = { r: number; g: number; b: number; a: number | undefined; format: string };
+    const parseColor = (raw: string): ParsedColor | null => {
+      const str = raw.trim();
+      let m: RegExpMatchArray | null;
+      if ((m = str.match(/^#([0-9a-f]{3,8})$/i))) {
+        const h = m[1];
+        const hx = (a: number, b: number) => parseInt(h.slice(a, b), 16);
+        if (h.length === 3) return { r: hx(0, 1) * 17, g: hx(1, 2) * 17, b: hx(2, 3) * 17, a: undefined, format: 'hex' };
+        if (h.length === 4) return { r: hx(0, 1) * 17, g: hx(1, 2) * 17, b: hx(2, 3) * 17, a: hx(3, 4) * 17 / 255, format: 'hexa' };
+        if (h.length === 6) return { r: hx(0, 2), g: hx(2, 4), b: hx(4, 6), a: undefined, format: 'hex' };
+        if (h.length === 8) return { r: hx(0, 2), g: hx(2, 4), b: hx(4, 6), a: hx(6, 8) / 255, format: 'hexa' };
+        return null;
+      }
+      if ((m = str.match(/^rgba?\(([^)]*)\)$/i))) {
+        const p = m[1].split(/[,/\s]+/).filter(Boolean);
+        if (p.length < 3) return null;
+        const n = (s: string) => s.endsWith('%') ? parseFloat(s) * 255 / 100 : parseFloat(s);
+        const r = n(p[0]), g = n(p[1]), b = n(p[2]);
+        if ([r, g, b].some(isNaN)) return null;
+        const a = p[3] != null ? (p[3].endsWith('%') ? parseFloat(p[3]) / 100 : parseFloat(p[3])) : undefined;
+        return { r, g, b, a, format: a == null ? 'rgb' : 'rgba' };
+      }
+      if ((m = str.match(/^hsla?\(([^)]*)\)$/i))) {
+        const p = m[1].split(/[,/\s]+/).filter(Boolean);
+        if (p.length < 3) return null;
+        const h = parseFloat(p[0]), s = parseFloat(p[1]) / 100, l = parseFloat(p[2]) / 100;
+        if ([h, s, l].some(isNaN)) return null;
+        const a = p[3] != null ? (p[3].endsWith('%') ? parseFloat(p[3]) / 100 : parseFloat(p[3])) : undefined;
+        const c = hslToRgb(h, s, l);
+        return { r: c.r, g: c.g, b: c.b, a, format: a == null ? 'hsl' : 'hsla' };
+      }
+      return null;
+    };
+
+    const formatColor = (format: string, r: number, g: number, b: number, a: number | undefined) => {
+      r = clamp255(r); g = clamp255(g); b = clamp255(b);
+      switch (format) {
+        case 'hexa': return rgbToHex(r, g, b) + toHex2((a ?? 1) * 255);
+        case 'rgb':  return `rgb(${r}, ${g}, ${b})`;
+        case 'rgba': return `rgba(${r}, ${g}, ${b}, ${fmtA(a ?? 1)})`;
+        case 'hsl':  { const c = rgbToHsl(r, g, b); return `hsl(${c.h}, ${c.s}%, ${c.l}%)`; }
+        case 'hsla': { const c = rgbToHsl(r, g, b); return `hsla(${c.h}, ${c.s}%, ${c.l}%, ${fmtA(a ?? 1)})`; }
+        default:     return rgbToHex(r, g, b);
+      }
+    };
+
+    let activeSwatch: HTMLElement | null = null;
+
+    const openColorPicker = (sw: HTMLElement) => {
+      if (!colorInput) return;
+      activeSwatch = sw;
+      const cur = parseColor(textarea.value.slice(+sw.dataset.start!, +sw.dataset.end!));
+      colorInput.value = cur ? rgbToHex(cur.r, cur.g, cur.b) : '#000000';
+      const r = sw.getBoundingClientRect();
+      colorInput.style.left = `${r.left}px`;
+      colorInput.style.top = `${r.bottom}px`;
+      colorInput.click();
+    };
+
+    const renderSwatches = () => {
+      if (!gutterInner) return;
+      gutterInner.textContent = '';
+      const text = textarea.value;
+      const ignored = Settings.customCSSIgnoredCharMask(text);
+      const cs = window.getComputedStyle(textarea);
+      const lineHeight = parseFloat(cs.lineHeight) || 17;
+      const padTop = parseFloat(cs.paddingTop) || 8;
+      const seen = new Set<number>();
+      let line = 0, scan = 0;
+      COLOR_RE.lastIndex = 0;
+      let m: RegExpExecArray | null;
+      while ((m = COLOR_RE.exec(text))) {
+        const start = m.index;
+        while (scan < start) { if (text[scan] === '\n') line++; scan++; }
+        if (ignored[start] || seen.has(line)) continue;
+        const parsed = parseColor(m[0]);
+        if (!parsed) continue;
+        seen.add(line);
+        const sw = $.el('button', { className: 'ccss-swatch', type: 'button' }) as HTMLButtonElement;
+        sw.style.top = `${padTop + line * lineHeight + (lineHeight - 13) / 2}px`;
+        sw.style.background = rgbToHex(parsed.r, parsed.g, parsed.b);
+        sw.dataset.start = String(start);
+        sw.dataset.end = String(start + m[0].length);
+        sw.dataset.format = parsed.format;
+        sw.dataset.alpha = parsed.a == null ? '' : String(parsed.a);
+        sw.title = m[0];
+        $.on(sw, 'mousedown', (e: Event) => e.preventDefault());
+        $.on(sw, 'click', (e: Event) => { e.preventDefault(); openColorPicker(sw); });
+        $.add(gutterInner, sw);
+      }
+    };
+
+    if (colorInput) $.on(colorInput, 'change', () => {
+      const sw = activeSwatch;
+      activeSwatch = null;
+      if (!sw) return;
+      const start = +sw.dataset.start!, end = +sw.dataset.end!;
+      if (!parseColor(textarea.value.slice(start, end))) return; // text shifted under us
+      const picked = parseColor(colorInput.value);
+      if (!picked) return;
+      const alpha = sw.dataset.alpha ? parseFloat(sw.dataset.alpha) : undefined;
+      const replacement = formatColor(sw.dataset.format || 'hex', picked.r, picked.g, picked.b, alpha);
+      textarea.focus();
+      textarea.setSelectionRange(start, end);
+      let ok = false;
+      try { ok = d.execCommand('insertText', false, replacement); } catch {}
+      if (!ok) {
+        textarea.value = textarea.value.slice(0, start) + replacement + textarea.value.slice(end);
+        textarea.setSelectionRange(start + replacement.length, start + replacement.length);
+      }
+      Settings.renderCustomCSSHighlight(textarea, highlight);
+      renderSwatches();
+      $.event('change', null, textarea); // persist + Saved flash
+    });
+
+    // Briefly flash the "Saved" badge. Fires on every commit — autosave (the
+    // textarea's change event on blur) and the Ctrl+S reflex alike, since that
+    // shortcut just dispatches change (see bindCustomCSSEditorKeys).
+    let savedFlashTimer = 0;
+    const flashSaved = () => {
+      const badge = $('.custom-css-saved', editor) as HTMLElement | null;
+      if (!badge) return;
+      badge.dataset.show = 'true';
+      clearTimeout(savedFlashTimer);
+      savedFlashTimer = window.setTimeout(() => { badge.dataset.show = 'false'; }, 900);
+    };
+
+    // ── Detach into a floating, draggable, resizable panel ─────────────────
+    // "Detach" lifts the entire Custom CSS section (toggles, controls, editor)
+    // out of the scrolling settings page into a free-floating window. We
+    // *relocate* the live <details> node (not a clone) so every wired listener
+    // keeps working, leaving a "Re-attach" note in its place. The panel is added
+    // inside `section` (which carries `section-styling`) so the editor's theme
+    // rules — scoped under that class — still match; position:fixed keeps it
+    // viewport-anchored regardless. Closing Settings removes the panel with it,
+    // and reopening renders the section docked again.
+    const detachButton = $('#custom-css-detach', section) as HTMLButtonElement | null;
+    const detailsEl = editor.closest('.styling-custom-css') as HTMLDetailsElement | null;
+    let panel: HTMLElement | null = null;
+    let detachNote: HTMLElement | null = null;
+    let panelResizeObserver: ResizeObserver | null = null;
+    let panelSaveTimer = 0;
+
+    const writePanelRect = () => {
+      if (!panel) return;
+      const r = panel.getBoundingClientRect();
+      $.set('settings.customCSSPanel', {
+        left: Math.round(r.left), top: Math.round(r.top),
+        width: Math.round(r.width), height: Math.round(r.height),
+      });
+    };
+    // Debounced so a drag-resize (which fires the observer continuously) doesn't
+    // hammer storage; closeDetach flushes the final rect synchronously.
+    const savePanelRect = () => {
+      clearTimeout(panelSaveTimer);
+      panelSaveTimer = window.setTimeout(writePanelRect, 250);
+    };
+
+    // The editor's theme vars don't inherit upward, so copy their resolved values
+    // onto the panel to keep its chrome matching the active syntax theme.
+    const refreshPanelTheme = () => {
+      if (!panel) return;
+      const ecs = window.getComputedStyle(editor);
+      for (const v of ['--custom-css-bg', '--custom-css-text', '--custom-css-border']) {
+        panel.style.setProperty(v, ecs.getPropertyValue(v));
+      }
+    };
+
+    // Default geometry: a large, centered window sized to the viewport.
+    const centerPanelDefault = () => {
+      if (!panel) return;
+      const maxW = window.innerWidth, maxH = window.innerHeight;
+      const w = Math.min(1100, Math.round(maxW * 0.96));
+      const h = Math.min(820, Math.round(maxH * 0.92));
+      panel.style.width = `${w}px`;
+      panel.style.height = `${h}px`;
+      panel.style.left = `${Math.round((maxW - w) / 2)}px`;
+      panel.style.top = `${Math.round((maxH - h) / 2)}px`;
+      syncScroll();
+    };
+    // Reset button: recentre at the default size and persist it so it sticks.
+    const resetPanel = () => {
+      centerPanelDefault();
+      writePanelRect();
+    };
+
+    const onBarMousedown = (e: MouseEvent) => {
+      if (e.button !== 0 || !panel) return;
+      if ((e.target as HTMLElement).closest('button')) return; // let the close button click
+      e.preventDefault();
+      const rect = panel.getBoundingClientRect();
+      const dx = e.clientX - rect.left;
+      const dy = e.clientY - rect.top;
+      const onMove = (me: MouseEvent) => {
+        if (!panel) return;
+        const left = Math.max(0, Math.min(me.clientX - dx, window.innerWidth - panel.offsetWidth));
+        const top = Math.max(0, Math.min(me.clientY - dy, window.innerHeight - panel.offsetHeight));
+        panel.style.left = `${left}px`;
+        panel.style.top = `${top}px`;
+      };
+      const onUp = () => {
+        $.off(d, 'mousemove', onMove);
+        $.off(d, 'mouseup', onUp);
+        writePanelRect();
+      };
+      $.on(d, 'mousemove', onMove);
+      $.on(d, 'mouseup', onUp);
+    };
+
+    const closeDetach = () => {
+      if (!panel) return;
+      panelResizeObserver?.disconnect();
+      panelResizeObserver = null;
+      clearTimeout(panelSaveTimer);
+      writePanelRect();
+      if (detachNote?.parentNode && detailsEl) {
+        detachNote.parentNode.insertBefore(detailsEl, detachNote);
+        detachNote.remove();
+      }
+      detachNote = null;
+      if (detailsEl) delete detailsEl.dataset.detached;
+      $.rm(panel);
+      panel = null;
+      if (detachButton) detachButton.dataset.open = 'false';
+      syncScroll();
+    };
+
+    const openDetach = () => {
+      if (panel || !detailsEl) return;
+
+      // Mark the spot with a visible "Re-attach" note (also our restore anchor).
+      detachNote = $.el('div', {
+        className: 'custom-css-detached-note',
+        innerHTML: 'Custom CSS is detached. <button type="button" class="custom-css-reattach">Re-attach</button>',
+      }) as HTMLElement;
+      detailsEl.parentNode!.insertBefore(detachNote, detailsEl);
+      $.on($('.custom-css-reattach', detachNote) as HTMLElement, 'click', closeDetach);
+
+      panel = $.el('div', {
+        className: 'custom-css-panel',
+        innerHTML:
+          '<div class="custom-css-panel-bar">' +
+            '<span class="custom-css-panel-title">Custom CSS</span>' +
+            '<span class="custom-css-panel-actions">' +
+              '<button type="button" class="custom-css-panel-reset" title="Reset size and position">Reset</button>' +
+              '<button type="button" class="custom-css-panel-close" title="Re-attach">×</button>' +
+            '</span>' +
+          '</div>' +
+          '<div class="custom-css-panel-body"></div>',
+      }) as HTMLElement;
+
+      const bar = $('.custom-css-panel-bar', panel) as HTMLElement;
+      const body = $('.custom-css-panel-body', panel) as HTMLElement;
+      detailsEl.open = true;
+      detailsEl.dataset.detached = 'true';
+      $.add(body, detailsEl);
+
+      $.on($('.custom-css-panel-close', panel) as HTMLElement, 'click', closeDetach);
+      $.on($('.custom-css-panel-reset', panel) as HTMLElement, 'click', resetPanel);
+      $.on(bar, 'mousedown', onBarMousedown as (e: Event) => void);
+
+      $.add(section, panel);
+      refreshPanelTheme();
+
+      // Restore saved geometry (clamped to the viewport) or centre at a default.
+      $.get({ 'settings.customCSSPanel': null }, (prefs: Record<string, any>) => {
+        if (!panel) return;
+        const saved = prefs['settings.customCSSPanel'];
+        if (saved && saved.width) {
+          const maxW = window.innerWidth, maxH = window.innerHeight;
+          const w = Math.min(saved.width, maxW - 20);
+          const h = Math.min(saved.height, maxH - 20);
+          panel.style.width = `${w}px`;
+          panel.style.height = `${h}px`;
+          panel.style.left = `${Math.max(0, Math.min(saved.left, maxW - w))}px`;
+          panel.style.top = `${Math.max(0, Math.min(saved.top, maxH - h))}px`;
+          syncScroll();
+        } else {
+          centerPanelDefault();
+        }
+        // Observe only after the initial size so we don't persist transient
+        // pre-layout dimensions.
+        panelResizeObserver = new ResizeObserver(savePanelRect);
+        panelResizeObserver.observe(panel);
+      });
+
+      if (detachButton) detachButton.dataset.open = 'true';
+      textarea.focus();
+    };
+
+    if (detachButton) $.on(detachButton, 'click', () => (panel ? closeDetach() : openDetach()));
 
     const updateExpandedState = (expanded: boolean, save = false) => {
       editor.dataset.expanded = expanded ? 'true' : 'false';
@@ -3707,6 +4044,10 @@ Enable it on boards.${location.hostname.split('.')[1]}.org in your browser's pri
     const updateTheme = (save = false) => {
       const choice = themeSelect.value || 'xt-system';
       editor.dataset.theme = Settings.resolveCustomCSSEditorTheme(choice);
+      // Pin live-sampled colours when StyleChan/custom themes leave no native
+      // class to drive the palette; clears the overrides for every other theme.
+      Settings.applyCustomCSSEditorSystemColors(editor);
+      refreshPanelTheme(); // keep the detached panel chrome in sync (no-op when docked)
       if (save) $.set('settings.customCSSEditorTheme', choice);
     };
 
@@ -3718,21 +4059,36 @@ Enable it on boards.${location.hostname.split('.')[1]}.org in your browser's pri
       syncScroll();
     };
 
+    // Class-name autocomplete reads this dataset flag (see bindCustomCSSEditorKeys),
+    // so toggling it here turns the popup on/off without rewiring the editor.
+    const updateAutocomplete = (enabled: boolean, save = false) => {
+      autocompleteToggle.checked = enabled;
+      editor.dataset.autocomplete = enabled ? 'true' : 'false';
+      if (save) $.set('settings.customCSSEditorAutocomplete', enabled);
+    };
+
     const renderForCaret = () => {
       if (bracketToggle.checked) Settings.renderCustomCSSHighlight(textarea, highlight);
     };
 
-    $.on(textarea, 'input', () => Settings.renderCustomCSSHighlight(textarea, highlight));
+    $.on(textarea, 'input', () => { Settings.renderCustomCSSHighlight(textarea, highlight); renderSwatches(); });
+    // Re-measure swatch positions once the editor is actually on-screen (the
+    // initial render can run while the Styling tab is hidden, where line-height
+    // isn't resolvable and falls back to an approximation).
+    $.on(textarea, 'focus', renderSwatches);
     $.on(textarea, 'keyup mouseup select focus', renderForCaret);
     $.on(textarea, 'scroll', syncScroll);
     Settings.bindCustomCSSEditorKeys(textarea, highlight);
     $.on(textarea, 'change', () => {
       Settings.renderCustomCSSHighlight(textarea, highlight);
+      renderSwatches();
       if (Conf['Custom CSS']) CustomCSS.update();
+      flashSaved();
     });
     $.on(themeSelect, 'change', () => updateTheme(true));
     $.on(expandButton, 'click', () => updateExpandedState(editor.dataset.expanded !== 'true', true));
     $.on(bracketToggle, 'change', () => updateBracketHighlight(bracketToggle.checked, true));
+    $.on(autocompleteToggle, 'change', () => updateAutocomplete(autocompleteToggle.checked, true));
     Settings.customCSSEditorThemeObserver?.disconnect();
     Settings.customCSSEditorThemeObserver = new MutationObserver(() => {
       if (themeSelect.value === 'xt-system') updateTheme(false);
@@ -3746,16 +4102,20 @@ Enable it on boards.${location.hostname.split('.')[1]}.org in your browser's pri
       'settings.customCSSEditorTheme': 'xt-system',
       'settings.customCSSEditorExpanded': false,
       'settings.customCSSEditorBracketHighlight': false,
+      'settings.customCSSEditorAutocomplete': true,
     }, prefs => {
       const theme = prefs['settings.customCSSEditorTheme'];
       const expanded = !!prefs['settings.customCSSEditorExpanded'];
       const bracketHighlight = prefs['settings.customCSSEditorBracketHighlight'] !== false;
+      const autocomplete = prefs['settings.customCSSEditorAutocomplete'] !== false;
 
       themeSelect.value = ['xt-system', 'xt-light', 'xt-dark', 'xt-solarized'].includes(theme) ? theme : 'xt-system';
 
       updateTheme(false);
       updateExpandedState(expanded, false);
       updateBracketHighlight(bracketHighlight, false);
+      updateAutocomplete(autocomplete, false);
+      renderSwatches();
       syncScroll();
     });
   },
@@ -3810,7 +4170,261 @@ Enable it on boards.${location.hostname.split('.')[1]}.org in your browser's pri
       return (val.slice(lineStart, pos).match(/^[ \t]*/) || [''])[0];
     };
 
+    // Ctrl/Cmd+/ — toggle a CSS comment over the selection. CSS has only block
+    // comments, so a single line becomes `/* line */` and a multi-line selection
+    // is wrapped once (nested) rather than commenting each line individually.
+    // Uncommenting also recognises the old per-line `/* */` style so existing
+    // comments still toggle off. The block is replaced in one execCommand so it
+    // stays a single undo step.
+    const COMMENTED = /^(\s*)\/\*\s?([\s\S]*?)\s?\*\/(\s*)$/;
+    // CSS can't nest comments, so when wrapping a selection that itself contains
+    // `/* */`, slip a zero-width space between the two delimiter chars. The pair
+    // no longer terminates the outer comment but still looks identical, and
+    // unshield restores it on uncomment — making nested comments round-trip.
+    const ZW = '\u200B';
+    const shield = (s: string) => s.replace(/\*\//g, `*${ZW}/`).replace(/\/\*/g, `/${ZW}*`);
+    const unshield = (s: string) => s.replace(/\*\u200B\//g, '*/').replace(/\/\u200B\*/g, '/*');
+    const toggleComment = () => {
+      const val = textarea.value;
+      const selStart = textarea.selectionStart;
+      let selEnd = textarea.selectionEnd;
+      // A selection ending exactly at a line break shouldn't pull in the next line.
+      if (selEnd > selStart && val[selEnd - 1] === '\n') selEnd--;
+      const blockStart = val.lastIndexOf('\n', selStart - 1) + 1;
+      let blockEnd = val.indexOf('\n', selEnd);
+      if (blockEnd === -1) blockEnd = val.length;
+
+      const block = val.slice(blockStart, blockEnd);
+      const lead = (block.match(/^\s*/) || [''])[0];   // indent / blank lines before content
+      const trail = (block.match(/\s*$/) || [''])[0];  // trailing whitespace after content
+      const core = block.slice(lead.length, block.length - trail.length);
+      if (!core.length) return; // nothing but whitespace selected
+
+      const lines = block.split('\n');
+      const nonBlank = lines.filter(l => l.trim().length);
+      const wrapped = core.match(/^\/\*\s?([\s\S]*?)\s?\*\/$/); // whole selection is one comment
+
+      let next: string;
+      if (nonBlank.length > 0 && nonBlank.every(l => COMMENTED.test(l))) {
+        // Uncomment: covers a single one-line comment and the old per-line style.
+        next = lines.map(l => {
+          if (!l.trim().length) return l;
+          const m = l.match(COMMENTED);
+          return m ? m[1] + unshield(m[2]) + m[3] : l;
+        }).join('\n');
+      } else if (wrapped) {
+        // Unwrap a single block comment, restoring any shielded inner comments.
+        next = lead + unshield(wrapped[1]) + trail;
+      } else {
+        // Comment: wrap the whole selection in one `/* */`, shielding inner
+        // `/* */` so they don't prematurely close it.
+        next = lead + `/* ${shield(core)} */` + trail;
+      }
+
+      textarea.selectionStart = blockStart;
+      textarea.selectionEnd = blockEnd;
+      let ok = false;
+      try { ok = d.execCommand('insertText', false, next); } catch {}
+      if (!ok) textarea.value = val.slice(0, blockStart) + next + val.slice(blockEnd);
+      // Keep the transformed block selected so a repeat press toggles it back.
+      textarea.selectionStart = blockStart;
+      textarea.selectionEnd = blockStart + next.length;
+      refresh();
+    };
+
+    // ── Live class-name autocomplete ──────────────────────────────────────
+    // Typing a `.class` selector suggests class names that actually exist on the
+    // page. Matching is a cheap filter over a list collected once; the popup is
+    // positioned arithmetically (monospace, space-indented editor) so there's no
+    // per-keystroke layout work, and it's hosted in the overlay (position:fixed)
+    // so the editor's overflow:hidden can't clip it near the edges.
+    const editor = textarea.closest('.custom-css-editor') as HTMLElement | null;
+    const AC_MAX = 12;
+    let acItems: string[] = [];
+    let acActive = 0;
+    let acTokenStart = 0;
+    let acDropdown: HTMLElement | null = null;
+    let acSuppress = false;
+    let pageClasses: string[] | null = null;
+    let charWidth = 0;
+
+    const collectClasses = () => {
+      if (pageClasses) return pageClasses;
+      const set = new Set<string>();
+      for (const el of d.querySelectorAll('[class]')) {
+        if (Settings.dialog?.contains(el)) continue; // skip our own settings UI
+        for (const c of (el as HTMLElement).classList) {
+          if (c.length <= 40 && /^[-_a-zA-Z][-\w]*$/.test(c)) set.add(c);
+        }
+      }
+      pageClasses = Array.from(set).sort((a, b) => a.localeCompare(b));
+      return pageClasses;
+    };
+
+    const measureCharWidth = () => {
+      if (charWidth) return charWidth;
+      const cs = window.getComputedStyle(textarea);
+      const probe = $.el('span', { textContent: 'x'.repeat(80) }) as HTMLElement;
+      probe.style.cssText = 'position:absolute;visibility:hidden;white-space:pre;top:0;left:0';
+      probe.style.fontFamily = cs.fontFamily;
+      probe.style.fontSize = cs.fontSize;
+      probe.style.fontWeight = cs.fontWeight;
+      probe.style.fontStyle = cs.fontStyle;
+      probe.style.letterSpacing = cs.letterSpacing;
+      $.add(d.body, probe);
+      charWidth = probe.getBoundingClientRect().width / 80;
+      $.rm(probe);
+      return charWidth || 7;
+    };
+
+    // The `.partial` class token immediately left of the caret, or null.
+    const acToken = () => {
+      const pos = textarea.selectionStart;
+      if (pos !== textarea.selectionEnd) return null;
+      const lineStart = textarea.value.lastIndexOf('\n', pos - 1) + 1;
+      const left = textarea.value.slice(lineStart, pos);
+      const m = left.match(/\.([-\w]*)$/);
+      if (!m) return null;
+      // Skip decimals like `0.5` — a class dot is never preceded by a digit
+      // (but `div.foo` legitimately is preceded by a letter, so only block digits).
+      if (m.index! > 0 && /\d/.test(left[m.index! - 1])) return null;
+      return { partial: m[1], start: pos - m[1].length };
+    };
+
+    const acFilter = (partial: string) => {
+      const all = collectClasses();
+      if (!partial) return all.slice(0, AC_MAX);
+      const p = partial.toLowerCase();
+      const starts: string[] = [], contains: string[] = [];
+      for (const c of all) {
+        const lc = c.toLowerCase();
+        if (lc.startsWith(p)) starts.push(c);
+        else if (lc.includes(p)) contains.push(c);
+        if (starts.length >= AC_MAX) break;
+      }
+      return starts.concat(contains).slice(0, AC_MAX);
+    };
+
+    const acIsOpen = () => !!acDropdown && !acDropdown.hidden;
+
+    const closeAC = () => {
+      if (acDropdown) acDropdown.hidden = true;
+      acItems = [];
+      acActive = 0;
+    };
+
+    const positionAC = () => {
+      if (!acDropdown) return;
+      const cs = window.getComputedStyle(textarea);
+      const padL = parseFloat(cs.paddingLeft) || 0;
+      const padT = parseFloat(cs.paddingTop) || 0;
+      const lineH = parseFloat(cs.lineHeight) || (parseFloat(cs.fontSize) * 1.42) || 17;
+      const pos = textarea.selectionStart;
+      const upto = textarea.value.slice(0, pos);
+      const row = (upto.match(/\n/g) || []).length;
+      const col = pos - (upto.lastIndexOf('\n') + 1);
+      const taRect = textarea.getBoundingClientRect();
+      let x = taRect.left + padL + col * measureCharWidth() - textarea.scrollLeft;
+      const y = taRect.top + padT + row * lineH - textarea.scrollTop;
+      x = Math.max(taRect.left, Math.min(x, taRect.right - acDropdown.offsetWidth - 4));
+      const below = y + lineH;
+      const h = acDropdown.offsetHeight;
+      const top = (below + h > taRect.bottom && y - h > taRect.top) ? y - h : below;
+      acDropdown.style.left = `${Math.round(x)}px`;
+      acDropdown.style.top = `${Math.round(top)}px`;
+    };
+
+    const acceptAC = () => {
+      if (!acIsOpen() || !acItems.length) { closeAC(); return; }
+      const choice = acItems[acActive];
+      const pos = textarea.selectionStart;
+      acSuppress = true; // the insert below fires `input`; don't reopen on it
+      textarea.selectionStart = acTokenStart;
+      textarea.selectionEnd = pos;
+      insert(choice);
+      closeAC();
+      refresh();
+    };
+
+    const renderAC = () => {
+      if (!acDropdown) {
+        acDropdown = $.el('div', { className: 'css-autocomplete' }) as HTMLElement;
+        acDropdown.hidden = true;
+        $.add(Settings.dialog || d.body, acDropdown);
+        // Keep textarea focus when interacting with the popup.
+        $.on(acDropdown, 'mousedown', (ev: Event) => ev.preventDefault());
+      }
+      if (editor) {
+        const ecs = window.getComputedStyle(editor);
+        acDropdown.style.setProperty('--ac-bg', ecs.getPropertyValue('--custom-css-bg') || '#fff');
+        acDropdown.style.setProperty('--ac-fg', ecs.getPropertyValue('--custom-css-text') || '#222');
+        acDropdown.style.setProperty('--ac-border', ecs.getPropertyValue('--custom-css-border') || 'rgba(128,128,128,.4)');
+      }
+      acDropdown.textContent = '';
+      acItems.forEach((name, i) => {
+        const item = $.el('div', { className: 'css-ac-item', textContent: name }) as HTMLElement;
+        if (i === acActive) item.classList.add('active');
+        $.on(item, 'click', () => { acActive = i; acceptAC(); });
+        $.add(acDropdown as HTMLElement, item);
+      });
+      acDropdown.hidden = false;
+      positionAC();
+    };
+
+    const updateAC = () => {
+      if (acSuppress) { acSuppress = false; closeAC(); return; }
+      if (editor?.dataset.autocomplete === 'false') { closeAC(); return; } // disabled via toolbar toggle
+      const tok = acToken();
+      if (!tok) { closeAC(); return; }
+      const matches = acFilter(tok.partial);
+      if (!matches.length) { closeAC(); return; }
+      acItems = matches;
+      acTokenStart = tok.start;
+      if (acActive >= matches.length) acActive = 0;
+      renderAC();
+    };
+
+    const moveAC = (dir: number) => {
+      if (!acItems.length) return;
+      acActive = (acActive + dir + acItems.length) % acItems.length;
+      renderAC();
+      (acDropdown?.querySelector('.css-ac-item.active') as HTMLElement | null)
+        ?.scrollIntoView({ block: 'nearest' });
+    };
+
+    $.on(textarea, 'input', updateAC);
+    $.on(textarea, 'blur', () => setTimeout(closeAC, 120));
+    $.on(textarea, 'scroll', () => { if (acIsOpen()) positionAC(); });
+    $.on(textarea, 'click', () => { if (acIsOpen()) updateAC(); });
+
     $.on(textarea, 'keydown', (e: KeyboardEvent) => {
+      // Autocomplete navigation takes over the arrow/enter/tab/escape keys while
+      // the popup is open, before the editor's own handling of them.
+      if (acIsOpen()) {
+        if (e.key === 'ArrowDown') { e.preventDefault(); moveAC(1); return; }
+        if (e.key === 'ArrowUp')   { e.preventDefault(); moveAC(-1); return; }
+        if (e.key === 'Enter' || e.key === 'Tab') { e.preventDefault(); acceptAC(); return; }
+        if (e.key === 'Escape') { e.preventDefault(); e.stopPropagation(); closeAC(); return; }
+      }
+      // Ctrl/Cmd+/ toggles comments — handled before the modifier guard below.
+      // Match on the produced character so layouts where "/" needs Shift still work.
+      if ((e.ctrlKey || e.metaKey) && !e.altKey && e.key === '/') {
+        e.preventDefault();
+        toggleComment();
+        return;
+      }
+      // Ctrl/Cmd+S — the editor autosaves on change, but people reflexively press
+      // save. Dispatch change to commit now (persist + live style update + the
+      // "Saved" flash, all wired on the change handler), and stop the event before
+      // it reaches the browser's save-page dialog and the global keybind handler,
+      // which would otherwise insert a [spoiler] tag (Spoiler tags defaults to
+      // Ctrl+s, scoped to any textarea).
+      if ((e.ctrlKey || e.metaKey) && !e.altKey && (e.key === 's' || e.key === 'S')) {
+        e.preventDefault();
+        e.stopPropagation();
+        $.event('change', null, textarea);
+        return;
+      }
       if (e.ctrlKey || e.metaKey || e.altKey) return;
       const val = textarea.value;
       const start = textarea.selectionStart;
@@ -3912,7 +4526,44 @@ Enable it on boards.${location.hostname.split('.')[1]}.org in your browser's pri
     if (classList.contains('yotsuba')) return 'xt-system-yotsuba';
     if (classList.contains('futaba')) return 'xt-system-futaba';
     if (classList.contains('photon')) return 'xt-system-photon';
-    return 'xt-system-default';
+    // No native 4chan theme class on <html> — e.g. StyleChan or a custom site
+    // theme is driving the page. The class-scoped --xt-* palette vars aren't
+    // present either, so the static CSS palette would fall back to white.
+    // Signal updateTheme to sample the live, rendered colours instead.
+    return 'xt-system-live';
+  },
+
+  // When the editor is in "Match site" mode but no native theme class is on
+  // <html> (StyleChan / custom site theme), read the colours actually painted on
+  // the page and pin them onto the editor so it follows the real look instead of
+  // defaulting to white. For every other theme this clears the overrides and lets
+  // the static CSS palette govern.
+  applyCustomCSSEditorSystemColors(editor: HTMLElement) {
+    const clear = () => {
+      for (const v of ['--custom-css-bg', '--custom-css-text', '--custom-css-caret', '--custom-css-border']) {
+        editor.style.removeProperty(v);
+      }
+      editor.style.colorScheme = '';
+    };
+    if (editor.dataset.theme !== 'xt-system-live') { clear(); return; }
+    const sample = (el: Element | null) => {
+      if (!el) return null;
+      const cs = window.getComputedStyle(el);
+      const m = cs.backgroundColor.match(/[\d.]+/g);
+      const opaque = m && m.length >= 3 && !(m[3] !== undefined && parseFloat(m[3]) === 0);
+      return opaque ? { bg: cs.backgroundColor, fg: cs.color } : null;
+    };
+    const colors = sample(d.body) || sample(d.documentElement);
+    if (!colors) { clear(); return; }
+    editor.style.setProperty('--custom-css-bg', colors.bg);
+    editor.style.setProperty('--custom-css-text', colors.fg);
+    editor.style.setProperty('--custom-css-caret', colors.fg);
+    const fg = colors.fg.match(/[\d.]+/g);
+    if (fg && fg.length >= 3) {
+      editor.style.setProperty('--custom-css-border', `rgba(${fg[0]}, ${fg[1]}, ${fg[2]}, .35)`);
+      // Light text ⇒ dark theme; keep the textarea's own caret/selection chrome aligned.
+      editor.style.colorScheme = $.luma([+fg[0], +fg[1], +fg[2]]) > 128 ? 'dark' : 'light';
+    }
   },
 
   refreshCustomCSSEditor(section: HTMLElement) {
@@ -7757,8 +8408,11 @@ Enable it on boards.${location.hostname.split('.')[1]}.org in your browser's pri
     const inputs = Settings.keyBindInputs;
     for (key in Config.hotkeys) {
       var arr = Config.hotkeys[key];
+      var marker = Settings.isClickKeybind(key)
+        ? '<span class="keybind-click-marker" title="Click modifier — hold the keys and click.">*</span>'
+        : '';
       var tr = $.el('tr',
-        { innerHTML: `<td class="setting-title">${arr[1]}</td><td><input class="field"></td>` });
+        { innerHTML: `<td class="setting-title">${marker}${arr[1]}</td><td><input class="field"></td>` });
       tr.dataset.name = `${key} ${arr[1]}`;
       tr.dataset.settingTitle = arr[1];
       tr.dataset.settingDescription = key;
@@ -7785,7 +8439,7 @@ Enable it on boards.${location.hostname.split('.')[1]}.org in your browser's pri
     e.preventDefault();
     e.stopPropagation();
     const key = Keybinds.keyCode(e);
-    if (this.name === 'Watch (catalog click)') {
+    if (Settings.isClickKeybind(this.name)) {
       if (key === '') { // backspace clears
         this.value = '';
         $.cb.value.call(this);

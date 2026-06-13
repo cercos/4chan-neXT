@@ -1,5 +1,18 @@
 ## 4chan-neXT changelog
 
+### 1.1.4 (2026-06-12)
+
+- Added a keybind for the hide modifier, so the default Shift+click to hide can be reassigned to whatever modifier(s) you want.
+- Added an "Undo last hide/filter" keybind (default Ctrl+Z) to undo recent thread hides and MD5 filters.
+- Added Ctrl+/ to comment and uncomment the selection in the Custom CSS editor; multi-line selections are wrapped in a single comment, and comments nested inside it survive the round-trip.
+- Added live class-name autocomplete in the Custom CSS editor, suggesting classes that exist on the page, with a toggle to turn it off.
+- Added clickable color swatches in the Custom CSS editor's left gutter for each line with a color (hex, rgb/rgba, hsl/hsla); clicking one opens the native color picker and writes the result back in the line's original format, preserving any alpha.
+- Added a "Detach" button to the Custom CSS editor that pops the whole section out into a floating, draggable, resizable window so you can edit with more room.
+- Custom CSS now flashes a "Saved" confirmation when it autosaves, and Ctrl+S in the editor forces a save.
+- The scrollbar now follows the active theme.
+- Updated the script-manager icons.
+- Fixed Quick Reply autofill (again): with "Allow Browser Autofill" on, the Name/Options/Subject fields use their original field names so browsers and password managers actually recognize them; with it off, the fields no longer lock up while typing. The toggle now also applies to an open Quick Reply immediately.
+
 ### 1.1.3 (2026-06-11)
 
 - Fixed the persona picker beside the Quick Reply Name, Options, and Subject fields so it lists every saved persona for the board.

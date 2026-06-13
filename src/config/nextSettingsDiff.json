@@ -6,8 +6,8 @@
   },
   "counts": {
     "xt": 259,
-    "next": 394,
-    "added": 129,
+    "next": 397,
+    "added": 132,
     "changed": 3
   },
   "added": [
@@ -61,6 +61,7 @@
     "Grid Thumbnails",
     "Group Hidden Threads By Filter",
     "Hide Original Post Form",
+    "Hide thread (catalog click)",
     "Highlight Ghost Background",
     "Highlight Ghost Border Style",
     "Highlight Ghost Color",
@@ -130,6 +131,7 @@
     "Strip Video Audio",
     "Text Color",
     "Thread Highlight Edge Width",
+    "Thread Watcher Attach Location",
     "Thread Watcher Attached",
     "Thread Watcher Max Height",
     "Thread Watcher Max Width",
@@ -139,6 +141,7 @@
     "Thread Watcher Thumbnail Size",
     "Toggle comment preview",
     "Toggle drafts",
+    "Undo last hide/filter",
     "Watch (catalog click)"
   ],
   "changed": [

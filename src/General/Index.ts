@@ -304,8 +304,22 @@ var Index = {
   },
 
   catalogNode() {
-    return $.on(this.nodes.root, 'click', e => {
-      if ((e.button !== 0) || !e.shiftKey) return;
+    return $.on(this.nodes.root, 'click', (e: MouseEvent) => {
+      if (e.button !== 0) return;
+      // The modifier(s) that turn a catalog click into a hide are configurable
+      // (Keybinds → "Hide thread (catalog click)", default Shift). Empty disables
+      // it. Build a canonical modifier string ordered to match the value stored
+      // by the Settings keybind UI (Keybinds.modifierString).
+      const hideMods = Conf['Hide thread (catalog click)'];
+      if (!hideMods) return;
+      const mods = [
+        e.altKey  && 'Alt',
+        e.ctrlKey && 'Ctrl',
+        e.metaKey && 'Meta',
+        e.shiftKey && 'Shift',
+      ].filter(Boolean).join('+');
+      if (mods !== hideMods) return;
+
       e.preventDefault();
       getSelection().removeAllRanges();
       if (e.target.classList.contains('catalog-thumb') && Conf['MD5 Quick Filter in the Catalog']) {

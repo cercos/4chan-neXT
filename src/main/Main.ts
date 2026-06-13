@@ -354,9 +354,6 @@ var Main = {
       'Custom CSS': true,
       'usercss SFW': '',
       'usercss NSFW': '',
-      styleChanThemeHome: false,
-      styleChanThemeCSS: '',
-      styleChanVarsCSS: '',
       // Per-section master switches. The home page can't detect StyleChan
       // (it doesn't run here), so we read the persisted flags a board visit
       // synced. Default-true ⇒ non-StyleChan users are unaffected.
@@ -373,14 +370,9 @@ var Main = {
         siteStyle = '';
       }
       const normalizedStyle = Main.normalizeSiteStyle(siteStyle);
-      // StyleChan excludes the home page, so it never injects its theme here.
-      // If the user opted in (and we captured a snapshot while they browsed a
-      // board), replay StyleChan's stylesheet on the home page instead of our
-      // own. This takes precedence so the two don't fight over the same page.
-      const useStylechanHome = !!(items.styleChanThemeHome && (items.styleChanThemeCSS || items.styleChanVarsCSS));
       const siteStyleSectionOn = items.stylingSectionSiteStyle !== false;
       const customCSSSectionOn = items.stylingSectionCustomCSS !== false;
-      if (items.siteStyleHome && siteStyleSectionOn && normalizedStyle && !useStylechanHome) {
+      if (items.siteStyleHome && siteStyleSectionOn && normalizedStyle) {
         // Persist 4chan's own theme cookie so future homepage requests render
         // server-side with the right stylesheet.
         Main.setSiteStyleHomeCookie(siteStyle);
@@ -390,11 +382,8 @@ var Main = {
         // the chosen theme, so the homepage repaints immediately.
         Main.applyHomePageSiteStyle(siteStyle);
       }
-      if (items.customCSSHome && customCSSSectionOn && items['Custom CSS'] && usercss && !useStylechanHome) {
+      if (items.customCSSHome && customCSSSectionOn && items['Custom CSS'] && usercss) {
         Main.installHomePageCustomCSS(usercss);
-      }
-      if (useStylechanHome) {
-        Main.applyStylechanToHome(items.styleChanVarsCSS, items.styleChanThemeCSS);
       }
     });
   },
@@ -440,68 +429,6 @@ var Main = {
     });
     $.on(window, 'pageshow', ensure);
     $.on(window, 'load', ensure);
-  },
-
-  // Replay StyleChan's captured stylesheet on the home page. StyleChan splits
-  // its output into `#sc-theme-vars` (the `:root{--sc-*}` color variables) and
-  // `#ch4SS` (the theme rules + the user's per-theme custom CSS, which reference
-  // those variables). We snapshot both on board pages (snapshotStylechanForHome)
-  // and re-inject them here so www.4chan.org matches the StyleChan look.
-  applyStylechanToHome(varsCSS, themeCSS) {
-    const reapply = () => {
-      if (!d.head) return;
-      // Don't reorder once appended: with two styles, both fighting to be the
-      // last child would ping-pong forever under the MutationObserver below.
-      // StyleChan's rules are heavily !important, so source order vs 4chan's
-      // own sheets doesn't matter for them to win.
-      const ensureStyle = (id, css) => {
-        if (!css) return;
-        const el = $.id(id);
-        if (!el || !el.isConnected) {
-          $.add(d.head, $.el('style', { id, textContent: css }));
-        } else if (el.textContent !== css) {
-          el.textContent = css;
-        }
-      };
-      // Variables first (they define what the theme rules consume), then theme.
-      ensureStyle('stylechan-home-vars', varsCSS);
-      ensureStyle('stylechan-home-theme', themeCSS);
-    };
-    $.onExists(doc, 'head', () => {
-      reapply();
-      new MutationObserver(reapply).observe(d.head, { childList: true });
-    });
-    $.on(window, 'pageshow', reapply);
-    $.on(window, 'load', reapply);
-  },
-
-  // Capture StyleChan's injected stylesheet while on a board page (where
-  // StyleChan runs) so the home page bridge can replay it. We can't read
-  // StyleChan's saved config directly — it lives in its own sandboxed GM
-  // storage — but its output is in the shared DOM, and it updates these two
-  // elements in place when the theme changes, so we observe them.
-  snapshotStylechanForHome() {
-    const save = () => {
-      const pairs = [['ch4SS', 'styleChanThemeCSS'], ['sc-theme-vars', 'styleChanVarsCSS']];
-      for (const [id, key] of pairs) {
-        const el = d.getElementById(id);
-        const css = el && el.textContent;
-        if (css && css !== Conf[key]) {
-          Conf[key] = css;
-          $.set(key, css);
-        }
-      }
-    };
-    const watch = (id) => {
-      $.onExists(doc, `#${id}`, (el) => {
-        save();
-        new MutationObserver(save).observe(el, { childList: true, characterData: true, subtree: true });
-      });
-    };
-    save();
-    watch('ch4SS');
-    watch('sc-theme-vars');
-    $.on(window, 'pageshow', save);
   },
 
   upgrade(items) {
@@ -616,11 +543,6 @@ var Main = {
     // reverse reset once StyleChan is uninstalled). The per-section master
     // switches then gate styling at runtime instead of force-disabling settings.
     Settings.initStylingSectionDefaults();
-    // While StyleChan is managing this board, capture its injected stylesheet so
-    // the (StyleChan-excluded) home page can mirror it when the user opts in.
-    if (Settings.shouldDeferStylingToStylechan()) {
-      Main.snapshotStylechanForHome();
-    }
     if (Conf['siteStyleHome'] && Settings.stylingSectionEnabled('siteStyle') && homeSiteStyle) {
       Main.setSiteStyleHomeCookie(homeSiteStyle);
     }

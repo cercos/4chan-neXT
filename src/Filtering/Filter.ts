@@ -3,6 +3,7 @@ import Notice from "../classes/Notice";
 import Config from "../config/Config";
 import Get from "../General/Get";
 import Settings from "../General/Settings";
+import UndoStack from "../General/UndoStack";
 import { g, Conf, doc } from "../globals/globals";
 import Menu from "../Menu/Menu";
 import Unread from "../Monitoring/Unread";
@@ -683,6 +684,7 @@ var Filter = {
     Filter.addFilter('MD5', filter);
     const reason = files.map(f => `Filtered MD5 ${f.MD5}`).join(' & ');
     const origin = (post.origin || post) as Post;
+    const hidden: Post[] = [];
     const hideMatchingPost = (candidate: Post) => {
       if (candidate.isHidden || !candidate.files.some(file => file.MD5 && md5s.has(file.MD5))) return;
       delete candidate.filterResults;
@@ -691,6 +693,7 @@ var Filter = {
       } else if (g.VIEW === 'index') {
         ThreadHiding.hide(candidate.thread);
       }
+      hidden.push(candidate);
     };
 
     if (g.VIEW === 'thread') {
@@ -698,6 +701,19 @@ var Filter = {
     } else {
       hideMatchingPost(origin);
     }
+
+    // Make the quick-filter undoable from the keybind, mirroring the notice's
+    // [undo] link: drop the filter we just added and reveal what it hid.
+    UndoStack.record('Removed MD5 filter', () => {
+      Filter.removeFilters('MD5', [filter]);
+      for (const p of hidden) {
+        if (p.isReply) {
+          PostHiding.show(p);
+        } else if (g.VIEW === 'index') {
+          ThreadHiding.show(p.thread);
+        }
+      }
+    });
 
     if (!Conf['MD5 Quick Filter Notifications']) {
       // Feedback for when nothing gets hidden.

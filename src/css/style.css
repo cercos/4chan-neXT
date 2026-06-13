@@ -693,6 +693,94 @@ audio.controls-added {
     scrollbar-color: var(--xt-border, rgba(128, 128, 128, .5)) transparent;
   }
 }
+/* Match every other scrollable surface in the settings dialog to the panel's
+   themed scrollbar (above), so the textareas — boardnav, sauce, filters,
+   archive lists, banners, JS whitelist, personas, external catalogs — and the
+   section nav list stop falling back to the bulky OS-default scrollbar. */
+#fourchanx-settings textarea::-webkit-scrollbar,
+.sections-list::-webkit-scrollbar {
+  width: 6px;
+  height: 6px;
+}
+#fourchanx-settings textarea::-webkit-scrollbar-button,
+.sections-list::-webkit-scrollbar-button {
+  display: none;
+  width: 0;
+  height: 0;
+}
+#fourchanx-settings textarea::-webkit-scrollbar-track,
+.sections-list::-webkit-scrollbar-track {
+  background: transparent;
+}
+#fourchanx-settings textarea::-webkit-scrollbar-thumb,
+.sections-list::-webkit-scrollbar-thumb {
+  background-color: var(--xt-border, rgba(128, 128, 128, .5));
+  border-radius: 3px;
+}
+#fourchanx-settings textarea::-webkit-scrollbar-thumb:hover,
+.sections-list::-webkit-scrollbar-thumb:hover {
+  background-color: var(--xt-border, rgba(128, 128, 128, .8));
+}
+@supports not selector(::-webkit-scrollbar) {
+  #fourchanx-settings textarea,
+  .sections-list {
+    scrollbar-width: thin;
+    scrollbar-color: var(--xt-border, rgba(128, 128, 128, .5)) transparent;
+  }
+}
+/* Custom CSS editor keeps a slimmer bar, themed to the editor's own palette so
+   it reads against whatever editor theme is picked (which can differ from the
+   surrounding panel). Width/colour override the shared textarea rule above; the
+   ID+class selector outranks the ID+element one so these win. */
+#fourchanx-settings .custom-css-textarea::-webkit-scrollbar {
+  width: 4px;
+  height: 4px;
+}
+#fourchanx-settings .custom-css-textarea::-webkit-scrollbar-thumb {
+  background-color: var(--custom-css-border, var(--xt-border, rgba(128, 128, 128, .5)));
+}
+@supports not selector(::-webkit-scrollbar) {
+  #fourchanx-settings .custom-css-textarea {
+    scrollbar-color: var(--custom-css-border, var(--xt-border, rgba(128, 128, 128, .5))) transparent;
+  }
+}
+/* Live class-name autocomplete popup for the Custom CSS editor (hosted in the
+   overlay; themed from the editor's resolved --custom-css-* palette via --ac-*). */
+.css-autocomplete {
+  position: fixed;
+  z-index: 2147483646;
+  min-width: 140px;
+  max-width: 320px;
+  max-height: 220px;
+  overflow-y: auto;
+  margin: 0;
+  padding: 3px;
+  border-radius: 5px;
+  background: var(--ac-bg, #fff);
+  color: var(--ac-fg, #222);
+  border: 1px solid var(--ac-border, rgba(128, 128, 128, .4));
+  box-shadow: 0 4px 14px rgba(0, 0, 0, .28);
+  font: 12px/1.4 ui-monospace, SFMono-Regular, Menlo, Monaco, Consolas, "Liberation Mono", "Courier New", monospace;
+}
+.css-autocomplete::-webkit-scrollbar {
+  width: 6px;
+}
+.css-autocomplete::-webkit-scrollbar-thumb {
+  background-color: var(--ac-border, rgba(128, 128, 128, .5));
+  border-radius: 3px;
+}
+.css-ac-item {
+  padding: 2px 7px;
+  border-radius: 3px;
+  white-space: nowrap;
+  overflow: hidden;
+  text-overflow: ellipsis;
+  cursor: pointer;
+}
+.css-ac-item.active,
+.css-ac-item:hover {
+  background: color-mix(in srgb, var(--ac-fg, #222) 16%, transparent);
+}
 .section-container > section {
   margin-bottom: 14px;
 }
@@ -835,6 +923,31 @@ audio.controls-added {
   align-items: center;
   justify-content: center;
   z-index: 1002;
+}
+.imp-exp-picker::-webkit-scrollbar {
+  width: 6px;
+  height: 6px;
+}
+.imp-exp-picker::-webkit-scrollbar-button {
+  display: none;
+  width: 0;
+  height: 0;
+}
+.imp-exp-picker::-webkit-scrollbar-track {
+  background: transparent;
+}
+.imp-exp-picker::-webkit-scrollbar-thumb {
+  background-color: var(--xt-border, rgba(128, 128, 128, .5));
+  border-radius: 3px;
+}
+.imp-exp-picker::-webkit-scrollbar-thumb:hover {
+  background-color: var(--xt-border, rgba(128, 128, 128, .8));
+}
+@supports not selector(::-webkit-scrollbar) {
+  .imp-exp-picker {
+    scrollbar-width: thin;
+    scrollbar-color: var(--xt-border, rgba(128, 128, 128, .5)) transparent;
+  }
 }
 .imp-exp-picker {
   min-width: 260px;
@@ -1856,8 +1969,7 @@ body > #overlay:not(.media-preview) {
   z-index: 1003 !important;
 }
 
-/* StyleChan info box: sits at the top of the Styling page with shortcuts and
-   the home-page mirror opt-in. */
+/* StyleChan info box: sits at the top of the Styling page with shortcuts. */
 .styling-stylechan-box {
   border: 1px solid rgba(128, 128, 128, .35);
   border-radius: 4px;
@@ -1879,10 +1991,6 @@ body > #overlay:not(.media-preview) {
 .styling-stylechan-buttons > button {
   cursor: pointer;
   padding: 6px 12px;
-}
-.styling-stylechan-home {
-  cursor: pointer;
-  font-size: 12px;
 }
 #fourchanx-settings .section-styling {
   position: relative;
@@ -2458,6 +2566,132 @@ body > #overlay:not(.media-preview) {
 .section-styling .custom-css-editor[data-expanded="true"] {
   height: 500px;
 }
+.section-styling .custom-css-saved {
+  position: absolute;
+  top: 6px;
+  right: 8px;
+  z-index: 2;
+  padding: 2px 9px;
+  border-radius: 3px;
+  font: 600 11px/1.5 ui-monospace, SFMono-Regular, Menlo, Monaco, Consolas, monospace;
+  color: #fff;
+  background: rgba(46, 160, 67, .94);
+  pointer-events: none;
+  opacity: 0;
+  transform: translateY(-2px);
+  transition: opacity .12s ease, transform .12s ease;
+}
+.section-styling .custom-css-saved[data-show="true"] {
+  opacity: 1;
+  transform: translateY(0);
+}
+/* Detached panel: free-floating, draggable, resizable window holding the whole
+   Custom CSS section. It's added inside the styling `section`, so the editor's
+   theme rules (scoped under `.section-styling`) keep matching; position:fixed
+   anchors it to the viewport regardless of where it lives in the DOM. Selectors
+   are prefixed with #fourchanx-settings (and the structural display/flex props
+   forced) because the panel lives inside the settings dialog, where the existing
+   ID-specificity rules (e.g. `#fourchanx-settings summary{display:flex}`) would
+   otherwise win and break the flex chain. */
+#fourchanx-settings .custom-css-panel {
+  position: fixed;
+  z-index: 1500;
+  display: flex !important;
+  flex-direction: column;
+  min-width: 360px;
+  min-height: 240px;
+  max-width: 100vw;
+  max-height: 100vh;
+  overflow: hidden;
+  resize: both;
+  border-radius: 6px;
+  border: 1px solid var(--custom-css-border, rgba(128, 128, 128, .35));
+  background: var(--custom-css-bg, #fbfbfb);
+  box-shadow: 0 12px 48px rgba(0, 0, 0, .5);
+}
+#fourchanx-settings .custom-css-panel-bar {
+  flex: 0 0 auto;
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+  gap: 12px;
+  padding: 6px 6px 6px 12px;
+  cursor: move;
+  user-select: none;
+  font: 600 12px/1.6 ui-monospace, SFMono-Regular, Menlo, Monaco, Consolas, monospace;
+  color: var(--custom-css-text, #1f2731);
+  border-bottom: 1px solid var(--custom-css-border, rgba(128, 128, 128, .35));
+}
+#fourchanx-settings .custom-css-panel-actions {
+  display: flex;
+  align-items: center;
+  gap: 6px;
+}
+#fourchanx-settings .custom-css-panel-reset {
+  cursor: pointer;
+}
+#fourchanx-settings .custom-css-panel-close {
+  cursor: pointer;
+  padding: 0 8px;
+  font-size: 16px;
+  line-height: 1.2;
+}
+#fourchanx-settings .custom-css-panel-body {
+  flex: 1 1 auto !important;
+  min-height: 0;
+  display: flex !important;
+  flex-direction: column;
+  overflow: auto;
+  padding: 10px 12px 12px;
+}
+/* The relocated <details> becomes the flex column that lets the editor grow to
+   fill whatever height the user resizes the panel to. */
+#fourchanx-settings .custom-css-panel-body > .styling-custom-css {
+  display: flex !important;
+  flex-direction: column;
+  flex: 1 1 auto !important;
+  min-height: 0;
+  margin: 0 !important;
+  padding: 0 !important;
+  border: 0 !important;
+}
+/* Modern Chromium (131+) wraps a <details>' non-summary content in an internal
+   ::details-content box, so the editor isn't a direct flex child of the details
+   element. Make that wrapper the growable flex column so the editor can fill.
+   Harmless in engines that don't implement the pseudo (editor is a direct child
+   there, handled by the rule above). */
+#fourchanx-settings .custom-css-panel-body > .styling-custom-css::details-content {
+  display: flex !important;
+  flex-direction: column !important;
+  flex: 1 1 auto !important;
+  min-height: 0 !important;
+}
+#fourchanx-settings .custom-css-panel-body .custom-css-editor {
+  flex: 1 1 auto !important;
+  height: auto !important;
+  min-height: 120px !important;
+  resize: none;
+}
+/* While detached, the section's own collapse summary and the now-redundant
+   inline-size buttons are hidden — the panel chrome and resize handle replace them. */
+#fourchanx-settings .styling-custom-css[data-detached] > summary,
+#fourchanx-settings .styling-custom-css[data-detached] #custom-css-expand,
+#fourchanx-settings .styling-custom-css[data-detached] #custom-css-detach {
+  display: none !important;
+}
+/* "Re-attach" note left in the settings page while the section is detached. */
+.custom-css-detached-note {
+  display: flex;
+  align-items: center;
+  gap: 8px;
+  padding: 10px 12px;
+  border: 1px dashed rgba(128, 128, 128, .5);
+  border-radius: 4px;
+  opacity: .85;
+}
+.custom-css-reattach {
+  cursor: pointer;
+}
 .section-styling .custom-css-editor[data-theme="xt-dark"],
 .section-styling .custom-css-editor[data-theme="xt-system-tomorrow"],
 .section-styling .custom-css-editor[data-theme="xt-system-spooky"] {
@@ -2548,6 +2782,51 @@ body > #overlay:not(.media-preview) {
 }
 .section-styling .custom-css-textarea:focus {
   outline: none;
+}
+/* Colour swatches: a clickable swatch in a left gutter on each line that holds a
+   colour. The text layers are nudged right to make room; the gutter scrolls with
+   the content (transform synced in syncScroll). Must follow the base padding rule
+   above so this padding-left wins the !important tie. */
+.section-styling .custom-css-highlight,
+.section-styling .custom-css-textarea {
+  padding-left: 28px !important;
+}
+.section-styling .custom-css-gutter {
+  position: absolute;
+  left: 0;
+  top: 0;
+  bottom: 12px;
+  width: 24px;
+  overflow: hidden;
+  pointer-events: none;
+  z-index: 3;
+}
+.section-styling .custom-css-gutter-inner {
+  position: absolute;
+  inset: 0 0 auto 0;
+  will-change: transform;
+}
+.section-styling .ccss-swatch {
+  position: absolute;
+  left: 5px;
+  width: 13px;
+  height: 13px;
+  margin: 0;
+  padding: 0;
+  border-radius: 3px;
+  border: 1px solid rgba(128, 128, 128, .55);
+  box-shadow: inset 0 0 0 1px rgba(255, 255, 255, .15);
+  cursor: pointer;
+  pointer-events: auto;
+}
+.section-styling .ccss-color-input {
+  position: fixed;
+  width: 1px;
+  height: 1px;
+  padding: 0;
+  border: 0;
+  opacity: 0;
+  pointer-events: none;
 }
 .section-styling .custom-css-highlight .css-token-comment {
   color: #73838a;
@@ -2753,6 +3032,14 @@ body > #overlay:not(.media-preview) {
 }
 .section-keybinds .field {
   font-family: monospace;
+}
+/* Marks the modifier-only mouse bindings (e.g. "Watch (catalog click)") with a
+   leading "*" so they read as a hold-and-click action rather than a plain
+   keyboard shortcut; the legend above the table explains the marker. */
+.keybind-click-marker {
+  margin-right: 0.25em;
+  font-weight: 700;
+  opacity: 0.8;
 }
 #fourchanx-settings details {
   border: 1px solid rgba(128, 128, 128, .3);
