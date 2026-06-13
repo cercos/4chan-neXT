@@ -2902,40 +2902,65 @@ Enable it on boards.${location.hostname.split('.')[1]}.org in your browser's pri
         refreshStylingPreview();
       });
     }
-    const useThemeDefaults = $('#styling-use-theme-defaults', section) as HTMLButtonElement | null;
-    if (useThemeDefaults) {
-      $.on(useThemeDefaults, 'click', (e: Event) => {
-        e.preventDefault();
-        for (const [baseKey, value] of themeDefaultSettings) {
-          writeEditConf(baseKey, value);
-          const input = inputs[baseKey];
-          if (!input) continue;
-          if (input.type === 'checkbox') {
-            input.checked = !!value;
-            setCheckedState(input);
-          } else if (input.type === 'color') {
-            Settings.setColorInputValue(input, baseKey, value);
-          } else if (input.type === 'range') {
-            input.value = value === '' ? '1' : String(value);
-          } else {
-            input.value = String(value ?? '');
-          }
+    // Reset every highlight setting to the active theme's defaults. Exposed as
+    // the pinned "Theme defaults" row in the saved-palette list (below).
+    const applyThemeDefaults = () => {
+      for (const [baseKey, value] of themeDefaultSettings) {
+        writeEditConf(baseKey, value);
+        const input = inputs[baseKey];
+        if (!input) continue;
+        if (input.type === 'checkbox') {
+          input.checked = !!value;
+          setCheckedState(input);
+        } else if (input.type === 'color') {
+          Settings.setColorInputValue(input, baseKey, value);
+        } else if (input.type === 'range') {
+          input.value = value === '' ? '1' : String(value);
+        } else {
+          input.value = String(value ?? '');
         }
-        syncMarkerColorControls();
-        syncCatalogHighlightControls();
-        syncThreadHighlightControls();
-        syncTextColorControls();
-        syncHighlightTextControls();
-        syncAutoHighlightPreviewInputs();
-        Settings.applyStylingVars();
-        refreshUnsetColorInputs();
-        syncColorHexInputs();
-        refreshOpacityReadouts();
-        updatePreviewStateFromRows();
-        refreshSuggestedPalettesIfOpen();
-        $.event('RefreshScrollMarkers');
-      });
-    }
+      }
+      syncMarkerColorControls();
+      syncCatalogHighlightControls();
+      syncThreadHighlightControls();
+      syncTextColorControls();
+      syncHighlightTextControls();
+      syncAutoHighlightPreviewInputs();
+      Settings.applyStylingVars();
+      refreshUnsetColorInputs();
+      syncColorHexInputs();
+      refreshOpacityReadouts();
+      updatePreviewStateFromRows();
+      refreshSuggestedPalettesIfOpen();
+      $.event('RefreshScrollMarkers');
+    };
+    // Resolve the theme's own default highlight colors (independent of the
+    // user's current overrides) for the pinned row's swatch preview.
+    const themeDefaultPaletteColors = (): Record<'own' | 'you' | 'ghost' | 'catalogOwn' | 'catalogWatched', string> => {
+      const exprs: Record<string, string> = {
+        own: 'var(--xt-border-highlight, #d83030)',
+        you: 'var(--xt-border-highlight, #d83030)',
+        ghost: '#888888',
+        catalogOwn: 'var(--xt-border-highlight, #d83030)',
+        catalogWatched: 'var(--xt-watched-border, rgba(255, 0, 0, .75))',
+      };
+      const out: any = { own: '#000000', you: '#000000', ghost: '#888888', catalogOwn: '#000000', catalogWatched: '#000000' };
+      const scope = Settings.dialog || d.body;
+      if (!scope) return out;
+      const host = $.el('div') as HTMLDivElement;
+      host.style.cssText = 'position:absolute;visibility:hidden;pointer-events:none;left:0;top:0';
+      const probes: Record<string, HTMLSpanElement> = {};
+      for (const slot in exprs) {
+        const probe = $.el('span') as HTMLSpanElement;
+        probe.style.color = exprs[slot];
+        probes[slot] = probe;
+        $.add(host, probe);
+      }
+      $.add(scope, host);
+      for (const slot in exprs) out[slot] = Settings.toHexColor(window.getComputedStyle(probes[slot]).color) || out[slot];
+      $.rm(host);
+      return out;
+    };
 
     // Per-row reset for the Filtered-thread highlight back to its shipped
     // defaults (blank color ⇒ the theme's own filter color, glow on, etc.).
@@ -2992,6 +3017,7 @@ Enable it on boards.${location.hostname.split('.')[1]}.org in your browser's pri
     const savePaletteBtn = $('#styling-save-palette', section) as HTMLButtonElement | null;
     const savedPalettesList = $('#styling-saved-palettes-list', section) as HTMLElement | null;
     let suggestedPaletteBatch = 0;
+    let suggestedRandomMode = false;
     const paletteStateMap = [
       ['own', 'Highlight Own Color', 'Thread: your post'],
       ['you', 'Highlight You Color', 'Thread: quotes you'],
@@ -2999,6 +3025,23 @@ Enable it on boards.${location.hostname.split('.')[1]}.org in your browser's pri
       ['catalogOwn', 'Catalog Highlight Own Color', 'Catalog: your post'],
       ['catalogWatched', 'Catalog Highlight Watched Color', 'Catalog: watched thread'],
     ] as const;
+    // Scrollbar markers ride along with palettes, but only when a marker has a
+    // colour of its own (not matched to, and not equal to, its highlight) — a
+    // matched marker just mirrors the highlight, so there's nothing to store.
+    const markerPaletteMap = [
+      ['own', 'Scroll Marker Own Color', 'Highlight Own Color', 'Scroll Marker Own Match Highlight', 'Marker: your post'],
+      ['you', 'Scroll Marker You Color', 'Highlight You Color', 'Scroll Marker You Match Highlight', 'Marker: quotes you'],
+      ['ghost', 'Scroll Marker Ghost Color', 'Highlight Ghost Color', 'Scroll Marker Ghost Match Highlight', 'Marker: ghost post'],
+    ] as const;
+    type MarkerSlot = typeof markerPaletteMap[number][0];
+    const resolveSlotColor = (baseKey: string) => {
+      const inputColor = inputs[baseKey]?.value || '';
+      const storedColor = editConf<string>(baseKey) || '';
+      return (Settings.toHexColor(inputColor)
+        || Settings.toHexColor(storedColor)
+        || Settings.resolvedColorForKey(baseKey)
+        || '#000000').toLowerCase();
+    };
     const readCurrentPaletteColors = () => {
       const out = {
         own: '#000000',
@@ -3007,19 +3050,36 @@ Enable it on boards.${location.hostname.split('.')[1]}.org in your browser's pri
         catalogOwn: '#000000',
         catalogWatched: '#000000',
       };
-      for (const [slot, baseKey] of paletteStateMap) {
-        const inputColor = inputs[baseKey]?.value || '';
-        const storedColor = editConf<string>(baseKey) || '';
-        const resolved = Settings.toHexColor(inputColor)
-          || Settings.toHexColor(storedColor)
-          || Settings.resolvedColorForKey(baseKey)
-          || '#000000';
-        out[slot] = resolved.toLowerCase();
-      }
+      for (const [slot, baseKey] of paletteStateMap) out[slot] = resolveSlotColor(baseKey);
       return out;
+    };
+    const readCurrentPaletteMarkers = () => {
+      const markers: Partial<Record<MarkerSlot, string>> = {};
+      for (const [slot, colorKey, highlightKey, matchKey] of markerPaletteMap) {
+        if (editConf<boolean>(matchKey)) continue; // matched ⇒ mirrors highlight
+        const markerColor = resolveSlotColor(colorKey);
+        if (markerColor && markerColor !== resolveSlotColor(highlightKey)) markers[slot] = markerColor;
+      }
+      return markers;
+    };
+    // Persist a palette into the saved list (overwriting any same-named entry),
+    // shared by the Save-palette button and the per-suggestion Save button.
+    const persistPalette = (
+      name: string,
+      colors: Record<'own' | 'you' | 'ghost' | 'catalogOwn' | 'catalogWatched', string>,
+      markers: Partial<Record<MarkerSlot, string>>,
+    ) => {
+      const list = Settings.savedHighlightPaletteList();
+      const existing = list.findIndex(p => p.name.toLowerCase() === name.toLowerCase());
+      const entry = { name, colors, markers };
+      if (existing >= 0) list[existing] = entry;
+      else list.unshift(entry);
+      Settings.setSavedHighlightPalettes(list);
+      renderSavedPalettes();
     };
     function applySuggestedPalette(palette: {
       colors: Record<'own' | 'you' | 'ghost' | 'catalogOwn' | 'catalogWatched', string>;
+      markers?: Partial<Record<MarkerSlot, string>>;
     }) {
       for (const [slot, baseKey] of paletteStateMap) {
         const color = palette.colors[slot];
@@ -3028,31 +3088,75 @@ Enable it on boards.${location.hostname.split('.')[1]}.org in your browser's pri
         const inp = inputs[baseKey];
         if (inp) Settings.setColorInputValue(inp, baseKey, color);
       }
+      // Only palettes that track markers (saved ones) touch marker state;
+      // suggested palettes have no `markers` field and leave markers alone.
+      if (palette.markers) {
+        for (const [slot, colorKey, , matchKey] of markerPaletteMap) {
+          const color = palette.markers[slot];
+          const matchInp = inputs[matchKey];
+          if (color) {
+            writeEditConf(matchKey, false);
+            if (matchInp) { matchInp.checked = false; setCheckedState(matchInp); }
+            writeEditConf(colorKey, color);
+            const colorInp = inputs[colorKey];
+            if (colorInp) Settings.setColorInputValue(colorInp, colorKey, color);
+          } else {
+            writeEditConf(matchKey, true);
+            if (matchInp) { matchInp.checked = true; setCheckedState(matchInp); }
+          }
+        }
+      }
       syncMarkerColorControls();
       syncAutoHighlightPreviewInputs();
       Settings.applyStylingVars();
       refreshStylingPreview();
     }
-    function renderSuggestedPalettes(advance = false) {
+    const buildRandomPalettes = (count = 6) => {
+      const out: { name: string; colors: Record<'own' | 'you' | 'ghost' | 'catalogOwn' | 'catalogWatched', string> }[] = [];
+      for (let i = 0; i < count; i++) {
+        out.push({
+          name: `Random ${i + 1}`,
+          colors: {
+            own: Settings.randomHighlightColor(),
+            you: Settings.randomHighlightColor(),
+            ghost: Settings.randomHighlightColor(),
+            catalogOwn: Settings.randomHighlightColor(),
+            catalogWatched: Settings.randomHighlightColor(),
+          },
+        });
+      }
+      return out;
+    };
+    function renderSuggestedPalettes() {
       if (!paletteSuggestionRoot) return;
-      if (advance) suggestedPaletteBatch += 1;
-      const { profile, palettes } = Settings.suggestedHighlightPalettes(editVariant(), suggestedPaletteBatch);
+      const suggested = suggestedRandomMode ? null : Settings.suggestedHighlightPalettes(editVariant(), suggestedPaletteBatch);
+      const palettes = suggested ? suggested.palettes : buildRandomPalettes();
       paletteSuggestionRoot.textContent = '';
       const header = $.el('div', { className: 'styling-palette-header' });
       const title = $.el('div', {
         className: 'styling-palette-title',
-        textContent: `Suggested palettes for ${profile.label}${suggestedPaletteBatch ? ` - set ${suggestedPaletteBatch + 1}` : ''}`,
+        textContent: suggested ? `Suggested palettes for ${suggested.profile.label}` : 'Random palettes',
       });
       const note = $.el('div', {
         className: 'styling-palette-note note',
-        textContent: profile.note,
+        textContent: suggested ? suggested.profile.note : 'Freshly generated random palettes. Click Randomize for another set.',
       });
-      const refresh = $.el('button', {
+      // The header button randomizes the list; once in random mode a second
+      // button returns to the curated suggestions.
+      const randomize = $.el('button', {
         type: 'button',
-        textContent: 'Refresh',
+        textContent: 'Randomize',
       }) as HTMLButtonElement;
-      $.on(refresh, 'click', () => renderSuggestedPalettes(true));
-      $.add(header, [title, note, refresh]);
+      $.on(randomize, 'click', () => { suggestedRandomMode = true; renderSuggestedPalettes(); });
+      $.add(header, [title, note, randomize]);
+      if (suggestedRandomMode) {
+        const back = $.el('button', {
+          type: 'button',
+          textContent: 'Back to suggested',
+        }) as HTMLButtonElement;
+        $.on(back, 'click', () => { suggestedRandomMode = false; renderSuggestedPalettes(); });
+        $.add(header, back);
+      }
       $.add(paletteSuggestionRoot, header);
 
       const list = $.el('div', { className: 'styling-palette-list' });
@@ -3063,6 +3167,18 @@ Enable it on boards.${location.hostname.split('.')[1]}.org in your browser's pri
           textContent: 'Apply',
         }) as HTMLButtonElement;
         $.on(apply, 'click', () => applySuggestedPalette(palette));
+        // Save the suggestion straight to the saved list (its colors + whatever
+        // markers are currently set), no apply-then-save round trip needed.
+        const save = $.el('button', {
+          type: 'button',
+          textContent: 'Save',
+          title: `Save "${palette.name}" to your palettes`,
+        }) as HTMLButtonElement;
+        $.on(save, 'click', () => {
+          persistPalette(palette.name, palette.colors, readCurrentPaletteMarkers());
+          save.textContent = 'Saved';
+          save.disabled = true;
+        });
         const name = $.el('div', { className: 'styling-palette-name', textContent: palette.name });
         const swatches = $.el('div', { className: 'styling-palette-swatches' });
         for (const [slot, , label] of paletteStateMap) {
@@ -3074,7 +3190,7 @@ Enable it on boards.${location.hostname.split('.')[1]}.org in your browser's pri
           swatch.style.backgroundColor = color;
           $.add(swatches, swatch);
         }
-        $.add(row, [apply, name, swatches]);
+        $.add(row, [name, apply, save, swatches]);
         $.add(list, row);
       }
       $.add(paletteSuggestionRoot, list);
@@ -3082,6 +3198,25 @@ Enable it on boards.${location.hostname.split('.')[1]}.org in your browser's pri
     function renderSavedPalettes() {
       if (!savedPalettesList) return;
       savedPalettesList.textContent = '';
+      // Pinned, immutable "Theme defaults" row: looks like a saved palette but
+      // shows the theme's own colors and only offers Apply (no Delete).
+      {
+        const row = $.el('div', { className: 'styling-saved-palette-row styling-saved-palette-row-theme' });
+        const apply = $.el('button', { type: 'button', textContent: 'Apply' }) as HTMLButtonElement;
+        $.on(apply, 'click', () => applyThemeDefaults());
+        const name = $.el('div', { className: 'styling-palette-name', textContent: 'Theme defaults' });
+        const spacer = $.el('span', { className: 'styling-palette-rowspacer' });
+        const swatches = $.el('div', { className: 'styling-palette-swatches' });
+        const themeColors = themeDefaultPaletteColors();
+        for (const [slot, , label] of paletteStateMap) {
+          const color = themeColors[slot];
+          const swatch = $.el('span', { className: 'styling-palette-swatch', title: `${label}: ${color}` }) as HTMLSpanElement;
+          swatch.style.backgroundColor = color;
+          $.add(swatches, swatch);
+        }
+        $.add(row, [name, apply, spacer, swatches]);
+        $.add(savedPalettesList, row);
+      }
       const palettes = Settings.savedHighlightPaletteList();
       if (!palettes.length) {
         const empty = $.el('div', {
@@ -3120,7 +3255,19 @@ Enable it on boards.${location.hostname.split('.')[1]}.org in your browser's pri
           swatch.style.backgroundColor = color;
           $.add(swatches, swatch);
         }
-        $.add(row, [apply, remove, name, swatches]);
+        // Marker swatches only appear for markers stored as distinct from their
+        // highlight (round, to read apart from the square highlight swatches).
+        for (const [slot, , , , label] of markerPaletteMap) {
+          const color = palette.markers?.[slot];
+          if (!color) continue;
+          const swatch = $.el('span', {
+            className: 'styling-palette-swatch styling-palette-swatch-marker',
+            title: `${label}: ${color}`,
+          }) as HTMLSpanElement;
+          swatch.style.backgroundColor = color;
+          $.add(swatches, swatch);
+        }
+        $.add(row, [name, apply, remove, swatches]);
         $.add(savedPalettesList, row);
       }
     }
@@ -3135,6 +3282,7 @@ Enable it on boards.${location.hostname.split('.')[1]}.org in your browser's pri
         suggestPalettesBtn.textContent = paletteSuggestionRoot.hidden ? 'Suggest palettes' : 'Hide palettes';
         if (!paletteSuggestionRoot.hidden) {
           suggestedPaletteBatch = 0;
+          suggestedRandomMode = false;
           renderSuggestedPalettes();
         }
       });
@@ -3146,18 +3294,7 @@ Enable it on boards.${location.hostname.split('.')[1]}.org in your browser's pri
           savedPaletteNameInput.focus();
           return;
         }
-        const colors = readCurrentPaletteColors();
-        const list = Settings.savedHighlightPaletteList();
-        const existing = list.findIndex(p => p.name.toLowerCase() === name.toLowerCase());
-        const entry = { name, colors };
-        if (existing >= 0) {
-          list[existing] = entry;
-          Settings.setSavedHighlightPalettes(list);
-        } else {
-          list.unshift(entry);
-          Settings.setSavedHighlightPalettes(list);
-        }
-        renderSavedPalettes();
+        persistPalette(name, readCurrentPaletteColors(), readCurrentPaletteMarkers());
       };
       $.on(savePaletteBtn, 'click', saveCurrentPalette);
       $.on(savedPaletteNameInput, 'keydown', (e: KeyboardEvent) => {
@@ -3172,7 +3309,6 @@ Enable it on boards.${location.hostname.split('.')[1]}.org in your browser's pri
       renderSavedPalettes();
     });
 
-    // Randomize / reset highlight color buttons.
     const openPreview = $('#styling-open-preview', section);
     if (openPreview) {
       if (Settings.stylingPreviewPanel?.isConnected) {
@@ -3181,29 +3317,6 @@ Enable it on boards.${location.hostname.split('.')[1]}.org in your browser's pri
       $.on(openPreview, 'click', () => {
         Settings.openStylingPreview(section);
         updatePreviewStateFromRows();
-      });
-    }
-    const randomize = $('#styling-randomize', section);
-    if (randomize) {
-      $.on(randomize, 'click', () => {
-        for (const baseKey of [
-          'Highlight Own Color',
-          'Highlight You Color',
-          'Highlight Ghost Color',
-          'Catalog Highlight Own Color',
-          'Catalog Highlight Watched Color',
-        ] as const) {
-          const color = Settings.randomHighlightColor();
-          const storageKey = Settings.variantKey(baseKey);
-          Conf[storageKey] = color;
-          $.set(storageKey, color);
-          const inp = inputs[baseKey];
-          if (inp) Settings.setColorInputValue(inp, baseKey, color);
-        }
-        syncAutoHighlightPreviewInputs();
-        Settings.applyStylingVars();
-        refreshStylingPreview();
-        refreshSuggestedPalettesIfOpen();
       });
     }
     const siteStyleInput = inputs['siteStyle'];
@@ -5901,6 +6014,7 @@ Enable it on boards.${location.hostname.split('.')[1]}.org in your browser's pri
   normalizeSavedHighlightPalette(raw: any): {
     name: string;
     colors: Record<'own' | 'you' | 'ghost' | 'catalogOwn' | 'catalogWatched', string>;
+    markers?: Partial<Record<'own' | 'you' | 'ghost', string>>;
   } | null {
     if (!raw || typeof raw !== 'object') return null;
     const name = String(raw.name || '').trim();
@@ -5913,21 +6027,32 @@ Enable it on boards.${location.hostname.split('.')[1]}.org in your browser's pri
     const catalogWatched = String(colors.catalogWatched || '').trim().toLowerCase();
     const isHex = (value: string) => /^#[0-9a-f]{6}$/i.test(value);
     if (![own, you, ghost, catalogOwn, catalogWatched].every(isHex)) return null;
+    // Markers are optional; keep only valid-hex entries. An absent/empty markers
+    // object is fine (older palettes simply never tracked them).
+    const markers: Partial<Record<'own' | 'you' | 'ghost', string>> = {};
+    const rawMarkers = raw.markers && typeof raw.markers === 'object' ? raw.markers : {};
+    for (const slot of ['own', 'you', 'ghost'] as const) {
+      const value = String(rawMarkers[slot] || '').trim().toLowerCase();
+      if (isHex(value)) markers[slot] = value;
+    }
     return {
       name,
       colors: { own, you, ghost, catalogOwn, catalogWatched },
+      ...(raw.markers !== undefined ? { markers } : {}),
     };
   },
 
   savedHighlightPaletteList(): {
     name: string;
     colors: Record<'own' | 'you' | 'ghost' | 'catalogOwn' | 'catalogWatched', string>;
+    markers?: Partial<Record<'own' | 'you' | 'ghost', string>>;
   }[] {
     const raw = Conf['savedHighlightPalettes'];
     if (!Array.isArray(raw)) return [];
     const out: {
       name: string;
       colors: Record<'own' | 'you' | 'ghost' | 'catalogOwn' | 'catalogWatched', string>;
+      markers?: Partial<Record<'own' | 'you' | 'ghost', string>>;
     }[] = [];
     for (const item of raw) {
       const normalized = Settings.normalizeSavedHighlightPalette(item);
@@ -5940,12 +6065,14 @@ Enable it on boards.${location.hostname.split('.')[1]}.org in your browser's pri
   setSavedHighlightPalettes(list: {
     name: string;
     colors: Record<'own' | 'you' | 'ghost' | 'catalogOwn' | 'catalogWatched', string>;
+    markers?: Partial<Record<'own' | 'you' | 'ghost', string>>;
   }[]) {
     const cleaned = list
       .map(item => Settings.normalizeSavedHighlightPalette(item))
       .filter(Boolean) as {
       name: string;
       colors: Record<'own' | 'you' | 'ghost' | 'catalogOwn' | 'catalogWatched', string>;
+      markers?: Partial<Record<'own' | 'you' | 'ghost', string>>;
     }[];
     Conf['savedHighlightPalettes'] = cleaned;
     $.set('savedHighlightPalettes', cleaned);

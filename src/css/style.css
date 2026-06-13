@@ -1384,6 +1384,23 @@ div[data-checked="false"] > .suboption-list {
   flex-wrap: wrap;
   gap: 8px;
 }
+/* Give the palette manager body a little breathing room below its header so
+   the first row isn't jammed against the title. */
+.section-styling .styling-hl-acc-item-palette .styling-hl-acc-body {
+  padding-top: 8px;
+}
+/* Save controls + action buttons share one row; the action buttons ride to the
+   right so the row reads as one tidy toolbar. */
+.section-styling .styling-palette-toprow {
+  align-items: center;
+  display: flex;
+  flex-wrap: wrap;
+  gap: 8px 12px;
+}
+.section-styling .styling-palette-toprow .styling-actions {
+  margin-left: auto;
+  margin-top: 0;
+}
 .section-styling .styling-highlight-intro {
   align-items: start;
   display: grid;
@@ -1428,14 +1445,24 @@ div[data-checked="false"] > .suboption-list {
   border-radius: 3px;
   display: grid;
   gap: 6px;
-  grid-template-columns: auto minmax(130px, 1fr) auto;
-  padding: 2px 4px;
+  grid-template-columns: minmax(110px, 1fr) auto auto auto;
+  padding: 3px 6px;
+}
+/* Match the saved-palette name styling so the two lists read alike. */
+.section-styling .styling-palette-row .styling-palette-name {
+  font-size: 13px;
 }
 .section-styling .styling-palette-row:hover {
   background: color-mix(in srgb, currentColor 8%, transparent);
 }
 .section-styling .styling-palette-name {
+  font-weight: 600;
   min-width: 0;
+}
+/* Saved rows lead with the (slightly larger) name, then Apply/Delete, then the
+   swatch preview on the right. */
+.section-styling .styling-saved-palette-row .styling-palette-name {
+  font-size: 13px;
 }
 .section-styling .styling-palette-swatches {
   align-items: center;
@@ -1448,6 +1475,14 @@ div[data-checked="false"] > .suboption-list {
   display: inline-block;
   height: 14px;
   width: 18px;
+}
+/* Scrollbar-marker swatches read as round dots so they're distinct from the
+   square highlight swatches; only shown when a marker differs from its
+   highlight. A small gap sets them apart from the highlight group. */
+.section-styling .styling-palette-swatch-marker {
+  border-radius: 50%;
+  margin-left: 2px;
+  width: 14px;
 }
 .section-styling .styling-saved-palettes {
   margin-top: 8px;
@@ -1471,11 +1506,20 @@ div[data-checked="false"] > .suboption-list {
   border-radius: 3px;
   display: grid;
   gap: 6px;
-  grid-template-columns: auto auto minmax(130px, 1fr) auto;
-  padding: 2px 4px;
+  grid-template-columns: minmax(110px, 1fr) auto auto auto;
+  padding: 3px 6px;
+}
+/* Zebra-stripe the saved rows so a long list is easier to scan. */
+.section-styling .styling-saved-palette-row:nth-child(even) {
+  background: color-mix(in srgb, currentColor 5%, transparent);
+}
+/* The pinned Theme-defaults row reads like a saved row but with a steady faint
+   tint so it stands apart from the zebra-striped user palettes below it. */
+.section-styling .styling-saved-palette-row-theme {
+  background: color-mix(in srgb, currentColor 8%, transparent);
 }
 .section-styling .styling-saved-palette-row:hover {
-  background: color-mix(in srgb, currentColor 8%, transparent);
+  background: color-mix(in srgb, currentColor 10%, transparent);
 }
 .styling-preview {
   box-sizing: border-box;
