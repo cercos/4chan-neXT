@@ -48,15 +48,66 @@ To migrate settings:
 
 ## Fork Additions
 
-Recent fork additions include:
-- **Quick Reply and posting:** per-thread `QR Drafts` restore with attachment persistence and a recoverable discard bin, native board-index form hiding, upload progress, dump-list file-first removal, image auto-processing, audio stripping for boards that disallow audio, stacked TCaptcha editing, autofill-resistant Name/Options/Subject fields with an opt-in browser autofill setting, Auto-close Tags, and post-style comment preview with docked, QR-attached, and floating modes.
-- **Thread Watcher and monitoring:** Quick Reply docking, attach location controls, QR/window resize handling, remembered floating QR reopen behavior, manual max size controls, OP thumbnails, hover thumbnail previews, mark-all-read and per-thread mark-read icons, detailed thread stats, and replies-to-you state support for watcher links.
-- **Styling and themes:** built-in site themes, SFW/NSFW styling variants, StyleChan section handoff, home-page StyleChan mirroring, theme-aware highlight colors, text color modes, edge/background highlight modes, edge and border styles, catalog own/watched highlights, saved palettes, Custom CSS editor pairing/indent helpers, and a local styling guide.
-- **Scrollbar markers:** own-post, quotes-you, ghost-post, and unread-line markers with per-marker colors, opacity, match-highlight controls, plus beside-scrollbar and IDE-style over-scrollbar layouts.
-- **Filters:** responsive Simple Filters, auto-save, color swatches plus custom CSS classes, combined Simple/Advanced preview, index/catalog search over preview replies with an `op:` prefix, hidden-thread grouping, showing hidden threads with unread replies to you, `highlight:` class lists, and catalog `tile` highlight glow.
-- **Gallery and media:** grid gallery thumbnails, configurable gallery columns and thumbnail dock position, ZIP-based download-all-media support, persistent download dialog behavior, thumbnail replacement controls, and metadata visibility controls.
-- **Linkification:** YouTube -> yewtu.be and X/Twitter -> xcancel link rewriting.
-- **Settings and UI:** faster Settings loading, visible or tooltip descriptions, Highlight neXT markers for fork-specific settings, vertical or horizontal Settings navigation, CSS Custom Highlight API search highlighting, search-friendly layout, relative post dates, relative-date title mode, Settings overlay stacking fixes, and local user/styling docs.
+### Quick Reply and posting
+- Per-thread `QR Drafts` restore with attachment persistence and a recoverable discard bin
+- Native board-index form hiding
+- Upload progress and dump-list file-first removal
+- Image auto-processing and audio stripping for boards that disallow audio
+- Stacked TCaptcha editing
+- Autofill-resistant Name/Options/Subject fields, with an opt-in browser autofill setting
+- Auto-close Tags
+- Post-style comment preview with docked, QR-attached, and floating modes
+
+### Thread Watcher and monitoring
+- Quick Reply docking and attach-location controls
+- QR/window resize handling and remembered floating QR reopen behavior
+- Manual max-size controls
+- OP thumbnails and hover thumbnail previews
+- Mark-all-read and per-thread mark-read icons
+- Detailed thread stats
+- Replies-to-you state support for watcher links
+
+### Styling and themes
+- Built-in site themes with SFW/NSFW styling variants
+- StyleChan section handoff and home-page StyleChan mirroring
+- Theme-aware highlight colors and text color modes
+- Edge/background highlight modes, plus edge and border styles
+- Catalog own/watched highlights and saved palettes
+- Custom CSS editor pairing/indent helpers
+- A local styling guide
+
+### Scrollbar markers
+- Own-post, quotes-you, ghost-post, and unread-line markers
+- Per-marker colors, opacity, and match-highlight controls
+- Beside-scrollbar and IDE-style over-scrollbar layouts
+
+### Filters
+- Responsive Simple Filters with auto-save
+- Color swatches plus custom CSS classes
+- Combined Simple/Advanced preview
+- Index/catalog search over preview replies with an `op:` prefix
+- Hidden-thread grouping, and showing hidden threads with unread replies to you
+- `highlight:` class lists and catalog `tile` highlight glow
+
+### Gallery and media
+- Grid gallery thumbnails with configurable columns and thumbnail dock position
+- ZIP-based download-all-media support
+- Persistent download dialog behavior
+- Thumbnail replacement and metadata visibility controls
+
+### Linkification
+- YouTube -> yewtu.be link rewriting
+- X/Twitter -> xcancel link rewriting
+
+### Settings and UI
+- Faster Settings loading
+- Visible or tooltip descriptions
+- Highlight neXT markers for fork-specific settings
+- Vertical or horizontal Settings navigation
+- CSS Custom Highlight API search highlighting and a search-friendly layout
+- Relative post dates and relative-date title mode
+- Settings overlay stacking fixes
+- Local user/styling docs
 
 ## Build from Source
 
