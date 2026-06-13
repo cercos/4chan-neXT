@@ -237,7 +237,7 @@
 </details>
 
 <details open class="styling-custom-css" data-styling-section="customCSS">
-  <summary>Custom CSS</summary>
+  <summary>Custom CSS<button type="button" id="custom-css-detach" data-open="false" class="custom-css-summary-detach">Detach</button></summary>
   <div class="custom-css-toggle-row">
     <label><input type="checkbox" name="Custom CSS"> Enable Custom CSS</label>
     <label><input type="checkbox" name="customCSSHome"> Load on home page</label>
@@ -252,12 +252,11 @@
         <option value="xt-solarized">Solarized</option>
       </select>
     </label>
-    <button type="button" id="custom-css-expand" data-expanded="false">Expand editor</button>
-    <button type="button" id="custom-css-detach" data-open="false">Detach</button>
-    <label title="Bracket matching scans the editor as you move the caret and may degrade browser performance on large Custom CSS."><input type="checkbox" id="custom-css-bracket-highlight"> Highlight brackets</label>
+    <button type="button" id="custom-css-format" title="Reformat the CSS: fix indentation, braces and spacing. Shortcut: Shift+Alt+F">Format CSS</button>
+    <label class="ccss-controls-right" title="Bracket matching scans the editor as you move the caret and may degrade browser performance on large Custom CSS."><input type="checkbox" id="custom-css-bracket-highlight"> Highlight brackets</label>
     <label title="Suggest class names that exist on the page while typing a .class selector."><input type="checkbox" id="custom-css-autocomplete" checked> Suggest class names</label>
   </div>
-  <div class="custom-css-editor" data-theme="xt-system-default" data-expanded="false">
+  <div class="custom-css-editor" data-theme="xt-system-default">
     <pre class="custom-css-highlight" aria-hidden="true"></pre>
     <textarea hidden name="usercss" class="field custom-css-textarea" spellcheck="false" wrap="off"></textarea>
     <div class="custom-css-gutter" aria-hidden="true"><div class="custom-css-gutter-inner"></div></div>

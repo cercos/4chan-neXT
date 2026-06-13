@@ -132,7 +132,7 @@
     "//typecheck": "Compile-check src only (no build) via tsconfig.typecheck.json. Exits 0; treat new errors as regressions. Loose like the base config (not full strict) — separate so it doesn't touch the ~3500 non-fatal rollup warnings.",
     "typecheck": "tsc --noEmit -p tsconfig.typecheck.json",
     "//testbuild": "Development build for verifying source changes locally. Outputs to testbuilds/ (gitignored). This is the default build to use when iterating on code.",
-    "testbuild": "node ./tools/rollup -build-dir=testbuilds",
+    "testbuild": "node ./tools/rollup -build-dir=testbuilds -channel=testing",
     "//build": "Production release build. Writes committed artifacts to builds/. Only run when explicitly preparing a release — use testbuild for development iteration.",
     "build": "node ./tools/rollup",
     "//build:variants": "All build:* scripts below write release artifacts to builds/. Only run when explicitly preparing a release; use testbuild otherwise.",

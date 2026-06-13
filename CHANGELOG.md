@@ -1,5 +1,10 @@
 ## 4chan-neXT changelog
 
+### Unreleased
+
+- Added a "Format CSS" button and Shift+Alt+F shortcut to the Custom CSS editor that tidies indentation, braces, and spacing, and puts each selector of a comma list on its own line.
+- Moved the Custom CSS "Detach" button into the section header and removed the "Expand editor" button. Use Detach for more room, or drag the editor's bottom edge to resize.
+
 ### 1.1.4 (2026-06-12)
 
 - Added a keybind for the hide modifier, so the default Shift+click to hide can be reassigned to whatever modifier(s) you want.

@@ -2541,7 +2541,17 @@ body > #overlay:not(.media-preview) {
   display: inline-flex;
   gap: 4px;
 }
-.section-styling #custom-css-expand {
+/* Detach button lives in the section's <summary> flex row. margin-left:auto pushes
+   it to the right, next to the section's collapse triangle. Normal weight so it
+   reads as a control, not part of the bold heading. */
+.section-styling .custom-css-summary-detach {
+  font-weight: 400;
+  flex: 0 0 auto;
+  margin-left: auto;
+}
+/* Push the bracket/autocomplete toggles to the right of the controls row, leaving
+   the syntax-theme select and Format CSS on the left. */
+.section-styling .custom-css-controls > .ccss-controls-right {
   margin-left: auto;
 }
 .section-styling .custom-css-editor {
@@ -2562,9 +2572,6 @@ body > #overlay:not(.media-preview) {
   overflow: hidden;
   position: relative;
   resize: vertical;
-}
-.section-styling .custom-css-editor[data-expanded="true"] {
-  height: 500px;
 }
 .section-styling .custom-css-saved {
   position: absolute;
@@ -2672,11 +2679,9 @@ body > #overlay:not(.media-preview) {
   min-height: 120px !important;
   resize: none;
 }
-/* While detached, the section's own collapse summary and the now-redundant
-   inline-size buttons are hidden — the panel chrome and resize handle replace them. */
-#fourchanx-settings .styling-custom-css[data-detached] > summary,
-#fourchanx-settings .styling-custom-css[data-detached] #custom-css-expand,
-#fourchanx-settings .styling-custom-css[data-detached] #custom-css-detach {
+/* While detached, the section's own collapse summary (which now hosts the Detach
+   button) is hidden — the panel chrome and resize handle replace them. */
+#fourchanx-settings .styling-custom-css[data-detached] > summary {
   display: none !important;
 }
 /* "Re-attach" note left in the settings page while the section is detached. */

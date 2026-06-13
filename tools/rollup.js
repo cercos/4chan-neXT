@@ -2,7 +2,7 @@ import { rollup } from 'rollup';
 import typescript from '@rollup/plugin-typescript';
 import setupFileInliner from './rollup-plugin-inline-file.js';
 import faFix from './rollup-plugin-fa.js';
-import { dirname, resolve } from 'path';
+import { dirname, resolve, relative, sep } from 'path';
 import { fileURLToPath } from 'url';
 import generateMetadata from '../src/meta/metadata.js';
 import { copyFile, mkdir, readFile, writeFile } from 'fs/promises';
@@ -29,6 +29,14 @@ if (platform !== undefined && platform !== 'crx' && platform !== 'userscript') {
   throw new Error('incorrect value for the platform argument');
 }
 const buildForTest = process.argv.includes('-test');
+// -channel=<label> brands the userscript as a separate install (distinct @name +
+// @namespace) so it can sit alongside the release build. Its update/download
+// URLs point at -channel-base=<url> (default: a local http-server matching the
+// build dir, see `npm run serve:8123`) so "Check for updates" reinstalls locally.
+const channel = process.argv.find(arg => arg.startsWith('-channel='))?.slice(9);
+const buildDirRel = relative(resolve(__dirname, '..'), buildDir).split(sep).join('/');
+const channelBaseUrl = process.argv.find(arg => arg.startsWith('-channel-base='))?.slice(14)
+  || `http://localhost:8123/${buildDirRel}`;
 // Code comments are stripped from the unminified build by default (userscript header +
 // license banner are added after this runs, so they're unaffected). Saves ~7%.
 // Pass -keep-comments for a fully commented build.
@@ -45,7 +53,7 @@ const tsPlugin = typescript({
   const fileName = `${packageJson.meta.path}${minify ? '.min' : ''}.user.js`;
   const metaFileName = `${packageJson.meta.path}${minify ? '.min' : ''}.meta.js`;
 
-  const metadata = await generateMetadata(packageJson, fileName, metaFileName);
+  const metadata = await generateMetadata(packageJson, fileName, metaFileName, { channel, channelBaseUrl });
 
   const license = await readFile(resolve(__dirname, '../LICENSE'), 'utf8');
 

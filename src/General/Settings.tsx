@@ -3684,10 +3684,11 @@ Enable it on boards.${location.hostname.split('.')[1]}.org in your browser's pri
     const editor = $('.custom-css-editor', section) as HTMLDivElement | null;
     const highlight = $('.custom-css-highlight', section) as HTMLPreElement | null;
     const themeSelect = $('#custom-css-theme', section) as HTMLSelectElement | null;
-    const expandButton = $('#custom-css-expand', section) as HTMLButtonElement | null;
     const bracketToggle = $('#custom-css-bracket-highlight', section) as HTMLInputElement | null;
     const autocompleteToggle = $('#custom-css-autocomplete', section) as HTMLInputElement | null;
-    if (!editor || !highlight || !themeSelect || !expandButton || !bracketToggle || !autocompleteToggle) return;
+    // Optional: an older detached template may lack it, so don't gate init on it.
+    const formatButton = $('#custom-css-format', section) as HTMLButtonElement | null;
+    if (!editor || !highlight || !themeSelect || !bracketToggle || !autocompleteToggle) return;
 
     const gutter = $('.custom-css-gutter', editor) as HTMLElement | null;
     const gutterInner = gutter ? ($('.custom-css-gutter-inner', gutter) as HTMLElement | null) : null;
@@ -4031,15 +4032,13 @@ Enable it on boards.${location.hostname.split('.')[1]}.org in your browser's pri
       textarea.focus();
     };
 
-    if (detachButton) $.on(detachButton, 'click', () => (panel ? closeDetach() : openDetach()));
-
-    const updateExpandedState = (expanded: boolean, save = false) => {
-      editor.dataset.expanded = expanded ? 'true' : 'false';
-      editor.style.height = expanded ? '500px' : '180px';
-      expandButton.dataset.expanded = editor.dataset.expanded;
-      expandButton.textContent = expanded ? 'Collapse editor' : 'Expand editor';
-      if (save) $.set('settings.customCSSEditorExpanded', expanded);
-    };
+    // Detach lives inside <summary>, whose click would otherwise toggle the
+    // <details>; preventDefault/stopPropagation keep the disclosure state put.
+    if (detachButton) $.on(detachButton, 'click', (e: MouseEvent) => {
+      e.preventDefault();
+      e.stopPropagation();
+      panel ? closeDetach() : openDetach();
+    });
 
     const updateTheme = (save = false) => {
       const choice = themeSelect.value || 'xt-system';
@@ -4086,9 +4085,9 @@ Enable it on boards.${location.hostname.split('.')[1]}.org in your browser's pri
       flashSaved();
     });
     $.on(themeSelect, 'change', () => updateTheme(true));
-    $.on(expandButton, 'click', () => updateExpandedState(editor.dataset.expanded !== 'true', true));
     $.on(bracketToggle, 'change', () => updateBracketHighlight(bracketToggle.checked, true));
     $.on(autocompleteToggle, 'change', () => updateAutocomplete(autocompleteToggle.checked, true));
+    if (formatButton) $.on(formatButton, 'click', () => Settings.applyCustomCSSFormat(textarea, highlight));
     Settings.customCSSEditorThemeObserver?.disconnect();
     Settings.customCSSEditorThemeObserver = new MutationObserver(() => {
       if (themeSelect.value === 'xt-system') updateTheme(false);
@@ -4100,19 +4099,16 @@ Enable it on boards.${location.hostname.split('.')[1]}.org in your browser's pri
 
     $.get({
       'settings.customCSSEditorTheme': 'xt-system',
-      'settings.customCSSEditorExpanded': false,
       'settings.customCSSEditorBracketHighlight': false,
       'settings.customCSSEditorAutocomplete': true,
     }, prefs => {
       const theme = prefs['settings.customCSSEditorTheme'];
-      const expanded = !!prefs['settings.customCSSEditorExpanded'];
       const bracketHighlight = prefs['settings.customCSSEditorBracketHighlight'] !== false;
       const autocomplete = prefs['settings.customCSSEditorAutocomplete'] !== false;
 
       themeSelect.value = ['xt-system', 'xt-light', 'xt-dark', 'xt-solarized'].includes(theme) ? theme : 'xt-system';
 
       updateTheme(false);
-      updateExpandedState(expanded, false);
       updateBracketHighlight(bracketHighlight, false);
       updateAutocomplete(autocomplete, false);
       renderSwatches();
@@ -4425,6 +4421,16 @@ Enable it on boards.${location.hostname.split('.')[1]}.org in your browser's pri
         $.event('change', null, textarea);
         return;
       }
+      // Shift+Alt+F — reformat the whole document (matches VS Code's "Format
+      // Document"). Matched on e.code so it works regardless of the dead/accented
+      // character Alt produces on some keyboard layouts.
+      if (e.altKey && e.shiftKey && !e.ctrlKey && !e.metaKey && e.code === 'KeyF') {
+        e.preventDefault();
+        e.stopPropagation();
+        closeAC();
+        Settings.applyCustomCSSFormat(textarea, highlight);
+        return;
+      }
       if (e.ctrlKey || e.metaKey || e.altKey) return;
       const val = textarea.value;
       const start = textarea.selectionStart;
@@ -4514,6 +4520,126 @@ Enable it on boards.${location.hostname.split('.')[1]}.org in your browser's pri
         refresh();
       }
     });
+  },
+
+  // Reformat the whole textarea via Shift+Alt+F (or the Format CSS button), then
+  // commit it through the same change event Ctrl+S uses so it persists, updates
+  // the live style, and reflows the highlight overlay. A pure-whitespace diff is
+  // skipped so an already-tidy document doesn't push a no-op onto the undo stack.
+  applyCustomCSSFormat(textarea: HTMLTextAreaElement, highlight: HTMLPreElement) {
+    const formatted = Settings.formatCustomCSS(textarea.value);
+    if (formatted === textarea.value) return false;
+    textarea.focus();
+    // Select all then insertText so the reformat is a single native undo step.
+    textarea.selectionStart = 0;
+    textarea.selectionEnd = textarea.value.length;
+    let ok = false;
+    try { ok = d.execCommand('insertText', false, formatted); } catch {}
+    if (!ok) textarea.value = formatted;
+    textarea.selectionStart = textarea.selectionEnd = 0;
+    textarea.scrollTop = textarea.scrollLeft = 0;
+    $.event('change', null, textarea);
+    Settings.renderCustomCSSHighlight(textarea, highlight);
+    highlight.scrollTop = textarea.scrollTop;
+    highlight.scrollLeft = textarea.scrollLeft;
+    return true;
+  },
+
+  // Lightweight CSS pretty-printer. Not a full parser: it stashes comments and
+  // strings so their contents are never touched, then walks the remaining source
+  // tracking brace depth to re-emit consistent 2-space indentation, one
+  // declaration per line, `selector {` / dedented `}`, and `prop: value;`
+  // spacing, with a blank line between top-level rules. Anything it can't
+  // classify is preserved verbatim, so the worst case is a no-op rather than
+  // corrupted CSS.
+  formatCustomCSS(css: string): string {
+    const INDENT = '  ';
+    // 1. Pull comments and strings out so their braces / semicolons / colons
+    //    can't be mistaken for structure. Restored at the end.
+    const stash: string[] = [];
+    const work = css
+      .replace(/\/\*[\s\S]*?\*\//g, m => `${stash.push(m) - 1}`)
+      .replace(/"(?:\\.|[^"\\])*"|'(?:\\.|[^'\\])*'/g, m => `${stash.push(m) - 1}`);
+
+    const PURE_PLACEHOLDER = /^(?:\d+\s*)+$/; // run is nothing but stashed tokens
+    let out = '';
+    let depth = 0;
+    let buf = '';
+    const pad = () => INDENT.repeat(depth);
+
+    // Peel leading stashed comments off `s`, emitting each on its own line, so a
+    // comment sitting before a selector/declaration isn't glued onto it.
+    const peelComments = (s: string) => {
+      let m: RegExpMatchArray | null;
+      while ((m = s.match(/^\s*(\d+)\s*/))) {
+        out += pad() + m[1] + '\n';
+        s = s.slice(m[0].length);
+      }
+      return s;
+    };
+
+    // Split `s` on `sep` at paren/bracket depth 0 only, so commas inside
+    // :is(…)/:not(…)/:where(…) or [attr] aren't mistaken for list separators.
+    const splitTopLevel = (s: string, sep: string) => {
+      const parts: string[] = [];
+      let nest = 0, last = 0;
+      for (let i = 0; i < s.length; i++) {
+        const c = s[i];
+        if (c === '(' || c === '[') nest++;
+        else if (c === ')' || c === ']') nest = Math.max(0, nest - 1);
+        else if (c === sep && nest === 0) { parts.push(s.slice(last, i)); last = i + 1; }
+      }
+      parts.push(s.slice(last));
+      return parts;
+    };
+
+    const flushDecl = () => {
+      let t = peelComments(buf.replace(/\s+/g, ' ').trim()).trim();
+      buf = '';
+      if (!t) return;
+      if (PURE_PLACEHOLDER.test(t)) { out += pad() + t + '\n'; return; } // trailing comment only, no `;`
+      // Normalise `prop:value` → `prop: value`, but only when the text left of
+      // the first colon is a clean identifier — so values that contain colons
+      // (url(http://…), data URIs) are left untouched.
+      const ci = t.indexOf(':');
+      if (ci > 0) {
+        const prop = t.slice(0, ci).trim();
+        if (/^(?:--)?[-\w]+$/.test(prop)) t = `${prop}: ${t.slice(ci + 1).trim()}`;
+      }
+      t = t.replace(/\s*!important/gi, ' !important');
+      out += pad() + t + ';\n';
+    };
+
+    for (let i = 0; i < work.length; i++) {
+      const ch = work[i];
+      if (ch === '{') {
+        if (depth === 0 && out && !out.endsWith('\n\n')) out += '\n'; // blank line between top-level rules
+        const sel = peelComments(buf.replace(/\s+/g, ' ').trim()).trim();
+        buf = '';
+        const parts = splitTopLevel(sel, ',');
+        if (parts.length > 1) {
+          // Stack a selector list one-per-line (the last carries the brace), so
+          // long lists stay readable instead of collapsing onto one line.
+          parts.forEach((p, n) => { out += pad() + p.trim() + (n < parts.length - 1 ? ',\n' : ' {\n'); });
+        } else {
+          out += pad() + (sel ? sel + ' ' : '') + '{\n';
+        }
+        depth++;
+      } else if (ch === '}') {
+        flushDecl();
+        depth = Math.max(0, depth - 1);
+        out += pad() + '}\n';
+      } else if (ch === ';') {
+        flushDecl();
+      } else {
+        buf += ch;
+      }
+    }
+    flushDecl(); // trailing declaration with no closing `;` or `}`
+
+    // Restore stashed tokens, collapse blank-line runs, normalise edges.
+    out = out.replace(/(\d+)/g, (_, n) => stash[+n]);
+    return out.replace(/\n{3,}/g, '\n\n').replace(/^\n+/, '').replace(/\s+$/, '') + '\n';
   },
 
   resolveCustomCSSEditorTheme(theme: string) {
