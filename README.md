@@ -69,7 +69,7 @@ To migrate settings:
 
 ### Styling and themes
 - Built-in site themes with SFW/NSFW styling variants
-- StyleChan section handoff and home-page StyleChan mirroring
+- Styling-script section handoff and home-page mirroring (currently StyleChan)
 - Theme-aware highlight colors and text color modes
 - Edge/background highlight modes, plus edge and border styles
 - Catalog own/watched highlights and saved palettes
