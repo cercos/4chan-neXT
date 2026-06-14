@@ -74,6 +74,7 @@ var Settings = {
   },
   rememberLayout: false,
   highlightNext: false,
+  accordionMode: false,
   savedWindowLayout: '',
   detailsState: dict() as Record<string, boolean>,
   pointerDownInsideDialog: false,
@@ -373,6 +374,7 @@ var Settings = {
     $.on($('.settings-search input', dialog), 'input', Settings.onSearchInput);
     $.on($('.expand-all',   dialog), 'click', e => { e.preventDefault(); Settings.toggleAllDetails(true); });
     $.on($('.collapse-all', dialog), 'click', e => { e.preventDefault(); Settings.toggleAllDetails(false); });
+    $.on($('.accordion-toggle', dialog), 'click', e => { e.preventDefault(); Settings.toggleAccordion(); });
     $.on($('.move', settingsWindow), 'touchstart mousedown', Settings.prepareDrag);
     $.on($('#settings-remember-layout', dialog), 'change', Settings.onRememberLayoutChange);
     $.on($('#settings-highlight-next', dialog), 'change', Settings.onHighlightNextChange);
@@ -495,6 +497,10 @@ var Settings = {
 
   toggleAllDetails(open) {
     if (!Settings.dialog) return;
+    // Accordion mode is, by definition, one-open-at-a-time, so an "expand all"
+    // is a contradiction the browser would override anyway. Ignore it loudly
+    // (the button is dimmed in CSS) rather than flashing every panel open.
+    if (open && Settings.accordionMode) return;
     const section = $('section', Settings.dialog);
     if (!section) return;
     for (const details of $$('details', section)) {
@@ -506,17 +512,98 @@ var Settings = {
     }
   },
 
+  toggleAccordion() {
+    Settings.setAccordionMode(!Settings.accordionMode);
+  },
+
+  setAccordionMode(on: boolean) {
+    Settings.accordionMode = on;
+    $.set('settings.accordionMode', on);
+    Settings.syncAccordionButton();
+    const section = Settings.dialog && $('section', Settings.dialog);
+    if (section) {
+      Settings.applyAccordionMode(section as HTMLElement);
+      // Turning accordion off opens every top-level panel so the change is
+      // immediately visible: the lone-open constraint is gone and everything
+      // is now expandable at once.
+      if (!on) Settings.expandTopLevelPanels(section as HTMLElement);
+    }
+  },
+
+  // Open every top-level <details> panel in each container (the lone section,
+  // or every block in "All Settings"), mirroring the scope the accordion groups.
+  // Nested <details> are left as-is. Persists the resulting layout when needed.
+  expandTopLevelPanels(section: HTMLElement) {
+    const blocks = $$('.settings-section-content', section) as HTMLElement[];
+    const containers = blocks.length ? blocks : [section];
+    for (const container of containers) {
+      for (const el of [...container.children] as HTMLElement[]) {
+        if (el.tagName === 'DETAILS') (el as HTMLDetailsElement).open = true;
+      }
+    }
+    if (Settings.rememberLayout) {
+      Settings.persistCurrentDetailsState();
+      $.set('settings.detailsState', Settings.detailsState);
+    }
+  },
+
+  syncAccordionButton() {
+    if (!Settings.dialog) return;
+    const btn = $('.accordion-toggle', Settings.dialog) as HTMLElement | null;
+    if (!btn) return;
+    btn.classList.toggle('accordion-active', Settings.accordionMode);
+    btn.setAttribute('aria-pressed', Settings.accordionMode ? 'true' : 'false');
+    const actions = $('.settings-titlebar-actions', Settings.dialog) as HTMLElement | null;
+    if (actions) actions.classList.toggle('accordion-on', Settings.accordionMode);
+  },
+
+  // Accordion = native exclusive <details>. Giving each top-level panel in a
+  // container a shared `name` makes the browser keep at most one open. Nested
+  // <details> (filters, sub-groups) are left alone so they collapse normally
+  // inside whichever panel is open. Each container (the lone section, or every
+  // block in "All Settings") gets its own group so blocks stay independent.
+  applyAccordionMode(section: HTMLElement) {
+    if (!section) return;
+    // While searching, panels are revealed/hidden by class; exclusive grouping
+    // would fight that by force-collapsing a panel that holds a match. Suspend
+    // grouping for the duration of the query (re-applied on the post-search
+    // re-render). The mode flag itself is untouched.
+    const active = Settings.accordionMode && !Settings.searchQuery;
+    const blocks = $$('.settings-section-content', section) as HTMLElement[];
+    const containers = blocks.length ? blocks : [section];
+    containers.forEach((container, i) => {
+      const groupName = `xt-accordion-${i}`;
+      const panels = ([...container.children] as HTMLElement[])
+        .filter(el => el.tagName === 'DETAILS') as HTMLDetailsElement[];
+      if (active) {
+        // Collapse to a single open panel before grouping so the browser does
+        // not arbitrarily pick which one survives.
+        let kept = false;
+        for (const panel of panels) {
+          if (panel.open && !kept) { kept = true; }
+          else if (panel.open) { panel.open = false; }
+        }
+        for (const panel of panels) panel.setAttribute('name', groupName);
+      } else {
+        for (const panel of panels) panel.removeAttribute('name');
+      }
+    });
+  },
+
   loadLayoutPrefs() {
     if (!Settings.dialog) return;
     $.get({
       'settings.rememberLayout': false,
       'settings.highlightNext': false,
+      'settings.accordionMode': false,
       'settings.windowLayout': '',
       'settings.detailsState': dict(),
     }, prefs => {
       if (!Settings.dialog) return;
       Settings.rememberLayout = !!prefs['settings.rememberLayout'];
       Settings.highlightNext = !!prefs['settings.highlightNext'];
+      Settings.accordionMode = !!prefs['settings.accordionMode'];
+      Settings.syncAccordionButton();
       const highlightToggle = $('#settings-highlight-next', Settings.dialog) as HTMLInputElement | null;
       if (highlightToggle) highlightToggle.checked = Settings.highlightNext;
       Settings.applyNextHighlight();
@@ -536,6 +623,7 @@ var Settings = {
         const section = $('section', Settings.dialog);
         if (section) {
           Settings.decorateDetailsWithKeys(section, Settings.renderedSection);
+          Settings.applyAccordionMode(section);
         }
       }
     });
@@ -1026,6 +1114,7 @@ var Settings = {
     sectionInfo.open(section, g);
     Settings.attachTextareaResizers(section);
     Settings.decorateDetailsWithKeys(section, sectionInfo);
+    Settings.applyAccordionMode(section);
     Settings.tagNextSettings(section);
     section.scrollTop = 0;
     Settings.renderedSection = sectionInfo;

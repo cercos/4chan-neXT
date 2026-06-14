@@ -2,8 +2,8 @@
 
 ### Unreleased
 
-- Refreshed the settings page styling: collapsible sections now subtly highlight as a whole when you hover over or focus within them, making the section you're working in easier to track. The tints adapt to the active theme.
-- Moved the Sauce section's "Detach" button up into the section header, beside the collapse arrow, matching the Quick Reply Personas section.
+- Added settings page header controls to collapse or expand all sections at once, plus an accordion mode that keeps only one section open at a time.
+- Improved settings page behaviors: sections highlight as a whole on hover/focus to track where you're working, and the Sauce and Quick Reply Personas "Detach" buttons moved into their section headers.
 - Post menus now animate when opening and closing instead of popping in and out. Dialogs finish their exit transition before leaving the DOM, so both the open and close are smooth.
 - Inline sauce links are now wrapped in a `.sauce-container` span, so they can be targeted or revealed on hover with custom CSS.
 - Fixed QR inputs not retaining values after submitting.

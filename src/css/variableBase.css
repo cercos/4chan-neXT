@@ -31,11 +31,9 @@
 }
 
 /* Settings */
-.section-main div::before {
+.section-main div::before,
+.section-main div::after {
   border-color: var(--xt-border);
-}
-.suboption-list > div:last-of-type {
-  background-color: var(--xt-background);
 }
 
 /* Catalog */

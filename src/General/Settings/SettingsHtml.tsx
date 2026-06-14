@@ -1,13 +1,15 @@
 import { g } from "../../globals/globals";
 import h from "../../globals/jsx";
 import meta from '../../../package.json';
+import Icon from '../../Icons/icon';
 
 const settingsHtml = <div id="fourchanx-settings" class="dialog">
   <div class="settings-titlebar move">
     <span class="settings-title">{meta.name} Settings</span>
     <span class="settings-titlebar-actions">
-      <a href="#" class="expand-all" title="Expand all sections">Expand all</a>
-      <a href="#" class="collapse-all" title="Collapse all sections">Collapse all</a>
+      <a href="#" class="accordion-toggle" role="button" aria-pressed="false" aria-label="Accordion mode" title="Accordion: keep only one section open at a time">{Icon.raw('barsStaggered')}</a>
+      <a href="#" class="expand-all" aria-label="Expand all sections" title="Expand all sections">{Icon.raw('squarePlus')}</a>
+      <a href="#" class="collapse-all" aria-label="Collapse all sections" title="Collapse all sections">{Icon.raw('squareMinus')}</a>
       <a href="#" class="close" title="Close">✕</a>
     </span>
   </div>

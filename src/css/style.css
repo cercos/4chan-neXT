@@ -518,6 +518,40 @@ audio.controls-added {
   opacity: 1;
   text-decoration: underline;
 }
+/* Icon-only action buttons (accordion / expand-all / collapse-all). The label
+   lives in title + aria-label; the glyph carries the meaning so the cluster
+   stays compact even in the cramped horizontal-nav titlebar. */
+.settings-titlebar-actions > a.accordion-toggle,
+.settings-titlebar-actions > a.expand-all,
+.settings-titlebar-actions > a.collapse-all {
+  display: inline-flex;
+  align-items: center;
+  padding: 2px 3px;
+  border-radius: 3px;
+  line-height: 1;
+}
+.settings-titlebar-actions > a.accordion-toggle:hover,
+.settings-titlebar-actions > a.expand-all:hover,
+.settings-titlebar-actions > a.collapse-all:hover {
+  text-decoration: none;
+  background: rgba(128, 128, 128, .2);
+}
+.settings-titlebar-actions > a.accordion-toggle .icon {
+  font-size: 1.1em;
+}
+/* Pressed accordion mode: solid, full-opacity, accent-tinted so the one-open
+   state reads as "on" at a glance. */
+.settings-titlebar-actions > a.accordion-toggle.accordion-active {
+  opacity: 1;
+  color: var(--xt-link-text-color, #34b);
+  background: rgba(128, 128, 128, .22);
+}
+/* While accordion is on, "expand all" cannot apply (only one panel may be
+   open), so fade it and block the pointer to signal it is inert. */
+.settings-titlebar-actions.accordion-on > a.expand-all {
+  opacity: .35;
+  pointer-events: none;
+}
 .remember-layout-toggle {
   align-items: center;
   cursor: pointer;
@@ -1040,19 +1074,16 @@ div[data-checked="false"] > .suboption-list {
 .suboption-list {
   position: relative;
 }
-.suboption-list::before {
-  content: "";
-  display: inline-block;
-  position: absolute;
-  left: .7em;
-  width: 0;
-  height: 100%;
-  border-left: 1px solid;
-}
 .suboption-list > div {
   position: relative;
   padding-left: 1.4em;
 }
+/* Tree connector. The elbow (::before) drops from the row top to the joint and
+   turns in to the label; the guide (::after) continues straight down to meet the
+   next sibling's elbow. Only non-last rows draw the guide, so the line stops at
+   the last elbow with no overshoot — which is why no row needs an opaque mask
+   to hide a dangling tail (an opaque mask would punch a hole in the section's
+   translucent :hover tint, showing up as a stray dark box on that one row). */
 .suboption-list > div::before {
   content: "";
   display: inline-block;
@@ -1062,6 +1093,16 @@ div[data-checked="false"] > .suboption-list {
   height: .6em;
   border-left: 1px solid;
   border-bottom: 1px solid;
+}
+.suboption-list > div:not(:last-of-type)::after {
+  content: "";
+  display: inline-block;
+  position: absolute;
+  left: .7em;
+  top: .6em;
+  bottom: 0;
+  width: 0;
+  border-left: 1px solid;
 }
 #fourchanx-settings .description {
   display: inline;
