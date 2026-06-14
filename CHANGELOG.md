@@ -2,6 +2,9 @@
 
 ### Unreleased
 
+- Post menus now animate when opening and closing instead of popping in and out. Dialogs finish their exit transition before leaving the DOM, so both the open and close are smooth.
+- Inline sauce links are now wrapped in a `.sauce-container` span, so they can be targeted or revealed on hover with custom CSS.
+
 ### 1.1.5 (2026-06-14)
 
 - Added a "Filtered thread" row to the catalog Highlights settings that configures how filter-highlighted threads look in the catalog (color, opacity, background, location, border, glow, text colors), with a "Use defaults" button. The color shows the theme's own filter color when left blank.

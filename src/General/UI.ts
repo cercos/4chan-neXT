@@ -163,7 +163,10 @@ var Menu = (function() {
     }
 
     close() {
-      $.rm(this.menu);
+      // Animate the menu out instead of yanking it from the DOM mid-transition;
+      // a fresh node is built on every open, so the outgoing copy can linger
+      // harmlessly until its exit animation finishes.
+      $.rmAfterAnimation(this.menu);
       delete this.menu;
       $.rmClass(lastToggledButton, 'active');
       currentMenu       = null;

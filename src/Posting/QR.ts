@@ -112,7 +112,6 @@ var QR = {
   fileBatchSize: 3,
   heavyBatchFileCount: 8,
   heavyBatchSize: 64 * 1024 * 1024,
-  metadataStrippedFlag: '__4chanXTMetadataStripped',
 
   // Page-stitched literal preview post (when style = 'thread')
   previewPost: null as HTMLDivElement | null,
@@ -162,15 +161,6 @@ var QR = {
   mimeTypes: ['image/jpeg', 'image/png', 'image/gif', 'application/pdf', 'application/vnd.adobe.flash.movie', 'application/x-shockwave-flash', 'video/webm', 'video/mp4'],
 
   validExtension: /\.(jpe?g|png|gif|pdf|swf|webm|mp4)$/i,
-
-  markMetadataStripped(file: File) {
-    (file as File & { [key: string]: any })[QR.metadataStrippedFlag] = true;
-    return file;
-  },
-
-  isMetadataStripped(file: File) {
-    return !!(file as File & { [key: string]: any })[QR.metadataStrippedFlag];
-  },
 
   typeFromExtension: {
     'jpg':  'image/jpeg',
@@ -3388,7 +3378,7 @@ var QR = {
       return file;
     }
 
-    return QR.markMetadataStripped(newFile);
+    return newFile;
   },
 
   previewUrl: undefined as string | undefined,
@@ -4913,73 +4903,6 @@ class post {
     }
   }
 
-  shouldStripMetadata(file: File) {
-    if (Conf['Strip All Media Metadata']) { return true; }
-    const category = file.type.split('/')[0];
-    switch (category) {
-      case 'image': return !!Conf['Image Metadata'];
-      case 'video': return !!Conf['Video Metadata'];
-      case 'audio': return !!Conf['Audio Metadata'];
-      default:      return !!Conf['Other Metadata'];
-    }
-  }
-
-  async stripImageMetadata(file: File): Promise<File> {
-    if (QR.isMetadataStripped(file)) { return file; }
-    const type = file.type.toLowerCase();
-    if (!['image/jpeg', 'image/png'].includes(type)) { return file; }
-    const outputType = type === 'image/jpeg' ? 'jpeg' : 'png';
-    const img = await createImageBitmap(file);
-    const width = img.width;
-    const height = img.height;
-    let canvas: HTMLCanvasElement | OffscreenCanvas;
-    let toBlob: (mime: string, quality: number) => Promise<Blob>;
-
-    if (window.OffscreenCanvas && !Conf['Avoid OffscreenCanvas']) {
-      canvas = new OffscreenCanvas(width, height);
-      toBlob = (mime, quality) => (canvas as OffscreenCanvas).convertToBlob({ type: mime, quality });
-    } else {
-      canvas = $.el('canvas', { width, height }) as HTMLCanvasElement;
-      toBlob = (mime, quality) => new Promise((resolve, reject) => {
-        (canvas as HTMLCanvasElement).toBlob(blob => {
-          if (blob) {
-            resolve(blob);
-          } else {
-            reject(new Error('Failed to strip image metadata.'));
-          }
-        }, mime, quality);
-      });
-    }
-    canvas.getContext('2d').drawImage(img, 0, 0, width, height);
-    const mime = `image/${outputType}`;
-    const stripped = await toBlob(mime, .92);
-    return QR.markMetadataStripped(new File([stripped], file.name, { type: file.type }));
-  }
-
-  async stripMetadata(file: File): Promise<File> {
-    if (QR.isMetadataStripped(file)) { return file; }
-    if (!this.shouldStripMetadata(file)) { return file; }
-    if (file.type.startsWith('image/')) {
-      const stripped = await this.stripImageMetadata(file);
-      if (stripped === file && !['image/jpeg', 'image/png'].includes(file.type.toLowerCase())) {
-        new Notice('warning', `Metadata stripping is not supported for ${file.type || 'this image type'}.`, 4);
-      }
-      return stripped;
-    }
-    if (file.type.startsWith('video/')) {
-      let stripped = await VideoStripper.stripMetadata(file);
-      if (stripped !== file) {
-        stripped = QR.markMetadataStripped(stripped);
-      }
-      if (stripped === file && !(/^video\/mp4$/i.test(file.type) || /\.mp4$/i.test(file.name))) {
-        new Notice('warning', `Metadata stripping is not supported for ${file.type || 'this video type'}.`, 4);
-      }
-      return stripped;
-    }
-    new Notice('warning', `Metadata stripping is not supported for ${file.type || 'this file type'}.`, 4);
-    return file;
-  }
-
   /**
    * Checks if the mime type and file size are valid. If "Auto-process Images" is enabled, it can convert unsupported
    * image formats to png, shrink oversized images, and convert to jpeg when the file is too large.
@@ -5051,8 +4974,8 @@ class post {
     // it gets re-saved; a restored file keeps its existing store id (set below).
     if (!opts.restore) { delete this._draftFileId; }
     try {
-      // On restore the file was already audio-stripped/metadata-stripped/renamed
-      // when first added, so skip that reprocessing (and its notices).
+      // On restore the file was already audio-stripped/renamed when first added,
+      // so skip that reprocessing (and its notices).
       if (
         !opts.restore &&
         Conf['Strip Video Audio'] &&
@@ -5063,14 +4986,6 @@ class post {
         if (stripped !== file) {
           file = stripped;
           new Notice('info', 'Removed audio from video for this board.', 4);
-        }
-      }
-
-      if (!opts.restore) {
-        const strippedMetadata = await this.stripMetadata(file);
-        if (strippedMetadata !== file) {
-          file = strippedMetadata;
-          new Notice('info', 'Removed media metadata from file.', 4);
         }
       }
 

@@ -148,7 +148,10 @@ var Sauce = {
         if (node.dataset.skip) { skipped.push([link, node]); }
       }
     }
-    $.add(file.text, nodes);
+    if (!nodes.length) { return; }
+    const container = $.el('span', {className: 'sauce-container'});
+    $.add(container, nodes);
+    $.add(file.text, container);
 
     if (skipped.length) {
       var observer = new MutationObserver(function() {

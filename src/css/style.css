@@ -2062,6 +2062,21 @@ body > #overlay:not(.media-preview) {
   padding: 1px 5px;
   vertical-align: 1px;
 }
+#fourchanx-settings .section-styling details[data-variant-aware="true"] > summary > .styling-variant-badge {
+  background: color-mix(in srgb, var(--xt-variant-accent, currentColor) 16%, transparent);
+  border: 1px solid color-mix(in srgb, var(--xt-variant-accent, currentColor) 45%, transparent);
+  border-radius: 3px;
+  color: inherit;
+  display: inline-block;
+  flex: 0 0 auto;
+  font-size: 10px;
+  font-weight: 700;
+  line-height: 1.2;
+  margin-left: 8px;
+  margin-right: auto;
+  padding: 1px 5px;
+  vertical-align: 1px;
+}
 .section-styling .styling-theme-picker > select[name^="siteStyle"] {
   display: none !important;
 }
@@ -2566,7 +2581,8 @@ body > #overlay:not(.media-preview) {
   vertical-align: middle;
 }
 .section-styling .styling-color-merged .styling-color-hex {
-  background: transparent;
+  background: transparent !important;
+  background-color: transparent !important;
   border: 0;
   border-radius: 0;
   height: 100%;
@@ -2580,7 +2596,8 @@ body > #overlay:not(.media-preview) {
   outline-offset: -2px;
 }
 .section-styling .styling-color-merged .styling-color-trigger {
-  background: transparent;
+  background: transparent !important;
+  background-color: transparent !important;
   /* Thin divider hints the strip is its own click target without breaking the
      seamless colour fill; a neutral translucent line reads on light and dark. */
   border-left: 1px solid rgba(128, 128, 128, .55);
@@ -2590,6 +2607,8 @@ body > #overlay:not(.media-preview) {
   width: 18px;
 }
 .section-styling .styling-color-merged .styling-color-trigger input[type="color"] {
+  background: transparent !important;
+  background-color: transparent !important;
   border: 0;
   cursor: pointer;
   height: 100%;
@@ -2669,6 +2688,9 @@ body > #overlay:not(.media-preview) {
   font-weight: 400;
   flex: 0 0 auto;
   margin-left: auto;
+}
+.section-styling .styling-variant-badge + .custom-css-summary-detach {
+  margin-left: 0;
 }
 /* Push the bracket/autocomplete toggles to the right of the controls row, leaving
    the syntax-theme select and Format CSS on the left. */
@@ -5527,6 +5549,23 @@ input[type="checkbox"]:checked ~ .checkbox-letter {
   position: fixed;
   outline: none;
   font-weight: normal;
+  transition: opacity .12s ease, transform .12s ease;
+}
+/* Enter animation: a freshly-inserted menu animates from this starting state. */
+@starting-style {
+  #menu {
+    opacity: 0;
+    transform: scale(.97);
+  }
+}
+/* Exit animation: $.rmAfterAnimation adds .closing, then removes on transitionend. */
+#menu.closing {
+  opacity: 0;
+  transform: scale(.97);
+  pointer-events: none;
+}
+@media (prefers-reduced-motion: reduce) {
+  #menu { transition: none; }
 }
 #menu, .submenu {
   border-radius: 3px;
@@ -5899,6 +5938,13 @@ input[type="checkbox"]:checked ~ .checkbox-letter {
 }
 :root.gal-pdf .gal-buttons a:hover {
   color: rgb(204, 204, 204) !important;
+}
+/* Inline sauce links are wrapped in .sauce-container so they can be
+   targeted or revealed on hover via custom CSS, e.g.:
+     .file-info .sauce-container { display: none; }
+     .file-info:hover .sauce-container { display: inline; } */
+.sauce-container {
+  display: inline;
 }
 /* The fixed top-right buttons and bottom-right labels sit at a base gap from the
    viewport edges. The 44px base accounts for the image viewport's vertical

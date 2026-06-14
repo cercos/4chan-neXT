@@ -498,7 +498,6 @@ const ScrollMarkers = {
       const topPct = (topInDoc / docHeight) * 100;
       const marker = $.el('div', {
         className: 'scroll-marker scroll-marker-unread',
-        title: 'Unread line',
       });
       marker.style.cssText = `top:${topPct}%;height:2px`;
       $.add(frag, marker);
@@ -512,7 +511,6 @@ const ScrollMarkers = {
   },
 
   bind(marker: HTMLElement, post: Post) {
-    marker.title = `Post No.${post.ID}`;
     $.on(marker, 'mouseenter', (e: MouseEvent) => {
       ScrollMarkers.highlightPost(post);
       ScrollMarkers.showPreview(marker, post, e);

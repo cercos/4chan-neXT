@@ -320,9 +320,22 @@ var Settings = {
       // instead of the whole summary, so it can't wipe the injected toggle.
       const titleWrap = $.el('span', { className: 'styling-section-summary-label' });
       const titleText = $.el('span', { className: 'styling-section-summary-text' });
-      while (summary.firstChild) titleText.appendChild(summary.firstChild);
+      const summaryActions: ChildNode[] = [];
+      while (summary.firstChild) {
+        const child = summary.firstChild;
+        if (
+          child instanceof HTMLElement
+          && child.matches('button, input, select, textarea, label, [data-summary-action]')
+        ) {
+          summaryActions.push(child);
+          summary.removeChild(child);
+        } else {
+          titleText.appendChild(child);
+        }
+      }
       $.add(titleWrap, [label, titleText]);
       summary.appendChild(titleWrap);
+      for (const action of summaryActions) summary.appendChild(action);
       syncOne(detail, id, cb);
       entries.push({ detail, id, cb });
     }
@@ -2463,13 +2476,16 @@ Enable it on boards.${location.hostname.split('.')[1]}.org in your browser's pri
       const rgb = value ? Settings.hexToRgb(value) : null;
       if (!rgb) {
         if (merged) merged.style.background = '';
-        hexInput.style.color = '';
+        hexInput.style.removeProperty('color');
+        hexInput.style.removeProperty('-webkit-text-fill-color');
         return;
       }
       if (merged) merged.style.background = value;
       const onWhite = Settings.contrastRatio([255, 255, 255], rgb);
       const onBlack = Settings.contrastRatio([17, 17, 17], rgb);
-      hexInput.style.color = onWhite >= onBlack ? '#fff' : '#111';
+      const textColor = onWhite >= onBlack ? '#fff' : '#111';
+      hexInput.style.setProperty('color', textColor, 'important');
+      hexInput.style.setProperty('-webkit-text-fill-color', textColor, 'important');
     };
     const syncColorHexInput = (baseKey: string) => {
       const colorInput = inputs[baseKey];
@@ -3407,7 +3423,23 @@ Enable it on boards.${location.hostname.split('.')[1]}.org in your browser's pri
       for (const detail of $$('details[data-variant-aware="true"]', section) as HTMLElement[]) {
         detail.dataset.variantLabel = shortLabel;
         const summaryText = $('.styling-section-summary-text', detail) as HTMLElement | null;
-        if (summaryText) summaryText.dataset.variantLabel = shortLabel;
+        if (summaryText) {
+          summaryText.dataset.variantLabel = shortLabel;
+          const oldBadge = $('summary > .styling-variant-badge', detail) as HTMLElement | null;
+          if (oldBadge) $.rm(oldBadge);
+          continue;
+        }
+        const summary = $('summary', detail) as HTMLElement | null;
+        if (!summary) continue;
+        let badge = $(':scope > .styling-variant-badge', summary) as HTMLElement | null;
+        if (!badge) {
+          badge = $.el('span', { className: 'styling-variant-badge' });
+          const firstAction = Array.from(summary.children).find(child =>
+            child.matches('button, input, select, textarea, label, [data-summary-action]')
+          );
+          summary.insertBefore(badge, firstAction || null);
+        }
+        badge.textContent = shortLabel;
       }
     };
     const switchEditingVariant = (variant: StyleVariant) => {
