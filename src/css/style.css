@@ -2840,6 +2840,130 @@ body > #overlay:not(.media-preview) {
 .custom-css-reattach {
   cursor: pointer;
 }
+/* ── Generic detach panel (Personas, Sauce) ───────────────────────────────────
+   A free-floating, draggable, resizable window holding a relocated settings
+   block. Mirrors the Custom CSS detach panel but theme-neutral (these fields have
+   no syntax theme), so its chrome follows the settings dialog. Structural
+   display/flex props are forced because the panel lives inside the settings
+   dialog, where the existing ID-specificity rules (e.g.
+   `#fourchanx-settings summary{display:flex}`) would otherwise win. */
+.xt-detach-btn {
+  cursor: pointer;
+}
+/* Personas and Sauce host their Detach button in the section's <summary> flex
+   row; push it to the right, next to the disclosure triangle, in normal (control)
+   weight. The summary itself is hidden while detached (see [data-detached] rule),
+   so the button vanishes with it. */
+.xt-detach-summary-btn {
+  font-weight: 400;
+  flex: 0 0 auto;
+  margin-left: auto;
+}
+#fourchanx-settings .xt-detach-panel {
+  /* Match the settings dialog itself: `.dialog` (the settings window) is painted
+     with var(--xt-background)/var(--xt-border) per active theme, so reusing them
+     makes the panel a true extension of the dialog and adapts to every theme
+     (dark themes included) instead of a hardcoded colour. Text is inherited from
+     #fourchanx-settings, which the panel is nested inside. */
+  --xt-detach-border: var(--xt-border, rgba(128, 128, 128, .45));
+  position: fixed;
+  z-index: 1500;
+  display: flex !important;
+  flex-direction: column;
+  min-width: 320px;
+  min-height: 200px;
+  max-width: 100vw;
+  max-height: 100vh;
+  overflow: hidden;
+  resize: both;
+  border-radius: 6px;
+  border: 1px solid var(--xt-detach-border);
+  background: var(--xt-background, Canvas);
+  color: inherit;
+  box-shadow: 0 12px 48px rgba(0, 0, 0, .5);
+}
+#fourchanx-settings .xt-detach-panel-bar {
+  flex: 0 0 auto;
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+  gap: 12px;
+  padding: 6px 6px 6px 12px;
+  cursor: move;
+  user-select: none;
+  font-weight: 700;
+  border-bottom: 1px solid var(--xt-detach-border);
+}
+#fourchanx-settings .xt-detach-panel-actions {
+  display: flex;
+  align-items: center;
+  gap: 6px;
+}
+#fourchanx-settings .xt-detach-panel-reset {
+  cursor: pointer;
+}
+#fourchanx-settings .xt-detach-panel-close {
+  cursor: pointer;
+  padding: 0 8px;
+  font-size: 16px;
+  line-height: 1.2;
+}
+#fourchanx-settings .xt-detach-panel-body {
+  flex: 1 1 auto !important;
+  min-height: 0;
+  display: flex !important;
+  flex-direction: column;
+  overflow: auto;
+  padding: 10px 12px 12px;
+}
+/* The relocated block (Personas' <details> or Sauce's .sauce-section) becomes the
+   flex column that lets its textarea grow to fill whatever height the user resizes
+   the panel to. */
+#fourchanx-settings .xt-detach-panel-body > details,
+#fourchanx-settings .xt-detach-panel-body > .sauce-section {
+  display: flex !important;
+  flex-direction: column;
+  flex: 1 1 auto !important;
+  min-height: 0;
+  margin: 0 !important;
+}
+/* Modern Chromium wraps a <details>' non-summary content in an internal
+   ::details-content box; make that wrapper the growable flex column too. */
+#fourchanx-settings .xt-detach-panel-body > details::details-content {
+  display: flex !important;
+  flex-direction: column !important;
+  flex: 1 1 auto !important;
+  min-height: 0 !important;
+}
+#fourchanx-settings .xt-detach-panel-body textarea {
+  flex: 1 1 auto !important;
+  height: auto !important;
+  min-height: 120px !important;
+  width: 100%;
+  resize: none;
+}
+/* The panel itself is resizable, so the field's own drag-resize bar is redundant
+   while detached. */
+#fourchanx-settings .xt-detach-panel-body .settings-textarea-resizer {
+  display: none !important;
+}
+/* While detached, the block's own collapse summary (which hosts the Detach
+   toggle) is hidden — the panel chrome and resize handle replace them. */
+#fourchanx-settings details[data-detached] > summary {
+  display: none !important;
+}
+.xt-detach-note {
+  display: flex;
+  align-items: center;
+  gap: 8px;
+  padding: 10px 12px;
+  border: 1px dashed rgba(128, 128, 128, .5);
+  border-radius: 4px;
+  opacity: .85;
+}
+.xt-detach-reattach {
+  cursor: pointer;
+}
 .section-styling .custom-css-editor[data-theme="xt-dark"],
 .section-styling .custom-css-editor[data-theme="xt-system-tomorrow"],
 .section-styling .custom-css-editor[data-theme="xt-system-spooky"] {
@@ -3130,11 +3254,13 @@ body > #overlay:not(.media-preview) {
 .section-styling .custom-css-editor[data-theme="xt-solarized"] .custom-css-highlight .css-token-important {
   color: #cb4b16;
 }
-#sauce-doc-expand:not(:checked) ~ #sauce-doc {
+#sauce-doc-expand:not(:checked) ~ #sauce-doc,
+#personas-doc-expand:not(:checked) ~ #personas-doc {
   max-height: 130px;
   overflow: auto;
 }
-#sauce-doc > label {
+#sauce-doc > label,
+#personas-doc > label {
   float: right;
   margin: 0 5px;
 }
@@ -3199,6 +3325,19 @@ body > #overlay:not(.media-preview) {
 #fourchanx-settings details[open] {
   padding-bottom: 0.85em;
 }
+/* Highlight the whole section you're pointing at (:hover) or working in
+   (:focus-within), extending the summary's own hover cue to the entire block.
+   Theme-agnostic via currentColor: lightens on dark themes, darkens on light
+   ones. Kept moderate (~6%) so nested sections (Styling) can stack their tints
+   without it getting muddy; the summary's 8% hover still layers on top as a
+   header depth cue. */
+#fourchanx-settings details {
+  transition: background-color 120ms ease;
+}
+#fourchanx-settings details:hover,
+#fourchanx-settings details:focus-within {
+  background: color-mix(in srgb, currentColor 6%, transparent);
+}
 #fourchanx-settings summary {
   display: flex;
   align-items: center;
@@ -3229,9 +3368,12 @@ body > #overlay:not(.media-preview) {
   opacity: .55;
   transition: transform 120ms ease, opacity 120ms ease;
 }
+/* The summary tint layers over the section's hover/focus tint (see the
+   details:hover rule), so this stays small — composited over the ~6% section
+   fill it lands just slightly above it, marking the header without a hard jump. */
 #fourchanx-settings summary:hover {
-  background: rgba(128, 128, 128, .08);
-  background: color-mix(in srgb, currentColor 8%, transparent);
+  background: rgba(128, 128, 128, .03);
+  background: color-mix(in srgb, currentColor 3%, transparent);
 }
 #fourchanx-settings summary:hover::after {
   opacity: 1;

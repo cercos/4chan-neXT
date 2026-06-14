@@ -1850,11 +1850,18 @@ Enable it on boards.${location.hostname.split('.')[1]}.org in your browser's pri
 
     const sauceFS = $.el('details',
       { open: true },
-      { innerHTML: '<summary>Sauce</summary>' });
+      { innerHTML: '<summary>Sauce<button type="button" id="sauce-detach" data-open="false" class="xt-detach-btn xt-detach-summary-btn" title="Detach into a floating window">Detach</button></summary>' });
     const sauceWrap = $.el('div');
     Settings.sauce(sauceWrap);
     $.add(sauceFS, sauceWrap);
     $.add(section, sauceFS);
+    // Detach button lives in the section's <summary> (mirrors Personas); wire it
+    // here where both the summary and the relocatable .sauce-section are in scope.
+    Settings.makeDetachable(
+      $('.sauce-section', sauceWrap) as HTMLElement | null,
+      $('#sauce-detach', sauceFS),
+      { storageKey: 'settings.detachPanel.sauce', title: 'Sauce' },
+    );
   },
 
   posting(section) {
@@ -4821,6 +4828,247 @@ Enable it on boards.${location.hostname.split('.')[1]}.org in your browser's pri
         e.preventDefault();
         refresh();
       }
+    });
+  },
+
+  // Tab / Shift+Tab indentation and Ctrl/Cmd+/ comment toggling for the plain
+  // settings textareas (Personas). These fields use a leading `#` to mark a line
+  // ignored, so the comment toggle is line-based (each selected line gets `# `
+  // prefixed/stripped) rather than the Custom CSS editor's `/* */` block style.
+  // Edits go through execCommand insertText so they stay native undo steps and
+  // persist on blur through the field's existing change handler, just like typing.
+  bindPlainEditorKeys(textarea: HTMLTextAreaElement, token = '#') {
+    const esc = token.replace(/[.*+?^${}()|[\]\\]/g, '\\$&');
+    const COMMENTED = new RegExp(`^(\\s*)${esc} ?`); // indent + token + optional space
+
+    // Replace [start,end) with `next`, keeping the result selected.
+    const replace = (start: number, end: number, next: string) => {
+      textarea.selectionStart = start;
+      textarea.selectionEnd = end;
+      let ok = false;
+      try { ok = d.execCommand('insertText', false, next); } catch {}
+      if (!ok) textarea.value = textarea.value.slice(0, start) + next + textarea.value.slice(end);
+      textarea.selectionStart = start;
+      textarea.selectionEnd = start + next.length;
+    };
+
+    const toggleComment = () => {
+      const val = textarea.value;
+      const selStart = textarea.selectionStart;
+      let selEnd = textarea.selectionEnd;
+      // A selection ending exactly at a line break shouldn't pull in the next line.
+      if (selEnd > selStart && val[selEnd - 1] === '\n') selEnd--;
+      const blockStart = val.lastIndexOf('\n', selStart - 1) + 1;
+      let blockEnd = val.indexOf('\n', selEnd);
+      if (blockEnd === -1) blockEnd = val.length;
+      const lines = val.slice(blockStart, blockEnd).split('\n');
+      const nonBlank = lines.filter(l => l.trim().length);
+      if (!nonBlank.length) return;
+      // Uncomment only when every non-blank line is already commented; otherwise
+      // comment the whole block (so a mixed selection comments uniformly).
+      const allCommented = nonBlank.every(l => COMMENTED.test(l));
+      const next = lines.map(l => {
+        if (!l.trim().length) return l;
+        if (allCommented) return l.replace(COMMENTED, '$1');
+        const indent = (l.match(/^\s*/) || [''])[0];
+        return `${indent}${token} ${l.slice(indent.length)}`;
+      }).join('\n');
+      replace(blockStart, blockEnd, next);
+    };
+
+    $.on(textarea, 'keydown', (e: KeyboardEvent) => {
+      // Ctrl/Cmd+/ toggles comments. Match on the produced character so layouts
+      // where "/" needs Shift still work.
+      if ((e.ctrlKey || e.metaKey) && !e.altKey && e.key === '/') {
+        e.preventDefault();
+        toggleComment();
+        return;
+      }
+      if (e.ctrlKey || e.metaKey || e.altKey) return;
+      if (e.key !== 'Tab') return;
+      e.preventDefault();
+      const val = textarea.value;
+      const start = textarea.selectionStart;
+      const end = textarea.selectionEnd;
+      const blockStart = val.lastIndexOf('\n', start - 1) + 1;
+      const multiline = val.slice(start, end).includes('\n');
+      if (multiline) {
+        // Indent/dedent every line touched by the selection by two spaces.
+        const block = val.slice(blockStart, end);
+        const next = e.shiftKey ? block.replace(/^[ \t]{1,2}/gm, '') : block.replace(/^/gm, '  ');
+        replace(blockStart, end, next);
+      } else if (e.shiftKey) {
+        // Dedent the current line.
+        const lead = (val.slice(blockStart).match(/^[ \t]{1,2}/) || [''])[0];
+        if (lead) {
+          textarea.value = val.slice(0, blockStart) + val.slice(blockStart + lead.length);
+          const caret = Math.max(blockStart, start - lead.length);
+          textarea.selectionStart = textarea.selectionEnd = caret;
+        }
+      } else {
+        // Plain Tab inserts two spaces at the caret.
+        let ok = false;
+        try { ok = d.execCommand('insertText', false, '  '); } catch {}
+        if (!ok) {
+          textarea.value = val.slice(0, start) + '  ' + val.slice(end);
+          textarea.selectionStart = textarea.selectionEnd = start + 2;
+        }
+      }
+    });
+  },
+
+  // Generic "detach into a floating, draggable, resizable window" for a settings
+  // block. Mirrors the Custom CSS editor's detach (Settings.initCustomCSSEditor):
+  // the live `node` is *relocated* (not cloned) so its wired listeners survive, a
+  // "Re-attach" note marks its spot, and the panel geometry persists under
+  // `storageKey`. Theme-neutral (these fields have no syntax theme), so the panel
+  // chrome follows the settings dialog. Used by the Personas and Sauce fields.
+  makeDetachable(node: HTMLElement | null, button: HTMLElement | null, opts: { storageKey: string; title: string }) {
+    if (!node || !button) return;
+    // Append inside the settings *window* (#fourchanx-settings), not the outer
+    // overlay wrapper (Settings.dialog) — the panel's CSS is scoped under
+    // `#fourchanx-settings`, and position:fixed still anchors it to the viewport.
+    const host = ($('#fourchanx-settings', Settings.dialog) as HTMLElement | null)
+      || (Settings.dialog as HTMLElement) || d.body;
+    let panel: HTMLElement | null = null;
+    let note: HTMLElement | null = null;
+    let ro: ResizeObserver | null = null;
+    let saveTimer = 0;
+
+    const writeRect = () => {
+      if (!panel) return;
+      const r = panel.getBoundingClientRect();
+      $.set(opts.storageKey, {
+        left: Math.round(r.left), top: Math.round(r.top),
+        width: Math.round(r.width), height: Math.round(r.height),
+      });
+    };
+    // Debounced so a drag-resize (which fires the observer continuously) doesn't
+    // hammer storage; close() flushes the final rect synchronously.
+    const saveRect = () => { clearTimeout(saveTimer); saveTimer = window.setTimeout(writeRect, 250); };
+
+    const centerDefault = () => {
+      if (!panel) return;
+      // Match the Custom CSS detach panel: a large, near-fullscreen window so the
+      // section's textarea has room to fill the space.
+      const maxW = window.innerWidth, maxH = window.innerHeight;
+      const w = Math.min(1100, Math.round(maxW * 0.96));
+      const h = Math.min(820, Math.round(maxH * 0.92));
+      panel.style.width = `${w}px`;
+      panel.style.height = `${h}px`;
+      panel.style.left = `${Math.round((maxW - w) / 2)}px`;
+      panel.style.top = `${Math.round((maxH - h) / 2)}px`;
+    };
+    const resetPanel = () => { centerDefault(); writeRect(); };
+
+    const onBarMousedown = (e: MouseEvent) => {
+      if (e.button !== 0 || !panel) return;
+      if ((e.target as HTMLElement).closest('button')) return; // let the action buttons click
+      e.preventDefault();
+      const rect = panel.getBoundingClientRect();
+      const dx = e.clientX - rect.left;
+      const dy = e.clientY - rect.top;
+      const onMove = (me: MouseEvent) => {
+        if (!panel) return;
+        const left = Math.max(0, Math.min(me.clientX - dx, window.innerWidth - panel.offsetWidth));
+        const top = Math.max(0, Math.min(me.clientY - dy, window.innerHeight - panel.offsetHeight));
+        panel.style.left = `${left}px`;
+        panel.style.top = `${top}px`;
+      };
+      const onUp = () => {
+        $.off(d, 'mousemove', onMove);
+        $.off(d, 'mouseup', onUp);
+        writeRect();
+      };
+      $.on(d, 'mousemove', onMove);
+      $.on(d, 'mouseup', onUp);
+    };
+
+    const close = () => {
+      if (!panel) return;
+      ro?.disconnect();
+      ro = null;
+      clearTimeout(saveTimer);
+      writeRect();
+      if (note?.parentNode) {
+        note.parentNode.insertBefore(node, note);
+        note.remove();
+      }
+      note = null;
+      delete node.dataset.detached;
+      $.rm(panel);
+      panel = null;
+      button.dataset.open = 'false';
+    };
+
+    const open = () => {
+      if (panel) return;
+
+      // Mark the spot with a visible "Re-attach" note (also our restore anchor).
+      note = $.el('div', {
+        className: 'xt-detach-note',
+        innerHTML: `${opts.title} is detached. <button type="button" class="xt-detach-reattach">Re-attach</button>`,
+      }) as HTMLElement;
+      node.parentNode!.insertBefore(note, node);
+      $.on($('.xt-detach-reattach', note) as HTMLElement, 'click', close);
+
+      panel = $.el('div', {
+        className: 'xt-detach-panel',
+        innerHTML:
+          '<div class="xt-detach-panel-bar">' +
+            `<span class="xt-detach-panel-title">${opts.title}</span>` +
+            '<span class="xt-detach-panel-actions">' +
+              '<button type="button" class="xt-detach-panel-reset" title="Reset size and position">Reset</button>' +
+              '<button type="button" class="xt-detach-panel-close" title="Re-attach">×</button>' +
+            '</span>' +
+          '</div>' +
+          '<div class="xt-detach-panel-body"></div>',
+      }) as HTMLElement;
+
+      const bar = $('.xt-detach-panel-bar', panel) as HTMLElement;
+      const body = $('.xt-detach-panel-body', panel) as HTMLElement;
+      if (node.tagName === 'DETAILS') (node as HTMLDetailsElement).open = true;
+      node.dataset.detached = 'true';
+      $.add(body, node);
+
+      $.on($('.xt-detach-panel-close', panel) as HTMLElement, 'click', close);
+      $.on($('.xt-detach-panel-reset', panel) as HTMLElement, 'click', resetPanel);
+      $.on(bar, 'mousedown', onBarMousedown as (e: Event) => void);
+
+      $.add(host, panel);
+
+      // Restore saved geometry (clamped to the viewport) or centre at a default.
+      // (cast: $.get's loose typings declare the callback as zero-arg.)
+      $.get({ [opts.storageKey]: null }, ((prefs: Record<string, any>) => {
+        if (!panel) return;
+        const saved = prefs[opts.storageKey];
+        if (saved && saved.width) {
+          const maxW = window.innerWidth, maxH = window.innerHeight;
+          const w = Math.min(saved.width, maxW - 20);
+          const h = Math.min(saved.height, maxH - 20);
+          panel.style.width = `${w}px`;
+          panel.style.height = `${h}px`;
+          panel.style.left = `${Math.max(0, Math.min(saved.left, maxW - w))}px`;
+          panel.style.top = `${Math.max(0, Math.min(saved.top, maxH - h))}px`;
+        } else {
+          centerDefault();
+        }
+        // Observe only after the initial size so we don't persist transient dims.
+        ro = new ResizeObserver(saveRect);
+        ro.observe(panel);
+      }) as () => void);
+
+      button.dataset.open = 'true';
+      const ta = node.tagName === 'TEXTAREA' ? node : ($('textarea', node) as HTMLElement | null);
+      ta?.focus();
+    };
+
+    // For personas the button lives inside <summary>, whose click would otherwise
+    // toggle the <details>; preventDefault/stopPropagation keep that state put.
+    $.on(button, 'click', (e: MouseEvent) => {
+      e.preventDefault();
+      e.stopPropagation();
+      panel ? close() : open();
     });
   },
 
@@ -8129,6 +8377,8 @@ Enable it on boards.${location.hostname.split('.')[1]}.org in your browser's pri
       ta.hidden = false;
     }); // XXX prevent Firefox from adding initialization to undo queue
     $.on(ta, 'change', $.cb.value);
+    // The Detach button now lives in the section's <summary> and is wired by the
+    // section builder (see media()); nothing to do here.
   },
 
   advanced(section) {
@@ -8179,6 +8429,19 @@ Enable it on boards.${location.hostname.split('.')[1]}.org in your browser's pri
       for (const textContent of ImageHost.suggestions) {
         $.add(listImageHost, $.el('option', {textContent}));
       }
+    }
+
+    // Personas: Tab/Shift+Tab indent, Ctrl+/ to toggle `#` line comments, and a
+    // Detach button (in the section's summary) that pops the whole block into a
+    // floating window — matching the Custom CSS editor.
+    const personaTA = $('.personafield', section) as HTMLTextAreaElement | null;
+    if (personaTA) {
+      Settings.bindPlainEditorKeys(personaTA, '#');
+      Settings.makeDetachable(
+        personaTA.closest('details') as HTMLElement | null,
+        $('#personas-detach', section),
+        { storageKey: 'settings.detachPanel.personas', title: 'Personas' },
+      );
     }
 
     const interval  : HTMLInputElement  = inputs['Interval'];
