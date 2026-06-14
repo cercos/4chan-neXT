@@ -4687,11 +4687,15 @@ class post {
       :
       false);
     QR.persona.get(persona => {
-      // Apply user-configured persona "always" defaults (QR.personas setting).
-      // Saved/previous values are intentionally NOT restored here (autofill hardening),
-      // but the persona feature's always-on defaults must still pre-fill the fields.
-      this.name  = 'name'  in QR.persona.always ? QR.persona.always.name  : '';
-      this.email = 'email' in QR.persona.always ? QR.persona.always.email : '';
+      // Priority: a user-configured "always" persona (QR.personas setting) wins; otherwise
+      // carry the previous post's identity forward so name/trip stick across a session, the
+      // same way vanilla 4chan's static form keeps the fields filled. This is independent of
+      // browser autofill: filling .value here doesn't suppress the browser's suggestions on a
+      // blank field, it just stops the field blanking after every post.
+      this.name  = 'name'  in QR.persona.always ? QR.persona.always.name  : (prev?.name ?? '');
+      // Carry the options field, but drop a bare "sage" so replies aren't accidentally saged.
+      this.email = 'email' in QR.persona.always ? QR.persona.always.email : (/^sage$/i.test(prev?.email) ? '' : (prev?.email ?? ''));
+      // Subject intentionally still clears after each post.
       this.sub   = 'sub'   in QR.persona.always ? QR.persona.always.sub   : '';
 
       if (QR.nodes.flag) {
