@@ -959,6 +959,43 @@ var Settings = {
     Settings.renderSection(allSettingsSection);
   },
 
+  // Replace the tiny native corner resize grip on each vertically-resizable
+  // settings textarea with a full-width bar the user can grab anywhere along
+  // the bottom edge to drag the field taller or shorter. The Custom CSS editor
+  // is excluded (it has its own panel chrome / resize handling).
+  attachTextareaResizers(section) {
+    for (const ta of $$('textarea:not(.custom-css-textarea)', section) as HTMLTextAreaElement[]) {
+      const existing = ta.nextElementSibling as HTMLElement | null;
+      if (existing && existing.classList.contains('settings-textarea-resizer')) { continue; }
+
+      $.addClass(ta, 'has-custom-resizer');
+      const handle = $.el('div', {
+        className: 'settings-textarea-resizer',
+        title: 'Drag to resize'
+      });
+
+      $.on(handle, 'pointerdown', (e: PointerEvent) => {
+        e.preventDefault();
+        const startY = e.clientY;
+        const startHeight = ta.offsetHeight;
+        $.addClass(handle, 'dragging');
+
+        const onMove = (ev: PointerEvent) => {
+          ta.style.height = `${Math.max(28, startHeight + (ev.clientY - startY))}px`;
+        };
+        const onUp = () => {
+          $.rmClass(handle, 'dragging');
+          $.off(d, 'pointermove', onMove);
+          $.off(d, 'pointerup', onUp);
+        };
+        $.on(d, 'pointermove', onMove);
+        $.on(d, 'pointerup', onUp);
+      });
+
+      $.after(ta, handle);
+    }
+  },
+
   renderActiveSection() {
     const section = Settings.activeSection || Settings.getActiveSection() || Settings.sections[0];
     if (!section) return;
@@ -974,6 +1011,7 @@ var Settings = {
     $.rmAll(section);
     section.className = `section-${sectionInfo.hyphenatedTitle}`;
     sectionInfo.open(section, g);
+    Settings.attachTextareaResizers(section);
     Settings.decorateDetailsWithKeys(section, sectionInfo);
     Settings.tagNextSettings(section);
     section.scrollTop = 0;
@@ -2457,7 +2495,7 @@ Enable it on boards.${location.hostname.split('.')[1]}.org in your browser's pri
         type: 'text',
         className: 'field styling-color-hex',
         placeholder: '#rrggbb',
-        title: label ? `${label} — type a hex value` : 'Hex color, e.g. #ff5050',
+        title: label ? `${label}: type a hex value` : 'Hex color, e.g. #ff5050',
       }) as HTMLInputElement;
       hexInput.maxLength = 7;
       hexInput.setAttribute('spellcheck', 'false');
@@ -2470,7 +2508,7 @@ Enable it on boards.${location.hostname.split('.')[1]}.org in your browser's pri
       }) as HTMLElement;
       const trigger = $.el('span', {
         className: 'styling-color-trigger',
-        title: label ? `${label} — open picker` : 'Pick a color',
+        title: label ? `${label}: open picker` : 'Pick a color',
       }) as HTMLElement;
       colorInput.replaceWith(merged);
       trigger.appendChild(colorInput);
@@ -8837,7 +8875,7 @@ Enable it on boards.${location.hostname.split('.')[1]}.org in your browser's pri
     for (key in Config.hotkeys) {
       var arr = Config.hotkeys[key];
       var marker = Settings.isClickKeybind(key)
-        ? '<span class="keybind-click-marker" title="Click modifier — hold the keys and click.">*</span>'
+        ? '<span class="keybind-click-marker" title="Click modifier: hold the keys and click.">*</span>'
         : '';
       var tr = $.el('tr',
         { innerHTML: `<td class="setting-title">${marker}${arr[1]}</td><td><input class="field"></td>` });

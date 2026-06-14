@@ -3226,6 +3226,42 @@ body > #overlay:not(.media-preview) {
   cursor: default;
   overflow: hidden;
 }
+/* Full-width drag handle for resizable settings textareas. The native resize
+   grip is a tiny corner triangle; this turns the whole bottom edge into a bar
+   the user can grab and drag to extend the field. JS adds .has-custom-resizer
+   to the textarea and inserts the .settings-textarea-resizer bar after it. */
+#fourchanx-settings textarea.has-custom-resizer {
+  resize: none;
+  display: block;
+}
+#fourchanx-settings .settings-textarea-resizer {
+  height: 12px;
+  margin-top: -1px;
+  margin-bottom: 6px;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  cursor: ns-resize;
+  border-radius: 0 0 3px 3px;
+  background: var(--xt-border, rgba(128, 128, 128, .18));
+  user-select: none;
+  touch-action: none;
+}
+#fourchanx-settings .settings-textarea-resizer::before {
+  content: '';
+  width: 30px;
+  height: 3px;
+  border-radius: 2px;
+  background: currentColor;
+  opacity: .4;
+}
+#fourchanx-settings .settings-textarea-resizer:hover::before,
+#fourchanx-settings .settings-textarea-resizer.dragging::before {
+  opacity: .8;
+}
+#fourchanx-settings .settings-textarea-resizer.dragging {
+  background: var(--xt-border, rgba(128, 128, 128, .35));
+}
 #fourchanx-settings code {
   color: #000;
   background-color: #FFF;

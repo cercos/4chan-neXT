@@ -1255,7 +1255,33 @@ current-archive-text:"Archive"]
 
   QR: {
     'QR.personas': `\
-#options:"sage";boards:jp;always\
+# These are examples - remove the leading # on any line to try that option out.
+
+# --- Builds a name dropdown on /g/ with 3 options.
+#name:"Anonymous";boards:g
+#name:"Based Department";boards:g
+#name:"Chad";boards:g
+
+# --- All 3 show in the subject dropdown; "Programming General" is pre-filled.
+#subject:"Linux";boards:g
+#subject:"Sticky Suggestions";boards:g
+#subject:"Programming General";boards:g;always
+
+# --- Dropdown shows both; "fortune" pre-fills because it's lower in the list.
+#options:"sage";boards:g;always
+#options:"fortune";boards:g;always
+
+# --- Board-scoped: only appears on the listed boards ---
+#subject:"/v/ permavirgin general";boards:v,vg
+
+# --- Global: no boards key means every board ---
+#name:"Anonymous"
+
+# --- Tripcode: goes in the name field as name#secret (not password) ---
+#name:"Code Monkey#s3cret";boards:g
+
+# --- Password: post deletion password, no dropdown, global only ---
+#password:"hunter2"\
 `,
     sjisPreview: false
   },
