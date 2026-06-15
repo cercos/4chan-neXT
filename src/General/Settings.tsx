@@ -1230,6 +1230,23 @@ Enable it on boards.${location.hostname.split('.')[1]}.org in your browser's pri
     }
   },
 
+  // Build the standard `<span class="description">: <span class="setting-description">…</span></span>`
+  // wrapper. Settings search only paints matches inside `.setting-title` /
+  // `.setting-description`, so description text dropped straight into a bare
+  // `.description` span never gets highlighted — and the row then falls back to
+  // the confusing whole-row keyword bar instead of marking the matched word.
+  // Pass `text` without a leading ": "; the colon is added here.
+  descriptionSpan(text: string) {
+    const outer = $.el('span', { className: 'description' });
+    if (text) {
+      $.add(outer, [
+        $.tn(': '),
+        $.el('span', { className: 'setting-description', textContent: text }),
+      ]);
+    }
+    return outer;
+  },
+
   addCheckboxes(root, obj, items, inputs, includeSetting = (_key: string) => true) {
     const containers = [root];
     let count = 0;
@@ -1461,12 +1478,12 @@ Enable it on boards.${location.hostname.split('.')[1]}.org in your browser's pri
         select.appendChild($.el('option', { value: option[0], textContent: option[1] }));
       }
       $.add(label, [
-        $.el('span', { textContent: `${row.label}: ` }),
+        $.el('span', { className: 'setting-title', textContent: `${row.label}: ` }),
         select
       ]);
       $.add(div, [
         label,
-        $.el('span', { className: 'description', textContent: row.description ? `: ${row.description}` : '' })
+        Settings.descriptionSpan(row.description || '')
       ]);
       $.on(select, 'change', $.cb.value);
       if (row.name === 'Comment Preview Position' || row.name === 'Comment Preview Inline Behavior') {
@@ -1721,7 +1738,7 @@ Enable it on boards.${location.hostname.split('.')[1]}.org in your browser's pri
     inputs['Interval'] = intervalInput;
     $.add(fsUC, divInterval);
     const divCooldown = $.el('div',
-      { innerHTML: '<label>Custom Cooldown: <input type="number" name="customCooldown" class="field" min="0"></label><span class="description">: Seconds to wait after posting.</span>' });
+      { innerHTML: '<label><span class="setting-title">Custom Cooldown: </span><input type="number" name="customCooldown" class="field" min="0"></label><span class="description">: <span class="setting-description">Seconds to wait after posting.</span></span>' });
     divCooldown.dataset.name = 'customCooldown';
     const cooldownInput = $('input', divCooldown) as HTMLInputElement;
     $.on(cooldownInput, 'change', $.cb.value);
@@ -2014,13 +2031,10 @@ Enable it on boards.${location.hostname.split('.')[1]}.org in your browser's pri
       }
       $.on(defaultModeSelect, 'change', $.cb.value);
       $.on(defaultModeSelect, 'change', () => $.event('QRCommentPreviewChanged'));
-      $.add(defaultModeLabel, [$.el('span', { textContent: 'Default Preview Mode: ' }), defaultModeSelect]);
+      $.add(defaultModeLabel, [$.el('span', { className: 'setting-title', textContent: 'Default Preview Mode: ' }), defaultModeSelect]);
       $.add(defaultModeRow, [
         defaultModeLabel,
-        $.el('span', {
-          className: 'description',
-          textContent: `: ${defaultModeDescription}`,
-        }),
+        Settings.descriptionSpan(defaultModeDescription),
       ]);
 
       const attachLocationDescription = String(Config.main['Posting and Captchas']['Comment Preview Attach Location'][1]);
@@ -2041,13 +2055,10 @@ Enable it on boards.${location.hostname.split('.')[1]}.org in your browser's pri
       }
       $.on(attachLocationSelect, 'change', $.cb.value);
       $.on(attachLocationSelect, 'change', () => $.event('QRCommentPreviewChanged'));
-      $.add(attachLocationLabel, [$.el('span', { textContent: 'Attach to QR Location: ' }), attachLocationSelect]);
+      $.add(attachLocationLabel, [$.el('span', { className: 'setting-title', textContent: 'Attach to QR Location: ' }), attachLocationSelect]);
       $.add(attachLocationRow, [
         attachLocationLabel,
-        $.el('span', {
-          className: 'description',
-          textContent: `: ${attachLocationDescription}`,
-        }),
+        Settings.descriptionSpan(attachLocationDescription),
       ]);
 
       const positionRow = $.el('div') as HTMLDivElement;
@@ -2064,13 +2075,10 @@ Enable it on boards.${location.hostname.split('.')[1]}.org in your browser's pri
     }
     $.on(select, 'change', $.cb.value);
     $.on(select, 'change', () => $.event('QRCommentPreviewChanged'));
-    $.add(label, [$.el('span', { textContent: 'Inline Behavior: ' }), select]);
+    $.add(label, [$.el('span', { className: 'setting-title', textContent: 'Inline Behavior: ' }), select]);
     $.add(positionRow, [
       label,
-      $.el('span', {
-        className: 'description',
-        textContent: ': How the preview is inserted when you dock it into the thread.',
-        }),
+      Settings.descriptionSpan('How the preview is inserted when you dock it into the thread.'),
       ]);
       const rememberFloatDescription = String(Config.main['Posting and Captchas']['Comment Preview Remember Float Position'][1]);
       const rememberFloatRow = $.el('div', {
@@ -2100,13 +2108,10 @@ Enable it on boards.${location.hostname.split('.')[1]}.org in your browser's pri
       }
       $.on(threadBehaviorSelect, 'change', $.cb.value);
       $.on(threadBehaviorSelect, 'change', () => $.event('QRCommentPreviewChanged', null));
-      $.add(threadBehaviorLabel, [$.el('span', { textContent: 'Thread Behavior: ' }), threadBehaviorSelect]);
+      $.add(threadBehaviorLabel, [$.el('span', { className: 'setting-title', textContent: 'Thread Behavior: ' }), threadBehaviorSelect]);
       $.add(threadBehaviorRow, [
         threadBehaviorLabel,
-        $.el('span', {
-          className: 'description',
-          textContent: `: ${threadBehaviorDescription}`,
-        }),
+        Settings.descriptionSpan(threadBehaviorDescription),
       ]);
 
       const catalogBehaviorDescription = String(Config.main['Posting and Captchas']['Comment Preview Catalog Behavior'][1]);
@@ -2125,13 +2130,10 @@ Enable it on boards.${location.hostname.split('.')[1]}.org in your browser's pri
       }
       $.on(catalogBehaviorSelect, 'change', $.cb.value);
       $.on(catalogBehaviorSelect, 'change', () => $.event('QRCommentPreviewChanged', null));
-      $.add(catalogBehaviorLabel, [$.el('span', { textContent: 'Catalog/Index Behavior: ' }), catalogBehaviorSelect]);
+      $.add(catalogBehaviorLabel, [$.el('span', { className: 'setting-title', textContent: 'Catalog/Index Behavior: ' }), catalogBehaviorSelect]);
       $.add(catalogBehaviorRow, [
         catalogBehaviorLabel,
-        $.el('span', {
-          className: 'description',
-          textContent: `: ${catalogBehaviorDescription}`,
-        }),
+        Settings.descriptionSpan(catalogBehaviorDescription),
       ]);
 
       const iconDescription = String(Config.main['Posting and Captchas']['Show Comment Preview Header Icon'][1]);
@@ -8977,7 +8979,8 @@ Enable it on boards.${location.hostname.split('.')[1]}.org in your browser's pri
 
     const div = $.el('div');
     div.dataset.name = 'board-update-sound';
-    const label = $.el('label', { textContent: `Board update sound (/${boardID}/): ` });
+    const label = $.el('label');
+    $.add(label, $.el('span', { className: 'setting-title', textContent: `Board update sound (/${boardID}/): ` }));
     const select = $.el('select', { className: 'field', name: 'board-update-sound' }) as HTMLSelectElement;
     const previewBtn = $.el('button', {
       type: 'button',
@@ -9025,7 +9028,7 @@ Enable it on boards.${location.hostname.split('.')[1]}.org in your browser's pri
     $.add(div, [
       label,
       previewBtn,
-      $.el('span', { className: 'description', textContent: ': Plays on new posts in this board.' }),
+      Settings.descriptionSpan('Plays on new posts in this board.'),
     ]);
     $.add(root, div);
   },
