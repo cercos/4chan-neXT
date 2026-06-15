@@ -2,6 +2,8 @@
 
 ### Unreleased
 
+### 1.1.6 (2026-06-15)
+
 - Added settings page header controls to collapse or expand all sections at once, plus an accordion mode that keeps only one section open at a time.
 - Improved settings page behaviors: sections highlight as a whole on hover/focus to track where you're working, and the Sauce and Quick Reply Personas "Detach" buttons moved into their section headers.
 - Post menus now animate when opening and closing instead of popping in and out. Dialogs finish their exit transition before leaving the DOM, so both the open and close are smooth.
