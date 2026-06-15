@@ -4,6 +4,9 @@ import CrossOrigin from "../platform/CrossOrigin";
 import { Conf, d, g } from "../globals/globals";
 import Get from "../General/Get";
 
+// Sites known to strip WebM title metadata, making this feature only show "no title" and pointless to display.
+const noWebmTitleMetadataSites = ['4chan.org'];
+
 /*
  * decaffeinate suggestions:
  * DS102: Remove unnecessary code created because of implicit returns
@@ -13,6 +16,7 @@ import Get from "../General/Get";
 var Metadata = {
   init() {
     if (!Conf['WEBM Metadata'] || !['index', 'thread'].includes(g.VIEW)) { return; }
+    if (noWebmTitleMetadataSites.includes(g.SITE.ID)) { return; }
 
     return Callbacks.Post.push({
       name: 'WEBM Metadata',
