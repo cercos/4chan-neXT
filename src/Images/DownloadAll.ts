@@ -109,7 +109,7 @@ const DownloadAll = {
     dialog.style.cssText = Conf['download-all-picker.position'] || '';
     dialog.innerHTML =
       '<div class="move">' +
-        '<label title="Keep open across page loads">' +
+        '<label title="Persistent Download Media">' +
           '<input type="checkbox" name="Persistent Download Media"> Download media' +
         '</label>' +
         '<a href="javascript:;" class="jump close" title="Hide">' + Icon.get('xmark') + '</a>' +
