@@ -39,9 +39,47 @@ import Icon from '../Icons/icon';
 // Name of the CSS Custom Highlight that paints index/catalog search matches.
 const INDEX_SEARCH_HL = 'fourchanx-index-search';
 
+// Class glowed onto an element when a regex search hits a field that has no
+// paintable visible text in the tile (an icon, the thumbnail, or a body that
+// catalog mode hides). Styled by a `.search-hit` rule in style.css.
+const SEARCH_HIT_CLASS = 'search-hit';
+
+// How each searchable field surfaces a regex hit inside a rendered tile.
+//   kind 'text':    paint the matched characters inside the matched element(s).
+//   kind 'element': glow the element(s), since the value isn't shown as text.
+// `sel` is queried within a thread tile. When a 'text' field's element is hidden
+// (e.g. the post body in catalog mode) or an 'element' field's icon is absent,
+// the tile falls back to glowing its thumbnail so the hit is still visible.
+const SEARCH_FIELD_TARGETS: Record<string, { kind: 'text' | 'element'; sel: string }> = {
+  comment:    { kind: 'text',    sel: '.postMessage' },
+  subject:    { kind: 'text',    sel: '.subject' },
+  name:       { kind: 'text',    sel: '.nameBlock .name' },
+  tripcode:   { kind: 'text',    sel: '.postertrip' },
+  capcode:    { kind: 'text',    sel: '.capcode' },
+  uniqueID:   { kind: 'text',    sel: '.posteruid' },
+  postID:     { kind: 'text',    sel: '.postNum' },
+  filename:   { kind: 'text',    sel: '.fileText a' },
+  dimensions: { kind: 'text',    sel: '.fileText' },
+  filesize:   { kind: 'text',    sel: '.fileText' },
+  email:      { kind: 'element', sel: '.useremail' },
+  flag:       { kind: 'element', sel: '.flag, .bfl' },
+  pass:       { kind: 'element', sel: '.n-pu' },
+  MD5:        { kind: 'element', sel: '.fileThumb, a.catalog-link' },
+};
+
+// Visible thumbnail (or tile) to glow when nothing field-specific can be shown.
+const SEARCH_FALLBACK_SEL = 'a.catalog-link, .fileThumb';
+
 var Index = {
   showHiddenThreads: false,
   changed: {},
+
+  // Search text contributed by inline-expanded threads, keyed by thread ID. Kept
+  // separate from the parsed-thread objects (which parseThreadList rebuilds) so
+  // an expansion survives an index refresh. Populated only while a thread is
+  // expanded (and thus visible), cleared when it is collapsed — so the search
+  // never matches a thread on text you can't see. See ExpandThread.
+  expandedSearchText: dict(),
 
   enabledOn({siteID, boardID}) {
     return Conf['JSON Index'] && (g.sites[siteID].software === 'yotsuba') && (boardID !== 'f');
@@ -147,6 +185,7 @@ var Index = {
     // Search field
     this.searchInput = $('#index-search', this.navLinks);
     this.setupSearch();
+    this.setupSearchHelp();
     $.on(this.searchInput, 'input', this.onSearchInput);
     $.on($('#index-search-clear', this.navLinks), 'click', this.clearSearch);
     Icon.set($('#index-search-clear', this.navLinks), 'xmark');
@@ -512,6 +551,28 @@ var Index = {
         style.right = `${-x}px`;
         return $.one(this.root, 'mouseleave', () => style.left = (style.right = null));
       }
+    },
+
+    searchHelp(e) {
+      e.preventDefault();
+      e.stopPropagation();
+      const {popover} = Index.searchHelpNodes();
+      if (!popover) { return; }
+      return Index.setSearchHelp(popover.hidden);
+    },
+
+    closeSearchHelpOutside(e) {
+      const {popover, wrap} = Index.searchHelpNodes();
+      if (!popover || popover.hidden) { return; }
+      if (wrap?.contains(e.target)) { return; }
+      return Index.setSearchHelp(false);
+    },
+
+    closeSearchHelpOnEscape(e) {
+      const {popover} = Index.searchHelpNodes();
+      if (!popover || popover.hidden || (e.key !== 'Escape')) { return; }
+      e.preventDefault();
+      return Index.setSearchHelp(false);
     }
   },
 
@@ -1404,6 +1465,32 @@ var Index = {
     return Index.searchInput.focus();
   },
 
+  searchHelpNodes() {
+    const navLinks = (Index as any).navLinks;
+    if (!navLinks) { return {help: null, popover: null, wrap: null}; }
+    return {
+      help: $('#index-search-help', navLinks),
+      popover: $('#index-search-help-popover', navLinks),
+      wrap: $('#index-search-help-wrap', navLinks)
+    };
+  },
+
+  setupSearchHelp() {
+    const {help} = Index.searchHelpNodes();
+    if (!help) { return; }
+    Icon.set(help, 'circleQuestion');
+    $.on(help, 'click', Index.cb.searchHelp);
+    $.on(d, 'click', Index.cb.closeSearchHelpOutside);
+    return $.on(d, 'keydown', Index.cb.closeSearchHelpOnEscape);
+  },
+
+  setSearchHelp(open) {
+    const {help, popover} = Index.searchHelpNodes();
+    if (!help || !popover) { return; }
+    popover.hidden = !open;
+    return help.setAttribute('aria-expanded', open ? 'true' : 'false');
+  },
+
   setupSearch() {
     Index.searchInput.value = Index.search;
     if (Index.search) {
@@ -1450,8 +1537,29 @@ var Index = {
       opOnly = true;
       query = query.slice(m[0].length);
     }
-    const keywords = query.toLowerCase().match(/\S+/g) || [];
+    const keywords = Index.tokenizeKeywords(query.toLowerCase());
     return { opOnly, keywords };
+  },
+
+  // Break a query into terms, honoring double-quoted phrases. A quoted run
+  // (`"do not ask"`) becomes a single term that must match as one contiguous
+  // phrase, with the surrounding quotes stripped and inner whitespace collapsed;
+  // bare text is split on whitespace into one term per word (AND-matched). A
+  // trailing unclosed quote (`"do not`) is treated as an open phrase so matching
+  // stays sensible while the closing quote is still being typed. The quote
+  // characters themselves are never part of a term, so `"hello"` searches for
+  // `hello`, not `"hello"`.
+  tokenizeKeywords(query) {
+    const keywords = [];
+    const rx = /"([^"]*)"?|(\S+)/g;
+    let m;
+    while ((m = rx.exec(query))) {
+      // Defensive: a zero-width match (e.g. a lone `"`) would loop forever.
+      if (!m[0]) { rx.lastIndex++; continue; }
+      const term = m[1] != null ? m[1].trim().replace(/\s+/g, ' ') : m[2];
+      if (term) { keywords.push(term); }
+    }
+    return keywords;
   },
 
   querySearch(query) {
@@ -1470,21 +1578,77 @@ var Index = {
     return Index.sortedThreadIDs.filter(ID => Index.searchMatch(Index.parsedThreads[ID], keywords, opOnly));
   },
 
-  // Keyword terms to highlight in the rendered results. Regex queries
-  // (`field:/pattern/flags`) match structurally rather than by literal text, so
-  // there's nothing meaningful to highlight — return none. Flag tokens like
-  // `op:` are stripped so they aren't painted as literal text.
+  // Keyword terms to highlight in the rendered results. Flag tokens like `op:`
+  // are stripped so they aren't painted as literal text. Regex queries are
+  // handled separately (highlightRegexSearch), so this only sees plain keywords.
   getSearchTerms() {
     const query = Index.search;
     if (!query || Index.parseRegexQuery(query)) { return []; }
     return Index.parseKeywordQuery(query).keywords;
   },
 
-  // Paint the current search terms across the rendered threads. Re-run after
-  // every (re)build, since buildIndex replaces Index.root's contents and the old
+  // Paint the current search across the rendered threads. Re-run after every
+  // (re)build, since buildIndex replaces Index.root's contents and the old
   // highlight ranges would point at detached nodes. An empty query clears it.
+  // Regex queries get field-aware treatment; plain keywords use literal paint.
   highlightSearch() {
+    // Drop any element glows left by the previous query before re-marking. (A
+    // rebuild already replaces the nodes, but clearing keeps this self-contained
+    // for the case where highlightSearch runs without a rebuild.)
+    for (const el of Index.root.querySelectorAll(`.${SEARCH_HIT_CLASS}`)) {
+      el.classList.remove(SEARCH_HIT_CLASS);
+    }
+    const query = Index.search;
+    let match;
+    if (query && (match = Index.parseRegexQuery(query))) {
+      Index.highlightRegexSearch(match);
+      return;
+    }
     SearchHighlight.apply(INDEX_SEARCH_HL, Index.root, Index.getSearchTerms());
+  },
+
+  // Surface a regex hit inside each rendered (and therefore matching) tile: paint
+  // the matched text where the targeted field is visible, and glow the relevant
+  // icon/thumbnail where the value isn't shown as text or the body is hidden
+  // (catalog mode). `match` is the [, fields, pattern, flags] from parseRegexQuery.
+  highlightRegexSearch(match) {
+    let rx;
+    try {
+      // Force the global flag so rangesFor's exec loop advances; keep the user's
+      // own flags (e.g. `i`) so painting matches the same casing the filter did.
+      rx = RegExp(match[2], /g/.test(match[3]) ? match[3] : `${match[3] || ''}g`);
+    } catch (error) {
+      SearchHighlight.setRanges(INDEX_SEARCH_HL, []);
+      return;
+    }
+    const fields = match[1].split('+').filter(f => SEARCH_FIELD_TARGETS[f]);
+    const ranges = [];
+    for (const tile of Index.root.children) {
+      if (tile.tagName === 'HR') { continue; }
+      let shown = false;   // something for this tile is already visibly marked
+      let missed = false;  // a field hit but had nothing visible to mark
+      for (const field of fields) {
+        const { kind, sel } = SEARCH_FIELD_TARGETS[field];
+        const els = tile.querySelectorAll(sel);
+        let visible = false;
+        for (const el of els) {
+          if (kind === 'text') {
+            if (el.offsetParent === null) { continue; } // hidden body, fall back instead
+            const r = SearchHighlight.rangesFor(el, rx);
+            if (r.length) { ranges.push(...r); visible = true; }
+          } else {
+            el.classList.add(SEARCH_HIT_CLASS);
+            if (el.offsetParent !== null) { visible = true; }
+          }
+        }
+        if (visible) { shown = true; } else { missed = true; }
+      }
+      if (missed && !shown) {
+        const fallback = tile.querySelector(SEARCH_FALLBACK_SEL) || tile;
+        fallback.classList.add(SEARCH_HIT_CLASS);
+      }
+    }
+    SearchHighlight.setRanges(INDEX_SEARCH_HL, ranges);
   },
 
   searchMatch(obj, keywords, opOnly) {
@@ -1509,7 +1673,9 @@ var Index = {
         if (key in info) { parts.push(info[key]); }
       }
       if (file) { parts.push(file.name); }
-      obj._searchTextOP = parts.join(' ').toLowerCase();
+      // Collapse whitespace so a quoted phrase still matches across the line
+      // breaks parseComment leaves in place (`<br>` becomes `\n`).
+      obj._searchTextOP = parts.join(' ').replace(/\s+/g, ' ').toLowerCase();
     }
     if (opOnly) { return obj._searchTextOP; }
     if (obj._searchText == null) {
@@ -1524,9 +1690,36 @@ var Index = {
           if (reply.com) { parts.push(g.SITE.Build.parseComment(reply.com)); }
         }
       }
-      obj._searchText = parts.join(' ').toLowerCase();
+      obj._searchText = parts.join(' ').replace(/\s+/g, ' ').toLowerCase();
     }
-    return obj._searchText;
+    // Append the expanded thread's text (if any) at lookup time rather than
+    // baking it into the cache, so collapsing/expanding takes effect without
+    // having to invalidate _searchText, and so it survives parsedThreads rebuilds.
+    const extra = Index.expandedSearchText[obj.threadID];
+    return extra ? `${obj._searchText} ${extra}` : obj._searchText;
+  },
+
+  // Record an inline-expanded thread's full text into the search corpus so the
+  // index search reaches content past the preview replies *while the thread is
+  // expanded and visible*. `postsData` is the raw thread JSON (`response.posts`).
+  setExpandedThreadText(threadID, postsData) {
+    if (!postsData) { return; }
+    const parts = [];
+    for (var data of postsData) {
+      if (data.no === threadID) { continue; } // OP is already in the base corpus
+      if (data.sub) { parts.push(data.sub); }
+      if (data.name) { parts.push(data.name); }
+      if (data.trip) { parts.push(data.trip); }
+      if (data.filename) { parts.push(data.filename + (data.ext || '')); }
+      if (data.com) { parts.push(g.SITE.Build.parseComment(data.com)); }
+    }
+    Index.expandedSearchText[threadID] = parts.join(' ').replace(/\s+/g, ' ').toLowerCase();
+  },
+
+  // Drop a thread's expanded text from the search corpus when it is collapsed,
+  // so a collapsed thread is never matched on text the user can no longer see.
+  clearExpandedThreadText(threadID) {
+    delete Index.expandedSearchText[threadID];
   }
 };
 export default Index;

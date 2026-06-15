@@ -866,6 +866,15 @@ audio.controls-added {
 .settings-search-keyword-match {
   box-shadow: inset 3px 0 0 rgba(255, 214, 83, .7);
 }
+/* Regex search hit on a field with no paintable text (an icon, the thumbnail, or
+   a catalog-hidden body): glow the relevant region in the same amber as the text
+   highlight so it reads as one system. */
+.search-hit {
+  outline: 2px solid rgba(255, 214, 83, .7);
+  outline-offset: 1px;
+  box-shadow: 0 0 6px 2px rgba(255, 214, 83, .55);
+  border-radius: 2px;
+}
 .sections-list {
   flex: 1;
   display: flex;
@@ -3725,6 +3734,71 @@ body > #overlay:not(.media-preview) {
 :root:not(.catalog-mode) #hidden-label,
 :root:not(.catalog-mode) #index-size {
   display: none;
+}
+#index-search-help-wrap {
+  position: relative;
+  display: inline-block;
+  vertical-align: middle;
+}
+#index-search-help {
+  color: gray;
+  display: inline-flex;
+  align-items: center;
+  justify-content: center;
+  width: 1.25em;
+  height: 1.25em;
+  margin: 0 .25em 0 .1em;
+}
+#index-search-help:hover,
+#index-search-help[aria-expanded="true"] {
+  color: inherit;
+}
+#index-search-help-popover {
+  position: absolute;
+  z-index: 4;
+  top: 1.6em;
+  left: 0;
+  box-sizing: border-box;
+  width: 320px;
+  max-height: 70vh;
+  overflow-y: auto;
+  overscroll-behavior: contain;
+  padding: 6px 8px;
+  text-align: left;
+  line-height: 1.4;
+  white-space: normal;
+}
+#index-search-help-popover strong,
+#index-search-help-popover span {
+  display: block;
+}
+#index-search-help-popover strong {
+  margin-bottom: 4px;
+}
+/* Section headers below the title: spaced from the prior block and de-emphasized. */
+#index-search-help-popover strong.section {
+  margin-top: 8px;
+  opacity: .85;
+  font-size: 11px;
+  text-transform: uppercase;
+  letter-spacing: .04em;
+}
+/* Explanatory lines that aren't a single example: smaller, slightly dimmed. */
+#index-search-help-popover span.note {
+  margin-top: 2px;
+  opacity: .8;
+  font-size: 11px;
+}
+/* Example search terms: a tinted pill with an accent color so it's obvious where
+   the term begins and ends versus the surrounding description. */
+#index-search-help-popover code {
+  font-size: 12px;
+  background: rgba(120, 130, 150, .22);
+  color: #d4a017;
+  padding: 1px 5px;
+  border-radius: 3px;
+  box-decoration-break: clone;
+  -webkit-box-decoration-break: clone;
 }
 #index-search {
   padding-right: 1.5em;

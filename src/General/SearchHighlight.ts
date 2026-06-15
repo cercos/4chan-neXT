@@ -44,6 +44,45 @@ var SearchHighlight = {
     return s.replace(/[.*+?^${}()|[\]\\]/g, '\\$&');
   },
 
+  // Build a Range over every match of `rx` (which MUST carry the global flag, or
+  // exec would loop forever) within the text nodes under `root`. Pure: it reads
+  // the DOM and returns ranges without touching the highlight registry, so
+  // callers can gather ranges across many roots/fields and register them at once.
+  rangesFor(root: Node, rx: RegExp): Range[] {
+    const ranges: Range[] = [];
+    if (!root) return ranges;
+    const walker = d.createTreeWalker(root, NodeFilter.SHOW_TEXT);
+    let node: Node | null;
+    while ((node = walker.nextNode())) {
+      const text = node.nodeValue;
+      if (!text) continue;
+      rx.lastIndex = 0;
+      let m: RegExpExecArray | null;
+      while ((m = rx.exec(text))) {
+        // Defensive: a zero-width match would loop forever and paint nothing.
+        if (!m[0]) { rx.lastIndex++; continue; }
+        const range = d.createRange();
+        range.setStart(node, m.index);
+        range.setEnd(node, m.index + m[0].length);
+        ranges.push(range);
+      }
+    }
+    return ranges;
+  },
+
+  // Register `ranges` under `name`, replacing whatever was there; an empty list
+  // clears it. Returns false when the API is unavailable.
+  setRanges(name: string, ranges: Range[]) {
+    const w: any = view();
+    if (!w || !w.CSS || !w.CSS.highlights || !w.Highlight) return false;
+    if (ranges && ranges.length) {
+      w.CSS.highlights.set(name, new w.Highlight(...ranges));
+    } else {
+      w.CSS.highlights.delete(name);
+    }
+    return true;
+  },
+
   // Register, under `name`, a highlight covering every case-insensitive
   // occurrence of any term within the text nodes under `roots` (one element or a
   // list). Whatever was previously registered under `name` is replaced; an empty
@@ -51,41 +90,18 @@ var SearchHighlight = {
   apply(name: string, roots: Node | Node[], terms: string[]) {
     const w: any = view();
     if (!w || !w.CSS || !w.CSS.highlights || !w.Highlight) return false;
-    const registry = w.CSS.highlights;
     const list = Array.isArray(roots) ? roots : [roots];
     if (!terms.length || !list.length) {
-      registry.delete(name);
+      w.CSS.highlights.delete(name);
       return true;
     }
 
     const rx = RegExp(terms.map(SearchHighlight.escape).join('|'), 'gi');
     const ranges: Range[] = [];
     for (const root of list) {
-      if (!root) continue;
-      const walker = d.createTreeWalker(root, NodeFilter.SHOW_TEXT);
-      let node: Node | null;
-      while ((node = walker.nextNode())) {
-        const text = node.nodeValue;
-        if (!text) continue;
-        rx.lastIndex = 0;
-        let m: RegExpExecArray | null;
-        while ((m = rx.exec(text))) {
-          // Defensive: a zero-width match would loop forever and paint nothing.
-          if (!m[0]) { rx.lastIndex++; continue; }
-          const range = d.createRange();
-          range.setStart(node, m.index);
-          range.setEnd(node, m.index + m[0].length);
-          ranges.push(range);
-        }
-      }
+      ranges.push(...SearchHighlight.rangesFor(root, rx));
     }
-
-    if (ranges.length) {
-      registry.set(name, new w.Highlight(...ranges));
-    } else {
-      registry.delete(name);
-    }
-    return true;
+    return SearchHighlight.setRanges(name, ranges);
   },
 
   clear(name: string) {
