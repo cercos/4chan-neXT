@@ -1941,12 +1941,12 @@ div[data-checked="false"] > .suboption-list {
   padding: 6px 8px 8px;
   position: relative;
 }
-/* SFW is treated as the default/regular style — no accent. Only NSFW
-   gets the colored treatment so the user gets a visual warning when
-   editing the NSFW variant. */
+/* SFW is treated as the default/regular style — no accent. Only NSFW gets the
+   accent color, which feeds the badges and selected-tab styling. We don't tint
+   the row background itself — the badges already signal the active variant, and
+   recoloring the whole setting row is noisy. */
 .section-styling .styling-variant-bar[data-editing-variant="nsfw"] {
   --xt-variant-accent: #a66a00;
-  background: rgba(166, 106, 0, .07);
 }
 .section-styling .styling-variant-mode {
   align-items: center;
