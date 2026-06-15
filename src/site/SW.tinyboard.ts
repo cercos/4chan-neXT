@@ -195,6 +195,13 @@ $\
           fileDeleted: true,
           filesDeleted: [0]
         });
+      } else if (o.file) {
+        // Yotsuba's parseJSON built o.file using 4chan's flat /board/<tim>.ext +
+        // /board/<tim>s.jpg layout. Rebuild it with tinyboard/vichan's layout
+        // (files under src/, thumbs under thumb/ as .png) so synthesized URLs
+        // (e.g. Thread Watcher thumbnails) resolve instead of 404ing.
+        o.file = this.parseJSONFile(data, board);
+        o.files = [o.file];
       }
       if (data.extra_files) {
         let file;
@@ -211,6 +218,18 @@ $\
           o.file = o.files[0];
         }
       }
+      return o;
+    },
+
+    parseJSONFile(data, board) {
+      const o = SWYotsuba.Build.parseJSONFile(data, board);
+      const {siteID, boardID} = board;
+      // Vichan/tinyboard JSON only exposes the source `ext`; thumbnails live in a
+      // thumb/ subfolder and are regenerated as .png by default. Allow per-site
+      // override via siteProperties.thumbExt for instances that keep jpg thumbs.
+      const thumbExt = Conf['siteProperties'][siteID]?.thumbExt || '.png';
+      o.url = SWTinyboard.urls.file({siteID, boardID}, `src/${data.tim}${data.ext}`);
+      o.thumbURL = SWTinyboard.urls.thumb({siteID, boardID}, `thumb/${data.tim}${thumbExt}`);
       return o;
     },
 
