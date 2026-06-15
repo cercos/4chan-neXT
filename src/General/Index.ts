@@ -1625,11 +1625,14 @@ var Index = {
     const ranges = [];
     for (const tile of Index.root.children) {
       if (tile.tagName === 'HR') { continue; }
+      // Scope to the OP: a regex query matches the OP only, but an index tile also
+      // renders preview replies, whose flags/comments must NOT be marked.
+      const opRoot = tile.querySelector('.opContainer') || tile.querySelector('.postContainer') || tile;
       let shown = false;   // something for this tile is already visibly marked
       let missed = false;  // a field hit but had nothing visible to mark
       for (const field of fields) {
         const { kind, sel } = SEARCH_FIELD_TARGETS[field];
-        const els = tile.querySelectorAll(sel);
+        const els = opRoot.querySelectorAll(sel);
         let visible = false;
         for (const el of els) {
           if (kind === 'text') {
@@ -1644,7 +1647,7 @@ var Index = {
         if (visible) { shown = true; } else { missed = true; }
       }
       if (missed && !shown) {
-        const fallback = tile.querySelector(SEARCH_FALLBACK_SEL) || tile;
+        const fallback = opRoot.querySelector(SEARCH_FALLBACK_SEL) || tile;
         fallback.classList.add(SEARCH_HIT_CLASS);
       }
     }
