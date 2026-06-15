@@ -5817,17 +5817,21 @@ input[type="checkbox"]:checked ~ .checkbox-letter {
   position: fixed;
   outline: none;
   font-weight: normal;
-  transition: opacity .12s ease, transform .12s ease;
+  /* allow-discrete lets the display:none flip wait for the exit transition. */
+  transition: opacity .12s ease, transform .12s ease, display .12s allow-discrete;
 }
-/* Enter animation: a freshly-inserted menu animates from this starting state. */
+/* Enter animation: the menu animates from this state each time it's shown
+   (display:none -> displayed), thanks to transition-behavior: allow-discrete. */
 @starting-style {
-  #menu {
+  #menu:not(.menu-hidden) {
     opacity: 0;
     transform: scale(.97);
   }
 }
-/* Exit animation: $.rmAfterAnimation adds .closing, then removes on transitionend. */
-#menu.closing {
+/* Hidden/exit state. The node is kept in the DOM and only toggles visibility,
+   so the exit animation finishes; display flips to none after it ends. */
+#menu.menu-hidden {
+  display: none;
   opacity: 0;
   transform: scale(.97);
   pointer-events: none;
