@@ -45,29 +45,22 @@ To migrate settings:
 
 ### Quick Reply and posting
 - Per-thread `QR Drafts` restore with attachment persistence and a recoverable discard bin
-- Native board-index form hiding
 - Upload progress and dump-list file-first removal
 - Image auto-processing and audio stripping for boards that disallow audio
 - Stacked TCaptcha editing
-- Autofill-resistant Name/Options/Subject fields, with an opt-in browser autofill setting
 - Auto-close Tags
 - Post-style comment preview with docked, QR-attached, and floating modes
 
 ### Thread Watcher and monitoring
 - Quick Reply docking and attach-location controls
 - QR/window resize handling and remembered floating QR reopen behavior
-- Manual max-size controls
 - OP thumbnails and hover thumbnail previews
 - Mark-all-read and per-thread mark-read icons
-- Detailed thread stats
-- Replies-to-you state support for watcher links
 
 ### Styling and themes
 - Built-in site themes with SFW/NSFW styling variants
 - Styling-script section handoff and home-page mirroring (currently StyleChan)
 - Theme-aware highlight colors and text color modes
-- Edge/background highlight modes, plus edge and border styles
-- Catalog own/watched highlights and saved palettes
 - Custom CSS editor pairing/indent helpers
 - A local styling guide
 
@@ -79,7 +72,6 @@ To migrate settings:
 ### Filters
 - Responsive Simple Filters with auto-save
 - Color swatches plus custom CSS classes
-- Combined Simple/Advanced preview
 - Index/catalog search over preview replies with an `op:` prefix
 - Hidden-thread grouping, and showing hidden threads with unread replies to you
 - `highlight:` class lists and catalog `tile` highlight glow
@@ -87,7 +79,6 @@ To migrate settings:
 ### Gallery and media
 - Grid gallery thumbnails with configurable columns and thumbnail dock position
 - ZIP-based download-all-media support
-- Persistent download dialog behavior
 - Thumbnail replacement and metadata visibility controls
 
 ### Linkification
@@ -95,13 +86,9 @@ To migrate settings:
 - X/Twitter -> xcancel link rewriting
 
 ### Settings and UI
-- Faster Settings loading
-- Visible or tooltip descriptions
 - Highlight neXT markers for fork-specific settings
 - Vertical or horizontal Settings navigation
 - CSS Custom Highlight API search highlighting and a search-friendly layout
-- Relative post dates and relative-date title mode
-- Settings overlay stacking fixes
 - Local user/styling docs
 
 ## Build from Source

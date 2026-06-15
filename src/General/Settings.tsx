@@ -671,8 +671,19 @@ var Settings = {
       ':scope .styling-section-summary-text, :scope > .next-summary-title') as HTMLElement | null;
     if (existing) return existing;
     const title = $.el('span', { className: 'next-summary-title' });
-    while (summary.firstChild) title.appendChild(summary.firstChild);
-    summary.appendChild(title);
+    // Wrap only the title text. Action elements and the SFW/NSFW variant badge
+    // (.styling-variant-badge, inserted earlier by updateVariantDecoration) must
+    // stay as direct children of the flex <summary>: their CSS targets
+    // `summary > …`, so sweeping them into this span would strip the variant
+    // badge of its box and glue its text onto the title (e.g. "HighlightsNSFW").
+    const isAside = (node: ChildNode) =>
+      node instanceof HTMLElement
+      && node.matches('button, input, select, textarea, label, .styling-variant-badge, [data-summary-action]');
+    const anchor = ([...summary.childNodes].find(isAside) as ChildNode | undefined) || null;
+    for (const node of [...summary.childNodes]) {
+      if (!isAside(node)) title.appendChild(node);
+    }
+    summary.insertBefore(title, anchor);
     return title;
   },
 
@@ -715,6 +726,16 @@ var Settings = {
     for (const details of $$('details', root) as HTMLElement[]) {
       const summary = details.querySelector(':scope > summary') as HTMLElement | null;
       if (!summary) continue;
+      // A section explicitly declared fully-neXT (e.g. Highlights, where some
+      // rows are upstream-changed rather than neXT-added so the every()-added
+      // check below never fires) collapses to one header badge regardless of
+      // per-row status: badge the title span and clear every descendant status.
+      const manualSection = details.dataset.nextSection;
+      if (manualSection === 'added' || manualSection === 'changed') {
+        for (const r of $$('[data-next-status]', details) as HTMLElement[]) delete r.dataset.nextStatus;
+        Settings.nextBadgeTitle(summary).dataset.nextStatus = manualSection;
+        continue;
+      }
       const rows = ($$('[data-name]', details) as HTMLElement[]).filter(r => r.dataset.name);
       if (rows.length && rows.every(r => r.dataset.nextStatus === 'added')) {
         // Anchor the badge on the title-text span, not the bare <summary>: the

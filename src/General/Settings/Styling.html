@@ -1,7 +1,7 @@
 <details open class="styling-site-style" data-styling-section="siteStyle">
   <summary>Site Style</summary>
   <div class="styling-variant-bar">
-    <label class="styling-variant-mode">SFW / NSFW mode:
+    <label class="styling-variant-mode" data-next-manual-status="added">SFW / NSFW mode:
       <select name="sfwNsfwMode">
         <option value="auto">Auto (per board)</option>
         <option value="sfw">Force SFW everywhere</option>
@@ -30,7 +30,7 @@
   <div id="styling-site-style-note" class="note" hidden></div>
 </details>
 
-<details open data-styling-section="highlights">
+<details open data-styling-section="highlights" data-next-section="added">
   <summary>Highlights</summary>
   <div class="styling-highlight-intro">
     <p>Each row is one highlight state. Click a row to open its colors and scrollbar marker; only one stays open at a time. The master toggles turn whole groups on or off.</p>
@@ -224,7 +224,7 @@
 <details open class="styling-text-colors" data-styling-section="textColors">
   <summary>Text Colors</summary>
   <div class="styling-theme-row">
-    <label>Mode:
+    <label data-next-manual-status="added">Mode:
       <select name="textColorMode">
         <option value="default">Defaults</option>
         <option value="auto">Auto</option>
@@ -265,7 +265,7 @@
   </div>
 </details>
 
-<details open class="styling-custom-css" data-styling-section="customCSS">
+<details open class="styling-custom-css" data-styling-section="customCSS" data-next-section="changed">
   <summary>Custom CSS<button type="button" id="custom-css-detach" data-open="false" class="custom-css-summary-detach">Detach</button></summary>
   <div class="custom-css-toggle-row">
     <label><input type="checkbox" name="Custom CSS"> Enable Custom CSS</label>
