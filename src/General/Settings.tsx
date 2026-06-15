@@ -7934,22 +7934,41 @@ Enable it on boards.${location.hostname.split('.')[1]}.org in your browser's pri
     if (previewState) previewState.simpleContainer = container;
 
     // Layout mode (auto/grid/list). "list" = inline rows, "grid" = vertical cards.
-    // "auto" switches on the settings dialog's own width: at >= AUTO_LIST_MIN_WIDTH the
-    // inline row fits comfortably, so it uses "list"; below that it drops to "grid",
-    // whose column count then auto-fits the available width (~3 just under the
-    // breakpoint, scaling down as it narrows). Re-evaluated live via ResizeObserver.
-    // Mode persists like settings.filtersMode; the resolved class is layout-list/grid.
-    const AUTO_LIST_MIN_WIDTH = 1000;
+    // "auto" measures the actual layout: it lays the tiles out as inline rows and
+    // checks whether any row's controls wrap onto a second line. If a row would
+    // wrap it drops to "grid" (whose column count then auto-fits the width); while
+    // every row still fits on one line it stays "list". Re-evaluated live via
+    // ResizeObserver. Mode persists like settings.filtersMode; the resolved class
+    // is layout-list/grid.
     let resizeObserver: ResizeObserver | null = null;
     let lastAutoWidth = -1;
     const dialogWidth = () => {
       const dialog = container.closest('#fourchanx-settings') as HTMLElement | null;
       return (dialog || container).getBoundingClientRect().width;
     };
+    // True when, laid out as inline rows, any tile's controls spill onto a second
+    // line. The tile is align-items:center, so controls of different heights still
+    // share a vertical center while on one line; a wrapped control drops a full
+    // line below. Comparing centers (not tops) avoids false positives from the
+    // taller controls (selects, color picker) sitting higher within the same row.
+    const inlineRowsWrap = () => {
+      container.className = 'easy-filters-list layout-list';
+      for (const tile of $$('.easy-filter-tile', container)) {
+        let min = Infinity, max = -Infinity;
+        for (const item of $$('.easy-filter-on, .easy-filter-remove, .easy-filter-field', tile)) {
+          const r = item.getBoundingClientRect();
+          if (!r.height) continue; // not laid out yet — ignore rather than count as wrapped
+          const center = r.top + r.height / 2;
+          if (center < min) min = center;
+          if (center > max) max = center;
+        }
+        if (max - min > 6) return true; // a control sits ~a line below the rest
+      }
+      return false;
+    };
     const resolveAuto = () => {
-      const w = dialogWidth();
-      lastAutoWidth = w;
-      container.className = `easy-filters-list ${w >= AUTO_LIST_MIN_WIDTH ? 'layout-list' : 'layout-grid'}`;
+      lastAutoWidth = dialogWidth();
+      container.className = `easy-filters-list ${inlineRowsWrap() ? 'layout-grid' : 'layout-list'}`;
     };
     const setLayout = (mode: string) => {
       if (!['auto', 'grid', 'list'].includes(mode)) mode = 'auto';

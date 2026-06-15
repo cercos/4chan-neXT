@@ -1260,8 +1260,8 @@ div[data-checked="false"] > .suboption-list {
    - "list" = inline rows (fields side by side, one rule per line) — the classic form.
    - "grid" = vertical cards (label left / value right) flowed into responsive columns.
    "auto" is not its own layout: easyFilters() resolves the container to .layout-list
-   when the settings dialog is at least ~1000px wide and .layout-grid below that,
-   re-evaluating on resize. layout-grid auto-fits its column count to the width. */
+   while the inline rows still fit on one line and .layout-grid once any row would
+   wrap, re-evaluating on resize. layout-grid auto-fits its column count to the width. */
 .section-filters .easy-filters-list {
   gap: 8px;
 }
@@ -1299,7 +1299,7 @@ div[data-checked="false"] > .suboption-list {
 /* Card (vertical) layout — "grid", and "auto" when a row would wrap. */
 .section-filters .easy-filters-list.layout-grid {
   display: grid;
-  grid-template-columns: repeat(auto-fill, minmax(240px, 1fr));
+  grid-template-columns: repeat(auto-fill, minmax(190px, 1fr));
 }
 .section-filters .layout-grid .easy-filter-tile {
   flex-direction: column;
