@@ -8,6 +8,7 @@
 - Inline sauce links are now wrapped in a `.sauce-container` span, so they can be targeted or revealed on hover with custom CSS.
 - Fixed QR inputs not retaining values after submitting.
 - Added setting to enable/disable thread watcher attachment system. (Threads & Posts > Monitoring > Thread Watcher > Attachment Controls)
+- Fixed "Edit image" only inserting a quote instead of opening the image in the Tegaki editor.
 
 ### 1.1.5 (2026-06-14)
 
