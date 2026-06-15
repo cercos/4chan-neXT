@@ -1600,7 +1600,7 @@ var QR = {
     if (preferred !== 'auto') return preferred;
 
     const blocked = new Set<string>();
-    if (Conf['Thread Watcher Attached']) {
+    if (Conf['Thread Watcher Attach Controls'] !== false && Conf['Thread Watcher Attached']) {
       const watcherLoc = Conf['Thread Watcher Attach Location'];
       blocked.add((watcherLoc === 'top' || watcherLoc === 'left' || watcherLoc === 'right') ? watcherLoc : 'bottom');
     }
@@ -3825,6 +3825,8 @@ var QR = {
     },
 
     menu: {
+      post: null as any,
+
       init() {
         if (!['index', 'thread'].includes(g.VIEW) || !Conf['Menu'] || !Conf['Edit Link'] || !Conf['Quick Reply']) { return; }
 
@@ -3847,9 +3849,38 @@ var QR = {
         });
       },
 
-      editFile() {
-        const { post } = QR.oekaki.menu;
+      preparePost(post): any {
+        QR.openPost();
+        if (!QR.postCanTakeFile(QR.selected, false)) {
+          new QR.post(true);
+          $.addClass(QR.nodes.el, 'dump');
+        }
         QR.quote.call(post.nodes.post);
+        return QR.selected;
+      },
+
+      editSelectedPost(post) {
+        post.select();
+        const { el } = post.nodes;
+        const open = function(e?) {
+          if (e) { el.removeEventListener('QRMetadata', open, false); }
+          if (!el.dataset.type || !/^(image|video)\//.test(el.dataset.type)) { return; }
+          if (el.dataset.height === 'loading') {
+            el.addEventListener('QRMetadata', open, false);
+            return;
+          }
+          if (!el.dataset.height || !el.dataset.width) { return; }
+          post.select();
+          QR.oekaki.edit();
+        };
+        open();
+      },
+
+      editFile(e?: Event) {
+        e?.preventDefault();
+        const { post } = QR.oekaki.menu;
+        const target = QR.oekaki.menu.preparePost(post);
+        if (!target) { return; }
         const { isVideo } = post.file;
         const currentTime = post.file.fullImage?.currentTime || 0;
         return CrossOrigin.file(post.file.url, function (blob) {
@@ -3864,10 +3895,11 @@ var QR = {
                   height: video.videoHeight
                 }) as HTMLCanvasElement;
                 canvas.getContext('2d').drawImage(video, 0, 0);
-                canvas.toBlob(function (snapshot) {
-                  snapshot.name = post.file.name.replace(/\.\w+$/, '') + '.png';
-                  QR.handleFiles([snapshot]);
-                  QR.oekaki.edit();
+                canvas.toBlob(async function (snapshot) {
+                  if (!snapshot) { return QR.error('Could not snapshot video for the editor.'); }
+                  const file = new File([snapshot], post.file.name.replace(/\.\w+$/, '') + '.png', { type: 'image/png' });
+                  await target.setFile(file);
+                  QR.oekaki.menu.editSelectedPost(target);
                 });
               });
               video.currentTime = currentTime;
@@ -3875,9 +3907,8 @@ var QR = {
             $.on(video, 'error', () => QR.openError());
             video.src = URL.createObjectURL(blob);
           } else {
-            blob.name = post.file.name;
-            QR.handleFiles([blob]);
-            QR.oekaki.edit();
+            const file = new File([blob], post.file.name, { type: blob.type });
+            target.setFile(file).then(() => QR.oekaki.menu.editSelectedPost(target));
           }
         });
       }

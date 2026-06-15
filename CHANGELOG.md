@@ -7,6 +7,7 @@
 - Post menus now animate when opening and closing instead of popping in and out. Dialogs finish their exit transition before leaving the DOM, so both the open and close are smooth.
 - Inline sauce links are now wrapped in a `.sauce-container` span, so they can be targeted or revealed on hover with custom CSS.
 - Fixed QR inputs not retaining values after submitting.
+- Added setting to enable/disable thread watcher attachment system. (Threads & Posts > Monitoring > Thread Watcher > Attachment Controls)
 
 ### 1.1.5 (2026-06-14)
 

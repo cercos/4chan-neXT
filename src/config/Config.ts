@@ -515,10 +515,10 @@ const Config = {
         'The thread watcher will be visible when the page is loaded.',
         1
       ],
-      'Thread Watcher Attached': [
-        false,
-        'Attach the thread watcher to the Quick Reply (position is set via "Attach Location" in the watcher menu). Drag either title bar to move both dialogs; use the attach button to detach.',
-        2
+      'Thread Watcher Attach Controls': [
+        true,
+        'Show the Thread Watcher titlebar button for attaching/detaching it to Quick Reply. When disabled, the attach button and Attach Location menu are hidden.',
+        1
       ],
       'Mark New IPs': [
         false,
@@ -894,6 +894,7 @@ const Config = {
   'Thread Watcher Max Height': 210,
   'Thread Watcher Max Width': 250,
   'Thread Watcher Sort': 'manual',
+  'Thread Watcher Attach Controls': true,
   'Thread Watcher Attached': false,
   'Thread Watcher Attach Location': 'bottom',
   'Thread Title': 'excerpt',

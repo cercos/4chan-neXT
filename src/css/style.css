@@ -4,7 +4,10 @@
   display: block;
   background-color: inherit;
 }
-.dialog:not(#qr):not(#thread-watcher):not(#download-all-picker):not(#header-bar) {
+/* #fourchanx-settings is exempted: it defines its own stronger shadow to match
+   the detached panels (each :not(#id) adds ID-level specificity, so this rule
+   would otherwise win over the plain #fourchanx-settings selector). */
+.dialog:not(#qr):not(#thread-watcher):not(#download-all-picker):not(#header-bar):not(#fourchanx-settings) {
   box-shadow: 0 1px 2px rgba(0, 0, 0, .15);
 }
 #qr,
@@ -151,7 +154,7 @@ body.hasDropDownNav{
 #menu label.entry {
   display: block;
 }
-#fourchanx-settings label {
+#xt-settings-overlay label {
   display: inline;
 }
 .intro a[href="javascript:;"],
@@ -474,7 +477,14 @@ audio.controls-added {
 }
 #fourchanx-settings {
   box-sizing: border-box;
-  box-shadow: 0 0 15px rgba(0, 0, 0, .15);
+  /* Match the detached panels' lift exactly (same border + radius + shadow), so
+     the window reads as the same kind of floating surface when it overlaps them.
+     The shadow alone wasn't enough — a soft shadow on a square, borderless edge
+     barely registers, especially dark-on-dark; the 1px border and rounded
+     corners are what actually frame it as a lifted card. */
+  border: 1px solid var(--xt-border, rgba(128, 128, 128, .45));
+  border-radius: 6px;
+  box-shadow: 0 12px 48px rgba(0, 0, 0, .5);
   height: 600px;
   max-height: 100%;
   /* The Simple Filters page used to be a wide table that forced a ~975px minimum.
@@ -673,7 +683,7 @@ audio.controls-added {
    thread-watcher inputs, …) so the whole dialog is consistent. The styling
    section's special fields are excluded so their bespoke rules — including the
    red invalid-hex border — keep winning. */
-#fourchanx-settings .field:not(.styling-color-hex):not(.styling-saved-palette-name):not(.styling-hl-widthnum):not(.custom-css-textarea) {
+#xt-settings-overlay .field:not(.styling-color-hex):not(.styling-saved-palette-name):not(.styling-hl-widthnum):not(.custom-css-textarea) {
   background-color: transparent;
   border-color: rgba(128, 128, 128, .45);
   border-radius: 3px;
@@ -684,11 +694,11 @@ audio.controls-added {
    stark white default on dark themes (simple-filter type, attach-to-QR location,
    board update sound, …). Re-theme the options to the dialog background, matching
    the styling-section and #qr selects which already do this. */
-#fourchanx-settings select.field option {
+#xt-settings-overlay select.field option {
   background-color: var(--xt-dialog-bg, var(--background, Canvas));
   color: inherit;
 }
-#fourchanx-settings .close {
+#xt-settings-overlay .close {
   text-decoration: none;
   padding: 2px 4px;
   margin: 0;
@@ -731,32 +741,32 @@ audio.controls-added {
    themed scrollbar (above), so the textareas — boardnav, sauce, filters,
    archive lists, banners, JS whitelist, personas, external catalogs — and the
    section nav list stop falling back to the bulky OS-default scrollbar. */
-#fourchanx-settings textarea::-webkit-scrollbar,
+#xt-settings-overlay textarea::-webkit-scrollbar,
 .sections-list::-webkit-scrollbar {
   width: 6px;
   height: 6px;
 }
-#fourchanx-settings textarea::-webkit-scrollbar-button,
+#xt-settings-overlay textarea::-webkit-scrollbar-button,
 .sections-list::-webkit-scrollbar-button {
   display: none;
   width: 0;
   height: 0;
 }
-#fourchanx-settings textarea::-webkit-scrollbar-track,
+#xt-settings-overlay textarea::-webkit-scrollbar-track,
 .sections-list::-webkit-scrollbar-track {
   background: transparent;
 }
-#fourchanx-settings textarea::-webkit-scrollbar-thumb,
+#xt-settings-overlay textarea::-webkit-scrollbar-thumb,
 .sections-list::-webkit-scrollbar-thumb {
   background-color: var(--xt-border, rgba(128, 128, 128, .5));
   border-radius: 3px;
 }
-#fourchanx-settings textarea::-webkit-scrollbar-thumb:hover,
+#xt-settings-overlay textarea::-webkit-scrollbar-thumb:hover,
 .sections-list::-webkit-scrollbar-thumb:hover {
   background-color: var(--xt-border, rgba(128, 128, 128, .8));
 }
 @supports not selector(::-webkit-scrollbar) {
-  #fourchanx-settings textarea,
+  #xt-settings-overlay textarea,
   .sections-list {
     scrollbar-width: thin;
     scrollbar-color: var(--xt-border, rgba(128, 128, 128, .5)) transparent;
@@ -766,15 +776,15 @@ audio.controls-added {
    it reads against whatever editor theme is picked (which can differ from the
    surrounding panel). Width/colour override the shared textarea rule above; the
    ID+class selector outranks the ID+element one so these win. */
-#fourchanx-settings .custom-css-textarea::-webkit-scrollbar {
+#xt-settings-overlay .custom-css-textarea::-webkit-scrollbar {
   width: 4px;
   height: 4px;
 }
-#fourchanx-settings .custom-css-textarea::-webkit-scrollbar-thumb {
+#xt-settings-overlay .custom-css-textarea::-webkit-scrollbar-thumb {
   background-color: var(--custom-css-border, var(--xt-border, rgba(128, 128, 128, .5)));
 }
 @supports not selector(::-webkit-scrollbar) {
-  #fourchanx-settings .custom-css-textarea {
+  #xt-settings-overlay .custom-css-textarea {
     scrollbar-color: var(--custom-css-border, var(--xt-border, rgba(128, 128, 128, .5))) transparent;
   }
 }
@@ -1104,7 +1114,7 @@ div[data-checked="false"] > .suboption-list {
   width: 0;
   border-left: 1px solid;
 }
-#fourchanx-settings .description {
+#xt-settings-overlay .description {
   display: inline;
   opacity: .72;
 }
@@ -1115,7 +1125,7 @@ div[data-checked="false"] > .suboption-list {
 #fourchanx-settings.settings-searching .description {
   display: inline;
 }
-#fourchanx-settings .section-main p {
+#xt-settings-overlay .section-main p {
   margin: .5em 0 0;
 }
 .section-filter ul,
@@ -1131,38 +1141,40 @@ div[data-checked="false"] > .suboption-list {
 .section-filters textarea {
   height: 500px;
 }
-.section-interface .boardnav-instructions {
+/* Collapsible guide/help blocks inside settings sections (Board Navigation
+   syntax, Sauce parameters, Personas usage). */
+.settings-guide {
   margin-top: 10px;
 }
-.section-interface .boardnav-instructions > summary {
+.settings-guide > summary {
   font-weight: 600;
 }
 .section-main a, .section-filter a, .section-filters a, .section-advanced a {
   text-decoration: underline;
 }
-#fourchanx-settings .thread-watcher-inline-number {
+#xt-settings-overlay .thread-watcher-inline-number {
   margin-left: 8px;
   display: inline-flex;
   align-items: center;
   gap: 4px;
 }
-#fourchanx-settings .thread-watcher-inline-subsetting {
+#xt-settings-overlay .thread-watcher-inline-subsetting {
   display: block;
   margin: 4px 0 0 22px;
 }
-#fourchanx-settings .thread-watcher-size-input {
+#xt-settings-overlay .thread-watcher-size-input {
   width: 3.2em;
 }
-#fourchanx-settings .thread-watcher-preview-size-input {
+#xt-settings-overlay .thread-watcher-preview-size-input {
   width: 3.2em;
 }
-#fourchanx-settings .thread-watcher-height-input {
+#xt-settings-overlay .thread-watcher-height-input {
   width: 4.2em;
 }
-#fourchanx-settings .thread-watcher-width-input {
+#xt-settings-overlay .thread-watcher-width-input {
   width: 4.2em;
 }
-#fourchanx-settings .thread-watcher-attach-loc {
+#xt-settings-overlay .thread-watcher-attach-loc {
   width: 5.5em;
   font-size: 90%;
 }
@@ -2077,10 +2089,10 @@ body > #overlay:not(.media-preview) {
   cursor: pointer;
   padding: 6px 12px;
 }
-#fourchanx-settings .section-styling {
+#xt-settings-overlay .section-styling {
   position: relative;
 }
-#fourchanx-settings .section-styling[data-editing-variant="nsfw"] {
+#xt-settings-overlay .section-styling[data-editing-variant="nsfw"] {
   --xt-variant-accent: #a66a00;
 }
 
@@ -2089,7 +2101,7 @@ body > #overlay:not(.media-preview) {
    summary badge keeps the affected sections scannable after switching
    SFW/NSFW tabs. Keep it off summary::after; that pseudo-element is reserved
    for the shared details disclosure arrow. */
-#fourchanx-settings .section-styling details[data-variant-aware="true"] > summary .styling-section-summary-text::after {
+#xt-settings-overlay .section-styling details[data-variant-aware="true"] > summary .styling-section-summary-text::after {
   background: color-mix(in srgb, var(--xt-variant-accent, currentColor) 16%, transparent);
   border: 1px solid color-mix(in srgb, var(--xt-variant-accent, currentColor) 45%, transparent);
   border-radius: 3px;
@@ -2103,7 +2115,7 @@ body > #overlay:not(.media-preview) {
   padding: 1px 5px;
   vertical-align: 1px;
 }
-#fourchanx-settings .section-styling details[data-variant-aware="true"] > summary > .styling-variant-badge {
+#xt-settings-overlay .section-styling details[data-variant-aware="true"] > summary > .styling-variant-badge {
   background: color-mix(in srgb, var(--xt-variant-accent, currentColor) 16%, transparent);
   border: 1px solid color-mix(in srgb, var(--xt-variant-accent, currentColor) 45%, transparent);
   border-radius: 3px;
@@ -2376,7 +2388,7 @@ body > #overlay:not(.media-preview) {
   gap: 6px 16px;
   margin: 6px 0;
 }
-#fourchanx-settings .section-styling .styling-hl-master {
+#xt-settings-overlay .section-styling .styling-hl-master {
   align-items: center;
   display: inline-flex;
   font-weight: 600;
@@ -2388,13 +2400,13 @@ body > #overlay:not(.media-preview) {
 /* Plain group title (no master toggle), matching the weight of the toggle
    labels so a checkbox-less group like the palette tools still reads as a
    peer subsection of Thread/Catalog highlights. */
-#fourchanx-settings .section-styling .styling-hl-grouptitle {
+#xt-settings-overlay .section-styling .styling-hl-grouptitle {
   font-weight: 600;
   line-height: 16px;
   min-height: 18px;
   white-space: nowrap;
 }
-#fourchanx-settings .section-styling .styling-hl-master input[type="checkbox"] {
+#xt-settings-overlay .section-styling .styling-hl-master input[type="checkbox"] {
   align-self: center;
   display: block;
   flex: none;
@@ -2478,10 +2490,10 @@ body > #overlay:not(.media-preview) {
   background: color-mix(in srgb, currentColor 5%, transparent);
   display: block;
 }
-/* ID prefix beats `#fourchanx-settings label { display: inline }`, so the
+/* ID prefix beats `#xt-settings-overlay label { display: inline }`, so the
    subsection label lays out as a full-width flex row and keeps its full-width
    underline. */
-#fourchanx-settings .section-styling .styling-hl-sub {
+#xt-settings-overlay .section-styling .styling-hl-sub {
   align-items: center;
   border-bottom: 1px solid color-mix(in srgb, currentColor 18%, transparent);
   box-sizing: border-box;
@@ -2780,11 +2792,11 @@ body > #overlay:not(.media-preview) {
    Custom CSS section. It's added inside the styling `section`, so the editor's
    theme rules (scoped under `.section-styling`) keep matching; position:fixed
    anchors it to the viewport regardless of where it lives in the DOM. Selectors
-   are prefixed with #fourchanx-settings (and the structural display/flex props
+   are prefixed with #xt-settings-overlay (and the structural display/flex props
    forced) because the panel lives inside the settings dialog, where the existing
-   ID-specificity rules (e.g. `#fourchanx-settings summary{display:flex}`) would
+   ID-specificity rules (e.g. `#xt-settings-overlay summary{display:flex}`) would
    otherwise win and break the flex chain. */
-#fourchanx-settings .custom-css-panel {
+#xt-settings-overlay .custom-css-panel {
   position: fixed;
   z-index: 1500;
   display: flex !important;
@@ -2800,7 +2812,7 @@ body > #overlay:not(.media-preview) {
   background: var(--custom-css-bg, #fbfbfb);
   box-shadow: 0 12px 48px rgba(0, 0, 0, .5);
 }
-#fourchanx-settings .custom-css-panel-bar {
+#xt-settings-overlay .custom-css-panel-bar {
   flex: 0 0 auto;
   display: flex;
   align-items: center;
@@ -2813,21 +2825,21 @@ body > #overlay:not(.media-preview) {
   color: var(--custom-css-text, #1f2731);
   border-bottom: 1px solid var(--custom-css-border, rgba(128, 128, 128, .35));
 }
-#fourchanx-settings .custom-css-panel-actions {
+#xt-settings-overlay .custom-css-panel-actions {
   display: flex;
   align-items: center;
   gap: 6px;
 }
-#fourchanx-settings .custom-css-panel-reset {
+#xt-settings-overlay .custom-css-panel-reset {
   cursor: pointer;
 }
-#fourchanx-settings .custom-css-panel-close {
+#xt-settings-overlay .custom-css-panel-close {
   cursor: pointer;
   padding: 0 8px;
   font-size: 16px;
   line-height: 1.2;
 }
-#fourchanx-settings .custom-css-panel-body {
+#xt-settings-overlay .custom-css-panel-body {
   flex: 1 1 auto !important;
   min-height: 0;
   display: flex !important;
@@ -2837,7 +2849,7 @@ body > #overlay:not(.media-preview) {
 }
 /* The relocated <details> becomes the flex column that lets the editor grow to
    fill whatever height the user resizes the panel to. */
-#fourchanx-settings .custom-css-panel-body > .styling-custom-css {
+#xt-settings-overlay .custom-css-panel-body > .styling-custom-css {
   display: flex !important;
   flex-direction: column;
   flex: 1 1 auto !important;
@@ -2851,13 +2863,13 @@ body > #overlay:not(.media-preview) {
    element. Make that wrapper the growable flex column so the editor can fill.
    Harmless in engines that don't implement the pseudo (editor is a direct child
    there, handled by the rule above). */
-#fourchanx-settings .custom-css-panel-body > .styling-custom-css::details-content {
+#xt-settings-overlay .custom-css-panel-body > .styling-custom-css::details-content {
   display: flex !important;
   flex-direction: column !important;
   flex: 1 1 auto !important;
   min-height: 0 !important;
 }
-#fourchanx-settings .custom-css-panel-body .custom-css-editor {
+#xt-settings-overlay .custom-css-panel-body .custom-css-editor {
   flex: 1 1 auto !important;
   height: auto !important;
   min-height: 120px !important;
@@ -2865,7 +2877,7 @@ body > #overlay:not(.media-preview) {
 }
 /* While detached, the section's own collapse summary (which now hosts the Detach
    button) is hidden — the panel chrome and resize handle replace them. */
-#fourchanx-settings .styling-custom-css[data-detached] > summary {
+#xt-settings-overlay .styling-custom-css[data-detached] > summary {
   display: none !important;
 }
 /* "Re-attach" note left in the settings page while the section is detached. */
@@ -2887,7 +2899,7 @@ body > #overlay:not(.media-preview) {
    no syntax theme), so its chrome follows the settings dialog. Structural
    display/flex props are forced because the panel lives inside the settings
    dialog, where the existing ID-specificity rules (e.g.
-   `#fourchanx-settings summary{display:flex}`) would otherwise win. */
+   `#xt-settings-overlay summary{display:flex}`) would otherwise win. */
 .xt-detach-btn {
   cursor: pointer;
 }
@@ -2900,7 +2912,7 @@ body > #overlay:not(.media-preview) {
   flex: 0 0 auto;
   margin-left: auto;
 }
-#fourchanx-settings .xt-detach-panel {
+#xt-settings-overlay .xt-detach-panel {
   /* Match the settings dialog itself: `.dialog` (the settings window) is painted
      with var(--xt-background)/var(--xt-border) per active theme, so reusing them
      makes the panel a true extension of the dialog and adapts to every theme
@@ -2923,7 +2935,7 @@ body > #overlay:not(.media-preview) {
   color: inherit;
   box-shadow: 0 12px 48px rgba(0, 0, 0, .5);
 }
-#fourchanx-settings .xt-detach-panel-bar {
+#xt-settings-overlay .xt-detach-panel-bar {
   flex: 0 0 auto;
   display: flex;
   align-items: center;
@@ -2935,21 +2947,21 @@ body > #overlay:not(.media-preview) {
   font-weight: 700;
   border-bottom: 1px solid var(--xt-detach-border);
 }
-#fourchanx-settings .xt-detach-panel-actions {
+#xt-settings-overlay .xt-detach-panel-actions {
   display: flex;
   align-items: center;
   gap: 6px;
 }
-#fourchanx-settings .xt-detach-panel-reset {
+#xt-settings-overlay .xt-detach-panel-reset {
   cursor: pointer;
 }
-#fourchanx-settings .xt-detach-panel-close {
+#xt-settings-overlay .xt-detach-panel-close {
   cursor: pointer;
   padding: 0 8px;
   font-size: 16px;
   line-height: 1.2;
 }
-#fourchanx-settings .xt-detach-panel-body {
+#xt-settings-overlay .xt-detach-panel-body {
   flex: 1 1 auto !important;
   min-height: 0;
   display: flex !important;
@@ -2960,23 +2972,32 @@ body > #overlay:not(.media-preview) {
 /* The relocated block (Personas' <details> or Sauce's .sauce-section) becomes the
    flex column that lets its textarea grow to fill whatever height the user resizes
    the panel to. */
-#fourchanx-settings .xt-detach-panel-body > details,
-#fourchanx-settings .xt-detach-panel-body > .sauce-section {
+#xt-settings-overlay .xt-detach-panel-body > details,
+#xt-settings-overlay .xt-detach-panel-body > .sauce-section,
+#xt-settings-overlay .xt-detach-panel-body > .boardnav-detachable {
   display: flex !important;
   flex-direction: column;
   flex: 1 1 auto !important;
   min-height: 0;
   margin: 0 !important;
 }
+/* Board Navigation's textarea sits inside its own wrapper div; make that wrapper
+   the growable flex child so the field fills the panel above the syntax guide. */
+#xt-settings-overlay .xt-detach-panel-body > .boardnav-detachable > .boardnav-field-wrap {
+  display: flex;
+  flex-direction: column;
+  flex: 1 1 auto;
+  min-height: 0;
+}
 /* Modern Chromium wraps a <details>' non-summary content in an internal
    ::details-content box; make that wrapper the growable flex column too. */
-#fourchanx-settings .xt-detach-panel-body > details::details-content {
+#xt-settings-overlay .xt-detach-panel-body > details::details-content {
   display: flex !important;
   flex-direction: column !important;
   flex: 1 1 auto !important;
   min-height: 0 !important;
 }
-#fourchanx-settings .xt-detach-panel-body textarea {
+#xt-settings-overlay .xt-detach-panel-body textarea {
   flex: 1 1 auto !important;
   height: auto !important;
   min-height: 120px !important;
@@ -2985,12 +3006,12 @@ body > #overlay:not(.media-preview) {
 }
 /* The panel itself is resizable, so the field's own drag-resize bar is redundant
    while detached. */
-#fourchanx-settings .xt-detach-panel-body .settings-textarea-resizer {
+#xt-settings-overlay .xt-detach-panel-body .settings-textarea-resizer {
   display: none !important;
 }
 /* While detached, the block's own collapse summary (which hosts the Detach
    toggle) is hidden — the panel chrome and resize handle replace them. */
-#fourchanx-settings details[data-detached] > summary {
+#xt-settings-overlay details[data-detached] > summary {
   display: none !important;
 }
 .xt-detach-note {
@@ -3295,20 +3316,6 @@ body > #overlay:not(.media-preview) {
 .section-styling .custom-css-editor[data-theme="xt-solarized"] .custom-css-highlight .css-token-important {
   color: #cb4b16;
 }
-#sauce-doc-expand:not(:checked) ~ #sauce-doc,
-#personas-doc-expand:not(:checked) ~ #personas-doc {
-  max-height: 130px;
-  overflow: auto;
-}
-#sauce-doc > label,
-#personas-doc > label {
-  float: right;
-  margin: 0 5px;
-}
-/* XXX for OneeChan */
-#sauce-doc-expand + .riceCheck {
-  display: none;
-}
 .section-sauce textarea {
   height: 430px;
 }
@@ -3356,14 +3363,14 @@ body > #overlay:not(.media-preview) {
   font-weight: 700;
   opacity: 0.8;
 }
-#fourchanx-settings details {
+#xt-settings-overlay details {
   border: 1px solid rgba(128, 128, 128, .3);
   border: 1px solid color-mix(in srgb, currentColor 22%, transparent);
   border-radius: 4px;
   padding: 0 0.75em;
   margin: 4px 2px;
 }
-#fourchanx-settings details[open] {
+#xt-settings-overlay details[open] {
   padding-bottom: 0.85em;
 }
 /* Highlight the whole section you're pointing at (:hover) or working in
@@ -3372,14 +3379,14 @@ body > #overlay:not(.media-preview) {
    ones. Kept moderate (~6%) so nested sections (Styling) can stack their tints
    without it getting muddy; the summary's 8% hover still layers on top as a
    header depth cue. */
-#fourchanx-settings details {
+#xt-settings-overlay details {
   transition: background-color 120ms ease;
 }
-#fourchanx-settings details:hover,
-#fourchanx-settings details:focus-within {
+#xt-settings-overlay details:hover,
+#xt-settings-overlay details:focus-within {
   background: color-mix(in srgb, currentColor 6%, transparent);
 }
-#fourchanx-settings summary {
+#xt-settings-overlay summary {
   display: flex;
   align-items: center;
   justify-content: space-between;
@@ -3392,17 +3399,17 @@ body > #overlay:not(.media-preview) {
   list-style: none;
   user-select: none;
 }
-#fourchanx-settings details[open] > summary {
+#xt-settings-overlay details[open] > summary {
   margin-bottom: 6px;
   border-bottom: 1px solid rgba(128, 128, 128, .2);
   border-bottom: 1px solid color-mix(in srgb, currentColor 14%, transparent);
 }
-#fourchanx-settings summary::-webkit-details-marker,
-#fourchanx-settings summary::marker {
+#xt-settings-overlay summary::-webkit-details-marker,
+#xt-settings-overlay summary::marker {
   display: none;
   content: '';
 }
-#fourchanx-settings summary::after {
+#xt-settings-overlay summary::after {
   content: "▾";
   font-size: 0.85em;
   line-height: 1;
@@ -3412,22 +3419,22 @@ body > #overlay:not(.media-preview) {
 /* The summary tint layers over the section's hover/focus tint (see the
    details:hover rule), so this stays small — composited over the ~6% section
    fill it lands just slightly above it, marking the header without a hard jump. */
-#fourchanx-settings summary:hover {
+#xt-settings-overlay summary:hover {
   background: rgba(128, 128, 128, .03);
   background: color-mix(in srgb, currentColor 3%, transparent);
 }
-#fourchanx-settings summary:hover::after {
+#xt-settings-overlay summary:hover::after {
   opacity: 1;
 }
-#fourchanx-settings details:not([open]) > summary::after {
+#xt-settings-overlay details:not([open]) > summary::after {
   transform: rotate(-90deg);
 }
-#fourchanx-settings textarea:not(.custom-css-textarea) {
+#xt-settings-overlay textarea:not(.custom-css-textarea) {
   font-family: monospace;
   width: 100%;
   resize: vertical;
 }
-#fourchanx-settings textarea:not(.custom-css-textarea):not(:focus) {
+#xt-settings-overlay textarea:not(.custom-css-textarea):not(:focus) {
   cursor: default;
   overflow: hidden;
 }
@@ -3435,11 +3442,11 @@ body > #overlay:not(.media-preview) {
    grip is a tiny corner triangle; this turns the whole bottom edge into a bar
    the user can grab and drag to extend the field. JS adds .has-custom-resizer
    to the textarea and inserts the .settings-textarea-resizer bar after it. */
-#fourchanx-settings textarea.has-custom-resizer {
+#xt-settings-overlay textarea.has-custom-resizer {
   resize: none;
   display: block;
 }
-#fourchanx-settings .settings-textarea-resizer {
+#xt-settings-overlay .settings-textarea-resizer {
   height: 12px;
   margin-top: -1px;
   margin-bottom: 6px;
@@ -3452,7 +3459,7 @@ body > #overlay:not(.media-preview) {
   user-select: none;
   touch-action: none;
 }
-#fourchanx-settings .settings-textarea-resizer::before {
+#xt-settings-overlay .settings-textarea-resizer::before {
   content: '';
   width: 30px;
   height: 3px;
@@ -3460,14 +3467,14 @@ body > #overlay:not(.media-preview) {
   background: currentColor;
   opacity: .4;
 }
-#fourchanx-settings .settings-textarea-resizer:hover::before,
-#fourchanx-settings .settings-textarea-resizer.dragging::before {
+#xt-settings-overlay .settings-textarea-resizer:hover::before,
+#xt-settings-overlay .settings-textarea-resizer.dragging::before {
   opacity: .8;
 }
-#fourchanx-settings .settings-textarea-resizer.dragging {
+#xt-settings-overlay .settings-textarea-resizer.dragging {
   background: var(--xt-border, rgba(128, 128, 128, .35));
 }
-#fourchanx-settings code {
+#xt-settings-overlay code {
   color: #000;
   background-color: #FFF;
   padding: 0 2px;
@@ -3695,14 +3702,14 @@ body > #overlay:not(.media-preview) {
   color: inherit;
   opacity: 0.7;
 }
-#fourchanx-settings th {
+#xt-settings-overlay th {
   text-align: center;
   font-weight: bold;
 }
-#fourchanx-settings p {
+#xt-settings-overlay p {
   margin: 1em 0px;
 }
-#fourchanx-settings table {
+#xt-settings-overlay table {
   margin: auto;
 }
 
@@ -4253,6 +4260,10 @@ textarea.copy-text-element {
 }
 #thread-watcher > .move > .attach.attached {
   opacity: 1;
+}
+#thread-watcher > .move > .attach.attach-controls-hidden {
+  visibility: hidden;
+  pointer-events: none;
 }
 #thread-watcher.watcher-attached {
   /* visually indicate docked/attached state (e.g. via themes) */

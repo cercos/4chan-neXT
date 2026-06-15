@@ -31,6 +31,9 @@ const dialog = function(id, properties) {
   return el;
 };
 
+const threadWatcherAttached = () =>
+  Conf['Thread Watcher Attach Controls'] !== false && Conf['Thread Watcher Attached'];
+
 var Menu = (function() {
   let currentMenu = undefined;
   let lastToggledButton = undefined;
@@ -302,7 +305,7 @@ export var dragstart = function (e) {
   }
   // distance from pointer to el edge is constant; calculate it here.
   let el = $.x('ancestor::div[contains(@class,"dialog")][1]', this);
-  if (el.id === 'thread-watcher' && Conf['Thread Watcher Attached']) {
+  if (el.id === 'thread-watcher' && threadWatcherAttached()) {
     const qr = $.id('qr');
     if (qr && !qr.hidden) {
       // Dragging an attached watcher moves the QR/watcher pair. Detaching is
@@ -412,7 +415,7 @@ export var dragend = function () {
     $.off(d, 'mousemove', this.move);
     $.off(d, 'mouseup',   this.up);
   }
-  if (this.id === 'thread-watcher' && Conf['Thread Watcher Attached']) { return; }
+  if (this.id === 'thread-watcher' && threadWatcherAttached()) { return; }
   if (this.style.length === 2) { // assume only left or right and top or bottom
     $.set(`${this.id}.position`, this.style.cssText);
   } else { // only include position data.

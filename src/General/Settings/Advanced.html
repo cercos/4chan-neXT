@@ -87,9 +87,8 @@
 <details open>
   <summary>Quick Reply Personas<button type="button" id="personas-detach" data-open="false" class="xt-detach-btn xt-detach-summary-btn" title="Detach into a floating window">Detach</button></summary>
   <textarea hidden class="personafield field" name="QR.personas" spellcheck="false"></textarea>
-  <input id="personas-doc-expand" type="checkbox" hidden>
-  <div id="personas-doc">
-    <label for="personas-doc-expand">[expand]</label>
+  <details class="settings-guide" data-remember-layout="false">
+    <summary>Usage guide</summary>
     <p>
       One item per line.<br>
       Items will be added in the relevant input&#039;s auto-completion list.<br>
@@ -102,7 +101,7 @@
       <li>Force values as defaults with the <code>always</code> keyword, for example: <code>options:&quot;sage&quot;;always</code>.</li>
       <li>Select specific boards for an item, separated with commas, for example: <code>options:&quot;sage&quot;;boards:jp;always</code>.</li>
     </ul>
-  </div>
+  </details>
 </details>
 
 <details open>

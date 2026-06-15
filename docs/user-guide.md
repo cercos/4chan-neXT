@@ -47,7 +47,8 @@ Important settings:
 - Settings -> Monitoring -> `Thread Watcher`: enables the feature.
 - Settings -> Monitoring -> `Fixed Thread Watcher`: makes the watcher scroll with the page.
 - Settings -> Monitoring -> `Persistent Thread Watcher`: shows the watcher on page load.
-- Settings -> Monitoring -> `Attach to QR`: docks the watcher to Quick Reply.
+- Settings -> Threads & Posts -> Monitoring -> `Attachment Controls`: shows the Thread Watcher titlebar attach button and Attach Location menu for Quick Reply.
+- Thread Watcher titlebar -> attach button: docks or undocks the watcher to Quick Reply.
 - Thread Watcher menu -> `Auto Update Thread Watcher`: periodically checks watched threads.
 - Thread Watcher menu -> `Auto Watch`: automatically watches threads you create.
 - Thread Watcher menu -> `Auto Watch Reply`: automatically watches threads you reply to.
@@ -257,7 +258,7 @@ Important settings:
 - `Show Comment Preview Header Icon`: adds the preview toggle to the QR titlebar.
 - `Auto-close Tags`: automatically inserts matching closing tags for supported board tags in the QR comment box.
 
-Thread Watcher can be attached to Quick Reply. When attached, dragging either title bar moves both dialogs. Use the attach button to detach.
+Thread Watcher can be attached to Quick Reply from its titlebar attach button. When attached, dragging either title bar moves both dialogs. Disable `Attachment Controls` if you do not want the attach button or Attach Location menu.
 
 Comment Preview renders quote links, cross-board quote links, programmatic quote insertion refreshes, and `[math]` / `[eqn]` blocks in the preview pane. The preview is styled as an actual post, with a dashed preview border and accent edge so it is visually distinct from real posts.
 

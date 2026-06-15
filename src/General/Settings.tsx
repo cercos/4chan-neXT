@@ -376,6 +376,9 @@ var Settings = {
     $.on($('.collapse-all', dialog), 'click', e => { e.preventDefault(); Settings.toggleAllDetails(false); });
     $.on($('.accordion-toggle', dialog), 'click', e => { e.preventDefault(); Settings.toggleAccordion(); });
     $.on($('.move', settingsWindow), 'touchstart mousedown', Settings.prepareDrag);
+    // Window-manager z-order: clicking the settings window raises it above any
+    // detached panels (its siblings in the overlay).
+    $.on(settingsWindow, 'mousedown', () => Settings.raiseToFront(settingsWindow));
     $.on($('#settings-remember-layout', dialog), 'change', Settings.onRememberLayoutChange);
     $.on($('#settings-highlight-next', dialog), 'change', Settings.onHighlightNextChange);
     for (const actionEl of $$('.settings-titlebar-actions > *', settingsWindow)) {
@@ -474,6 +477,9 @@ var Settings = {
     if (searchInput) searchInput.value = '';
     SearchHighlight.clear(SETTINGS_SEARCH_HL);
     $.rm(Settings.dialog);
+    // The overlay (and every detached panel inside it) is gone now; drop the
+    // registry so the next open starts with no stale detach controllers.
+    Settings.detached = Object.create(null);
     Settings.searchQuery = '';
     Settings.searchTerms = [];
     Settings.activeSection = null;
@@ -569,25 +575,38 @@ var Settings = {
     // grouping for the duration of the query (re-applied on the post-search
     // re-render). The mode flag itself is untouched.
     const active = Settings.accordionMode && !Settings.searchQuery;
+    // All top-level <details> in the rendered view: a section's own panels, or
+    // every section block on the All Settings page. They form ONE exclusive
+    // group, so accordion keeps a single panel open per individual section and a
+    // single panel open across the whole All Settings page.
     const blocks = $$('.settings-section-content', section) as HTMLElement[];
     const containers = blocks.length ? blocks : [section];
-    containers.forEach((container, i) => {
-      const groupName = `xt-accordion-${i}`;
-      const panels = ([...container.children] as HTMLElement[])
-        .filter(el => el.tagName === 'DETAILS') as HTMLDetailsElement[];
-      if (active) {
-        // Collapse to a single open panel before grouping so the browser does
-        // not arbitrarily pick which one survives.
-        let kept = false;
-        for (const panel of panels) {
-          if (panel.open && !kept) { kept = true; }
-          else if (panel.open) { panel.open = false; }
-        }
-        for (const panel of panels) panel.setAttribute('name', groupName);
-      } else {
-        for (const panel of panels) panel.removeAttribute('name');
+    const allDetails: HTMLDetailsElement[] = [];
+    for (const container of containers) {
+      for (const el of [...container.children] as HTMLElement[]) {
+        if (el.tagName === 'DETAILS') allDetails.push(el as HTMLDetailsElement);
       }
-    });
+    }
+    if (!active) {
+      for (const panel of allDetails) panel.removeAttribute('name');
+      return;
+    }
+    // Hidden panels (e.g. General's normally-empty Warnings box, which is
+    // `hidden` + `open`) are excluded: letting one occupy the single "open" slot
+    // would leave the page looking collapsed with nothing visible.
+    const panels = allDetails.filter(p => !p.hidden);
+    // Collapse to one open panel before grouping so the browser doesn't pick
+    // arbitrarily; if none are open (e.g. General), open the first so the view
+    // always shows one panel instead of a wall of collapsed summaries.
+    let kept = false;
+    for (const panel of panels) {
+      if (panel.open && !kept) { kept = true; }
+      else if (panel.open) { panel.open = false; }
+    }
+    if (!kept && panels.length) panels[0].open = true;
+    for (const panel of panels) panel.setAttribute('name', 'xt-accordion');
+    // Hidden panels stay out of the group so they don't silently steal the slot.
+    for (const panel of allDetails) if (panel.hidden) panel.removeAttribute('name');
   },
 
   loadLayoutPrefs() {
@@ -1219,10 +1238,13 @@ Enable it on boards.${location.hostname.split('.')[1]}.org in your browser's pri
       if (!(arr instanceof Array)) continue;
       if (!includeSetting(key)) continue;
       const description = arr[1] || '';
+      const settingTitle = ({
+        'Thread Watcher Attach Controls': 'Attachment Controls',
+      } as Record<string, string>)[key] || key;
       const div = $.el('div',
-        { innerHTML: `<label><input type="checkbox" name="${key}"><span class="setting-title">${key}</span></label><span class="description">: <span class="setting-description">${description}</span></span>` });
+        { innerHTML: `<label><input type="checkbox" name="${key}"><span class="setting-title">${settingTitle}</span></label><span class="description">: <span class="setting-description">${description}</span></span>` });
       div.dataset.name = key;
-      div.dataset.settingTitle = key;
+      div.dataset.settingTitle = settingTitle;
       Settings.registerSettingDescription(div, description);
       const input = $('input', div) as HTMLInputElement;
       $.on(input, 'change', $.cb.checked);
@@ -1232,6 +1254,14 @@ Enable it on boards.${location.hostname.split('.')[1]}.org in your browser's pri
       }
       if (key === 'Comment Preview') {
         $.on(input, 'change', () => $.event('QRCommentPreviewChanged'));
+      }
+      if (key === 'Thread Watcher Attach Controls') {
+        $.on(input, 'change', () => {
+          const TW: any = ThreadWatcher;
+          if (TW && TW.applyAttachControlsSetting) {
+            TW.applyAttachControlsSetting(input.checked);
+          }
+        });
       }
       items[key] = Conf[key];
       inputs[key] = input;
@@ -1477,12 +1507,13 @@ Enable it on boards.${location.hostname.split('.')[1]}.org in your browser's pri
 
     const fsNav = $.el('details',
       { open: true },
-      { innerHTML: '<summary>Custom Board Navigation</summary>' });
+      { innerHTML: '<summary>Custom Board Navigation<button type="button" id="boardnav-detach" data-open="false" class="xt-detach-btn xt-detach-summary-btn" title="Detach into a floating window">Detach</button></summary>' });
     const navContent = $.el('div', {
+      className: 'boardnav-detachable',
       innerHTML:
-        '<div><textarea name="boardnav" class="field boardnav-field" spellcheck="false"></textarea></div>' +
+        '<div class="boardnav-field-wrap"><textarea name="boardnav" class="field boardnav-field" spellcheck="false"></textarea></div>' +
         '<span class="note">New lines will be converted into spaces.</span><br><br>' +
-        '<details class="boardnav-instructions" data-remember-layout="false">' +
+        '<details class="settings-guide" data-remember-layout="false">' +
           '<summary>Syntax guide</summary>' +
           '<div class="note">In the following examples for /g/, <code>g</code> can be changed to a different board ID (<code>a</code>, <code>b</code>, etc...), the current board (<code>current</code>), or the Twitter link (<code>@</code>).</div>' +
           '<div>Board link: <code>g</code></div>' +
@@ -1521,6 +1552,13 @@ Enable it on boards.${location.hostname.split('.')[1]}.org in your browser's pri
     items['boardnav'] = Conf['boardnav'];
     inputs['boardnav'] = textarea;
     $.add(fsNav, navContent);
+    // Detach button lives in the section's <summary> (mirrors Sauce/Personas);
+    // relocate the inner content so the summary stays put with the re-attach note.
+    Settings.makeDetachable(
+      navContent,
+      $('#boardnav-detach', fsNav),
+      { storageKey: 'settings.detachPanel.boardnav', title: 'Custom Board Navigation' },
+    );
 
     Settings.renderMainGroups(section, {
       categories: [
@@ -1852,26 +1890,6 @@ Enable it on boards.${location.hostname.split('.')[1]}.org in your browser's pri
     inputs['Thread Watcher Max Width'] = widthInput;
     $.add(fs, heightDiv);
 
-    const attachDiv = $.el('div',
-      { innerHTML: '<label><input type="checkbox" name="Thread Watcher Attached">Attach to QR</label><span class="description">: <span class="setting-description">Attach/dock the watcher below Quick Reply. The watcher follows QR width, and dragging either title bar moves both; use the attach button to detach.</span></span>' });
-    attachDiv.dataset.name = 'Thread Watcher Attached';
-    attachDiv.dataset.settingTitle = 'Attach to QR';
-    Settings.registerSettingDescription(attachDiv, 'Attach the thread watcher below the Quick Reply dialog.');
-    const attachInput = $('input[name="Thread Watcher Attached"]', attachDiv) as HTMLInputElement;
-    $.on(attachInput, 'change', $.cb.checked);
-    $.on(attachInput, 'change', function() { this.parentNode.parentNode.dataset.checked = this.checked; });
-    $.on(attachInput, 'change', () => {
-      const TW: any = ThreadWatcher;
-      if (attachInput.checked) {
-        if (TW && TW.positionIfAttached) TW.positionIfAttached(true);
-      } else if (TW && TW.restorePosition) {
-        TW.restorePosition();
-      }
-    });
-    items['Thread Watcher Attached'] = Conf['Thread Watcher Attached'];
-    inputs['Thread Watcher Attached'] = attachInput;
-    $.add(fs, attachDiv);
-
     $.add(section, fs);
     $.get(items, function(items) {
       for (const key in items) {
@@ -1891,16 +1909,6 @@ Enable it on boards.${location.hostname.split('.')[1]}.org in your browser's pri
       if (Number.isFinite(watcherHeight)) syncWatcherHeightToDialog(Math.max(120, Math.min(999, watcherHeight)));
       const watcherWidth = parseInt(`${items['Thread Watcher Max Width']}`, 10);
       if (Number.isFinite(watcherWidth)) syncWatcherWidthToDialog(Math.max(120, Math.min(999, watcherWidth)));
-      const attachInput2 = inputs['Thread Watcher Attached'] as HTMLInputElement | undefined;
-      if (attachInput2) {
-        attachInput2.parentNode.parentNode.dataset.checked = !!items['Thread Watcher Attached'];
-      }
-      if (items['Thread Watcher Attached']) {
-        const TW: any = ThreadWatcher;
-        if (TW && TW.positionIfAttached) {
-          setTimeout(() => TW.positionIfAttached(true), 0);
-        }
-      }
     });
   },
 
@@ -4075,6 +4083,16 @@ Enable it on boards.${location.hostname.split('.')[1]}.org in your browser's pri
 
   initCustomCSSEditor(section: HTMLElement, textarea: HTMLTextAreaElement | null) {
     if (!textarea) return;
+    // Already detached and the Styling section just re-rendered: keep the live
+    // panel and discard this freshly-docked editor (mirrors makeDetachable). Done
+    // before any setup since the fresh editor is thrown away.
+    const liveDetach = Settings.detached['settings.customCSSPanel'];
+    if (liveDetach) {
+      const freshDetails = $('.styling-custom-css', section) as HTMLElement | null;
+      const freshButton = $('#custom-css-detach', section) as HTMLElement | null;
+      if (freshDetails && freshButton) liveDetach.adopt(freshDetails, freshButton);
+      return;
+    }
     // Keep textarea layout deterministic so the text layer stays aligned with
     // the highlighted overlay regardless of theme or browser defaults.
     textarea.wrap = 'off';
@@ -4276,12 +4294,23 @@ Enable it on boards.${location.hostname.split('.')[1]}.org in your browser's pri
     // rules — scoped under that class — still match; position:fixed keeps it
     // viewport-anchored regardless. Closing Settings removes the panel with it,
     // and reopening renders the section docked again.
-    const detachButton = $('#custom-css-detach', section) as HTMLButtonElement | null;
-    const detailsEl = editor.closest('.styling-custom-css') as HTMLDetailsElement | null;
+    // curButton/curDetails track the *live* (possibly-edited) editor and the
+    // button currently controlling it; adopt() swaps them in on re-render.
+    let curButton = $('#custom-css-detach', section) as HTMLElement | null;
+    let curDetails = editor.closest('.styling-custom-css') as HTMLElement | null;
     let panel: HTMLElement | null = null;
     let detachNote: HTMLElement | null = null;
     let panelResizeObserver: ResizeObserver | null = null;
     let panelSaveTimer = 0;
+
+    const placeDetachNote = (before: HTMLElement) => {
+      detachNote = $.el('div', {
+        className: 'custom-css-detached-note',
+        innerHTML: 'Custom CSS is detached. <button type="button" class="custom-css-reattach">Re-attach</button>',
+      }) as HTMLElement;
+      before.parentNode!.insertBefore(detachNote, before);
+      $.on($('.custom-css-reattach', detachNote) as HTMLElement, 'click', closeDetach);
+    };
 
     const writePanelRect = () => {
       if (!panel) return;
@@ -4355,31 +4384,43 @@ Enable it on boards.${location.hostname.split('.')[1]}.org in your browser's pri
       panelResizeObserver = null;
       clearTimeout(panelSaveTimer);
       writePanelRect();
-      if (detachNote?.parentNode && detailsEl) {
-        detachNote.parentNode.insertBefore(detailsEl, detachNote);
+      if (detachNote?.parentNode && curDetails) {
+        detachNote.parentNode.insertBefore(curDetails, detachNote);
         detachNote.remove();
       }
       detachNote = null;
-      if (detailsEl) delete detailsEl.dataset.detached;
+      if (curDetails) delete curDetails.dataset.detached;
       $.rm(panel);
       panel = null;
-      if (detachButton) detachButton.dataset.open = 'false';
+      if (curButton) curButton.dataset.open = 'false';
+      delete Settings.detached['settings.customCSSPanel'];
+      // Rejoin the accordion group it left on detach (re-adds the shared name).
+      const sec = $('section', Settings.dialog) as HTMLElement | null;
+      if (sec) Settings.applyAccordionMode(sec);
       syncScroll();
     };
 
+    // Re-render while detached: discard the freshly-docked editor (the live,
+    // possibly-edited one stays in the panel), leave a note, rebind the button.
+    const adoptDetach = (freshDetails: HTMLElement, freshButton: HTMLElement) => {
+      placeDetachNote(freshDetails);
+      $.rm(freshDetails);
+      curButton = freshButton;
+      curButton.dataset.open = 'true';
+      $.on(curButton, 'click', toggleDetach);
+    };
+
     const openDetach = () => {
-      if (panel || !detailsEl) return;
+      if (panel || !curDetails) return;
 
       // Mark the spot with a visible "Re-attach" note (also our restore anchor).
-      detachNote = $.el('div', {
-        className: 'custom-css-detached-note',
-        innerHTML: 'Custom CSS is detached. <button type="button" class="custom-css-reattach">Re-attach</button>',
-      }) as HTMLElement;
-      detailsEl.parentNode!.insertBefore(detachNote, detailsEl);
-      $.on($('.custom-css-reattach', detachNote) as HTMLElement, 'click', closeDetach);
+      placeDetachNote(curDetails);
 
       panel = $.el('div', {
-        className: 'custom-css-panel',
+        // `section-styling` so the editor's theme rules (scoped `.section-styling
+        // .custom-css-editor[...]`) still match now that the panel lives in the
+        // overlay rather than inside the styling section.
+        className: 'custom-css-panel section-styling',
         innerHTML:
           '<div class="custom-css-panel-bar">' +
             '<span class="custom-css-panel-title">Custom CSS</span>' +
@@ -4393,15 +4434,25 @@ Enable it on boards.${location.hostname.split('.')[1]}.org in your browser's pri
 
       const bar = $('.custom-css-panel-bar', panel) as HTMLElement;
       const body = $('.custom-css-panel-body', panel) as HTMLElement;
-      detailsEl.open = true;
-      detailsEl.dataset.detached = 'true';
-      $.add(body, detailsEl);
+      // Leave the accordion group (see makeDetachable): otherwise a same-named
+      // section opening elsewhere collapses this panel into a blank box.
+      curDetails.removeAttribute('name');
+      (curDetails as HTMLDetailsElement).open = true;
+      curDetails.dataset.detached = 'true';
+      $.add(body, curDetails);
 
       $.on($('.custom-css-panel-close', panel) as HTMLElement, 'click', closeDetach);
       $.on($('.custom-css-panel-reset', panel) as HTMLElement, 'click', resetPanel);
       $.on(bar, 'mousedown', onBarMousedown as (e: Event) => void);
+      // Clicking anywhere in the panel raises it above the settings window.
+      $.on(panel, 'mousedown', () => Settings.raiseToFront(panel));
 
-      $.add(section, panel);
+      // Sibling of the settings window in the overlay (not nested) so the
+      // window's shadow casts over it and click-to-front ordering is uniform.
+      $.add((Settings.dialog as HTMLElement) || section, panel);
+      Settings.raiseToFront(panel);
+      // Register so a later re-render of Styling adopts (keeps) this panel.
+      Settings.detached['settings.customCSSPanel'] = { adopt: adoptDetach };
       refreshPanelTheme();
 
       // Restore saved geometry (clamped to the viewport) or centre at a default.
@@ -4426,17 +4477,18 @@ Enable it on boards.${location.hostname.split('.')[1]}.org in your browser's pri
         panelResizeObserver.observe(panel);
       });
 
-      if (detachButton) detachButton.dataset.open = 'true';
+      if (curButton) curButton.dataset.open = 'true';
       textarea.focus();
     };
 
     // Detach lives inside <summary>, whose click would otherwise toggle the
     // <details>; preventDefault/stopPropagation keep the disclosure state put.
-    if (detachButton) $.on(detachButton, 'click', (e: MouseEvent) => {
+    function toggleDetach(e: MouseEvent) {
       e.preventDefault();
       e.stopPropagation();
       panel ? closeDetach() : openDetach();
-    });
+    }
+    if (curButton) $.on(curButton, 'click', toggleDetach);
 
     const updateTheme = (save = false) => {
       const choice = themeSelect.value || 'xt-system';
@@ -5006,6 +5058,27 @@ Enable it on boards.${location.hostname.split('.')[1]}.org in your browser's pri
     });
   },
 
+  // ── Z-order: the settings window and its detached panels ───────────────────
+  // The settings dialog and every detached panel are siblings inside the overlay
+  // (#xt-settings-overlay), so they share one stacking context. Treat them like
+  // OS windows: clicking any of them raises it above the rest via an inline
+  // z-index from a shared counter. Because they're siblings (not nested), the
+  // raised window's drop-shadow casts over whatever is behind it, and each keeps
+  // its own z-index so relative order is preserved until something is clicked.
+  detachZ: 10,
+  raiseToFront(el: HTMLElement | null) {
+    if (el) el.style.zIndex = String(++Settings.detachZ);
+  },
+
+  // Open detached panels keyed by storageKey. A panel outlives the section it
+  // came from: navigating re-renders the section (Settings.renderSection →
+  // $.rmAll), which would otherwise orphan the floating panel and re-dock a
+  // duplicate. While a key is registered, a re-render of that section instead
+  // calls adopt() to discard the freshly-docked copy and keep the live panel.
+  // Cleared wholesale when the settings dialog closes (the overlay, and every
+  // panel inside it, is removed in one go).
+  detached: Object.create(null) as Record<string, { adopt(node: HTMLElement, button: HTMLElement): void }>,
+
   // Generic "detach into a floating, draggable, resizable window" for a settings
   // block. Mirrors the Custom CSS editor's detach (Settings.initCustomCSSEditor):
   // the live `node` is *relocated* (not cloned) so its wired listeners survive, a
@@ -5014,15 +5087,35 @@ Enable it on boards.${location.hostname.split('.')[1]}.org in your browser's pri
   // chrome follows the settings dialog. Used by the Personas and Sauce fields.
   makeDetachable(node: HTMLElement | null, button: HTMLElement | null, opts: { storageKey: string; title: string }) {
     if (!node || !button) return;
-    // Append inside the settings *window* (#fourchanx-settings), not the outer
-    // overlay wrapper (Settings.dialog) — the panel's CSS is scoped under
-    // `#fourchanx-settings`, and position:fixed still anchors it to the viewport.
-    const host = ($('#fourchanx-settings', Settings.dialog) as HTMLElement | null)
-      || (Settings.dialog as HTMLElement) || d.body;
+    // Already detached and this section just re-rendered: keep the live panel,
+    // drop the freshly-docked duplicate, and re-point the new button at it.
+    const live = Settings.detached[opts.storageKey];
+    if (live) { live.adopt(node, button); return; }
+
+    // Append to the overlay (#xt-settings-overlay), as a *sibling* of the
+    // settings window — not nested inside it. Siblings share one stacking
+    // context, so the window's drop-shadow casts over the panels and click-to-
+    // front works uniformly (the panel CSS is scoped to the overlay to match).
+    const host = (Settings.dialog as HTMLElement) || d.body;
+    // `curNode`/`curButton` track the *live* relocated node and the button that
+    // currently controls it; adopt() swaps in the latest button on re-render.
+    let curNode = node;
+    let curButton = button;
     let panel: HTMLElement | null = null;
     let note: HTMLElement | null = null;
     let ro: ResizeObserver | null = null;
     let saveTimer = 0;
+
+    // Drop the "<title> is detached / Re-attach" note into the section where the
+    // relocated block used to sit; clicking Re-attach runs close().
+    const placeNote = (before: HTMLElement) => {
+      note = $.el('div', {
+        className: 'xt-detach-note',
+        innerHTML: `${opts.title} is detached. <button type="button" class="xt-detach-reattach">Re-attach</button>`,
+      }) as HTMLElement;
+      before.parentNode!.insertBefore(note, before);
+      $.on($('.xt-detach-reattach', note) as HTMLElement, 'click', close);
+    };
 
     const writeRect = () => {
       if (!panel) return;
@@ -5080,26 +5173,36 @@ Enable it on boards.${location.hostname.split('.')[1]}.org in your browser's pri
       clearTimeout(saveTimer);
       writeRect();
       if (note?.parentNode) {
-        note.parentNode.insertBefore(node, note);
+        note.parentNode.insertBefore(curNode, note);
         note.remove();
       }
       note = null;
-      delete node.dataset.detached;
+      delete curNode.dataset.detached;
       $.rm(panel);
       panel = null;
-      button.dataset.open = 'false';
+      curButton.dataset.open = 'false';
+      delete Settings.detached[opts.storageKey];
+      // Rejoin the accordion group it left on detach (re-adds the shared name).
+      const sec = $('section', Settings.dialog) as HTMLElement | null;
+      if (sec) Settings.applyAccordionMode(sec);
+    };
+
+    // Re-render of an already-detached section: the section drew a fresh docked
+    // copy of the block. Discard it (the live, possibly-edited node stays in the
+    // panel), leave a note in its place, and bind the new button to this panel.
+    const adopt = (freshNode: HTMLElement, freshButton: HTMLElement) => {
+      placeNote(freshNode);
+      $.rm(freshNode);
+      curButton = freshButton;
+      curButton.dataset.open = 'true';
+      $.on(curButton, 'click', toggle);
     };
 
     const open = () => {
       if (panel) return;
 
       // Mark the spot with a visible "Re-attach" note (also our restore anchor).
-      note = $.el('div', {
-        className: 'xt-detach-note',
-        innerHTML: `${opts.title} is detached. <button type="button" class="xt-detach-reattach">Re-attach</button>`,
-      }) as HTMLElement;
-      node.parentNode!.insertBefore(note, node);
-      $.on($('.xt-detach-reattach', note) as HTMLElement, 'click', close);
+      placeNote(curNode);
 
       panel = $.el('div', {
         className: 'xt-detach-panel',
@@ -5116,15 +5219,27 @@ Enable it on boards.${location.hostname.split('.')[1]}.org in your browser's pri
 
       const bar = $('.xt-detach-panel-bar', panel) as HTMLElement;
       const body = $('.xt-detach-panel-body', panel) as HTMLElement;
-      if (node.tagName === 'DETAILS') (node as HTMLDetailsElement).open = true;
-      node.dataset.detached = 'true';
-      $.add(body, node);
+      if (curNode.tagName === 'DETAILS') {
+        // Leave the accordion group: native exclusive <details> is document-wide
+        // by `name`, so a same-named section opening elsewhere would collapse
+        // this panel — and its summary is hidden while detached, leaving it
+        // blank and unrecoverable. Drop the name and force it open.
+        curNode.removeAttribute('name');
+        (curNode as HTMLDetailsElement).open = true;
+      }
+      curNode.dataset.detached = 'true';
+      $.add(body, curNode);
 
       $.on($('.xt-detach-panel-close', panel) as HTMLElement, 'click', close);
       $.on($('.xt-detach-panel-reset', panel) as HTMLElement, 'click', resetPanel);
       $.on(bar, 'mousedown', onBarMousedown as (e: Event) => void);
+      // Clicking anywhere in the panel raises it above the settings window.
+      $.on(panel, 'mousedown', () => Settings.raiseToFront(panel));
 
       $.add(host, panel);
+      Settings.raiseToFront(panel);
+      // Register so a later re-render of this section adopts (keeps) this panel.
+      Settings.detached[opts.storageKey] = { adopt };
 
       // Restore saved geometry (clamped to the viewport) or centre at a default.
       // (cast: $.get's loose typings declare the callback as zero-arg.)
@@ -5147,18 +5262,19 @@ Enable it on boards.${location.hostname.split('.')[1]}.org in your browser's pri
         ro.observe(panel);
       }) as () => void);
 
-      button.dataset.open = 'true';
-      const ta = node.tagName === 'TEXTAREA' ? node : ($('textarea', node) as HTMLElement | null);
+      curButton.dataset.open = 'true';
+      const ta = curNode.tagName === 'TEXTAREA' ? curNode : ($('textarea', curNode) as HTMLElement | null);
       ta?.focus();
     };
 
     // For personas the button lives inside <summary>, whose click would otherwise
     // toggle the <details>; preventDefault/stopPropagation keep that state put.
-    $.on(button, 'click', (e: MouseEvent) => {
+    function toggle(e: MouseEvent) {
       e.preventDefault();
       e.stopPropagation();
       panel ? close() : open();
-    });
+    }
+    $.on(button, 'click', toggle);
   },
 
   // Reformat the whole textarea via Shift+Alt+F (or the Format CSS button), then
@@ -6931,7 +7047,6 @@ Enable it on boards.${location.hostname.split('.')[1]}.org in your browser's pri
       'Thread Watcher Thumbnail Preview Size',
       'Thread Watcher Max Height',
       'Thread Watcher Max Width',
-      'Thread Watcher Attached',
       'Thread Title',
       'Unread Title Count',
       'Interval',

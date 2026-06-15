@@ -103,6 +103,7 @@ var ThreadWatcher = {
     if (this.attachButton) {
       Icon.set(this.attachButton, 'link');
     }
+    ThreadWatcher.applyAttachControlsSetting(Conf['Thread Watcher Attach Controls']);
 
     $.on(d, 'QRPostSuccessful',   this.cb.post);
     $.on(sc, 'click', this.toggleWatcher);
@@ -155,13 +156,20 @@ var ThreadWatcher = {
     $.on(window, 'visibilitychange focus', () => $.queueTask(ThreadWatcher.fetchAuto));
 
     $.sync('Thread Watcher Attached', (val) => {
-      Conf['Thread Watcher Attached'] = !!val;
+      const attached = ThreadWatcher.attachControlsEnabled() && !!val;
+      Conf['Thread Watcher Attached'] = attached;
+      if (val && !attached) {
+        $.set('Thread Watcher Attached', false);
+      }
       ThreadWatcher.updateAttachButton();
-      if (val) {
+      if (attached) {
         ThreadWatcher.positionIfAttached(true);
       } else if (ThreadWatcher.dialog) {
         ThreadWatcher.restorePosition();
       }
+    });
+    $.sync('Thread Watcher Attach Controls', (val) => {
+      ThreadWatcher.applyAttachControlsSetting(val);
     });
     $.sync('Thread Watcher Attach Location', (val) => {
       Conf['Thread Watcher Attach Location'] = val;
@@ -1184,7 +1192,23 @@ var ThreadWatcher = {
   },
 
   attached() {
-    return !!Conf['Thread Watcher Attached'];
+    return ThreadWatcher.attachControlsEnabled() && !!Conf['Thread Watcher Attached'];
+  },
+
+  attachControlsEnabled() {
+    return Conf['Thread Watcher Attach Controls'] !== false;
+  },
+
+  applyAttachControlsSetting(val) {
+    const enabled = val !== false;
+    Conf['Thread Watcher Attach Controls'] = enabled;
+    if (!enabled && Conf['Thread Watcher Attached']) {
+      Conf['Thread Watcher Attached'] = false;
+      $.set('Thread Watcher Attached', false);
+      ThreadWatcher.restorePosition();
+      $.event('CloseMenu', null);
+    }
+    ThreadWatcher.updateAttachButton();
   },
 
   attachLocation() {
@@ -1195,12 +1219,25 @@ var ThreadWatcher = {
   updateAttachButton() {
     const btn = ThreadWatcher.attachButton;
     if (!btn) { return; }
+    const controlsEnabled = ThreadWatcher.attachControlsEnabled();
+    btn.hidden = false;
+    btn.classList.toggle('attach-controls-hidden', !controlsEnabled);
+    if (!controlsEnabled) {
+      btn.classList.remove('attached');
+      btn.title = '';
+      btn.setAttribute('aria-hidden', 'true');
+      btn.tabIndex = -1;
+      return;
+    }
+    btn.removeAttribute('aria-hidden');
+    btn.removeAttribute('tabindex');
     const isAttached = ThreadWatcher.attached();
     btn.classList.toggle('attached', isAttached);
     btn.title = isAttached ? 'Detach from Quick Reply' : 'Attach to Quick Reply';
   },
 
   toggleAttach() {
+    if (!ThreadWatcher.attachControlsEnabled()) { return; }
     const val = !ThreadWatcher.attached();
     $.set('Thread Watcher Attached', val);
     Conf['Thread Watcher Attached'] = val;
@@ -1761,6 +1798,7 @@ var ThreadWatcher = {
         order: 51,
         subEntries,
         open() {
+          if (!ThreadWatcher.attachControlsEnabled()) { return false; }
           this.el.title = 'Where to attach the watcher relative to the Quick Reply when attached.\nBottom/top: width follows the QR. Left/right: width uses the manual Max W; height sizes to content.';
           return true;
         }

@@ -6,8 +6,8 @@
   },
   "counts": {
     "xt": 259,
-    "next": 397,
-    "added": 132,
+    "next": 398,
+    "added": 133,
     "changed": 3
   },
   "added": [
@@ -131,6 +131,7 @@
     "Strip Video Audio",
     "Text Color",
     "Thread Highlight Edge Width",
+    "Thread Watcher Attach Controls",
     "Thread Watcher Attach Location",
     "Thread Watcher Attached",
     "Thread Watcher Max Height",

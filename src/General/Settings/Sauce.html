@@ -1,9 +1,8 @@
 <div class="sauce-section">
   <div class="warning"><code>Sauce</code> is disabled.</div>
   <textarea hidden name="sauces" class="field" spellcheck="false"></textarea>
-  <input id="sauce-doc-expand" type="checkbox" hidden>
-  <div id="sauce-doc">
-    <label for="sauce-doc-expand">[expand]</label>
+  <details class="settings-guide" data-remember-layout="false">
+    <summary>Parameter guide</summary>
     <div>These parameters will be replaced by their corresponding values in the URL and displayed text:</div>
     <ul>
       <li><code>%IMG</code>: Full image URL for GIF, JPG, and PNG; thumbnail URL for other types.</li>
@@ -23,5 +22,5 @@
     <div>You can specify the applicable boards/sites by appending <code>;boards:[board1],[board2]</code>. See the Filter guide for details.</div>
     <div>You can specify the applicable file types by appending <code>;types:[extension1],[extension2]</code>.</div>
     <div>You can specify a regular expression the filename must match by appending <code>;regexp:[regular expression]</code>.</div>
-  </div>
+  </details>
 </div>
