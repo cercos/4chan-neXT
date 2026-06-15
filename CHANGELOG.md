@@ -2,11 +2,16 @@
 
 ### Unreleased
 
+### 1.1.7 (2026-06-15)
+
+- Regex field searches (e.g. `comment:/cat|dog/i`) now highlight their matches in the index/catalog instead of only filtering the results. Text fields paint the matched characters; fields with no visible text (flag, file MD5, email, pass) glow the matching icon, and in catalog mode the thumbnail glows so the hit is still visible.
+- Expanded the search box "?" help with grouped examples (keywords, per-field regex, lighting up icons/thumbnails, multiple fields) and the full list of searchable fields, with the example terms shown as standout pills.
+
 ### 1.1.6 (2026-06-15)
 
 - Added settings page header controls to collapse or expand all sections at once, plus an accordion mode that keeps only one section open at a time.
 - Improved settings page behaviors: sections highlight as a whole on hover/focus to track where you're working, and the Sauce and Quick Reply Personas "Detach" buttons moved into their section headers.
-- Post menus now animate when opening and closing instead of popping in and out. Dialogs finish their exit transition before leaving the DOM, so both the open and close are smooth.
+- Post menus now animate when opening and closing instead of popping in and out. The menu stays in the DOM and toggles visibility, so both the enter and exit transitions finish smoothly and can be customized with userstyles or Custom CSS.
 - Inline sauce links are now wrapped in a `.sauce-container` span, so they can be targeted or revealed on hover with custom CSS.
 - Fixed QR inputs not retaining values after submitting.
 - Added setting to enable/disable thread watcher attachment system. (Threads & Posts > Monitoring > Thread Watcher > Attachment Controls)
