@@ -98,14 +98,6 @@ body.hasDropDownNav{
 :root.sw-yotsuba canvas#tegaki-canvas {
   background: none;
 }
-/* Disable obnoxious captcha fade-in. */
-:root.sw-yotsuba > body > div:last-of-type {
-  transition: none !important;
-}
-/* Fix captcha scrolling to top of page. */
-:root.sw-yotsuba > body > div[style*=" top: -10000px;"] {
-  visibility: hidden !important;
-}
 /* Make long filenames wrap properly: https://github.com/ccd0/4chan-x/issues/1082 */
 :root.sw-yotsuba .post > .file {
   word-break: break-word;
@@ -1276,7 +1268,13 @@ div[data-checked="false"] > .suboption-list {
 .section-filters .easy-filter-on {
   display: inline-flex;
   align-items: center;
-  gap: 4px;
+  cursor: pointer;
+}
+/* Off rows read dimmed at a glance; the leading toggle stays full strength so
+   it still looks live and clickable. */
+.section-filters .easy-filter-off .easy-filter-field,
+.section-filters .easy-filter-off .easy-filter-remove {
+  opacity: .4;
 }
 .section-filters .easy-filter-field {
   display: flex;
@@ -1330,6 +1328,13 @@ div[data-checked="false"] > .suboption-list {
 }
 .section-filters .layout-list .easy-filter-tile-head {
   display: contents;
+}
+/* Toggle becomes a switch-like segment at the start of the row, fenced off from
+   the fields by a right divider. */
+.section-filters .layout-list .easy-filter-on {
+  align-self: stretch;
+  padding-right: 10px;
+  border-right: 1px solid rgba(128, 128, 128, .3);
 }
 .section-filters .layout-list .easy-filter-remove {
   order: 1;

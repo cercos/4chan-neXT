@@ -8055,7 +8055,7 @@ Enable it on boards.${location.hostname.split('.')[1]}.org in your browser's pri
       className: 'easy-filter-tile',
       innerHTML: `
         <div class="easy-filter-tile-head">
-          <label class="easy-filter-on"><input class="easy-filter-enabled" type="checkbox"> On</label>
+          <label class="easy-filter-on" title="Enable/disable this filter"><input class="easy-filter-enabled" type="checkbox"></label>
           <button class="easy-filter-remove" type="button" title="Remove">\u00D7</button>
         </div>
         <label class="easy-filter-field"><input class="field easy-filter-pattern" type="text" placeholder="Pattern" aria-label="Pattern"></label>
@@ -8113,6 +8113,14 @@ Enable it on boards.${location.hostname.split('.')[1]}.org in your browser's pri
     syncHighlightControls();
     $.on(hideInput, 'change', syncHighlightControls);
     $.on(colorOnInput, 'change', syncHighlightControls);
+
+    // Dim the whole row when the rule is disabled so its on/off state reads at a
+    // glance — the leading toggle acts like a switch for the row.
+    const syncEnabledState = () => {
+      tr.classList.toggle('easy-filter-off', !enabledInput.checked);
+    };
+    syncEnabledState();
+    $.on(enabledInput, 'change', syncEnabledState);
 
     for (const input of $$('input, select', tr)) {
       $.on(input, 'change', markDirty);
