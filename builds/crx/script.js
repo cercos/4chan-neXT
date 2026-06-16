@@ -22781,6 +22781,7 @@ aero|asia|biz|cat|com|coop|dance|info|int|jobs|mobi|moe|museum|name|net|org|post
 			set(post) {
 				$.get('QR.persona', {}, function ({ 'QR.persona': persona }) {
 					persona = {
+						name: post.name ?? '',
 						flag: post.flag
 					};
 					$.set('QR.persona', persona);
@@ -22848,7 +22849,7 @@ aero|asia|biz|cat|com|coop|dance|info|int|jobs|mobi|moe|museum|name|net|org|post
 					false);
 			QR.persona.get(persona => {
 
-				this.name = 'name' in QR.persona.always ? QR.persona.always.name : (prev?.name ?? '');
+				this.name = 'name' in QR.persona.always ? QR.persona.always.name : (prev?.name ?? persona.name ?? '');
 
 				this.email = 'email' in QR.persona.always ? QR.persona.always.email : (/^sage$/i.test(prev?.email) ? '' : (prev?.email ?? ''));
 
@@ -22964,6 +22965,7 @@ aero|asia|biz|cat|com|coop|dance|info|int|jobs|mobi|moe|museum|name|net|org|post
 					this.saveFilename();
 					this.updateFilename();
 					break;
+				case 'name':
 				case 'flag':
 					if (this[name] !== prev) {
 						QR.persona.set(this);
@@ -24801,6 +24803,10 @@ $\
 						fileDeleted: true,
 						filesDeleted: [0]
 					});
+				} else if (o.file) {
+
+					o.file = this.parseJSONFile(data, board);
+					o.files = [o.file];
 				}
 				if (data.extra_files) {
 					let file;
@@ -24817,6 +24823,15 @@ $\
 						o.file = o.files[0];
 					}
 				}
+				return o;
+			},
+			parseJSONFile(data, board) {
+				const o = SWYotsuba.Build.parseJSONFile(data, board);
+				const { siteID, boardID } = board;
+
+				const thumbExt = Conf['siteProperties'][siteID]?.thumbExt || '.png';
+				o.url = SWTinyboard.urls.file({ siteID, boardID }, `src/${data.tim}${data.ext}`);
+				o.thumbURL = SWTinyboard.urls.thumb({ siteID, boardID }, `thumb/${data.tim}${thumbExt}`);
 				return o;
 			},
 			parseComment(html) {
