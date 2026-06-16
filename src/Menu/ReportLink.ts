@@ -8,6 +8,9 @@ import Menu from "./Menu";
  * Full docs: https://github.com/decaffeinate/decaffeinate/blob/main/docs/suggestions.md
  */
 var ReportLink = {
+  url: null as any,   // loose: late-assigned report URL
+  dims: null as any,  // loose: late-assigned window dimensions
+
   init() {
     if (!['index', 'thread'].includes(g.VIEW) || !Conf['Menu'] || !Conf['Report Link']) { return; }
 
@@ -38,7 +41,7 @@ var ReportLink = {
     const {url, dims} = ReportLink;
     const id  = Date.now();
     const set = `toolbar=0,scrollbars=1,location=0,status=1,menubar=0,resizable=1,${dims}`;
-    return window.open(url, id, set);
+    return window.open(url, String(id), set);
   }
 };
 export default ReportLink;

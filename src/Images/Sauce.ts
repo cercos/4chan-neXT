@@ -14,6 +14,11 @@ import { dict } from "../platform/helpers";
  * Full docs: https://github.com/decaffeinate/decaffeinate/blob/main/docs/suggestions.md
  */
 var Sauce = {
+  // Assigned later; declared so the singleton's type includes them. Loosely typed
+  // (read across modules) where a precise type would cascade new errors.
+  link: null as any,
+  links: null as any,
+
   init() {
     let link;
     if (!['index', 'thread'].includes(g.VIEW) || !Conf['Sauce']) { return; }

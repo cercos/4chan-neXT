@@ -195,7 +195,7 @@ $\
           } else if (match = location.search.match(/\bres=(\d+)/)) {
             $.ready(function() {
               if (Conf['404 Redirect'] && ($.id('errmsg')?.textContent === 'Error: Specified thread does not exist.')) {
-                return Redirect.navigate('thread', {
+                return (Redirect.navigate as any)('thread', { // loose: optional 3rd arg defined in src/Archive
                   boardID: g.BOARD.ID,
                   postID:  +match[1]
                 });
@@ -407,7 +407,7 @@ $\
     },
 
     parseJSON(data, { siteID, boardID }) {
-      const o = {
+      const o: any = { // loose: built post object, extended with .info/.files/.extra below
         // id
         ID: data.no,
         postID: data.no,
@@ -466,7 +466,7 @@ $\
         `${encodeURIComponent(data.filename)}${data.ext}`
         :
         `${data.tim}${data.ext}`;
-      const o = {
+      const o: any = { // loose: built file object, extended with .dimensions below
         name: ($.unescape(data.filename)) + data.ext,
         url: site.urls.file({ siteID, boardID }, filename),
         height: data.h,

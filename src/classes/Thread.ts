@@ -31,6 +31,11 @@ export default class Thread {
   declare catalogView: any
   declare nodes: any
 
+  // Instance properties assigned in methods / across modules; declared for typing.
+  // Loosely typed where precise types would cascade; tighten during the strict pass.
+  stub?:              boolean;
+  catalogViewNative?: any;
+
   toString() { return this.ID; }
 
   constructor(ID: string, board: Board) {

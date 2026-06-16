@@ -79,7 +79,7 @@ var ThreadUpdater = {
       var conf = Config.updater.checkbox[name];
       const el = UI.checkbox(name, name);
       el.title = conf[1];
-      var input = el.firstElementChild;
+      var input = el.firstElementChild as any;
       $.on(input, 'change', $.cb.checked);
       if (input.name === 'Scroll BG') {
         $.on(input, 'change', this.cb.scrollBG);
@@ -505,9 +505,9 @@ var ThreadUpdater = {
 
     // XXX Reject updates that falsely delete the last post.
     if ((postObjects[postObjects.length-1].no < lastPost) &&
-      ((new Date(req.getResponseHeader('Last-Modified')) - thread.posts.get(lastPost).info.date) < (30 * SECOND))) { return; }
+      (((+new Date(req.getResponseHeader('Last-Modified'))) - (thread.posts.get(lastPost).info.date as any)) < (30 * SECOND))) { return; }
 
-    g.SITE.Build.spoilerRange[board] = OP.custom_spoiler;
+    g.SITE.Build.spoilerRange[board as any] = OP.custom_spoiler;
     thread.setStatus('Archived', !!OP.archived);
     ThreadUpdater.updateThreadStatus('Sticky', !!OP.sticky);
     ThreadUpdater.updateThreadStatus('Closed', !!OP.closed);

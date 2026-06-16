@@ -12,6 +12,14 @@ import QuoteThreading from "../Quotelinks/QuoteThreading";
  * Full docs: https://github.com/decaffeinate/decaffeinate/blob/main/docs/suggestions.md
  */
 var ReplyPruning = {
+  // Assigned later; declared so the singleton's type includes them. Loosely typed
+  // where a precise type would cascade new errors; tighten during the strict pass.
+  container: null as any,
+  summary: null as any,
+  inputs: null as any,
+  active: false,
+  thread: null as any,
+
   init() {
     if ((g.VIEW !== 'thread') || !Conf['Reply Pruning']) { return; }
 
@@ -62,7 +70,7 @@ var ReplyPruning = {
   totalFiles: 0,
 
   setEnabled() {
-    const other = QuoteThreading.input;
+    const other = (QuoteThreading as any).input;
     if (this.checked && other?.checked) {
       other.checked = false;
       $.event('change', null, other);
@@ -83,9 +91,9 @@ var ReplyPruning = {
 
     if (this.isSticky) {
       ReplyPruning.active = (ReplyPruning.inputs.enabled.checked = true);
-      if (QuoteThreading.input) {
+      if ((QuoteThreading as any).input) {
         // Disable Quote Threading for this thread but don't save the setting.
-        Conf['Thread Quotes'] = (QuoteThreading.input.checked = false);
+        Conf['Thread Quotes'] = ((QuoteThreading as any).input.checked = false);
       }
     }
 

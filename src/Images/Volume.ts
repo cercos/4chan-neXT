@@ -11,6 +11,10 @@ import $ from "../platform/$";
  * Full docs: https://github.com/decaffeinate/decaffeinate/blob/main/docs/suggestions.md
  */
 var Volume = {
+  // Assigned later; declared so the singleton's type includes them. Loosely typed
+  // where a precise type would cascade new errors; tighten during the strict pass.
+  inputs: null as any,
+
   init() {
     if (!['index', 'thread'].includes(g.VIEW) ||
       (!Conf['Image Expansion'] && !Conf['Image Hover'] && !Conf['Image Hover in Catalog'] && !Conf['Gallery'])) { return; }
@@ -42,7 +46,7 @@ var Volume = {
     }
 
     const unmuteEntry = UI.checkbox('Allow Sound', 'Allow Sound');
-    unmuteEntry.title = Config.main['Images and Videos']['Allow Sound'][1];
+    unmuteEntry.title = String(Config.main['Images and Videos']['Allow Sound'][1]);
 
     const volumeEntry = $.el('label',
       {title: 'Default volume for videos.'});

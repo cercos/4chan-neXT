@@ -21,6 +21,9 @@ const Captcha = {
     },
 
     captchas: [],
+    submitCB: null as any, // loose: late-assigned callback
+    prerequested: null as any, // loose: late-assigned
+    timer: null as any, // loose: setTimeout handle
 
     getCount() {
       return this.captchas.length;
@@ -42,7 +45,7 @@ const Captcha = {
       return /\b_ct=/.test(d.cookie) && (QR.posts[0].thread !== 'new');
     },
 
-    getOne() {
+    getOne(isReply?) {
       let captcha;
       delete this.prerequested;
       this.clear();
@@ -139,12 +142,16 @@ const Captcha = {
   t: CaptchaT,
   v2: {
     lifetime: 2 * MINUTE,
+    isEnabled: false, // loose: late-assigned
+    noscript: false, // loose: late-assigned
+    nodes: null as any, // loose: late-assigned
+    timer: null as any, // loose: setTimeout handle
 
     init() {
       if (d.cookie.indexOf('pass_enabled=1') >= 0) { return; }
       if (!(this.isEnabled = !!$('#g-recaptcha, #captcha-forced-noscript') || !$.id('postForm'))) { return; }
 
-      if (this.noscript = Conf['Force Noscript Captcha'] || !Main.jsEnabled) {
+      if (this.noscript = Conf['Force Noscript Captcha'] || !(Main as any).jsEnabled) { // loose: jsEnabled owned by ../main/Main
         $.addClass(QR.nodes.el, 'noscript-captcha');
       }
 
@@ -208,7 +215,7 @@ const Captcha = {
       }
     },
 
-    setup(focus, force) {
+    setup(focus?, force?) {
       if (!this.isEnabled || (!Captcha.cache.needed() && !force)) { return; }
 
       if (focus) {
@@ -267,17 +274,17 @@ const Captcha = {
         const { classList } = document.documentElement;
         const container = $('#qr .captcha-container');
         if (!container) { return; }
-        container.dataset.widgetID = window.grecaptcha.render(container, {
+        container.dataset.widgetID = (window as any).grecaptcha.render(container, { // loose: vendor global
           sitekey: meta.recaptchaKey,
           theme: classList.contains('tomorrow') || classList.contains('spooky') || classList.contains('dark-captcha') ? 'dark' : 'light',
           callback: response => window.dispatchEvent(new CustomEvent('captcha:success', { detail: response }))
         });
       };
-      if (window.grecaptcha) {
+      if ((window as any).grecaptcha) { // loose: vendor global
         render();
       } else {
-        const cbNative = window.onRecaptchaLoaded;
-        window.onRecaptchaLoaded = function() {
+        const cbNative = (window as any).onRecaptchaLoaded; // loose: vendor global
+        (window as any).onRecaptchaLoaded = function() {
           render();
           cbNative?.();
         };
@@ -345,7 +352,7 @@ const Captcha = {
         timeout: Date.now() + this.lifetime
       });
 
-      const focus = (d.activeElement?.nodeName === 'IFRAME') && /https?:\/\/www\.google\.com\/recaptcha\//.test(d.activeElement.src);
+      const focus = (d.activeElement?.nodeName === 'IFRAME') && /https?:\/\/www\.google\.com\/recaptcha\//.test((d.activeElement as any).src);
       if (Captcha.cache.needed()) {
         if (focus) {
           if (QR.cooldown.auto || Conf['Post on Captcha Completion']) {
@@ -383,8 +390,8 @@ const Captcha = {
         return this.setup(false, true);
       } else {
         const container = $('#qr .captcha-container');
-        if (window.grecaptcha && container?.dataset.widgetID != null) {
-          window.grecaptcha.reset(container.dataset.widgetID);
+        if ((window as any).grecaptcha && container?.dataset.widgetID != null) { // loose: vendor global
+          (window as any).grecaptcha.reset(container.dataset.widgetID);
         }
       }
     },

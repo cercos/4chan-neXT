@@ -15,6 +15,10 @@ import Volume from "./Volume";
  * Full docs: https://github.com/decaffeinate/decaffeinate/blob/main/docs/suggestions.md
  */
 var ImageCommon = {
+  // Assigned later; declared so the singleton's type includes them. Loosely typed
+  // (read across modules) where a precise type would cascade new errors.
+  cache: null as any,
+
   // Pause and mute video in preparation for removing the element from the document.
   pause(video) {
     if (video.nodeName !== 'VIDEO') { return; }
@@ -70,7 +74,7 @@ var ImageCommon = {
       url = Redirect.to('file', {
         boardID:  post.board.ID,
         filename: src[src.length - 1]
-      });
+      } as any);
     }
     if (!url || !Redirect.securityCheck(url)) { url = null; }
 

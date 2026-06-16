@@ -26,9 +26,9 @@ export default class Board {
     this.siteID  = g.SITE.ID;
     this.threads = new SimpleDict();
     this.posts   = new SimpleDict();
-    this.config  = BoardConfig.boards?.[this.ID] || {};
+    this.config  = (BoardConfig as any).boards?.[this.ID] || {};
 
-    g.boards[this] = this;
+    g.boards[this as any] = this;
   }
 
   cooldowns() {

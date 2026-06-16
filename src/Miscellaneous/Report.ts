@@ -12,6 +12,8 @@ import { Conf, d, doc, g } from "../globals/globals";
  */
 
 var Report = {
+  postID: null as any, // loose:
+
   init() {
     let match;
     if (!(match = location.search.match(/\bno=(\d+)/))) { return; }

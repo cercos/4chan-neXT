@@ -10,6 +10,10 @@ import $ from "../platform/$";
  * Full docs: https://github.com/decaffeinate/decaffeinate/blob/main/docs/suggestions.md
  */
 var ImageLoader = {
+  // Assigned later; declared so the singleton's type includes them. Loosely typed
+  // where a precise type would cascade new errors; tighten during the strict pass.
+  prefetchEnabled: false,
+
   init() {
     if (!['index', 'thread', 'archive'].includes(g.VIEW)) { return; }
     const replace = Conf['Replace Thumbnails'] && (
@@ -103,7 +107,7 @@ var ImageLoader = {
     }
 
     const el = $.el(isImage ? 'img' : 'video');
-    if (isVideo) { el.preload = 'auto'; }
+    if (isVideo) { (el as HTMLVideoElement).preload = 'auto'; }
     if (replace && isImage) {
       $.on(el, 'load', function() {
         for (clone of post.clones) { clone.file.thumb.src = url; }
@@ -135,7 +139,7 @@ var ImageLoader = {
         for (var file of post.files) {
           if (file.videoThumb) {
             var {thumb} = file;
-            if (Header.isNodeVisible(thumb) || (post.nodes.root === qpClone)) { thumb.play(); } else { thumb.pause(); }
+            if (Header.isNodeVisible(thumb) || (post.nodes.root === qpClone)) { (thumb as HTMLVideoElement).play(); } else { (thumb as HTMLVideoElement).pause(); }
           }
         }
       }

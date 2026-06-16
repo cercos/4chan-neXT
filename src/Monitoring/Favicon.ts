@@ -46,6 +46,21 @@ import { Conf, d } from '../globals/globals';
  */
 
 var Favicon = {
+  // Assigned later; declared so the singleton's type includes them. Loosely typed
+  // where a precise type would cascade new errors; tighten during the strict pass.
+  el: null as HTMLLinkElement,
+  status: null as any,
+  isSFW: false,
+  default: '',
+  unread: '',
+  unreadY: '',
+  unreadDead: '',
+  unreadDeadY: '',
+  unreadSFW: '',
+  unreadSFWY: '',
+  unreadNSFW: '',
+  unreadNSFWY: '',
+
   init() {
     return $.asap((() => d.head && (Favicon.el = $('link[rel="shortcut icon"]', d.head))), Favicon.initAsap);
   },
@@ -71,7 +86,7 @@ var Favicon = {
   },
 
   switch() {
-    let items = {
+    let items: any = {
       ferongr: [
         ferongr_unreadDead,
         ferongr_unreadDeadY,

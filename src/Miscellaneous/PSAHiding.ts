@@ -8,6 +8,12 @@ import Icon from "../Icons/icon";
  * Full docs: https://github.com/decaffeinate/decaffeinate/blob/main/docs/suggestions.md
  */
 var PSAHiding = {
+  psa: null as any, // loose:
+  text: null as any, // loose:
+  hr: null as any, // loose:
+  content: null as any, // loose:
+  btn: null as any, // loose:
+
   init() {
     if (!Conf['Announcement Hiding'] || !g.SITE.selectors.psa) { return; }
     $.addClass(doc, 'hide-announcement');

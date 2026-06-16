@@ -2,13 +2,14 @@
 // Mirrors the base tsconfig (loose: noImplicitAny:false, strict off) but scoped to
 // src/ with skipLibCheck, so it's a clean green/red compile signal — exits 0 today.
 //
-// This is the ratchet for the ongoing `any`-removal work: it catches mistakes on
-// values that DO have real types (wrong field, type incompat, etc.) — exactly what
-// we add when we replace an `any`. It does NOT enforce full strict.
+// This is the ratchet: it must stay at 0 errors. Treat any new error as a regression
+// to fix before merging. The decaffeinated object-literal singletons are now typed
+// (late-assigned properties declared on each literal; loose `any` where a precise
+// type would cascade — grep `// loose:` for the spots to tighten later).
 //
-// NOTE: full `strict` currently surfaces ~3786 errors (dominated by property-access
-// on the decaffeinated object-literal singletons + null-safety), so strict is a
-// large future burndown, not a freebie. noImplicitAny:false is load-bearing here.
+// NOTE: full `strict` still surfaces ~3.7k errors (dominated by null-safety once the
+// singletons are typed), so strict remains a large future burndown, not a freebie.
+// noImplicitAny:false is load-bearing here.
 //
 // Scoped to src/ — tools/ has its own tools/tsconfig.json (node16 + @types/node).
 // fbegin.js/fend.js are intentionally-invalid dead build fragments, excluded.
@@ -20,6 +21,9 @@
   "include": ["src"],
   "exclude": [
     "src/meta/fbegin.js",
-    "src/meta/fend.js"
+    "src/meta/fend.js",
+    // Node build-time script (uses fs/promises, path, url); not browser runtime
+    // source, so it's checked by the build tooling, not this browser-targeted config.
+    "src/meta/metadata.js"
   ]
 }

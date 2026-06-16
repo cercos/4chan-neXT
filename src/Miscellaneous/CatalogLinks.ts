@@ -18,6 +18,12 @@ import { dict } from "../platform/helpers";
  * Full docs: https://github.com/decaffeinate/decaffeinate/blob/main/docs/suggestions.md
  */
 var CatalogLinks = {
+  // Assigned later; declared so the singleton's type includes them. Loosely typed
+  // where a precise type would cascade new errors; tighten during the strict pass.
+  el: null as any,
+  enabled: false,
+  externalList: null as any,
+
   init() {
     if ((g.SITE.software === 'yotsuba') && (Conf['External Catalog'] || Conf['JSON Index']) && !(Conf['JSON Index'] && (g.VIEW === 'index'))) {
       const selector = (() => { switch (g.VIEW) {
@@ -113,7 +119,7 @@ var CatalogLinks = {
       }
 
       var board = {siteID, boardID};
-      var url = Conf['Header catalog links'] ? CatalogLinks.catalog(board) : Get.url('index', board);
+      var url = Conf['Header catalog links'] ? CatalogLinks.catalog(board as any) : Get.url('index', board);
       if (url) {
         a.href = url;
         if (a.dataset.indexOptions && (url.split('#')[0] === Get.url('index', board))) {

@@ -140,7 +140,7 @@ var PostHiding = {
         { el: thisPost },
         { el: replies },
       ];
-      let byId: HTMLElement;
+      let byId: any;
       if (g.BOARD.config.user_ids) {
         byId = UI.checkbox('byId', 'By poster id', false);
         showOptions.push({ el: byId });
@@ -160,9 +160,9 @@ var PostHiding = {
           if (!data) return false;
 
           PostHiding.menu.post = post;
-          thisPost.firstChild.checked = post.isHidden;
-          replies.firstChild.checked = data.hideRecursively ?? Conf['Recursive Hiding'];
-          if (byId) byId.firstChild.checked = data.byId;
+          (thisPost.firstChild as any).checked = post.isHidden;
+          (replies.firstChild as any).checked = data.hideRecursively ?? Conf['Recursive Hiding'];
+          if (byId) (byId.firstChild as any).checked = data.byId;
           return true;
         },
         subEntries: showOptions
@@ -293,7 +293,7 @@ var PostHiding = {
     hideRecursively?: boolean,
     byId?: boolean
   ) {
-    const data = {
+    const data: any = {
       boardID:  post.board.ID,
       threadID: post.thread.ID,
       postID:   post.ID
@@ -307,7 +307,7 @@ var PostHiding = {
       } satisfies HideOptions;
       PostHiding.db.set(data);
     } else {
-      PostHiding.db.delete(data);
+      (PostHiding.db.delete as any)(data); // loose: DataBoard.delete cb param non-optional in its signature
     }
   },
 
@@ -355,7 +355,7 @@ var PostHiding = {
 
     if (!Conf['Filter Reason'] && reasons) post.nodes.stub.title = reasons.join(' & ');
     if (Conf['Menu']) {
-      $.add(post.nodes.stub, Menu.makeButton(post));
+      $.add(post.nodes.stub, (Menu.makeButton as any)(post)); // loose: Menu.makeButton button param non-optional in its signature
     }
     $.prepend(post.nodes.root, post.nodes.stub);
   },

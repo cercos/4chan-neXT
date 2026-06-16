@@ -124,14 +124,14 @@ var Main = {
     // XXX Firefox reinjects WebExtension content scripts when extension is updated / reloaded.
     try {
       let w = window;
-      if (platform === 'crx') { w = (w.wrappedJSObject || w); }
+      if (platform === 'crx') { w = ((w as any).wrappedJSObject || w); }
       if (`${meta.name} antidup` in w) { return; }
       w[`${meta.name} antidup`] = true;
     } catch (error) {}
 
     // Don't run inside ad iframes.
     try {
-      if (window.frameElement && ['', 'about:blank'].includes(window.frameElement.src)) { return; }
+      if (window.frameElement && ['', 'about:blank'].includes((window.frameElement as any).src)) { return; }
     } catch (error1) {}
 
     // Detect multiple copies of 4chan X
@@ -228,11 +228,11 @@ var Main = {
       /\.4chan(?:nel)?\.org$/.test(location.hostname) &&
       !SW.yotsuba.regexp.pass.test(location.href) &&
       !SW.yotsuba.regexp.captcha.test(location.href) &&
-      !$$('script:not([src])', d).filter(s => /this\[/.test(s.textContent)).length
+      !$$('script:not([src])', d as any).filter(s => /this\[/.test(s.textContent)).length
     ) {
       ($.getSync || $.get)({'jsWhitelist': Conf['jsWhitelist']}, ({jsWhitelist}) => {
         const sources = jsWhitelist.replace(/^#.*$/mg, '').split(/[\s;]+/).filter(Boolean);
-        const mathBoard = $$('script:not([src])', d).some(s => /\bmath_tags\s*=\s*true\b/.test(s.textContent || ''));
+        const mathBoard = $$('script:not([src])', d as any).some(s => /\bmath_tags\s*=\s*true\b/.test(s.textContent || ''));
         if (mathBoard) {
           sources.push('https://cdnjs.cloudflare.com', 'https://cdn.mathjax.org');
         }
@@ -450,7 +450,7 @@ var Main = {
   },
 
   parseURL(site=g.SITE, url=location) {
-    const r = {};
+    const r: any = {};
 
     if (!site) { return r; }
     r.siteID = site.ID;
@@ -495,7 +495,7 @@ var Main = {
         let video;
         if ((g.SITE.software === 'yotsuba') && Conf['404 Redirect'] && g.SITE.is404?.()) {
           const pathname = location.pathname.split(/\/+/);
-          return Redirect.navigate('file', {
+          return (Redirect as any).navigate('file', {
             boardID:  g.BOARD.ID,
             filename: pathname[pathname.length - 1]
           });
@@ -634,9 +634,9 @@ var Main = {
         return;
       }
 
-      const styleSelector = $.id('styleSelector');
+      const styleSelector = $.id('styleSelector') as any;
       if (styleSelector?.options?.length) {
-        const hasPreferred = Array.from(styleSelector.options).some(option => option.value === preferred);
+        const hasPreferred = Array.from(styleSelector.options).some((option: any) => option.value === preferred);
         if (hasPreferred) {
           if (styleSelector.value !== preferred) {
             styleSelector.value = preferred;
@@ -731,7 +731,7 @@ var Main = {
       $.add(d.body, div);
       let bgColor = window.getComputedStyle(div).backgroundColor;
       $.rm(div);
-      const rgb = bgColor.match(/[\d.]+/g);
+      const rgb = bgColor.match(/[\d.]+/g) as any;
       // Use body background if reply background is transparent
       if (!/^rgb\(/.test(bgColor)) {
         const s = window.getComputedStyle(d.body);
@@ -853,7 +853,7 @@ var Main = {
     // Parse HTML or skip it and start building from JSON.
     if (g.VIEW === 'catalog') {
       Main.initCatalog();
-    } else if (!Index.enabled) {
+    } else if (!(Index as any).enabled) {
       if (g.SITE.awaitBoard) {
         g.SITE.awaitBoard(Main.initThread);
       } else {
@@ -868,7 +868,7 @@ var Main = {
   initThread() {
     let board;
     const s = g.SITE.selectors;
-    if (board = $((s.boardFor?.[g.VIEW] || s.board))) {
+    if (board = $(((s as any).boardFor?.[g.VIEW] || s.board))) {
       const threads = [];
       const posts   = [];
       const errors  = [];
@@ -920,7 +920,7 @@ var Main = {
       })();
       var threadID = +threadRoot.id.match(/\d*$/)[0];
       if (!threadID || boardObj.threads.get(threadID)?.nodes.root) { return; }
-      var thread = new Thread(threadID, boardObj);
+      var thread = new Thread(threadID as any, boardObj as any);
       thread.nodes.root = threadRoot;
       threads.push(thread);
       var postRoots = $$(g.SITE.selectors.postContainer, threadRoot);
@@ -1152,7 +1152,7 @@ var Main = {
     return new Notice('error', [div, logs], 30);
   },
 
-  parseError(data, reportLink) {
+  parseError(data, reportLink?) {
     c.error(data.message, data.error.stack);
     const message = $.el('div',
       { innerHTML: E(data.message) + ((reportLink) ? (reportLink).innerHTML : "") });
@@ -1200,12 +1200,12 @@ User agent: ${navigator.userAgent}\
   isThisPageLegit() {
     // not 404 error page or similar.
     if (!('thisPageIsLegit' in Main)) {
-      Main.thisPageIsLegit = g.SITE.isThisPageLegit ?
+      (Main as any).thisPageIsLegit = g.SITE.isThisPageLegit ?
         g.SITE.isThisPageLegit()
       :
         !/^[45]\d\d\b/.test(document.title) && !/\.(?:json|rss)$/.test(location.pathname);
     }
-    return Main.thisPageIsLegit;
+    return (Main as any).thisPageIsLegit;
   },
 
   ready(cb) {
@@ -1223,6 +1223,20 @@ User agent: ${navigator.userAgent}\
   },
 
   mountedCBs: [],
+
+  // loose: late-assigned properties on the Main singleton.
+  // NOTE: `thisPageIsLegit` is deliberately NOT declared here — isThisPageLegit()
+  // memoizes via `'thisPageIsLegit' in Main`, so the key must be absent until first
+  // computed. It's accessed through `(Main as any)` casts instead.
+  expectInitFinished: false,
+  isMounted: false,
+  isFirstRun: false,
+  jsEnabled: false,
+  bgColorStyle: null as any,
+  customSiteThemeStyle: null as any,
+  addThreadsObserver: null as any,
+  addPostsObserver: null as any,
+  addCatalogThreadsObserver: null as any,
 
   features: [
     ['Board Configuration',       BoardConfig],

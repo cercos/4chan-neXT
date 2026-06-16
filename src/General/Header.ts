@@ -19,6 +19,21 @@ import Icon from "../Icons/icon";
  * Full docs: https://github.com/decaffeinate/decaffeinate/blob/main/docs/suggestions.md
  */
 var Header = {
+  // Assigned later; declared so the singleton's type includes them. Loosely typed
+  // where a precise type would cascade new errors; tighten during the strict pass.
+  menu: null as any,
+  boardList: null as any,
+  bottomBoardList: null as any,
+  barFixedToggler: null as any,
+  scrollHeaderToggler: null as any,
+  barPositionToggler: null as any,
+  linkJustifyToggler: null as any,
+  headerToggler: null as any,
+  footerToggler: null as any,
+  shortcutToggler: null as any,
+  customNavToggler: null as any,
+  previousOffset: 0,
+
   init() {
     $.onExists(doc, 'body', () => {
       if (!Main.isThisPageLegit()) { return; }
@@ -243,7 +258,7 @@ var Header = {
       return '';
     });
 
-    let indexOptions = [];
+    let indexOptions: any = [];
     t = t.replace(/-(?:mode|sort):"([^"]+)"/g, function(m0, m1) {
       indexOptions.push(m1.toLowerCase().replace(/\ /g, '-'));
       return '';
@@ -580,7 +595,7 @@ var Header = {
     }
   },
 
-  scrollToIfNeeded(root, down) {
+  scrollToIfNeeded(root, down?) {
     return Header.scrollTo(root, down, true);
   },
 

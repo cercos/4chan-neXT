@@ -13,6 +13,9 @@ import { dict } from "../platform/helpers";
  * Full docs: https://github.com/decaffeinate/decaffeinate/blob/main/docs/suggestions.md
  */
 var Banner = {
+  db: null as any, // loose: DataBoard, but cast to any so optional cb on delete() typechecks
+  choices: null as string[], // loose:
+
   init() {
     if (Conf['Custom Board Titles']) {
       this.db = new DataBoard('customTitles', null, true);

@@ -9,6 +9,8 @@ import $ from "../platform/$";
  * Full docs: https://github.com/decaffeinate/decaffeinate/blob/main/docs/suggestions.md
  */
 var MarkNewIPs = {
+  ipCount: null as any, // loose: late-assigned
+  postCount: null as any, // loose: late-assigned
   init() {
     if ((g.SITE.software !== 'yotsuba') || (g.VIEW !== 'thread') || !Conf['Mark New IPs']) { return; }
     return Callbacks.Thread.push({

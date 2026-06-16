@@ -31,7 +31,7 @@ var ExpandThread = {
     if (!thread.nodes.root) return;
     const a = $('a.summary', thread.nodes.root);
     if (!a) return;
-    a.textContent = g.SITE.Build.summaryText('+', ...a.textContent.match(/\d+/g));
+    a.textContent = (g.SITE.Build.summaryText as any)('+', ...a.textContent.match(/\d+/g));
     a.style.cursor = 'pointer';
     $.on(a, 'click', ExpandThread.cbToggle);
   },
@@ -104,7 +104,7 @@ var ExpandThread = {
     let status;
     ExpandThread.expanded[thread.ID] = true;
     ExpandThread.statuses[thread] = (status = {});
-    a.textContent = g.SITE.Build.summaryText('...', ...a.textContent.match(/\d+/g));
+    a.textContent = (g.SITE.Build.summaryText as any)('...', ...a.textContent.match(/\d+/g));
     status.req = $.cache(g.SITE.urls.threadJSON({boardID: thread.board.ID, threadID: thread.ID}), function() {
       if (this !== status.req) { return; } // aborted
       delete status.req;
@@ -124,7 +124,7 @@ var ExpandThread = {
     if (oldReq = status.req) {
       delete status.req;
       oldReq.abort();
-      if (a) { a.textContent = g.SITE.Build.summaryText('+', ...a.textContent.match(/\d+/g)); }
+      if (a) { a.textContent = (g.SITE.Build.summaryText as any)('+', ...a.textContent.match(/\d+/g)); }
       return;
     }
 

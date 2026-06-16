@@ -14,8 +14,96 @@ import { debounce, dict, MINUTE, platform, SECOND } from "./helpers";
 import meta from '../../package.json';
 import PageContextFunctions from "../PageContext/pageContext";
 
+// The `$` singleton is built by incremental (and conditional, platform-dependent)
+// property assignment below. TypeScript cannot infer a stable, complete type from
+// that, so we declare the full surface here once and cast the base callable to it.
+// Properties are loosely typed (the singleton is depended on by hundreds of call
+// sites); precise types are a later phase. Signatures err on the side of permissive
+// (genuinely-optional trailing params are `?`, callbacks are loose) so they match
+// the many call patterns across the codebase without changing runtime behavior.
+interface $Static {
+  (selector: string, root?: Element | Document | DocumentFragment): any;
+  id(id: string): HTMLElement;
+  ready(fc: () => any): void;
+  formData(form: any): FormData;
+  extend(object: any, properties: any): void;
+  hasOwn(obj: any, key: string): boolean;
+  getOwn(obj: any, key: string): any;
+  ajax(url: string, options?: any): any;
+  lastModified: any;
+  whenModified(url: string, bucket: any, cb: (...args: any[]) => any, options?: any): any;
+  cache(url: string, cb: (...args: any[]) => any, options?: any): any;
+  cleanCache(testf: (url: string) => any): void;
+  cb: { checked(this: any): any; value(this: any): any };
+  asap(test: () => any, cb: (...args: any[]) => any): any;
+  onExists(root: any, selector: string, cb: (el: any) => any): void;
+  addStyle(css: string, id?: string, test?: string): HTMLStyleElement;
+  getCSPNonce(): string;
+  addCSP(policy: string): any;
+  x(path: string, root?: any): any;
+  X(path: string, root?: any): any;
+  addClass(el: any, ...classNames: string[]): void;
+  rmClass(el: any, ...classNames: string[]): void;
+  toggleClass(el: any, className: string): boolean;
+  hasClass(el: any, className: string): boolean;
+  rm(el: any): void;
+  rmAll(root: any): any;
+  tn(s: any): Text;
+  frag(): DocumentFragment;
+  nodes(nodes: any): any;
+  add(parent: any, el: any): any;
+  prepend(parent: any, el: any): any;
+  after(root: any, el: any): any;
+  before(root: any, el: any): any;
+  replace(root: any, el: any): any;
+  el<K extends keyof HTMLElementTagNameMap>(tag: K, properties?: Record<string, any>, properties2?: Record<string, any>): HTMLElementTagNameMap[K];
+  el(tag: string, properties?: Record<string, any>, properties2?: Record<string, any>): any;
+  on(el: any, events: string, handler: (...args: any[]) => any): void;
+  off(el: any, events: string, handler: (...args: any[]) => any): void;
+  one(el: any, events: string, handler: (...args: any[]) => any): void;
+  event(event: string, detail?: any, root?: EventTarget): boolean;
+  modifiedClick(e: any): boolean;
+  open(url: string, ...args: any[]): any;
+  debounce(wait: number, fn: (...args: any[]) => any): (...args: any[]) => any;
+  queueTask(fn: (...args: any[]) => any, ...args: any[]): void;
+  eventPageRequest(params: any): Promise<any>;
+  global(fn: string, data?: Record<string, any>): Promise<any>;
+  bytesToString(size: number): string;
+  minmax(value: number, min: number, max: number): number;
+  hasAudio(video: any): boolean;
+  luma(rgb: any): number;
+  unescape(text: any): any;
+  isImage(url: string): boolean;
+  isVideo(url: string): boolean;
+  engine: string;
+  hasStorage: boolean;
+  item(key: string, val: any): any;
+  oneItemSugar(fn: (...args: any[]) => any): any;
+  syncing: any;
+  securityCheck(data: any): any;
+  // Assigned later; declared so the singleton's type includes them. Loosely typed
+  // where a precise type would cascade; tighten during the strict pass.
+  oldValue?: any;
+  sync(key: string, cb?: (...args: any[]) => any): any;
+  forceSync(key?: string): any;
+  crxWorking(): boolean;
+  crxWarningShown?: boolean;
+  get(key: string | Record<string, any>, value?: any, cb?: (...args: any[]) => any): any;
+  set(key: string | Record<string, any>, value?: any, cb?: (...args: any[]) => any): any;
+  delete(keys: string | string[], cb?: (...args: any[]) => any): any;
+  clear(cb?: (...args: any[]) => any): any;
+  syncChannel?: any;
+  getValue(key: string, ...args: any[]): any;
+  setValue(key: string, val?: any, ...args: any[]): any;
+  deleteValue(key: string, ...args: any[]): any;
+  listValues(): any[];
+  getSync(items: any, cb: (...args: any[]) => any): any;
+  cantSync?: boolean;
+  cantSet?: boolean;
+}
+
 // not chainable
-const $ = (selector, root = document.body) => root.querySelector(selector);
+const $ = ((selector, root = document.body) => root.querySelector(selector)) as $Static;
 
 $.id = id => d.getElementById(id);
 
@@ -64,9 +152,9 @@ $.getOwn = function(obj, key) {
 
 $.ajax = (function() {
   let pageXHR = XMLHttpRequest;
-  if (window.wrappedJSObject && !XMLHttpRequest.wrappedJSObject) {
+  if ((window as any).wrappedJSObject && !(XMLHttpRequest as any).wrappedJSObject) {
     try {
-      pageXHR = XPCNativeWrapper(window.wrappedJSObject.XMLHttpRequest);
+      pageXHR = XPCNativeWrapper((window as any).wrappedJSObject.XMLHttpRequest);
     } catch (e) {}
   }
 
@@ -346,8 +434,8 @@ if (platform === 'userscript') {
       return new CustomEvent('x', {detail: {}});
     } catch (err) {
       const unsafeConstructors = {
-        Object: unsafeWindow.Object,
-        Array:  unsafeWindow.Array
+        Object: (unsafeWindow as any).Object,
+        Array:  (unsafeWindow as any).Array
       };
       var clone = function(obj) {
         let constructor;
@@ -580,7 +668,7 @@ if (platform === 'crx') {
 
   $.get = $.oneItemSugar(function(data, cb) {
     if (!$.crxWorking()) { return; }
-    const results = {};
+    const results: any = {};
     const get = function(area) {
       let keys = Object.keys(data);
       // XXX slow performance in Firefox
@@ -636,7 +724,7 @@ if (platform === 'crx') {
     };
 
     const timeout = {};
-    var setArea = function(area, cb) {
+    var setArea = function(area, cb?) {
       const data = dict();
       $.extend(data, items[area]);
       if (!Object.keys(data).length || (timeout[area] > Date.now())) { return; }
@@ -740,7 +828,7 @@ if (platform === 'crx') {
         for (let i = 0; i < values.length; i++) {
           var val = values[i];
           if (val) {
-            items[keys[i]] = dict.json(val);
+            items[keys[i]] = dict.json(val as string);
           }
         }
         return cb(items);
@@ -822,7 +910,7 @@ if (platform === 'crx') {
     if (typeof GM_addValueChangeListener !== 'undefined' && GM_addValueChangeListener !== null) {
       $.sync = (key, cb) => $.syncing[key] = GM_addValueChangeListener(g.NAMESPACE + key, function(key2, oldValue, newValue, remote) {
         if (remote) {
-          if (newValue !== undefined) { newValue = dict.json(newValue); }
+          if (newValue !== undefined) { newValue = dict.json(newValue as string); }
           return cb(newValue, key);
         }
       });

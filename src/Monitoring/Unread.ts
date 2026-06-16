@@ -17,6 +17,21 @@ import ThreadWatcher from "./ThreadWatcher";
  * Full docs: https://github.com/decaffeinate/decaffeinate/blob/main/docs/suggestions.md
  */
 var Unread = {
+  // Assigned later; declared so the singleton's type includes them. Loosely typed
+  // where a precise type would cascade new errors; tighten during the strict pass.
+  thread: null as any,
+  // null (not '' / 0): code probes these with `== null` / `!= null` to detect "unset".
+  title: null as any,
+  lastReadPost: null as any,
+  db: null as any,
+  readCount: 0,
+  posts: null as any,
+  postsQuotingYou: null as any,
+  order: null as any,
+  position: null as any,
+  hr: null as any,
+  linePosition: null as any,
+
   init() {
     if ((g.VIEW !== 'thread') || (
       !Conf['Unread Count'] &&
@@ -271,7 +286,7 @@ var Unread = {
     });
   }),
 
-  setLine(force) {
+  setLine(force?) {
     if (!Conf['Unread Line']) { return; }
     if (Unread.hr.hidden || d.hidden || (force === true)) {
       const oldPosition = Unread.linePosition;

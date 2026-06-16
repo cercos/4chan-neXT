@@ -18,6 +18,11 @@ import Icon from '../Icons/icon';
  * Full docs: https://github.com/decaffeinate/decaffeinate/blob/main/docs/suggestions.md
  */
 var ThreadHiding = {
+  // Assigned later; declared so the singleton's type includes them. Loosely typed
+  // where a precise type would cascade new errors; tighten during the strict pass.
+  db: null as any,
+  hiddenThreads: null as any,
+
   init() {
     if (!['index', 'catalog'].includes(g.VIEW) || (!Conf['Thread Hiding Buttons'] && !(Conf['Menu'] && Conf['Thread Hiding Link']) && !Conf['JSON Index'])) { return; }
     this.db = new DataBoard('hiddenThreads');
@@ -103,10 +108,14 @@ var ThreadHiding = {
   },
 
   menu: {
+    // Assigned later; declared so the singleton's type includes them. Loosely typed
+    // where a precise type would cascade new errors; tighten during the strict pass.
+    thread: null as any,
+
     init() {
       if ((g.VIEW !== 'index') || !Conf['Menu'] || !Conf['Thread Hiding Link']) { return; }
 
-      let div = $.el('div', {
+      let div: HTMLElement = $.el('div', {
         className: 'hide-thread-link',
         textContent: 'Hide'
       }
@@ -211,7 +220,7 @@ var ThreadHiding = {
     return a;
   },
 
-  makeStub(thread, root, reason) {
+  makeStub(thread, root, reason?) {
     let summary, threadDivider;
     let numReplies  = $$(g.SITE.selectors.replyOriginal, root).length;
     if (summary = $(g.SITE.selectors.summary, root)) { numReplies += +summary.textContent.match(/\d+/); }
@@ -246,7 +255,7 @@ var ThreadHiding = {
     thread.stub = $.el('div', {className: 'stub'});
 
     if (Conf['Menu']) {
-      $.add(thread.stub, [a, Menu.makeButton(thread.OP)]);
+      $.add(thread.stub, [a, (Menu.makeButton as any)(thread.OP)]); // loose: Menu.makeButton button param non-optional in its signature
     } else {
       $.add(thread.stub, a);
     }
@@ -259,7 +268,7 @@ var ThreadHiding = {
     }
   },
 
-  saveHiddenState(thread, makeStub) {
+  saveHiddenState(thread, makeStub?) {
     if (thread.isHidden) {
       ThreadHiding.db.set({
         boardID:  thread.board.ID,
@@ -293,7 +302,7 @@ var ThreadHiding = {
     return ThreadHiding.saveHiddenState(thread);
   },
 
-  hide(thread, makeStub=Conf['Stubs'], reason) {
+  hide(thread, makeStub=Conf['Stubs'], reason?) {
     if (thread.isHidden) { return; }
     const threadRoot = thread.nodes.root;
     thread.isHidden = true;

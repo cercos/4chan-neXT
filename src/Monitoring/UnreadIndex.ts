@@ -20,6 +20,8 @@ var UnreadIndex = {
   lastReadPost: dict(),
   hr:           dict(),
   markReadLink: dict(),
+  enabled:      null as any, // loose: late-assigned
+  db:           null as any, // loose: late-assigned
 
   init() {
     if ((g.VIEW !== 'index') || !Conf['Remember Last Read Post'] || !Conf['Unread Line in Index']) { return; }
@@ -41,7 +43,7 @@ var UnreadIndex = {
       boardID: this.board.ID,
       threadID: this.ID
     }) || 0;
-    if (!Index.enabled) { // let onIndexRefresh handle JSON Index
+    if (!(Index as any).enabled) { // let onIndexRefresh handle JSON Index
       return UnreadIndex.update(this);
     }
   },
@@ -113,7 +115,7 @@ var UnreadIndex = {
 
     const hasUnread = repliesShown ?
       firstUnread || !repliesRead
-    : Index.enabled ?
+    : (Index as any).enabled ?
       thread.lastPost > lastReadPost
     :
       thread.OP.ID > lastReadPost;

@@ -158,6 +158,11 @@ var QR = {
   req: undefined as (XMLHttpRequest & { isUploadFinished: boolean, progress: string }) | undefined,
   selected: undefined as post,
 
+  // Assigned later; declared so the singleton's type includes them. Loosely typed
+  // where a precise type would cascade new errors; tighten during the strict pass.
+  currentCaptcha: null as any,
+  errorCount: 0,
+
   mimeTypes: ['image/jpeg', 'image/png', 'image/gif', 'application/pdf', 'application/vnd.adobe.flash.movie', 'application/x-shockwave-flash', 'video/webm', 'video/mp4'],
 
   validExtension: /\.(jpe?g|png|gif|pdf|swf|webm|mp4)$/i,
@@ -488,7 +493,7 @@ var QR = {
   },
 
   blur() {
-    if (QR.nodes.el.contains(d.activeElement)) { return d.activeElement.blur(); }
+    if (QR.nodes.el.contains(d.activeElement)) { return (d.activeElement as HTMLElement).blur(); }
   },
 
   toggleSJIS(e) {
@@ -1934,7 +1939,7 @@ var QR = {
     QR.cleanNotifications();
     $.rmClass(QR.nodes.el, 'dump');
     QR.status();
-    QR.captcha.updateThread?.();
+    (QR.captcha as any).updateThread?.();
   },
 
   toggleDumpList(e: MouseEvent) {
@@ -2113,7 +2118,7 @@ var QR = {
 
     QR.openPost();
     const {com, thread} = QR.nodes;
-    if (!com.value) { thread.value = Get.threadFromNode(this); }
+    if (!com.value) { thread.value = Get.threadFromNode(this) as any; } // loose: Get.threadFromNode return type owned by ../General/Get
 
     const wasOnlyQuotes = QR.selected.isOnlyQuotes();
 
@@ -2188,7 +2193,7 @@ var QR = {
   drawFile(e) {
     const file = QR.selected?.file;
     if (!file || !/^(image|video)\//.test(file.type)) { return; }
-    const isVideo = /^video\//.test(file);
+    const isVideo = /^video\//.test(file as any); // loose: preserves decaffeinated coercion behavior
     const el = $.el((isVideo ? 'video' : 'img'));
     $.on(el, 'error', () => QR.openError());
     $.on(el, (isVideo ? 'loadeddata' : 'load'), function() {
@@ -2259,7 +2264,7 @@ var QR = {
     }
     if (file) {
       const {type} = file;
-      const blob = new Blob([file], {type});
+      const blob = new Blob([file], {type}) as any; // loose: blob used as File with .name
       blob.name = `${Conf['pastedname']}.${$.getOwn(QR.extensionFromType, type) || 'jpg'}`;
       QR.open();
       QR.handleFiles([blob]);
@@ -2280,7 +2285,7 @@ var QR = {
         for (let i = 0; i < bstr.length; i++) {
           arr[i] = bstr.charCodeAt(i);
         }
-        var blob = new Blob([arr], {type: m[1]});
+        var blob = new Blob([arr], {type: m[1]}) as any; // loose: blob used as File with .name
         blob.name = `${Conf['pastedname']}.${m[2]}`;
         QR.handleFiles([blob]);
       } else if (/^https?:\/\//.test(src)) {
@@ -2437,10 +2442,10 @@ var QR = {
     list.value = val;
     if (list.value === val) { return; }
     // Fix the value if the option disappeared.
-    list.value = g.VIEW === 'thread' ?
+    list.value = String(g.VIEW === 'thread' ?
       g.THREADID
     :
-      'new';
+      'new');
     // Sync the model on the current draft post so canActuallyShowThreadPreview sees the right target thread.
     // (programmatic .value = does not fire 'change', so explicit save is needed; used e.g. on catalog -> thread navigation)
     if (QR.selected && list) {
@@ -2970,7 +2975,7 @@ var QR = {
     }
   },
 
-  submit(e) {
+  submit(e?) {
     let captcha, err, filetag;
     e?.preventDefault();
     const force = e?.shiftKey;
@@ -3074,7 +3079,7 @@ var QR = {
       flag:     post.flag,
     };
 
-    const options = {
+    const options: any = { // loose: local options literal with late-assigned onprogress
       responseType: 'document',
       withCredentials: true,
       onloadend: QR.response,
@@ -3095,7 +3100,7 @@ var QR = {
       };
     }
 
-    let cb = function(response) {
+    let cb = function(response?) {
       if (response != null) {
         QR.currentCaptcha = response;
         if (QR.captcha === Captcha.v2) {
@@ -3126,7 +3131,7 @@ var QR = {
           }
           cb = null;
         }
-      };
+      } as any; // loose: placeholder req object, not a full XMLHttpRequest
       captcha(function(response) {
         if ((QR.captcha === Captcha.v2) && Captcha.cache.haveCookie()) {
           cb?.();
@@ -3168,7 +3173,7 @@ var QR = {
       err = `Error ${this.statusText} (${this.status})`;
     }
 
-    if (!connErr) { QR.captcha.setUsed?.(); }
+    if (!connErr) { (QR.captcha as any).setUsed?.(); }
     delete QR.currentCaptcha;
 
     if (err) {
@@ -3179,19 +3184,19 @@ var QR = {
           !!submittedCaptcha?.['t-challenge'] &&
           !submittedCaptcha?.['t-response'];
         if (wasNoopTCaptcha) {
-          QR.captcha.setState?.('failed');
-          QR.captcha.forceLoad?.();
+          (QR.captcha as any).setState?.('failed');
+          (QR.captcha as any).forceLoad?.();
           err = 'Captcha is now required. A new captcha has been requested.';
         } else {
           // Remove the obnoxious 4chan Pass ad.
           if (/mistyped/i.test(err.textContent)) {
             err = 'You mistyped the CAPTCHA, or the CAPTCHA malfunctioned.';
-            QR.captcha.setState?.('failed');
+            (QR.captcha as any).setState?.('failed');
           } else if (/expired/i.test(err.textContent)) {
             err = 'This CAPTCHA is no longer valid because it has expired.';
-            QR.captcha.setState?.('expired');
+            (QR.captcha as any).setState?.('expired');
           } else {
-            QR.captcha.setState?.('failed');
+            (QR.captcha as any).setState?.('failed');
           }
         }
         // Do not auto post with a wrong captcha.
@@ -3223,7 +3228,7 @@ var QR = {
       } else { // stop auto-posting
         QR.cooldown.auto = false;
       }
-      QR.captcha.setup(QR.cooldown.auto && [QR.nodes.status, d.body].includes(d.activeElement));
+      QR.captcha.setup(QR.cooldown.auto && [QR.nodes.status, d.body].includes(d.activeElement as HTMLElement));
       QR.status();
       QR.error(err);
       return;
@@ -3418,6 +3423,13 @@ var QR = {
     auto: false,
     data: {} as Record<string, any>,
 
+    // Assigned later; declared so the singleton's type includes them. Loosely typed
+    // where a precise type would cascade new errors; tighten during the strict pass.
+    customCooldown: false,
+    isCounting: false,
+    changes: null as any,
+    timeout: 0 as ReturnType<typeof setTimeout>,
+
     // Called from Main
     init() {
       if (!Conf['Quick Reply']) { return; }
@@ -3429,7 +3441,7 @@ var QR = {
     // Called from QR
     setup() {
       // Read cooldown times
-      $.extend(QR.cooldown.delays, g.BOARD.cooldowns());
+      $.extend(QR.cooldown.delays, (g.BOARD as any).cooldowns()); // loose: cooldowns owned by ../classes/Board
 
       // The longest reply cooldown, for use in pruning old reply data
       QR.cooldown.maxDelay = 0;
@@ -3473,7 +3485,7 @@ var QR = {
 
     addDelay(post, delay) {
       if (!Conf['Cooldown']) { return; }
-      const cooldown = QR.cooldown.categorize(post);
+      const cooldown = QR.cooldown.categorize(post) as any; // loose: categorize union lacks delay
       cooldown.delay = delay;
       QR.cooldown.set(g.BOARD.ID, Date.now(), cooldown);
       QR.cooldown.save();
@@ -3506,7 +3518,7 @@ var QR = {
       for (var start in cooldowns) {
         var cooldown = cooldowns[start];
         if ((cooldown.delay == null) && (cooldown.threadID === post.thread.ID) && (cooldown.postID === post.ID)) {
-          var seconds = QR.cooldown.delays.deletion - Math.floor((Date.now() - start) / SECOND);
+          var seconds = QR.cooldown.delays.deletion - Math.floor((Date.now() - +start) / SECOND);
           return Math.max(seconds, 0);
         }
       }
@@ -3577,8 +3589,8 @@ var QR = {
 
           for (var start in cooldowns) {
             cooldown = cooldowns[start];
-            start = +start;
-            var elapsed = Math.floor((now - start) / SECOND);
+            (start as any) = +start; // loose: reuse for-in key as number, JS coerces
+            var elapsed = Math.floor((now - (start as any)) / SECOND);
             if (elapsed < 0) { // clock changed since then?
               QR.cooldown.set(scope, start, null);
               save = true;
@@ -3660,7 +3672,7 @@ var QR = {
     loadFailed: false,
 
     pageWindow() {
-      return window.wrappedJSObject || (typeof unsafeWindow !== 'undefined' ? unsafeWindow : window);
+      return (window as any).wrappedJSObject || (typeof unsafeWindow !== 'undefined' ? unsafeWindow : window); // loose: vendor global
     },
 
     getTegaki() {
@@ -3838,7 +3850,7 @@ var QR = {
         );
         $.on(a, 'click', this.editFile);
 
-        Menu.menu.addEntry({
+        (Menu as any).menu.addEntry({ // loose: menu owned by ../Menu/Menu
           el: a,
           order: 90,
           open(post) {
@@ -4056,7 +4068,7 @@ var QR = {
             ? { id: post._draftFileId, filename: post.filename || null, originalName: post.originalName || null }
             : undefined,
         }))
-        .filter(post => post.com || post.sub || post.file);
+        .filter(post => post.com || (post as any).sub || post.file); // loose: sub not in mapped literal
       $.get('QR.drafts', dict(), ({ 'QR.drafts': all }) => {
         const key = QR.drafts.key();
         if (posts.length) { all[key] = { posts }; } else { delete all[key]; }
@@ -4522,6 +4534,11 @@ var QR = {
 
   persona: {
     always: {} as Record<string, string>,
+
+    // Assigned later; declared so the singleton's type includes them. Loosely typed
+    // where a precise type would cascade new errors; tighten during the strict pass.
+    pwd: '' as string,
+
     types: {
       name: [],
       email: [],
@@ -4656,11 +4673,13 @@ class post {
   declare com?: string;
   declare pasting?: boolean;
   declare pendingFile?: boolean;
+  declare quotedText?: string;
+  declare errors?: any[]; // loose: array of error nodes, late-assigned
   // id of this post's attached file in QRFileStore (IndexedDB), when the draft
   // feature has persisted it. See QR.drafts.
   declare _draftFileId?: string;
 
-  constructor(select) {
+  constructor(select?) {
     this.select = this.select.bind(this);
     const el = $.el('a', {
       className: 'qr-preview',
@@ -4760,7 +4779,7 @@ class post {
     }
     QR.posts.splice(index, 1);
     QR.status();
-    QR.captcha.updateThread?.();
+    (QR.captcha as any).updateThread?.();
     QR.drafts.save();
   }
 
@@ -4798,8 +4817,8 @@ class post {
     this.nodes.el.id = 'selected';
     // Scroll the list to center the focused post.
     const rectEl = this.nodes.el.getBoundingClientRect();
-    const rectList = this.nodes.el.parentNode.getBoundingClientRect();
-    this.nodes.el.parentNode.scrollLeft += (rectEl.left + (rectEl.width / 2)) - rectList.left - (rectList.width / 2);
+    const rectList = (this.nodes.el.parentNode as HTMLElement).getBoundingClientRect();
+    (this.nodes.el.parentNode as HTMLElement).scrollLeft += (rectEl.left + (rectEl.width / 2)) - rectList.left - (rectList.width / 2);
     this.load();
   }
 
@@ -4820,9 +4839,9 @@ class post {
     QR.refreshCommentPreview();
   }
 
-  save(input: HTMLInputElement, forced?: boolean) {
+  save(input: HTMLInputElement | HTMLTextAreaElement | HTMLSelectElement, forced?: boolean) {
     if (input.type === 'checkbox') {
-      this.spoiler = input.checked;
+      this.spoiler = (input as HTMLInputElement).checked;
       return;
     }
     const { name } = input.dataset;
@@ -4833,7 +4852,7 @@ class post {
       case 'thread':
         (this.thread !== 'new' ? $.addClass : $.rmClass)(QR.nodes.el, 'reply-to-thread');
         QR.status();
-        QR.captcha.updateThread?.();
+        (QR.captcha as any).updateThread?.();
         break;
       case 'com':
         this.updateComment();
@@ -4934,7 +4953,7 @@ class post {
     this.error('file-error', `${this.filename}: ${message}`, link);
   }
 
-  dismissErrors(test = () => true) {
+  dismissErrors(test: (error?: any) => boolean = () => true) {
     if (this.errors) {
       for (var error of this.errors) {
         if (doc.contains(error) && test(error)) {
@@ -5093,7 +5112,7 @@ class post {
   readFile() {
     const isVideo = /^video\//.test(this.file.type);
     const el = $.el(isVideo ? 'video' : 'img');
-    if (isVideo && !el.canPlayType(this.file.type)) { return; }
+    if (isVideo && !(el as HTMLVideoElement).canPlayType(this.file.type)) { return; }
 
     const event = isVideo ? 'loadeddata' : 'load';
     var onload = () => {
@@ -5275,7 +5294,7 @@ class post {
   }
 
   dragStart(e) {
-    const { left, top } = this.getBoundingClientRect();
+    const { left, top } = (this as any).getBoundingClientRect(); // loose: bound as event handler, this is the element
     e.dataTransfer.setDragImage(this, e.clientX - left, e.clientY - top);
     $.addClass(this, 'drag');
   }
@@ -5291,8 +5310,8 @@ class post {
   drop(e) {
     $.rmClass(this, 'over');
     if (e.dataTransfer?.files?.length) { return; }
-    if (!this.draggable) { return; }
-    const el = $('.drag', this.parentNode);
+    if (!(this as any).draggable) { return; } // loose: this is the element here
+    const el = $('.drag', (this as any).parentNode);
     if (!el) { return; }
     const index = el => {
       for (let i = 0; i < el.parentNode.children.length; i++) {
@@ -5307,7 +5326,7 @@ class post {
     const post = QR.posts.splice(oldIndex, 1)[0];
     QR.posts.splice(newIndex, 0, post);
     QR.status();
-    QR.captcha.updateThread?.();
+    (QR.captcha as any).updateThread?.();
   }
 };
 QR.post = post;

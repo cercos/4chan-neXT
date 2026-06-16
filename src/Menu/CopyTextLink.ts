@@ -8,6 +8,8 @@ import Menu from "./Menu";
  * Full docs: https://github.com/decaffeinate/decaffeinate/blob/main/docs/suggestions.md
  */
 var CopyTextLink = {
+  text: null as any,  // loose: late-assigned post text
+
   init() {
     if (!['index', 'thread'].includes(g.VIEW) || !Conf['Menu'] || !Conf['Copy Text Link']) { return; }
 

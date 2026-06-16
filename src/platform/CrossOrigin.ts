@@ -79,7 +79,7 @@ var CrossOrigin = {
         }
       };
       try {
-        return (GM?.xmlHttpRequest || GM_xmlhttpRequest)(gmOptions);
+        return (GM?.xmlHttpRequest || GM_xmlhttpRequest)(gmOptions as any);
       } catch (error) {
         return fallback();
       }
@@ -109,6 +109,14 @@ var CrossOrigin = {
 
   Request: (function() {
     const Request = class Request {
+      // loose: dynamically-assigned request fields
+      status: any;
+      statusText: any;
+      response: any;
+      responseHeaderString: any;
+      responseHeaders: any;
+      url: any;
+      headers: any;
       static initClass() {
         this.prototype.status = 0;
         this.prototype.statusText = '';
@@ -158,7 +166,7 @@ var CrossOrigin = {
     req.onloadend = onloadend;
 
     if (platform === 'userscript') {
-      if (window.GM?.xmlHttpRequest == null && window.GM_xmlhttpRequest == null) {
+      if ((window as any).GM?.xmlHttpRequest == null && window.GM_xmlhttpRequest == null) {
         return $.ajax(url, options);
       }
 

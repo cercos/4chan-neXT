@@ -72,7 +72,7 @@ var FileInfo = {
     L() { return <a href={this.file.url} target="_blank">{FileInfo.formatters.N.call(this)}</a> },
     n() {
       const fullname  = this.file.name;
-      const shortname = SW.yotsuba.Build.shortFilename(this.file.name, this.isReply);
+      const shortname = (SW.yotsuba.Build.shortFilename as any)(this.file.name, this.isReply);
       if (fullname === shortname) {
         return { innerHTML: E(fullname), [isEscaped]: true };
       } else {

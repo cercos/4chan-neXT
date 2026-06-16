@@ -44,6 +44,8 @@ export interface BoardConfig {
   user_ids?:         number,
   code_tags?:        1 | 0,
   math_tags?:        1 | 0,
+  sjis_tags?:        1 | 0,
+  forced_anon?:      1 | 0,
   require_subject?:  1 | 0,
   text_only?:        1 | 0,
 }
@@ -55,6 +57,7 @@ export interface Board {
   config:  BoardConfig,
   posts:   SimpleDict<Post>,
   threads: SimpleDict<Thread>,
+  cooldowns(): any,
 }
 
 export const Conf = Object.create(null);

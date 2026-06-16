@@ -22,6 +22,20 @@ import { debounce, dict, SECOND } from '../platform/helpers';
 import Icon from '../Icons/icon';
 
 var Gallery = {
+  // Assigned later; declared so the singleton's type includes them. Loosely typed
+  // where a precise type would cascade new errors; tighten during the strict pass.
+  enabled: false,
+  delay: 0,
+  nodes: null as any,
+  images: [] as any,
+  fileIDs: null as any,
+  slideshow: false,
+  cache: null as any,
+  timeoutID: 0,
+  fullscreen: false,
+  colInput: null as any,
+  colLabelText: null as any,
+
   init() {
     if (!(this.enabled = Conf['Gallery'] && ['index', 'thread'].includes(g.VIEW))) { return; }
 
@@ -53,7 +67,7 @@ var Gallery = {
             Gallery.nodes.total.textContent = Gallery.images.length;
           }
 
-          if (!Conf['Image Expansion'] && ((g.SITE.software !== 'tinyboard') || !Main.jsEnabled)) {
+          if (!Conf['Image Expansion'] && ((g.SITE.software !== 'tinyboard') || !(Main as any).jsEnabled)) {
             result.push($.on(file.thumbLink, 'click', Gallery.cb.image));
           } else {
             result.push(undefined);
@@ -64,18 +78,18 @@ var Gallery = {
     })();
   },
 
-  build(image) {
+  build(image?) {
     let dialog, thumb;
     const {cb} = Gallery;
 
     if (Conf['Fullscreen Gallery']) {
       $.one(d, 'fullscreenchange mozfullscreenchange webkitfullscreenchange', () => $.on(d, 'fullscreenchange mozfullscreenchange webkitfullscreenchange', cb.close));
-      doc.mozRequestFullScreen?.();
-      doc.webkitRequestFullScreen?.(Element.ALLOW_KEYBOARD_INPUT);
+      (doc as any).mozRequestFullScreen?.();
+      (doc as any).webkitRequestFullScreen?.((Element as any).ALLOW_KEYBOARD_INPUT);
     }
 
     Gallery.images  = [];
-    const nodes = (Gallery.nodes = {});
+    const nodes = (Gallery.nodes = {} as any);
     Gallery.fileIDs = dict();
     Gallery.slideshow = false;
 
@@ -128,7 +142,7 @@ var Gallery = {
     Icon.set(prev, 'caretLeft');
     Icon.set(next, 'caretRight');
 
-    for (var entry of Gallery.menu.createSubEntries()) {
+    for (var entry of Gallery.menu.createSubEntries() as any[]) {
       entry.order = 0;
       nodes.menu.addEntry(entry);
     }
@@ -451,8 +465,8 @@ var Gallery = {
       return Gallery.slideshow = false;
     },
 
-    rotateLeft() { return Gallery.cb.rotate(270); },
-    rotateRight() { return Gallery.cb.rotate(90); },
+    rotateLeft() { return (Gallery.cb.rotate as any)(270); },
+    rotateRight() { return (Gallery.cb.rotate as any)(90); },
 
     rotate: debounce(100, function(delta) {
       const {current} = Gallery.nodes;
@@ -469,8 +483,8 @@ var Gallery = {
       $.rmClass(doc, 'gallery-open');
       if (Conf['Fullscreen Gallery']) {
         $.off(d, 'fullscreenchange mozfullscreenchange webkitfullscreenchange', Gallery.cb.close);
-        d.mozCancelFullScreen?.();
-        d.webkitExitFullscreen?.();
+        (d as any).mozCancelFullScreen?.();
+        (d as any).webkitExitFullscreen?.();
       }
       delete Gallery.nodes;
       delete Gallery.fileIDs;
@@ -541,7 +555,7 @@ var Gallery = {
       } else {
         extent = 150;
       }
-      doc.style.setProperty('--gal-cols', effCols || 1);
+      doc.style.setProperty('--gal-cols', String(effCols || 1));
       return doc.style.setProperty('--gal-thumbs-width', `${extent}px`);
     },
 
@@ -617,7 +631,7 @@ var Gallery = {
     },
 
     createSubEntries() {
-      const subEntries = (['Hide Thumbnails', 'Fit Width', 'Fit Height', 'Stretch to Fit', 'Scroll to Post'].map((item) => Gallery.menu.createSubEntry(item)));
+      const subEntries: any[] = (['Hide Thumbnails', 'Fit Width', 'Fit Height', 'Stretch to Fit', 'Scroll to Post'].map((item) => Gallery.menu.createSubEntry(item)));
 
       // Grid toggle and its track count share one row: [✓] Grid Columns: [N].
       // The checkbox drives 'Grid Thumbnails'; the number drives 'Gallery Columns',
@@ -633,8 +647,8 @@ var Gallery = {
       $.on(gridInput, 'change', Gallery.cb.setLayout);
 
       const colLabel = $.el('label', {title: '0 disables the image preview and shows fullscreen thumbnails.', innerHTML: 'Grid Columns: <input type="number" name="Gallery Columns" min="0" step="1" class="field gal-col-input" title="0 disables the image preview and shows fullscreen thumbnails.">'});
-      const colInput = colLabel.firstElementChild;
-      colInput.value = Math.max(0, parseInt(Conf['Gallery Columns'], 10) || 0);
+      const colInput = colLabel.firstElementChild as HTMLInputElement;
+      colInput.value = String(Math.max(0, parseInt(Conf['Gallery Columns'], 10) || 0));
       Gallery.colInput = colInput;
       Gallery.colLabelText = colLabel.firstChild;   // "Grid Columns: " text node, relabelled per dock
       $.on(colInput, 'change', Gallery.cb.clampColumns);
@@ -647,7 +661,7 @@ var Gallery = {
       const posOptions = Gallery.cb.positions.map(p =>
         `<option value="${p}">${p[0].toUpperCase()}${p.slice(1)}</option>`).join('');
       const posLabel = $.el('label', {innerHTML: `Thumbnails Position: <select name="Gallery Thumbnails Position" class="field gal-field">${posOptions}</select>`});
-      const posInput = posLabel.firstElementChild;
+      const posInput = posLabel.firstElementChild as HTMLSelectElement;
       posInput.value = Gallery.cb.positions.includes(Conf['Gallery Thumbnails Position'])
         ? Conf['Gallery Thumbnails Position'] : 'right';
       $.on(posInput, 'change', $.cb.value);
@@ -655,8 +669,8 @@ var Gallery = {
       subEntries.push({el: posLabel});
 
       const delayLabel = $.el('label', {innerHTML: 'Slide Delay: <input type="number" name="Slide Delay" min="0" step="any" class="field">'});
-      const delayInput = delayLabel.firstElementChild;
-      delayInput.value = Gallery.delay;
+      const delayInput = delayLabel.firstElementChild as HTMLInputElement;
+      delayInput.value = String(Gallery.delay);
       $.on(delayInput, 'change', Gallery.cb.setDelay);
       $.on(delayInput, 'change', $.cb.value);
       subEntries.push({el: delayLabel});

@@ -12,6 +12,8 @@ import Menu from "./Menu";
  */
 var DeleteLink = {
   auto: [dict(), dict()],
+  post: null as any,   // loose: late-assigned current post
+  nodes: null as any,  // loose: late-assigned node refs
 
   init() {
     if (!['index', 'thread'].includes(g.VIEW) || !Conf['Menu'] || !Conf['Delete Link']) { return; }
@@ -113,7 +115,7 @@ var DeleteLink = {
     };
     form[+post.ID] = 'delete';
 
-    return $.ajax($.id('delform').action.replace(`/${g.BOARD}/`, `/${post.board}/`), {
+    return $.ajax(($.id('delform') as any).action.replace(`/${g.BOARD}/`, `/${post.board}/`), {
       responseType: 'document',
       withCredentials: true,
       onloadend() { return DeleteLink.load(link, post, fileOnly, this.response); },
@@ -155,7 +157,7 @@ var DeleteLink = {
   cooldown: {
     seconds: dict(),
 
-    start(post, seconds) {
+    start(post, seconds?) {
       // Already counting.
       if (DeleteLink.cooldown.seconds[post.fullID] != null) { return; }
 

@@ -10,6 +10,7 @@ import Get from "../General/Get";
  * Full docs: https://github.com/decaffeinate/decaffeinate/blob/main/docs/suggestions.md
  */
 var QuoteCT = {
+  mark: null as any, // loose: late-assigned singleton prop
   init() {
     if (!['index', 'thread'].includes(g.VIEW) || !Conf['Mark Cross-thread Quotes']) { return; }
 

@@ -496,7 +496,7 @@ var Settings = {
   close() {
     if (!Settings.dialog) { return; }
     // Unfocus current field to trigger change event.
-    d.activeElement?.blur();
+    (d.activeElement as HTMLElement)?.blur();
     // Persist any pending Simple Filters auto-save before the panel is torn down.
     Settings.easyFiltersFlush?.();
     Settings.easyFiltersFlush = null;
@@ -1240,7 +1240,7 @@ var Settings = {
   // `.styling-section-summary-text` span for their title; highlight that span,
   // not the bare summary, so the two don't paint the same text twice.
   highlightableEls(root: ParentNode) {
-    return $$(SEARCH_HIGHLIGHT_SELECTOR, root).filter(el =>
+    return $$(SEARCH_HIGHLIGHT_SELECTOR, root as HTMLElement).filter(el =>
       !((el as HTMLElement).tagName === 'SUMMARY'
         && el.querySelector('.styling-section-summary-text, .next-summary-title')));
   },
@@ -1567,7 +1567,7 @@ Enable it on boards.${location.hostname.split('.')[1]}.org in your browser's pri
     }
     Settings.syncDescriptionTooltipInputs();
     if (!useTooltips || !touchDescriptions) Settings.closeMobileDescription();
-    for (const row of $$('[data-setting-description]', root)) {
+    for (const row of $$('[data-setting-description]', root as HTMLElement)) {
       const el = row as HTMLElement;
       const description = el.dataset.settingDescription || '';
       if (useTooltips && description) {
@@ -2671,7 +2671,9 @@ Enable it on boards.${location.hostname.split('.')[1]}.org in your browser's pri
       section.insertBefore(box, section.firstChild);
     }
 
-    const inputs: Record<string, HTMLInputElement> = dict();
+    // loose: values are a mix of <input>/<select>/<textarea>; typed `any` so the
+    // various `as HTMLSelectElement` reads below don't trip the input/select divide.
+    const inputs: Record<string, any> = dict();
     for (input of $$('[name]', section)) {
       inputs[input.name] = input;
     }
@@ -2898,7 +2900,9 @@ Enable it on boards.${location.hostname.split('.')[1]}.org in your browser's pri
     // board variant. Without this, switching tabs would either show the
     // wrong starting values or silently overwrite the other variant.
     const editVariant = () => Settings.stylingEditingVariant || Settings.getBoardVariant();
-    const editConf = <T = any>(baseKey: string): T => Settings.styleConf<T>(baseKey, editVariant());
+    // loose: Settings.styleConf is seen as untyped here (TS2347 on explicit type args),
+    // so drop the type arg and cast the (any) result; identical at runtime.
+    const editConf = <T = any>(baseKey: string): T => Settings.styleConf(baseKey, editVariant()) as T;
     const writeEditConf = (baseKey: string, value: any) => {
       const storageKey = Settings.styleVariantKeySet.has(baseKey)
         ? Settings.variantKey(baseKey, editVariant())
@@ -3294,8 +3298,8 @@ Enable it on boards.${location.hostname.split('.')[1]}.org in your browser's pri
       for (const key in inputs) {
         const inp = inputs[key];
         if (inp.type !== 'color' || inp.dataset.unset !== '1') continue;
-        if (highlightTextKeys.has(key)) {
-          const group = highlightTextControlGroups.find(item => item.keys.includes(key as any));
+        if (highlightTextKeys.has(key as any)) {
+          const group = highlightTextControlGroups.find(item => (item.keys as readonly string[]).includes(key));
           if (group && groupTextMode(group) === 'manual') continue;
         }
         Settings.setColorInputValue(inp, key, '');
@@ -3393,7 +3397,7 @@ Enable it on boards.${location.hostname.split('.')[1]}.org in your browser's pri
         if (event !== 'input') $.on(input, 'input', applyRange);
       } else if (borderStyleInputKeys.has(name)) {
         $.on(input, 'change', () => {
-          writeEditConf(name, (input as HTMLSelectElement).value);
+          writeEditConf(name, (input as unknown as HTMLSelectElement).value);
           Settings.applyStylingVars();
           refreshStylingPreview();
         });
@@ -6653,10 +6657,12 @@ Enable it on boards.${location.hostname.split('.')[1]}.org in your browser's pri
     baseBackground = Settings.getTextBaseBackground(),
     variant?: StyleVariant,
   ) {
-    const color = Settings.styleConf<string>(colorKey, variant);
+    // loose: styleConf reads as untyped here (TS2347), so drop the explicit type
+    // arg; result is `any`, identical at runtime.
+    const color = Settings.styleConf(colorKey, variant);
     const rgb = Settings.hexToRgb(color);
     if (!rgb) return null;
-    const opacity = Settings.styleConf<string | number>(opacityKey, variant);
+    const opacity = Settings.styleConf(opacityKey, variant);
     const alpha = (
       opacity === '' || opacity == null
     ) ? 1 : $.minmax(parseFloat(String(opacity)), 0, 1);
@@ -6856,8 +6862,8 @@ Enable it on boards.${location.hostname.split('.')[1]}.org in your browser's pri
     for (const [highlightKey, markerKey, matchKey] of colorPairs) {
       const linked = !!Settings.styleConf(matchKey, variant);
       const color = linked
-        ? (Settings.styleConf<string>(highlightKey, variant) || '')
-        : (Settings.styleConf<string>(markerKey, variant) || '');
+        ? (Settings.styleConf(highlightKey, variant) || '')
+        : (Settings.styleConf(markerKey, variant) || '');
       const markerStorageKey = Settings.variantKey(markerKey, variant);
       if (linked && (Conf[markerStorageKey] !== color)) {
         Conf[markerStorageKey] = color;
@@ -6911,7 +6917,7 @@ Enable it on boards.${location.hostname.split('.')[1]}.org in your browser's pri
   },
 
   highlightPaletteThemeProfile(variant?: StyleVariant) {
-    const siteStyle = String(Settings.styleConf<string>('siteStyle', variant) || '').trim();
+    const siteStyle = String(Settings.styleConf('siteStyle', variant) || '').trim();
     const native = Settings.isCustomSiteThemeValue(siteStyle) ? '' : siteStyle.toLowerCase();
     const darkThemes = ['tomorrow', 'spooky', 'photon'];
     const lightThemes = ['yotsuba-b', 'yotsuba', 'futaba', 'burichan'];
@@ -7148,7 +7154,7 @@ Enable it on boards.${location.hostname.split('.')[1]}.org in your browser's pri
       }
     }
 
-    const desired = Settings.styleConf<string>('siteStyle');
+    const desired = Settings.styleConf('siteStyle');
     if (desired && seen.has(desired)) {
       select.value = desired;
     } else if (!noOptions) {
@@ -7296,7 +7302,7 @@ Enable it on boards.${location.hostname.split('.')[1]}.org in your browser's pri
       }
     }
     if (activeRemoved) {
-      const fallback = Settings.styleConf<string>('siteStyle') || '';
+      const fallback = Settings.styleConf('siteStyle') || '';
       if (Settings.dialog) {
         const select = $('#fourchanx-settings [name^="siteStyle"]') as HTMLSelectElement | null;
         if (select) {
@@ -7375,7 +7381,7 @@ Enable it on boards.${location.hostname.split('.')[1]}.org in your browser's pri
 
   siteStyleHome(this: HTMLInputElement) {
     if (!this.checked) return;
-    const activeStyle = Settings.styleConf<string>('siteStyle');
+    const activeStyle = Settings.styleConf('siteStyle');
     const style = activeStyle || ($('#fourchanx-settings [name^="siteStyle"]') as HTMLSelectElement | null)?.value || '';
     if (!style) return;
     if (!activeStyle) {
@@ -7749,7 +7755,7 @@ Enable it on boards.${location.hostname.split('.')[1]}.org in your browser's pri
     const reader = new FileReader();
     reader.onload = function(e) {
       try {
-        let data = dict.json(e.target.result);
+        let data = dict.json(e.target.result as string);
         // Accept older/minimal exports that store settings directly at the top level.
         if (!data?.Conf && (data?.watchedThreads || data?.watcherBackup)) {
           data = {
@@ -9752,7 +9758,7 @@ Enable it on boards.${location.hostname.split('.')[1]}.org in your browser's pri
     }
 
     $.extend(td, {innerHTML: '<select></select>'});
-    const select = td.firstElementChild;
+    const select = td.firstElementChild as HTMLSelectElement;
     if (!(select.disabled = length === 1)) {
       // XXX GM can't into datasets
       select.setAttribute('data-boardid', boardID);

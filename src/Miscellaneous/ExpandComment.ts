@@ -65,7 +65,7 @@ var ExpandComment = {
       posts
     } = req.response;
     if (spoilerRange = posts[0].custom_spoiler) {
-      g.SITE.Build.spoilerRange[g.BOARD] = spoilerRange;
+      g.SITE.Build.spoilerRange[g.BOARD as any] = spoilerRange;
     }
 
     for (postObj of posts) {

@@ -10,6 +10,20 @@ var ThreadStats = {
   fileCount: 0,
   postIndex: 0,
 
+  // Assigned later in init()/node()/etc. Declared here so the singleton's type
+  // includes them. Loosely typed where a precise type would cascade (DOM els get
+  // numeric textContent assignments); tighten these during the strict pass.
+  showPage: false,
+  showPurgePos: false,
+  thread: null as any,
+  dialog: null as HTMLElement,
+  postCountEl: null as any,
+  fileCountEl: null as any,
+  ipCountEl: null as any,
+  pageCountEl: null as any,
+  timeout: 0,
+  lastPageUpdate: null as Date,
+
   init() {
     let sc;
     if ((g.VIEW !== 'thread') || !Conf['Thread Stats']) { return; }

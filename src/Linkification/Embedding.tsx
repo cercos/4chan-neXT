@@ -21,6 +21,11 @@ import Icon from '../Icons/icon';
  */
 
 var Embedding = {
+  // loose: late-assigned singleton props
+  types: null as any,
+  dialog: null as any,
+  media: null as any,
+  lastEmbed: null as any,
   init() {
     if (!['index', 'thread', 'archive'].includes(g.VIEW) || !Conf['Linkify'] || (!Conf['Embedding'] && !Conf['Link Title'] && !Conf['Cover Preview'])) { return; }
     this.types = dict();
@@ -41,7 +46,7 @@ var Embedding = {
     }
     if (Embedding.shouldFetchTitles()) {
       $.on(d, '4chanXInitFinished PostsInserted', function() {
-        for (const service of Object.values(Embedding.types)) {
+        for (const service of Object.values(Embedding.types) as any[]) {
           if (service.title?.batchSize) {
             Embedding.flushTitles(service.title);
           }
@@ -149,14 +154,14 @@ var Embedding = {
   dragEmbed() {
     // only webkit can handle a blocking div
     const {style} = Embedding.media;
-    if (Embedding.dragEmbed.mouseup) {
+    if ((Embedding.dragEmbed as any).mouseup) {
       $.off(d, 'mouseup', Embedding.dragEmbed);
-      Embedding.dragEmbed.mouseup = false;
+      (Embedding.dragEmbed as any).mouseup = false;
       style.pointerEvents = '';
       return;
     }
     $.on(d, 'mouseup', Embedding.dragEmbed);
-    Embedding.dragEmbed.mouseup = true;
+    (Embedding.dragEmbed as any).mouseup = true;
     return style.pointerEvents = 'none';
   },
 
@@ -206,7 +211,7 @@ var Embedding = {
         latestEvent: e,
         endEvents: 'mouseout click',
         height
-      });
+      } as any);
     });
   },
 
@@ -420,7 +425,7 @@ var Embedding = {
           }
           );
           CrossOrigin.cache(`https://api.github.com/gists/${a.dataset.uid}`, function() {
-            el.textContent = Object.values(this.response.files)[0].content;
+            el.textContent = (Object.values(this.response.files)[0] as any).content;
             el.className = 'prettyprint';
             $.global('prettyPrint', {id: el.id});
             return el.hidden = false;
@@ -662,10 +667,10 @@ var Embedding = {
       regExp: /^\w+:\/\/(?:(?:www\.|old\.)?vocaroo\.com|voca\.ro)\/((?:i\/)?\w+)/,
       style: '',
       el(a) {
-        const el = $.el('iframe');
+        const el = $.el('iframe') as any;
         el.width = 300;
         el.height = 60;
-        el.setAttribute('frameborder', 0);
+        el.setAttribute('frameborder', 0 as any);
         el.src = `https://vocaroo.com/embed/${a.dataset.uid.replace(/^i\//, '')}?autoplay=0`;
         return el;
       }

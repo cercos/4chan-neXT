@@ -9,7 +9,7 @@ const NormalizeURL = {
   init() {
     if (!Conf['Normalize URL']) { return; }
 
-    let pathname = location.pathname.split(/\/+/);
+    let pathname: any = location.pathname.split(/\/+/);
     if (g.SITE.software === 'yotsuba') {
       switch (g.VIEW) {
         case 'thread':

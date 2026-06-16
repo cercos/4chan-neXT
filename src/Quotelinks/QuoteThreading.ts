@@ -13,6 +13,13 @@ import { dict } from "../platform/helpers";
 */
 
 var QuoteThreading = {
+  // loose: late-assigned singleton props
+  controls: null as any,
+  threadNewLink: null as any,
+  input: null as any,
+  entry: null as any,
+  ready: null as any,
+  thread: null as any,
   init() {
     if (!Conf['Quote Threading'] || (g.VIEW !== 'thread')) { return; }
 

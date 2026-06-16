@@ -187,7 +187,7 @@ $\
 
   Build: {
     parseJSON(data, board) {
-      const o = SWYotsuba.Build.parseJSON(data, board);
+      const o: any = SWYotsuba.Build.parseJSON(data, board); // loose: built post object, accessed via dynamic props
       if (data.ext === 'deleted') {
         delete o.file;
         $.extend(o, {

@@ -10,6 +10,9 @@ import Icon from "../Icons/icon";
  * Full docs: https://github.com/decaffeinate/decaffeinate/blob/main/docs/suggestions.md
  */
 var Menu = {
+  button: null as any,  // loose: late-assigned element, read by other modules
+  menu: null as any,    // loose: late-assigned UI.Menu instance, read by other modules
+
   init() {
     if (!['index', 'thread'].includes(g.VIEW) || !Conf['Menu']) { return; }
 
@@ -48,7 +51,7 @@ var Menu = {
     return $.after(this.nodes.icons, Menu.makeButton(this.thread.OP));
   },
 
-  makeButton(post, button) {
+  makeButton(post, button?) {
     if (!button) { button = Menu.button.cloneNode(true); }
     $.on(button, 'click', function(e) {
       return Menu.menu.toggle(e, this, post);

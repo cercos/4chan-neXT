@@ -79,7 +79,48 @@ const SEARCH_FALLBACK_SEL = 'a.catalog-link, .fileThumb';
 
 var Index = {
   showHiddenThreads: false,
-  changed: {},
+  // Dirty flags toggled by index controls; reset to {} after each pageLoad.
+  changed: {} as {
+    threads?: boolean; order?: boolean; search?: boolean; mode?: boolean;
+    sort?: boolean; page?: boolean; hash?: boolean;
+  },
+
+  // Assigned later; declared so the singleton's type includes them. Loosely typed
+  // where a precise type would cascade new errors; tighten during the strict pass.
+  button: null as HTMLElement,
+  // Set true in init() when the JSON index takes over; read by Keybinds/ExpandThread.
+  enabled: false,
+  currentPage: null as any,
+  currentSort: null as any,
+  hideLabel: null as HTMLElement,
+  initFinishedFired: false,
+  inputs: null as any,
+  lastLongOptions: null as HTMLElement,
+  lastLongThresholds: null as any,
+  lastReadPostsDB: null as any,
+  liveThreadData: null as any,
+  liveThreadDict: null as any,
+  liveThreadIDs: null as any,
+  loaded: false,
+  nTimeout: null as any,
+  navLinks: null as HTMLElement,
+  notice: null as any,
+  pageNum: null as any,
+  pagelist: null as HTMLElement,
+  pagesNum: null as any,
+  parsedThreads: null as any,
+  replyData: null as any,
+  req: null as any,
+  root: null as HTMLElement,
+  search: '',
+  searchInput: null as any,
+  selectMode: null as any,
+  selectRev: null as any,
+  selectSort: null as any,
+  sortedThreadIDs: null as any,
+  threadPosition: null as any,
+  threadsNumPerPage: null as any,
+  threadsWithYous: null as any,
 
   // Search text contributed by inline-expanded threads, keyed by thread ID. Kept
   // separate from the parsed-thread objects (which parseThreadList rebuilds) so
@@ -248,15 +289,17 @@ var Index = {
 
     $.onExists(doc, '.board > .thread > .postContainer, .board + *', function() {
       let el;
-      g.SITE.Build.hat = $('.board > .thread > img:first-child');
-      if (g.SITE.Build.hat) {
+      // loose: `hat` is a late-assigned field on the site's Build object, which is
+      // typed in src/site (other directory); cast the receiver to set/read it.
+      (g.SITE.Build as any).hat = $('.board > .thread > img:first-child');
+      if ((g.SITE.Build as any).hat) {
         g.BOARD.threads.forEach(function(thread) {
           if (thread.nodes.root) {
-            return $.prepend(thread.nodes.root, g.SITE.Build.hat.cloneNode(false));
+            return $.prepend(thread.nodes.root, (g.SITE.Build as any).hat.cloneNode(false));
           }
         });
         $.addClass(doc, 'hats-enabled');
-        $.addStyle(`.catalog-thread::after {background-image: url(${g.SITE.Build.hat.src});}`);
+        $.addStyle(`.catalog-thread::after {background-image: url(${(g.SITE.Build as any).hat.src});}`);
       }
 
       const board = $('.board');
@@ -368,7 +411,7 @@ var Index = {
 
       e.preventDefault();
       getSelection().removeAllRanges();
-      if (e.target.classList.contains('catalog-thumb') && Conf['MD5 Quick Filter in the Catalog']) {
+      if ((e.target as HTMLElement).classList.contains('catalog-thumb') && Conf['MD5 Quick Filter in the Catalog']) {
         Filter.quickFilterMD5.call(this.thread.OP);
       } else {
         Index.toggleHide(this.thread);
@@ -416,7 +459,7 @@ var Index = {
       if (n) { return $.event('IndexRefresh'); }
     },
 
-    toggleHiddenThreads(e) {
+    toggleHiddenThreads(e?) {
       e?.preventDefault();
       $('#hidden-toggle a', Index.navLinks).textContent = (Index.showHiddenThreads = !Index.showHiddenThreads) ?
         'Hide'
@@ -464,7 +507,7 @@ var Index = {
       return Index.pageLoad(false);
     },
 
-    size(e) {
+    size(e?) {
       if (Conf['Index Mode'] !== 'catalog') {
         $.rmClass(Index.root, 'catalog-small');
         $.rmClass(Index.root, 'catalog-large');
@@ -624,7 +667,7 @@ var Index = {
   processHash() {
     // XXX https://bugzilla.mozilla.org/show_bug.cgi?id=483304
     let hash = location.href.match(/#.*/)?.[0] || '';
-    const state =
+    const state: any =
       {replace: true};
     const commands = hash.slice(1).split('/');
     const leftover = [];
@@ -673,7 +716,7 @@ var Index = {
     , '', `${location.protocol}//${location.host}${pathname}${hash}`);
   },
 
-  setState({search, mode, sort, page, hash}) {
+  setState({search, mode, sort, page, hash}: any) {
     if ((search != null) && (search !== Index.search)) {
       Index.changed.search = true;
       Index.search = search;
@@ -840,7 +883,7 @@ var Index = {
       `${hiddenCount} hidden threads`;
   },
 
-  update(firstTime) {
+  update(firstTime?) {
     let oldReq;
     if (oldReq = Index.req) {
       delete Index.req;
@@ -1045,7 +1088,7 @@ var Index = {
     return !hidden || Index.threadHasUnreadYous(threadID);
   },
 
-  buildThreads(threadIDs, isCatalog, withReplies) {
+  buildThreads(threadIDs, isCatalog, withReplies?) {
     let errors;
     const threads    = [];
     const newThreads = [];
@@ -1069,7 +1112,8 @@ var Index = {
             thread.catalogView.nodes.replies = null;
           }
         } else {
-          thread = new Thread(ID, g.BOARD);
+          // loose: globals.Board vs classes/Board nominal mismatch; same shape at runtime.
+          thread = new Thread(ID, g.BOARD as any);
           newThreads.push(thread);
         }
         var lastPost = threadData.last_replies && threadData.last_replies.length ? threadData.last_replies[threadData.last_replies.length - 1].no : ID;
@@ -1083,7 +1127,8 @@ var Index = {
         } else {
           var obj = Index.parsedThreads[ID];
           opRoot = g.SITE.Build.post(obj);
-          OP = new Post(opRoot, thread, g.BOARD);
+          // loose: globals.Board vs classes/Board nominal mismatch; same shape at runtime.
+          OP = new Post(opRoot, thread, g.BOARD as any);
           OP.filterResults = obj.filterResults;
           newPosts.push(OP);
         }
@@ -1669,12 +1714,12 @@ var Index = {
         let visible = false;
         for (const el of els) {
           if (kind === 'text') {
-            if (el.offsetParent === null) { continue; } // hidden body, fall back instead
+            if ((el as HTMLElement).offsetParent === null) { continue; } // hidden body, fall back instead
             const r = SearchHighlight.rangesFor(el, rx);
             if (r.length) { ranges.push(...r); visible = true; }
           } else {
             el.classList.add(SEARCH_HIT_CLASS);
-            if (el.offsetParent !== null) { visible = true; }
+            if ((el as HTMLElement).offsetParent !== null) { visible = true; }
           }
         }
         if (visible) { shown = true; } else { missed = true; }

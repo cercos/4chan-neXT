@@ -409,7 +409,7 @@ var Keybinds = {
     );
   },
 
-  qr(thread) {
+  qr(thread?) {
     QR.open();
     if (thread != null) {
       QR.quote.call(Keybinds.post(thread));
@@ -455,7 +455,7 @@ var Keybinds = {
     : "sage";
   },
 
-  open(thread, tab) {
+  open(thread, tab?) {
     if (g.VIEW !== 'index') { return; }
     const url = Get.url('thread', thread);
     if (tab) {

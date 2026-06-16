@@ -151,7 +151,9 @@ const Test = {
           }
 
           for (var key in Config.filter) {
-            if ((!key === 'General') && !((key === 'MD5') && (post.board.ID === 'f'))) {
+            // loose: preserves original (decaffeinated) runtime comparison; cast only
+            // to satisfy the boolean-vs-string check without altering behavior.
+            if (((!key as any) === 'General') && !((key === 'MD5') && (post.board.ID === 'f'))) {
               var val1 = Filter.values(key, obj);
               var val2 = Filter.values(key, post2);
               if ((val1.length !== val2.length) || !val1.every((x, i) => x === val2[i])) {

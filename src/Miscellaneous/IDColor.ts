@@ -9,6 +9,8 @@ import { dict } from "../platform/helpers";
  * Full docs: https://github.com/decaffeinate/decaffeinate/blob/main/docs/suggestions.md
  */
 var IDColor = {
+  ids: null as any, // loose:
+
   init() {
     if (!['index', 'thread'].includes(g.VIEW) || !Conf['Color User IDs']) { return; }
     this.ids = dict();
@@ -39,7 +41,7 @@ var IDColor = {
     const hash = g.SITE.uidColor ? g.SITE.uidColor(uid) : parseInt(uid, 16);
 
     // Convert binary string to numerical values with bitshift and '&' truncation.
-    const rgb = [
+    const rgb: any[] = [
       (hash >> 16) & 0xFF,
       (hash >> 8)  & 0xFF,
       hash & 0xFF

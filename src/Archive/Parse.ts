@@ -28,6 +28,7 @@ export interface RawArchivePost {
   poster_hash: any;
   poster_country?: string;
   troll_country_code?: string;
+  troll_country_name?: any;
   sticky: string;
   locked: string;
   deleted: string;
@@ -82,7 +83,7 @@ export const parseArchivePost = (data: RawArchivePost) => {
   // https://github.com/eksopl/asagi/blob/v0.4.0b74/src/main/java/net/easymodo/asagi/YotsubaAbstract.java#L82-L129
   // https://github.com/FoolCode/FoolFuuka/blob/800bd090835489e7e24371186db6e336f04b85c0/src/Model/Comment.php#L368-L428
   // https://github.com/bstats/b-stats/blob/6abe7bffaf6e5f523498d760e54b110df5331fbb/inc/classes/Yotsuba.php#L157-L168
-  let comment = (data.comment || '').split(/(\n|\[\/?(?:b|spoiler|code|moot|banned|fortune(?: color="#\w+")?|i|red|green|blue)\])/);
+  let comment: any = (data.comment || '').split(/(\n|\[\/?(?:b|spoiler|code|moot|banned|fortune(?: color="#\w+")?|i|red|green|blue)\])/);
   comment = comment.map((text, i) => {
     if ((i % 2) === 1) {
       var tag = Fetcher.archiveTags[text.replace(/\ .*\]/, ']')];
@@ -129,7 +130,7 @@ export const parseArchivePost = (data: RawArchivePost) => {
       dateText: data.fourchan_date,
       commentHTML: comment,
     },
-    file: null as File,
+    file: null as any,
     extra: null as any,
   };
   if (o.info.capcode) { delete o.info.uniqueID; }
@@ -153,7 +154,7 @@ export const parseArchivePost = (data: RawArchivePost) => {
       height: data.media.media_h,
       width: data.media.media_w,
       MD5: data.media.media_hash,
-      size: $.bytesToString(data.media.media_size),
+      size: $.bytesToString(+data.media.media_size),
       thumbURL: thumb_link || `${location.protocol}//${ImageHost.thumbHost()}/${o.boardID}/${data.media.preview_orig}`,
       theight: data.media.preview_h,
       twidth: data.media.preview_w,

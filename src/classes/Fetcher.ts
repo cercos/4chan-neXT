@@ -43,6 +43,8 @@ export default class Fetcher {
     '[/blue]':    {innerHTML: "</span>"}
   };
 
+  static flagCSS: any; // loose: late-assigned static prop
+
   declare boardID: string;
   declare threadID: number;
   declare postID: string;
@@ -172,7 +174,7 @@ export default class Fetcher {
     const board = g.boards[this.boardID] ||
       new Board(this.boardID);
     const thread = g.threads.get(`${this.boardID}.${this.threadID}`) ||
-      new Thread(this.threadID, board);
+      new Thread(String(this.threadID), board);
     post = new Post(g.SITE.Build.postFromObject(post, this.boardID), thread, board, {isFetchedQuote: true});
     Main.callbackNodes('Post', [post]);
     return this.insert(post);

@@ -37,6 +37,14 @@ export interface File {
   twidth:      string,
   MD5?:        string,
   isSpoiler?:  boolean,
+  // Properties assigned in methods / across modules; declared for typing.
+  // Loosely typed where precise types would cascade; tighten during the strict pass.
+  index?:         number,
+  newName?:       string,
+  source?:        any,
+  tag?:           any,
+  videoControls?: any,
+  videoThumb?:    any,
 };
 
 export default class Post {
@@ -66,6 +74,13 @@ export default class Post {
   declare highlights?:    string[];
   declare filterResults:  FilterResults;
 
+  // Instance properties assigned in methods / across modules; declared for typing.
+  // Loosely typed where precise types would cascade; tighten during the strict pass.
+  callbacksExecuted?: boolean;
+  forwarded?:         any;
+  indexRefreshSeen?:  boolean;
+  origin?:            any;
+
   declare info: {
     subject:       string | undefined,
     name:          string | undefined,
@@ -79,6 +94,7 @@ export default class Post {
     flag:          string | undefined,
     date:          Date | undefined,
     nameBlock:     string,
+    comment?:      any,
   };
 
   // because of a circular dependency $ might not be initialized, so we can't use $.el
@@ -200,6 +216,10 @@ export default class Post {
       uniqueIDRoot: any,
       uniqueID:     any,
       stub?:        HTMLElement,
+      // Assigned in methods / by site parseNodes; loosely typed for typing.
+      commentClean?: any,
+      reply?:        any,
+      quote?:        any,
     };
 
     const nodes: Node & Partial<Record<keyof Post['info'], HTMLElement>> = {
@@ -222,7 +242,7 @@ export default class Post {
     g.SITE.parseNodes?.(this, nodes);
     if (!nodes.uniqueIDRoot) { nodes.uniqueIDRoot = nodes.uniqueID; }
 
-    return nodes as Node & Record<keyof Post['info'], HTMLElement>;
+    return nodes as Node & Record<keyof Post['info'], any>;
   }
 
   parseComment() {
@@ -454,7 +474,7 @@ export default class Post {
   rmClone(index) {
     this.clones.splice(index, 1);
     for (var clone of this.clones.slice(index)) {
-      clone.nodes.root.dataset.clone = index++;
+      clone.nodes.root.dataset.clone = String(index++);
     }
   }
 

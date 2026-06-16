@@ -135,11 +135,11 @@ var Redirect = {
 
   to(
     dest: 'post' | 'thread' | 'threadJSON' | 'file' | 'board' | 'search',
-    data: { boardID: string, threadID?: string | number, postID?: string | number }
+    data: { boardID: string, threadID?: string | number, postID?: string | number, filename?: string, type?: string, value?: string }
   ): string {
     const archive = (['search', 'board'].includes(dest) ? Redirect.data.thread : Redirect.data[dest]).get(data.boardID);
     if (!archive) { return ''; }
-    return Redirect[dest](archive, data);
+    return Redirect[dest](archive, data as any);
   },
 
   protocol(archive) {

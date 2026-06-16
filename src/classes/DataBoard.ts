@@ -9,13 +9,16 @@ import { dict, HOUR } from "../platform/helpers";
  * Full docs: https://github.com/decaffeinate/decaffeinate/blob/main/docs/suggestions.md
  */
 
-type DataBoardData = {
-  [site: string]: {
-    boards: {
-      [threadId: string]: number;
-    };
-    lastChecked?: number;
+type DataBoardSite = {
+  boards: {
+    [threadId: string]: number;
   };
+  lastChecked?: number;
+  version?: number;
+};
+
+type DataBoardData = {
+  [site: string]: DataBoardSite;
 } & { version?: number };
 
 interface PostInfo {
@@ -66,7 +69,7 @@ export default class DataBoard {
     $.on(d, '4chanXInitFinished', init);
   }
 
-  initData(data: DataBoardData) {
+  initData(data: any) {
     let boards;
     this.data = data;
     if (this.data.boards) {
@@ -180,7 +183,7 @@ export default class DataBoard {
 
   setLastChecked(key='lastChecked') {
     this.save(() => {
-      this.data[key] = Date.now();
+      (this.data as any)[key] = Date.now();
     });
   }
 

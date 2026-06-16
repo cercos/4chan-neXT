@@ -159,7 +159,7 @@ const PageContextFunctions = {
       let postID;
       if (settings.url !== form.action) return;
       if (!(postID = +request.responseJSON?.id)) return;
-      const detail = { boardID, threadID, postID };
+      const detail: any = { boardID, threadID, postID };
       try {
         const { redirect, noko } = request.responseJSON;
         if (redirect && (originalNoko != null) && !originalNoko && !noko) {
@@ -177,7 +177,7 @@ const PageContextFunctions = {
   setupCaptcha: ({ recaptchaKey }) => {
     const render = function () {
       const { classList } = document.documentElement;
-      const container = document.querySelector('#qr .captcha-container');
+      const container = document.querySelector<HTMLElement>('#qr .captcha-container');
       container.dataset.widgetID = (window as any).grecaptcha.render(container, {
         sitekey: recaptchaKey,
         theme: classList.contains('tomorrow') || classList.contains('spooky') || classList.contains('dark-captcha') ? 'dark' : 'light',
@@ -254,7 +254,7 @@ const PageContextFunctions = {
 
   qrTegakiLoad: () => {
     const { Tegaki, FCX } = (window as any);
-    const name = document.getElementById<HTMLInputElement>('qr-filename').value.replace(/\.\w+$/, '') + '.png';
+    const name = (document.getElementById('qr-filename') as HTMLInputElement).value.replace(/\.\w+$/, '') + '.png';
     const { source } = document.getElementById('file-n-submit').dataset;
     const error = content => document.dispatchEvent(new CustomEvent('CreateNotification', {
       bubbles: true,
@@ -280,8 +280,8 @@ const PageContextFunctions = {
         bgColor: 'transparent'
       });
       const canvas = document.createElement('canvas');
-      canvas.width = (canvas.naturalWidth = +selected.dataset.width);
-      canvas.height = (canvas.naturalHeight = +selected.dataset.height);
+      canvas.width = ((canvas as any).naturalWidth = +selected.dataset.width);
+      canvas.height = ((canvas as any).naturalHeight = +selected.dataset.height);
       canvas.hidden = true;
       document.body.appendChild(canvas);
       canvas.addEventListener('QRImageDrawn', function () {

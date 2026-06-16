@@ -24,6 +24,7 @@ var QuoteBacklink = {
   // This is is so that fetched posts can get their backlinks,
   // and that as much backlinks are appended in the background as possible.
   containers: dict(),
+  bottomBacklinks: null as any, // loose: late-assigned singleton prop
   init() {
     if (!['index', 'thread'].includes(g.VIEW) || !Conf['Quote Backlinks']) { return; }
 

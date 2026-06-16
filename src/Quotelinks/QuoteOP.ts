@@ -10,6 +10,7 @@ import $ from "../platform/$";
  * Full docs: https://github.com/decaffeinate/decaffeinate/blob/main/docs/suggestions.md
  */
 var QuoteOP = {
+  mark: null as any, // loose: late-assigned singleton prop
   init() {
     if (!['index', 'thread'].includes(g.VIEW) || !Conf['Mark OP Quotes']) { return; }
 

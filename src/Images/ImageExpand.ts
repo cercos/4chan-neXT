@@ -20,6 +20,13 @@ import Icon from "../Icons/icon";
  * Full docs: https://github.com/decaffeinate/decaffeinate/blob/main/docs/suggestions.md
  */
 var ImageExpand = {
+  // Assigned later; declared so the singleton's type includes them. Loosely typed
+  // where a precise type would cascade new errors; tighten during the strict pass.
+  enabled: false,
+  on: false,
+  EAI: null as HTMLElement,
+  videoControls: null as HTMLElement,
+
   init() {
     if (!(this.enabled = Conf['Image Expansion'] && ['index', 'thread'].includes(g.VIEW))) { return; }
 
@@ -56,7 +63,7 @@ var ImageExpand = {
       } else if (this.file.isExpanded && this.file.isVideo) {
         Volume.setup(this.file.fullImage);
         ImageExpand.setupVideoCB(this);
-        return ImageExpand.setupVideo(this, !this.origin.file.fullImage?.paused || this.origin.file.wasPlaying, this.file.fullImage.controls);
+        return ImageExpand.setupVideo(this, !(this.origin.file.fullImage as HTMLVideoElement)?.paused || this.origin.file.wasPlaying, (this.file.fullImage as HTMLVideoElement).controls);
       }
 
     } else if (ImageExpand.on && !this.isHidden && !this.isFetchedQuote &&
@@ -79,8 +86,8 @@ var ImageExpand = {
       const {file} = post;
       if (file.isExpanded && ImageCommon.onControls(e)) { return; }
       e.preventDefault();
-      if (!Conf['Autoplay'] && file.fullImage?.paused) {
-        return file.fullImage.play();
+      if (!Conf['Autoplay'] && (file.fullImage as HTMLVideoElement)?.paused) {
+        return (file.fullImage as HTMLVideoElement).play();
       } else {
         return ImageExpand.toggle(post);
       }
@@ -126,7 +133,7 @@ var ImageExpand = {
           var {file} = post;
           if (!file || !file.isVideo || !file.isExpanded) { continue; }
 
-          var video = file.fullImage;
+          var video = file.fullImage as HTMLVideoElement;
           var visible = ($.hasAudio(video) && !video.muted) || Header.isNodeVisible(video);
           if (visible && file.wasPlaying) {
             delete file.wasPlaying;
@@ -192,7 +199,7 @@ var ImageExpand = {
         window.scrollBy(0, ((scrollY - window.scrollY) + d.body.clientHeight) - oldHeight);
       } else {
         // For images not above us that would be moved above us, scroll to the thumbnail.
-        Header.scrollToIfNeeded(post.nodes.root);
+        (Header as any).scrollToIfNeeded(post.nodes.root);
       }
       if (window.scrollX > 0) {
         // If we have scrolled right viewing an expanded image, return to the left.
@@ -268,14 +275,14 @@ var ImageExpand = {
       thumbLink.removeAttribute('href');
       thumbLink.removeAttribute('target');
 
-      el.loop = true;
+      (el as HTMLVideoElement).loop = true;
       Volume.setup(el);
       ImageExpand.setupVideoCB(post);
     }
 
     if (!isVideo) {
-      $.asap((() => el.naturalHeight), () => ImageExpand.completeExpand(post));
-    } else if (el.readyState >= el.HAVE_METADATA) {
+      $.asap((() => (el as HTMLImageElement).naturalHeight), () => ImageExpand.completeExpand(post));
+    } else if ((el as HTMLVideoElement).readyState >= (el as HTMLVideoElement).HAVE_METADATA) {
       ImageExpand.completeExpand(post);
     } else {
       $.on(el, 'loadedmetadata', () => ImageExpand.completeExpand(post));

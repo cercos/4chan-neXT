@@ -119,12 +119,12 @@ var Linkify = {
       if (Conf['Convert YouTube to yewtu.be']) { Linkify.rewriteYouTubeLink(link); }
       if (g.SITE.isLinkified?.(link)) {
         $.addClass(link, 'linkify');
-        if (ImageHost.useFaster) { ImageHost.fixLinks([link]); }
+        if ((ImageHost as any).useFaster) { ImageHost.fixLinks([link]); }
         Embedding.process(link, this);
       }
     }
     const links = Linkify.process(this.nodes.comment);
-    if (ImageHost.useFaster) { ImageHost.fixLinks(links); }
+    if ((ImageHost as any).useFaster) { ImageHost.fixLinks(links); }
     for (link of links) { Embedding.process(link, this); }
   },
 

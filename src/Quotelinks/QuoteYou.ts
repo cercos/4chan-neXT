@@ -17,12 +17,18 @@ import PostRedirect from "../Posting/PostRedirect";
  * Full docs: https://github.com/decaffeinate/decaffeinate/blob/main/docs/suggestions.md
  */
 var QuoteYou = {
+  // Assigned later; declared so the singleton's type includes them. Loosely typed
+  // where a precise type would cascade new errors; tighten during the strict pass.
+  db: null as any,
+  mark: null as HTMLElement,
+  lastRead: null as HTMLElement,
+
   init() {
     if (!Conf['Remember Your Posts']) { return; }
 
     this.db = new DataBoard('yourPosts');
     $.sync('Remember Your Posts', enabled => Conf['Remember Your Posts'] = enabled);
-    $.on(d, 'QRPostSuccessful', function(e) {
+    $.on(d, 'QRPostSuccessful', function(e: CustomEvent) {
       const cb = PostRedirect.delay();
       return $.get('Remember Your Posts', Conf['Remember Your Posts'], function(items) {
         if (!items['Remember Your Posts']) { return; }
@@ -92,6 +98,10 @@ var QuoteYou = {
   },
 
   menu: {
+    // Assigned later; declared so the singleton's type includes them. Loosely typed
+    // where a precise type would cascade new errors; tighten during the strict pass.
+    post: null as any,
+
     init() {
       const label = $.el('label',
         {className: 'toggle-you'}

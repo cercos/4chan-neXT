@@ -608,7 +608,7 @@ var Filter = {
     subject(post) { return [post.info.subject || (post.isReply ? undefined : '')]; },
     comment(post) {
       if (post.info.comment == null) {
-        post.info.comment = g.sites[post.siteID]?.Build?.parseComment?.(post.info.commentHTML.innerHTML);
+        post.info.comment = g.sites[post.siteID]?.Build?.parseComment?.((post.info as any).commentHTML.innerHTML);
       }
       return [post.info.comment];
     },

@@ -11,6 +11,8 @@ import Icon from "../Icons/icon";
  * Full docs: https://github.com/decaffeinate/decaffeinate/blob/main/docs/suggestions.md
  */
 var Nav = {
+  haveExtra: false, // loose:
+
   init() {
     switch (g.VIEW) {
       case 'index':
@@ -82,7 +84,7 @@ var Nav = {
 
   scroll(delta) {
     let next;
-    d.activeElement?.blur();
+    (d.activeElement as any)?.blur();
     let thread = Nav.getThread();
     if (!thread) { return; }
     const axis = delta === +1 ?

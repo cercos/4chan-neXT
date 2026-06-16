@@ -42,6 +42,12 @@ var Menu = (function() {
   // the enter and exit transitions can finish (see makeMenu/open/close).
   let menuNode = null;
   Menu = class Menu {
+    // Assigned later; declared so the singleton's type includes them. Loosely typed
+    // where a precise type would cascade new errors; tighten during the strict pass.
+    type: any = null;
+    entries: any[] = [];
+    menu: any = null;
+
     static initClass() {
       currentMenu       = null;
       lastToggledButton = null;
@@ -55,7 +61,7 @@ var Menu = (function() {
       this.onFocus = this.onFocus.bind(this);
       this.addEntry = this.addEntry.bind(this);
       this.type = type;
-      $.on(d, 'AddMenuEntry', ({detail}) => {
+      $.on(d, 'AddMenuEntry', ({detail}: any) => {
         if (detail.type !== this.type) { return; }
         delete detail.open;
         return this.addEntry(detail);
@@ -317,7 +323,7 @@ export var dragstart = function (e) {
     e = e.changedTouches[e.changedTouches.length - 1];
   }
   // distance from pointer to el edge is constant; calculate it here.
-  let el = $.x('ancestor::div[contains(@class,"dialog")][1]', this);
+  let el: any = $.x('ancestor::div[contains(@class,"dialog")][1]', this);
   if (el.id === 'thread-watcher' && threadWatcherAttached()) {
     const qr = $.id('qr');
     if (qr && !qr.hidden) {
@@ -329,7 +335,7 @@ export var dragstart = function (e) {
   const rect = el.getBoundingClientRect();
   const screenHeight = doc.clientHeight;
   const screenWidth  = doc.clientWidth;
-  const o = {
+  const o: any = {
     id:     el.id,
     style:  el.style,
     dx:     e.clientX - rect.left,
@@ -338,7 +344,14 @@ export var dragstart = function (e) {
     width:  screenWidth  - rect.width,
     screenHeight,
     screenWidth,
-    isTouching
+    isTouching,
+    // Assigned later; declared so the singleton's type includes them. Loosely typed
+    // where a precise type would cascade new errors; tighten during the strict pass.
+    topBorder: 0,
+    bottomBorder: 0,
+    identifier: null as any,
+    move: null as any,
+    up: null as any
   };
 
   [o.topBorder, o.bottomBorder] = Conf['Header auto-hide'] || !Conf['Fixed Header'] ?
@@ -374,7 +387,7 @@ export var touchmove = function (e) {
 export var drag = function (e) {
   const {clientX, clientY} = e;
 
-  let left = clientX - this.dx;
+  let left: any = clientX - this.dx;
   left = left < 10 ?
     0
   : (this.width - left) < 10 ?
@@ -382,7 +395,7 @@ export var drag = function (e) {
   :
     ((left / this.screenWidth) * 100) + '%';
 
-  let top = clientY - this.dy;
+  let top: any = clientY - this.dy;
   top = top < (10 + this.topBorder) ?
     this.topBorder + 'px'
   : (this.height - top) < (10 + this.bottomBorder) ?
@@ -450,7 +463,7 @@ export var dragend = function () {
 
 const hoverstart = function ({ root, el, latestEvent, endEvents, height, width, cb, noRemove }) {
   const rect = root.getBoundingClientRect();
-  const o = {
+  const o: any = {
     root,
     el,
     style: el.style,
@@ -464,7 +477,12 @@ const hoverstart = function ({ root, el, latestEvent, endEvents, height, width, 
     width,
     noRemove,
     clientX: (rect.left + rect.right) / 2,
-    clientY: (rect.top + rect.bottom) / 2
+    clientY: (rect.top + rect.bottom) / 2,
+    // Assigned later; declared so the singleton's type includes them. Loosely typed
+    // where a precise type would cascade new errors; tighten during the strict pass.
+    hover: null as any,
+    hoverend: null as any,
+    workaround: null as any
   };
   o.hover    = hover.bind(o);
   o.hoverend = hoverend.bind(o);
@@ -522,7 +540,7 @@ export var hoverend = function (e) {
   if (this.cb) { return this.cb.call(this); }
 };
 
-export const checkbox = function (name, text, checked) {
+export const checkbox = function (name, text, checked?) {
   if (checked == null) { checked = Conf[name]; }
   const label = $.el('label');
   const input = $.el('input', {type: 'checkbox', name, checked});

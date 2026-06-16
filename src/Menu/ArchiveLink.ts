@@ -71,7 +71,7 @@ const ArchiveLink = {
           type:     typeParam,
           value,
           isSearch: true
-        }
+        } as any
         );
         return true;
       };

@@ -7,7 +7,7 @@ import { svgPathData as circleExclamationSvg, width as circleExclamationW, heigh
 import { svgPathData as circleNotchSvg, width as circleNotchW, height as circleNotchH } from "@fas/faCircleNotch";
 import { svgPathData as circleXmarkSvg, width as circleXmarkW, height as circleXmarkH } from "@fas/faCircleXmark";
 
-const getTCaptcha = () => window.TCaptcha || window.wrappedJSObject?.TCaptcha || (typeof unsafeWindow !== 'undefined' ? unsafeWindow.TCaptcha : undefined);
+const getTCaptcha = () => window.TCaptcha || (window as any).wrappedJSObject?.TCaptcha || (typeof unsafeWindow !== 'undefined' ? unsafeWindow.TCaptcha : undefined); // loose: vendor global wrappedJSObject
 
 const captchaStatusIcon = (svgPathData: string, width: string | number, height: string | number) => (
   `<svg xmlns="http://www.w3.org/2000/svg" class="fourchanx-captcha-status-svg" viewBox="0 0 ${width} ${height}" aria-hidden="true">` +
@@ -44,7 +44,7 @@ const CaptchaT = {
     };
   },
 
-  setup(focus) {
+  setup(focus?, force?) { // loose: force unused here, kept for union-compat with Captcha.v2.setup
     if (!this.isEnabled) { return; }
     const TCaptcha = getTCaptcha();
     if (!TCaptcha?.init) {
@@ -455,7 +455,7 @@ const CaptchaT = {
     $.add(ctrl, progress);
   },
 
-  updateProgress(TCaptcha) {
+  updateProgress(TCaptcha?) {
     const container = this.nodes?.container;
     if (!container) { return; }
     const progress = $('.fourchanx-captcha-progress', container);
@@ -541,6 +541,13 @@ const CaptchaT = {
   // solved-challenge path and the "verification not required" path can't both
   // submit the same post. Cleared whenever the captcha leaves the complete state.
   _autoSubmitted: false,
+  // loose: late-assigned singleton state
+  isEnabled: false,
+  nodes: null as any,
+  answerHistory: null as any,
+  editingIndex: null as any,
+  cachedButtons: null as any,
+  currentHighlightIndex: -1 as number,
 
   // Auto-submit the post when "Post on Captcha Completion" is on and the captcha
   // is satisfied -- whether that's a solved challenge or 4chan reporting that no
