@@ -14,8 +14,29 @@ if [[ ! -d "$BUILD_DIR" ]]; then
 fi
 
 if [[ -z "$PACKER_BIN" ]]; then
-  for bin in chromium chromium-browser google-chrome google-chrome-stable; do
+  for bin in chromium chromium-browser google-chrome google-chrome-stable chrome; do
     if command -v "$bin" >/dev/null 2>&1; then
+      PACKER_BIN="$bin"
+      break
+    fi
+  done
+fi
+
+# Windows fallback: Chromium-family browsers aren't on PATH under Git Bash,
+# so probe the usual install locations (Chrome, then Brave, then Edge).
+if [[ -z "$PACKER_BIN" ]]; then
+  win_candidates=(
+    "${PROGRAMFILES:-/c/Program Files}/Google/Chrome/Application/chrome.exe"
+    "/c/Program Files/Google/Chrome/Application/chrome.exe"
+    "/c/Program Files (x86)/Google/Chrome/Application/chrome.exe"
+    "${LOCALAPPDATA:-/c/Users/$USER/AppData/Local}/Google/Chrome/Application/chrome.exe"
+    "/c/Program Files/BraveSoftware/Brave-Browser/Application/brave.exe"
+    "/c/Program Files (x86)/BraveSoftware/Brave-Browser/Application/brave.exe"
+    "/c/Program Files/Microsoft/Edge/Application/msedge.exe"
+    "/c/Program Files (x86)/Microsoft/Edge/Application/msedge.exe"
+  )
+  for bin in "${win_candidates[@]}"; do
+    if [[ -f "$bin" ]]; then
       PACKER_BIN="$bin"
       break
     fi
