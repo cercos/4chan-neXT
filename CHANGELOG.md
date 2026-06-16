@@ -2,6 +2,7 @@
 
 ### Unreleased
 
+- Improved the Settings dialog on small screens: navigation collapses into a hamburger menu, horizontal navigation scrolls instead of wrapping, descriptions switch to tooltip mode with a mobile tap-to-reveal fallback, the archives controls use a compact layout, and footer actions move into a drop-up menu.
 - Settings textareas that autosave on change now flash a "Saved" badge, and Ctrl+S/Cmd+S saves the focused settings textarea instead of triggering textarea tag shortcuts.
 - Fixed the Quick Reply not remembering the last-used Name (and Options) after posting, restoring the pre-1.1.0 behavior where the name carries forward across posts and survives a page reload.
 - Added a "Clear Name and Options After Posting" Quick Reply setting (off by default) for anyone who preferred the fields auto-clearing. When on, the Name and Options fields blank out after each post and aren't remembered across sessions. Subject and comment always clear regardless, and an "always" persona still overrides it.

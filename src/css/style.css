@@ -493,7 +493,7 @@ audio.controls-added {
   min-height: 480px;
   width: 1000px;
   max-width: 100%;
-  min-width: 360px;
+  min-width: min(360px, 100%);
   margin: auto;
   padding: 0;
   display: flex;
@@ -520,6 +520,9 @@ audio.controls-added {
   gap: 10px;
   font-size: 0.85em;
 }
+.settings-titlebar-actions > a.settings-nav-toggle {
+  display: none;
+}
 .settings-titlebar-actions > a:not(.close) {
   text-decoration: none;
   opacity: 0.8;
@@ -532,6 +535,7 @@ audio.controls-added {
    lives in title + aria-label; the glyph carries the meaning so the cluster
    stays compact even in the cramped horizontal-nav titlebar. */
 .settings-titlebar-actions > a.accordion-toggle,
+.settings-titlebar-actions > a.settings-nav-toggle,
 .settings-titlebar-actions > a.expand-all,
 .settings-titlebar-actions > a.collapse-all {
   display: inline-flex;
@@ -541,6 +545,7 @@ audio.controls-added {
   line-height: 1;
 }
 .settings-titlebar-actions > a.accordion-toggle:hover,
+.settings-titlebar-actions > a.settings-nav-toggle:hover,
 .settings-titlebar-actions > a.expand-all:hover,
 .settings-titlebar-actions > a.collapse-all:hover {
   text-decoration: none;
@@ -548,6 +553,9 @@ audio.controls-added {
 }
 .settings-titlebar-actions > a.accordion-toggle .icon {
   font-size: 1.1em;
+}
+.settings-nav-scroll {
+  display: none;
 }
 /* Pressed accordion mode: solid, full-opacity, accent-tinted so the one-open
    state reads as "on" at a glance. */
@@ -902,13 +910,18 @@ audio.controls-added {
 /* Horizontal navigation layout: the search box and section links are moved
    into the titlebar (in place of the title) and the left sidebar is hidden. */
 #fourchanx-settings.settings-nav-horizontal .settings-titlebar {
-  flex-wrap: wrap;
+  flex-wrap: nowrap;
   gap: 4px 10px;
 }
 #fourchanx-settings.settings-nav-horizontal .settings-title {
   display: none;
 }
+#fourchanx-settings.settings-nav-horizontal .settings-titlebar-actions {
+  flex: 0 0 auto;
+  white-space: nowrap;
+}
 #fourchanx-settings.settings-nav-horizontal .settings-titlebar > .settings-search {
+  flex: 0 0 auto;
   margin: 0;
 }
 #fourchanx-settings.settings-nav-horizontal .settings-titlebar > .settings-search input {
@@ -917,13 +930,31 @@ audio.controls-added {
 }
 #fourchanx-settings.settings-nav-horizontal .settings-titlebar > .sections-list {
   flex: 1 1 auto;
+  min-width: 0;
   flex-direction: row;
-  flex-wrap: wrap;
+  flex-wrap: nowrap;
   align-items: center;
   gap: 0;
-  overflow: visible;
+  overflow-x: auto;
+  overflow-y: hidden;
+  position: relative;
+  cursor: grab;
+  scrollbar-width: none;
+  touch-action: pan-x;
+}
+#fourchanx-settings.settings-nav-horizontal .settings-titlebar > .sections-list::-webkit-scrollbar {
+  display: none;
+  width: 0;
+  height: 0;
+}
+#fourchanx-settings.settings-nav-horizontal .settings-titlebar > .sections-list.sections-list-dragging {
+  cursor: grabbing;
+}
+#fourchanx-settings.settings-nav-horizontal .settings-titlebar > .sections-list.sections-list-dragging > a {
+  pointer-events: none;
 }
 #fourchanx-settings.settings-nav-horizontal .settings-titlebar > .sections-list > a {
+  flex: 0 0 auto;
   padding: 3px 7px;
   border-radius: 0;
 }
@@ -938,8 +969,92 @@ audio.controls-added {
 #fourchanx-settings.settings-nav-horizontal .settings-titlebar > .sections-list > a + a {
   border-left: 1px solid rgba(128, 128, 128, .4);
 }
+#fourchanx-settings.settings-nav-horizontal.settings-nav-overflow-left > .settings-titlebar > .settings-nav-scroll-left,
+#fourchanx-settings.settings-nav-horizontal.settings-nav-overflow-right > .settings-titlebar > .settings-nav-scroll-right {
+  display: inline-flex;
+  align-items: center;
+  justify-content: center;
+  flex: 0 0 auto;
+  border: 0;
+  border-radius: 3px;
+  color: inherit;
+  cursor: pointer;
+  line-height: 1;
+}
+#fourchanx-settings.settings-nav-horizontal.settings-nav-overflow-left > .settings-titlebar > .settings-nav-scroll-left {
+  margin: 0 -10px 0 -6px;
+  padding: 2px 12px 2px 3px;
+  background: linear-gradient(to left, transparent, var(--xt-dialog-bg, var(--background, Canvas)) 45%);
+}
+#fourchanx-settings.settings-nav-horizontal.settings-nav-overflow-right > .settings-titlebar > .settings-nav-scroll-right {
+  margin: 0 -6px 0 -10px;
+  padding: 2px 3px 2px 12px;
+  background: linear-gradient(to right, transparent, var(--xt-dialog-bg, var(--background, Canvas)) 45%);
+}
+#fourchanx-settings.settings-nav-horizontal.settings-nav-overflow-left > .settings-titlebar > .settings-nav-scroll-left:hover,
+#fourchanx-settings.settings-nav-horizontal.settings-nav-overflow-left > .settings-titlebar > .settings-nav-scroll-left:focus {
+  background: linear-gradient(to left, transparent, var(--xt-dialog-bg, var(--background, Canvas)) 35%),
+    rgba(128, 128, 128, .16);
+}
+#fourchanx-settings.settings-nav-horizontal.settings-nav-overflow-right > .settings-titlebar > .settings-nav-scroll-right:hover,
+#fourchanx-settings.settings-nav-horizontal.settings-nav-overflow-right > .settings-titlebar > .settings-nav-scroll-right:focus {
+  background: linear-gradient(to right, transparent, var(--xt-dialog-bg, var(--background, Canvas)) 35%),
+    rgba(128, 128, 128, .16);
+}
 #fourchanx-settings.settings-nav-horizontal > .settings-body > nav {
   display: none;
+}
+#fourchanx-settings:not(.settings-nav-collapsed) .settings-titlebar-actions > a.settings-nav-toggle {
+  display: none;
+}
+#fourchanx-settings.settings-nav-collapsed .settings-titlebar {
+  gap: 6px;
+}
+#fourchanx-settings.settings-nav-collapsed .settings-title {
+  display: none;
+}
+#fourchanx-settings.settings-nav-collapsed .settings-titlebar-actions {
+  flex: 1;
+  gap: 6px;
+  min-width: 0;
+}
+#fourchanx-settings.settings-nav-collapsed .settings-titlebar-actions > a.settings-nav-toggle {
+  display: inline-flex;
+}
+#fourchanx-settings.settings-nav-collapsed .settings-titlebar-actions > .settings-search {
+  flex: 1 1 auto;
+  margin: 0;
+  min-width: 0;
+}
+#fourchanx-settings.settings-nav-collapsed .settings-titlebar-actions > .settings-search input {
+  box-sizing: border-box;
+  width: 100%;
+}
+#fourchanx-settings.settings-nav-collapsed > .settings-body {
+  position: relative;
+}
+#fourchanx-settings.settings-nav-collapsed > .settings-body > nav {
+  display: none;
+  position: absolute;
+  top: 0;
+  left: 0;
+  z-index: 4;
+  box-sizing: border-box;
+  width: min(260px, calc(100% - 16px));
+  max-height: calc(100% - 16px);
+  margin: 8px;
+  padding: 8px;
+  border: 1px solid var(--xt-border, rgba(128, 128, 128, .45));
+  border-radius: 5px;
+  background: var(--xt-dialog-bg, var(--background, Canvas));
+  box-shadow: 0 8px 28px rgba(0, 0, 0, .4);
+  overflow: auto;
+}
+#fourchanx-settings.settings-nav-collapsed.settings-nav-open > .settings-body > nav {
+  display: flex;
+}
+#fourchanx-settings.settings-nav-collapsed > .settings-body > nav .sections-list {
+  max-height: calc(100dvh - 150px);
 }
 .settings-footer {
   border-top: 1px solid rgba(128, 128, 128, .25);
@@ -950,6 +1065,30 @@ audio.controls-added {
   flex-wrap: wrap;
   align-items: center;
   gap: 4px 12px;
+  overflow: visible;
+}
+.settings-footer-menu {
+  display: flex;
+  align-items: center;
+  position: relative;
+}
+.settings-footer-menu-toggle {
+  display: none;
+  align-items: center;
+  justify-content: center;
+  width: 24px;
+  height: 24px;
+  padding: 3px;
+  border: 0;
+  border-radius: 3px;
+  background: transparent;
+  color: inherit;
+  cursor: pointer;
+  line-height: 1;
+}
+.settings-footer-menu-toggle:hover,
+.settings-footer-menu-toggle:focus {
+  background: rgba(128, 128, 128, .18);
 }
 .settings-actions {
   display: flex;
@@ -965,6 +1104,77 @@ audio.controls-added {
 .imp-exp-result {
   font-size: 11px;
   margin: 0;
+}
+#fourchanx-settings.settings-compact-content .settings-footer {
+  position: relative;
+  gap: 4px 8px;
+}
+#fourchanx-settings.settings-compact-content .settings-footer-menu {
+  order: 0;
+  z-index: 8;
+  margin-left: 0;
+}
+#fourchanx-settings.settings-compact-content .settings-footer-menu-toggle {
+  display: inline-flex;
+}
+#fourchanx-settings.settings-compact-content .settings-footer-menu > .settings-actions {
+  display: none;
+  position: absolute;
+  left: 0;
+  right: auto;
+  bottom: 100%;
+  z-index: 8;
+  box-sizing: border-box;
+  min-width: 190px;
+  max-width: calc(100vw - 32px);
+  max-height: min(260px, calc(100dvh - 120px));
+  margin-bottom: 6px;
+  padding: 6px;
+  flex-direction: column;
+  align-items: stretch;
+  gap: 2px;
+  border: 1px solid var(--xt-border, rgba(128, 128, 128, .45));
+  border-radius: 5px;
+  background: var(--xt-dialog-bg, var(--background, Canvas));
+  box-shadow: 0 8px 24px rgba(0, 0, 0, .35);
+  overflow: auto;
+  white-space: normal;
+}
+#fourchanx-settings.settings-compact-content .settings-footer-menu.settings-footer-menu-open > .settings-actions {
+  display: flex;
+}
+#fourchanx-settings.settings-compact-content .settings-actions > a,
+#fourchanx-settings.settings-compact-content .settings-actions > label {
+  box-sizing: border-box;
+  display: flex;
+  align-items: center;
+  gap: 6px;
+  width: 100%;
+  padding: 4px 6px;
+  border-radius: 3px;
+  white-space: nowrap;
+}
+#fourchanx-settings.settings-compact-content .settings-actions > a:hover,
+#fourchanx-settings.settings-compact-content .settings-actions > a:focus,
+#fourchanx-settings.settings-compact-content .settings-actions > label:hover {
+  background: rgba(128, 128, 128, .14);
+}
+#fourchanx-settings.settings-compact-content .credits {
+  order: 1;
+  flex: 1 1 auto;
+  justify-content: flex-end;
+  min-width: 0;
+  margin-left: auto;
+  gap: 8px;
+  overflow: hidden;
+}
+#fourchanx-settings.settings-compact-content .credits a {
+  overflow: hidden;
+  text-overflow: ellipsis;
+}
+#fourchanx-settings.settings-compact-content .imp-exp-result {
+  order: 2;
+  flex: 1 0 100%;
 }
 
 /* Import/Export picker */
@@ -1129,6 +1339,25 @@ div[data-checked="false"] > .suboption-list {
 }
 #fourchanx-settings.settings-description-tooltips:not(.settings-searching) .description {
   display: none;
+}
+#fourchanx-settings.settings-touch-descriptions.settings-description-tooltips:not(.settings-searching) [data-setting-description] label,
+#fourchanx-settings.settings-touch-descriptions.settings-description-tooltips:not(.settings-searching) [data-setting-description] .setting-title {
+  cursor: pointer;
+}
+.settings-mobile-description {
+  display: none;
+}
+#fourchanx-settings.settings-touch-descriptions.settings-description-tooltips:not(.settings-searching) .settings-mobile-description {
+  display: block;
+  box-sizing: border-box;
+  margin: 4px 0 4px 1.6em;
+  max-width: calc(100% - 1.6em);
+  padding: 5px 7px;
+  border-left: 2px solid rgba(128, 128, 128, .55);
+  background: rgba(128, 128, 128, .09);
+  border-radius: 3px;
+  line-height: 1.35;
+  opacity: .86;
 }
 /* While searching, reveal descriptions so <mark> highlights are visible. */
 #fourchanx-settings.settings-searching .description {
@@ -3358,6 +3587,59 @@ body > #overlay:not(.media-preview) {
 }
 .section-advanced #archive-board-select {
   position: absolute;
+}
+#fourchanx-settings.settings-compact-content .section-advanced #archive-board-select {
+  box-sizing: border-box;
+  display: block;
+  max-width: 100%;
+  margin: 0 0 8px;
+  position: static;
+  width: 100%;
+}
+#fourchanx-settings.settings-compact-content .section-advanced #archive-table {
+  border-collapse: separate;
+  border-spacing: 0;
+  display: block;
+  max-width: 100%;
+  width: 100%;
+}
+#fourchanx-settings.settings-compact-content .section-advanced #archive-table thead {
+  display: none;
+}
+#fourchanx-settings.settings-compact-content .section-advanced #archive-table tbody {
+  display: block;
+  max-width: 100%;
+}
+#fourchanx-settings.settings-compact-content .section-advanced #archive-table tbody tr:not([hidden]) {
+  box-sizing: border-box;
+  display: grid;
+  gap: 6px;
+  max-width: 100%;
+  padding: 8px;
+  border: 1px solid rgba(128, 128, 128, .28);
+  border-radius: 6px;
+  background: rgba(128, 128, 128, .06);
+}
+#fourchanx-settings.settings-compact-content .section-advanced .archive-cell {
+  box-sizing: border-box;
+  display: grid;
+  grid-template-columns: minmax(0, 9.5em) minmax(0, 1fr);
+  gap: 8px;
+  align-items: center;
+  min-width: 0;
+  padding: 2px 0;
+  text-align: left;
+}
+#fourchanx-settings.settings-compact-content .section-advanced .archive-cell::before {
+  content: attr(data-label);
+  font-weight: 700;
+  line-height: 1.2;
+}
+#fourchanx-settings.settings-compact-content .section-advanced .archive-cell select {
+  box-sizing: border-box;
+  min-width: 0;
+  max-width: 100%;
+  width: 100%;
 }
 .section-advanced .note {
   font-size: 0.8em;
