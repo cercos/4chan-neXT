@@ -881,6 +881,14 @@ audio.controls-added {
   box-shadow: 0 0 6px 2px rgba(255, 214, 83, .55);
   border-radius: 2px;
 }
+/* Whole-post hook: every post/tile containing an index/catalog search match also
+   carries `.index-search-matched`. The ::highlight paint above has no DOM presence,
+   so this class is the only way userstyles/Custom CSS can style the entire matching
+   post (not just the matched characters). No visible default — opt in by setting
+   --xt-search-match-bg — so the stock appearance is unchanged. */
+.index-search-matched {
+  background: var(--xt-search-match-bg, transparent);
+}
 .sections-list {
   flex: 1;
   display: flex;
@@ -2227,9 +2235,9 @@ div[data-checked="false"] > .suboption-list {
 }
 
 /* StyleChan compatibility: each Styling subsection carries a master-switch
-   checkbox in its <summary> title. Disabling one grays its body out and blocks
-   interaction, while the runtime gates remove its effect from the page. The
-   inner controls keep their values so re-enabling restores the look. */
+   checkbox in its <summary> title. Disabling one grays its body out while the
+   runtime gates remove its effect from the page. The inner controls stay
+   editable so users can keep working on saved values before re-enabling. */
 .styling-section-summary-label {
   display: inline-flex;
   align-items: center;
@@ -2286,7 +2294,6 @@ div[data-checked="false"] > .suboption-list {
 }
 details[data-styling-section].styling-section-off > :not(summary) {
   opacity: .45;
-  pointer-events: none;
 }
 details[data-styling-section].styling-section-off > summary {
   opacity: .7;
@@ -2975,7 +2982,7 @@ body > #overlay:not(.media-preview) {
 .section-styling .custom-css-controls > .ccss-controls-right {
   margin-left: auto;
 }
-.section-styling .custom-css-editor {
+.custom-css-editor {
   --custom-css-bg: #fbfbfb;
   --custom-css-text: #1f2731;
   --custom-css-caret: #1f2731;
@@ -3317,7 +3324,7 @@ body > #overlay:not(.media-preview) {
    selections covering the wrong rows and backspace deleting the wrong
    character. Pin every layout-affecting property on BOTH layers with
    `!important` so the two stay glued together regardless of outside CSS. */
-.section-styling :is(.custom-css-highlight, .custom-css-textarea) {
+.custom-css-editor > :is(.custom-css-highlight, .custom-css-textarea) {
   background: var(--custom-css-bg) !important;
   box-sizing: border-box !important;
   font: var(--custom-css-font) !important;
@@ -3334,32 +3341,37 @@ body > #overlay:not(.media-preview) {
   white-space: pre !important;
   word-break: normal !important;
 }
-.section-styling .custom-css-highlight {
+.custom-css-editor > .custom-css-highlight {
   border: 0 !important;
   color: var(--custom-css-text) !important;
+  display: block !important;
   overflow: hidden !important;
   pointer-events: none !important;
+  z-index: 0 !important;
 }
-.section-styling .custom-css-textarea {
+.custom-css-editor > .custom-css-textarea {
   background: transparent !important;
   border: 0 !important;
   color: var(--custom-css-caret) !important;
   caret-color: var(--custom-css-caret);
+  display: block !important;
   -webkit-text-fill-color: transparent !important;
   overflow: auto !important;
+  pointer-events: auto !important;
   resize: none !important;
+  z-index: 2 !important;
 }
-.section-styling .custom-css-textarea:focus {
+.custom-css-editor > .custom-css-textarea:focus {
   outline: none;
 }
 /* Colour swatches: a clickable swatch in a left gutter on each line that holds a
    colour. The text layers are nudged right to make room; the gutter scrolls with
    the content (transform synced in syncScroll). Must follow the base padding rule
    above so this padding-left wins the !important tie. */
-.section-styling :is(.custom-css-highlight, .custom-css-textarea) {
+.custom-css-editor > :is(.custom-css-highlight, .custom-css-textarea) {
   padding-left: 28px !important;
 }
-.section-styling .custom-css-gutter {
+.custom-css-editor > .custom-css-gutter {
   position: absolute;
   left: 0;
   top: 0;
@@ -3369,12 +3381,12 @@ body > #overlay:not(.media-preview) {
   pointer-events: none;
   z-index: 3;
 }
-.section-styling .custom-css-gutter-inner {
+.custom-css-editor .custom-css-gutter-inner {
   position: absolute;
   inset: 0 0 auto 0;
   will-change: transform;
 }
-.section-styling .ccss-swatch {
+.custom-css-editor .ccss-swatch {
   position: absolute;
   left: 5px;
   width: 13px;
@@ -3387,7 +3399,7 @@ body > #overlay:not(.media-preview) {
   cursor: pointer;
   pointer-events: auto;
 }
-.section-styling .ccss-color-input {
+.custom-css-editor > .ccss-color-input {
   position: fixed;
   width: 1px;
   height: 1px;

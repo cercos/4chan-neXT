@@ -4512,6 +4512,7 @@ Enable it on boards.${location.hostname.split('.')[1]}.org in your browser's pri
     // the highlighted overlay regardless of theme or browser defaults.
     textarea.wrap = 'off';
     textarea.spellcheck = false;
+    textarea.hidden = false;
     const editor = $('.custom-css-editor', section) as HTMLDivElement | null;
     const highlight = $('.custom-css-highlight', section) as HTMLPreElement | null;
     const themeSelect = $('#custom-css-theme', section) as HTMLSelectElement | null;
@@ -4538,6 +4539,47 @@ Enable it on boards.${location.hostname.split('.')[1]}.org in your browser's pri
     // format, preserving any alpha the native picker can't edit. Lines never wrap
     // (white-space:pre) so a swatch's Y is just lineIndex × line-height — no DOM
     // measurement needed; the gutter scrolls via the transform in syncScroll.
+    const highlightOffsetFromPoint = (clientX: number, clientY: number) => {
+      let node: Node | null = null;
+      let offset = 0;
+      const caretPositionFromPoint = (d as any).caretPositionFromPoint;
+      const caretRangeFromPoint = (d as any).caretRangeFromPoint;
+      if (caretPositionFromPoint) {
+        const pos = caretPositionFromPoint.call(d, clientX, clientY);
+        node = pos?.offsetNode || null;
+        offset = pos?.offset || 0;
+      } else if (caretRangeFromPoint) {
+        const range = caretRangeFromPoint.call(d, clientX, clientY);
+        node = range?.startContainer || null;
+        offset = range?.startOffset || 0;
+      }
+      if (!node || !highlight.contains(node)) return null;
+      let count = 0;
+      const walker = d.createTreeWalker(highlight, NodeFilter.SHOW_TEXT);
+      for (let cur = walker.nextNode(); cur; cur = walker.nextNode()) {
+        if (cur === node) return count + offset;
+        count += cur.textContent?.length || 0;
+      }
+      return null;
+    };
+
+    const focusEditorSurface = (e: Event) => {
+      const target = e.target as HTMLElement | null;
+      if (!target || target === textarea || target.closest('.ccss-swatch, .ccss-color-input')) return;
+      if (textarea.disabled) return;
+      const pointer = e as MouseEvent;
+      const offset = highlightOffsetFromPoint(pointer.clientX, pointer.clientY);
+      e.preventDefault();
+      textarea.focus();
+      if (offset != null) {
+        const pos = Math.min(textarea.value.length, Math.max(0, offset));
+        textarea.setSelectionRange(pos, pos);
+        if (bracketToggle.checked) Settings.renderCustomCSSHighlight(textarea, highlight);
+      }
+    };
+    editor.addEventListener('pointerdown', focusEditorSurface, true);
+    editor.addEventListener('mousedown', focusEditorSurface, true);
+
     const COLOR_RE = /#(?:[0-9a-f]{8}|[0-9a-f]{6}|[0-9a-f]{4}|[0-9a-f]{3})\b|(?:rgba?|hsla?)\([^)]*\)/gi;
     const clamp255 = (n: number) => Math.max(0, Math.min(255, Math.round(n)));
     const toHex2 = (n: number) => clamp255(n).toString(16).padStart(2, '0');
@@ -5863,7 +5905,7 @@ Enable it on boards.${location.hostname.split('.')[1]}.org in your browser's pri
   },
 
   refreshCustomCSSEditor(section: HTMLElement) {
-    const textarea = $('textarea[name^="usercss"]', section) as HTMLTextAreaElement | null;
+    const textarea = $('.custom-css-textarea', section) as HTMLTextAreaElement | null;
     const highlight = $('.custom-css-highlight', section) as HTMLPreElement | null;
     if (!textarea || !highlight) return;
     Settings.renderCustomCSSHighlight(textarea, highlight);
@@ -9780,7 +9822,7 @@ Enable it on boards.${location.hostname.split('.')[1]}.org in your browser's pri
 
   togglecss() {
     const details = $.x('ancestor::details[1]', this) as HTMLElement | null;
-    const textarea = details ? ($('textarea[name^=usercss]', details) as HTMLTextAreaElement | null) : null;
+    const textarea = details ? ($('.custom-css-textarea', details) as HTMLTextAreaElement | null) : null;
     const disabled = !this.checked;
     if (textarea) textarea.disabled = disabled;
     if (disabled) {

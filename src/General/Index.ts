@@ -44,6 +44,13 @@ const INDEX_SEARCH_HL = 'fourchanx-index-search';
 // catalog mode hides). Styled by a `.search-hit` rule in style.css.
 const SEARCH_HIT_CLASS = 'search-hit';
 
+// Class tagged onto every post/tile that contains a search match. The ::highlight
+// text paint has no DOM presence, so this is the hook userstyles/Custom CSS need
+// to style the *whole* matching post (not just the matched characters). Lands on
+// the enclosing `.postContainer` in list modes and on the `.catalog-thread` tile
+// in catalog mode. Styled by an `.index-search-matched` rule in style.css.
+const SEARCH_MATCH_CLASS = 'index-search-matched';
+
 // How each searchable field surfaces a regex hit inside a rendered tile.
 //   kind 'text':    paint the matched characters inside the matched element(s).
 //   kind 'element': glow the element(s), since the value isn't shown as text.
@@ -1592,11 +1599,11 @@ var Index = {
   // highlight ranges would point at detached nodes. An empty query clears it.
   // Regex queries get field-aware treatment; plain keywords use literal paint.
   highlightSearch() {
-    // Drop any element glows left by the previous query before re-marking. (A
-    // rebuild already replaces the nodes, but clearing keeps this self-contained
-    // for the case where highlightSearch runs without a rebuild.)
-    for (const el of Index.root.querySelectorAll(`.${SEARCH_HIT_CLASS}`)) {
-      el.classList.remove(SEARCH_HIT_CLASS);
+    // Drop any element glows / matched-post markers left by the previous query
+    // before re-marking. (A rebuild already replaces the nodes, but clearing keeps
+    // this self-contained for the case where highlightSearch runs without a rebuild.)
+    for (const el of Index.root.querySelectorAll(`.${SEARCH_HIT_CLASS}, .${SEARCH_MATCH_CLASS}`)) {
+      el.classList.remove(SEARCH_HIT_CLASS, SEARCH_MATCH_CLASS);
     }
     const query = Index.search;
     let match;
@@ -1604,7 +1611,29 @@ var Index = {
       Index.highlightRegexSearch(match);
       return;
     }
-    SearchHighlight.apply(INDEX_SEARCH_HL, Index.root, Index.getSearchTerms());
+    // Build the ranges here (rather than via SearchHighlight.apply) so the same
+    // ranges drive both the text paint and the per-post marker class.
+    const terms = Index.getSearchTerms();
+    if (!terms.length) {
+      SearchHighlight.setRanges(INDEX_SEARCH_HL, []);
+      return;
+    }
+    const rx = RegExp(terms.map(SearchHighlight.escape).join('|'), 'gi');
+    const ranges = SearchHighlight.rangesFor(Index.root, rx);
+    SearchHighlight.setRanges(INDEX_SEARCH_HL, ranges);
+    Index.markMatchedPosts(ranges);
+  },
+
+  // Tag each post that actually contains a painted match with SEARCH_MATCH_CLASS,
+  // giving Custom CSS a hook to style the whole matching post. Driven off the same
+  // ranges the highlight uses, so the marker tracks the visible matches — and works
+  // even where the Custom Highlight API is unsupported and no text paint appears.
+  markMatchedPosts(ranges) {
+    for (const range of ranges) {
+      const node = range.startContainer;
+      const el = node.nodeType === Node.TEXT_NODE ? node.parentElement : (node as Element);
+      el?.closest(`.postContainer, .catalog-thread`)?.classList.add(SEARCH_MATCH_CLASS);
+    }
   },
 
   // Surface a regex hit inside each rendered (and therefore matching) tile: paint
@@ -1628,6 +1657,10 @@ var Index = {
       // Scope to the OP: a regex query matches the OP only, but an index tile also
       // renders preview replies, whose flags/comments must NOT be marked.
       const opRoot = tile.querySelector('.opContainer') || tile.querySelector('.postContainer') || tile;
+      // Every rendered tile is a confirmed match (querySearch already filtered the
+      // list), so tag the post itself regardless of which field hit or whether the
+      // hit is visible as text — this is the whole-post hook for Custom CSS.
+      opRoot.classList.add(SEARCH_MATCH_CLASS);
       let shown = false;   // something for this tile is already visibly marked
       let missed = false;  // a field hit but had nothing visible to mark
       for (const field of fields) {
