@@ -85,6 +85,7 @@ var Settings = {
   stylingPreviewAttachRaf: null as number | null,
   activeSiteStylePicker: null as HTMLElement | null,
   siteStylePickerOutsideHandler: null as ((e: Event) => void) | null,
+  textareaSavedFlashTimers: new WeakMap<HTMLTextAreaElement, number>(),
   stylingEditingVariant: null as StyleVariant | null,
   styleVariantKeySet: new Set<string>(styleVariantKeys),
   resolvedStyleColorCache: null as Record<string, string> | null,
@@ -1100,40 +1101,96 @@ var Settings = {
     Settings.renderSection(allSettingsSection);
   },
 
-  // Replace the tiny native corner resize grip on each vertically-resizable
-  // settings textarea with a full-width bar the user can grab anywhere along
-  // the bottom edge to drag the field taller or shorter. The Custom CSS editor
-  // is excluded (it has its own panel chrome / resize handling).
+  ensureAutosaveTextareaShell(textarea: HTMLTextAreaElement) {
+    let shell = textarea.parentElement as HTMLElement | null;
+    if (!shell || !shell.classList.contains('settings-textarea-shell')) {
+      shell = $.el('div', { className: 'settings-textarea-shell' }) as HTMLElement;
+      textarea.parentNode!.insertBefore(shell, textarea);
+      $.add(shell, textarea);
+    }
+    if (!$('.settings-textarea-saved', shell)) {
+      const badge = $.el('div', { className: 'settings-textarea-saved', textContent: 'Saved' }) as HTMLElement;
+      badge.setAttribute('aria-hidden', 'true');
+      $.add(shell, badge);
+    }
+    return shell;
+  },
+
+  flashAutosaveTextareaSaved(textarea: HTMLTextAreaElement) {
+    const shell = textarea.parentElement as HTMLElement | null;
+    const badge = shell?.classList.contains('settings-textarea-shell')
+      ? $('.settings-textarea-saved', shell) as HTMLElement | null
+      : null;
+    if (!badge) return;
+    badge.dataset.show = 'true';
+    const timer = Settings.textareaSavedFlashTimers.get(textarea);
+    if (timer) clearTimeout(timer);
+    Settings.textareaSavedFlashTimers.set(textarea, window.setTimeout(() => {
+      badge.dataset.show = 'false';
+      Settings.textareaSavedFlashTimers.delete(textarea);
+    }, 900));
+  },
+
+  bindAutosaveTextareaSaveKey(textarea: HTMLTextAreaElement) {
+    if (textarea.dataset.autosaveSaveKeyBound === 'true') return;
+    textarea.dataset.autosaveSaveKeyBound = 'true';
+    $.on(textarea, 'keydown', (e: KeyboardEvent) => {
+      if (!(e.ctrlKey || e.metaKey) || e.altKey || (e.key !== 's' && e.key !== 'S')) return;
+      e.preventDefault();
+      e.stopPropagation();
+      $.event('change', null, textarea);
+    });
+  },
+
+  bindAutosaveTextareaSavedFlash(textarea: HTMLTextAreaElement) {
+    if (textarea.dataset.autosaveSavedFlashBound === 'true') return;
+    textarea.dataset.autosaveSavedFlashBound = 'true';
+    $.on(textarea, 'change', () => Settings.flashAutosaveTextareaSaved(textarea));
+  },
+
+  // Settings textareas already save on `change`. Add the same "Saved" flash and
+  // Ctrl/Cmd+S save shortcut Custom CSS has, plus the full-width resize handle.
+  // Custom CSS is excluded because it has its own editor chrome.
+  prepareAutosaveTextarea(textarea: HTMLTextAreaElement | null) {
+    if (!textarea || textarea.classList.contains('custom-css-textarea')) return;
+    const shell = Settings.ensureAutosaveTextareaShell(textarea);
+    Settings.bindAutosaveTextareaSaveKey(textarea);
+    Settings.bindAutosaveTextareaSavedFlash(textarea);
+
+    const existing = shell.nextElementSibling as HTMLElement | null;
+    if (existing && existing.classList.contains('settings-textarea-resizer')) return;
+
+    $.addClass(textarea, 'has-custom-resizer');
+    const handle = $.el('div', {
+      className: 'settings-textarea-resizer',
+      title: 'Drag to resize'
+    });
+
+    $.on(handle, 'pointerdown', (e: PointerEvent) => {
+      e.preventDefault();
+      const startY = e.clientY;
+      const startHeight = textarea.offsetHeight;
+      $.addClass(handle, 'dragging');
+
+      const onMove = (ev: PointerEvent) => {
+        textarea.style.height = `${Math.max(28, startHeight + (ev.clientY - startY))}px`;
+      };
+      const onUp = () => {
+        $.rmClass(handle, 'dragging');
+        $.off(d, 'pointermove', onMove);
+        $.off(d, 'pointerup', onUp);
+      };
+      $.on(d, 'pointermove', onMove);
+      $.on(d, 'pointerup', onUp);
+    });
+
+    $.after(shell, handle);
+  },
+
   attachTextareaResizers(section) {
     for (const ta of $$('textarea:not(.custom-css-textarea)', section) as HTMLTextAreaElement[]) {
-      const existing = ta.nextElementSibling as HTMLElement | null;
-      if (existing && existing.classList.contains('settings-textarea-resizer')) { continue; }
-
-      $.addClass(ta, 'has-custom-resizer');
-      const handle = $.el('div', {
-        className: 'settings-textarea-resizer',
-        title: 'Drag to resize'
-      });
-
-      $.on(handle, 'pointerdown', (e: PointerEvent) => {
-        e.preventDefault();
-        const startY = e.clientY;
-        const startHeight = ta.offsetHeight;
-        $.addClass(handle, 'dragging');
-
-        const onMove = (ev: PointerEvent) => {
-          ta.style.height = `${Math.max(28, startHeight + (ev.clientY - startY))}px`;
-        };
-        const onUp = () => {
-          $.rmClass(handle, 'dragging');
-          $.off(d, 'pointermove', onMove);
-          $.off(d, 'pointerup', onUp);
-        };
-        $.on(d, 'pointermove', onMove);
-        $.on(d, 'pointerup', onUp);
-      });
-
-      $.after(ta, handle);
+      if (ta.hidden) continue;
+      Settings.prepareAutosaveTextarea(ta);
     }
   },
 
@@ -7896,6 +7953,7 @@ Enable it on boards.${location.hostname.split('.')[1]}.org in your browser's pri
       $.get(name, Conf[name], function(item) {
         ta.value = item[name];
         $.add(div, ta);
+        Settings.prepareAutosaveTextarea(ta);
         Settings.addFilterStats(name, ta, div, previewState);
       });
       return;
@@ -8621,6 +8679,7 @@ Enable it on boards.${location.hostname.split('.')[1]}.org in your browser's pri
     $.get('sauces', Conf['sauces'], function(item) {
       ta.value = item['sauces'];
       ta.hidden = false;
+      Settings.prepareAutosaveTextarea(ta);
     }); // XXX prevent Firefox from adding initialization to undo queue
     $.on(ta, 'change', $.cb.value);
     // The Detach button now lives in the section's <summary> and is wired by the
@@ -8664,6 +8723,9 @@ Enable it on boards.${location.hostname.split('.')[1]}.org in your browser's pri
         input = inputs[key];
         input[input.type === 'checkbox' ? 'checked' : 'value'] = val;
         input.hidden = false; // XXX prevent Firefox from adding initialization to undo queue
+        if (input.nodeName === 'TEXTAREA') {
+          Settings.prepareAutosaveTextarea(input as HTMLTextAreaElement);
+        }
         if (key in Settings) {
           Settings[key].call(input);
         }

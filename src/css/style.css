@@ -2778,7 +2778,8 @@ body > #overlay:not(.media-preview) {
   position: relative;
   resize: vertical;
 }
-.section-styling .custom-css-saved {
+.section-styling .custom-css-saved,
+#xt-settings-overlay .settings-textarea-saved {
   position: absolute;
   top: 6px;
   right: 8px;
@@ -2793,7 +2794,8 @@ body > #overlay:not(.media-preview) {
   transform: translateY(-2px);
   transition: opacity .12s ease, transform .12s ease;
 }
-.section-styling .custom-css-saved[data-show="true"] {
+.section-styling .custom-css-saved[data-show="true"],
+#xt-settings-overlay .settings-textarea-saved[data-show="true"] {
   opacity: 1;
   transform: translateY(0);
 }
@@ -3012,6 +3014,17 @@ body > #overlay:not(.media-preview) {
   min-height: 120px !important;
   width: 100%;
   resize: none;
+}
+#xt-settings-overlay .xt-detach-panel-body .settings-textarea-shell {
+  flex: 1 1 auto;
+  min-height: 0;
+  display: flex;
+  flex-direction: column;
+}
+#xt-settings-overlay .xt-detach-panel-body .settings-textarea-shell > textarea {
+  flex: 1 1 auto !important;
+  height: auto !important;
+  min-height: 120px !important;
 }
 /* The panel itself is resizable, so the field's own drag-resize bar is redundant
    while detached. */
@@ -3447,10 +3460,17 @@ body > #overlay:not(.media-preview) {
   cursor: default;
   overflow: hidden;
 }
+#xt-settings-overlay .settings-textarea-shell {
+  position: relative;
+  width: 100%;
+}
+#xt-settings-overlay .settings-textarea-shell > textarea {
+  width: 100%;
+}
 /* Full-width drag handle for resizable settings textareas. The native resize
    grip is a tiny corner triangle; this turns the whole bottom edge into a bar
-   the user can grab and drag to extend the field. JS adds .has-custom-resizer
-   to the textarea and inserts the .settings-textarea-resizer bar after it. */
+   the user can grab and drag to extend the field. JS wraps the textarea for
+   the Saved badge, adds .has-custom-resizer, and inserts the bar after it. */
 #xt-settings-overlay textarea.has-custom-resizer {
   resize: none;
   display: block;

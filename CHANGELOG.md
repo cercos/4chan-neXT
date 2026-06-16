@@ -2,6 +2,8 @@
 
 ### Unreleased
 
+- Settings textareas that autosave on change now flash a "Saved" badge, and Ctrl+S/Cmd+S saves the focused settings textarea instead of triggering textarea tag shortcuts.
+
 ### 1.1.7 (2026-06-15)
 
 - Regex field searches (e.g. `comment:/cat|dog/i`) now highlight their matches in the index/catalog instead of only filtering the results. Text fields paint the matched characters; fields with no visible text (flag, file MD5, email, pass) glow the matching icon, and in catalog mode the thumbnail glows so the hit is still visible.
