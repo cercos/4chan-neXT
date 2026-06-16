@@ -4038,12 +4038,19 @@ body > #overlay:not(.media-preview) {
   opacity: .8;
   font-size: 11px;
 }
-/* Example search terms: a tinted pill with an accent color so it's obvious where
-   the term begins and ends versus the surrounding description. */
+/* Example search terms: a tinted pill so it's obvious where the term begins and
+   ends versus the surrounding description. The background is a soft translucent
+   wash of the theme's header-link accent (maroon on Yotsuba/Futaba, navy on the
+   blue boards, blue on Tomorrow, orange on Spooky) so the pill tracks the board's
+   colour scheme. NB: we deliberately don't use --xt-border-highlight — that's the
+   reply-highlight colour, hardcoded red on every light theme, so it'd paint red
+   pills even on blue boards. Falls back to the theme foreground then neutral grey
+   for themes (e.g. Photon) that define no header-link. Text inherits the popover
+   colour so it stays legible on light and dark. */
 #index-search-help-popover code {
   font-size: 12px;
-  background: rgba(120, 130, 150, .22);
-  color: #d4a017;
+  background: color-mix(in srgb, var(--xt-header-link, var(--xt-fxt-fg, gray)) 25%, transparent);
+  color: inherit;
   padding: 1px 5px;
   border-radius: 3px;
   box-decoration-break: clone;
