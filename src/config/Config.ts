@@ -599,6 +599,11 @@ const Config = {
         'Remember the spoiler state, instead of resetting after posting.',
         1
       ],
+      'Clear Name and Options After Posting': [
+        false,
+        'Clear the name and options (email) fields after posting and don\'t remember them across sessions. Subject and comment always clear regardless. An "always" persona still overrides this.',
+        1
+      ],
       'Auto-close Tags': [
         true,
         'Auto-insert matching closing tags in Quick Reply for board-supported tags like [code], [spoiler], [math], and [sjis].',
