@@ -613,11 +613,13 @@ audio.controls-added {
    - > label > span:first-child::after -> select rows (addSelectRows: label is
      "<span>Label: </span><select>"; checkbox labels start with <input>, so
      their span is not :first-child and never double-badges). */
-.highlight-next-settings [data-next-status] .setting-title::after,
-.highlight-next-settings .next-summary-title[data-next-status]::after,
-.highlight-next-settings .styling-section-summary-text[data-next-status]::after,
-.highlight-next-settings label[data-next-status]::after,
-.highlight-next-settings [data-next-status] > label > span:first-child::after {
+.highlight-next-settings :is(
+  [data-next-status] .setting-title,
+  .next-summary-title[data-next-status],
+  .styling-section-summary-text[data-next-status],
+  label[data-next-status],
+  [data-next-status] > label > span:first-child
+)::after {
   display: inline-block;
   margin-left: 6px;
   padding: 0 5px;
@@ -630,21 +632,25 @@ audio.controls-added {
   vertical-align: middle;
   white-space: nowrap;
 }
-.highlight-next-settings [data-next-status="added"] .setting-title::after,
-.highlight-next-settings .next-summary-title[data-next-status="added"]::after,
-.highlight-next-settings .styling-section-summary-text[data-next-status="added"]::after,
-.highlight-next-settings label[data-next-status="added"]::after,
-.highlight-next-settings [data-next-status="added"] > label > span:first-child::after {
+.highlight-next-settings :is(
+  [data-next-status="added"] .setting-title,
+  .next-summary-title[data-next-status="added"],
+  .styling-section-summary-text[data-next-status="added"],
+  label[data-next-status="added"],
+  [data-next-status="added"] > label > span:first-child
+)::after {
   content: 'neXT';
   color: #fff;
   background: #3fb950;
   text-transform: none;
 }
-.highlight-next-settings [data-next-status="changed"] .setting-title::after,
-.highlight-next-settings .next-summary-title[data-next-status="changed"]::after,
-.highlight-next-settings .styling-section-summary-text[data-next-status="changed"]::after,
-.highlight-next-settings label[data-next-status="changed"]::after,
-.highlight-next-settings [data-next-status="changed"] > label > span:first-child::after {
+.highlight-next-settings :is(
+  [data-next-status="changed"] .setting-title,
+  .next-summary-title[data-next-status="changed"],
+  .styling-section-summary-text[data-next-status="changed"],
+  label[data-next-status="changed"],
+  [data-next-status="changed"] > label > span:first-child
+)::after {
   content: 'changed';
   color: #1a1a1a;
   background: #d29922;
@@ -2084,55 +2090,45 @@ div[data-checked="false"] > .suboption-list {
 .styling-preview .styling-preview-post.from-archive .quotelink.deadlink {
   color: var(--xt-highlight-ghost-dead-link, var(--xt-dead-link-text-color, var(--xt-dead-link))) !important;
 }
-.styling-preview[data-highlight-catalog-own="true"]:not([data-edge-catalog-own="true"]) .catalog-thread:has(.yourPost),
-.styling-preview[data-highlight-catalog-own="true"]:not([data-edge-catalog-own="true"]) .catalog-thread.yourPost {
+.styling-preview[data-highlight-catalog-own="true"]:not([data-edge-catalog-own="true"]) .catalog-thread:is(:has(.yourPost), .yourPost) {
   background: color-mix(in srgb, var(--xt-catalog-own-highlight, var(--xt-highlight-own)) calc(var(--xt-catalog-own-highlight-opacity, 1) * 100%), var(--xt-post-background, var(--xt-background, #d6daf0))) !important;
   overflow: hidden;
 }
-.styling-preview[data-highlight-catalog-own="true"][data-edge-catalog-own="true"] .catalog-thread:has(.yourPost),
-.styling-preview[data-highlight-catalog-own="true"][data-edge-catalog-own="true"] .catalog-thread.yourPost {
+.styling-preview[data-highlight-catalog-own="true"][data-edge-catalog-own="true"] .catalog-thread:is(:has(.yourPost), .yourPost) {
   border-color: color-mix(in srgb, var(--xt-catalog-own-highlight, var(--xt-highlight-own, var(--xt-border-highlight))) calc(var(--xt-catalog-own-highlight-opacity, 1) * 100%), transparent) !important;
   border-style: var(--xt-catalog-border-style-own, solid) !important;
   border-width: var(--xt-catalog-border-width-own, var(--xt-catalog-border-width, 3px)) !important;
 }
-.styling-preview[data-highlight-catalog-own="true"]:not([data-edge-catalog-own="true"]) .catalog-thread:has(.yourPost) > .catalog-container,
-.styling-preview[data-highlight-catalog-own="true"]:not([data-edge-catalog-own="true"]) .catalog-thread.yourPost > .catalog-container,
-.styling-preview[data-highlight-catalog-own="true"]:not([data-edge-catalog-own="true"]) .catalog-thread > .catalog-container.yourPost,
-.styling-preview[data-highlight-catalog-own="true"]:not([data-edge-catalog-own="true"]) .catalog-thread:has(.yourPost) .post.catalog-post.yourPost,
-.styling-preview[data-highlight-catalog-own="true"]:not([data-edge-catalog-own="true"]) .catalog-thread.yourPost .post.catalog-post,
-.styling-preview[data-highlight-catalog-own="true"]:not([data-edge-catalog-own="true"]) .catalog-thread > .catalog-container.yourPost .post.catalog-post {
+.styling-preview[data-highlight-catalog-own="true"]:not([data-edge-catalog-own="true"]) :is(
+  .catalog-thread:is(:has(.yourPost), .yourPost) > .catalog-container,
+  .catalog-thread > .catalog-container.yourPost,
+  .catalog-thread:has(.yourPost) .post.catalog-post.yourPost,
+  .catalog-thread.yourPost .post.catalog-post,
+  .catalog-thread > .catalog-container.yourPost .post.catalog-post
+) {
   background: transparent !important;
   border-color: transparent !important;
 }
-.styling-preview[data-highlight-catalog-own="true"][data-text-catalog-own="true"] .catalog-thread:has(.yourPost) .post.catalog-post.yourPost,
-.styling-preview[data-highlight-catalog-own="true"][data-text-catalog-own="true"] .catalog-thread.yourPost .post.catalog-post,
-.styling-preview[data-highlight-catalog-own="true"][data-text-catalog-own="true"] .catalog-thread > .catalog-container.yourPost .post.catalog-post {
+.styling-preview[data-highlight-catalog-own="true"][data-text-catalog-own="true"] :is(
+  .catalog-thread:has(.yourPost) .post.catalog-post.yourPost,
+  .catalog-thread.yourPost .post.catalog-post,
+  .catalog-thread > .catalog-container.yourPost .post.catalog-post
+) {
   color: var(--xt-catalog-own-text, var(--xt-text-color)) !important;
 }
-.styling-preview[data-highlight-catalog-own="true"][data-text-catalog-own="true"] .catalog-thread.yourPost .post.catalog-post .postInfo,
-.styling-preview[data-highlight-catalog-own="true"][data-text-catalog-own="true"] .catalog-thread.yourPost .post.catalog-post .postMessage,
-.styling-preview[data-highlight-catalog-own="true"][data-text-catalog-own="true"] .catalog-thread.yourPost .post.catalog-post .summary,
-.styling-preview[data-highlight-catalog-own="true"][data-text-catalog-own="true"] .catalog-thread.yourPost .post.catalog-post .catalog-stats,
-.styling-preview[data-highlight-catalog-own="true"][data-text-catalog-own="true"] .catalog-thread > .catalog-container.yourPost .post.catalog-post .postInfo,
-.styling-preview[data-highlight-catalog-own="true"][data-text-catalog-own="true"] .catalog-thread > .catalog-container.yourPost .post.catalog-post .postMessage,
-.styling-preview[data-highlight-catalog-own="true"][data-text-catalog-own="true"] .catalog-thread > .catalog-container.yourPost .post.catalog-post .summary,
-.styling-preview[data-highlight-catalog-own="true"][data-text-catalog-own="true"] .catalog-thread > .catalog-container.yourPost .post.catalog-post .catalog-stats {
+.styling-preview[data-highlight-catalog-own="true"][data-text-catalog-own="true"] :is(.catalog-thread.yourPost, .catalog-thread > .catalog-container.yourPost) .post.catalog-post :is(.postInfo, .postMessage, .summary, .catalog-stats) {
   color: var(--xt-catalog-own-text, var(--xt-text-color)) !important;
 }
-.styling-preview[data-highlight-catalog-own="true"][data-text-catalog-own="true"] .catalog-thread.yourPost .post.catalog-post .subject,
-.styling-preview[data-highlight-catalog-own="true"][data-text-catalog-own="true"] .catalog-thread > .catalog-container.yourPost .post.catalog-post .subject {
+.styling-preview[data-highlight-catalog-own="true"][data-text-catalog-own="true"] :is(.catalog-thread.yourPost, .catalog-thread > .catalog-container.yourPost) .post.catalog-post .subject {
   color: var(--xt-catalog-own-subject, var(--xt-catalog-own-text, var(--xt-text-color))) !important;
 }
-.styling-preview[data-highlight-catalog-own="true"][data-text-catalog-own="true"] .catalog-thread.yourPost .post.catalog-post a,
-.styling-preview[data-highlight-catalog-own="true"][data-text-catalog-own="true"] .catalog-thread > .catalog-container.yourPost .post.catalog-post a {
+.styling-preview[data-highlight-catalog-own="true"][data-text-catalog-own="true"] :is(.catalog-thread.yourPost, .catalog-thread > .catalog-container.yourPost) .post.catalog-post a {
   color: var(--xt-catalog-own-link, var(--xt-link-text-color)) !important;
 }
-.styling-preview[data-highlight-catalog-own="true"][data-text-catalog-own="true"] .catalog-thread.yourPost .post.catalog-post .quote,
-.styling-preview[data-highlight-catalog-own="true"][data-text-catalog-own="true"] .catalog-thread > .catalog-container.yourPost .post.catalog-post .quote {
+.styling-preview[data-highlight-catalog-own="true"][data-text-catalog-own="true"] :is(.catalog-thread.yourPost, .catalog-thread > .catalog-container.yourPost) .post.catalog-post .quote {
   color: var(--xt-catalog-own-quote, var(--xt-quote-text-color)) !important;
 }
-.styling-preview[data-highlight-catalog-own="true"][data-text-catalog-own="true"] .catalog-thread.yourPost .post.catalog-post .deadlink,
-.styling-preview[data-highlight-catalog-own="true"][data-text-catalog-own="true"] .catalog-thread > .catalog-container.yourPost .post.catalog-post .deadlink {
+.styling-preview[data-highlight-catalog-own="true"][data-text-catalog-own="true"] :is(.catalog-thread.yourPost, .catalog-thread > .catalog-container.yourPost) .post.catalog-post .deadlink {
   color: var(--xt-catalog-own-dead-link, var(--xt-dead-link-text-color, var(--xt-dead-link))) !important;
 }
 .styling-preview[data-highlight-catalog-watched="true"]:not([data-edge-catalog-watched="true"]) .catalog-thread.watched {
@@ -2152,10 +2148,7 @@ div[data-checked="false"] > .suboption-list {
 .styling-preview[data-highlight-catalog-watched="true"][data-text-catalog-watched="true"] .catalog-thread.watched .post.catalog-post {
   color: var(--xt-catalog-watched-text, var(--xt-text-color)) !important;
 }
-.styling-preview[data-highlight-catalog-watched="true"][data-text-catalog-watched="true"] .catalog-thread.watched .post.catalog-post .postInfo,
-.styling-preview[data-highlight-catalog-watched="true"][data-text-catalog-watched="true"] .catalog-thread.watched .post.catalog-post .postMessage,
-.styling-preview[data-highlight-catalog-watched="true"][data-text-catalog-watched="true"] .catalog-thread.watched .post.catalog-post .summary,
-.styling-preview[data-highlight-catalog-watched="true"][data-text-catalog-watched="true"] .catalog-thread.watched .post.catalog-post .catalog-stats {
+.styling-preview[data-highlight-catalog-watched="true"][data-text-catalog-watched="true"] .catalog-thread.watched .post.catalog-post :is(.postInfo, .postMessage, .summary, .catalog-stats) {
   color: var(--xt-catalog-watched-text, var(--xt-text-color)) !important;
 }
 .styling-preview[data-highlight-catalog-watched="true"][data-text-catalog-watched="true"] .catalog-thread.watched .post.catalog-post .subject {
@@ -2537,12 +2530,7 @@ body > #overlay:not(.media-preview) {
   margin-left: 8px;
   opacity: .35;
 }
-.section-styling .styling-inline-controls {
-  align-items: center;
-  display: inline-flex;
-  gap: 4px;
-}
-.section-styling .styling-inline-toggle {
+.section-styling :is(.styling-inline-controls, .styling-inline-toggle) {
   align-items: center;
   display: inline-flex;
   gap: 4px;
@@ -2569,10 +2557,7 @@ body > #overlay:not(.media-preview) {
 /* Bring the styling section's native dropdowns in line with the same subtle,
    theme-adaptive frame (they previously rendered with the browser's stark
    default control, clashing with the theme picker and hex/name fields). */
-.section-styling .styling-variant-mode select,
-.section-styling .styling-theme-row select,
-.section-styling .styling-hl-octl select,
-.section-styling .custom-css-controls select {
+.section-styling :is(.styling-variant-mode, .styling-theme-row, .styling-hl-octl, .custom-css-controls) select {
   background: transparent;
   border: 1px solid rgba(128, 128, 128, .45);
   border-radius: 3px;
@@ -2581,10 +2566,7 @@ body > #overlay:not(.media-preview) {
 }
 /* Keep the popped-open option list readable: an inherited light text colour
    would otherwise sit on the browser's default light popup on dark themes. */
-.section-styling .styling-variant-mode select option,
-.section-styling .styling-theme-row select option,
-.section-styling .styling-hl-octl select option,
-.section-styling .custom-css-controls select option {
+.section-styling :is(.styling-variant-mode, .styling-theme-row, .styling-hl-octl, .custom-css-controls) select option {
   background: var(--xt-dialog-bg, var(--background, Canvas));
   color: inherit;
 }
@@ -3317,13 +3299,11 @@ body > #overlay:not(.media-preview) {
   --custom-css-caret: #1f2731;
   --custom-css-border: rgba(128, 128, 128, .35);
 }
-.section-styling .custom-css-editor[data-theme="xt-system-yotsuba"],
-.section-styling .custom-css-editor[data-theme="xt-system-futaba"] {
+.section-styling .custom-css-editor:is([data-theme="xt-system-yotsuba"], [data-theme="xt-system-futaba"]) {
   --custom-css-text: #6f3a29;
   --custom-css-caret: #6f3a29;
 }
-.section-styling .custom-css-editor[data-theme="xt-system-yotsuba-b"],
-.section-styling .custom-css-editor[data-theme="xt-system-burichan"] {
+.section-styling .custom-css-editor:is([data-theme="xt-system-yotsuba-b"], [data-theme="xt-system-burichan"]) {
   --custom-css-text: #2b355a;
   --custom-css-caret: #2b355a;
 }
@@ -3337,8 +3317,7 @@ body > #overlay:not(.media-preview) {
    selections covering the wrong rows and backspace deleting the wrong
    character. Pin every layout-affecting property on BOTH layers with
    `!important` so the two stay glued together regardless of outside CSS. */
-.section-styling .custom-css-highlight,
-.section-styling .custom-css-textarea {
+.section-styling :is(.custom-css-highlight, .custom-css-textarea) {
   background: var(--custom-css-bg) !important;
   box-sizing: border-box !important;
   font: var(--custom-css-font) !important;
@@ -3377,8 +3356,7 @@ body > #overlay:not(.media-preview) {
    colour. The text layers are nudged right to make room; the gutter scrolls with
    the content (transform synced in syncScroll). Must follow the base padding rule
    above so this padding-left wins the !important tie. */
-.section-styling .custom-css-highlight,
-.section-styling .custom-css-textarea {
+.section-styling :is(.custom-css-highlight, .custom-css-textarea) {
   padding-left: 28px !important;
 }
 .section-styling .custom-css-gutter {
@@ -3441,8 +3419,7 @@ body > #overlay:not(.media-preview) {
   color: #b54a00;
   font-weight: 700;
 }
-.section-styling .custom-css-highlight .css-token-bracket-match,
-.section-styling .custom-css-highlight .css-token-bracket-mismatch {
+.section-styling .custom-css-highlight :is(.css-token-bracket-match, .css-token-bracket-mismatch) {
   border-radius: 2px;
 }
 .section-styling .custom-css-highlight .css-token-bracket-match {
@@ -3453,102 +3430,67 @@ body > #overlay:not(.media-preview) {
   background: var(--custom-css-bracket-error-bg);
   box-shadow: inset 0 0 0 1px var(--custom-css-bracket-error-border);
 }
-.section-styling .custom-css-editor[data-theme="xt-dark"] .custom-css-highlight .css-token-comment,
-.section-styling .custom-css-editor[data-theme="xt-system-tomorrow"] .custom-css-highlight .css-token-comment,
-.section-styling .custom-css-editor[data-theme="xt-system-spooky"] .custom-css-highlight .css-token-comment {
+.section-styling .custom-css-editor:is([data-theme="xt-dark"], [data-theme="xt-system-tomorrow"], [data-theme="xt-system-spooky"]) .custom-css-highlight .css-token-comment {
   color: #7c8a99;
 }
-.section-styling .custom-css-editor[data-theme="xt-dark"] .custom-css-highlight .css-token-string,
-.section-styling .custom-css-editor[data-theme="xt-system-tomorrow"] .custom-css-highlight .css-token-string,
-.section-styling .custom-css-editor[data-theme="xt-system-spooky"] .custom-css-highlight .css-token-string {
+.section-styling .custom-css-editor:is([data-theme="xt-dark"], [data-theme="xt-system-tomorrow"], [data-theme="xt-system-spooky"]) .custom-css-highlight .css-token-string {
   color: #f08ea3;
 }
-.section-styling .custom-css-editor[data-theme="xt-dark"] .custom-css-highlight .css-token-atrule,
-.section-styling .custom-css-editor[data-theme="xt-system-tomorrow"] .custom-css-highlight .css-token-atrule,
-.section-styling .custom-css-editor[data-theme="xt-system-spooky"] .custom-css-highlight .css-token-atrule {
+.section-styling .custom-css-editor:is([data-theme="xt-dark"], [data-theme="xt-system-tomorrow"], [data-theme="xt-system-spooky"]) .custom-css-highlight .css-token-atrule {
   color: #c9a7ff;
 }
-.section-styling .custom-css-editor[data-theme="xt-dark"] .custom-css-highlight .css-token-property,
-.section-styling .custom-css-editor[data-theme="xt-system-tomorrow"] .custom-css-highlight .css-token-property,
-.section-styling .custom-css-editor[data-theme="xt-system-spooky"] .custom-css-highlight .css-token-property {
+.section-styling .custom-css-editor:is([data-theme="xt-dark"], [data-theme="xt-system-tomorrow"], [data-theme="xt-system-spooky"]) .custom-css-highlight .css-token-property {
   color: #6fb3ff;
 }
-.section-styling .custom-css-editor[data-theme="xt-dark"] .custom-css-highlight .css-token-number,
-.section-styling .custom-css-editor[data-theme="xt-system-tomorrow"] .custom-css-highlight .css-token-number,
-.section-styling .custom-css-editor[data-theme="xt-system-spooky"] .custom-css-highlight .css-token-number {
+.section-styling .custom-css-editor:is([data-theme="xt-dark"], [data-theme="xt-system-tomorrow"], [data-theme="xt-system-spooky"]) .custom-css-highlight .css-token-number {
   color: #ffb076;
 }
-.section-styling .custom-css-editor[data-theme="xt-dark"] .custom-css-highlight .css-token-color,
-.section-styling .custom-css-editor[data-theme="xt-system-tomorrow"] .custom-css-highlight .css-token-color,
-.section-styling .custom-css-editor[data-theme="xt-system-spooky"] .custom-css-highlight .css-token-color {
+.section-styling .custom-css-editor:is([data-theme="xt-dark"], [data-theme="xt-system-tomorrow"], [data-theme="xt-system-spooky"]) .custom-css-highlight .css-token-color {
   color: #6dd08f;
 }
-.section-styling .custom-css-editor[data-theme="xt-dark"] .custom-css-highlight .css-token-important,
-.section-styling .custom-css-editor[data-theme="xt-system-tomorrow"] .custom-css-highlight .css-token-important,
-.section-styling .custom-css-editor[data-theme="xt-system-spooky"] .custom-css-highlight .css-token-important {
+.section-styling .custom-css-editor:is([data-theme="xt-dark"], [data-theme="xt-system-tomorrow"], [data-theme="xt-system-spooky"]) .custom-css-highlight .css-token-important {
   color: #ffb46e;
 }
-.section-styling .custom-css-editor[data-theme="xt-system-yotsuba"] .custom-css-highlight .css-token-comment,
-.section-styling .custom-css-editor[data-theme="xt-system-futaba"] .custom-css-highlight .css-token-comment {
+.section-styling .custom-css-editor:is([data-theme="xt-system-yotsuba"], [data-theme="xt-system-futaba"]) .custom-css-highlight .css-token-comment {
   color: #8a6d61;
 }
-.section-styling .custom-css-editor[data-theme="xt-system-yotsuba"] .custom-css-highlight .css-token-string,
-.section-styling .custom-css-editor[data-theme="xt-system-futaba"] .custom-css-highlight .css-token-string {
+.section-styling .custom-css-editor:is([data-theme="xt-system-yotsuba"], [data-theme="xt-system-futaba"]) .custom-css-highlight .css-token-string {
   color: #9a315d;
 }
-.section-styling .custom-css-editor[data-theme="xt-system-yotsuba"] .custom-css-highlight .css-token-atrule,
-.section-styling .custom-css-editor[data-theme="xt-system-futaba"] .custom-css-highlight .css-token-atrule {
+.section-styling .custom-css-editor:is([data-theme="xt-system-yotsuba"], [data-theme="xt-system-futaba"]) .custom-css-highlight .css-token-atrule {
   color: #6f45bf;
 }
-.section-styling .custom-css-editor[data-theme="xt-system-yotsuba"] .custom-css-highlight .css-token-property,
-.section-styling .custom-css-editor[data-theme="xt-system-futaba"] .custom-css-highlight .css-token-property {
+.section-styling .custom-css-editor:is([data-theme="xt-system-yotsuba"], [data-theme="xt-system-futaba"]) .custom-css-highlight .css-token-property {
   color: #1764bc;
 }
-.section-styling .custom-css-editor[data-theme="xt-system-yotsuba"] .custom-css-highlight .css-token-number,
-.section-styling .custom-css-editor[data-theme="xt-system-futaba"] .custom-css-highlight .css-token-number {
+.section-styling .custom-css-editor:is([data-theme="xt-system-yotsuba"], [data-theme="xt-system-futaba"]) .custom-css-highlight .css-token-number {
   color: #b2571b;
 }
-.section-styling .custom-css-editor[data-theme="xt-system-yotsuba"] .custom-css-highlight .css-token-color,
-.section-styling .custom-css-editor[data-theme="xt-system-futaba"] .custom-css-highlight .css-token-color {
+.section-styling .custom-css-editor:is([data-theme="xt-system-yotsuba"], [data-theme="xt-system-futaba"]) .custom-css-highlight .css-token-color {
   color: #3b8649;
 }
-.section-styling .custom-css-editor[data-theme="xt-system-yotsuba"] .custom-css-highlight .css-token-important,
-.section-styling .custom-css-editor[data-theme="xt-system-futaba"] .custom-css-highlight .css-token-important {
+.section-styling .custom-css-editor:is([data-theme="xt-system-yotsuba"], [data-theme="xt-system-futaba"]) .custom-css-highlight .css-token-important {
   color: #b14a00;
 }
-.section-styling .custom-css-editor[data-theme="xt-system-yotsuba-b"] .custom-css-highlight .css-token-comment,
-.section-styling .custom-css-editor[data-theme="xt-system-burichan"] .custom-css-highlight .css-token-comment,
-.section-styling .custom-css-editor[data-theme="xt-system-photon"] .custom-css-highlight .css-token-comment {
+.section-styling .custom-css-editor:is([data-theme="xt-system-yotsuba-b"], [data-theme="xt-system-burichan"], [data-theme="xt-system-photon"]) .custom-css-highlight .css-token-comment {
   color: #6d7893;
 }
-.section-styling .custom-css-editor[data-theme="xt-system-yotsuba-b"] .custom-css-highlight .css-token-string,
-.section-styling .custom-css-editor[data-theme="xt-system-burichan"] .custom-css-highlight .css-token-string,
-.section-styling .custom-css-editor[data-theme="xt-system-photon"] .custom-css-highlight .css-token-string {
+.section-styling .custom-css-editor:is([data-theme="xt-system-yotsuba-b"], [data-theme="xt-system-burichan"], [data-theme="xt-system-photon"]) .custom-css-highlight .css-token-string {
   color: #93468a;
 }
-.section-styling .custom-css-editor[data-theme="xt-system-yotsuba-b"] .custom-css-highlight .css-token-atrule,
-.section-styling .custom-css-editor[data-theme="xt-system-burichan"] .custom-css-highlight .css-token-atrule,
-.section-styling .custom-css-editor[data-theme="xt-system-photon"] .custom-css-highlight .css-token-atrule {
+.section-styling .custom-css-editor:is([data-theme="xt-system-yotsuba-b"], [data-theme="xt-system-burichan"], [data-theme="xt-system-photon"]) .custom-css-highlight .css-token-atrule {
   color: #5f57be;
 }
-.section-styling .custom-css-editor[data-theme="xt-system-yotsuba-b"] .custom-css-highlight .css-token-property,
-.section-styling .custom-css-editor[data-theme="xt-system-burichan"] .custom-css-highlight .css-token-property,
-.section-styling .custom-css-editor[data-theme="xt-system-photon"] .custom-css-highlight .css-token-property {
+.section-styling .custom-css-editor:is([data-theme="xt-system-yotsuba-b"], [data-theme="xt-system-burichan"], [data-theme="xt-system-photon"]) .custom-css-highlight .css-token-property {
   color: #1e60b7;
 }
-.section-styling .custom-css-editor[data-theme="xt-system-yotsuba-b"] .custom-css-highlight .css-token-number,
-.section-styling .custom-css-editor[data-theme="xt-system-burichan"] .custom-css-highlight .css-token-number,
-.section-styling .custom-css-editor[data-theme="xt-system-photon"] .custom-css-highlight .css-token-number {
+.section-styling .custom-css-editor:is([data-theme="xt-system-yotsuba-b"], [data-theme="xt-system-burichan"], [data-theme="xt-system-photon"]) .custom-css-highlight .css-token-number {
   color: #9d521e;
 }
-.section-styling .custom-css-editor[data-theme="xt-system-yotsuba-b"] .custom-css-highlight .css-token-color,
-.section-styling .custom-css-editor[data-theme="xt-system-burichan"] .custom-css-highlight .css-token-color,
-.section-styling .custom-css-editor[data-theme="xt-system-photon"] .custom-css-highlight .css-token-color {
+.section-styling .custom-css-editor:is([data-theme="xt-system-yotsuba-b"], [data-theme="xt-system-burichan"], [data-theme="xt-system-photon"]) .custom-css-highlight .css-token-color {
   color: #2f8654;
 }
-.section-styling .custom-css-editor[data-theme="xt-system-yotsuba-b"] .custom-css-highlight .css-token-important,
-.section-styling .custom-css-editor[data-theme="xt-system-burichan"] .custom-css-highlight .css-token-important,
-.section-styling .custom-css-editor[data-theme="xt-system-photon"] .custom-css-highlight .css-token-important {
+.section-styling .custom-css-editor:is([data-theme="xt-system-yotsuba-b"], [data-theme="xt-system-burichan"], [data-theme="xt-system-photon"]) .custom-css-highlight .css-token-important {
   color: #a04f00;
 }
 .section-styling .custom-css-editor[data-theme="xt-solarized"] .custom-css-highlight .css-token-comment {
@@ -4279,28 +4221,18 @@ body > #overlay:not(.media-preview) {
   margin: 0;
   padding-bottom: .3em;
 }
-.catalog-container:not(:hover) > * > .file,
-.catalog-container:not(:hover) > * > .postInfo > :not(.subject),
-.catalog-container:not(:hover) > * > .catalog-replies,
-.catalog-container:not(:hover) .extra-linebreak,
-.catalog-container:not(:hover) .abbr,
-:root:not(.catalog-hover-expand) .catalog-container > * > .file,
-:root:not(.catalog-hover-expand) .catalog-container > * > .postInfo > :not(.subject),
-:root:not(.catalog-hover-expand) .catalog-container > * > .catalog-replies,
-:root:not(.catalog-hover-expand) .catalog-container .extra-linebreak,
-:root:not(.catalog-hover-expand) .catalog-container .abbr,
+:is(.catalog-container:not(:hover), :root:not(.catalog-hover-expand) .catalog-container) > * > :is(.file, .catalog-replies),
+:is(.catalog-container:not(:hover), :root:not(.catalog-hover-expand) .catalog-container) > * > .postInfo > :not(.subject),
+:is(.catalog-container:not(:hover), :root:not(.catalog-hover-expand) .catalog-container) :is(.extra-linebreak, .abbr),
 .catalog-thread > .catalog-container > :not(.catalog-post),
 .preview-summary,
 .catalog-post > .file > :not(.fileText),
 .catalog-post > * > .fileText > :not(:first-child),
 .catalog-post > .postInfo > :not(.subject):not(.nameBlock):not(.dateTime),
 .catalog-post > .postInfo > .nameBlock > .contact-links,
-.catalog-post > * > * > .posteruid,
-.catalog-post > * > * > .postJumper,
+.catalog-post > * > * > :is(.posteruid, .postJumper),
 :root.bottom-backlinks .catalog-post > .container,
-.post:not(.catalog-post) > .catalog-link,
-.post:not(.catalog-post) > .catalog-stats,
-.post:not(.catalog-post) > .catalog-replies {
+.post:not(.catalog-post) > :is(.catalog-link, .catalog-stats, .catalog-replies) {
   display: none;
 }
 .catalog-post > .file {
@@ -5667,6 +5599,15 @@ input.field.tripped:not(:hover):not(:focus) {
 #qr .captcha-root {
   position: relative;
 }
+/* Google reCAPTCHA can inject top-level helper containers with broad inline
+   transition/positioning styles. Keep the old captcha workaround, but only for
+   actual reCAPTCHA layers so it cannot disable #menu transitions. */
+:root.sw-yotsuba > body > div:has(iframe[src^="https://www.google.com/recaptcha/"]) {
+  transition: none !important;
+}
+:root.sw-yotsuba > body > div[style*=" top: -10000px;"]:has(iframe[src^="https://www.google.com/recaptcha/"]) {
+  visibility: hidden !important;
+}
 #qr .captcha-container > div {
   margin: auto;
   width: 304px;
@@ -6294,9 +6235,7 @@ input[type="checkbox"]:checked ~ .checkbox-letter {
 .gal-fullscreen-thumbs .gal-viewport {
   flex: 0 0 0;
 }
-.gal-fullscreen-thumbs .gal-image,
-.gal-fullscreen-thumbs .gal-prev,
-.gal-fullscreen-thumbs .gal-next {
+.gal-fullscreen-thumbs :is(.gal-image, .gal-prev, .gal-next) {
   display: none;
 }
 .gal-fullscreen-thumbs .gal-thumbnails {
@@ -6309,8 +6248,7 @@ input[type="checkbox"]:checked ~ .checkbox-letter {
 .gal-fullscreen-thumbs:not(.gal-lightbox-open) .gal-labels {
   display: none;
 }
-.gal-fullscreen-thumbs .gal-buttons,
-.gal-fullscreen-thumbs .gal-labels {
+.gal-fullscreen-thumbs :is(.gal-buttons, .gal-labels) {
   z-index: 7;
 }
 /* A clicked thumbnail opens as a lightbox layered over the grid. */

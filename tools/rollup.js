@@ -126,18 +126,16 @@ const tsPlugin = typescript({
           // and bundle CSS isn't hand-edited; keeps the readable build smaller
           // while leaving JS untouched. (Same transform the minified build uses.)
           return css
-            // Remove whitespace after colon in css rules.
-            .replace(/^ {2,}([a-z\-]+:) +/gm, '$1')
-            // Remove newlines and trailing whitespace.
-            .replace(/\r?\n[ \t+]*/g, '')
-            // Remove last semicolon before the }.
+            // Remove comments first, including multi-line comments that contain
+            // asterisks.
+            .replace(/\/\*[\s\S]*?\*\//g, '')
+            // Collapse whitespace without deleting descendant-selector spaces.
+            .replace(/\s+/g, ' ')
+            // Remove whitespace around CSS punctuation where spaces are optional.
+            .replace(/\s*([{}:;,>+~])\s*/g, '$1')
+            // Remove the last semicolon before a rule closes.
             .replace(/;\}/g, '}')
-            // Remove space between rule set and {.
-            .replace(/ \{/g, '{')
-            // Remove comments.
-            .replace(/\/\*[^\*]*\*\//g, '')
-            // Remove space before and after these characters in selectors.
-            .replace(/ ([>+~]) /g, '$1');
+            .trim();
         }
       }),
       importBase64({ include: ["**/*.png", "**/*.gif", "**/*.wav", "**/*.woff", "**/*.woff2"] }),
