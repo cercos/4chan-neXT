@@ -17,10 +17,13 @@ You will need a userscript manager:
 
 ## Latest Version
 
-`1.1.7` (2026-06-15)
+`1.1.8` (2026-06-16)
 
-- Regex field searches (e.g. `comment:/cat|dog/i`) now highlight their matches in the index/catalog instead of only filtering the results. Text fields paint the matched characters; fields with no visible text (flag, file MD5, email, pass) glow the matching icon, and in catalog mode the thumbnail glows so the hit is still visible.
-- Expanded the search box "?" help with grouped examples (keywords, per-field regex, lighting up icons/thumbnails, multiple fields) and the full list of searchable fields, with the example terms shown as standout pills.
+- Improved the Settings dialog on small screens: navigation collapses into a hamburger menu, horizontal navigation scrolls instead of wrapping, descriptions switch to tooltip mode with a mobile tap-to-reveal fallback, the archives controls use a compact layout, and footer actions move into a drop-up menu.
+- Settings textareas that autosave on change now flash a "Saved" badge, and Ctrl+S/Cmd+S saves the focused settings textarea instead of triggering textarea tag shortcuts.
+- Fixed the Quick Reply not remembering the last-used Name (and Options) after posting, restoring the pre-1.1.0 behavior where the name carries forward across posts and survives a page reload.
+- Added a "Clear Name and Options After Posting" Quick Reply setting (off by default) for anyone who preferred the fields auto-clearing. When on, the Name and Options fields blank out after each post and aren't remembered across sessions. Subject and comment always clear regardless, and an "always" persona still overrides it.
+- Scoped the old reCAPTCHA helper-layer CSS so it no longer disables post menu transitions.
 
 
 ## Migration from 4chan X / 4chan XT

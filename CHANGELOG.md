@@ -1,6 +1,6 @@
 ## 4chan-neXT changelog
 
-### Unreleased
+### 1.1.8 (2026-06-16)
 
 - Improved the Settings dialog on small screens: navigation collapses into a hamburger menu, horizontal navigation scrolls instead of wrapping, descriptions switch to tooltip mode with a mobile tap-to-reveal fallback, the archives controls use a compact layout, and footer actions move into a drop-up menu.
 - Settings textareas that autosave on change now flash a "Saved" badge, and Ctrl+S/Cmd+S saves the focused settings textarea instead of triggering textarea tag shortcuts.
