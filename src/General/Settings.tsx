@@ -45,6 +45,9 @@ const SETTINGS_SEARCH_HL = 'fourchanx-settings-search';
 const SEARCH_HIGHLIGHT_SELECTOR =
   '.setting-title, .setting-description, .settings-section-header, .styling-section-summary-text, .next-summary-title, summary, th, h4';
 
+const SETTINGS_COMPACT_CONTENT_WIDTH = 760;
+const SETTINGS_COLLAPSED_NAV_WIDTH = 640;
+
 // Settings neXT added or changed vs upstream 4chan-X (see
 // tools/gen-next-settings-diff.js). Powers the "Highlight neXT" toggle.
 const NEXT_ADDED = new Set<string>(nextSettingsDiff.added);
@@ -75,6 +78,10 @@ var Settings = {
   rememberLayout: false,
   highlightNext: false,
   accordionMode: false,
+  settingsNavResizeObserver: null as ResizeObserver | null,
+  settingsNavResizeFallback: null as (() => void) | null,
+  descriptionTooltipAutoPrevious: null as boolean | null,
+  descriptionTooltipAutoActive: false,
   savedWindowLayout: '',
   detailsState: dict() as Record<string, boolean>,
   pointerDownInsideDialog: false,
@@ -85,6 +92,7 @@ var Settings = {
   stylingPreviewAttachRaf: null as number | null,
   activeSiteStylePicker: null as HTMLElement | null,
   siteStylePickerOutsideHandler: null as ((e: Event) => void) | null,
+  textareaSavedFlashTimers: new WeakMap<HTMLTextAreaElement, number>(),
   stylingEditingVariant: null as StyleVariant | null,
   styleVariantKeySet: new Set<string>(styleVariantKeys),
   resolvedStyleColorCache: null as Record<string, string> | null,
@@ -367,14 +375,32 @@ var Settings = {
       , SettingsPage));
     const settingsWindow = $('#fourchanx-settings', dialog) as HTMLDivElement;
 
-    $.on($('.export', dialog), 'click', e => { e.preventDefault(); Settings.export(); });
-    $.on($('.import', dialog), 'click', e => { e.preventDefault(); Settings.import.call(e.currentTarget); });
-    $.on($('.reset',  dialog), 'click', e => { e.preventDefault(); Settings.reset(); });
+    $.on($('.export', dialog), 'click', e => { e.preventDefault(); Settings.export(); Settings.closeFooterActions(); });
+    $.on($('.import', dialog), 'click', e => { e.preventDefault(); Settings.import.call(e.currentTarget); Settings.closeFooterActions(); });
+    $.on($('.reset',  dialog), 'click', e => { e.preventDefault(); Settings.reset(); Settings.closeFooterActions(); });
     $.on($('input[type=file]', dialog), 'change', Settings.onImport);
     $.on($('.settings-search input', dialog), 'input', Settings.onSearchInput);
     $.on($('.expand-all',   dialog), 'click', e => { e.preventDefault(); Settings.toggleAllDetails(true); });
     $.on($('.collapse-all', dialog), 'click', e => { e.preventDefault(); Settings.toggleAllDetails(false); });
     $.on($('.accordion-toggle', dialog), 'click', e => { e.preventDefault(); Settings.toggleAccordion(); });
+    for (const btn of $$('.settings-nav-scroll', dialog) as HTMLElement[]) {
+      $.on(btn, 'click', e => {
+        e.preventDefault();
+        e.stopPropagation();
+        Settings.scrollHorizontalNav(settingsWindow, btn.classList.contains('settings-nav-scroll-left') ? -1 : 1);
+      });
+      $.on(btn, 'touchstart mousedown', e => e.stopPropagation());
+    }
+    $.on($('.settings-nav-toggle', dialog), 'click', e => {
+      e.preventDefault();
+      e.stopPropagation();
+      Settings.toggleCollapsedNav();
+    });
+    $.on($('.settings-footer-menu-toggle', dialog), 'click', e => {
+      e.preventDefault();
+      e.stopPropagation();
+      Settings.toggleFooterActions();
+    });
     $.on($('.move', settingsWindow), 'touchstart mousedown', Settings.prepareDrag);
     // Window-manager z-order: clicking the settings window raises it above any
     // detached panels (its siblings in the overlay).
@@ -405,7 +431,9 @@ var Settings = {
           downX = downY = null;
           return;
         }
+        downX = downY = null;
         Settings.openSection.call(section);
+        Settings.closeCollapsedNav();
       });
       links.push(link);
       if (!defaultLink && section.title === 'General') defaultLink = link;
@@ -416,12 +444,12 @@ var Settings = {
       ) { sectionToOpen = link; }
     }
     $.add($('.sections-list', dialog), links);
-    // In horizontal layout the search box and section links sit inside the
-    // draggable titlebar. Only stop pointer events on the search box (so text
-    // selection works); the section links and surrounding empty space are left
-    // draggable — a click still navigates, but a drag moves the window since
-    // the horizontal titlebar has little blank room to grab.
+    // Search and section tabs can live in the draggable titlebar; stop their
+    // pointer starts so text selection and horizontal tab scrolling work.
     $.on($('.settings-search', dialog), 'touchstart mousedown', e => e.stopPropagation());
+    $.on($('.sections-list', dialog), 'touchstart mousedown', e => e.stopPropagation());
+    $.on($('.sections-list', dialog), 'scroll', () => Settings.updateHorizontalNavOverflow(settingsWindow));
+    Settings.enableHorizontalNavDrag($('.sections-list', dialog) as HTMLElement);
     Settings.setNavLayout(settingsWindow, Conf['Settings Menu Layout']);
     // Opening on "All Settings" eagerly renders every section, which is
     // noticeably slower in Firefox. Default to the lightweight General view
@@ -447,10 +475,18 @@ var Settings = {
       if (d.activeElement?.tagName === 'INPUT' || d.activeElement?.tagName === 'TEXTAREA') return;
       Settings.close();
     });
-    $.on(settingsWindow, 'click', e => e.stopPropagation());
+    $.on(settingsWindow, 'click', e => {
+      if (Settings.onDescriptionLabelTap(e)) return;
+      Settings.closeMobileDescription();
+      Settings.closeCollapsedNavForClick(e);
+      Settings.closeFooterActionsForClick(e);
+      e.stopPropagation();
+    });
 
     $.add(d.body, dialog);
     Settings.restoreWindowLayout(settingsWindow);
+    Settings.watchSettingsNavWidth(settingsWindow);
+    Settings.applyResponsiveNavLayout(settingsWindow);
     initialLink?.focus();
     Settings.loadLayoutPrefs();
 
@@ -470,12 +506,20 @@ var Settings = {
       if (settingsWindow) Settings.saveWindowLayout(settingsWindow);
     }
     Settings.closeImpExpPicker();
+    Settings.restoreAutoDescriptionTooltips();
+    Settings.closeFooterActions();
     // The settings page node is a reused singleton, so the search field keeps
     // its value across opens. Clear it (and the derived search state) so a
     // stale query doesn't re-highlight matches on the next open.
     const searchInput = $('.settings-search input', Settings.dialog) as HTMLInputElement | null;
     if (searchInput) searchInput.value = '';
     SearchHighlight.clear(SETTINGS_SEARCH_HL);
+    Settings.settingsNavResizeObserver?.disconnect();
+    Settings.settingsNavResizeObserver = null;
+    if (Settings.settingsNavResizeFallback) {
+      $.off(window, 'resize', Settings.settingsNavResizeFallback);
+      Settings.settingsNavResizeFallback = null;
+    }
     $.rm(Settings.dialog);
     // The overlay (and every detached panel inside it) is gone now; drop the
     // registry so the next open starts with no stale detach controllers.
@@ -784,24 +828,208 @@ var Settings = {
     }
   },
 
-  // Reposition the search box and section links between the left sidebar
-  // (vertical) and the titlebar (horizontal) based on the chosen layout.
+  // Reposition the search box and section links between the left sidebar,
+  // titlebar, and narrow-width hamburger dropdown. The saved layout remains a
+  // desktop preference; collapsed nav is an automatic presentation override.
   setNavLayout(settingsWindow: HTMLDivElement, layout: string) {
+    settingsWindow.dataset.navLayout = layout || 'vertical';
+    Settings.applyResponsiveNavLayout(settingsWindow);
+  },
+
+  applyResponsiveNavLayout(settingsWindow: HTMLDivElement) {
     const titlebar = $('.settings-titlebar', settingsWindow);
     const actions = $('.settings-titlebar-actions', settingsWindow);
+    const navToggle = $('.settings-nav-toggle', settingsWindow);
+    const navScrollLeft = $('.settings-nav-scroll-left', settingsWindow);
+    const navScrollRight = $('.settings-nav-scroll-right', settingsWindow);
     const nav = $('.settings-body > nav', settingsWindow);
     const search = $('.settings-search', settingsWindow);
     const sectionsList = $('.sections-list', settingsWindow);
-    if (!titlebar || !actions || !nav || !search || !sectionsList) return;
-    if (layout === 'horizontal') {
+    if (!titlebar || !actions || !navToggle || !navScrollLeft || !navScrollRight || !nav || !search || !sectionsList) return;
+    const layout = settingsWindow.dataset.navLayout || 'vertical';
+    const width = settingsWindow.getBoundingClientRect().width || doc.clientWidth;
+    const collapsed = width <= SETTINGS_COLLAPSED_NAV_WIDTH;
+    const compact = width <= SETTINGS_COMPACT_CONTENT_WIDTH;
+    const wasCollapsed = settingsWindow.classList.contains('settings-nav-collapsed');
+    settingsWindow.classList.toggle('settings-compact-content', compact);
+    settingsWindow.classList.toggle('settings-nav-collapsed', collapsed);
+    if (collapsed && !wasCollapsed) Settings.autoEnableDescriptionTooltips();
+    if (!collapsed && wasCollapsed) Settings.restoreAutoDescriptionTooltips();
+    if (collapsed) {
+      actions.insertBefore(search, navToggle.nextSibling);
+      nav.appendChild(sectionsList);
+      $.rmClass(settingsWindow, 'settings-nav-horizontal');
+    } else if (layout === 'horizontal') {
       titlebar.insertBefore(search, actions);
+      titlebar.insertBefore(navScrollLeft, actions);
       titlebar.insertBefore(sectionsList, actions);
+      titlebar.insertBefore(navScrollRight, actions);
       $.addClass(settingsWindow, 'settings-nav-horizontal');
     } else {
       nav.appendChild(search);
       nav.appendChild(sectionsList);
       $.rmClass(settingsWindow, 'settings-nav-horizontal');
     }
+    if (!collapsed) Settings.closeCollapsedNav(settingsWindow);
+    if (!compact) Settings.closeFooterActions(settingsWindow);
+    Settings.syncCollapsedNavButton(settingsWindow);
+    Settings.syncFooterActionsButton(settingsWindow);
+    Settings.updateHorizontalNavOverflow(settingsWindow);
+    Settings.applyDescriptionMode();
+  },
+
+  watchSettingsNavWidth(settingsWindow: HTMLDivElement) {
+    Settings.settingsNavResizeObserver?.disconnect();
+    if (Settings.settingsNavResizeFallback) {
+      $.off(window, 'resize', Settings.settingsNavResizeFallback);
+      Settings.settingsNavResizeFallback = null;
+    }
+    const update = () => Settings.applyResponsiveNavLayout(settingsWindow);
+    if (typeof ResizeObserver !== 'undefined') {
+      Settings.settingsNavResizeObserver = new ResizeObserver(update);
+      Settings.settingsNavResizeObserver.observe(settingsWindow);
+      return;
+    }
+    Settings.settingsNavResizeFallback = update;
+    $.on(window, 'resize', update);
+  },
+
+  toggleCollapsedNav() {
+    const settingsWindow = Settings.dialog && $('#fourchanx-settings', Settings.dialog) as HTMLDivElement | null;
+    if (!settingsWindow || !settingsWindow.classList.contains('settings-nav-collapsed')) return;
+    settingsWindow.classList.toggle('settings-nav-open');
+    Settings.syncCollapsedNavButton(settingsWindow);
+  },
+
+  closeCollapsedNav(settingsWindow?: HTMLDivElement | null) {
+    settingsWindow = settingsWindow || (Settings.dialog && $('#fourchanx-settings', Settings.dialog) as HTMLDivElement | null);
+    if (!settingsWindow) return;
+    settingsWindow.classList.remove('settings-nav-open');
+    Settings.syncCollapsedNavButton(settingsWindow);
+  },
+
+  closeCollapsedNavForClick(e: Event) {
+    const settingsWindow = Settings.dialog && $('#fourchanx-settings', Settings.dialog) as HTMLDivElement | null;
+    const target = e.target as Element | null;
+    if (!settingsWindow || !target || !settingsWindow.classList.contains('settings-nav-collapsed')) return;
+    if (target.closest('.settings-nav-toggle') || target.closest('.settings-body > nav')) return;
+    Settings.closeCollapsedNav(settingsWindow);
+  },
+
+  syncCollapsedNavButton(settingsWindow: HTMLDivElement) {
+    const toggle = $('.settings-nav-toggle', settingsWindow) as HTMLElement | null;
+    if (!toggle) return;
+    const expanded = settingsWindow.classList.contains('settings-nav-open');
+    toggle.setAttribute('aria-expanded', expanded ? 'true' : 'false');
+  },
+
+  toggleFooterActions() {
+    const settingsWindow = Settings.dialog && $('#fourchanx-settings', Settings.dialog) as HTMLDivElement | null;
+    if (!settingsWindow || !settingsWindow.classList.contains('settings-compact-content')) return;
+    const menu = $('.settings-footer-menu', settingsWindow) as HTMLElement | null;
+    if (!menu) return;
+    menu.classList.toggle('settings-footer-menu-open');
+    Settings.syncFooterActionsButton(settingsWindow);
+  },
+
+  closeFooterActions(settingsWindow?: HTMLElement | null) {
+    settingsWindow = settingsWindow || (Settings.dialog && $('#fourchanx-settings', Settings.dialog) as HTMLElement | null);
+    if (!settingsWindow) return;
+    $('.settings-footer-menu', settingsWindow)?.classList.remove('settings-footer-menu-open');
+    Settings.syncFooterActionsButton(settingsWindow as HTMLDivElement);
+  },
+
+  closeFooterActionsForClick(e: Event) {
+    const settingsWindow = Settings.dialog && $('#fourchanx-settings', Settings.dialog) as HTMLElement | null;
+    const target = e.target as Element | null;
+    if (!settingsWindow || !target) return;
+    if (target.closest('.settings-footer-menu')) return;
+    Settings.closeFooterActions(settingsWindow);
+  },
+
+  syncFooterActionsButton(settingsWindow: HTMLDivElement) {
+    const menu = $('.settings-footer-menu', settingsWindow) as HTMLElement | null;
+    const toggle = $('.settings-footer-menu-toggle', settingsWindow) as HTMLButtonElement | null;
+    if (!menu || !toggle) return;
+    const expanded = menu.classList.contains('settings-footer-menu-open');
+    toggle.setAttribute('aria-expanded', expanded ? 'true' : 'false');
+  },
+
+  updateHorizontalNavOverflow(settingsWindow: HTMLDivElement) {
+    const sectionsList = $('.settings-titlebar > .sections-list', settingsWindow) as HTMLElement | null;
+    if (!sectionsList || !settingsWindow.classList.contains('settings-nav-horizontal')) {
+      settingsWindow.classList.remove('settings-nav-overflow-left', 'settings-nav-overflow-right');
+      return;
+    }
+    settingsWindow.classList.remove('settings-nav-overflow-left', 'settings-nav-overflow-right');
+    const maxScroll = sectionsList.scrollWidth - sectionsList.clientWidth;
+    settingsWindow.classList.toggle('settings-nav-overflow-left', sectionsList.scrollLeft > 1);
+    settingsWindow.classList.toggle('settings-nav-overflow-right', maxScroll > 1 && sectionsList.scrollLeft < maxScroll - 1);
+  },
+
+  scrollHorizontalNav(settingsWindow: HTMLDivElement, direction = 1) {
+    const sectionsList = $('.settings-titlebar > .sections-list', settingsWindow) as HTMLElement | null;
+    if (!sectionsList) return;
+    sectionsList.scrollBy({
+      left: direction * Math.max(120, Math.round(sectionsList.clientWidth * 0.7)),
+      behavior: 'smooth',
+    });
+    window.setTimeout(() => Settings.updateHorizontalNavOverflow(settingsWindow), 250);
+  },
+
+  enableHorizontalNavDrag(sectionsList: HTMLElement) {
+    let pointerId: number | null = null;
+    let startX = 0;
+    let startScrollLeft = 0;
+    let moved = false;
+    let captured = false;
+
+    sectionsList.addEventListener('click', e => {
+      if (sectionsList.dataset.suppressClick !== 'true') return;
+      e.preventDefault();
+      e.stopPropagation();
+    }, true);
+
+    $.on(sectionsList, 'pointerdown', e => {
+      const pe = e as PointerEvent;
+      const settingsWindow = Settings.dialog && $('#fourchanx-settings', Settings.dialog) as HTMLDivElement | null;
+      if (!settingsWindow?.classList.contains('settings-nav-horizontal')) return;
+      pointerId = pe.pointerId;
+      startX = pe.clientX;
+      startScrollLeft = sectionsList.scrollLeft;
+      moved = false;
+      captured = false;
+    });
+
+    $.on(sectionsList, 'pointermove', e => {
+      const pe = e as PointerEvent;
+      if (pointerId !== pe.pointerId) return;
+      const dx = pe.clientX - startX;
+      if (!moved && Math.abs(dx) > 3) {
+        moved = true;
+        captured = true;
+        sectionsList.classList.add('sections-list-dragging');
+        sectionsList.setPointerCapture?.(pe.pointerId);
+      }
+      if (!moved) return;
+      pe.preventDefault();
+      sectionsList.scrollLeft = startScrollLeft - dx;
+      const settingsWindow = Settings.dialog && $('#fourchanx-settings', Settings.dialog) as HTMLDivElement | null;
+      if (settingsWindow) Settings.updateHorizontalNavOverflow(settingsWindow);
+    });
+
+    const endDrag = (e: Event) => {
+      const pe = e as PointerEvent;
+      if (pointerId !== pe.pointerId) return;
+      if (captured) sectionsList.releasePointerCapture?.(pe.pointerId);
+      pointerId = null;
+      captured = false;
+      sectionsList.classList.remove('sections-list-dragging');
+      if (!moved) return;
+      sectionsList.dataset.suppressClick = 'true';
+      window.setTimeout(() => { delete sectionsList.dataset.suppressClick; }, 0);
+    };
+    $.on(sectionsList, 'pointerup pointercancel', endDrag);
   },
 
 
@@ -920,6 +1148,7 @@ var Settings = {
     const query = Settings.searchQuery;
     const win = $('#fourchanx-settings', Settings.dialog);
     win.classList.toggle('settings-searching', !!query);
+    if (query) Settings.closeMobileDescription();
     const section = $('section', Settings.dialog);
     if (!section) return;
 
@@ -1100,40 +1329,96 @@ var Settings = {
     Settings.renderSection(allSettingsSection);
   },
 
-  // Replace the tiny native corner resize grip on each vertically-resizable
-  // settings textarea with a full-width bar the user can grab anywhere along
-  // the bottom edge to drag the field taller or shorter. The Custom CSS editor
-  // is excluded (it has its own panel chrome / resize handling).
+  ensureAutosaveTextareaShell(textarea: HTMLTextAreaElement) {
+    let shell = textarea.parentElement as HTMLElement | null;
+    if (!shell || !shell.classList.contains('settings-textarea-shell')) {
+      shell = $.el('div', { className: 'settings-textarea-shell' }) as HTMLElement;
+      textarea.parentNode!.insertBefore(shell, textarea);
+      $.add(shell, textarea);
+    }
+    if (!$('.settings-textarea-saved', shell)) {
+      const badge = $.el('div', { className: 'settings-textarea-saved', textContent: 'Saved' }) as HTMLElement;
+      badge.setAttribute('aria-hidden', 'true');
+      $.add(shell, badge);
+    }
+    return shell;
+  },
+
+  flashAutosaveTextareaSaved(textarea: HTMLTextAreaElement) {
+    const shell = textarea.parentElement as HTMLElement | null;
+    const badge = shell?.classList.contains('settings-textarea-shell')
+      ? $('.settings-textarea-saved', shell) as HTMLElement | null
+      : null;
+    if (!badge) return;
+    badge.dataset.show = 'true';
+    const timer = Settings.textareaSavedFlashTimers.get(textarea);
+    if (timer) clearTimeout(timer);
+    Settings.textareaSavedFlashTimers.set(textarea, window.setTimeout(() => {
+      badge.dataset.show = 'false';
+      Settings.textareaSavedFlashTimers.delete(textarea);
+    }, 900));
+  },
+
+  bindAutosaveTextareaSaveKey(textarea: HTMLTextAreaElement) {
+    if (textarea.dataset.autosaveSaveKeyBound === 'true') return;
+    textarea.dataset.autosaveSaveKeyBound = 'true';
+    $.on(textarea, 'keydown', (e: KeyboardEvent) => {
+      if (!(e.ctrlKey || e.metaKey) || e.altKey || (e.key !== 's' && e.key !== 'S')) return;
+      e.preventDefault();
+      e.stopPropagation();
+      $.event('change', null, textarea);
+    });
+  },
+
+  bindAutosaveTextareaSavedFlash(textarea: HTMLTextAreaElement) {
+    if (textarea.dataset.autosaveSavedFlashBound === 'true') return;
+    textarea.dataset.autosaveSavedFlashBound = 'true';
+    $.on(textarea, 'change', () => Settings.flashAutosaveTextareaSaved(textarea));
+  },
+
+  // Settings textareas already save on `change`. Add the same "Saved" flash and
+  // Ctrl/Cmd+S save shortcut Custom CSS has, plus the full-width resize handle.
+  // Custom CSS is excluded because it has its own editor chrome.
+  prepareAutosaveTextarea(textarea: HTMLTextAreaElement | null) {
+    if (!textarea || textarea.classList.contains('custom-css-textarea')) return;
+    const shell = Settings.ensureAutosaveTextareaShell(textarea);
+    Settings.bindAutosaveTextareaSaveKey(textarea);
+    Settings.bindAutosaveTextareaSavedFlash(textarea);
+
+    const existing = shell.nextElementSibling as HTMLElement | null;
+    if (existing && existing.classList.contains('settings-textarea-resizer')) return;
+
+    $.addClass(textarea, 'has-custom-resizer');
+    const handle = $.el('div', {
+      className: 'settings-textarea-resizer',
+      title: 'Drag to resize'
+    });
+
+    $.on(handle, 'pointerdown', (e: PointerEvent) => {
+      e.preventDefault();
+      const startY = e.clientY;
+      const startHeight = textarea.offsetHeight;
+      $.addClass(handle, 'dragging');
+
+      const onMove = (ev: PointerEvent) => {
+        textarea.style.height = `${Math.max(28, startHeight + (ev.clientY - startY))}px`;
+      };
+      const onUp = () => {
+        $.rmClass(handle, 'dragging');
+        $.off(d, 'pointermove', onMove);
+        $.off(d, 'pointerup', onUp);
+      };
+      $.on(d, 'pointermove', onMove);
+      $.on(d, 'pointerup', onUp);
+    });
+
+    $.after(shell, handle);
+  },
+
   attachTextareaResizers(section) {
     for (const ta of $$('textarea:not(.custom-css-textarea)', section) as HTMLTextAreaElement[]) {
-      const existing = ta.nextElementSibling as HTMLElement | null;
-      if (existing && existing.classList.contains('settings-textarea-resizer')) { continue; }
-
-      $.addClass(ta, 'has-custom-resizer');
-      const handle = $.el('div', {
-        className: 'settings-textarea-resizer',
-        title: 'Drag to resize'
-      });
-
-      $.on(handle, 'pointerdown', (e: PointerEvent) => {
-        e.preventDefault();
-        const startY = e.clientY;
-        const startHeight = ta.offsetHeight;
-        $.addClass(handle, 'dragging');
-
-        const onMove = (ev: PointerEvent) => {
-          ta.style.height = `${Math.max(28, startHeight + (ev.clientY - startY))}px`;
-        };
-        const onUp = () => {
-          $.rmClass(handle, 'dragging');
-          $.off(d, 'pointermove', onMove);
-          $.off(d, 'pointerup', onUp);
-        };
-        $.on(d, 'pointermove', onMove);
-        $.on(d, 'pointerup', onUp);
-      });
-
-      $.after(ta, handle);
+      if (ta.hidden) continue;
+      Settings.prepareAutosaveTextarea(ta);
     }
   },
 
@@ -1225,12 +1510,63 @@ Enable it on boards.${location.hostname.split('.')[1]}.org in your browser's pri
     return Conf['Settings Descriptions as Tooltips'] === true;
   },
 
+  useDescriptionTooltips(settingsWindow = Settings.dialog && $('#fourchanx-settings', Settings.dialog) as HTMLElement | null) {
+    return Settings.descriptionsAsTooltips();
+  },
+
+  autoEnableDescriptionTooltips() {
+    if (!Settings.descriptionTooltipAutoActive) {
+      Settings.descriptionTooltipAutoPrevious = Settings.descriptionsAsTooltips();
+    }
+    Settings.descriptionTooltipAutoActive = true;
+    Conf['Settings Descriptions as Tooltips'] = true;
+    Settings.syncDescriptionTooltipInputs(true);
+  },
+
+  restoreAutoDescriptionTooltips() {
+    if (!Settings.descriptionTooltipAutoActive) return;
+    const previous = Settings.descriptionTooltipAutoPrevious === true;
+    Conf['Settings Descriptions as Tooltips'] = previous;
+    Settings.descriptionTooltipAutoActive = false;
+    Settings.descriptionTooltipAutoPrevious = null;
+    Settings.syncDescriptionTooltipInputs(previous);
+  },
+
+  onDescriptionTooltipSettingChange(input: HTMLInputElement) {
+    Settings.descriptionTooltipAutoActive = false;
+    Settings.descriptionTooltipAutoPrevious = null;
+    Settings.syncDescriptionTooltipInputs(input.checked);
+    Settings.applyDescriptionMode();
+  },
+
+  syncDescriptionTooltipInputs(enabled = Settings.descriptionsAsTooltips()) {
+    if (!Settings.dialog) return;
+    for (const input of $$('input[name="Settings Descriptions as Tooltips"]', Settings.dialog) as HTMLInputElement[]) {
+      input.checked = enabled;
+      const row = input.closest('[data-name="Settings Descriptions as Tooltips"]') as HTMLElement | null;
+      if (row) row.dataset.checked = String(enabled);
+    }
+  },
+
+  hasTouchDescriptionPointer() {
+    return typeof window.matchMedia === 'function'
+      && window.matchMedia('(hover: none) and (pointer: coarse)').matches;
+  },
+
+  isTouchDescriptionMode(settingsWindow = Settings.dialog && $('#fourchanx-settings', Settings.dialog) as HTMLElement | null) {
+    return !!settingsWindow?.classList.contains('settings-nav-collapsed') && Settings.hasTouchDescriptionPointer();
+  },
+
   applyDescriptionMode(root: HTMLElement | Document = Settings.dialog || d) {
     const settingsWindow = $('#fourchanx-settings', Settings.dialog || d) as HTMLElement | null;
-    const useTooltips = Settings.descriptionsAsTooltips();
+    const useTooltips = Settings.useDescriptionTooltips(settingsWindow);
+    const touchDescriptions = Settings.isTouchDescriptionMode(settingsWindow);
     if (settingsWindow) {
       settingsWindow.classList.toggle('settings-description-tooltips', useTooltips);
+      settingsWindow.classList.toggle('settings-touch-descriptions', touchDescriptions);
     }
+    Settings.syncDescriptionTooltipInputs();
+    if (!useTooltips || !touchDescriptions) Settings.closeMobileDescription();
     for (const row of $$('[data-setting-description]', root)) {
       const el = row as HTMLElement;
       const description = el.dataset.settingDescription || '';
@@ -1244,10 +1580,64 @@ Enable it on boards.${location.hostname.split('.')[1]}.org in your browser's pri
 
   registerSettingDescription(row: HTMLElement, description: string) {
     row.dataset.settingDescription = description;
-    if (Settings.descriptionsAsTooltips() && description) {
+    if (Settings.useDescriptionTooltips() && description) {
       row.title = description;
     } else {
       row.removeAttribute('title');
+    }
+  },
+
+  onDescriptionLabelTap(e: Event) {
+    const settingsWindow = Settings.dialog && $('#fourchanx-settings', Settings.dialog) as HTMLDivElement | null;
+    const target = e.target as Element | null;
+    if (!settingsWindow
+      || !target
+      || !Settings.isTouchDescriptionMode(settingsWindow)
+      || !settingsWindow.classList.contains('settings-description-tooltips')
+      || settingsWindow.classList.contains('settings-searching')) {
+      return false;
+    }
+    if (target.closest('input, select, textarea, button, a, .settings-mobile-description')) return false;
+    const row = target.closest('[data-setting-description]') as HTMLElement | null;
+    if (!row || !row.dataset.settingDescription) return false;
+    const trigger = target.closest('.setting-title, label');
+    if (!trigger || !row.contains(trigger)) return false;
+
+    e.preventDefault();
+    e.stopPropagation();
+    Settings.toggleMobileDescription(row);
+    return true;
+  },
+
+  toggleMobileDescription(row: HTMLElement) {
+    const wasOpen = row.classList.contains('settings-mobile-description-open');
+    Settings.closeMobileDescription(row);
+    if (wasOpen) return;
+
+    const description = row.dataset.settingDescription || '';
+    if (!description) return;
+
+    const bubble = $.el('div', {
+      className: 'settings-mobile-description',
+      textContent: description,
+    });
+    const label = $('label', row) as HTMLElement | null;
+    if (label?.parentElement === row) {
+      label.insertAdjacentElement('afterend', bubble);
+    } else {
+      $.add(row, bubble);
+    }
+    row.classList.add('settings-mobile-description-open');
+  },
+
+  closeMobileDescription(except?: HTMLElement | null) {
+    if (!Settings.dialog) return;
+    for (const bubble of $$('.settings-mobile-description', Settings.dialog)) {
+      if (except && except.contains(bubble)) continue;
+      $.rm(bubble);
+    }
+    for (const row of $$('.settings-mobile-description-open', Settings.dialog)) {
+      if (row !== except) row.classList.remove('settings-mobile-description-open');
     }
   },
 
@@ -1288,7 +1678,7 @@ Enable it on boards.${location.hostname.split('.')[1]}.org in your browser's pri
       $.on(input, 'change', $.cb.checked);
       $.on(input, 'change', function() { this.parentNode.parentNode.dataset.checked = this.checked; });
       if (key === 'Settings Descriptions as Tooltips') {
-        $.on(input, 'change', () => Settings.applyDescriptionMode());
+        $.on(input, 'change', () => Settings.onDescriptionTooltipSettingChange(input));
       }
       if (key === 'Comment Preview') {
         $.on(input, 'change', () => $.event('QRCommentPreviewChanged'));
@@ -1413,6 +1803,7 @@ Enable it on boards.${location.hostname.split('.')[1]}.org in your browser's pri
         inputs[key].checked = val;
         inputs[key].parentNode.parentNode.dataset.checked = val;
       }
+      if (inputs['Settings Descriptions as Tooltips']) Settings.syncDescriptionTooltipInputs();
     });
 
     if (!includeHiddenCount) return;
@@ -1646,6 +2037,7 @@ Enable it on boards.${location.hostname.split('.')[1]}.org in your browser's pri
           input.value = items[key];
         }
       }
+      if (inputs['Settings Descriptions as Tooltips']) Settings.syncDescriptionTooltipInputs();
     });
   },
 
@@ -7896,6 +8288,7 @@ Enable it on boards.${location.hostname.split('.')[1]}.org in your browser's pri
       $.get(name, Conf[name], function(item) {
         ta.value = item[name];
         $.add(div, ta);
+        Settings.prepareAutosaveTextarea(ta);
         Settings.addFilterStats(name, ta, div, previewState);
       });
       return;
@@ -8629,6 +9022,7 @@ Enable it on boards.${location.hostname.split('.')[1]}.org in your browser's pri
     $.get('sauces', Conf['sauces'], function(item) {
       ta.value = item['sauces'];
       ta.hidden = false;
+      Settings.prepareAutosaveTextarea(ta);
     }); // XXX prevent Firefox from adding initialization to undo queue
     $.on(ta, 'change', $.cb.value);
     // The Detach button now lives in the section's <summary> and is wired by the
@@ -8672,6 +9066,9 @@ Enable it on boards.${location.hostname.split('.')[1]}.org in your browser's pri
         input = inputs[key];
         input[input.type === 'checkbox' ? 'checked' : 'value'] = val;
         input.hidden = false; // XXX prevent Firefox from adding initialization to undo queue
+        if (input.nodeName === 'TEXTAREA') {
+          Settings.prepareAutosaveTextarea(input as HTMLTextAreaElement);
+        }
         if (key in Settings) {
           Settings[key].call(input);
         }
@@ -9100,7 +9497,7 @@ Enable it on boards.${location.hostname.split('.')[1]}.org in your browser's pri
         const lib = SoundManager.getEntry(soundId);
         const row = $.el('div', { className: 'sound-list__row' });
         const nameCell = $.el('div', { className: 'sound-list__name' });
-        const board = $.el('span', { className: 'sound-list__board', textContent: `${siteID}/${boardID}` });
+        const board = $.el('span', { className: 'sound-list__board', title: `${siteID}/${boardID}`, textContent: `/${boardID}/` });
         const arrow = $.el('span', { className: 'sound-list__sep', textContent: '→' });
         const sound = $.el('span', {
           className: 'sound-list__sound' + (lib ? '' : ' sound-list__sound--missing'),
@@ -9290,6 +9687,12 @@ Enable it on boards.${location.hostname.split('.')[1]}.org in your browser's pri
     const {length} = data[type];
     const td = $.el('td',
       {className: 'archive-cell'});
+    td.dataset.label = ({
+      thread: 'Thread redirection',
+      threadJSON: 'Thread fetching',
+      post: 'Post fetching',
+      file: 'File redirection',
+    } as Record<string, string>)[type] || type;
 
     if (!length) {
       td.textContent = '--';

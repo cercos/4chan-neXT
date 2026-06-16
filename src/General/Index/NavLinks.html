@@ -3,6 +3,42 @@
 <span class="brackets-wrap archlistlink"><a href="./archive">Archive</a></span> 
 <span class="brackets-wrap bottomlink"><a href="#bottom">Bottom</a></span> 
 <span class="brackets-wrap" id="index-last-refresh"><a href="javascript:;"><time title="Last index refresh">...</time></a></span> 
+<span id="index-search-help-wrap">
+  <a id="index-search-help" href="javascript:;" title="Search syntax" aria-label="Search syntax" aria-haspopup="dialog" aria-expanded="false">?</a>
+  <span id="index-search-help-popover" class="dialog" role="dialog" aria-label="Search syntax" hidden>
+    <strong>Search syntax</strong>
+
+    <strong class="section">Keywords</strong>
+    <span><code>cat dog</code> matches both words.</span>
+    <span><code>&quot;cat dog&quot;</code> matches that exact phrase.</span>
+    <span><code>op: cat</code> searches OP text only (skips replies).</span>
+
+    <strong class="section">Regex on a field</strong>
+    <span class="note">Form is <code>field:/pattern/flags</code>. The <code>i</code> flag ignores case. Matches the OP only.</span>
+    <span><code>comment:/cat|dog/i</code> either word.</span>
+    <span><code>comment:/\bwebm\b/i</code> whole word only.</span>
+    <span><code>comment:/https?:\/\/\S+/i</code> any link.</span>
+    <span><code>comment:/\d{2,}/</code> 2+ digits in a row.</span>
+    <span><code>subject:/general/i</code> in the subject.</span>
+    <span><code>name:/anon/i</code> in the poster name.</span>
+    <span><code>filename:/\.webm$/i</code> filename ending.</span>
+    <span><code>dimensions:/^1920x/</code> e.g. 1920x1080.</span>
+
+    <strong class="section">Light up icons &amp; thumbnails</strong>
+    <span class="note">Fields with no visible text glow the matching icon, image, or (in catalog) the thumbnail.</span>
+    <span><code>flag:/united states/i</code> by flag name.</span>
+    <span><code>MD5:/^A/i</code> image by file hash.</span>
+    <span><code>email:/sage/i</code> the email field.</span>
+    <span><code>pass:/./</code> any pass user.</span>
+
+    <strong class="section">Multiple fields</strong>
+    <span><code>subject+comment:/cat/i</code> search both at once.</span>
+
+    <strong class="section">Searchable fields</strong>
+    <span class="note">comment, subject, name, tripcode, capcode, uniqueID, postID, filename, dimensions, filesize, flag, email, MD5, pass.</span>
+    <span class="note">Tip: matches are highlighted in the results, painted in text or glowed on icons/images. Escape a literal slash as <code>\/</code>.</span>
+  </span>
+</span>
 <input type="search" id="index-search" class="field" placeholder="Search" autocomplete="off">
 <a id="index-search-clear" href="javascript:;" title="Clear search">×</a>
 <span id="hidden-label" hidden> &mdash; <span id="hidden-count"></span> <span id="hidden-toggle">[<a href="javascript:;">Show</a>]</span></span>

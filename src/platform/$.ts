@@ -258,41 +258,6 @@ $.hasClass = (el, className) => el.classList.contains(className);
 
 $.rm = el => el?.remove();
 
-// Trigger an exit animation, then remove the element once it finishes.
-// Adds `className` (default 'closing') so CSS can transition/animate the node
-// out, listens for the matching end event, then detaches it. Falls back to an
-// immediate remove when nothing is animated (duration 0) or the node is already
-// detached, and uses a timeout backstop so an interrupted/never-firing end
-// event can't leave the node stranded in the DOM.
-$.rmAfterAnimation = function (el, className = 'closing') {
-  if (!el) { return; }
-  if (!el.isConnected) { el.remove(); return; }
-  el.classList.add(className);
-
-  const style = window.getComputedStyle(el);
-  const times = (durations, delays) =>
-    durations.split(',').map((dur, i) =>
-      (parseFloat(dur) || 0) + (parseFloat(delays.split(',')[i]) || 0));
-  const total = Math.max(0,
-    ...times(style.transitionDuration, style.transitionDelay),
-    ...times(style.animationDuration,  style.animationDelay));
-  if (total === 0) { el.remove(); return; }
-
-  let done = false;
-  const finish = e => {
-    // Ignore events bubbling up from descendant transitions/animations.
-    if (e && e.target !== el) { return; }
-    if (done) { return; }
-    done = true;
-    el.removeEventListener('transitionend', finish);
-    el.removeEventListener('animationend', finish);
-    el.remove();
-  };
-  el.addEventListener('transitionend', finish);
-  el.addEventListener('animationend', finish);
-  setTimeout(finish, (total * 1000) + 50);
-};
-
 $.rmAll = root => root.textContent = null;
 
 $.tn = s => d.createTextNode(s);

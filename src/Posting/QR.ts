@@ -4623,6 +4623,7 @@ var QR = {
     set(post) {
       $.get('QR.persona', {}, function ({ 'QR.persona': persona }) {
         persona = {
+          name: post.name ?? '',
           flag: post.flag
         };
         $.set('QR.persona', persona);
@@ -4720,12 +4721,15 @@ class post {
     QR.persona.get(persona => {
       // Priority: a user-configured "always" persona (QR.personas setting) wins; otherwise
       // carry the previous post's identity forward so name/trip stick across a session, the
-      // same way vanilla 4chan's static form keeps the fields filled. This is independent of
-      // browser autofill: filling .value here doesn't suppress the browser's suggestions on a
-      // blank field, it just stops the field blanking after every post.
-      this.name  = 'name'  in QR.persona.always ? QR.persona.always.name  : (prev?.name ?? '');
+      // same way vanilla 4chan's static form keeps the fields filled. If this is the first
+      // queued post, fall back to the last manually used name from QR.persona.
+      // When "Clear Name and Options After Posting" is on, never carry the
+      // identity fields forward and never restore them from storage, so each
+      // post starts blank. An "always" persona still wins.
+      const clearIdentity = Conf['Clear Name and Options After Posting'];
+      this.name  = 'name'  in QR.persona.always ? QR.persona.always.name  : (clearIdentity ? '' : (prev?.name ?? persona.name ?? ''));
       // Carry the options field, but drop a bare "sage" so replies aren't accidentally saged.
-      this.email = 'email' in QR.persona.always ? QR.persona.always.email : (/^sage$/i.test(prev?.email) ? '' : (prev?.email ?? ''));
+      this.email = 'email' in QR.persona.always ? QR.persona.always.email : (clearIdentity ? '' : (/^sage$/i.test(prev?.email) ? '' : (prev?.email ?? '')));
       // Subject intentionally still clears after each post.
       this.sub   = 'sub'   in QR.persona.always ? QR.persona.always.sub   : '';
 
@@ -4839,8 +4843,10 @@ class post {
         this.saveFilename();
         this.updateFilename();
         break;
-      case 'flag':
-        if (this[name] !== prev) { // only save manual changes, not values filled in by persona settings
+      case 'name': case 'flag':
+        // only save manual changes, not values filled in by persona settings,
+        // and don't persist identity when the user opted to clear it after posting
+        if (this[name] !== prev && !Conf['Clear Name and Options After Posting']) {
           QR.persona.set(this);
         }
         break;

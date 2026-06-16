@@ -37,6 +37,10 @@ const threadWatcherAttached = () =>
 var Menu = (function() {
   let currentMenu = undefined;
   let lastToggledButton = undefined;
+  // A single #menu node, created once and kept in the DOM. Opening repopulates
+  // it and toggles visibility instead of building/removing a node each time, so
+  // the enter and exit transitions can finish (see makeMenu/open/close).
+  let menuNode = null;
   Menu = class Menu {
     static initClass() {
       currentMenu       = null;
@@ -60,16 +64,23 @@ var Menu = (function() {
     }
 
     makeMenu() {
-      const menu = $.el('div', {
-        className: 'dialog',
-        id:        'menu',
-        tabIndex:  0
+      if (!menuNode) {
+        menuNode = $.el('div', {
+          className: 'dialog menu-hidden',
+          id:        'menu',
+          tabIndex:  0
+        }
+        );
+        $.on(menuNode, 'click', e => e.stopPropagation());
+        // The node is shared across Menu instances, so route keyboard handling
+        // to whichever menu is currently open.
+        $.on(menuNode, 'keydown', e => currentMenu?.keybinds(e));
+        // Append to body so the menu escapes any ancestor stacking context
+        // (e.g. #thread-watcher's position:fixed/z-index:5).
+        $.add(d.body, menuNode);
       }
-      );
-      menu.dataset.type = this.type;
-      $.on(menu, 'click', e => e.stopPropagation());
-      $.on(menu, 'keydown', this.keybinds);
-      return menu;
+      menuNode.dataset.type = this.type;
+      return menuNode;
     }
 
     toggle(e, button, data) {
@@ -96,6 +107,8 @@ var Menu = (function() {
 
       this.entries.sort((first, second) => first.order - second.order);
 
+      // Clear any entries left over from a previous open before repopulating.
+      $.rmAll(menu);
       for (entry of this.entries) {
         this.insertEntry(entry, menu, data);
       }
@@ -105,9 +118,9 @@ var Menu = (function() {
       $.on(d, 'click CloseMenu', this.close);
       $.on(d, 'scroll', this.setPosition);
       $.on(window, 'resize', this.setPosition);
-      // Append to body so the menu escapes any ancestor stacking context
-      // (e.g. #thread-watcher's position:fixed/z-index:5).
-      $.add(d.body, menu);
+      // Reveal the menu (display:none -> shown) so the @starting-style enter
+      // animation runs; the node itself stays in the DOM across opens.
+      $.rmClass(menu, 'menu-hidden');
 
       this.setPosition();
 
@@ -166,10 +179,10 @@ var Menu = (function() {
     }
 
     close() {
-      // Animate the menu out instead of yanking it from the DOM mid-transition;
-      // a fresh node is built on every open, so the outgoing copy can linger
-      // harmlessly until its exit animation finishes.
-      $.rmAfterAnimation(this.menu);
+      // Hide instead of removing: the node stays in the DOM so its exit
+      // animation can finish. transition-behavior: allow-discrete defers the
+      // display:none flip until the opacity/transform transition ends.
+      $.addClass(menuNode, 'menu-hidden');
       delete this.menu;
       $.rmClass(lastToggledButton, 'active');
       currentMenu       = null;

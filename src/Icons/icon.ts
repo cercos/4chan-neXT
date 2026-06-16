@@ -4,6 +4,7 @@ import { svgPathData as imgSvg, width as imgW, height as imgH } from "@fa/faImag
 import { svgPathData as eyeSvg, width as eyeW, height as eyeH } from "@fa/faEye";
 import { svgPathData as expandSvg, width as expandW, height as expandH } from "@fas/faUpRightAndDownLeftFromCenter";
 import { svgPathData as commentSvg, width as commentW, height as commentH } from "@fa/faComment";
+import { svgPathData as circleQuestionSvg, width as circleQuestionW, height as circleQuestionH } from "@fa/faCircleQuestion";
 import { svgPathData as refreshSvg, width as refreshW, height as refreshH } from "@fas/faRotate";
 import { svgPathData as wrenchSvg, width as wrenchW, height as wrenchH } from "@fas/faWrench";
 import { svgPathData as boltSvg, width as boltW, height as boltH } from "@fas/faBolt";
@@ -31,7 +32,9 @@ import { svgPathData as playSvg, width as playW, height as playH } from "@fas/fa
 import { svgPathData as stopSvg, width as stopW, height as stopH } from "@fas/faStop";
 import { svgPathData as arrowUpLongSvg, width as arrowUpLongW, height as arrowUpLongH } from "@fas/faArrowUpLong";
 import { svgPathData as arrowDownLongSvg, width as arrowDownLongW, height as arrowDownLongH } from "@fas/faArrowDownLong";
+import { svgPathData as barsSvg, width as barsW, height as barsH } from "@fas/faBars";
 import { svgPathData as barsStaggeredSvg, width as barsStaggeredW, height as barsStaggeredH } from "@fas/faBarsStaggered";
+import { svgPathData as slidersSvg, width as slidersW, height as slidersH } from "@fas/faSliders";
 
 const toSvg = (svgPathData: string, width: string | number, height: string | number) => {
   return `<svg xmlns="http://www.w3.org/2000/svg" class="icon" viewBox="0 0 ${width} ${height}">` +
@@ -43,6 +46,7 @@ const icons = {
    eye:             toSvg(eyeSvg, eyeW, eyeH),
    expand:          toSvg(expandSvg, expandW, expandH),
    comment:         toSvg(commentSvg, commentW, commentH),
+   circleQuestion:  toSvg(circleQuestionSvg, circleQuestionW, circleQuestionH),
    refresh:         toSvg(refreshSvg, refreshW, refreshH),
    wrench:          toSvg(wrenchSvg, wrenchW, wrenchH),
    bolt:            toSvg(boltSvg, boltW, boltH),
@@ -70,7 +74,9 @@ const icons = {
    stop:            toSvg(stopSvg, stopW, stopH),
    arrowUpLong:     toSvg(arrowUpLongSvg, arrowUpLongW, arrowUpLongH),
    arrowDownLong:   toSvg(arrowDownLongSvg, arrowDownLongW, arrowDownLongH),
-   barsStaggered:   toSvg(barsStaggeredSvg, barsStaggeredW, barsStaggeredH)
+   bars:            toSvg(barsSvg, barsW, barsH),
+   barsStaggered:   toSvg(barsStaggeredSvg, barsStaggeredW, barsStaggeredH),
+   sliders:         toSvg(slidersSvg, slidersW, slidersH)
 } as const;
 
 var Icon = {
