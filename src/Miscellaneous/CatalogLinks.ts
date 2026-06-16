@@ -25,25 +25,27 @@ var CatalogLinks = {
   externalList: null as any,
 
   init() {
-    if ((g.SITE.software === 'yotsuba') && (Conf['External Catalog'] || Conf['JSON Index']) && !(Conf['JSON Index'] && (g.VIEW === 'index'))) {
+    const site = g.SITE!;
+    const board = g.BOARD!;
+    if ((site.software === 'yotsuba') && (Conf['External Catalog'] || Conf['JSON Index']) && !(Conf['JSON Index'] && (g.VIEW === 'index'))) {
       const selector = (() => { switch (g.VIEW) {
         case 'thread': case 'archive': return '.navLinks.desktop > a';
         case 'catalog':           return '.navLinks > :first-child > a';
         case 'index':             return '#ctrl-top > a, .cataloglink > a';
       } })();
-      $.ready(function() {
+      if (selector) $.ready(function() {
         for (var link of $$(selector)) {
           var catalogURL;
           switch (link.pathname.replace(/\/+/g, '/')) {
-            case `/${g.BOARD}/`:
+            case `/${board}/`:
               if (Conf['JSON Index']) { link.textContent = 'Index'; }
               link.href = CatalogLinks.index();
               break;
-            case `/${g.BOARD}/catalog`:
+            case `/${board}/catalog`:
               link.href = CatalogLinks.catalog();
               break;
           }
-          if ((g.VIEW === 'catalog') && ((catalogURL = CatalogLinks.catalog()) !== g.SITE.urls.catalog?.(g.BOARD))) {
+          if ((g.VIEW === 'catalog') && ((catalogURL = CatalogLinks.catalog()) !== site.urls.catalog?.(board))) {
             var catalogLink = link.parentNode.cloneNode(true);
             var link2 = catalogLink.firstElementChild;
             link2.href = catalogURL;
@@ -54,7 +56,7 @@ var CatalogLinks = {
       });
     }
 
-    if ((g.SITE.software === 'yotsuba') && Conf['JSON Index'] && Conf[`Use ${meta.name} Catalog`]) {
+    if ((site.software === 'yotsuba') && Conf['JSON Index'] && Conf[`Use ${meta.name} Catalog`]) {
       Callbacks.Post.push({
         name: 'Catalog Link Rewrite',
         cb:   this.node
@@ -151,14 +153,14 @@ var CatalogLinks = {
   },
 
   jsonIndex(board, hash) {
-    if ((g.SITE.ID === board.siteID) && (g.BOARD.ID === board.boardID) && (g.VIEW === 'index')) {
+    if ((g.SITE!.ID === board.siteID) && (g.BOARD!.ID === board.boardID) && (g.VIEW === 'index')) {
       return hash;
     } else {
       return Get.url('index', board) + hash;
     }
   },
 
-  catalog(board=g.BOARD) {
+  catalog(board=g.BOARD!) {
     let external, nativeCatalog;
     if (Conf['External Catalog'] && (external = CatalogLinks.external(board))) {
       return external;
@@ -171,7 +173,7 @@ var CatalogLinks = {
     }
   },
 
-  index(board=g.BOARD) {
+  index(board=g.BOARD!) {
     if (Index.enabledOn(board)) {
       return CatalogLinks.jsonIndex(board, '#index');
     } else {

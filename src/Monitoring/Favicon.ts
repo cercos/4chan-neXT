@@ -48,7 +48,7 @@ import { Conf, d } from '../globals/globals';
 var Favicon = {
   // Assigned later; declared so the singleton's type includes them. Loosely typed
   // where a precise type would cascade new errors; tighten during the strict pass.
-  el: null as HTMLLinkElement,
+  el: null as unknown as HTMLLinkElement,
   status: null as any,
   isSFW: false,
   default: '',

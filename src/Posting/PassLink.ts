@@ -8,7 +8,7 @@ import $ from "../platform/$";
  */
 const PassLink = {
   init() {
-    if ((g.SITE.software !== 'yotsuba') || !Conf['Pass Link']) { return; }
+    if ((g.SITE!.software !== 'yotsuba') || !Conf['Pass Link']) { return; }
     return Main.ready(this.ready);
   },
 

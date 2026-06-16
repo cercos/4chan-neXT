@@ -15,7 +15,7 @@ var ImageLoader = {
   prefetchEnabled: false,
 
   init() {
-    if (!['index', 'thread', 'archive'].includes(g.VIEW)) { return; }
+    if (g.VIEW !== 'index' && g.VIEW !== 'thread' && g.VIEW !== 'archive') { return; }
     const replace = Conf['Replace Thumbnails'] && (
       Conf['Replace JPG'] ||
       Conf['Replace PNG'] ||
@@ -31,7 +31,7 @@ var ImageLoader = {
 
     $.on(d, 'PostsInserted', function() {
       if (ImageLoader.prefetchEnabled || replace) {
-        return g.posts.forEach(ImageLoader.prefetchAll);
+        return g.posts!.forEach(ImageLoader.prefetchAll);
       }
     });
 
@@ -39,7 +39,7 @@ var ImageLoader = {
       $.on(d, 'scroll visibilitychange 4chanXInitFinished PostsInserted', this.playVideos);
     }
 
-    if (!Conf['Image Prefetching'] || !['index', 'thread'].includes(g.VIEW)) { return; }
+    if (!Conf['Image Prefetching'] || (g.VIEW !== 'index' && g.VIEW !== 'thread')) { return; }
 
     const el = $.el('a', {
       href: 'javascript:;',
@@ -127,14 +127,14 @@ var ImageLoader = {
     ImageLoader.prefetchEnabled = !ImageLoader.prefetchEnabled;
     this.classList.toggle('disabled', !ImageLoader.prefetchEnabled);
     if (ImageLoader.prefetchEnabled) {
-      g.posts.forEach(ImageLoader.prefetchAll);
+      g.posts!.forEach(ImageLoader.prefetchAll);
     }
   },
 
   playVideos() {
     // Special case: Quote previews are off screen when inserted into document, but quickly moved on screen.
     const qpClone = $.id('qp')?.firstElementChild;
-    return g.posts.forEach(function(post) {
+    return g.posts!.forEach(function(post) {
       for (post of [post, ...post.clones]) {
         for (var file of post.files) {
           if (file.videoThumb) {

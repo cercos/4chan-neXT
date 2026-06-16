@@ -20,7 +20,7 @@ import Menu from "../Menu/Menu";
 
 const Test = {
   init() {
-    if ((g.SITE.software !== 'yotsuba') || !['index', 'thread'].includes(g.VIEW)) { return; }
+    if ((g.SITE!.software !== 'yotsuba') || (g.VIEW !== 'index' && g.VIEW !== 'thread')) { return; }
 
     if (Conf['Menu']) {
       const a = $.el('a',
@@ -80,7 +80,7 @@ const Test = {
       var nodes = $.X('.//br|.//wbr|.//text()', el);
       i = 0;
       nodes = ((() => {
-        const result = [];
+        const result: Node[] = [];
         while (node = nodes.snapshotItem(i++)) {
           result.push(node);
         }
@@ -124,15 +124,15 @@ const Test = {
 
   testOne(post) {
     Test.postsRemaining++;
-    return $.cache(g.SITE.urls.threadJSON({boardID: post.boardID, threadID: post.threadID}), function() {
+    return $.cache(g.SITE!.urls.threadJSON({boardID: post.boardID, threadID: post.threadID}), function() {
       if (!this.response) { return; }
       const {posts} = this.response;
-      g.SITE.Build.spoilerRange[post.board.ID] = posts[0].custom_spoiler;
+      g.SITE!.Build.spoilerRange[post.board.ID] = posts[0].custom_spoiler;
       for (var postData of posts) {
         if (postData.no === post.ID) {
           var t1 = new Date().getTime();
-          var obj = g.SITE.Build.parseJSON(postData, post.board);
-          var root = g.SITE.Build.post(obj);
+          var obj = g.SITE!.Build.parseJSON(postData, post.board);
+          var root = g.SITE!.Build.post(obj);
           var t2 = new Date().getTime();
           Test.time += t2 - t1;
           var post2 = new Post(root, post.thread, post.board, {forBuildTest: true});
@@ -178,7 +178,7 @@ const Test = {
   },
 
   testAll() {
-    g.posts.forEach(function(post) {
+    g.posts!.forEach(function(post) {
       if (!post.isClone && !post.isFetchedQuote) {
         let abbr;
         if (!((abbr = $('.abbr', post.nodes.comment)) && /Comment too long\./.test(abbr.textContent))) {
@@ -203,7 +203,7 @@ const Test = {
 
   cb: {
     testOne() {
-      Test.testOne(g.posts.get(this.dataset.fullID));
+      Test.testOne(g.posts!.get(this.dataset.fullID));
       return Menu.menu.close();
     },
 
@@ -215,14 +215,14 @@ const Test = {
     testOrder() {
       let x;
       const list1 = ((() => {
-        const result = [];
+        const result: number[] = [];
         for (x of Unread.order.order()) {           result.push(x.ID);
         }
         return result;
       })());
       const list2 = ((() => {
-        const result1 = [];
-        for (x of ($$((g.SITE.isOPContainerThread ? `${g.SITE.selectors.thread}, ` : '') + g.SITE.selectors.postContainer))) {           result1.push(+x.id.match(/\d*$/)[0]);
+        const result1: number[] = [];
+        for (x of ($$((g.SITE!.isOPContainerThread ? `${g.SITE!.selectors.thread}, ` : '') + g.SITE!.selectors.postContainer))) {           result1.push(+x.id.match(/\d*$/)[0]);
         }
         return result1;
       })());

@@ -12,7 +12,7 @@ import $ from "../platform/$";
 var QuoteOP = {
   mark: null as any, // loose: late-assigned singleton prop
   init() {
-    if (!['index', 'thread'].includes(g.VIEW) || !Conf['Mark OP Quotes']) { return; }
+    if ((g.VIEW !== 'index' && g.VIEW !== 'thread') || !Conf['Mark OP Quotes']) { return; }
 
     if (Conf['Comment Expansion']) {
       ExpandComment.callbacks.push(this.node);

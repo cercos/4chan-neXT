@@ -12,7 +12,7 @@ var IDColor = {
   ids: null as any, // loose:
 
   init() {
-    if (!['index', 'thread'].includes(g.VIEW) || !Conf['Color User IDs']) { return; }
+    if ((g.VIEW !== 'index' && g.VIEW !== 'thread') || !Conf['Color User IDs']) { return; }
     this.ids = dict();
     this.ids['Heaven'] = [0, 0, 0, '#fff'];
 
@@ -38,7 +38,7 @@ var IDColor = {
   compute(uid) {
     // Convert chars to integers, bitshift and math to create a larger integer
     // Create a nice string of binary
-    const hash = g.SITE.uidColor ? g.SITE.uidColor(uid) : parseInt(uid, 16);
+    const hash = (g.SITE! as any).uidColor ? (g.SITE! as any).uidColor(uid) : parseInt(uid, 16);
 
     // Convert binary string to numerical values with bitshift and '&' truncation.
     const rgb: any[] = [

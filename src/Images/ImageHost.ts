@@ -9,7 +9,7 @@ import $$ from "../platform/$$";
  */
 var ImageHost = {
   init() {
-    if ((!(this.useFaster = /\S/.test(Conf['fourchanImageHost']))) || (g.SITE.software !== 'yotsuba') || !['index', 'thread'].includes(g.VIEW)) { return; }
+    if ((!(this.useFaster = /\S/.test(Conf['fourchanImageHost']))) || (g.SITE!.software !== 'yotsuba') || (g.VIEW !== 'index' && g.VIEW !== 'thread')) { return; }
     return Callbacks.Post.push({
       name: 'Image Host Rewriting',
       cb:   this.node

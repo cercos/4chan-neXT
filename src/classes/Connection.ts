@@ -29,7 +29,7 @@ export default class Connection {
   }
 
   send(data) {
-    return this.targetWindow().postMessage(`${g.NAMESPACE}${JSON.stringify(data)}`, this.origin);
+    return this.targetWindow()?.postMessage(`${g.NAMESPACE}${JSON.stringify(data)}`, this.origin);
   }
 
   onMessage(e) {

@@ -15,7 +15,7 @@ import SW from "../site/SW";
  */
 var FileInfo = {
   init() {
-    if (!['index', 'thread', 'archive'].includes(g.VIEW) || !Conf['File Info Formatting']) { return; }
+    if ((g.VIEW !== 'index' && g.VIEW !== 'thread' && g.VIEW !== 'archive') || !Conf['File Info Formatting']) { return; }
 
     return Callbacks.Post.push({
       name: 'File Info Formatting',
@@ -47,7 +47,7 @@ var FileInfo = {
 
   format(formatString, post, outputNode) {
     let a;
-    const output = [];
+    const output: any[] = [];
     formatString.replace(/%(.)|[^%]+/g, function(s, c) {
       output.push($.hasOwn(FileInfo.formatters, c) ?
         FileInfo.formatters[c].call(post)

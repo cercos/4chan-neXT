@@ -8,12 +8,12 @@
  */
 export const debounce = (wait: number, fn: Function, leading = true) => {
   let lastCall = 0;
-  let timeout = null;
-  let that = null;
-  let args = null;
+  let timeout: ReturnType<typeof setTimeout> | null = null;
+  let that: any = null;
+  let args: IArguments | null = null;
   const exec = function () {
     lastCall = Date.now();
-    return fn.apply(that, args);
+    return fn.apply(that, args as any);
   };
   return function () {
     args = arguments;
@@ -35,7 +35,7 @@ dict.clone = function (obj) {
   if ((typeof obj !== 'object') || (obj === null)) {
     return obj;
   } else if (obj instanceof Array) {
-    const arr = [];
+    const arr: any[] = [];
     for (let i = 0, end = obj.length; i < end; i++) {
       arr.push(dict.clone(obj[i]));
     }
@@ -57,4 +57,4 @@ export const MINUTE = SECOND * 60;
 export const HOUR = MINUTE * 60;
 export const DAY = HOUR * 24;
 
-export const platform = window.GM_xmlhttpRequest ? 'userscript' : 'crx';
+export const platform = typeof window.GM_xmlhttpRequest !== 'undefined' ? 'userscript' : 'crx';

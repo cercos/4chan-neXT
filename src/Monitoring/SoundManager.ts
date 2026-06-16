@@ -42,12 +42,12 @@ const SoundManager = {
 
   onThreadUpdate(e: CustomEvent) {
     if (!e.detail?.[404]) return;
-    const thread = g.threads.get(e.detail.threadID);
+    const thread = g.threads!.get(e.detail.threadID);
     if (!thread) return;
     SoundManager.clearThreadPostOverrides(thread.board.ID, thread.ID);
   },
 
-  clearThreadPostOverrides(boardID: string, threadID: string | number, siteID = g.SITE.ID) {
+  clearThreadPostOverrides(boardID: string, threadID: string | number, siteID = g.SITE!.ID) {
     if (!this.db) return;
     this.db.delete({ siteID, boardID, threadID });
   },
@@ -123,11 +123,11 @@ const SoundManager = {
     return id === BUILTIN_DEFAULT_ID;
   },
 
-  boardKey(boardID: string, siteID = g.SITE.ID) {
+  boardKey(boardID: string, siteID = g.SITE!.ID) {
     return `${siteID}/${boardID}`;
   },
 
-  getBoardOverride(boardID: string, siteID = g.SITE.ID): string | undefined {
+  getBoardOverride(boardID: string, siteID = g.SITE!.ID): string | undefined {
     const map = Conf.boardSounds || {};
     return map[this.boardKey(boardID, siteID)];
   },

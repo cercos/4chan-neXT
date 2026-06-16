@@ -14,17 +14,17 @@ import { dict } from "../platform/helpers";
  */
 var Banner = {
   db: null as any, // loose: DataBoard, but cast to any so optional cb on delete() typechecks
-  choices: null as string[], // loose:
+  choices: null as string[] | null, // loose:
 
   init() {
     if (Conf['Custom Board Titles']) {
-      this.db = new DataBoard('customTitles', null, true);
+      this.db = new DataBoard('customTitles', undefined, true);
     }
 
     $.asap((() => d.body), () => $.asap((() => $('hr')), Banner.ready));
 
     // Let 4chan's JS load the banner if enabled; otherwise, load it ourselves.
-    if (g.BOARD.ID !== 'f') {
+    if (g.BOARD!.ID !== 'f') {
       return Main.ready(() => $.queueTask(Banner.load));
     }
   },
@@ -72,8 +72,9 @@ var Banner = {
       if (!Banner.choices?.length) {
         Banner.choices = Conf['knownBanners'].split(',').slice();
       }
-      const i = Math.floor(Banner.choices.length * Math.random());
-      const banner = Banner.choices.splice(i, 1);
+      const choices = Banner.choices!;
+      const i = Math.floor(choices.length * Math.random());
+      const banner = choices.splice(i, 1);
       return $('img', this.parentNode).src = `//s.4cdn.org/image/title/${banner}`;
     },
 
@@ -95,7 +96,7 @@ var Banner = {
       if (this.textContent = this.textContent.replace(/\n*$/, '')) {
         this.contentEditable = false;
         return Banner.db.set({
-          boardID:  g.BOARD.ID,
+          boardID:  g.BOARD!.ID,
           threadID: this.className,
           val: {
             title: this.textContent,
@@ -106,7 +107,7 @@ var Banner = {
         $.rmAll(this);
         $.add(this, [...Banner.original[this.className].cloneNode(true).childNodes]);
         return Banner.db.delete({
-          boardID:  g.BOARD.ID,
+          boardID:  g.BOARD!.ID,
           threadID: this.className
         });
       }
@@ -125,12 +126,12 @@ var Banner = {
       $.on(child, event, Banner.cb[event]);
     }
 
-    if (data = Banner.db.get({boardID: g.BOARD.ID, threadID: className})) {
+    if (data = Banner.db.get({boardID: g.BOARD!.ID, threadID: className})) {
       if (Conf['Persistent Custom Board Titles'] || (data.orig === child.textContent)) {
         Banner.original[className] = child.cloneNode(true);
         return child.textContent = data.title;
       } else {
-        return Banner.db.delete({boardID: g.BOARD.ID, threadID: className});
+        return Banner.db.delete({boardID: g.BOARD!.ID, threadID: className});
       }
     }
   }

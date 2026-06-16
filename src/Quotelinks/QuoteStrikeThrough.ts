@@ -10,7 +10,7 @@ import $ from "../platform/$";
  */
 const QuoteStrikeThrough = {
   init() {
-    if (!['index', 'thread'].includes(g.VIEW) ||
+    if ((g.VIEW !== 'index' && g.VIEW !== 'thread') ||
       (!Conf['Reply Hiding Buttons'] && (!Conf['Menu'] || !Conf['Reply Hiding Link']) && !Conf['Filter'])) { return; }
 
     return Callbacks.Post.push({
@@ -23,7 +23,7 @@ const QuoteStrikeThrough = {
     if (this.isClone) { return; }
     for (var quotelink of this.nodes.quotelinks) {
       var {boardID, postID} = Get.postDataFromLink(quotelink);
-      if (g.posts.get(`${boardID}.${postID}`)?.isHidden) {
+      if (g.posts!.get(`${boardID}.${postID}`)?.isHidden) {
         $.addClass(quotelink, 'filtered');
       }
     }

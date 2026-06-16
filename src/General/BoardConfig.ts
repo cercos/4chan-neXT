@@ -11,11 +11,11 @@ import { dict, HOUR } from "../platform/helpers";
  * Full docs: https://github.com/decaffeinate/decaffeinate/blob/main/docs/suggestions.md
  */
 var BoardConfig = {
-  cbs: [],
+  cbs: [] as Array<() => void>,
 
   init() {
     let middle;
-    if (g.SITE.software !== 'yotsuba') { return; }
+    if (g.SITE?.software !== 'yotsuba') { return; }
     const now = Date.now();
     if (now - (2 * HOUR) >= ((middle = Conf['boardConfig'].lastChecked || 0)) || middle > now) {
       return $.ajax(`${location.protocol}//a.4cdn.org/boards.json`,
@@ -67,7 +67,7 @@ var BoardConfig = {
 
   sfwBoards(sfw) {
     return (() => {
-      const result = [];
+      const result: string[] = [];
       const object = this.boards || Conf['boardConfig'].boards;
       for (var board in object) {
         var data = object[board];
@@ -95,7 +95,7 @@ var BoardConfig = {
   },
 
   noAudio(boardID) {
-    if (g.SITE.software !== 'yotsuba') { return false; }
+    if (g.SITE?.software !== 'yotsuba') { return false; }
     const boards = this.boards || Conf['boardConfig'].boards;
     return boards && boards[boardID] && !boards[boardID].webm_audio;
   },

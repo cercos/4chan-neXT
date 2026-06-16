@@ -22,7 +22,7 @@ const PostSuccessful = {
 
     const db = new DataBoard('yourPosts');
     return db.set({
-      boardID: g.BOARD.ID,
+      boardID: g.BOARD!.ID,
       threadID,
       postID,
       val: true

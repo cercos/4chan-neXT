@@ -79,7 +79,7 @@ export default class DataBoard {
       delete this.data.boards;
       delete this.data.lastChecked;
     }
-    return this.data[g.SITE.ID] || (this.data[g.SITE.ID] = { boards: dict() });
+    return this.data[g.SITE!.ID] || (this.data[g.SITE!.ID] = { boards: dict() });
   }
 
   save(change: () => void, cb?: () => void) {
@@ -113,7 +113,7 @@ export default class DataBoard {
   }
 
   delete({siteID, boardID, threadID, postID}, cb) {
-    if (!siteID) { siteID = g.SITE.ID; }
+    if (!siteID) { siteID = g.SITE!.ID; }
     if (!this.data[siteID]) { return; }
     this.save(() => {
       if (postID) {
@@ -150,12 +150,13 @@ export default class DataBoard {
   }
 
   setUnsafe({ siteID, boardID, threadID, postID, val }: PostInfo & { val?: any }) {
-    if (!siteID) { siteID = g.SITE.ID; }
+    if (!siteID) { siteID = g.SITE!.ID; }
     if (!this.data[siteID]) this.data[siteID] = { boards: dict() };
     const boards = this.data[siteID].boards;
     if (postID !== undefined) {
       let base;
-      (((base = boards[boardID] || (boards[boardID] = dict())))[threadID] || (base[threadID] = dict()))[postID] = val;
+      const threadKey = threadID as string | number;
+      (((base = boards[boardID] || (boards[boardID] = dict())))[threadKey] || (base[threadKey] = dict()))[postID] = val;
     } else if (threadID !== undefined) {
       (boards[boardID] || (boards[boardID] = dict()))[threadID] = val;
     } else {
@@ -189,7 +190,7 @@ export default class DataBoard {
 
   get({ siteID, boardID, threadID, postID, defaultValue }: PostInfo & { defaultValue?: any }) {
     let board, val;
-    if (!siteID) { siteID = g.SITE.ID; }
+    if (!siteID) { siteID = g.SITE!.ID; }
     if (board = this.data[siteID]?.boards[boardID]) {
       let thread;
       if (threadID == null) {
@@ -212,7 +213,7 @@ export default class DataBoard {
 
   clean() {
     let boardID, middle;
-    const siteID = g.SITE.ID;
+    const siteID = g.SITE!.ID;
     for (boardID in this.data[siteID].boards) {
       this.deleteIfEmpty({siteID, boardID});
     }
@@ -227,16 +228,16 @@ export default class DataBoard {
 
   ajaxClean(boardID) {
     const that = this;
-    const siteID = g.SITE.ID;
-    const threadsList = g.SITE.urls.threadsListJSON?.({siteID, boardID});
+    const siteID = g.SITE!.ID;
+    const threadsList = g.SITE!.urls.threadsListJSON?.({siteID, boardID});
     if (!threadsList) { return; }
     $.cache(threadsList, function() {
       if (this.status !== 200) { return; }
-      const archiveList = g.SITE.urls.archiveListJSON?.({siteID, boardID});
+      const archiveList = g.SITE!.urls.archiveListJSON?.({siteID, boardID});
       if (!archiveList) return that.ajaxCleanParse(boardID, this.response);
       const response1 = this.response;
       $.cache(archiveList, function() {
-        if ((this.status !== 200) && (!!g.SITE.archivedBoardsKnown || (this.status !== 404))) { return; }
+        if ((this.status !== 200) && (!!g.SITE!.archivedBoardsKnown || (this.status !== 404))) { return; }
         that.ajaxCleanParse(boardID, response1, this.response);
       });
     });
@@ -244,7 +245,7 @@ export default class DataBoard {
 
   ajaxCleanParse(boardID: string, response1: any, response2?: any) {
     let board, ID;
-    const siteID = g.SITE.ID;
+    const siteID = g.SITE!.ID;
     if (!(board = this.data[siteID].boards[boardID])) return;
     const threads = dict();
     if (response1) {

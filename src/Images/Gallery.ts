@@ -37,7 +37,7 @@ var Gallery = {
   colLabelText: null as any,
 
   init() {
-    if (!(this.enabled = Conf['Gallery'] && ['index', 'thread'].includes(g.VIEW))) { return; }
+    if (!(this.enabled = Conf['Gallery'] && (g.VIEW === 'index' || g.VIEW === 'thread'))) { return; }
 
     this.delay = Conf['Slide Delay'];
 
@@ -59,7 +59,7 @@ var Gallery = {
 
   node() {
     return (() => {
-      const result = [];
+      const result: any[] = [];
       for (var file of this.files) {
         if (file.thumb) {
           if (Gallery.nodes) {
@@ -67,7 +67,7 @@ var Gallery = {
             Gallery.nodes.total.textContent = Gallery.images.length;
           }
 
-          if (!Conf['Image Expansion'] && ((g.SITE.software !== 'tinyboard') || !(Main as any).jsEnabled)) {
+          if (!Conf['Image Expansion'] && ((g.SITE!.software !== 'tinyboard') || !(Main as any).jsEnabled)) {
             result.push($.on(file.thumbLink, 'click', Gallery.cb.image));
           } else {
             result.push(undefined);
@@ -155,7 +155,7 @@ var Gallery = {
     $.on(window, 'resize', Gallery.cb.setHeight);
     $.on(window, 'resize', Gallery.cb.setLayout);
 
-    for (var postThumb of $$(g.SITE.selectors.file.thumb)) {
+    for (var postThumb of $$(g.SITE!.selectors.file.thumb)) {
       var post;
       if (!(post = Get.postFromNode(postThumb))) { continue; }
       for (var file of post.files) {
@@ -268,8 +268,8 @@ var Gallery = {
 
     // Set sauce links
     $.rmAll(nodes.sauce);
-    if (Conf['Sauce'] && Sauce.links && (post = g.posts.get(file.dataset.post))) {
-      const sauces = [];
+    if (Conf['Sauce'] && Sauce.links && (post = g.posts!.get(file.dataset.post))) {
+      const sauces: any[] = [];
       for (var link of Sauce.links) {
         var node;
         if (node = Sauce.createSauceLink(link, post, post.files[+file.dataset.file])) {
@@ -287,7 +287,7 @@ var Gallery = {
     }
 
     // Scroll to post
-    if (Conf['Scroll to Post'] && (post = g.posts.get(file.dataset.post))) {
+    if (Conf['Scroll to Post'] && (post = g.posts!.get(file.dataset.post))) {
       Header.scrollTo(post.nodes.root);
     }
 
@@ -302,7 +302,7 @@ var Gallery = {
       return new Notice('error', 'Corrupt or unplayable video', 30);
     }
     if (ImageCommon.isFromArchive(this)) { return; }
-    const post = g.posts.get(this.dataset.post);
+    const post = g.posts!.get(this.dataset.post);
     const file = post.files[+this.dataset.file];
     return ImageCommon.error(this, post, file, null, url => {
       if (!url) { return; }
@@ -381,7 +381,7 @@ var Gallery = {
       return cb();
     },
 
-    open(e) {
+    open(e?: Event) {
       if (e) { e.preventDefault(); }
       // In fullscreen-thumbnails mode a click opens the image as a lightbox
       // overlaid on the grid rather than in the (collapsed) inline preview.
@@ -399,12 +399,14 @@ var Gallery = {
 
     prev() {
       return Gallery.cb.open.call(
-        Gallery.images[+Gallery.nodes.current.dataset.id - 1] || Gallery.images[Gallery.images.length - 1]
+        Gallery.images[+Gallery.nodes.current.dataset.id - 1] || Gallery.images[Gallery.images.length - 1],
+        undefined
       );
     },
     next() {
       return Gallery.cb.open.call(
-        Gallery.images[+Gallery.nodes.current.dataset.id + 1] || Gallery.images[0]
+        Gallery.images[+Gallery.nodes.current.dataset.id + 1] || Gallery.images[0],
+        undefined
       );
     },
 
@@ -575,7 +577,7 @@ var Gallery = {
       const {current, frame} = Gallery.nodes;
       const {style} = current;
 
-      if (Conf['Stretch to Fit'] && (dim = g.posts.get(current.dataset.post)?.files[+current.dataset.file].dimensions)) {
+      if (Conf['Stretch to Fit'] && (dim = g.posts!.get(current.dataset.post)?.files[+current.dataset.file].dimensions)) {
         const [width, height] = dim.split('x');
         let containerWidth = frame.clientWidth;
         let containerHeight = doc.clientHeight - 25;
@@ -621,7 +623,7 @@ var Gallery = {
 
     createSubEntry(name) {
       const label = UI.checkbox(name, name);
-      const input = label.firstElementChild;
+      const input = label.firstElementChild as HTMLInputElement;
       if (['Hide Thumbnails', 'Fit Width', 'Fit Height'].includes(name)) { $.on(input, 'change', Gallery.cb.setFitness); }
       $.event('change', null, input);
       $.on(input, 'change', $.cb.checked);
@@ -640,7 +642,7 @@ var Gallery = {
       // the other.
       const gridRow = $.el('span', {className: 'gal-grid-entry'});
       const gridCheck = UI.checkbox('Grid Thumbnails', '');
-      const gridInput = gridCheck.firstElementChild;
+      const gridInput = gridCheck.firstElementChild as HTMLInputElement;
       $.on(gridInput, 'change', Gallery.cb.setFitness);
       $.event('change', null, gridInput);
       $.on(gridInput, 'change', $.cb.checked);

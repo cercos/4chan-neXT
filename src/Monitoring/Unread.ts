@@ -319,7 +319,7 @@ var Unread = {
 
     Unread.saveThreadWatcherCount();
 
-    if (Conf['Unread Favicon'] && (g.SITE.software === 'yotsuba')) {
+    if (Conf['Unread Favicon'] && (g.SITE!.software === 'yotsuba')) {
       const {isDead} = Unread.thread;
       return Favicon.set((
         countQuotingYou ?
@@ -350,7 +350,7 @@ var Unread = {
           }
         }
       }
-      return ThreadWatcher.update(g.SITE.ID, Unread.thread.board.ID, Unread.thread.ID, {
+      return ThreadWatcher.update(g.SITE!.ID, Unread.thread.board.ID, Unread.thread.ID, {
         last: Unread.thread.lastPost,
         isDead: Unread.thread.isDead,
         isArchived: Unread.thread.isArchived,

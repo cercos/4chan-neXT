@@ -26,7 +26,7 @@ var QuoteBacklink = {
   containers: dict(),
   bottomBacklinks: null as any, // loose: late-assigned singleton prop
   init() {
-    if (!['index', 'thread'].includes(g.VIEW) || !Conf['Quote Backlinks']) { return; }
+    if ((g.VIEW !== 'index' && g.VIEW !== 'thread') || !Conf['Quote Backlinks']) { return; }
 
     // Add a class to differentiate when backlinks are at
     // the top (default) or bottom of a post
@@ -47,7 +47,7 @@ var QuoteBacklink = {
     if (this.isClone || !this.quotes.length || this.isRebuilt) { return; }
     const markYours = Conf['Mark Quotes of You'] && QuoteYou.isYou(this);
     const a = $.el('a', {
-      href: g.SITE.Build.postURL(this.board.ID, this.thread.ID, this.ID),
+      href: g.SITE!.Build.postURL(this.board.ID, this.thread.ID, this.ID),
       className: this.isHidden ? 'filtered backlink' : 'backlink',
       textContent: Conf['backlink'].replace(/%(?:id|%)/g, x => ({'%id': this.ID, '%%': '%'})[x])
     }
@@ -56,7 +56,7 @@ var QuoteBacklink = {
     for (var quote of this.quotes) {
       var post;
       var containers = [QuoteBacklink.getContainer(quote)];
-      if ((post = g.posts.get(quote)) && post.nodes.backlinkContainer) {
+      if ((post = g.posts!.get(quote)) && post.nodes.backlinkContainer) {
         // Don't add OP clones when OP Backlinks is disabled,
         // as the clones won't have the backlink containers.
         for (var clone of post.clones) {

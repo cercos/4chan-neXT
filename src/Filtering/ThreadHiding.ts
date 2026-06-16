@@ -24,10 +24,10 @@ var ThreadHiding = {
   hiddenThreads: null as any,
 
   init() {
-    if (!['index', 'catalog'].includes(g.VIEW) || (!Conf['Thread Hiding Buttons'] && !(Conf['Menu'] && Conf['Thread Hiding Link']) && !Conf['JSON Index'])) { return; }
+    if ((g.VIEW !== 'index' && g.VIEW !== 'catalog') || (!Conf['Thread Hiding Buttons'] && !(Conf['Menu'] && Conf['Thread Hiding Link']) && !Conf['JSON Index'])) { return; }
     this.db = new DataBoard('hiddenThreads');
     if (g.VIEW === 'catalog') { return this.catalogWatch(); }
-    this.catalogSet(g.BOARD);
+    this.catalogSet(g.BOARD!);
     $.on(d, 'IndexRefreshInternal', this.onIndexRefresh);
     if (Conf['Thread Hiding Buttons']) {
       $.addClass(doc, 'thread-hide');
@@ -39,7 +39,7 @@ var ThreadHiding = {
   },
 
   catalogSet(board) {
-    if (!$.hasStorage || (g.SITE.software !== 'yotsuba')) { return; }
+    if (!$.hasStorage || (g.SITE!.software !== 'yotsuba')) { return; }
     const hiddenThreads = ThreadHiding.db.get({
       boardID: board.ID,
       defaultValue: dict()
@@ -49,8 +49,8 @@ var ThreadHiding = {
   },
 
   catalogWatch() {
-    if (!$.hasStorage || (g.SITE.software !== 'yotsuba')) { return; }
-    this.hiddenThreads = JSON.parse(localStorage.getItem(`4chan-hide-t-${g.BOARD}`)) || {};
+    if (!$.hasStorage || (g.SITE!.software !== 'yotsuba')) { return; }
+    this.hiddenThreads = JSON.parse(localStorage.getItem(`4chan-hide-t-${g.BOARD}`) || '{}') || {};
     return Main.ready(() => // 4chan's catalog sets the style to "display: none;" when hiding or unhiding a thread.
     new MutationObserver(ThreadHiding.catalogSave).observe($.id('threads'), {
       attributes: true,
@@ -61,11 +61,11 @@ var ThreadHiding = {
 
   catalogSave() {
     let threadID;
-    const hiddenThreads2 = JSON.parse(localStorage.getItem(`4chan-hide-t-${g.BOARD}`)) || {};
+    const hiddenThreads2 = JSON.parse(localStorage.getItem(`4chan-hide-t-${g.BOARD}`) || '{}') || {};
     for (threadID in hiddenThreads2) {
       if (!$.hasOwn(ThreadHiding.hiddenThreads, threadID)) {
         ThreadHiding.db.set({
-          boardID:  g.BOARD.ID,
+          boardID:  g.BOARD!.ID,
           threadID,
           val:      {makeStub: Conf['Stubs']}});
       }
@@ -73,7 +73,7 @@ var ThreadHiding = {
     for (threadID in ThreadHiding.hiddenThreads) {
       if (!$.hasOwn(hiddenThreads2, threadID)) {
         ThreadHiding.db.delete({
-          boardID:  g.BOARD.ID,
+          boardID:  g.BOARD!.ID,
           threadID
         });
       }
@@ -99,7 +99,7 @@ var ThreadHiding = {
   },
 
   onIndexRefresh() {
-    return g.BOARD.threads.forEach(function(thread) {
+    return g.BOARD!.threads.forEach(function(thread) {
       const {root} = thread.nodes;
       if (thread.isHidden && thread.stub && !root.contains(thread.stub)) {
         ThreadHiding.makeStub(thread, root);
@@ -222,8 +222,8 @@ var ThreadHiding = {
 
   makeStub(thread, root, reason?) {
     let summary, threadDivider;
-    let numReplies  = $$(g.SITE.selectors.replyOriginal, root).length;
-    if (summary = $(g.SITE.selectors.summary, root)) { numReplies += +summary.textContent.match(/\d+/); }
+    let numReplies  = $$(g.SITE!.selectors.replyOriginal, root).length;
+    if (summary = $(g.SITE!.selectors.summary, root)) { numReplies += +(summary.textContent?.match(/\d+/)?.[0] || 0); }
 
     const a = ThreadHiding.makeButton(thread, 'show');
     const { nameBlock, subject } = thread.OP.info;
@@ -263,7 +263,7 @@ var ThreadHiding = {
     $.prepend(root, thread.stub);
 
     // Prevent hiding of thread divider on sites that put it inside the thread
-    if (threadDivider = $(g.SITE.selectors.threadDivider, root)) {
+    if (threadDivider = $(g.SITE!.selectors.threadDivider, root)) {
       return $.addClass(threadDivider, 'threadDivider');
     }
   },
@@ -292,7 +292,7 @@ var ThreadHiding = {
 
   toggle(thread) {
     if (!(thread instanceof Thread)) {
-      thread = g.threads.get(this.dataset.fullID);
+      thread = g.threads!.get(this.dataset.fullID);
     }
     if (thread.isHidden) {
       ThreadHiding.show(thread);

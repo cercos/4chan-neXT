@@ -1,5 +1,5 @@
 // Type-checking-only config (NOT used by the rollup build). Run via `npm run typecheck`.
-// Mirrors the base tsconfig (loose: noImplicitAny:false, strict off) but scoped to
+// Mirrors the base tsconfig (loose: noImplicitAny:false, strict off except ratcheted strict flags) but scoped to
 // src/ with skipLibCheck, so it's a clean green/red compile signal — exits 0 today.
 //
 // This is the ratchet: it must stay at 0 errors. Treat any new error as a regression
@@ -7,16 +7,22 @@
 // (late-assigned properties declared on each literal; loose `any` where a precise
 // type would cascade — grep `// loose:` for the spots to tighten later).
 //
-// NOTE: full `strict` still surfaces ~3.7k errors (dominated by null-safety once the
-// singletons are typed), so strict remains a large future burndown, not a freebie.
-// noImplicitAny:false is load-bearing here.
+// NOTE: full `strict` still has errors from the remaining strict flags, so strict
+// remains a future burndown, not a freebie. noImplicitAny:false is load-bearing here.
 //
 // Scoped to src/ — tools/ has its own tools/tsconfig.json (node16 + @types/node).
 // fbegin.js/fend.js are intentionally-invalid dead build fragments, excluded.
 {
   "extends": "./tsconfig.json",
   "compilerOptions": {
-    "skipLibCheck": true
+    "skipLibCheck": true,
+    "strictNullChecks": true,
+    "strictBindCallApply": true,
+    "strictFunctionTypes": true,
+    "strictPropertyInitialization": true,
+    "useUnknownInCatchVariables": true,
+    "strictBuiltinIteratorReturn": true,
+    "alwaysStrict": true
   },
   "include": ["src"],
   "exclude": [

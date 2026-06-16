@@ -15,11 +15,11 @@ var PSAHiding = {
   btn: null as any, // loose:
 
   init() {
-    if (!Conf['Announcement Hiding'] || !g.SITE.selectors.psa) { return; }
+    if (!Conf['Announcement Hiding'] || !g.SITE!.selectors.psa) { return; }
     $.addClass(doc, 'hide-announcement');
-    $.onExists(doc, g.SITE.selectors.psa, this.setup);
+    $.onExists(doc, g.SITE!.selectors.psa, this.setup);
     return $.ready(function() {
-      if (!$(g.SITE.selectors.psa)) { return $.rmClass(doc, 'hide-announcement'); }
+      if (!$(g.SITE!.selectors.psa)) { return $.rmClass(doc, 'hide-announcement'); }
     });
   },
 
@@ -27,7 +27,7 @@ var PSAHiding = {
     let btn, hr;
     PSAHiding.psa = psa;
     PSAHiding.text = psa.dataset.utc ?? psa.innerHTML;
-    if (g.SITE.selectors.psaTop && (hr = $(g.SITE.selectors.psaTop)?.previousElementSibling) && (hr.nodeName === 'HR')) {
+    if (g.SITE!.selectors.psaTop && (hr = $(g.SITE!.selectors.psaTop)?.previousElementSibling) && (hr.nodeName === 'HR')) {
       PSAHiding.hr = hr;
     }
     PSAHiding.content = $.el('div');
@@ -70,9 +70,9 @@ var PSAHiding = {
     const hide = $.hasClass(this, 'hide-announcement-button');
     const set = function(hiddenPSAList) {
       if (hide) {
-        return hiddenPSAList[g.SITE.ID] = PSAHiding.text;
+        return hiddenPSAList[g.SITE!.ID] = PSAHiding.text;
       } else {
-        return delete hiddenPSAList[g.SITE.ID];
+        return delete hiddenPSAList[g.SITE!.ID];
       }
     };
     set(Conf['hiddenPSAList']);
@@ -85,7 +85,7 @@ var PSAHiding = {
 
   sync(hiddenPSAList) {
     const {psa, content} = PSAHiding;
-    psa.hidden = (hiddenPSAList[g.SITE.ID] === PSAHiding.text);
+    psa.hidden = (hiddenPSAList[g.SITE!.ID] === PSAHiding.text);
     // Remove content to prevent autoplaying sounds from hidden announcements
     if (psa.hidden) {
       $.add(content, [...psa.childNodes]);

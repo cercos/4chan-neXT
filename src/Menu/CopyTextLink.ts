@@ -11,7 +11,7 @@ var CopyTextLink = {
   text: null as any,  // loose: late-assigned post text
 
   init() {
-    if (!['index', 'thread'].includes(g.VIEW) || !Conf['Menu'] || !Conf['Copy Text Link']) { return; }
+    if ((g.VIEW !== 'index' && g.VIEW !== 'thread') || !Conf['Menu'] || !Conf['Copy Text Link']) { return; }
 
     const a = $.el('a', {
       className: 'copy-text-link',

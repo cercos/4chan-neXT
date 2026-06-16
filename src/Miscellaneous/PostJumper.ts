@@ -13,7 +13,7 @@ var PostJumper = {
   buttons: null as any, // loose:
 
   init() {
-    if (!Conf['Unique ID and Capcode Navigation'] || !['index', 'thread'].includes(g.VIEW)) { return; }
+    if (!Conf['Unique ID and Capcode Navigation'] || (g.VIEW !== 'index' && g.VIEW !== 'thread')) { return; }
 
     this.buttons = this.makeButtons();
     Icon.set(this.buttons.firstChild, 'arrowUpLong');

@@ -24,11 +24,11 @@ var ImageExpand = {
   // where a precise type would cascade new errors; tighten during the strict pass.
   enabled: false,
   on: false,
-  EAI: null as HTMLElement,
-  videoControls: null as HTMLElement,
+  EAI: null as unknown as HTMLElement,
+  videoControls: null as unknown as HTMLElement,
 
   init() {
-    if (!(this.enabled = Conf['Image Expansion'] && ['index', 'thread'].includes(g.VIEW))) { return; }
+    if (!(this.enabled = Conf['Image Expansion'] && (g.VIEW === 'index' || g.VIEW === 'thread'))) { return; }
 
     this.EAI = $.el('a', {
       className: 'expand-all-shortcut',
@@ -76,6 +76,7 @@ var ImageExpand = {
   cb: {
     toggle(e) {
       const post = Get.postFromNode(this);
+      if (!post?.file) { return; }
       if (e.shiftKey && Conf['MD5 Quick Filter in Threads']) {
         Filter.quickFilterMD5.call(post);
         e.preventDefault();
@@ -122,13 +123,13 @@ var ImageExpand = {
         func = ImageExpand.contract;
       }
 
-      return g.posts.forEach(function(post) {
+      return g.posts!.forEach(function(post) {
         for (post of [post, ...post.clones]) { toggle(post); }
       });
     },
 
     playVideos() {
-      return g.posts.forEach(function(post) {
+      return g.posts!.forEach(function(post) {
         for (post of [post, ...post.clones]) {
           var {file} = post;
           if (!file || !file.isVideo || !file.isExpanded) { continue; }
@@ -383,6 +384,7 @@ var ImageExpand = {
   error() {
     const post = Get.postFromNode(this);
     $.rm(this);
+    if (!post?.file) { return; }
     delete post.file.fullImage;
     // Images can error:
     //  - before the image started loading.
@@ -415,7 +417,7 @@ var ImageExpand = {
       );
 
       const {createSubEntry} = ImageExpand.menu;
-      const subEntries = [];
+      const subEntries: any[] = [];
       for (var name in Config.imageExpansion) {
         var conf = Config.imageExpansion[name];
         subEntries.push(createSubEntry(name, conf[1]));
@@ -431,7 +433,7 @@ var ImageExpand = {
     createSubEntry(name, desc) {
       const label = UI.checkbox(name, name);
       label.title = desc;
-      const input = label.firstElementChild;
+      const input = label.firstElementChild as HTMLInputElement;
       if (['Fit width', 'Fit height'].includes(name)) {
         $.on(input, 'change', ImageExpand.cb.setFitness);
       }

@@ -35,12 +35,12 @@ const threadWatcherAttached = () =>
   Conf['Thread Watcher Attach Controls'] !== false && Conf['Thread Watcher Attached'];
 
 var Menu = (function() {
-  let currentMenu = undefined;
-  let lastToggledButton = undefined;
+  let currentMenu: any = undefined;
+  let lastToggledButton: any = undefined;
   // A single #menu node, created once and kept in the DOM. Opening repopulates
   // it and toggles visibility instead of building/removing a node each time, so
   // the enter and exit transitions can finish (see makeMenu/open/close).
-  let menuNode = null;
+  let menuNode: HTMLElement | null = null;
   Menu = class Menu {
     // Assigned later; declared so the singleton's type includes them. Loosely typed
     // where a precise type would cascade new errors; tighten during the strict pass.
@@ -185,6 +185,7 @@ var Menu = (function() {
     }
 
     close() {
+      if (!menuNode || !lastToggledButton) { return; }
       // Hide instead of removing: the node stays in the DOM so its exit
       // animation can finish. transition-behavior: allow-discrete defers the
       // display:none flip until the opacity/transform transition ends.

@@ -31,7 +31,7 @@ interface FilterObj {
   mask: any;
   hide: boolean;
   stub: any;
-  hl: string;
+  hl?: string;
   tile?: boolean;
   top?: boolean;
   noti?: boolean;
@@ -64,7 +64,7 @@ var Filter = {
   filters: new Map<FilterType, FilterObj[] | Map<string, FilterObj[]>>(),
 
   init(this: typeof Filter) {
-    if (!['index', 'thread', 'catalog'].includes(g.VIEW) || !Conf['Filter']) return;
+    if (g.VIEW !== 'index' && g.VIEW !== 'thread' && g.VIEW !== 'catalog' || !Conf['Filter']) return;
     if ((g.VIEW === 'catalog') && !Conf['Filter in Native Catalog']) return;
 
     if (!Conf['Filtered Backlinks']) {
@@ -77,10 +77,10 @@ var Filter = {
       const lines = (Conf[key] as string).split('\n');
       if (key === 'general' && easyLines.length) lines.push(...easyLines);
       for (var line of lines) {
-        let hl:       string;
+        let hl:       string | undefined;
         let tile =    false;
         let regexp:   RegExp | string;
-        let top:      boolean;
+        let top:      boolean | undefined;
         let hide =    true;
         let mask =    0;
         let boards:   any = false;
@@ -113,7 +113,7 @@ var Filter = {
               $.el('br'),
               $.tn(line),
               $.el('br'),
-              $.tn(err.message)
+              $.tn(err instanceof Error ? err.message : String(err))
             ], 60);
             continue;
           }
@@ -262,13 +262,13 @@ var Filter = {
     if (post.filterResults) return post.filterResults;
     let hide           = false;
     let stub           = true;
-    let hl  : string[] = undefined;
-    let top            = false;
+    let hl  : string[] | undefined = undefined;
+    let top: boolean | undefined = false;
     let noti           = false;
     let poster         = false;
     let replies        = false;
     let hlOverride     = false;
-    let reasons: string[];
+    let reasons: string[] | undefined;
     if (QuoteYou.isYou(post)) {
       hideable = false;
     }
@@ -280,7 +280,7 @@ var Filter = {
       for (const value of Filter.values(type, post)) {
         const filtersOrMap = Filter.filters.get(type);
 
-        const filtersForType: FilterObj[] = Array.isArray(filtersOrMap) ? filtersOrMap : filtersOrMap.get(value);
+        const filtersForType: FilterObj[] | undefined = Array.isArray(filtersOrMap) ? filtersOrMap : filtersOrMap.get(value);
         if (!filtersForType) continue;
 
         const isString = type === 'uniqueID' || type === 'MD5';
@@ -315,8 +315,8 @@ var Filter = {
             }
           }
           // `;tile` glows the whole catalog entry instead of the thumbnail.
-          if (filter.hl && filter.tile && !hl.includes('filter-glow-tile')) {
-            hl.push('filter-glow-tile');
+          if (filter.hl && filter.tile && !hl?.includes('filter-glow-tile')) {
+            (hl || (hl = [])).push('filter-glow-tile');
           }
           if (filter.override && filter.hl) hlOverride = true;
           if (!top) { ({ top } = filter); }
@@ -466,7 +466,7 @@ var Filter = {
       (!this.isReply && !this.thread.nodes.root)
     ) return;
 
-    const {hide, stub, hl, noti, poster, replies }: FilterResults = Filter.test(
+    const {hide, stub, hl, noti, poster, replies, reasons }: FilterResults = Filter.test(
       this,
       (!this.isFetchedQuote && (this.isReply || (g.VIEW === 'index')))
     );
@@ -474,7 +474,7 @@ var Filter = {
     // Add temporary filter for the poster ID for future posts.
     let reason: string;
     if (poster && this.info.uniqueID) {
-      reason = `Hidden because it's the same poster as ${this.ID} (${this.filterResults.reasons})`;
+      reason = `Hidden because it's the same poster as ${this.ID} (${reasons})`;
       const { uniqueID } = this.info;
       const newFilter: FilterObj = {
         regexp: uniqueID,
@@ -488,7 +488,7 @@ var Filter = {
         hl: hl?.[0],
         reason,
       }
-      const map: Map<string, FilterObj[]> = Filter.filters.get('uniqueID');
+      const map = Filter.filters.get('uniqueID') as Map<string, FilterObj[]> | undefined;
       if (map) {
         map.get(uniqueID)?.push(newFilter) ?? map.set(uniqueID, [newFilter]);
       } else {
@@ -503,7 +503,7 @@ var Filter = {
           Recursive.applyAndAdd(PostHiding.hide, this, stub, undefined, `Hidden recursively from ${this.ID}`);
         }
         if (poster && this.info.uniqueID) {
-          g.posts.forEach((p) => {
+          g.posts!.forEach((p) => {
             if (p.info.uniqueID === this.info.uniqueID && p !== this) {
               PostHiding.hide(p, stub, replies, reason);
               if (replies) {
@@ -525,7 +525,7 @@ var Filter = {
         if (replies) Recursive.applyAndAdd(hlFn, this, ...hl);
 
         if (poster && this.info.uniqueID) {
-          g.posts.forEach((p) => {
+          g.posts!.forEach((p) => {
             if (p.info.uniqueID === this.info.uniqueID && p !== this) {
               $.addClass(p.nodes.root, ...hl);
               if (replies) Recursive.applyAndAdd(hlFn, p, ...hl);
@@ -549,7 +549,7 @@ var Filter = {
 
   catalog() {
     let url;
-    if (!(url = g.SITE.urls.catalogJSON?.(g.BOARD))) { return; }
+    if (!(url = g.SITE!.urls.catalogJSON?.(g.BOARD! as any))) { return; }
     Filter.catalogData = dict();
     $.ajax(url,
       {onloadend: Filter.catalogParse});
@@ -569,7 +569,7 @@ var Filter = {
         Filter.catalogData[item.no] = item;
       }
     }
-    g.BOARD.threads.forEach(function(thread) {
+    g.BOARD!.threads.forEach(function(thread) {
       if (thread.catalogViewNative) {
         return Filter.catalogNode.call(thread.catalogViewNative);
       }
@@ -577,9 +577,9 @@ var Filter = {
   },
 
   catalogNode(this: Post) {
-    if ((this.boardID !== g.BOARD.ID) || !Filter.catalogData[this.ID]) { return; }
-    if (QuoteYou.db?.get({siteID: g.SITE.ID, boardID: this.boardID, threadID: this.ID, postID: this.ID})) { return; }
-    const {hide, hl, top} = Filter.test(g.SITE.Build.parseJSON(Filter.catalogData[this.ID], this));
+    if ((this.boardID !== g.BOARD!.ID) || !Filter.catalogData[this.ID]) { return; }
+    if (QuoteYou.db?.get({siteID: g.SITE!.ID, boardID: this.boardID, threadID: this.ID, postID: this.ID})) { return; }
+    const {hide, hl, top} = Filter.test(g.SITE!.Build.parseJSON(Filter.catalogData[this.ID], this));
     if (hide) {
       this.nodes.root.hidden = true;
     }
@@ -589,7 +589,7 @@ var Filter = {
     }
     if (top) {
       $.prepend(this.nodes.root.parentNode, this.nodes.root);
-      g.SITE.catalogPin?.(this.nodes.root);
+      g.SITE!.catalogPin?.(this.nodes.root);
     }
   },
 
@@ -603,9 +603,9 @@ var Filter = {
     uniqueID(post) { return [post.info.uniqueID || '']; },
     tripcode(post) { return post.info.tripcode === undefined ? [] : [post.info.tripcode]; },
     capcode(post) { return post.info.capcode === undefined ? [] : [post.info.capcode]; },
-    pass(post) { return [post.info.pass]; },
-    email(post) { return [post.info.email]; },
-    subject(post) { return [post.info.subject || (post.isReply ? undefined : '')]; },
+    pass(post) { return post.info.pass === undefined ? [] : [post.info.pass]; },
+    email(post) { return post.info.email === undefined ? [] : [post.info.email]; },
+    subject(post) { return post.info.subject === undefined && post.isReply ? [] : [post.info.subject || '']; },
     comment(post) {
       if (post.info.comment == null) {
         post.info.comment = g.sites[post.siteID]?.Build?.parseComment?.((post.info as any).commentHTML.innerHTML);
@@ -614,9 +614,9 @@ var Filter = {
     },
     flag(post) { return post.info.flag === undefined ? [] : [post.info.flag]; },
     filename(post) { return post.files.map(f => f.name); },
-    dimensions(post) { return post.files.map(f => f.dimensions); },
+    dimensions(post) { return post.files.map(f => f.dimensions).filter(v => v != null); },
     filesize(post) { return post.files.map(f => f.size); },
-    MD5(post) { return post.files.map(f => f.MD5); }
+    MD5(post) { return post.files.map(f => f.MD5).filter(v => v != null); }
   } satisfies Record<FilterType, (post: Post) => string[]>,
 
   values(key: FilterType, post: Post): string[] {
@@ -697,7 +697,7 @@ var Filter = {
     };
 
     if (g.VIEW === 'thread') {
-      g.posts.forEach(hideMatchingPost);
+      g.posts!.forEach(hideMatchingPost);
     } else {
       hideMatchingPost(origin);
     }
@@ -764,7 +764,7 @@ var Filter = {
     }
   },
 
-  escape(value) {
+  escape(value: string) {
     return value.replace(/\/|\\|\^|\$|\n|\.|\(|\)|\{|\}|\[|\]|\?|\*|\+|\|/g, (c) => {
       if (c === '\n') {
         return '\\n';
@@ -776,7 +776,7 @@ var Filter = {
 
   menu: {
     init() {
-      if (!['index', 'thread'].includes(g.VIEW) || !Conf['Menu'] || !Conf['Filter']) { return; }
+      if ((g.VIEW !== 'index' && g.VIEW !== 'thread') || !Conf['Menu'] || !Conf['Filter']) { return; }
 
       const div = $.el('div',
         {textContent: 'Filter'});
@@ -788,7 +788,7 @@ var Filter = {
           Filter.menu.post = post;
           return true;
         },
-        subEntries: []
+        subEntries: [] as any[]
       };
 
       for (var type of [
@@ -813,7 +813,7 @@ var Filter = {
       return Menu.menu.addEntry(entry);
     },
 
-    createSubEntry(text, type) {
+    createSubEntry(text: string, type: FilterType) {
       const el = $.el('a', {
         href: 'javascript:;',
         textContent: text
@@ -831,7 +831,7 @@ var Filter = {
     },
 
     makeFilter() {
-      const {type} = this.dataset;
+      const type = this.dataset.type as FilterType;
       // Convert value -> regexp, unless type is MD5
       const values = Filter.values(type, Filter.menu.post);
       const res = values.map((value) => {

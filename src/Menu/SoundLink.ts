@@ -16,7 +16,7 @@ interface ScopeTarget {
 
 const SoundLink = {
   init() {
-    if (!['index', 'thread'].includes(g.VIEW) || !Conf['Menu']) return;
+    if ((g.VIEW !== 'index' && g.VIEW !== 'thread') || !Conf['Menu']) return;
     if (!Conf['Thread Updater']) return;
     SoundManager.init();
 

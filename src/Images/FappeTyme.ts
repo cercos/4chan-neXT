@@ -16,7 +16,7 @@ var FappeTyme = {
   enabled: null as any,
 
   init() {
-    if ((!Conf['Fappe Tyme'] && !Conf['Werk Tyme']) || !['index', 'thread', 'archive'].includes(g.VIEW)) { return; }
+    if ((!Conf['Fappe Tyme'] && !Conf['Werk Tyme']) || (g.VIEW !== 'index' && g.VIEW !== 'thread' && g.VIEW !== 'archive')) { return; }
 
     this.nodes = {};
     this.enabled = {

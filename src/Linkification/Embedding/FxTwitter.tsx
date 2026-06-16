@@ -100,7 +100,7 @@ export default function EmbedFxTwitter(a: HTMLAnchorElement): HTMLElement {
     }
 
     function renderText(inputText: string): (EscapedHtml | string)[] {
-      const result = [];
+      const result: (EscapedHtml | string)[] = [];
       let endLast = 0;
 
       for (const match of inputText.matchAll(/(?:@|\#)\w+/g)) {
@@ -146,7 +146,7 @@ export default function EmbedFxTwitter(a: HTMLAnchorElement): HTMLElement {
     }
 
     async function renderReplies(tweet) {
-      const replies = [];
+      const replies: EscapedHtml[] = [];
       let depth = 0;
       while (tweet.replying_to && tweet.replying_to_status && depth < maxReplies) {
         const replyUrl = `${Conf.fxtUrl}/${tweet.replying_to}/status/${tweet.replying_to_status}`;
@@ -157,7 +157,7 @@ export default function EmbedFxTwitter(a: HTMLAnchorElement): HTMLElement {
           replies.unshift(replyHTML);
           depth++;
         } catch (error) {
-          console.error(`Error fetching/rendering reply tweet: ${error.message}`);
+          console.error(`Error fetching/rendering reply tweet: ${error instanceof Error ? error.message : String(error)}`);
           console.log(tweet);
           const url = `${Conf.fxtUrl}/${tweet.replying_to}/status/${tweet.replying_to_status}`
           return <div class="fxt-reply_container">
@@ -236,11 +236,11 @@ export default function EmbedFxTwitter(a: HTMLAnchorElement): HTMLElement {
       Linkify.process(textEl);
     }
 
-    el.style.resize = null;
+    el.style.resize = '';
     el.classList.add('fxt-card_container');
-    el.style.height = null;
-    el.style.width = null;
-    el.style.overflow = null;
+    el.style.height = '';
+    el.style.width = '';
+    el.style.overflow = '';
   });
   return el;
 }

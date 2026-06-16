@@ -13,7 +13,7 @@ import $ from "../platform/$";
  */
 var QuoteInline = {
   init() {
-    if (!['index', 'thread'].includes(g.VIEW) || !Conf['Quote Inlining']) { return; }
+    if ((g.VIEW !== 'index' && g.VIEW !== 'thread') || !Conf['Quote Inlining']) { return; }
 
     if (Conf['Comment Expansion']) {
       ExpandComment.callbacks.push(this.node);
@@ -55,11 +55,12 @@ var QuoteInline = {
     if ($.modifiedClick(e)) { return; }
 
     const {boardID, threadID, postID} = Get.postDataFromLink(this);
-    if (Conf['Inline Cross-thread Quotes Only'] && (g.VIEW === 'thread') && g.posts.get(`${boardID}.${postID}`)?.nodes.root.offsetParent) { return; } // exists and not hidden
+    if (Conf['Inline Cross-thread Quotes Only'] && (g.VIEW === 'thread') && g.posts!.get(`${boardID}.${postID}`)?.nodes.root.offsetParent) { return; } // exists and not hidden
     if ($.hasClass(doc, 'catalog-mode')) { return; }
 
     e.preventDefault();
     const quoter = Get.postFromNode(this);
+    if (!quoter) { return; }
     const {context} = quoter;
     if ($.hasClass(this, 'inlined')) {
       QuoteInline.rm(this, boardID, threadID, postID, context);
@@ -93,7 +94,7 @@ var QuoteInline = {
     new Fetcher(boardID, threadID, postID, inline, quoter);
 
     if (!(
-      (post = g.posts.get(`${boardID}.${postID}`)) &&
+      (post = g.posts!.get(`${boardID}.${postID}`)) &&
       (context.thread === post.thread)
     )) { return; }
 
@@ -130,13 +131,13 @@ var QuoteInline = {
     if (!(el = root.firstElementChild)) { return; }
 
     // Dereference clone.
-    const post = g.posts.get(`${boardID}.${postID}`);
+    const post = g.posts!.get(`${boardID}.${postID}`);
     post.rmClone(el.dataset.clone);
 
     // Decrease forward count and unhide.
     if (Conf['Forward Hiding'] &&
       isBacklink &&
-      (context.thread === g.threads.get(`${boardID}.${threadID}`)) &&
+      (context.thread === g.threads!.get(`${boardID}.${threadID}`)) &&
       !--post.forwarded) {
         delete post.forwarded;
         $.rmClass(post.nodes.root, 'forwarded');

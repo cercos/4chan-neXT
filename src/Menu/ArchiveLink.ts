@@ -11,7 +11,8 @@ import Menu from "./Menu";
  */
 const ArchiveLink = {
   init() {
-    if ((g.SITE.software !== 'yotsuba') || !['index', 'thread'].includes(g.VIEW) || !Conf['Menu'] || !Conf['Archive Link']) { return; }
+    const site = g.SITE;
+    if (!site || (site.software !== 'yotsuba') || (g.VIEW !== 'index' && g.VIEW !== 'thread') || !Conf['Menu'] || !Conf['Archive Link']) { return; }
 
     const div = $.el('div',
       {textContent: 'Archive'});
@@ -22,7 +23,7 @@ const ArchiveLink = {
       open({ID, thread, board}) {
         return !!Redirect.to('thread', {postID: ID, threadID: thread.ID, boardID: board.ID});
       },
-      subEntries: []
+      subEntries: [] as any[]
     };
 
     for (var type of [
@@ -42,7 +43,7 @@ const ArchiveLink = {
     return Menu.menu.addEntry(entry);
   },
 
-  createSubEntry(text, type) {
+  createSubEntry(text: string, type: string) {
     const el = $.el('a', {
       textContent: text,
       target: '_blank'

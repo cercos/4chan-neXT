@@ -27,7 +27,7 @@ var Embedding = {
   media: null as any,
   lastEmbed: null as any,
   init() {
-    if (!['index', 'thread', 'archive'].includes(g.VIEW) || !Conf['Linkify'] || (!Conf['Embedding'] && !Conf['Link Title'] && !Conf['Cover Preview'])) { return; }
+    if ((g.VIEW !== 'index' && g.VIEW !== 'thread' && g.VIEW !== 'archive') || !Conf['Linkify'] || (!Conf['Embedding'] && !Conf['Link Title'] && !Conf['Cover Preview'])) { return; }
     this.types = dict();
     for (var type of this.ordered_types) { this.types[type.key] = type; }
 
@@ -36,7 +36,7 @@ var Embedding = {
         { innerHTML: EmbeddingPage });
       this.media = $('#media-embed', this.dialog);
       $.one(d, '4chanXInitFinished', this.ready);
-      $.on(d, 'IndexRefreshInternal', () => g.posts.forEach(function(post) {
+      $.on(d, 'IndexRefreshInternal', () => g.posts?.forEach(function(post) {
         for (post of [post, ...post.clones]) {
           for (var embed of post.nodes.embedlinks) {
             Embedding.cb.catalogRemove.call(embed);
@@ -222,7 +222,9 @@ var Embedding = {
         let div;
         if (!(div = Embedding.media.firstChild)) { return; }
         $.replace(div, Embedding.cb.embed(this));
-        Embedding.lastEmbed = Get.postFromNode(this).nodes.root;
+        const post = Get.postFromNode(this);
+        if (!post) { return; }
+        Embedding.lastEmbed = post.nodes.root;
         return $.rmClass(Embedding.dialog, 'empty');
       } else {
         return Embedding.cb.toggle.call(this);
@@ -510,6 +512,7 @@ var Embedding = {
               case 'gc': return [`https://${type}.gfycat.com/${name}.webm`];
             } })();
 
+            if (!urls) { return el; }
             for (var url of urls) {
               $.add(el, $.el('source', {src: url}));
             }

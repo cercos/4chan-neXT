@@ -15,8 +15,8 @@ const noWebmTitleMetadataSites = ['4chan.org'];
  */
 var Metadata = {
   init() {
-    if (!Conf['WEBM Metadata'] || !['index', 'thread'].includes(g.VIEW)) { return; }
-    if (noWebmTitleMetadataSites.includes(g.SITE.ID)) { return; }
+    if (!Conf['WEBM Metadata'] || (g.VIEW !== 'index' && g.VIEW !== 'thread')) { return; }
+    if (noWebmTitleMetadataSites.includes(g.SITE!.ID)) { return; }
 
     return Callbacks.Post.push({
       name: 'WEBM Metadata',
@@ -48,7 +48,9 @@ var Metadata = {
     $.rmClass(this.parentNode, 'error');
     $.addClass(this.parentNode, 'loading');
     const {index} = this.parentNode.dataset;
-    return CrossOrigin.binary(Get.postFromNode(this).files[+index].url, data => {
+    const post = Get.postFromNode(this);
+    if (!post) { return; }
+    return CrossOrigin.binary(post.files[+index].url, data => {
       $.rmClass(this.parentNode, 'loading');
       if (data != null) {
         const title = Metadata.parse(data);

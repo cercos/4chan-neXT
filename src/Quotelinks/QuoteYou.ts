@@ -20,8 +20,8 @@ var QuoteYou = {
   // Assigned later; declared so the singleton's type includes them. Loosely typed
   // where a precise type would cascade new errors; tighten during the strict pass.
   db: null as any,
-  mark: null as HTMLElement,
-  lastRead: null as HTMLElement,
+  mark: null as unknown as HTMLElement,
+  lastRead: null as unknown as HTMLElement,
 
   init() {
     if (!Conf['Remember Your Posts']) { return; }
@@ -37,7 +37,7 @@ var QuoteYou = {
       });
     });
 
-    if (!['index', 'thread', 'archive'].includes(g.VIEW)) { return; }
+    if (g.VIEW !== 'index' && g.VIEW !== 'thread' && g.VIEW !== 'archive') { return; }
 
     if ((Conf['Enable Thread Highlights'] !== false) && Conf['Highlight Own Posts']) {
       $.addClass(doc, 'highlight-own');
@@ -139,7 +139,9 @@ var QuoteYou = {
         }
         quotelink.classList.toggle('you', this.checked);
         if ($.hasClass(quotelink, 'quotelink')) {
-          var quoter = Get.postFromNode(quotelink).nodes.root;
+          const quoterPost = Get.postFromNode(quotelink);
+          if (!quoterPost) { continue; }
+          var quoter = quoterPost.nodes.root;
           quoter.classList.toggle('quotesYou', !!$('.quotelink.you', quoter));
         }
       }
@@ -151,7 +153,7 @@ var QuoteYou = {
     seek(type) {
       let highlighted, post;
       let result;
-      const {highlight} = g.SITE.classes;
+      const {highlight} = g.SITE!.classes;
       if (highlighted = $(`.${highlight}`)) { $.rmClass(highlighted, highlight); }
 
       if (!QuoteYou.lastRead || !doc.contains(QuoteYou.lastRead) || !$.hasClass(QuoteYou.lastRead, 'quotesYou')) {
@@ -176,17 +178,17 @@ var QuoteYou = {
 
     scroll(root) {
       const post = Get.postFromRoot(root);
-      if (!post.nodes.post.getBoundingClientRect().height) {
+      if (!post || !post.nodes.post.getBoundingClientRect().height) {
         return false;
       } else {
         QuoteYou.lastRead = root;
         location.href = Get.url('post', post);
         Header.scrollTo(post.nodes.post);
         if (post.isReply) {
-          const sel = `${g.SITE.selectors.postContainer}${g.SITE.selectors.highlightable.reply}`;
+          const sel = `${g.SITE!.selectors.postContainer}${g.SITE!.selectors.highlightable.reply}`;
           let node = post.nodes.root;
           if (!node.matches(sel)) { node = $(sel, node); }
-          $.addClass(node, g.SITE.classes.highlight);
+          $.addClass(node, g.SITE!.classes.highlight);
         }
         return true;
       }

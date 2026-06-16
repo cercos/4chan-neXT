@@ -153,7 +153,7 @@ var Main = {
     }
     $.on(d, '4chanXInitFinished', function() {
       if (Main.expectInitFinished) {
-        return delete Main.expectInitFinished;
+        return delete (Main as any).expectInitFinished;
       } else {
         new Notice('error', `Error: Multiple copies of ${meta.name} or 4chan X are enabled.`);
         return $.addClass(doc, 'tainted');
@@ -313,7 +313,7 @@ var Main = {
     };
 
     // Prefer sync reads where available so this runs before native scripts init.
-    if ($.getSync) {
+    if (($ as any).getSync) {
       try {
         const raw = $.getValue?.(g.NAMESPACE + 'Disable Native Extension');
         if (raw != null) {
@@ -415,7 +415,7 @@ var Main = {
   },
 
   installHomePageCustomCSS(usercss) {
-    let style = null;
+    let style: HTMLStyleElement | null = null;
     const ensure = () => {
       if (!d.head) return;
       if (!style || !style.isConnected) {
@@ -486,17 +486,17 @@ var Main = {
     if (g.boardID) { g.BOARD = new Board(g.boardID); }
 
     if (!g.VIEW) {
-      g.SITE.initAuxiliary?.();
+      g.SITE!.initAuxiliary?.();
       return;
     }
 
     if (g.VIEW === 'file') {
       $.asap((() => d.readyState !== 'loading'), function() {
         let video;
-        if ((g.SITE.software === 'yotsuba') && Conf['404 Redirect'] && g.SITE.is404?.()) {
+        if ((g.SITE!.software === 'yotsuba') && Conf['404 Redirect'] && g.SITE!.is404?.()) {
           const pathname = location.pathname.split(/\/+/);
           return (Redirect as any).navigate('file', {
-            boardID:  g.BOARD.ID,
+            boardID:  g.BOARD!.ID,
             filename: pathname[pathname.length - 1]
           });
         } else if (video = $('video')) {
@@ -521,7 +521,7 @@ var Main = {
 
     // c.time 'All initializations'
     for (var [name, feature] of Main.features) {
-      if (g.SITE.disabledFeatures && g.SITE.disabledFeatures.includes(name)) { continue; }
+      if (g.SITE!.disabledFeatures && g.SITE!.disabledFeatures.includes(name)) { continue; }
       // c.time "#{name} initialization"
       try {
         feature.init();
@@ -556,8 +556,8 @@ var Main = {
     const mobileLink = $('link[href*=mobile]', d.head);
     if (mobileLink) mobileLink.disabled = true;
     doc.dataset.host = location.host;
-    $.addClass(doc, `sw-${g.SITE.software}`);
-    $.addClass(doc, g.VIEW === 'thread' ? 'thread-view' : g.VIEW);
+    $.addClass(doc, `sw-${g.SITE!.software}`);
+    $.addClass(doc, g.VIEW === 'thread' ? 'thread-view' : g.VIEW!);
     $.onExists(doc, '.ad-cnt, .adg-rects > .desktop', ad => $.onExists(ad, 'img, iframe', () => $.addClass(doc, 'ads-loaded')));
     if (Conf['Autohiding Scrollbar']) { $.addClass(doc, 'autohiding-scrollbar'); }
     $.ready(function() {
@@ -622,7 +622,7 @@ var Main = {
       // Site Style section off ⇒ don't actively switch the site theme; leave
       // whatever the page / native extension / StyleChan rendered in place.
       if (!Settings.stylingSectionEnabled('siteStyle')) { return; }
-      if (preferredStyleApplied || g.SITE.software !== 'yotsuba' || !activeSiteStyle) { return; }
+      if (preferredStyleApplied || g.SITE!.software !== 'yotsuba' || !activeSiteStyle) { return; }
       const preferred = activeSiteStyle;
 
       if (isCustomSiteStyle(preferred)) {
@@ -659,7 +659,7 @@ var Main = {
       }
     };
 
-    if ((g.SITE.software === 'yotsuba') && (g.VIEW === 'catalog')) {
+    if ((g.SITE!.software === 'yotsuba') && (g.VIEW === 'catalog')) {
       if (mainStyleSheet = $.id('base-css')) {
         style = mainStyleSheet.href.match(/catalog_(\w+)/)?.[1].replace('_new', '').replace(/_+/g, '-');
         if (knownStyles.includes(style)) {
@@ -677,7 +677,7 @@ var Main = {
       let customThemeApplied = false;
       const currentSiteStyle = Settings.styleConf('siteStyle');
       // Custom themes win: disable the native sheet and inject the user CSS.
-      if (g.SITE.software === 'yotsuba' && isCustomSiteStyle(currentSiteStyle)) {
+      if (g.SITE!.software === 'yotsuba' && isCustomSiteStyle(currentSiteStyle)) {
         const theme = findCustomTheme(currentSiteStyle);
         if (theme) {
           $.rmClass(doc, style);
@@ -691,7 +691,7 @@ var Main = {
         applyCustomTheme(null);
       }
       // Use preconfigured CSS for 4chan's default themes.
-      if (g.SITE.software === 'yotsuba' && !customThemeApplied) {
+      if (g.SITE!.software === 'yotsuba' && !customThemeApplied) {
         $.rmClass(doc, style);
         style = null;
         for (var styleSheet of styleSheets) {
@@ -725,7 +725,7 @@ var Main = {
       }
 
       // Determine proper dialog background color for other themes.
-      const div = g.SITE.bgColoredEl();
+      const div = g.SITE!.bgColoredEl();
       div.style.position = 'absolute';
       div.style.visibility = 'hidden';
       $.add(d.body, div);
@@ -754,9 +754,9 @@ var Main = {
       return;
     };
 
-    $.onExists(d.head, g.SITE.selectors.styleSheet, function(el) {
+    $.onExists(d.head, g.SITE!.selectors.styleSheet, function(el) {
       mainStyleSheet = el;
-      if (g.SITE.software === 'yotsuba') {
+      if (g.SITE!.software === 'yotsuba') {
         styleSheets = $$('link[rel="alternate stylesheet"]', d.head);
       }
       applyPreferredStyle();
@@ -826,14 +826,14 @@ var Main = {
   },
 
   initReady() {
-    if (g.SITE.is404?.()) {
+    if (g.SITE!.is404?.()) {
       if (g.VIEW === 'thread') {
-        ThreadWatcher.set404(g.BOARD.ID, g.THREADID, function() {
+        ThreadWatcher.set404(g.BOARD!.ID, g.THREADID, function() {
           if (Conf['404 Redirect']) {
             return Redirect.navigate('thread', {
-              boardID:  g.BOARD.ID,
+              boardID:  g.BOARD!.ID,
               threadID: g.THREADID,
-              postID:   +location.hash.match(/\d+/)
+              postID:   +(location.hash.match(/\d+/)?.[0] || 0)
             } // post number or 0
             , `/${g.BOARD}/`);
           }
@@ -843,7 +843,7 @@ var Main = {
       return;
     }
 
-    if (g.SITE.isIncomplete?.()) {
+    if (g.SITE!.isIncomplete?.()) {
       const msg = $.el('div',
         {innerHTML: 'The page didn&#039;t load completely.<br>Some features may not work unless you <a href="javascript:;">reload</a>.'});
       $.on($('a', msg), 'click', () => location.reload());
@@ -854,8 +854,8 @@ var Main = {
     if (g.VIEW === 'catalog') {
       Main.initCatalog();
     } else if (!(Index as any).enabled) {
-      if (g.SITE.awaitBoard) {
-        g.SITE.awaitBoard(Main.initThread);
+      if (g.SITE!.awaitBoard) {
+        g.SITE!.awaitBoard(Main.initThread);
       } else {
         Main.initThread();
       }
@@ -867,14 +867,14 @@ var Main = {
 
   initThread() {
     let board;
-    const s = g.SITE.selectors;
-    if (board = $(((s as any).boardFor?.[g.VIEW] || s.board))) {
-      const threads = [];
-      const posts   = [];
-      const errors  = [];
+    const s = g.SITE!.selectors;
+    if (board = $(((s as any).boardFor?.[g.VIEW!] || s.board))) {
+      const threads: Thread[] = [];
+      const posts: Post[] = [];
+      const errors: any[] = [];
 
       try {
-        g.SITE.preParsingFixes?.(board);
+        g.SITE!.preParsingFixes?.(board);
       } catch (error) {}
 
       Main.addThreadsObserver = new MutationObserver(Main.addThreads);
@@ -889,7 +889,7 @@ var Main = {
           threads[0].isArchived = true;
           threads[0].kill();
         }
-        g.SITE.parseThreadMetadata?.(threads[0]);
+        g.SITE!.parseThreadMetadata?.(threads[0]);
       }
 
       setTimeout(() => {
@@ -915,7 +915,7 @@ var Main = {
         boardID = encodeURIComponent(boardID);
         return g.boards[boardID] || new Board(boardID);
       } else {
-        return g.BOARD;
+        return g.BOARD!;
       }
       })();
       var threadID = +threadRoot.id.match(/\d*$/)[0];
@@ -923,8 +923,8 @@ var Main = {
       var thread = new Thread(threadID as any, boardObj as any);
       thread.nodes.root = threadRoot;
       threads.push(thread);
-      var postRoots = $$(g.SITE.selectors.postContainer, threadRoot);
-      if (g.SITE.isOPContainerThread) { postRoots.unshift(threadRoot); }
+      var postRoots = $$(g.SITE!.selectors.postContainer, threadRoot);
+      if (g.SITE!.isOPContainerThread) { postRoots.unshift(threadRoot); }
       Main.parsePosts(postRoots, thread, posts, errors);
       Main.addPostsObserver.observe(threadRoot, {childList: true});
     }
@@ -936,7 +936,7 @@ var Main = {
       // quote link). It carries .postContainer for styling, so the observer hands it here —
       // never build a real Post from it (Post.node() would crash on its null quote anchor).
       if (postRoot.classList?.contains('qr-preview-post')) { continue; }
-      if (!(postRoot.dataset.fullID && g.posts.get(postRoot.dataset.fullID)) && $(g.SITE.selectors.comment, postRoot)) {
+      if (!(postRoot.dataset.fullID && g.posts!.get(postRoot.dataset.fullID)) && $(g.SITE!.selectors.comment, postRoot)) {
         try {
           posts.push(new Post(postRoot, thread, thread.board));
         } catch (err) {
@@ -952,18 +952,19 @@ var Main = {
   },
 
   addThreads(records) {
-    const threadRoots = [];
+    const threadRoots: Element[] = [];
     for (var record of records) {
       for (var node of record.addedNodes) {
-        if ((node.nodeType === Node.ELEMENT_NODE) && node.matches(g.SITE.selectors.thread)) {
-          threadRoots.push(node);
+        const el = node as Element;
+        if ((node.nodeType === Node.ELEMENT_NODE) && el.matches(g.SITE!.selectors.thread)) {
+          threadRoots.push(el);
         }
       }
     }
     if (!threadRoots.length) { return; }
-    const threads = [];
-    const posts   = [];
-    const errors  = [];
+    const threads: Thread[] = [];
+    const posts: Post[] = [];
+    const errors: any[] = [];
     Main.parseThreads(threadRoots, threads, posts, errors);
     if (errors.length) { Main.handleErrors(errors); }
     Main.callbackNodes('Thread', threads);
@@ -972,17 +973,20 @@ var Main = {
 
   addPosts(records) {
     let thread;
-    const threads   = [];
-    const threadsRM = [];
-    const posts     = [];
-    const errors    = [];
+    const threads: Thread[]   = [];
+    const threadsRM: Thread[] = [];
+    const posts: Post[]       = [];
+    const errors: any[]       = [];
     for (var record of records) {
       thread = Get.threadFromRoot(record.target);
-      var postRoots = [];
+      if (!thread) { continue; }
+      var postRoots: Element[] = [];
       for (var node of record.addedNodes) {
         if (node.nodeType === Node.ELEMENT_NODE) {
-          if (node.matches(g.SITE.selectors.postContainer) || (node = $(g.SITE.selectors.postContainer, node))) {
-            postRoots.push(node);
+          let el = node as Element;
+          const postContainer = g.SITE!.selectors.postContainer;
+          if (el.matches(postContainer) || (el = $(postContainer, el) as Element)) {
+            postRoots.push(el);
           }
         }
       }
@@ -1015,10 +1019,10 @@ var Main = {
 
   initCatalog() {
     let board;
-    const s = g.SITE.selectors.catalog;
+    const s = g.SITE!.selectors.catalog;
     if (s && (board = $(s.board))) {
-      const threads = [];
-      const errors  = [];
+      const threads: CatalogThreadNative[] = [];
+      const errors: any[] = [];
 
       Main.addCatalogThreadsObserver = new MutationObserver(Main.addCatalogThreads);
       Main.addCatalogThreadsObserver.observe(board, {childList: true});
@@ -1053,17 +1057,18 @@ var Main = {
   },
 
   addCatalogThreads(records) {
-    const threadRoots = [];
+    const threadRoots: Element[] = [];
     for (var record of records) {
       for (var node of record.addedNodes) {
-        if ((node.nodeType === Node.ELEMENT_NODE) && node.matches(g.SITE.selectors.catalog.thread)) {
-          threadRoots.push(node);
+        const el = node as Element;
+        if ((node.nodeType === Node.ELEMENT_NODE) && el.matches(g.SITE!.selectors.catalog.thread)) {
+          threadRoots.push(el);
         }
       }
     }
     if (!threadRoots.length) { return; }
-    const threads = [];
-    const errors  = [];
+    const threads: CatalogThreadNative[] = [];
+    const errors: any[] = [];
     Main.parseCatalogThreads(threadRoots, threads, errors);
     if (errors.length) { Main.handleErrors(errors); }
     return Main.callbackNodes('CatalogThreadNative', threads);
@@ -1111,8 +1116,8 @@ var Main = {
     }
 
     // Detect conflicts with native extension
-    if (g.SITE.testNativeExtension && !$.hasClass(doc, 'tainted')) {
-      g.SITE.testNativeExtension().then(({enabled}) => {
+    if ((g.SITE! as any).testNativeExtension && !$.hasClass(doc, 'tainted')) {
+      (g.SITE! as any).testNativeExtension().then(({enabled}) => {
         if (enabled) {
           $.addClass(doc, 'tainted');
           if (Conf['Disable Native Extension'] && !Main.isFirstRun) {
@@ -1200,8 +1205,8 @@ User agent: ${navigator.userAgent}\
   isThisPageLegit() {
     // not 404 error page or similar.
     if (!('thisPageIsLegit' in Main)) {
-      (Main as any).thisPageIsLegit = g.SITE.isThisPageLegit ?
-        g.SITE.isThisPageLegit()
+      (Main as any).thisPageIsLegit = (g.SITE! as any).isThisPageLegit ?
+        (g.SITE! as any).isThisPageLegit()
       :
         !/^[45]\d\d\b/.test(document.title) && !/\.(?:json|rss)$/.test(location.pathname);
     }
@@ -1222,7 +1227,7 @@ User agent: ${navigator.userAgent}\
     }
   },
 
-  mountedCBs: [],
+  mountedCBs: [] as Array<() => void>,
 
   // loose: late-assigned properties on the Main singleton.
   // NOTE: `thisPageIsLegit` is deliberately NOT declared here — isThisPageLegit()

@@ -78,7 +78,7 @@ const CSS = {
 
   sub: function(css: string) {
     var variables = {
-      site: g.SITE.selectors
+      site: g.SITE?.selectors || {}
     };
     return css.replace(/\$[\w\$]+/g, function(name) {
       var words = name.slice(1).split('$');

@@ -13,7 +13,7 @@ import $$ from "../platform/$$";
  */
 var Quotify = {
   init() {
-    if (!['index', 'thread'].includes(g.VIEW) || !Conf['Resurrect Quotes']) { return; }
+    if ((g.VIEW !== 'index' && g.VIEW !== 'thread') || !Conf['Resurrect Quotes']) { return; }
 
     $.addClass(doc, 'resurrect-quotes');
 
@@ -79,12 +79,12 @@ var Quotify = {
       this.board.ID;
     const quoteID = `${boardID}.${postID}`;
 
-    if (post = g.posts.get(quoteID)) {
+    if (post = g.posts!.get(quoteID)) {
       if (!post.isDead) {
         // Don't (Dead) when quotifying in an archived post,
         // and we know the post still exists.
         a = $.el('a', {
-          href:        g.SITE.Build.postURL(boardID, post.thread.ID, postID),
+          href:        g.SITE!.Build.postURL(boardID, post.thread.ID, postID),
           className:   'quotelink',
           textContent: quote
         }
@@ -92,7 +92,7 @@ var Quotify = {
       } else {
         // Replace the .deadlink span if we can redirect.
         a = $.el('a', {
-          href:        g.SITE.Build.postURL(boardID, post.thread.ID, postID),
+          href:        g.SITE!.Build.postURL(boardID, post.thread.ID, postID),
           className:   'quotelink deadlink',
           textContent: quote
         }

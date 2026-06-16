@@ -74,7 +74,7 @@ var ThreadUpdater = {
     });
     $.on(updateLink.firstElementChild, 'click', this.update);
 
-    const subEntries = [];
+    const subEntries: any[] = [];
     for (const name in Config.updater.checkbox) {
       var conf = Config.updater.checkbox[name];
       const el = UI.checkbox(name, name);
@@ -328,7 +328,7 @@ var ThreadUpdater = {
           }
         case 404:
           // XXX workaround for 4chan sending false 404s
-          return $.ajax(g.SITE.urls.catalogJSON({boardID: ThreadUpdater.thread.board.ID}), { onloadend() {
+          return $.ajax(g.SITE!.urls.catalogJSON({boardID: ThreadUpdater.thread.board.ID}), { onloadend() {
             let confirmed;
             if (this.status === 200) {
               confirmed = true;
@@ -470,7 +470,7 @@ var ThreadUpdater = {
       oldReq.abort();
     }
     return ThreadUpdater.req = $.whenModified(
-      g.SITE.urls.threadJSON({boardID: ThreadUpdater.thread.board.ID, threadID: ThreadUpdater.thread.ID}),
+      g.SITE!.urls.threadJSON({boardID: ThreadUpdater.thread.board.ID, threadID: ThreadUpdater.thread.ID}),
       'ThreadUpdater',
       ThreadUpdater.cb.load,
       { timeout: MINUTE }
@@ -505,9 +505,9 @@ var ThreadUpdater = {
 
     // XXX Reject updates that falsely delete the last post.
     if ((postObjects[postObjects.length-1].no < lastPost) &&
-      (((+new Date(req.getResponseHeader('Last-Modified'))) - (thread.posts.get(lastPost).info.date as any)) < (30 * SECOND))) { return; }
+      (((+new Date(req.getResponseHeader('Last-Modified') || '')) - (thread.posts.get(lastPost).info.date as any)) < (30 * SECOND))) { return; }
 
-    g.SITE.Build.spoilerRange[board as any] = OP.custom_spoiler;
+    g.SITE!.Build.spoilerRange[board as any] = OP.custom_spoiler;
     thread.setStatus('Archived', !!OP.archived);
     ThreadUpdater.updateThreadStatus('Sticky', !!OP.sticky);
     ThreadUpdater.updateThreadStatus('Closed', !!OP.closed);
@@ -515,10 +515,10 @@ var ThreadUpdater = {
     thread.fileLimit = !!OP.imagelimit;
     if (OP.unique_ips) thread.ipCount = OP.unique_ips;
 
-    const posts    = []; // new post objects
-    const index    = []; // existing posts
-    const files    = []; // existing files
-    const newPosts = []; // new post fullID list for API
+    const posts: Post[] = []; // new post objects
+    const index: number[] = []; // existing posts
+    const files: number[] = []; // existing files
+    const newPosts: string[] = []; // new post fullID list for API
 
     // Build the index, create posts.
     for (var postObject of postObjects) {
@@ -536,14 +536,14 @@ var ThreadUpdater = {
       }
 
       newPosts.push(`${board}.${ID}`);
-      var node = g.SITE.Build.postFromObject(postObject, board.ID);
+      var node = g.SITE!.Build.postFromObject(postObject, board.ID);
       posts.push(new Post(node, thread, board));
       // Fetching your own posts after posting
       if (ThreadUpdater.postID === ID) { delete ThreadUpdater.postID; }
     }
 
     // Check for deleted posts.
-    const deletedPosts = [];
+    const deletedPosts: string[] = [];
     for (ID of ThreadUpdater.postIDs) {
       if (!index.includes(ID)) {
         thread.posts.get(ID).kill();
@@ -553,7 +553,7 @@ var ThreadUpdater = {
     ThreadUpdater.postIDs = index;
 
     // Check for deleted files.
-    const deletedFiles = [];
+    const deletedFiles: string[] = [];
     for (ID of ThreadUpdater.fileIDs) {
       if (!(files.includes(ID) || deletedPosts.includes(`${board}.${ID}`))) {
         thread.posts.get(ID).kill(true);

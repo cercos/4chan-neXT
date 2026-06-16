@@ -7,7 +7,8 @@ chrome.runtime.onMessage.addListener(function(request, sender, sendResponse) {
   const id = requestID;
   requestID++;
   handlers[request.type](request, sender).then(data => {
-    chrome.tabs.sendMessage(sender.tab.id, { id, data });
+    const tabId = sender.tab?.id;
+    if (tabId != null) chrome.tabs.sendMessage(tabId, { id, data });
   });
   sendResponse(id);
 });
@@ -50,10 +51,12 @@ var handlers = {
   },
 
   async runInPageContext(request, sender) {
+    const tabId = sender.tab?.id;
+    if (tabId == null) return undefined;
     const results = await chrome.scripting.executeScript({
       func: PageContextFunctions[request.fn],
       args: request.data ? [request.data] : [],
-      target: { tabId: sender.tab.id },
+      target: { tabId },
       world: 'MAIN',
     });
     return results[0].result

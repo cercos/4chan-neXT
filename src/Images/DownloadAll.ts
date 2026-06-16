@@ -25,7 +25,7 @@ const DownloadAll = {
   catalogFetching: false,
 
   init() {
-    if (!(Conf['Download All Media'] && ['thread', 'index', 'catalog'].includes(g.VIEW))) return;
+    if (!(Conf['Download All Media'] && (g.VIEW === 'thread' || g.VIEW === 'index' || g.VIEW === 'catalog'))) return;
 
     const el = $.el('a', {
       href: 'javascript:;',
@@ -45,7 +45,7 @@ const DownloadAll = {
 
   menu: {
     init() {
-      if (!(Conf['Download All Media'] && ['thread', 'index', 'catalog'].includes(g.VIEW))) return;
+      if (!(Conf['Download All Media'] && (g.VIEW === 'thread' || g.VIEW === 'index' || g.VIEW === 'catalog'))) return;
 
       const el = $.el('span', {
         textContent: 'Download Media',
@@ -212,7 +212,9 @@ const DownloadAll = {
 
   fetchCatalog(cb: () => void) {
     if (DownloadAll.catalogFetching) return;
-    const url = g.SITE.urls.catalogJSON?.(g.BOARD);
+    const site = g.SITE!;
+    const board = g.BOARD!;
+    const url = site.urls.catalogJSON?.(board);
     if (!url) {
       DownloadAll.catalogItems = [];
       cb();
@@ -231,7 +233,7 @@ const DownloadAll = {
               if (!data || !data.ext) continue;
               let file: any;
               try {
-                file = g.SITE.Build.parseJSONFile(data, { siteID: g.SITE.ID, boardID: g.BOARD.ID });
+                file = site.Build.parseJSONFile(data, { siteID: site.ID, boardID: board.ID });
               } catch (e) { continue; }
               if (!file?.url || seen[file.url]) continue;
               seen[file.url] = true;
@@ -270,8 +272,8 @@ const DownloadAll = {
     const out: MediaItem[] = [];
     const usedNames = dict() as Record<string, number>;
 
-    for (const key of g.posts.keys) {
-      const post = g.posts[key];
+    for (const key of g.posts!.keys) {
+      const post = g.posts![key];
       if (!post || post.isHidden) continue;
       for (const file of (post.files || [])) {
         if (!file || file.isDead || !file.url) continue;

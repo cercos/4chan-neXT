@@ -249,7 +249,7 @@ const ScrollMarkers = {
     entry: undefined as { el: HTMLElement; order: number; open: () => boolean; subEntries: { el: HTMLElement }[] } | undefined,
 
     init() {
-      if (!['thread', 'index', 'archive', 'catalog'].includes(g.VIEW)) return;
+      if (g.VIEW !== 'thread' && g.VIEW !== 'index' && g.VIEW !== 'archive' && g.VIEW !== 'catalog') return;
       const el = $.el('span', { textContent: 'Scroll markers' });
       const entry = {
         el,
@@ -305,7 +305,7 @@ const ScrollMarkers = {
 
   init() {
     ScrollMarkers.menu.init();
-    if (!['thread', 'index', 'archive', 'catalog'].includes(g.VIEW)) return;
+    if (g.VIEW !== 'thread' && g.VIEW !== 'index' && g.VIEW !== 'archive' && g.VIEW !== 'catalog') return;
 
     ScrollMarkers.container = $.el('div', { id: 'scroll-markers' });
     ScrollMarkers.container.hidden = true;
@@ -341,7 +341,7 @@ const ScrollMarkers = {
     // thread/archive get a per-Thread callback (to capture the Thread object);
     // index/catalog have many/no threads, so mount directly — the
     // 4chanXInitFinished + PostsInserted listeners drive the first draw.
-    if (['thread', 'archive'].includes(g.VIEW)) {
+    if (g.VIEW === 'thread' || g.VIEW === 'archive') {
       Callbacks.Thread.push({
         name: 'Scroll Markers',
         cb: ScrollMarkers.node,

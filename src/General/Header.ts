@@ -131,11 +131,11 @@ var Header = {
 
     this.setBoardList();
 
-    $.onExists(doc, `${g.SITE.selectors.boardList} + *`, Header.generateFullBoardList);
+    $.onExists(doc, `${g.SITE!.selectors.boardList} + *`, Header.generateFullBoardList);
 
     Main.ready(function() {
       let footer;
-      if ((g.SITE.software === 'yotsuba') && !(footer = $.id('boardNavDesktopFoot'))) {
+      if ((g.SITE!.software === 'yotsuba') && !(footer = $.id('boardNavDesktopFoot'))) {
         let absbot;
         if (!(absbot = $.id('absbot'))) { return; }
         footer = $.id('boardNavDesktop').cloneNode(true);
@@ -145,15 +145,15 @@ var Header = {
         $.before(absbot, footer);
         $.global('stubCloneTopNav');
       }
-      if (Header.bottomBoardList = $(g.SITE.selectors.boardListBottom)) {
+      if (Header.bottomBoardList = $(g.SITE!.selectors.boardListBottom)) {
         for (var a of $$('a', Header.bottomBoardList)) {
-          if ((a.hostname === location.hostname) && (a.pathname.split('/')[1] === g.BOARD.ID)) { a.className = 'current'; }
+          if ((a.hostname === location.hostname) && (a.pathname.split('/')[1] === g.BOARD!.ID)) { a.className = 'current'; }
         }
         return CatalogLinks.setLinks(Header.bottomBoardList);
       }
     });
 
-    if ((g.SITE.software === 'yotsuba') && ((g.VIEW === 'catalog') || !Conf['Disable Native Extension'])) {
+    if ((g.SITE!.software === 'yotsuba') && ((g.VIEW === 'catalog') || !Conf['Disable Native Extension'])) {
       const cs = $.el('a', {href: 'javascript:;'});
       if (g.VIEW === 'catalog') {
         cs.title = (cs.textContent = 'Catalog Settings');
@@ -205,15 +205,16 @@ var Header = {
 
   generateFullBoardList() {
     let nodes;
-    if (g.SITE.transformBoardList) {
-      nodes = g.SITE.transformBoardList();
+    const transformBoardList = (g.SITE as any).transformBoardList;
+    if (transformBoardList) {
+      nodes = transformBoardList();
     } else {
-      nodes = [...$(g.SITE.selectors.boardList).cloneNode(true).childNodes];
+      nodes = [...$(g.SITE!.selectors.boardList).cloneNode(true).childNodes];
     }
     const fullBoardList = $('.boardList', Header.boardList);
     $.add(fullBoardList, nodes);
     for (var a of $$('a', fullBoardList)) {
-      if ((a.hostname === location.hostname) && (a.pathname.split('/')[1] === g.BOARD.ID)) { a.className = 'current'; }
+      if ((a.hostname === location.hostname) && (a.pathname.split('/')[1] === g.BOARD!.ID)) { a.className = 'current'; }
     }
     return CatalogLinks.setLinks(fullBoardList);
   },
@@ -224,7 +225,7 @@ var Header = {
     if (!boardnav) return;
     boardnav = boardnav.replace(/(\r\n|\n|\r)/g, ' ');
     const segments = boardnav.split(/(\{\{(?:"[^"]+")?|\}\})/);
-    const spanStack = [];
+    const spanStack: HTMLElement[] = [];
     let currentContainer = list;
     segments.forEach(segment => {
       if (segment.startsWith('{{')) {
@@ -293,11 +294,11 @@ var Header = {
     let boardID = t.split('-')[0];
     if (boardID === 'current') {
       if (['boards.4chan.org', 'boards.4channel.org'].includes(location.hostname)) {
-        boardID = g.BOARD.ID;
+        boardID = g.BOARD!.ID;
       } else {
         a = $.el('a', {
-          href: `/${g.BOARD.ID}/`,
-          textContent: text || decodeURIComponent(g.BOARD.ID),
+          href: `/${g.BOARD!.ID}/`,
+          textContent: text || decodeURIComponent(g.BOARD!.ID),
           className: 'current'
         }
         );
@@ -335,14 +336,14 @@ var Header = {
         title: BoardConfig.title(boardID)
       }
       );
-      if (['catalog', 'archive'].includes(g.VIEW) && (urlV = Get.url(g.VIEW, {siteID: '4chan.org', boardID}))) {
+      if ((g.VIEW === 'catalog' || g.VIEW === 'archive') && (urlV = Get.url(g.VIEW, {siteID: '4chan.org', boardID}))) {
         a.href = urlV;
       }
-      if ((a.hostname === location.hostname) && (boardID === g.BOARD.ID)) { a.className = 'current'; }
+      if ((a.hostname === location.hostname) && (boardID === g.BOARD!.ID)) { a.className = 'current'; }
       return a;
     })();
 
-    a.textContent = /-title/.test(t) || (/-replace/.test(t) && (a.hostname === location.hostname) && (boardID === g.BOARD.ID)) ?
+    a.textContent = /-title/.test(t) || (/-replace/.test(t) && (a.hostname === location.hostname) && (boardID === g.BOARD!.ID)) ?
       a.title || a.textContent
     : /-full/.test(t) ?
       (`/${boardID}/`) + (a.title ? ` - ${a.title}` : '')

@@ -40,6 +40,7 @@ export interface File {
   // Properties assigned in methods / across modules; declared for typing.
   // Loosely typed where precise types would cascade; tighten during the strict pass.
   index?:         number,
+  docIndex?:      number,
   newName?:       string,
   source?:        any,
   tag?:           any,
@@ -67,12 +68,12 @@ export default class Post {
   declare isFetchedQuote: boolean | undefined;
   declare isClone:        boolean | undefined;
   declare quotes:         string[];
-  declare file:           ReturnType<Post['parseFile']>;
-  declare files:          ReturnType<Post['parseFile']>[];
+  declare file:           File;
+  declare files:          File[];
   declare forBuildTest?:  boolean;
   declare normalizedOriginal?: any;
   declare highlights?:    string[];
-  declare filterResults:  FilterResults;
+  declare filterResults?: FilterResults;
 
   // Instance properties assigned in methods / across modules; declared for typing.
   // Loosely typed where precise types would cascade; tighten during the strict pass.
@@ -116,28 +117,29 @@ export default class Post {
     // Skip initialization for PostClone
     if (root === undefined && thread === undefined && board === undefined) return;
 
-    this.root = root;
-    this.thread = thread;
-    this.board = board;
+    const postRoot = root as HTMLElement;
+    this.root = postRoot;
+    this.thread = thread as Thread;
+    this.board = board as Board;
     $.extend(this, flags);
-    this.ID       = +root.id.match(/\d*$/)[0];
+    this.ID       = +postRoot.id.match(/\d*$/)![0];
     this.postID   = this.ID;
     this.threadID = this.thread.ID;
     this.boardID  = this.board.ID;
-    this.siteID   = g.SITE.ID;
+    this.siteID   = g.SITE!.ID;
     this.fullID   = `${this.board}.${this.ID}`;
     this.context  = this;
     this.isReply  = (this.ID !== this.threadID);
 
-    root.dataset.fullID = this.fullID;
+    postRoot.dataset.fullID = this.fullID;
 
-    this.nodes = this.parseNodes(root);
+    this.nodes = this.parseNodes(postRoot);
 
     if (!this.isReply) {
       this.thread.OP = this;
       for (var key of ['isSticky', 'isClosed', 'isArchived']) {
         var selector;
-        if (selector = g.SITE.selectors.icons[key]) {
+        if (selector = g.SITE!.selectors.icons[key]) {
           this.thread[key] = !!$(selector, this.nodes.info);
         }
       }
@@ -161,7 +163,7 @@ export default class Post {
       flagCode:  this.nodes.flag?.className.match(/flag-(\w+)/)?.[1].toUpperCase(),
       flagCodeTroll: this.nodes.flag?.className.match(/bfl-(\w+)/)?.[1].toUpperCase(),
       flag:      this.nodes.flag?.title,
-      date:      this.nodes.date ? g.SITE.parseDate(this.nodes.date) : undefined,
+      date:      this.nodes.date ? g.SITE!.parseDate(this.nodes.date) : undefined,
       nameBlock: Conf['Anonymize'] ? 'Anonymous' : `${name || ''} ${tripcode || ''}`.trim(),
     };
 
@@ -179,9 +181,9 @@ export default class Post {
     // #region tests_enabled
     if (this.forBuildTest)  return;
     // #endregion
-    if (g.posts.get(this.fullID)) {
+    if (g.posts!.get(this.fullID)) {
       this.isRebuilt = true;
-      this.clones = g.posts.get(this.fullID).clones;
+      this.clones = g.posts!.get(this.fullID).clones;
       for (var clone of this.clones) { clone.origin = this; }
     }
 
@@ -190,16 +192,16 @@ export default class Post {
     if (this.ID < this.thread.lastPost && g.VIEW === 'thread') {
       this.board.posts.insert(this.ID, this);
       this.thread.posts.insert(this.ID, this);
-      g.posts.insert(this.fullID, this, key => +(key.split('.')[1]) < this.ID);
+      g.posts!.insert(this.fullID, this, key => +(key.split('.')[1]) < this.ID);
     } else {
       this.board.posts.push(this.ID, this);
       this.thread.posts.push(this.ID, this);
-      g.posts.push(this.fullID, this);
+      g.posts!.push(this.fullID, this);
     }
   }
 
   parseNodes(root: HTMLElement) {
-    const s = g.SITE.selectors;
+    const s = g.SITE!.selectors;
     const post: HTMLElement = $(s.post, root) || root;
     const info: HTMLElement = $(s.infoRoot, post);
 
@@ -224,7 +226,7 @@ export default class Post {
 
     const nodes: Node & Partial<Record<keyof Post['info'], HTMLElement>> = {
       root,
-      bottom:     this.isReply || !g.SITE.isOPContainerThread ? root : $(s.opBottom, root),
+      bottom:     this.isReply || !g.SITE!.isOPContainerThread ? root : $(s.opBottom, root),
       post,
       info,
       comment:    $(s.comment, post),
@@ -239,7 +241,7 @@ export default class Post {
       var selector = s.info[key];
       nodes[key] = $(selector, info);
     }
-    g.SITE.parseNodes?.(this, nodes);
+    g.SITE!.parseNodes?.(this, nodes);
     if (!nodes.uniqueIDRoot) { nodes.uniqueIDRoot = nodes.uniqueID; }
 
     return nodes as Node & Record<keyof Post['info'], any>;
@@ -256,7 +258,7 @@ export default class Post {
     //   'Comment too long'...
     //   EXIF data. (/p/)
     this.nodes.commentClean = (bq = this.nodes.comment.cloneNode(true));
-    g.SITE.cleanComment?.(bq);
+    g.SITE!.cleanComment?.(bq);
     return this.info.comment = this.nodesToText(bq);
   }
 
@@ -270,14 +272,14 @@ export default class Post {
     //   Trailing spaces.
     const bq = this.nodes.commentClean.cloneNode(true);
     if (!Conf['Remove Spoilers'] && !Conf['Reveal Spoilers']) { this.cleanSpoilers(bq); }
-    g.SITE.cleanCommentDisplay?.(bq);
+    g.SITE!.cleanCommentDisplay?.(bq);
     return this.nodesToText(bq).trim().replace(/\s+$/gm, '');
   }
 
   commentOrig() {
     // Get the comment's text for reposting purposes.
     const bq = this.nodes.commentClean.cloneNode(true);
-    g.SITE.insertTags?.(bq);
+    g.SITE!.insertTags?.(bq);
     return this.nodesToText(bq);
   }
 
@@ -293,7 +295,7 @@ export default class Post {
   }
 
   cleanSpoilers(bq) {
-    const spoilers = $$(g.SITE.selectors.spoiler, bq);
+    const spoilers = $$(g.SITE!.selectors.spoiler, bq);
     for (var node of spoilers) {
       $.replace(node, $.tn('[spoiler]'));
     }
@@ -301,7 +303,7 @@ export default class Post {
 
   parseQuotes() {
     this.quotes = [];
-    for (var quotelink of $$(g.SITE.selectors.quotelink, this.nodes.comment)) {
+    for (var quotelink of $$(g.SITE!.selectors.quotelink, this.nodes.comment)) {
       this.parseQuote(quotelink);
     }
   }
@@ -313,7 +315,7 @@ export default class Post {
     //  - catalog links. (>>>/b/catalog or >>>/b/search)
     //  - rules links. (>>>/a/rules)
     //  - text-board quotelinks. (>>>/img/1234)
-    const match = quotelink.href.match(g.SITE.regexp.quotelink);
+    const match = quotelink.href.match(g.SITE!.regexp.quotelink);
     if (!match && (!this.isClone || !quotelink.dataset.postID)) { return; } // normal or resurrected quote
 
     this.nodes.quotelinks.push(quotelink);
@@ -344,8 +346,8 @@ export default class Post {
   }
 
   fileRoots() {
-    if (g.SITE.selectors.multifile) {
-      const roots = $$(g.SITE.selectors.multifile, this.nodes.root);
+    if (g.SITE!.selectors.multifile) {
+      const roots = $$(g.SITE!.selectors.multifile, this.nodes.root);
       if (roots.length) { return roots; }
     }
     return [this.nodes.root];
@@ -355,14 +357,14 @@ export default class Post {
 
 
     const file: Partial<File> = { isDead: false };
-    for (var key in g.SITE.selectors.file) {
-      var selector = g.SITE.selectors.file[key];
+    for (var key in g.SITE!.selectors.file) {
+      var selector = g.SITE!.selectors.file[key];
       file[key] = $(selector, fileRoot);
     }
     file.thumbLink = file.thumb?.parentNode as HTMLElement;
 
     if (!(file.text && file.link)) { return; }
-    if (!g.SITE.parseFile(this, file)) { return; }
+    if (!g.SITE!.parseFile(this, file)) { return; }
 
     $.extend(file, {
       url:     file.link.href,
@@ -370,8 +372,9 @@ export default class Post {
       isVideo: $.isVideo(file.link.href)
     }
     );
-    let size  = +file.size.match(/[\d.]+/)[0];
-    let unit  = ['B', 'KB', 'MB', 'GB'].indexOf(file.size.match(/\w+$/)[0]);
+    const fileSize = file.size!;
+    let size  = +fileSize.match(/[\d.]+/)![0];
+    let unit  = ['B', 'KB', 'MB', 'GB'].indexOf(fileSize.match(/\w+$/)![0]);
     while (unit-- > 0) { size *= 1024; }
     file.sizeInBytes = size;
 
@@ -381,8 +384,8 @@ export default class Post {
   kill(file = false, index = 0) {
     let strong;
     if (file) {
-      if (this.isDead || this.files[index].isDead) { return; }
-      this.files[index].isDead = true;
+      if (this.isDead || this.files[index]!.isDead) { return; }
+      this.files[index]!.isDead = true;
       $.addClass(this.nodes.root, 'deleted-file');
     } else {
       if (this.isDead) { return; }
@@ -460,7 +463,7 @@ export default class Post {
   }
 
   collect() {
-    g.posts.rm(this.fullID);
+    g.posts!.rm(this.fullID);
     this.thread.posts.rm(this);
     this.board.posts.rm(this);
   }
@@ -483,7 +486,7 @@ export default class Post {
     this.nodes.root.classList.toggle('opContainer', !isCatalogOP);
     this.nodes.post.classList.toggle('catalog-post', isCatalogOP);
     this.nodes.post.classList.toggle('op', !isCatalogOP);
-    this.nodes.post.style.left = (this.nodes.post.style.right = null);
+    this.nodes.post.style.left = (this.nodes.post.style.right = '');
   }
 };
 
@@ -496,7 +499,7 @@ export class PostClone extends Post {
     super();
     this.isClone = true;
 
-    let file, fileRoots, key;
+    let file, fileRoots: HTMLElement[] = [], key;
     this.origin = origin;
     this.context = context;
     for (key of ['ID', 'postID', 'threadID', 'boardID', 'siteID', 'fullID', 'board', 'thread', 'info', 'quotes', 'isReply']) {
@@ -541,9 +544,9 @@ export class PostClone extends Post {
     for (var originFile of this.origin.files) {
       // Copy values, point to relevant elements.
       file = { ...originFile };
-      var fileRoot = fileRoots[file.docIndex];
-      for (key in g.SITE.selectors.file) {
-        var selector = g.SITE.selectors.file[key];
+      var fileRoot = fileRoots[file.docIndex!];
+      for (key in g.SITE!.selectors.file) {
+        var selector = g.SITE!.selectors.file[key];
         file[key] = $(selector, fileRoot);
       }
       file.thumbLink = file.thumb?.parentNode;

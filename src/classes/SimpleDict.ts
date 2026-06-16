@@ -68,7 +68,7 @@ export default class SimpleDict<T> {
 
   get(key): T {
     if (key === 'keys') {
-      return undefined;
+      return undefined as unknown as T;
     } else {
       return $.getOwn(this, key);
     }

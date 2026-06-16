@@ -93,13 +93,13 @@ var QuoteThreading = {
   },
 
   node(this: Post) {
-    let parent;
+    let parent: Post | undefined;
     if (this.isFetchedQuote || this.isClone || !this.isReply) { return; }
 
-    const parents = new Set();
-    let lastParent = null;
+    const parents = new Set<number>();
+    let lastParent: Post | null = null;
     for (var quote of this.quotes) {
-      if ((parent = g.posts.get(quote))) {
+      if ((parent = g.posts!.get(quote))) {
         if (!parent.isFetchedQuote && parent.isReply && (parent.ID < this.ID)) {
           parents.add(parent.ID);
           if (!lastParent || (parent.ID > lastParent.ID)) { lastParent = parent; }
@@ -147,7 +147,7 @@ var QuoteThreading = {
     }
 
     const {order} = Unread;
-    const children = (QuoteThreading.children[parent.fullID] || (QuoteThreading.children[parent.fullID] = []));
+      const children = (QuoteThreading.children[parent.fullID] || (QuoteThreading.children[parent.fullID] = [] as Post[]));
     const threadContainer = parent.nodes.threadContainer || $.el('div', {className: 'threadContainer'});
     const nodes = [post.nodes.root];
     if (post.nodes.threadContainer) { nodes.push(post.nodes.threadContainer); }
@@ -191,7 +191,7 @@ var QuoteThreading = {
     if (Conf['Thread Quotes']) {
       posts.forEach(QuoteThreading.insert);
     } else {
-      const nodes = [];
+      const nodes: HTMLElement[] = [];
       Unread.order = new RandomAccessList();
       QuoteThreading.inserted = dict();
       posts.forEach(function(post) {

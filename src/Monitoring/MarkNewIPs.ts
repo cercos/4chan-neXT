@@ -12,7 +12,7 @@ var MarkNewIPs = {
   ipCount: null as any, // loose: late-assigned
   postCount: null as any, // loose: late-assigned
   init() {
-    if ((g.SITE.software !== 'yotsuba') || (g.VIEW !== 'thread') || !Conf['Mark New IPs']) { return; }
+    if ((g.SITE!.software !== 'yotsuba') || (g.VIEW !== 'thread') || !Conf['Mark New IPs']) { return; }
     return Callbacks.Thread.push({
       name: 'Mark New IPs',
       cb:   this.node
@@ -34,12 +34,14 @@ var MarkNewIPs = {
       case (postCount - MarkNewIPs.postCount) + deletedPosts.length:
         var i = MarkNewIPs.ipCount;
         for (fullID of newPosts) {
-          MarkNewIPs.markNew(g.posts.get(fullID), ++i);
+          const post = g.posts!.get(fullID);
+          if (post) { MarkNewIPs.markNew(post, ++i); }
         }
         break;
       case -deletedPosts.length:
         for (fullID of newPosts) {
-          MarkNewIPs.markOld(g.posts.get(fullID));
+          const post = g.posts!.get(fullID);
+          if (post) { MarkNewIPs.markOld(post); }
         }
         break;
     }

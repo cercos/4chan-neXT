@@ -26,7 +26,7 @@ var ExpandComment = {
     }
   },
 
-  callbacks: [],
+  callbacks: [] as Array<(this: any) => void>,
 
   cb(e) {
     e.preventDefault();
@@ -35,6 +35,7 @@ var ExpandComment = {
 
   expand(post) {
     let a;
+    if (!post) { return; }
     if (post.nodes.longComment && !post.nodes.longComment.parentNode) {
       $.replace(post.nodes.shortComment, post.nodes.longComment);
       post.nodes.comment = post.nodes.longComment;
@@ -42,7 +43,7 @@ var ExpandComment = {
     }
     if (!(a = $('.abbr > a', post.nodes.comment))) { return; }
     a.textContent = `Post No.${post} Loading...`;
-    return $.cache(g.SITE.urls.threadJSON({boardID: post.boardID, threadID: post.threadID}), function() { return ExpandComment.parse(this, a, post); });
+    return $.cache(g.SITE!.urls.threadJSON({boardID: post.boardID, threadID: post.threadID}), function() { return ExpandComment.parse(this, a, post); });
   },
 
   contract(post) {
@@ -65,7 +66,7 @@ var ExpandComment = {
       posts
     } = req.response;
     if (spoilerRange = posts[0].custom_spoiler) {
-      g.SITE.Build.spoilerRange[g.BOARD as any] = spoilerRange;
+      g.SITE!.Build.spoilerRange[g.BOARD as any] = spoilerRange;
     }
 
     for (postObj of posts) {

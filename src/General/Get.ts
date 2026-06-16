@@ -29,19 +29,19 @@ var Get = {
   threadFromRoot(root) {
     if (root == null) { return null; }
     const {board} = root.dataset;
-    return g.threads.get(`${board ? encodeURIComponent(board) : g.BOARD.ID}.${root.id.match(/\d*$/)[0]}`);
+    return g.threads!.get(`${board ? encodeURIComponent(board) : g.BOARD!.ID}.${root.id.match(/\d*$/)[0]}`);
   },
   threadFromNode(node) {
-    return Get.threadFromRoot($.x(`ancestor-or-self::${g.SITE.xpath.thread}`, node));
+    return Get.threadFromRoot($.x(`ancestor-or-self::${g.SITE!.xpath.thread}`, node));
   },
   postFromRoot(root) {
     if (root == null) { return null; }
-    const post  = g.posts.get(root.dataset.fullID);
+    const post  = g.posts!.get(root.dataset.fullID);
     const index = root.dataset.clone;
     if (index) { return post.clones[+index]; } else { return post; }
   },
   postFromNode(root) {
-    return Get.postFromRoot($.x(`ancestor-or-self::${g.SITE.xpath.postContainer}[1]`, root));
+    return Get.postFromRoot($.x(`ancestor-or-self::${g.SITE!.xpath.postContainer}[1]`, root));
   },
   postDataFromLink(link) {
     let boardID, postID, threadID;
@@ -49,7 +49,7 @@ var Get = {
       ({boardID, threadID, postID} = link.dataset);
       if (!threadID) { threadID = 0; }
     } else {
-      const match = link.href.match(g.SITE.regexp.quotelink);
+      const match = link.href.match(g.SITE!.regexp.quotelink);
       [boardID, threadID, postID] = match.slice(1);
       if (!postID) { postID = threadID; }
     }
@@ -61,8 +61,8 @@ var Get = {
   },
   allQuotelinksLinkingTo(post) {
     // Get quotelinks & backlinks linking to the given post.
-    const quotelinks = [];
-    const {posts} = g;
+    const quotelinks: HTMLAnchorElement[] = [];
+    const posts = g.posts!;
     const {fullID} = post;
     const handleQuotes = function(qPost, type) {
       quotelinks.push(...(qPost.nodes[type] || []));

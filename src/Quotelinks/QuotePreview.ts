@@ -24,7 +24,7 @@ var QuotePreview = {
       });
     }
 
-    if (!['index', 'thread'].includes(g.VIEW)) { return; }
+    if (g.VIEW !== 'index' && g.VIEW !== 'thread') { return; }
 
     if (Conf['Comment Expansion']) {
       ExpandComment.callbacks.push(this.node);
@@ -55,7 +55,7 @@ var QuotePreview = {
     );
 
     $.add(Header.hover, qp);
-    new Fetcher(boardID, threadID, postID as any, qp, Get.postFromNode(this));
+    new Fetcher(boardID, threadID, postID as any, qp, Get.postFromNode(this) as any);
 
     UI.hover({
       root: this,
@@ -65,7 +65,7 @@ var QuotePreview = {
       cb: QuotePreview.mouseout
     } as any);
 
-    if (Conf['Quote Highlighting'] && (origin = g.posts.get(`${boardID}.${postID}`))) {
+    if (Conf['Quote Highlighting'] && (origin = g.posts!.get(`${boardID}.${postID}`))) {
       const posts = [origin].concat(origin.clones);
       // Remove the clone that's in the qp from the array.
       posts.pop();
@@ -83,6 +83,7 @@ var QuotePreview = {
     $.event('PostsRemoved', null, Header.hover);
 
     const clone = Get.postFromRoot(root);
+    if (!clone) { return; }
     let post  = clone.origin;
     post.rmClone(root.dataset.clone);
 

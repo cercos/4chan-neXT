@@ -71,10 +71,11 @@ var Nav = {
   },
 
   getThread() {
-    if (g.VIEW === 'thread') { return g.threads.get(`${g.BOARD}.${g.THREADID}`).nodes.root; }
+    if (g.VIEW === 'thread') { return g.threads!.get(`${g.BOARD}.${g.THREADID}`).nodes.root; }
     if ($.hasClass(doc, 'catalog-mode')) { return; }
-    for (var threadRoot of $$(g.SITE.selectors.thread)) {
+    for (var threadRoot of $$(g.SITE!.selectors.thread)) {
       var thread = Get.threadFromRoot(threadRoot);
+      if (!thread) { continue; }
       if (thread.isHidden && !thread.stub) { continue; }
       if (Header.getTopOf(threadRoot) >= -threadRoot.getBoundingClientRect().height) { // not scrolled past
         return threadRoot;
@@ -91,7 +92,7 @@ var Nav = {
       'following'
     :
       'preceding';
-    if (next = $.x(`${axis}-sibling::${g.SITE.xpath.thread}[not(@hidden)][1]`, thread)) {
+    if (next = $.x(`${axis}-sibling::${g.SITE!.xpath.thread}[not(@hidden)][1]`, thread)) {
       // Unless we're not at the beginning of the current thread,
       // and thus wanting to move to beginning,
       // or we're above the first thread and don't want to skip it.
@@ -116,7 +117,7 @@ var Nav = {
       return d.body.style.marginBottom = `${extra}px`;
     } else {
       d.body.style.marginBottom = '';
-      delete Nav.haveExtra;
+      delete (Nav as any).haveExtra;
       return $.off(d, 'scroll', Nav.removeExtra);
     }
   }

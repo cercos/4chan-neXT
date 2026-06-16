@@ -63,14 +63,14 @@ var ImageCommon = {
   },
 
   isFromArchive(file) {
-    return (g.SITE.software === 'yotsuba') && !ImageHost.test(file.src.split('/')[2]);
+    return (g.SITE!.software === 'yotsuba') && !ImageHost.test(file.src.split('/')[2]);
   },
 
   error(file, post, fileObj, delay, cb) {
     let timeoutID;
     const src = fileObj.url.split('/');
-    let url = null;
-    if ((g.SITE.software === 'yotsuba') && Conf['404 Redirect']) {
+    let url: string | null = null;
+    if ((g.SITE!.software === 'yotsuba') && Conf['404 Redirect']) {
       url = Redirect.to('file', {
         boardID:  post.board.ID,
         filename: src[src.length - 1]
@@ -89,13 +89,13 @@ var ImageCommon = {
       }
     };
 
-    const threadJSON = g.SITE.urls.threadJSON?.(post);
+    const threadJSON = g.SITE!.urls.threadJSON?.(post);
     if (!threadJSON) { return; }
-    var parseJSON = function(isArchiveURL) {
+    var parseJSON = function(isArchiveURL?: boolean) {
       let needle, postObj;
       if (this.status === 404) {
         let archivedThreadJSON;
-        if (!isArchiveURL && (archivedThreadJSON = g.SITE.urls.archivedThreadJSON?.(post))) {
+        if (!isArchiveURL && (archivedThreadJSON = g.SITE!.urls.archivedThreadJSON?.(post))) {
           $.ajax(archivedThreadJSON, {onloadend() { return parseJSON.call(this, true); }});
         } else {
           post.kill(!post.isClone, fileObj.index);
@@ -108,14 +108,14 @@ var ImageCommon = {
       if (postObj.no !== post.ID) {
         post.kill();
         return redirect();
-      } else if ((needle = fileObj.docIndex, g.SITE.Build.parseJSON(postObj, post.board).filesDeleted.includes(needle))) {
+      } else if ((needle = fileObj.docIndex, g.SITE!.Build.parseJSON(postObj, post.board).filesDeleted.includes(needle))) {
         post.kill(true);
         return redirect();
       } else {
         return url = fileObj.url;
       }
     };
-    return $.ajax(threadJSON, {onloadend() { return parseJSON.call(this); }});
+    return $.ajax(threadJSON, {onloadend() { return parseJSON.call(this, undefined); }});
   },
 
   // XXX Estimate whether clicks are on the video controls and should be ignored.

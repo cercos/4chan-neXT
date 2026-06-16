@@ -30,7 +30,9 @@ var IDPostCount = {
   },
 
   count() {
-    const {uniqueID} = Get.postFromNode(this).info;
+    const post = Get.postFromNode(this);
+    if (!post) { return; }
+    const {uniqueID} = post.info;
     let n = 0;
     IDPostCount.thread.posts.forEach(function(post) {
       if (post.info.uniqueID === uniqueID) { return n++; }

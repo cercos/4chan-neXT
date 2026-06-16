@@ -4,7 +4,7 @@ import $ from "../platform/$";
 
 const CaptchaReplace = {
   init() {
-    if ((g.SITE.software !== 'yotsuba') || (d.cookie.indexOf('pass_enabled=1') >= 0)) { return; }
+    if ((g.SITE!.software !== 'yotsuba') || (d.cookie.indexOf('pass_enabled=1') >= 0)) { return; }
 
     if (Conf['Force Noscript Captcha'] && (Main as any).jsEnabled) { // loose: jsEnabled owned by ../main/Main
       $.ready(this.noscript);

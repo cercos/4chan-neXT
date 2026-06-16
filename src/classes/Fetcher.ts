@@ -58,15 +58,15 @@ export default class Fetcher {
     this.postID = postID;
     this.root = root;
     this.quoter = quoter;
-    if (post = g.posts.get(`${this.boardID}.${this.postID}`)) {
+    if (post = g.posts!.get(`${this.boardID}.${this.postID}`)) {
       this.insert(post);
       return;
     }
 
     // 4chan X catalog data
-    if ((post = Index.replyData?.[`${this.boardID}.${this.postID}`]) && (thread = g.threads.get(`${this.boardID}.${this.threadID}`))) {
+    if ((post = Index.replyData?.[`${this.boardID}.${this.postID}`]) && (thread = g.threads!.get(`${this.boardID}.${this.threadID}`))) {
       const board  = g.boards[this.boardID];
-      post = new Post(g.SITE.Build.postFromObject(post, this.boardID), thread, board, {isFetchedQuote: true});
+      post = new Post(g.SITE!.Build.postFromObject(post, this.boardID), thread, board, {isFetchedQuote: true});
       Main.callbackNodes('Post', [post]);
       this.insert(post);
       return;
@@ -75,7 +75,7 @@ export default class Fetcher {
     this.root.textContent = `Loading post No.${this.postID}...`;
     if (this.threadID) {
       const that = this;
-      $.cache(g.SITE.urls.threadJSON({boardID: this.boardID, threadID: this.threadID}), function({isCached}) {
+      $.cache(g.SITE!.urls.threadJSON({boardID: this.boardID, threadID: this.threadID}), function({isCached}) {
         return that.fetchedPost(this, isCached);
       });
     } else {
@@ -124,7 +124,7 @@ export default class Fetcher {
     // In case of multiple callbacks for the same request,
     // don't parse the same original post more than once.
     let post;
-    if (post = g.posts.get(`${this.boardID}.${this.postID}`)) {
+    if (post = g.posts!.get(`${this.boardID}.${this.postID}`)) {
       this.insert(post);
       return;
     }
@@ -146,7 +146,7 @@ export default class Fetcher {
     }
 
     const {posts} = req.response;
-    g.SITE.Build.spoilerRange[this.boardID] = posts[0].custom_spoiler;
+    g.SITE!.Build.spoilerRange[this.boardID] = posts[0].custom_spoiler;
     for (post of posts) {
       if (post.no === this.postID) { break; }
     } // we found it!
@@ -154,7 +154,7 @@ export default class Fetcher {
     if (post.no !== this.postID) {
       // Cached requests can be stale and must be rechecked.
       if (isCached) {
-        const api = g.SITE.urls.threadJSON({boardID: this.boardID, threadID: this.threadID});
+        const api = g.SITE!.urls.threadJSON({boardID: this.boardID, threadID: this.threadID});
         $.cleanCache(url => url === api);
         const that = this;
         $.cache(api, function() {
@@ -173,9 +173,9 @@ export default class Fetcher {
 
     const board = g.boards[this.boardID] ||
       new Board(this.boardID);
-    const thread = g.threads.get(`${this.boardID}.${this.threadID}`) ||
+    const thread = g.threads!.get(`${this.boardID}.${this.threadID}`) ||
       new Thread(String(this.threadID), board);
-    post = new Post(g.SITE.Build.postFromObject(post, this.boardID), thread, board, {isFetchedQuote: true});
+    post = new Post(g.SITE!.Build.postFromObject(post, this.boardID), thread, board, {isFetchedQuote: true});
     Main.callbackNodes('Post', [post]);
     return this.insert(post);
   }
@@ -210,7 +210,7 @@ export default class Fetcher {
     // In case of multiple callbacks for the same request,
     // don't parse the same original post more than once.
     let post: Post;
-    if (post = g.posts.get(`${this.boardID}.${this.postID}`)) {
+    if (post = g.posts!.get(`${this.boardID}.${this.postID}`)) {
       this.insert(post);
       return;
     }

@@ -127,7 +127,7 @@ var ReplyPruning = {
     if (e.detail[404]) { return; }
     for (var fullID of e.detail.newPosts) {
       ReplyPruning.total++;
-      if (g.posts.get(fullID).file) { ReplyPruning.totalFiles++; }
+      if (g.posts!.get(fullID).file) { ReplyPruning.totalFiles++; }
     }
   },
 
@@ -171,9 +171,9 @@ var ReplyPruning = {
     }
 
     ReplyPruning.summary.textContent = ReplyPruning.active ?
-      g.SITE.Build.summaryText('+', ReplyPruning.hidden, ReplyPruning.hiddenFiles)
+      g.SITE!.Build.summaryText('+', ReplyPruning.hidden, ReplyPruning.hiddenFiles)
     :
-      g.SITE.Build.summaryText('-', ReplyPruning.total, ReplyPruning.totalFiles);
+      g.SITE!.Build.summaryText('-', ReplyPruning.total, ReplyPruning.totalFiles);
     ReplyPruning.summary.hidden = (ReplyPruning.total <= +Conf["Max Replies"]);
 
     // Maintain position in thread when posts are added/removed above

@@ -161,7 +161,7 @@ $\
   },
 
   isIncomplete() {
-    return ['index', 'thread'].includes(g.VIEW) && !$('.board + *');
+    return (g.VIEW === 'index' || g.VIEW === 'thread') && !$('.board + *');
   },
 
   isBoardlessPage(url) {
@@ -194,7 +194,7 @@ $\
             Report.init();
           } else if (match = location.search.match(/\bres=(\d+)/)) {
             $.ready(function() {
-              if (Conf['404 Redirect'] && ($.id('errmsg')?.textContent === 'Error: Specified thread does not exist.')) {
+              if (Conf['404 Redirect'] && g.BOARD && ($.id('errmsg')?.textContent === 'Error: Specified thread does not exist.')) {
                 return (Redirect.navigate as any)('thread', { // loose: optional 3rd arg defined in src/Archive
                   boardID: g.BOARD.ID,
                   postID:  +match[1]
@@ -222,7 +222,7 @@ $\
     thread.fileLimit = /\bimagelimit *= *1\b/.test(scriptData);
     thread.ipCount   = (m = scriptData.match(/\bunique_ips *= *(\d+)\b/)) ? +m[1] : undefined;
 
-    if ((g.BOARD.ID === 'f') && thread.OP.file) {
+    if ((g.BOARD?.ID === 'f') && thread.OP.file) {
       const {file} = thread.OP;
       return $.ajax(this.urls.threadJSON({boardID: 'f', threadID: thread.ID}), {
         timeout: MINUTE,
@@ -240,7 +240,7 @@ $\
     // Add CSS classes to sticky/closed icons on /f/ to match other boards.
     if (post.boardID === 'f') {
       return (() => {
-        const result = [];
+        const result: any[] = [];
         for (var type of ['Sticky', 'Closed']) {
           var icon;
           if (icon = $(`img[alt=${type}]`, nodes.info)) {
@@ -340,14 +340,14 @@ $\
 
   transformBoardList() {
     let node;
-    const nodes = [];
+    const nodes: Node[] = [];
     const spacer = () => $.el('span', {className: 'spacer'});
     const items = $.X('.//a|.//text()[not(ancestor::a)]', $(SWYotsuba.selectors.boardList));
     let i = 0;
     while ((node = items.snapshotItem(i++))) {
       switch (node.nodeName) {
         case '#text':
-          for (var chr of node.nodeValue) {
+          for (var chr of node.nodeValue || '') {
             var span = $.el('span', {textContent: chr});
             if (chr === ' ') { span.className = 'space'; }
             if (chr === ']') { nodes.push(spacer()); }
@@ -389,11 +389,11 @@ $\
     },
 
     sameThread(boardID, threadID) {
-      return (g.VIEW === 'thread') && (g.BOARD.ID === boardID) && (g.THREADID === +threadID);
+      return (g.VIEW === 'thread') && (g.BOARD?.ID === boardID) && (g.THREADID === +threadID);
     },
 
     threadURL(boardID, threadID) {
-      if (boardID !== g.BOARD.ID) {
+      if (boardID !== g.BOARD?.ID) {
         return `//${BoardConfig.domain(boardID)}/${boardID}/thread/${threadID}`;
       } else if ((g.VIEW !== 'thread') || (+threadID !== g.THREADID)) {
         return `/${boardID}/thread/${threadID}`;
@@ -508,7 +508,7 @@ $\
     },
 
     postFromObject(data, boardID) {
-      const o = this.parseJSON(data, { boardID, siteID: g.SITE.ID });
+      const o = this.parseJSON(data, { boardID, siteID: g.SITE!.ID });
       return this.post(o);
     },
 

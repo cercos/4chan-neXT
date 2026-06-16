@@ -12,7 +12,7 @@ const PageContextFunctions = {
 
   disableNativeExtension: () => {
     try {
-      const settings = JSON.parse(localStorage.getItem('4chan-settings')) || {};
+      const settings = JSON.parse(localStorage.getItem('4chan-settings') || '{}') || {};
       if (settings.disableAll) return;
       settings.disableAll = true;
       localStorage.setItem('4chan-settings', JSON.stringify(settings));
@@ -155,6 +155,7 @@ const PageContextFunctions = {
   initTinyBoard: ({ boardID, threadID }) => {
     threadID = +threadID;
     const form = document.querySelector<HTMLFormElement>('form[name="post"]');
+    if (!form) return;
     (window as any).$(document).ajaxComplete(function (event, request, settings) {
       let postID;
       if (settings.url !== form.action) return;
@@ -178,6 +179,7 @@ const PageContextFunctions = {
     const render = function () {
       const { classList } = document.documentElement;
       const container = document.querySelector<HTMLElement>('#qr .captcha-container');
+      if (!container) return;
       container.dataset.widgetID = (window as any).grecaptcha.render(container, {
         sitekey: recaptchaKey,
         theme: classList.contains('tomorrow') || classList.contains('spooky') || classList.contains('dark-captcha') ? 'dark' : 'light',
@@ -202,7 +204,9 @@ const PageContextFunctions = {
     }
   },
   resetCaptcha: () => {
-    (window as any).grecaptcha.reset(document.querySelector<HTMLElement>('#qr .captcha-container').dataset.widgetID);
+    const container = document.querySelector<HTMLElement>('#qr .captcha-container');
+    if (!container) return;
+    (window as any).grecaptcha.reset(container.dataset.widgetID);
   },
 
   setupTCaptcha: ({ boardID, threadID, autoLoad }) => {
@@ -232,22 +236,28 @@ const PageContextFunctions = {
       }));
     });
     if ((window as any).Tegaki) {
-      document.querySelector<HTMLElement>('#qr .oekaki').hidden = false;
+      const oekaki = document.querySelector<HTMLElement>('#qr .oekaki');
+      if (oekaki) oekaki.hidden = false;
     }
   },
 
   qrTegakiDraw: () => {
     const { Tegaki, FCX } = (window as any);
+    const widthInput = document.querySelector<HTMLInputElement>('#qr [name=oekaki-width]');
+    const heightInput = document.querySelector<HTMLInputElement>('#qr [name=oekaki-height]');
+    const bgInput = document.querySelector<HTMLInputElement>('#qr [name=oekaki-bg]');
+    const bgColorInput = document.querySelector<HTMLInputElement>('#qr [name=oekaki-bgcolor]');
+    if (!widthInput || !heightInput || !bgInput || !bgColorInput) return;
     if (Tegaki.bg) { Tegaki.destroy(); }
     FCX.oekakiName = 'tegaki.png';
     Tegaki.open({
       onDone: FCX.oekakiCB,
       onCancel() { Tegaki.bgColor = '#ffffff'; },
-      width: +document.querySelector<HTMLInputElement>('#qr [name=oekaki-width]').value,
-      height: +document.querySelector<HTMLInputElement>('#qr [name=oekaki-height]').value,
+      width: +widthInput.value,
+      height: +heightInput.value,
       bgColor:
-        document.querySelector<HTMLInputElement>('#qr [name=oekaki-bg]').checked ?
-          document.querySelector<HTMLInputElement>('#qr [name=oekaki-bgcolor]').value :
+        bgInput.checked ?
+          bgColorInput.value :
           'transparent'
     });
   },
@@ -255,7 +265,7 @@ const PageContextFunctions = {
   qrTegakiLoad: () => {
     const { Tegaki, FCX } = (window as any);
     const name = (document.getElementById('qr-filename') as HTMLInputElement).value.replace(/\.\w+$/, '') + '.png';
-    const { source } = document.getElementById('file-n-submit').dataset;
+    const source = document.getElementById('file-n-submit')?.dataset.source;
     const error = content => document.dispatchEvent(new CustomEvent('CreateNotification', {
       bubbles: true,
       detail: { type: 'warning', content, lifetime: 20 }
@@ -265,8 +275,9 @@ const PageContextFunctions = {
       const selected = document.getElementById('selected');
       if (!selected?.dataset.type) return error('No file to edit.');
       if (!/^(image|video)\//.test(selected.dataset.type)) { return error('Not an image.'); }
-      if (!selected.dataset.height) return error('Metadata not available.');
-      if (selected.dataset.height === 'loading') {
+      const { width, height } = selected.dataset;
+      if (!width || !height) return error('Metadata not available.');
+      if (height === 'loading') {
         selected.addEventListener('QRMetadata', cb, false);
         return;
       }
@@ -275,13 +286,13 @@ const PageContextFunctions = {
       Tegaki.open({
         onDone: FCX.oekakiCB,
         onCancel() { Tegaki.bgColor = '#ffffff'; },
-        width: +selected.dataset.width,
-        height: +selected.dataset.height,
+        width: +width,
+        height: +height,
         bgColor: 'transparent'
       });
       const canvas = document.createElement('canvas');
-      canvas.width = ((canvas as any).naturalWidth = +selected.dataset.width);
-      canvas.height = ((canvas as any).naturalHeight = +selected.dataset.height);
+      canvas.width = ((canvas as any).naturalWidth = +width);
+      canvas.height = ((canvas as any).naturalHeight = +height);
       canvas.hidden = true;
       document.body.appendChild(canvas);
       canvas.addEventListener('QRImageDrawn', function () {

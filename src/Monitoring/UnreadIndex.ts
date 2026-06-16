@@ -50,10 +50,10 @@ var UnreadIndex = {
 
   onIndexRefresh(e) {
     return (() => {
-      const result = [];
+      const result: any[] = [];
       for (var threadID of e.detail.threadIDs) {
-        var thread = g.threads.get(threadID);
-        result.push(UnreadIndex.update(thread));
+        var thread = g.threads!.get(threadID);
+        if (thread) { result.push(UnreadIndex.update(thread)); }
       }
       return result;
     })();
@@ -71,7 +71,7 @@ var UnreadIndex = {
   },
 
   sync() {
-    return g.threads.forEach(function(thread) {
+    return g.threads!.forEach(function(thread) {
       const lastReadPost = UnreadIndex.db.get({
         boardID: thread.board.ID,
         threadID: thread.ID
@@ -90,7 +90,7 @@ var UnreadIndex = {
     const lastReadPost = UnreadIndex.lastReadPost[thread.fullID];
     let repliesShown = 0;
     let repliesRead = 0;
-    let firstUnread = null;
+    let firstUnread: any = null;
     thread.posts.forEach(function(post) {
       if (post.isReply && thread.nodes.root.contains(post.nodes.root)) {
         repliesShown++;
@@ -103,7 +103,7 @@ var UnreadIndex = {
     });
 
     let hr = UnreadIndex.hr[thread.fullID];
-    if (firstUnread && (repliesRead || ((lastReadPost === thread.OP.ID) && (!$(g.SITE.selectors.summary, thread.nodes.root) || thread.ID in ExpandThread.statuses)))) {
+    if (firstUnread && (repliesRead || ((lastReadPost === thread.OP.ID) && (!$(g.SITE!.selectors.summary, thread.nodes.root) || thread.ID in ExpandThread.statuses)))) {
       if (!hr) {
         hr = (UnreadIndex.hr[thread.fullID] = $.el('hr',
           {className: 'unread-line'}));
@@ -136,7 +136,7 @@ var UnreadIndex = {
       ));
       $.on(link, 'click', UnreadIndex.markRead);
     }
-    if (divider = $(g.SITE.selectors.threadDivider, thread.nodes.root)) { // divider inside thread as in Tinyboard
+    if (divider = $(g.SITE!.selectors.threadDivider, thread.nodes.root)) { // divider inside thread as in Tinyboard
       return $.before(divider, link);
     } else {
       return $.add(thread.nodes.root, link);
@@ -145,6 +145,7 @@ var UnreadIndex = {
 
   markRead() {
     const thread = Get.threadFromNode(this);
+    if (!thread) { return; }
     UnreadIndex.lastReadPost[thread.fullID] = thread.lastPost;
     UnreadIndex.db.set({
       boardID:  thread.board.ID,
@@ -158,7 +159,7 @@ var UnreadIndex = {
       thread.catalogView.nodes.root.classList.remove('unread-thread');
       thread.catalogView.nodes.root.classList.add('read-thread');
     }
-    return ThreadWatcher.update(g.SITE.ID, thread.board.ID, thread.ID, {
+    return ThreadWatcher.update(g.SITE!.ID, thread.board.ID, thread.ID, {
       last: thread.lastPost,
       unread: 0,
       quotingYou: 0

@@ -43,7 +43,7 @@ export default class Thread {
     this.ID         = +ID;
     this.threadID   = this.ID;
     this.boardID    = this.board.ID;
-    this.siteID     = g.SITE.ID;
+    this.siteID     = g.SITE!.ID;
     this.fullID     = `${this.board}.${this.ID}`;
     this.posts      = new SimpleDict();
     this.isDead     = false;
@@ -54,17 +54,17 @@ export default class Thread {
     this.postLimit  = false;
     this.fileLimit  = false;
     this.lastPost   = 0;
-    this.ipCount    = undefined;
+    this.ipCount    = undefined as unknown as number;
     this.json       = null;
 
-    this.OP = null;
+    this.OP = null as unknown as Post;
     this.catalogView = null;
 
     this.nodes =
       {root: null};
 
     this.board.threads.push(this.ID, this);
-    g.threads.push(this.fullID, this);
+    g.threads!.push(this.fullID, this);
   }
 
   setPage(pageNum) {
@@ -108,13 +108,13 @@ export default class Thread {
       return;
     }
     icon = $.el('img', {
-      src: `${g.SITE.Build.staticPath}${typeLC}${g.SITE.Build.gifIcon}`,
+      src: `${g.SITE!.Build.staticPath}${typeLC}${g.SITE!.Build.gifIcon}`,
       alt:   type,
       title: type,
       className: `${typeLC}Icon retina`
     }
     );
-    if (g.BOARD.ID === 'f') {
+    if (g.BOARD!.ID === 'f') {
       icon.style.cssText = 'height: 18px; width: 18px;';
     }
 
@@ -142,7 +142,7 @@ export default class Thread {
       }
     });
     if (!n) {
-      g.threads.rm(this.fullID);
+      g.threads!.rm(this.fullID);
       return this.board.threads.rm(this);
     }
   }

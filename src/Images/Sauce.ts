@@ -21,10 +21,10 @@ var Sauce = {
 
   init() {
     let link;
-    if (!['index', 'thread'].includes(g.VIEW) || !Conf['Sauce']) { return; }
+    if ((g.VIEW !== 'index' && g.VIEW !== 'thread') || !Conf['Sauce']) { return; }
     $.addClass(doc, 'show-sauce');
 
-    const links = [];
+    const links: any[] = [];
     for (link of Conf['sauces'].split('\n')) {
       var linkData;
       if ((link[0] !== '#') && (linkData = this.parseLink(link))) {
@@ -80,7 +80,7 @@ var Sauce = {
           $.el('br'),
           $.tn(link),
           $.el('br'),
-          $.tn(err.message)
+          $.tn(err instanceof Error ? err.message : String(err))
         ], 60);
         return null;
       }
@@ -98,7 +98,7 @@ var Sauce = {
     if (!!parts['types']  && (needle = ext, !parts['types'].split(',').includes(needle))) { return null; }
     if (!!parts['regexp'] && (!(matches = file.name.match(parts['regexp'])))) { return null; }
 
-    const missing = [];
+    const missing: string[] = [];
     for (var key of ['url', 'text']) {
       parts[key] = parts[key].replace(/%(T?URL|IMG|[sh]?MD5|board|name|%|semi|\$\d+)/g, function(orig, parameter) {
         let type;
@@ -121,7 +121,7 @@ var Sauce = {
       });
     }
 
-    if (g.SITE.areMD5sDeferred?.(post.board) && missing.length && !missing.filter(x => !/^.?MD5$/.test(x)).length) {
+    if (g.SITE!.areMD5sDeferred?.(post.board) && missing.length && !missing.filter(x => !/^.?MD5$/.test(x)).length) {
       a = Sauce.link.cloneNode(false);
       a.dataset.skip = '1';
       return a;
@@ -145,8 +145,8 @@ var Sauce = {
 
   file(post, file) {
     let link, node;
-    const nodes = [];
-    const skipped = [];
+    const nodes: any[] = [];
+    const skipped: any[] = [];
     for (link of Sauce.links) {
       if (node = Sauce.createSauceLink(link, post, file)) {
         nodes.push($.tn(' '), node);

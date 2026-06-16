@@ -9,7 +9,7 @@ import $ from "../platform/$";
  */
 var IDHighlight = {
   init() {
-    if (!['index', 'thread'].includes(g.VIEW)) { return; }
+    if (g.VIEW !== 'index' && g.VIEW !== 'thread') { return; }
 
     return Callbacks.Post.push({
       name: 'Highlight by User ID',
@@ -33,7 +33,7 @@ var IDHighlight = {
   click(post) { return function() {
     const uniqueID = post.info.uniqueID || post.info.capcode;
     IDHighlight.uniqueID = IDHighlight.uniqueID === uniqueID ? null : uniqueID;
-    return g.posts.forEach(IDHighlight.set);
+    return g.posts!.forEach(IDHighlight.set);
   }; }
 };
 export default IDHighlight;

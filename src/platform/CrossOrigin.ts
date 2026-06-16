@@ -86,10 +86,10 @@ var CrossOrigin = {
     }
   },
 
-  file(url: string, cb: (result: File) => void) {
+  file(url: string, cb: (result: File | null) => void) {
     return CrossOrigin.binary(url, function(data, headers) {
       if (data == null) { return cb(null); }
-      let name = url.match(/([^\/?#]+)\/*(?:$|[?#])/)?.[1];
+      let name = url.match(/([^\/?#]+)\/*(?:$|[?#])/)?.[1] || 'file';
       const contentType        = headers.match(/Content-Type:\s*(.*)/i)?.[1];
       const contentDisposition = headers.match(/Content-Disposition:\s*(.*)/i)?.[1];
       let mime = contentType?.match(/[^;]*/)[0] || 'application/octet-stream';
@@ -101,7 +101,8 @@ var CrossOrigin = {
       }
       if (/^text\/plain;\s*charset=x-user-defined$/i.test(mime)) {
         // In JS Blocker (Safari) content type comes back as 'text/plain; charset=x-user-defined'; guess from filename instead.
-        mime = $.getOwn(QR.typeFromExtension, name.match(/[^.]*$/)[0].toLowerCase()) || 'application/octet-stream';
+        const extension = name.match(/[^.]*$/)?.[0]?.toLowerCase() || '';
+        mime = $.getOwn(QR.typeFromExtension, extension) || 'application/octet-stream';
       }
       cb(new File([data], name, { type: mime }));
     });
@@ -163,7 +164,7 @@ var CrossOrigin = {
     if (responseType == null) { responseType = 'json'; }
 
     const req = new CrossOrigin.Request();
-    req.onloadend = onloadend;
+    if (onloadend) req.onloadend = onloadend;
 
     if (platform === 'userscript') {
       if ((window as any).GM?.xmlHttpRequest == null && window.GM_xmlhttpRequest == null) {
@@ -252,7 +253,7 @@ var CrossOrigin = {
         if (result) {
           return cb();
         } else {
-          return cbFail();
+          return cbFail?.();
         }
       });
     }

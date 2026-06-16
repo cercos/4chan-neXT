@@ -13,7 +13,7 @@ import ExpandComment from "./ExpandComment";
  */
 var Fourchan = {
   init() {
-    if ((g.SITE.software !== 'yotsuba') || !['index', 'thread', 'archive'].includes(g.VIEW)) { return; }
+    if ((g.SITE!.software !== 'yotsuba') || (g.VIEW !== 'index' && g.VIEW !== 'thread' && g.VIEW !== 'archive')) { return; }
     BoardConfig.ready(this.initBoard);
     return Main.ready(this.initReady);
   },
@@ -21,10 +21,10 @@ var Fourchan = {
   initBoard() {
     Fourchan.applyPageFeatureFlags();
 
-    if (g.BOARD.config.code_tags) {
+    if (g.BOARD!.config.code_tags) {
       $.on(window, 'prettyprint:cb', function(e) {
         let post, pre;
-        if (!(post = g.posts.get(e.detail.ID))) { return; }
+        if (!(post = g.posts!.get(e.detail.ID))) { return; }
         if (!(pre  = $$('.prettyprint', post.nodes.comment)[+e.detail.i])) { return; }
         if (!$.hasClass(pre, 'prettyprinted')) {
           pre.innerHTML = e.detail.html;
@@ -36,7 +36,7 @@ var Fourchan = {
         name: 'Parse [code] tags',
         cb:   Fourchan.code
       });
-      g.posts.forEach(function(post) {
+      g.posts!.forEach(function(post) {
         if (post.callbacksExecuted) {
           return Callbacks.Post.execute(post, ['Parse [code] tags'], true);
         }
@@ -44,13 +44,13 @@ var Fourchan = {
       ExpandComment.callbacks.push(Fourchan.code);
     }
 
-    if (g.BOARD.config.math_tags) {
+    if (g.BOARD!.config.math_tags) {
       $.global('fourChanMathjaxListener');
       Callbacks.Post.push({
         name: 'Parse [math] tags',
         cb:   Fourchan.math
       });
-      g.posts.forEach(function(post) {
+      g.posts!.forEach(function(post) {
         if (post.callbacksExecuted) {
           return Callbacks.Post.execute(post, ['Parse [math] tags'], true);
         }
@@ -64,8 +64,8 @@ var Fourchan = {
     for (const script of $$('script')) {
       const text = script.textContent || '';
       for (const flag of flags) {
-        if (!g.BOARD.config[flag] && new RegExp(`\\b${flag}\\s*=\\s*true\\b`).test(text)) {
-          g.BOARD.config[flag] = 1;
+        if (!g.BOARD!.config[flag] && new RegExp(`\\b${flag}\\s*=\\s*true\\b`).test(text)) {
+          g.BOARD!.config[flag] = 1;
         }
       }
     }

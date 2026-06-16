@@ -184,7 +184,7 @@ var Settings = {
     $.on(d, 'AddSettingsSection',   Settings.addSection);
     $.on(d, 'OpenSettings', e => Settings.open(e.detail));
 
-    if ((g.SITE.software === 'yotsuba') && Conf['Disable Native Extension']) {
+    if ((g.SITE!.software === 'yotsuba') && Conf['Disable Native Extension']) {
       if ($.hasStorage) {
         // Run in page context to handle case where 4chan X has localStorage access but not the page.
         // (e.g. Pale Moon 26.2.2, GM 3.8, cookies disabled for 4chan only)
@@ -411,7 +411,7 @@ var Settings = {
       $.on(actionEl, 'touchstart mousedown', e => e.stopPropagation());
     }
 
-    const links = [];
+    const links: HTMLAnchorElement[] = [];
     let defaultLink;
     for (const section of Settings.sections) {
       const link = $.el('a', {
@@ -423,11 +423,11 @@ var Settings = {
       // Links live in the draggable titlebar (horizontal layout), so a drag
       // that starts on a link moves the window. Track the pointer-down position
       // and treat the click as a drag (don't navigate) if it moved past a few px.
-      let downX = null, downY = null;
+      let downX: number | null = null, downY: number | null = null;
       $.on(link, 'mousedown', e => { downX = e.clientX; downY = e.clientY; });
       $.on(link, 'click', e => {
         e.preventDefault();
-        if (downX !== null && (Math.abs(e.clientX - downX) > 4 || Math.abs(e.clientY - downY) > 4)) {
+        if (downX !== null && downY !== null && (Math.abs(e.clientX - downX) > 4 || Math.abs(e.clientY - downY) > 4)) {
           downX = downY = null;
           return;
         }
@@ -1062,7 +1062,7 @@ var Settings = {
     let sectionTitle = sectionInfo?.title || '';
     if (sectionTitle === 'All Settings') {
       const block = root.closest('.settings-section-block') as HTMLElement | null;
-      sectionTitle = $('.settings-section-header', block)?.textContent?.trim() || '';
+      sectionTitle = block ? $('.settings-section-header', block)?.textContent?.trim() || '' : '';
     }
     // Use the same scope key for both "All Settings" and single-section views
     // so collapse state stays in sync across both places.
@@ -1851,7 +1851,7 @@ Enable it on boards.${location.hostname.split('.')[1]}.org in your browser's pri
     $.on(button, 'click', function() {
       this.textContent = 'Hidden: 0';
       $.get('hiddenThreads', dict(), function({ hiddenThreads }) {
-        if ($.hasStorage && (g.SITE.software === 'yotsuba')) {
+        if ($.hasStorage && (g.SITE!.software === 'yotsuba')) {
           let boardID;
           for (boardID in hiddenThreads['4chan.org']?.boards) {
             localStorage.removeItem(`4chan-hide-t-${boardID}`);
@@ -2731,7 +2731,7 @@ Enable it on boards.${location.hostname.split('.')[1]}.org in your browser's pri
     const markerToggleKeys = new Set<string>([
       'Scrollbar Markers',
       ...markerControlRows.map(r => r.onKey),
-      ...markerControlRows.map(r => r.matchKey).filter((k): k is string => !!k),
+      ...(markerControlRows.map(r => r.matchKey).filter(Boolean) as string[]),
     ]);
     // Thread highlight rows: each enable checkbox gates its own detail controls,
     // mirroring syncCatalogHighlightControls for the catalog group.
@@ -7755,7 +7755,7 @@ Enable it on boards.${location.hostname.split('.')[1]}.org in your browser's pri
     const reader = new FileReader();
     reader.onload = function(e) {
       try {
-        let data = dict.json(e.target.result as string);
+        let data = dict.json((e.target as FileReader).result as string);
         // Accept older/minimal exports that store settings directly at the top level.
         if (!data?.Conf && (data?.watchedThreads || data?.watcherBackup)) {
           data = {
@@ -7775,7 +7775,7 @@ Enable it on boards.${location.hostname.split('.')[1]}.org in your browser's pri
           onConfirm: checkedOptions => Settings.doImport(data, checkedOptions)
         });
       } catch (error) {
-        const err = error;
+        const err = error instanceof Error ? error : new Error(String(error));
         output.textContent = 'Import failed due to an error.';
         c.error(err.stack);
       }
@@ -8672,7 +8672,7 @@ Enable it on boards.${location.hostname.split('.')[1]}.org in your browser's pri
 
   renderEasyFilterPreview(container: HTMLElement, panel: HTMLElement) {
     $.rmAll(panel);
-    if (!g.BOARD?.threads || !['index', 'thread', 'catalog'].includes(g.VIEW)) {
+    if (!g.BOARD?.threads || (g.VIEW !== 'index' && g.VIEW !== 'thread' && g.VIEW !== 'catalog')) {
       $.add(panel, $.el('div', {
         className: 'filter-stats-empty',
         textContent: 'Thread match preview is available on board and catalog pages.',
@@ -8799,7 +8799,7 @@ Enable it on boards.${location.hostname.split('.')[1]}.org in your browser's pri
 
   renderFilterStats(type: string, textarea: HTMLTextAreaElement, panel: HTMLElement) {
     $.rmAll(panel);
-    if (!g.BOARD?.threads || !['index', 'thread', 'catalog'].includes(g.VIEW)) {
+    if (!g.BOARD?.threads || (g.VIEW !== 'index' && g.VIEW !== 'thread' && g.VIEW !== 'catalog')) {
       $.add(panel, $.el('div', {
         className: 'filter-stats-empty',
         textContent: 'Thread match preview is available on board and catalog pages.',
@@ -8928,7 +8928,7 @@ Enable it on boards.${location.hostname.split('.')[1]}.org in your browser's pri
       try {
         regexp = RegExp(regexpMatch[1], regexpMatch[2]);
       } catch (err) {
-        return { invalid: err.message };
+        return { invalid: err instanceof Error ? err.message : String(err) };
       }
     }
     const filter = line.replace(regexpMatch[0], '');
@@ -9018,7 +9018,7 @@ Enable it on boards.${location.hostname.split('.')[1]}.org in your browser's pri
     if (g.VIEW === 'catalog' && (Filter as any)?.catalogData) {
       for (const threadID in (Filter as any).catalogData) {
         const data = (Filter as any).catalogData[threadID];
-        const parsed = g.SITE.Build.parseJSON(data, g.BOARD);
+        const parsed = g.SITE!.Build.parseJSON(data, g.BOARD!);
         const thread = g.BOARD?.threads?.get?.(+threadID) || g.BOARD?.threads?.get?.(threadID as any);
         const posts: any[] = [];
         if (thread?.posts) {
@@ -9050,7 +9050,7 @@ Enable it on boards.${location.hostname.split('.')[1]}.org in your browser's pri
 
   filterPreviewThreadLink(entry: any): { href: string; text: string } {
     const { id, boardID, op } = entry;
-    let href = (g.SITE.Build as any).postURL?.(boardID, id, id) || (g.SITE.Build as any).threadURL?.(boardID, id) || '';
+    let href = (g.SITE!.Build as any).postURL?.(boardID, id, id) || (g.SITE!.Build as any).threadURL?.(boardID, id) || '';
     if (!href) href = `#p${id}`;
     let title = op.info.subject || op.info.comment || op.info.nameBlock || '';
     if (!title && op.info.commentHTML?.innerHTML) {
@@ -9395,7 +9395,7 @@ Enable it on boards.${location.hostname.split('.')[1]}.org in your browser's pri
             setStatus(`Imported.`, true);
           });
         } catch (err) {
-          setStatus(`Import failed: ${err.message || err}`);
+          setStatus(`Import failed: ${err instanceof Error ? err.message : String(err)}`);
         }
       };
       reader.readAsText(file);
@@ -9684,17 +9684,17 @@ Enable it on boards.${location.hostname.split('.')[1]}.org in your browser's pri
       }
     }
 
-    const rows = [];
-    const boardOptions = [];
+    const rows: HTMLTableRowElement[] = [];
+    const boardOptions: HTMLOptionElement[] = [];
     for (boardID of Object.keys(archBoards).sort()) { // Alphabetical order
       var row = $.el('tr',
         {className: `board-${boardID}`});
-      row.hidden = boardID !== g.BOARD.ID;
+      row.hidden = boardID !== g.BOARD!.ID;
 
       boardOptions.push($.el('option', {
         textContent: `/${boardID}/`,
         value:       `board-${boardID}`,
-        selected:    boardID === g.BOARD.ID
+        selected:    boardID === g.BOARD!.ID
       }));
 
       o = archBoards[boardID];
@@ -9711,7 +9711,7 @@ Enable it on boards.${location.hostname.split('.')[1]}.org in your browser's pri
 
     boardSelect.hidden = (table.hidden = false);
 
-    if (!(g.BOARD.ID in archBoards)) {
+    if (!(g.BOARD!.ID in archBoards)) {
       rows[0].hidden = false;
     }
 
@@ -9747,7 +9747,7 @@ Enable it on boards.${location.hostname.split('.')[1]}.org in your browser's pri
       return td;
     }
 
-    const options = [];
+      const options: HTMLOptionElement[] = [];
     let i = 0;
     while (i < length) {
       var archive = data[type][i++];

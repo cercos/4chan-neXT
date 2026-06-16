@@ -14,7 +14,7 @@ import Volume from "./Volume";
  */
 var ImageHover = {
   init() {
-    if (!['index', 'thread'].includes(g.VIEW)) { return; }
+    if (g.VIEW !== 'index' && g.VIEW !== 'thread') { return; }
     if (Conf['Image Hover']) {
       Callbacks.Post.push({
         name: 'Image Hover',
@@ -44,7 +44,7 @@ var ImageHover = {
     let el, height, width;
     if (!doc.contains(this)) { return; }
     const {isVideo} = file;
-    if (file.isExpanding || file.isExpanded || g.SITE.isThumbExpanded?.(file)) { return; }
+    if (file.isExpanding || file.isExpanded || g.SITE!.isThumbExpanded?.(file)) { return; }
     const error = ImageHover.error(post, file);
     if (ImageCommon.cache?.dataset.fileID === `${post.fullID}.${file.index}`) {
       el = ImageCommon.popCache();

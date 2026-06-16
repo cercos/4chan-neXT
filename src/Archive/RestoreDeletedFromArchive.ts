@@ -11,7 +11,9 @@ import Get from '../General/Get';
 
 const RestoreDeletedFromArchive = {
   restore() {
-    const url = Redirect.to('threadJSON', { boardID: g.boardID, threadID: g.threadID });
+    const { boardID, threadID } = g;
+    if (!boardID || threadID == null) return;
+    const url = Redirect.to('threadJSON', { boardID, threadID });
     if (!url) {
       new Notice('warning', 'No archive found', 3);
       return;
@@ -31,7 +33,7 @@ const RestoreDeletedFromArchive = {
           return;
         }
         let nrRestored = 0;
-        const archivePosts = this.response[g.threadID.toString()].posts as Record<string, RawArchivePost>;
+        const archivePosts = this.response[threadID.toString()].posts as Record<string, RawArchivePost>;
         for (const [postID, raw] of Object.entries(archivePosts)) {
           if (RestoreDeletedFromArchive.insert(raw)[1]) {
             ++nrRestored;
@@ -78,7 +80,9 @@ const RestoreDeletedFromArchive = {
    */
   insert(raw: RawArchivePost): [(Post | undefined), boolean] {
     const key = `${raw.board.shortname}.${raw.num}`;
-    if (g.posts.keys.includes(key)) return [undefined, false];
+    const posts = g.posts;
+    if (!posts) return [undefined, false];
+    if (posts.keys.includes(key)) return [undefined, false];
 
     let inserted = false;
 
@@ -87,12 +91,12 @@ const RestoreDeletedFromArchive = {
     post.markAsFromArchive();
 
     if (post.threadID === g.threadID && g.VIEW === 'thread') {
-      const newPostIndex = g.posts.insert(key, post, key => +(key.split('.')[1]) < post.ID);
+      const newPostIndex = posts.insert(key, post, key => +(key.split('.')[1]) < post.ID);
 
       if (Conf['Thread Quotes']) {
         post.thread.nodes.root.insertAdjacentElement('beforeend', post.root);
       } else {
-        g.posts.get(g.posts.keys[newPostIndex - 1]).root.insertAdjacentElement('afterend', post.root);
+        posts.get(posts.keys[newPostIndex - 1]).root.insertAdjacentElement('afterend', post.root);
       }
 
       QuoteThreading.insert(post);

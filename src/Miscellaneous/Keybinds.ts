@@ -63,7 +63,7 @@ var Keybinds = {
     if (['INPUT', 'TEXTAREA'].includes(target.nodeName)) {
       if (!/(Esc|Alt|Ctrl|Meta|Shift\+\w{2,})/.test(key) || !!/^Alt\+(\d|Up|Down|Left|Right)$/.test(key)) { return; }
     }
-    if (['index', 'thread'].includes(g.VIEW)) {
+    if (g.VIEW === 'index' || g.VIEW === 'thread') {
       threadRoot = Nav.getThread();
       thread = Get.threadFromRoot(threadRoot);
     }
@@ -201,7 +201,7 @@ var Keybinds = {
     // Images
     if (key === Conf['Expand image'] && ImageExpand.enabled && threadRoot) {
       var post = Get.postFromNode(Keybinds.post(threadRoot));
-      if (post.file) {
+      if (post?.file) {
         ImageExpand.toggle(post);
         hasAction = true;
       }
@@ -214,7 +214,7 @@ var Keybinds = {
       Gallery.cb.toggle();
       hasAction = true;
     }
-    if (key === Conf['Download all media'] && Conf['Download All Media'] && ['thread', 'index', 'catalog'].includes(g.VIEW)) {
+    if (key === Conf['Download all media'] && Conf['Download All Media'] && (g.VIEW === 'thread' || g.VIEW === 'index' || g.VIEW === 'catalog')) {
       DownloadAll.cb.open();
       hasAction = true;
     }
@@ -239,29 +239,29 @@ var Keybinds = {
       $.open(`${location.origin}/${g.BOARD}/`);
       hasAction = true;
     }
-    if (key === Conf['Next page'] && g.VIEW === 'index' && !g.SITE.isOnePage?.(g.BOARD)) {
+    if (key === Conf['Next page'] && g.VIEW === 'index' && !g.SITE!.isOnePage?.(g.BOARD!)) {
       if (Index.enabled) {
         if (!['paged', 'infinite'].includes(Conf['Index Mode'])) { return; }
         $('.next button', Index.pagelist).click();
       } else {
-        $(g.SITE.selectors.nav.next)?.click();
+        $(g.SITE!.selectors.nav.next)?.click();
       }
       hasAction = true;
     }
-    if (key === Conf['Previous page'] && g.VIEW === 'index' && !g.SITE.isOnePage?.(g.BOARD)) {
+    if (key === Conf['Previous page'] && g.VIEW === 'index' && !g.SITE!.isOnePage?.(g.BOARD!)) {
       if (Index.enabled) {
         if (!['paged', 'infinite'].includes(Conf['Index Mode'])) { return; }
         $('.prev button', Index.pagelist).click();
       } else {
-        $(g.SITE.selectors.nav.prev)?.click();
+        $(g.SITE!.selectors.nav.prev)?.click();
       }
       hasAction = true;
     }
     if (key === Conf['Search form'] && g.VIEW === 'index') {
       var searchInput = Index.enabled ?
         Index.searchInput
-      : g.SITE.selectors.searchBox ?
-        $(g.SITE.selectors.searchBox)
+      : g.SITE!.selectors.searchBox ?
+        $(g.SITE!.selectors.searchBox)
       :
         undefined;
       if (searchInput) {
@@ -270,13 +270,13 @@ var Keybinds = {
         hasAction = true;
       }
     }
-    if (key === Conf['Paged mode'] && Index.enabledOn(g.BOARD)) {
+    if (key === Conf['Paged mode'] && Index.enabledOn(g.BOARD!)) {
       location.href = g.VIEW === 'index' ? '#paged' : `/${g.BOARD}/#paged`;
     }
-    if (key === Conf['Infinite scrolling mode'] && Index.enabledOn(g.BOARD)) {
+    if (key === Conf['Infinite scrolling mode'] && Index.enabledOn(g.BOARD!)) {
       location.href = g.VIEW === 'index' ? '#infinite' : `/${g.BOARD}/#infinite`;
     }
-    if (key === Conf['All pages mode'] && Index.enabledOn(g.BOARD)) {
+    if (key === Conf['All pages mode'] && Index.enabledOn(g.BOARD!)) {
       location.href = g.VIEW === 'index' ? '#all-pages' : `/${g.BOARD}/#all-pages`;
     }
     if (key === Conf['Open catalog'] && (catalog = CatalogLinks.catalog())) {
@@ -393,7 +393,7 @@ var Keybinds = {
   },
 
   modifierString(e) {
-    const parts = [];
+    const parts: string[] = [];
     if (e.altKey)   { parts.push('Alt'); }
     if (e.ctrlKey)  { parts.push('Ctrl'); }
     if (e.metaKey)  { parts.push('Meta'); }
@@ -402,24 +402,24 @@ var Keybinds = {
   },
 
   post(thread) {
-    const s = g.SITE.selectors;
+    const s = g.SITE!.selectors;
     return (
-      $(`${s.postContainer}${s.highlightable.reply}.${g.SITE.classes.highlight}`, thread) ||
-      $(`${g.SITE.isOPContainerThread ? s.thread : s.postContainer}${s.highlightable.op}`, thread)
+      $(`${s.postContainer}${s.highlightable.reply}.${g.SITE!.classes.highlight}`, thread) ||
+      $(`${g.SITE!.isOPContainerThread ? s.thread : s.postContainer}${s.highlightable.op}`, thread)
     );
   },
 
   qr(thread?) {
     QR.open();
     if (thread != null) {
-      QR.quote.call(Keybinds.post(thread));
+      QR.quote.call(Keybinds.post(thread), undefined);
     }
     return QR.nodes.com.focus();
   },
 
   tags(tag, ta) {
     BoardConfig.ready(function() {
-      const {config} = g.BOARD;
+      const {config} = g.BOARD!;
       const supported = (() => { switch (tag) {
         case 'spoiler':     return !!config.spoilers;
         case 'code':        return !!config.code_tags;
@@ -466,8 +466,8 @@ var Keybinds = {
   },
 
   hl(delta, thread) {
-    const replySelector = `${g.SITE.selectors.postContainer}${g.SITE.selectors.highlightable.reply}`;
-    const {highlight} = g.SITE.classes;
+    const replySelector = `${g.SITE!.selectors.postContainer}${g.SITE!.selectors.highlightable.reply}`;
+    const {highlight} = g.SITE!.classes;
 
     const postEl = $(`${replySelector}.${highlight}`, thread);
 
@@ -480,12 +480,14 @@ var Keybinds = {
       const {height} = postEl.getBoundingClientRect();
       if ((Header.getTopOf(postEl) >= -height) && (Header.getBottomOf(postEl) >= -height)) { // We're at least partially visible
         let next;
-        const {root} = Get.postFromNode(postEl).nodes;
+        const post = Get.postFromNode(postEl);
+        if (!post) { return; }
+        const {root} = post.nodes;
         const axis = delta === +1 ?
           'following'
         :
           'preceding';
-        if (!(next = $.x(`${axis}-sibling::${g.SITE.xpath.replyContainer}[not(@hidden) and not(child::div[@class='stub'])][1]`, root))) { return; }
+        if (!(next = $.x(`${axis}-sibling::${g.SITE!.xpath.replyContainer}[not(@hidden) and not(child::div[@class='stub'])][1]`, root))) { return; }
         if (!next.matches(replySelector)) { next = $(replySelector, next); }
         Header.scrollToIfNeeded(next, delta === +1);
         $.addClass(next, highlight);

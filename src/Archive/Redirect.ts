@@ -6,16 +6,17 @@ import { DAY, dict } from '../platform/helpers.js';
 import archives from './archives.json';
 
 type Archive = (typeof archives)[number];
+type ArchiveData = {
+  thread: Map<string, Archive>,
+  threadJSON: Map<string, Archive>,
+  post: Map<string, Archive>,
+  file: Map<string, Archive>,
+};
 
 var Redirect = {
   archives,
   /** List of archives by compatible functions. */
-  data: null as {
-    thread: Map<string, Archive>,
-    threadJSON: Map<string, Archive>,
-    post: Map<string, Archive>,
-    file: Map<string, Archive>,
-  },
+  data: null as unknown as ArchiveData,
 
   init() {
     this.selectArchives();
@@ -67,8 +68,8 @@ var Redirect = {
 
   update(cb) {
     let url;
-    const urls = [];
-    const responses = [];
+    const urls: string[] = [];
+    const responses: any[][] = [];
     let nloaded = 0;
     for (url of Conf['archiveLists'].split('\n')) {
       if (url[0] !== '#') {
@@ -98,7 +99,7 @@ var Redirect = {
           try {
             response = JSON.parse(url);
           } catch (err) {
-            fail(url, 'parsing', err.message);
+            fail(url, 'parsing', err instanceof Error ? err.message : String(err));
             continue;
           }
           load(i).call({status: 200, response});
@@ -113,7 +114,7 @@ var Redirect = {
   },
 
   parse(responses, cb) {
-    const archives = [];
+    const archives: any[] = [];
     const archiveUIDs = dict();
     for (var response of responses) {
       for (var data of response) {
@@ -232,7 +233,7 @@ var Redirect = {
   },
 
   report(boardID) {
-    const urls = [];
+    const urls: [string, string][] = [];
     for (var archive of Conf['archives']) {
       var {software, https, reports, boards, name, domain} = archive;
       if ((software === 'foolfuuka') && https && reports && boards instanceof Array && boards.includes(boardID)) {

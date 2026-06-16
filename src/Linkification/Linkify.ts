@@ -16,7 +16,7 @@ import Embedding from "./Embedding";
  */
 var Linkify = {
   init() {
-    if (!['index', 'thread', 'archive'].includes(g.VIEW)) { return; }
+    if (g.VIEW !== 'index' && g.VIEW !== 'thread' && g.VIEW !== 'archive') { return; }
 
     // Live-toggle: re-sweep page when the user flips the setting in Settings.
     $.sync('Convert X to xcancel', enabled => {
@@ -117,7 +117,7 @@ var Linkify = {
     for (link of $$('a', this.nodes.comment)) {
       if (Conf['Convert X to xcancel']) { Linkify.rewriteXLink(link); }
       if (Conf['Convert YouTube to yewtu.be']) { Linkify.rewriteYouTubeLink(link); }
-      if (g.SITE.isLinkified?.(link)) {
+      if (g.SITE?.isLinkified?.(link)) {
         $.addClass(link, 'linkify');
         if ((ImageHost as any).useFaster) { ImageHost.fixLinks([link]); }
         Embedding.process(link, this);
@@ -134,7 +134,7 @@ var Linkify = {
     const space    = /[\s"]/;
     const snapshot = $.X('.//br|.//text()', node);
     let i = 0;
-    const links = [];
+    const links: any[] = [];
     while ((node = snapshot.snapshotItem(i++))) {
       var result;
       var {data} = node;
@@ -292,10 +292,10 @@ aero|asia|biz|cat|com|coop|dance|info|int|jobs|mobi|moe|museum|name|net|org|post
     if (rewrittenHref !== text) {
       if (Conf['Convert X to xcancel'] && Linkify.rewriteXURL(text) !== text) {
         a.dataset.xcancelOrigHref = text;
-        if (a.children.length === 0) { a.dataset.xcancelOrigText = a.textContent; }
+        if (a.children.length === 0) { a.dataset.xcancelOrigText = a.textContent || ''; }
       } else if (Conf['Convert YouTube to yewtu.be'] && Linkify.rewriteYouTubeURL(text) !== text) {
         a.dataset.yewtuOrigHref = text;
-        if (a.children.length === 0) { a.dataset.yewtuOrigText = a.textContent; }
+        if (a.children.length === 0) { a.dataset.yewtuOrigText = a.textContent || ''; }
       }
       Linkify.rewriteVisibleText(a);
     }

@@ -12,7 +12,7 @@ var ReportLink = {
   dims: null as any,  // loose: late-assigned window dimensions
 
   init() {
-    if (!['index', 'thread'].includes(g.VIEW) || !Conf['Menu'] || !Conf['Report Link']) { return; }
+    if ((g.VIEW !== 'index' && g.VIEW !== 'thread') || !Conf['Menu'] || !Conf['Report Link']) { return; }
 
     const a = $.el('a', {
       className: 'report-link',

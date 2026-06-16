@@ -4,7 +4,7 @@ import { g, Conf } from "../globals/globals";
 
 var Time = {
   init() {
-    if (!['index', 'thread', 'archive'].includes(g.VIEW) || !Conf['Time Formatting']) { return; }
+    if ((g.VIEW !== 'index' && g.VIEW !== 'thread' && g.VIEW !== 'archive') || !Conf['Time Formatting']) { return; }
 
     Callbacks.Post.push({
       name: 'Time Formatting',
@@ -84,7 +84,7 @@ var Time = {
         Time.formatterCache.set('p', formatter)
       }
       const parts = formatter.formatToParts(this);
-      return parts.find((entry) => entry.type === 'dayPeriod').value;
+      return parts.find((entry) => entry.type === 'dayPeriod')?.value || '';
     },
     P() { return Time.formatters.p.call(this).toLowerCase(); },
     S() { return Time.zeroPad(this.getSeconds()); },

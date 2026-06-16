@@ -14,7 +14,7 @@ var Menu = {
   menu: null as any,    // loose: late-assigned UI.Menu instance, read by other modules
 
   init() {
-    if (!['index', 'thread'].includes(g.VIEW) || !Conf['Menu']) { return; }
+    if ((g.VIEW !== 'index' && g.VIEW !== 'thread') || !Conf['Menu']) { return; }
 
     this.button = $.el('a', {
       className: 'menu-button',

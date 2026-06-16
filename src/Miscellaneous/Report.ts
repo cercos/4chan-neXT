@@ -48,7 +48,7 @@ var Report = {
 
   archive() {
     let match, urls;
-    if (!(urls = Redirect.report(g.BOARD.ID)).length) { return; }
+    if (!(urls = Redirect.report(g.BOARD!.ID)).length) { return; }
 
     const form    = $('form');
     const types   = $.id('reportTypes');
@@ -103,11 +103,11 @@ var Report = {
 
   archiveSubmit(urls, reason, cb) {
     const form = $.formData({
-      board:  g.BOARD.ID,
+      board:  g.BOARD!.ID,
       num:    Report.postID,
       reason
     });
-    const results = [];
+    const results: any[] = [];
     for (var [name, url] of urls) {
       (function(name, url) {
         return $.ajax(url, {

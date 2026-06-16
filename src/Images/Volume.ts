@@ -16,7 +16,7 @@ var Volume = {
   inputs: null as any,
 
   init() {
-    if (!['index', 'thread'].includes(g.VIEW) ||
+    if ((g.VIEW !== 'index' && g.VIEW !== 'thread') ||
       (!Conf['Image Expansion'] && !Conf['Image Hover'] && !Conf['Image Hover in Catalog'] && !Conf['Gallery'])) { return; }
 
     $.sync('Allow Sound', function(x) {
@@ -36,7 +36,7 @@ var Volume = {
       });
     }
 
-    if (g.SITE.noAudio?.(g.BOARD)) { return; }
+    if (g.SITE!.noAudio?.(g.BOARD!)) { return; }
 
     if (Conf['Mouse Wheel Volume']) {
       Callbacks.CatalogThread.push({
@@ -92,7 +92,7 @@ var Volume = {
   },
 
   node() {
-    if (g.SITE.noAudio?.(this.board)) { return; }
+    if (g.SITE!.noAudio?.(this.board)) { return; }
     for (var file of this.files) {
       if (file.isVideo) {
         if (file.thumb) { $.on(file.thumb, 'wheel', Volume.wheel.bind(Header.hover)); }

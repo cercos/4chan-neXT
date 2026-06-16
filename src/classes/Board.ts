@@ -23,7 +23,7 @@ export default class Board {
   constructor(ID) {
     this.ID = ID;
     this.boardID = this.ID;
-    this.siteID  = g.SITE.ID;
+    this.siteID  = g.SITE!.ID;
     this.threads = new SimpleDict();
     this.posts   = new SimpleDict();
     this.config  = (BoardConfig as any).boards?.[this.ID] || {};

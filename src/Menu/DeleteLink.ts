@@ -16,7 +16,7 @@ var DeleteLink = {
   nodes: null as any,  // loose: late-assigned node refs
 
   init() {
-    if (!['index', 'thread'].includes(g.VIEW) || !Conf['Menu'] || !Conf['Delete Link']) { return; }
+    if ((g.VIEW !== 'index' && g.VIEW !== 'thread') || !Conf['Menu'] || !Conf['Delete Link']) { return; }
 
     const div = $.el('div', {
       className: 'delete-link',

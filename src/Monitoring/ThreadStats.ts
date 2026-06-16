@@ -16,25 +16,25 @@ var ThreadStats = {
   showPage: false,
   showPurgePos: false,
   thread: null as any,
-  dialog: null as HTMLElement,
+  dialog: null as unknown as HTMLElement,
   postCountEl: null as any,
   fileCountEl: null as any,
   ipCountEl: null as any,
   pageCountEl: null as any,
   timeout: 0,
-  lastPageUpdate: null as Date,
+  lastPageUpdate: null as unknown as Date,
 
   init() {
     let sc;
     if ((g.VIEW !== 'thread') || !Conf['Thread Stats']) { return; }
 
     if (Conf['Page Count in Stats']) {
-      this[g.SITE.isPrunedByAge?.(g.BOARD) ? 'showPurgePos' : 'showPage'] = true;
+      this[g.SITE!.isPrunedByAge?.(g.BOARD!) ? 'showPurgePos' : 'showPage'] = true;
     }
 
-    const statsHTML = {innerHTML: "<span id=\"post-count\">?</span> / <span id=\"file-count\">?</span>" + ((Conf["IP Count in Stats"] && g.SITE.hasIPCount) ? " / <span id=\"ip-count\">?</span>" : "") + ((Conf["Page Count in Stats"]) ? " / <span id=\"page-count\">?</span>" : "")};
+    const statsHTML = {innerHTML: "<span id=\"post-count\">?</span> / <span id=\"file-count\">?</span>" + ((Conf["IP Count in Stats"] && g.SITE!.hasIPCount) ? " / <span id=\"ip-count\">?</span>" : "") + ((Conf["Page Count in Stats"]) ? " / <span id=\"page-count\">?</span>" : "")};
     let statsTitle = 'Posts / Files';
-    if (Conf['IP Count in Stats'] && g.SITE.hasIPCount) { statsTitle += ' / IPs'; }
+    if (Conf['IP Count in Stats'] && g.SITE!.hasIPCount) { statsTitle += ' / IPs'; }
     if (Conf['Page Count in Stats']) {
       if (this.showPurgePos) {
         statsTitle += ' / Purge Position';
@@ -124,7 +124,7 @@ var ThreadStats = {
         ipCountEl.textContent = thread.ipCount;
       } else if (g.BOARD?.config.user_ids) {
         const IDs = new Set();
-        g.posts.forEach(post => {
+        g.posts!.forEach(post => {
           IDs.add(post.info.uniqueID);
         });
         ipCountEl.textContent = IDs.size;
@@ -150,7 +150,7 @@ var ThreadStats = {
         ? (5 * SECOND) : (2 * MINUTE)
     );
     $.whenModified(
-      g.SITE.urls.threadsListJSON(ThreadStats.thread),
+      g.SITE!.urls.threadsListJSON(ThreadStats.thread),
       'ThreadStats',
       ThreadStats.onThreadsLoad
     );
@@ -205,7 +205,7 @@ var ThreadStats = {
     if (
       !ThreadStats.showPage ||
       (ThreadStats.pageCountEl.textContent === '1') ||
-      !!g.SITE.threadModTimeIgnoresSage ||
+      !!g.SITE!.threadModTimeIgnoresSage ||
       (ThreadStats.thread.posts.get(ThreadStats.thread.lastPost).info.date <= ThreadStats.lastPageUpdate)
     ) { return; }
     clearTimeout(ThreadStats.timeout);

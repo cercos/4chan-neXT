@@ -39,7 +39,7 @@ const CaptchaT = {
 
   getThread() {
     return {
-      boardID: g.BOARD.ID,
+      boardID: g.BOARD!.ID,
       threadID: QR.posts[0].thread === 'new' ? '0' : ('' + QR.posts[0].thread),
     };
   },

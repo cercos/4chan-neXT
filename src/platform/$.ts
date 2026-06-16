@@ -105,7 +105,7 @@ interface $Static {
 // not chainable
 const $ = ((selector, root = document.body) => root.querySelector(selector)) as $Static;
 
-$.id = id => d.getElementById(id);
+$.id = id => d.getElementById(id) as HTMLElement;
 
 $.ready = function(fc) {
   if (d.readyState !== 'loading') {
@@ -179,7 +179,7 @@ $.ajax = (function() {
       r.send(form);
     } catch (err) {
       // XXX Some content blockers in Firefox (e.g. Adblock Plus and NoScript) throw an exception instead of simulating a connection error.
-      if (err.result !== 0x805e0006) { throw err; }
+      if ((err as { result?: number }).result !== 0x805e0006) { throw err; }
       r.onloadend = onloadend;
       $.queueTask($.event, 'error',   null, r);
       $.queueTask($.event, 'loadend', null, r);
@@ -469,12 +469,12 @@ if (!globalThis.chrome?.extension) {
 
 $.debounce = function(wait, fn) {
   let lastCall = 0;
-  let timeout  = null;
-  let that     = null;
-  let args     = null;
+  let timeout: ReturnType<typeof setTimeout> | null = null;
+  let that: any = null;
+  let args: IArguments | null = null;
   const exec = function() {
     lastCall = Date.now();
-    return fn.apply(that, args);
+    return fn.apply(that, args as any);
   };
   return function() {
     args = arguments;
@@ -483,16 +483,18 @@ $.debounce = function(wait, fn) {
       return exec();
     }
     // stop current reset
-    clearTimeout(timeout);
+    if (timeout !== null) clearTimeout(timeout);
     // after wait, let next invocation execute immediately
     return timeout = setTimeout(exec, wait);
   };
 };
 
 $.queueTask = (function() {
-  const taskQueue = [];
+  const taskQueue: IArguments[] = [];
   const execTask = function() {
-    const [func, ...args] = taskQueue.shift();
+    const task = taskQueue.shift();
+    if (!task) return;
+    const [func, ...args] = Array.from(task) as [(...args: any[]) => any, ...any[]];
     func(...args);
   };
   return function() {
@@ -506,7 +508,7 @@ if (platform === 'crx') {
   const callbacks = new Map<number, ((...args: any[]) => any)>();
 
   chrome.runtime.onMessage.addListener(({ id, data }) => {
-    callbacks.get(id)(data);
+    callbacks.get(id)?.(data);
     callbacks.delete(id);
   });
 
@@ -592,6 +594,7 @@ $.engine = (function() {
   if (/Chrome\//.test(navigator.userAgent)) { return 'blink'; }
   if (/WebKit\//.test(navigator.userAgent)) { return 'webkit'; }
   if (/Gecko\/|Goanna/.test(navigator.userAgent)) { return 'gecko'; } // Goanna = Pale Moon 26+
+  return 'unknown';
 })();
 
 $.hasStorage = (function() {
@@ -670,7 +673,7 @@ if (platform === 'crx') {
     if (!$.crxWorking()) { return; }
     const results: any = {};
     const get = function(area) {
-      let keys = Object.keys(data);
+      let keys: string[] | null = Object.keys(data);
       // XXX slow performance in Firefox
       if (($.engine === 'gecko') && (area === 'sync') && (keys.length > 3)) {
         keys = null;
@@ -745,7 +748,7 @@ if (platform === 'crx') {
           setSync();
         } else {
           chrome.storage.local.remove(((() => {
-            const result = [];
+            const result: string[] = [];
             for (key in data) {
               if (!(key in items.local)) {
                 result.push(key);
@@ -772,7 +775,7 @@ if (platform === 'crx') {
       items.local = dict();
       items.sync =  dict();
       let count = 2;
-      let err   = null;
+      let err: typeof chrome.runtime.lastError | null = null;
       const done  = function() {
         if (chrome.runtime.lastError) {
           c.error(chrome.runtime.lastError.message);
@@ -794,7 +797,7 @@ if (platform === 'crx') {
     $.syncChannel = new BroadcastChannel(g.NAMESPACE + 'sync');
 
     $.on($.syncChannel, 'message', e => (() => {
-      const result = [];
+      const result: any[] = [];
       for (var key in e.data) {
         var cb;
         var val = e.data[key];
@@ -838,7 +841,7 @@ if (platform === 'crx') {
     $.set = $.oneItemSugar(function(items, cb) {
       $.securityCheck(items);
       return Promise.all((() => {
-        const result = [];
+        const result: Promise<void>[] = [];
         for (var key in items) {
           var val = items[key];
           result.push(GM.setValue(g.NAMESPACE + key, JSON.stringify(val)));
@@ -858,7 +861,7 @@ if (platform === 'crx') {
     } else if ($.hasStorage) {
       $.getValue = key => localStorage.getItem(key);
       $.listValues = () => (() => {
-        const result = [];
+        const result: string[] = [];
         for (var key in localStorage) {
           if (key.slice(0, g.NAMESPACE.length) === g.NAMESPACE) {
             result.push(key);
@@ -911,7 +914,7 @@ if (platform === 'crx') {
       $.sync = (key, cb) => $.syncing[key] = GM_addValueChangeListener(g.NAMESPACE + key, function(key2, oldValue, newValue, remote) {
         if (remote) {
           if (newValue !== undefined) { newValue = dict.json(newValue as string); }
-          return cb(newValue, key);
+          return cb?.(newValue, key);
         }
       });
       $.forceSync = function() {};

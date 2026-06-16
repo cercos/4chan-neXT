@@ -31,7 +31,7 @@ var RemoveSpoilers = {
   },
 
   unspoiler(el) {
-    const spoilers = $$(g.SITE.selectors.spoiler, el);
+    const spoilers = $$(g.SITE!.selectors.spoiler, el);
     for (var spoiler of spoilers) {
       var span = $.el('span', {className: 'removed-spoiler'});
       $.replace(spoiler, span);

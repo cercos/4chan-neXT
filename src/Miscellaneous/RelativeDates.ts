@@ -71,7 +71,7 @@ var RelativeDates = {
     RelativeDates.timeout = undefined;
     RelativeDates.stale = [];
 
-    if (!['index', 'thread', 'archive'].includes(g.VIEW)) return;
+    if (g.VIEW !== 'index' && g.VIEW !== 'thread' && g.VIEW !== 'archive') return;
 
     const mode = Conf.RelativeTime;
     if (mode !== 'No') {
@@ -79,7 +79,7 @@ var RelativeDates = {
       RelativeDates.ensureCallback();
     }
 
-    g.posts.forEach((post: Post) => {
+    g.posts!.forEach((post: Post) => {
       if (!post.info.date || post.isFetchedQuote || !doc.contains(post.nodes.root)) return;
       RelativeDates.restore(post);
       if (mode === 'No') return;
@@ -156,7 +156,7 @@ var RelativeDates = {
   //
   // Each individual dateTime element will add its update() function to the stale list
   // when it is to be called.
-  stale: [],
+  stale: [] as Array<Post | HTMLElement>,
   timeout: undefined as undefined | number,
   flush() {
     // No point in changing the dates until the user sees them.
@@ -184,10 +184,13 @@ var RelativeDates = {
     let abbrev: boolean, date: Date;
     const isPost = data instanceof Post;
     if (isPost) {
-      ({ date } = data.info);
+      date = data.info.date!;
+      if (!date) { return; }
       abbrev = false;
     } else {
-      date = new Date(+data.dataset.utc);
+      const utc = data.dataset.utc;
+      if (!utc) { return; }
+      date = new Date(+utc);
       abbrev = !!data.dataset.abbrev;
     }
     const diff = now.getTime() - date.getTime();
@@ -207,7 +210,7 @@ var RelativeDates = {
         }
       }
     } else {
-      data.firstChild.textContent = relative;
+      if (data.firstChild) { data.firstChild.textContent = relative; }
     }
     RelativeDates.setOwnTimeout(diff, data);
   },
@@ -226,7 +229,7 @@ var RelativeDates = {
 
   markStale(data) {
     if (RelativeDates.stale.includes(data)) { return; } // We can call RelativeDates.update() multiple times.
-    if (data instanceof Post && !g.posts.get(data.fullID)) { return; } // collected post.
+    if (data instanceof Post && !g.posts!.get(data.fullID)) { return; } // collected post.
     if (data instanceof Element && !doc.contains(data)) { return; } // removed catalog reply.
     RelativeDates.stale.push(data);
   }

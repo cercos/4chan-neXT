@@ -8,7 +8,7 @@ import { g, Conf } from "../globals/globals";
  */
 const RevealSpoilers = {
   init() {
-    if (!['index', 'thread', 'archive'].includes(g.VIEW) || !Conf['Reveal Spoiler Thumbnails']) { return; }
+    if ((g.VIEW !== 'index' && g.VIEW !== 'thread' && g.VIEW !== 'archive') || !Conf['Reveal Spoiler Thumbnails']) { return; }
 
     return Callbacks.Post.push({
       name: 'Reveal Spoiler Thumbnails',

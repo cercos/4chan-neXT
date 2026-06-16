@@ -14,18 +14,18 @@ import Icon from '../Icons/icon';
 /** Used in DataBoards data */
 interface HideOptions {
   thisPost?: boolean;
-  makeStub: boolean;
-  hideRecursively: boolean;
+  makeStub?: boolean;
+  hideRecursively?: boolean;
   byId?: boolean;
 };
 
 var PostHiding = {
-  db: undefined as DataBoard,
+  db: undefined as unknown as DataBoard,
   /** poster Ids to filter */
-  posterIdDb: undefined as DataBoard,
+  posterIdDb: undefined as unknown as DataBoard,
 
   init() {
-    if (!['index', 'thread'].includes(g.VIEW) || (!Conf['Reply Hiding Buttons'] && !(Conf['Menu'] && Conf['Reply Hiding Link']))) { return; }
+    if ((g.VIEW !== 'index' && g.VIEW !== 'thread') || (!Conf['Reply Hiding Buttons'] && !(Conf['Menu'] && Conf['Reply Hiding Link']))) { return; }
 
     if (Conf['Reply Hiding Buttons']) {
       $.addClass(doc, "reply-hide");
@@ -62,14 +62,14 @@ var PostHiding = {
       if (data.thisPost) {
         PostHiding.hide(this, data.makeStub, data.hideRecursively, 'Hidden manually');
       } else {
-        PostHiding.hideRecursive(this, data.makeStub);
+        PostHiding.hideRecursive(this, data.makeStub ?? Conf['Stubs']);
       }
     }
 
     if (!Conf['Reply Hiding Buttons']) { return; }
 
     const button = PostHiding.makeButton(this, 'hide');
-    const sa = g.SITE.selectors.sideArrows;
+    const sa = g.SITE!.selectors.sideArrows;
     if (sa) {
       const sideArrows = $(sa, this.nodes.root);
       $.replace(sideArrows.firstChild, button);
@@ -80,10 +80,10 @@ var PostHiding = {
   },
 
   menu: {
-    post: undefined as Post,
+    post: undefined as unknown as Post,
 
     async init() {
-      if (!['index', 'thread'].includes(g.VIEW) || !Conf['Menu'] || !Conf['Reply Hiding Link']) return;
+      if ((g.VIEW !== 'index' && g.VIEW !== 'thread') || !Conf['Menu'] || !Conf['Reply Hiding Link']) return;
 
       await new Promise(res => BoardConfig.ready(res));
 
@@ -100,7 +100,7 @@ var PostHiding = {
         { el: UI.checkbox('replies', 'Hide replies', Conf['Recursive Hiding']) },
         { el: UI.checkbox('makeStub', 'Make stub', Conf['Stubs']) },
       ];
-      if (g.BOARD.config.user_ids) {
+      if (g.BOARD!.config.user_ids) {
         hideOptions.push({ el: UI.checkbox('byId', 'By poster id', false) });
       }
 
@@ -141,7 +141,7 @@ var PostHiding = {
         { el: replies },
       ];
       let byId: any;
-      if (g.BOARD.config.user_ids) {
+      if (g.BOARD!.config.user_ids) {
         byId = UI.checkbox('byId', 'By poster id', false);
         showOptions.push({ el: byId });
       }
@@ -200,8 +200,9 @@ var PostHiding = {
         PostHiding.hideRecursive(post, makeStub);
       }
       if (byId) {
+        if (!post.info.uniqueID) return;
         const msg = `Hidden because of poster ID ${post.info.uniqueID}`;
-        g.posts.forEach((p) => {
+        g.posts!.forEach((p) => {
           if (p.info.uniqueID === post.info.uniqueID && p !== post) {
             PostHiding.hide(p, makeStub, replies, msg);
             PostHiding.saveHiddenState(p, true, thisPost, makeStub, replies, byId);
@@ -237,7 +238,8 @@ var PostHiding = {
         Recursive.rm(PostHiding.hide, post);
       }
       if (byId) {
-        g.posts.forEach((p) => {
+        if (!post.info.uniqueID) return;
+        g.posts!.forEach((p) => {
           if (p.info.uniqueID === post.info.uniqueID && p !== post) {
             PostHiding.show(p, replies);
             const data = PostHiding.db.get({ boardID, threadID, postID });
@@ -312,7 +314,8 @@ var PostHiding = {
   },
 
   toggle() {
-    const post: Post = Get.postFromNode(this);
+    const post = Get.postFromNode(this);
+    if (!post) return;
     post.isHidden ? PostHiding.show(post) : PostHiding.hide(post, undefined, undefined, 'Hidden manually');
     PostHiding.saveHiddenState(post, post.isHidden);
   },

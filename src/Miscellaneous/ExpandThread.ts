@@ -31,7 +31,7 @@ var ExpandThread = {
     if (!thread.nodes.root) return;
     const a = $('a.summary', thread.nodes.root);
     if (!a) return;
-    a.textContent = (g.SITE.Build.summaryText as any)('+', ...a.textContent.match(/\d+/g));
+    a.textContent = (g.SITE!.Build.summaryText as any)('+', ...a.textContent.match(/\d+/g));
     a.style.cursor = 'pointer';
     $.on(a, 'click', ExpandThread.cbToggle);
   },
@@ -56,7 +56,7 @@ var ExpandThread = {
 
   onIndexRefresh(e) {
     ExpandThread.disconnect(true);
-    g.BOARD.threads.forEach(thread => ExpandThread.setButton(thread));
+    g.BOARD!.threads.forEach(thread => ExpandThread.setButton(thread));
 
     // Re-expand threads the user had open so they survive this rebuild (a search
     // or sort just replaced the index DOM). Only the threads actually rendered
@@ -65,7 +65,7 @@ var ExpandThread = {
     const threadIDs = e?.detail?.threadIDs;
     if (!threadIDs) { return; }
     for (var fullID of threadIDs) {
-      var thread = g.BOARD.threads.get(+(`${fullID}`.split('.').pop()));
+      var thread = g.BOARD!.threads.get(+(`${fullID}`.split('.').pop() || 0));
       if (!thread || !thread.nodes.root || !ExpandThread.expanded[thread.ID]) { continue; }
       if (thread.ID in ExpandThread.statuses) { continue; } // already (re)expanding
       var a = $('a.summary', thread.nodes.root);
@@ -83,6 +83,7 @@ var ExpandThread = {
     if ($.modifiedClick(e)) { return; }
     e.preventDefault();
     const thread = Get.threadFromNode(this);
+    if (!thread) { return; }
     $.rm(this); // remove before fixing bottom of thread position
     const {bottom} = thread.nodes.root.getBoundingClientRect();
     ExpandThread.toggle(thread);
@@ -90,7 +91,7 @@ var ExpandThread = {
   },
 
   toggle(thread) {
-    if (!thread.nodes.root) return;
+    if (!thread?.nodes.root) return;
     const a = $('a.summary', thread.nodes.root);
     if (!a) return;
     if (thread.ID in ExpandThread.statuses) {
@@ -104,13 +105,13 @@ var ExpandThread = {
     let status;
     ExpandThread.expanded[thread.ID] = true;
     ExpandThread.statuses[thread] = (status = {});
-    a.textContent = (g.SITE.Build.summaryText as any)('...', ...a.textContent.match(/\d+/g));
-    status.req = $.cache(g.SITE.urls.threadJSON({boardID: thread.board.ID, threadID: thread.ID}), function() {
+    a.textContent = (g.SITE!.Build.summaryText as any)('...', ...a.textContent.match(/\d+/g));
+    status.req = $.cache(g.SITE!.urls.threadJSON({boardID: thread.board.ID, threadID: thread.ID}), function() {
       if (this !== status.req) { return; } // aborted
       delete status.req;
       ExpandThread.parse(this, thread, a);
     });
-    status.numReplies = $$(g.SITE.selectors.replyOriginal, thread.nodes.root).length;
+    status.numReplies = $$(g.SITE!.selectors.replyOriginal, thread.nodes.root).length;
   },
 
   contract(thread, a, threadRoot) {
@@ -124,7 +125,7 @@ var ExpandThread = {
     if (oldReq = status.req) {
       delete status.req;
       oldReq.abort();
-      if (a) { a.textContent = (g.SITE.Build.summaryText as any)('+', ...a.textContent.match(/\d+/g)); }
+      if (a) { a.textContent = (g.SITE!.Build.summaryText as any)('+', ...a.textContent.match(/\d+/g)); }
       return;
     }
 
@@ -137,13 +138,14 @@ var ExpandThread = {
       if (Conf['Quote Inlining']) { var inlined;
       while ((inlined = $('.inlined', reply))) { inlined.click(); } }
       postsCount++;
-      if ('file' in Get.postFromRoot(reply)) { filesCount++; }
+      const post = Get.postFromRoot(reply);
+      if (post && 'file' in post) { filesCount++; }
       $.rm(reply);
     }
     if (Index.enabled) { // otherwise handled by Main.addPosts
       $.event('PostsRemoved', null, a.parentNode);
     }
-    a.textContent = g.SITE.Build.summaryText('+', postsCount, filesCount);
+    a.textContent = g.SITE!.Build.summaryText('+', postsCount, filesCount);
     $.rm($('.summary-bottom', threadRoot));
   },
 
@@ -154,10 +156,10 @@ var ExpandThread = {
       return;
     }
 
-    g.SITE.Build.spoilerRange[thread.board] = req.response.posts[0].custom_spoiler;
+    g.SITE!.Build.spoilerRange[thread.board] = req.response.posts[0].custom_spoiler;
 
-    const posts      = [];
-    const postsRoot  = [];
+    const posts: Post[] = [];
+    const postsRoot: any[] = [];
     let filesCount = 0;
     for (var postData of req.response.posts) {
       var post;
@@ -168,7 +170,7 @@ var ExpandThread = {
         postsRoot.push(root);
         continue;
       }
-      root = g.SITE.Build.postFromObject(postData, thread.board.ID);
+      root = g.SITE!.Build.postFromObject(postData, thread.board.ID);
       post = new Post(root, thread, thread.board);
       if ('file' in post) { filesCount++; }
       posts.push(post);
@@ -198,7 +200,7 @@ var ExpandThread = {
     }
 
     const postsCount    = postsRoot.length;
-    a.textContent = g.SITE.Build.summaryText('-', postsCount, filesCount);
+    a.textContent = g.SITE!.Build.summaryText('-', postsCount, filesCount);
 
     if (root) {
       const a2 = a.cloneNode(true);
