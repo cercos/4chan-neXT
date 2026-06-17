@@ -129,7 +129,7 @@
   },
   "type": "module",
   "scripts": {
-    "//typecheck": "Compile-check src only (no build) via tsconfig.typecheck.json. Exits 0; treat new errors as regressions. Loose like the base config (not full strict) — separate so it doesn't touch the ~3500 non-fatal rollup warnings.",
+    "//typecheck": "Strict compile-check for src only (no build) via tsconfig.typecheck.json. Exits 0; treat new errors as regressions. Separate from the Rollup build config so it does not touch the existing non-fatal build warnings.",
     "typecheck": "tsc --noEmit -p tsconfig.typecheck.json",
     "//testbuild": "Development build for verifying source changes locally. Outputs to testbuilds/ (gitignored). This is the default build to use when iterating on code.",
     "testbuild": "node ./tools/rollup -build-dir=testbuilds -channel=testing",
