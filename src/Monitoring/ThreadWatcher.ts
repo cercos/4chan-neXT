@@ -1846,8 +1846,7 @@ var ThreadWatcher = {
       const entry = {
         type: 'thread watcher',
         el: $.el('a', {
-          textContent: 'Thumbnails',
-          href: 'javascript:;'
+          textContent: 'Thumbnails'
         }),
         open(this: { el: HTMLElement }) {
           this.el.innerHTML = `<span style="display:inline-flex;align-items:center;gap:4px;"><label style="display:inline-flex;align-items:center;gap:4px;"><input type="checkbox"${Conf['Show OP Thumbnails'] ? ' checked' : ''}>Thumbnails</label><input type="number" value="${ThreadWatcher.thumbnailSize()}" min="16" max="160" class="field" style="width:3.2em"></span><br><span style="display:inline-flex;align-items:center;gap:4px;"><label style="display:inline-flex;align-items:center;gap:4px;"><input type="checkbox"${Conf['Thread Watcher Thumbnail Hover'] ? ' checked' : ''}>Hover Preview</label><input type="number" value="${ThreadWatcher.thumbnailPreviewSize()}" min="10" max="99" class="field" style="width:3.2em"><span>%</span></span>`;
