@@ -29,10 +29,10 @@ function isSupported() {
   return !!(w && w.CSS && w.CSS.highlights && w.Highlight);
 }
 
-// Two text nodes are bridgeable iff they share a parent and only `<wbr>`
-// elements lie between them — i.e. they're one visual run split only by 4chan's
-// cosmetic word-break hints. This deliberately refuses to bridge across any
-// other element boundary, so a match can never span unrelated nodes/posts.
+// Two text nodes can be bridged only if they share a parent and have nothing
+// but `<wbr>` elements between them, i.e. they're one visual run that 4chan
+// split with cosmetic word-break hints. Any other element boundary ends the
+// run, so a match never spans unrelated nodes or posts.
 function wbrBridged(a: Text, b: Text): boolean {
   if (a.parentNode !== b.parentNode) return false;
   for (let s = a.nextSibling; s && s !== b; s = s.nextSibling) {
