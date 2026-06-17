@@ -3,6 +3,7 @@
 ### Unreleased
 
 - Completed the remaining three phases of the TypeScript migration (strict null checks, `noImplicitThis`, and `noImplicitAny`) via assisted codemods, so the entire `src/` tree now type-checks clean under full strict mode. Only optional tightening of leftover loose types remains.
+- Fixed search not highlighting words that were split by line-break points in the text (e.g. inside long URLs).
 
 ### 1.1.8 (2026-06-16)
 
