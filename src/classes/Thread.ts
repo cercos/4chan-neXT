@@ -67,7 +67,7 @@ export default class Thread {
     g.threads!.push(this.fullID, this);
   }
 
-  setPage(pageNum) {
+  setPage(pageNum: number) {
     let icon;
     const {info, reply} = this.OP.nodes;
     if (!(icon = $('.page-num', info))) {
@@ -79,24 +79,24 @@ export default class Thread {
     if (this.catalogView) { return this.catalogView.nodes.pageCount.textContent = pageNum; }
   }
 
-  setCount(type, count, reachedLimit) {
+  setCount(type: string, count: number, reachedLimit: boolean) {
     if (!this.catalogView) { return; }
     const el = this.catalogView.nodes[`${type}Count`];
     el.textContent = count;
     return (reachedLimit ? $.addClass : $.rmClass)(el, 'warning');
   }
 
-  setStatus(type, status) {
-    const name = `is${type}`;
-    if (this[name] === status) { return; }
-    this[name] = status;
+  setStatus(type: string, status: boolean) {
+    const name = `is${type}` as keyof this;
+    if (this[name] === (status as this[keyof this])) { return; }
+    this[name] = status as this[keyof this];
     if (!this.OP) { return; }
     this.setIcon('Sticky',   this.isSticky);
     this.setIcon('Closed',   this.isClosed && !this.isArchived);
     return this.setIcon('Archived', this.isArchived);
   }
 
-  setIcon(type, status) {
+  setIcon(type: string, status: boolean) {
     const typeLC = type.toLowerCase();
     let icon = $(`.${typeLC}Icon`, this.OP.nodes.info);
     if (!!icon === status) { return; }

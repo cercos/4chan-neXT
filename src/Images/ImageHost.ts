@@ -28,7 +28,7 @@ var ImageHost = {
   thumbHost() {
     return 'i.4cdn.org';
   },
-  test(hostname) {
+  test(hostname: string) {
     return (hostname === 'i.4cdn.org') || ImageHost.regex.test(hostname);
   },
 
@@ -45,7 +45,7 @@ var ImageHost = {
     return ImageHost.fixLinks($$('a', this.nodes.comment));
   },
 
-  fixLinks(links) {
+  fixLinks(links: HTMLAnchorElement[]) {
     for (var link of links) {
       if (ImageHost.test(link.hostname) && !/\.swf$/.test(link.pathname)) {
         var host = ImageHost.host();

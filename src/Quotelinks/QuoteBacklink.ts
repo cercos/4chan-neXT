@@ -50,22 +50,25 @@ var QuoteBacklink = {
     const a = $.el('a', {
       href: g.SITE!.Build.postURL(this.board.ID, this.thread.ID, this.ID),
       className: this.isHidden ? 'filtered backlink' : 'backlink',
-      textContent: Conf['backlink'].replace(/%(?:id|%)/g, x => ({'%id': this.ID, '%%': '%'})[x])
+      textContent: Conf['backlink'].replace(/%(?:id|%)/g, (x: string) => {
+        const map = {'%id': this.ID, '%%': '%'};
+        return map[x as keyof typeof map];
+      })
     }
     );
     if (markYours) { $.add(a, QuoteYou.mark.cloneNode(true)); }
     for (var quote of this.quotes) {
       var post;
       var containers = [QuoteBacklink.getContainer(quote)];
-      if ((post = g.posts!.get(quote)) && post.nodes.backlinkContainer) {
+      if ((post = g.posts!.get(quote)) && (post.nodes as any).backlinkContainer) {
         // Don't add OP clones when OP Backlinks is disabled,
         // as the clones won't have the backlink containers.
         for (var clone of post.clones) {
-          containers.push(clone.nodes.backlinkContainer);
+          containers.push((clone.nodes as any).backlinkContainer);
         }
       }
       for (var container of containers) {
-        var link = a.cloneNode(true);
+        var link = a.cloneNode(true) as HTMLAnchorElement;
         var nodes = container.firstChild ? [$.tn(' '), link] : [link];
         if (Conf['Quote Previewing']) {
           $.on(link, 'mouseover', QuotePreview.mouseover);
@@ -96,7 +99,7 @@ var QuoteBacklink = {
       return $.add(this.nodes.info, container);
     }
   },
-  getContainer(id) {
+  getContainer(id: string) {
     return this.containers[id] ||
       (this.containers[id] = $.el('span', {className: 'container'}));
   }

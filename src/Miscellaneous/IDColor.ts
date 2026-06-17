@@ -36,7 +36,7 @@ var IDColor = {
     return $.addClass(span, 'painted');
   },
 
-  compute(uid) {
+  compute(uid: string) {
     // Convert chars to integers, bitshift and math to create a larger integer
     // Create a nice string of binary
     const hash = (g.SITE! as any).uidColor ? (g.SITE! as any).uidColor(uid) : parseInt(uid, 16);

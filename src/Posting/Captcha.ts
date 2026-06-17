@@ -45,7 +45,7 @@ const Captcha = {
       return /\b_ct=/.test(d.cookie) && (QR.posts[0].thread !== 'new');
     },
 
-    getOne(isReply?) {
+    getOne(isReply?: boolean) {
       let captcha;
       delete this.prerequested;
       this.clear();
@@ -57,11 +57,11 @@ const Captcha = {
       }
     },
 
-    request(isReply) {
+    request(isReply: boolean) {
       if (!this.submitCB) {
         if ($.event('RequestCaptcha', { isReply })) { return; }
       }
-      return cb => {
+      return (cb: (captcha?: any) => void) => { // loose: late-assigned submit callback
         this.submitCB = cb;
         return this.updateCount();
       };
@@ -75,7 +75,7 @@ const Captcha = {
       }
     },
 
-    saveAPI(captcha) {
+    saveAPI(captcha: any) { // loose: captcha object shape owned by vendor/event detail
       let cb;
       if (cb = this.submitCB) {
         delete this.submitCB;
@@ -86,7 +86,7 @@ const Captcha = {
       }
     },
 
-    noCaptcha(detail) {
+    noCaptcha(detail: { error?: string } | undefined) {
       let cb;
       if (cb = this.submitCB) {
         if (!this.haveCookie() || detail?.error) {
@@ -99,7 +99,7 @@ const Captcha = {
       }
     },
 
-    save(captcha) {
+    save(captcha: any) { // loose: captcha object shape owned by vendor/event detail
       let cb;
       if (cb = this.submitCB) {
         this.abort();
@@ -215,7 +215,7 @@ const Captcha = {
       }
     },
 
-    setup(focus?, force?) {
+    setup(focus?: boolean, force?: boolean) {
       if (!this.isEnabled || (!Captcha.cache.needed() && !force)) { return; }
 
       if (focus) {
@@ -277,7 +277,7 @@ const Captcha = {
         container.dataset.widgetID = (window as any).grecaptcha.render(container, { // loose: vendor global
           sitekey: meta.recaptchaKey,
           theme: classList.contains('tomorrow') || classList.contains('spooky') || classList.contains('dark-captcha') ? 'dark' : 'light',
-          callback: response => window.dispatchEvent(new CustomEvent('captcha:success', { detail: response }))
+          callback: (response: string) => window.dispatchEvent(new CustomEvent('captcha:success', { detail: response }))
         });
       };
       if ((window as any).grecaptcha) { // loose: vendor global
@@ -296,7 +296,7 @@ const Captcha = {
       }
     },
 
-    afterSetup(mutations) {
+    afterSetup(mutations: MutationRecord[]) {
       for (var mutation of mutations) {
         for (var node of mutation.addedNodes) {
           var iframe, textarea;
@@ -306,7 +306,7 @@ const Captcha = {
       }
     },
 
-    setupIFrame(iframe) {
+    setupIFrame(iframe: HTMLIFrameElement) {
       let needle;
       if (!doc.contains(iframe)) { return; }
       Captcha.replace.iframe(iframe);
@@ -327,7 +327,7 @@ const Captcha = {
       }
     },
 
-    setupTextArea(textarea) {
+    setupTextArea(textarea: HTMLTextAreaElement) {
       return $.one(textarea, 'input', () => this.save(true));
     },
 
@@ -342,11 +342,11 @@ const Captcha = {
       }
     },
 
-    getOne(isReply) {
+    getOne(isReply: boolean) {
       return Captcha.cache.getOne(isReply);
     },
 
-    save(pasted, token?) {
+    save(pasted: boolean, token?: string) {
       Captcha.cache.save({
         response: token || $('textarea', this.nodes.container).value,
         timeout: Date.now() + this.lifetime
@@ -384,7 +384,7 @@ const Captcha = {
       return this.moreNeeded();
     },
 
-    reload() {
+    reload(): void {
       if ($('iframe[src^="https://www.google.com/recaptcha/api/fallback?"]', this.nodes.container)) {
         this.destroy();
         return this.setup(false, true);

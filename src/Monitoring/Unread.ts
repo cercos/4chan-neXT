@@ -137,7 +137,7 @@ var Unread = {
     Unread.position = null;
     Unread.lastReadPost = 0;
     Unread.readCount = 0;
-    Unread.thread.posts.forEach(post => Unread.addPost.call(post));
+    Unread.thread.posts.forEach((post: Post) => Unread.addPost.call(post));
 
     $.forceSync('Remember Last Read Post');
     if (Conf['Remember Last Read Post'] && (!Unread.thread.isDead || Unread.thread.isArchived)) {
@@ -188,7 +188,7 @@ var Unread = {
     return Unread.position != null ? Unread.position : (Unread.position = Unread.order[this.ID]);
   },
 
-  addPostQuotingYou(post) {
+  addPostQuotingYou(post: Post) {
     for (var quotelink of post.nodes.quotelinks) {
       if (QuoteYou.db?.get(Get.postDataFromLink(quotelink))) {
         Unread.postsQuotingYou.add((Unread.postsQuotingYou.last = post.ID));
@@ -198,7 +198,7 @@ var Unread = {
     }
   },
 
-  openNotification(post, predicate=' replied to you') {
+  openNotification(post: Post, predicate=' replied to you') {
     const isQuotingYou = predicate === ' replied to you';
     if ((isQuotingYou && Conf['Beep Quoting You']) || (!isQuotingYou && Conf['Beep'])) {
       $.event('PlayUpdaterSound', { post, predicate });
@@ -210,7 +210,7 @@ var Unread = {
     }
     );
     notif.onclick = function() {
-      Header.scrollToIfNeeded(post.nodes.bottom, true);
+      Header.scrollToIfNeeded(post.nodes.bottom as HTMLElement, true);
       return window.focus();
     };
     return notif.onshow = () => setTimeout(() => notif.close()
@@ -225,7 +225,7 @@ var Unread = {
     });
   },
 
-  readSinglePost(post) {
+  readSinglePost(post: Post) {
     const {ID} = post;
     if (!Unread.posts.has(ID)) { return; }
     Unread.posts.delete(ID);
@@ -235,7 +235,7 @@ var Unread = {
     return Unread.update();
   },
 
-  read: debounce(100, function(e) {
+  read: debounce(100, function(e?: Event) {
     // Update the lastReadPost when hidden posts are added to the thread.
     if (!Unread.posts.size && (Unread.readCount !== Unread.thread.posts.keys.length)) {
       Unread.saveLastReadPost();
@@ -288,7 +288,7 @@ var Unread = {
     });
   }),
 
-  setLine(force?) {
+  setLine(force?: boolean) {
     if (!Conf['Unread Line']) { return; }
     if (Unread.hr.hidden || d.hidden || (force === true)) {
       const oldPosition = Unread.linePosition;

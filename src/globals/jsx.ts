@@ -55,7 +55,7 @@ export default function h(
     for (const child of children) {
       if (child === null || child === undefined || child === '') continue;
 
-      if (child instanceof Object && "innerHTML" in child && child[isEscaped]) {
+      if (child instanceof Object && "innerHTML" in child && (child as { [isEscaped]?: unknown })[isEscaped]) {
         innerHTML += child.innerHTML;
         continue;
       }

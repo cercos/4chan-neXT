@@ -18,7 +18,7 @@ var IDHighlight = {
     });
   },
 
-  uniqueID: null,
+  uniqueID: null as string | null | undefined,
 
   node(this: Post | PostClone) {
     if (this.nodes.uniqueIDRoot) { $.on(this.nodes.uniqueIDRoot, 'click', IDHighlight.click(this)); }
@@ -26,12 +26,12 @@ var IDHighlight = {
     if (!this.isClone) { return IDHighlight.set(this); }
   },
 
-  set(post) {
+  set(post: Post | PostClone) {
     const match = (post.info.uniqueID || post.info.capcode) === IDHighlight.uniqueID;
     return $[match ? 'addClass' : 'rmClass'](post.nodes.post, 'highlight');
   },
 
-  click(post) { return function() {
+  click(post: Post | PostClone) { return function() {
     const uniqueID = post.info.uniqueID || post.info.capcode;
     IDHighlight.uniqueID = IDHighlight.uniqueID === uniqueID ? null : uniqueID;
     return g.posts!.forEach(IDHighlight.set);

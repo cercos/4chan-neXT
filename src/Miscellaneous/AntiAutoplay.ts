@@ -14,7 +14,7 @@ var AntiAutoplay = {
     if (!Conf['Disable Autoplaying Sounds']) { return; }
     $.addClass(doc, 'anti-autoplay');
     for (var audio of $$('audio[autoplay]', doc)) { this.stop(audio); }
-    window.addEventListener('loadstart', (e => this.stop(e.target)), true);
+    window.addEventListener('loadstart', (e => this.stop(e.target as HTMLAudioElement)), true);
     Callbacks.Post.push({
       name: 'Disable Autoplaying Sounds',
       cb:   this.node
@@ -22,7 +22,7 @@ var AntiAutoplay = {
     return $.ready(() => this.process(d.body));
   },
 
-  stop(audio) {
+  stop(audio: HTMLAudioElement) {
     if (!audio.autoplay) { return; }
     audio.pause();
     audio.autoplay = false;
@@ -35,7 +35,7 @@ var AntiAutoplay = {
     return AntiAutoplay.process(this.nodes.comment);
   },
 
-  process(root) {
+  process(root: HTMLElement | Document) {
     for (var iframe of $$('iframe[src*="youtube"][src*="autoplay=1"]', root)) {
       AntiAutoplay.processVideo(iframe, 'src');
     }
@@ -44,7 +44,7 @@ var AntiAutoplay = {
     }
   },
 
-  processVideo(el, attr) {
+  processVideo(el: any, attr: 'src' | 'data') { // loose: el indexed dynamically by attr
     el[attr] = el[attr].replace(/\?autoplay=1&?/, '?').replace('&autoplay=1', '');
     if (window.getComputedStyle(el).display === 'none') { el.style.display = 'block'; }
     return $.addClass(el, 'autoplay-removed');

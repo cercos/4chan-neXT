@@ -23,12 +23,12 @@ const PageContextFunctions = {
 
   disableNativeExtensionNoStorage: () => { Object.defineProperty(window, 'Config', { value: { disableAll: true } }) },
 
-  prettyPrint: ({ id }) => {
+  prettyPrint: ({ id }: { id: string }) => {
     // @ts-ignore
     window.prettyPrint?.((function () { }), document.getElementById(id).parentNode);
   },
 
-  exposeVersion: ({ buildDate, version }) => {
+  exposeVersion: ({ buildDate, version }: { buildDate: string | number; version: string }) => {
       const date = +buildDate;
       Object.defineProperty(window, 'fourchanXT', {
         value: Object.freeze({
@@ -98,7 +98,7 @@ const PageContextFunctions = {
     }, false);
   },
 
-  typesetMathjax: ({ id }) => {
+  typesetMathjax: ({ id }: { id: string }) => {
     const target = document.getElementById(id);
     if (!target) return;
     const scriptURL = 'https://cdnjs.cloudflare.com/ajax/libs/mathjax/2.7.9/MathJax.js?config=TeX-AMS_HTML-full';
@@ -152,11 +152,11 @@ const PageContextFunctions = {
     }
   },
 
-  initTinyBoard: ({ boardID, threadID }) => {
+  initTinyBoard: ({ boardID, threadID }: { boardID: string; threadID: string | number }) => {
     threadID = +threadID;
     const form = document.querySelector<HTMLFormElement>('form[name="post"]');
     if (!form) return;
-    (window as any).$(document).ajaxComplete(function (event, request, settings) {
+    (window as any).$(document).ajaxComplete(function (event: Event, request: any, settings: any) { // loose: jQuery ajaxComplete callback args are untyped without @types/jquery
       let postID;
       if (settings.url !== form.action) return;
       if (!(postID = +request.responseJSON?.id)) return;
@@ -175,7 +175,7 @@ const PageContextFunctions = {
     (((base = (window as any).tb_settings || ((window as any).tb_settings = {}))).ajax || (base.ajax = {})).always_noko_replies = true;
   },
 
-  setupCaptcha: ({ recaptchaKey }) => {
+  setupCaptcha: ({ recaptchaKey }: { recaptchaKey: string }) => {
     const render = function () {
       const { classList } = document.documentElement;
       const container = document.querySelector<HTMLElement>('#qr .captcha-container');
@@ -183,7 +183,7 @@ const PageContextFunctions = {
       container.dataset.widgetID = (window as any).grecaptcha.render(container, {
         sitekey: recaptchaKey,
         theme: classList.contains('tomorrow') || classList.contains('spooky') || classList.contains('dark-captcha') ? 'dark' : 'light',
-        callback(response) {
+        callback(response: string) {
           window.dispatchEvent(new CustomEvent('captcha:success', { detail: response }));
         }
       });
@@ -209,7 +209,7 @@ const PageContextFunctions = {
     (window as any).grecaptcha.reset(container.dataset.widgetID);
   },
 
-  setupTCaptcha: ({ boardID, threadID, autoLoad }) => {
+  setupTCaptcha: ({ boardID, threadID, autoLoad }: { boardID: string; threadID: string | number; autoLoad: string }) => {
     const { TCaptcha } = (window as any);
     if (!TCaptcha?.init) {
       window.dispatchEvent(new CustomEvent('CreateNotification', {
@@ -218,7 +218,7 @@ const PageContextFunctions = {
       return;
     }
     TCaptcha.init(document.querySelector('#qr .captcha-container'), boardID, +threadID);
-    TCaptcha.setErrorCb(err => window.dispatchEvent(new CustomEvent('CreateNotification', {
+    TCaptcha.setErrorCb((err: unknown) => window.dispatchEvent(new CustomEvent('CreateNotification', {
       detail: { type: 'warning', content: '' + err }
     })));
     if (autoLoad === '1') TCaptcha.load(boardID, threadID);
@@ -227,7 +227,7 @@ const PageContextFunctions = {
   TCaptchaClearChallenge: () => { (window as any).TCaptcha.clearChallenge() },
 
   setupQR: () => {
-    (window as any).FCX.oekakiCB = () => (window as any).Tegaki.flatten().toBlob(function (file) {
+    (window as any).FCX.oekakiCB = () => (window as any).Tegaki.flatten().toBlob(function (file: Blob | null) {
       const source = `oekaki-${Date.now()}`;
       (window as any).FCX.oekakiLatest = source;
       document.dispatchEvent(new CustomEvent('QRSetFile', {
@@ -266,7 +266,7 @@ const PageContextFunctions = {
     const { Tegaki, FCX } = (window as any);
     const name = (document.getElementById('qr-filename') as HTMLInputElement).value.replace(/\.\w+$/, '') + '.png';
     const source = document.getElementById('file-n-submit')?.dataset.source;
-    const error = content => document.dispatchEvent(new CustomEvent('CreateNotification', {
+    const error = (content: string) => document.dispatchEvent(new CustomEvent('CreateNotification', {
       bubbles: true,
       detail: { type: 'warning', content, lifetime: 20 }
     }));

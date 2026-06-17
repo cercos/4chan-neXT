@@ -213,7 +213,7 @@ $.whenModified = function(url, bucket, cb, options={}) {
 (function() {
   const reqs = dict();
   $.cache = function(url, cb, options={}) {
-    let req;
+    let req: any; // loose: dynamic XHR-like object with .callbacks attached at runtime
     const {ajax} = options;
     if (req = reqs[url]) {
       if (req.callbacks) {
@@ -409,7 +409,7 @@ d.addEventListener('click', function(e) {
 }, true);
 
 $.one = function(el, events, handler) {
-  var cb = function(this: EventTarget, e) {
+  var cb = function(this: EventTarget, e: Event) {
     $.off(el, events, cb);
     return handler.call(this, e);
   };
@@ -433,11 +433,11 @@ if (platform === 'userscript') {
     try {
       return new CustomEvent('x', {detail: {}});
     } catch (err) {
-      const unsafeConstructors = {
+      const unsafeConstructors: Record<string, any> = {
         Object: (unsafeWindow as any).Object,
         Array:  (unsafeWindow as any).Array
       };
-      var clone = function(obj) {
+      var clone = function(obj: any) { // loose: recursively clones arbitrary structured-clone data
         let constructor;
         if ((obj != null) && (typeof obj === 'object') && (constructor = unsafeConstructors[obj.constructor.name])) {
           const obj2 = new constructor();
@@ -530,7 +530,7 @@ $.global = async function(fn: string, data?: Record<string, string>) {
   } else {
     if (doc) {
       const script = $.el('script',
-        {textContent: `(${PageContextFunctions[fn]})(document.currentScript.dataset);`});
+        {textContent: `(${PageContextFunctions[fn as keyof typeof PageContextFunctions]})(document.currentScript.dataset);`});
       // Allow this script through the extension's own whitelist CSP (no-op if no CSP is set).
       script.nonce = $.getCSPNonce();
       if (data) { $.extend(script.dataset, data); }
@@ -540,7 +540,7 @@ $.global = async function(fn: string, data?: Record<string, string>) {
     } else {
     // XXX dwb
       try {
-        PageContextFunctions[fn](data);
+        (PageContextFunctions[fn as keyof typeof PageContextFunctions] as (data?: any) => void)(data);
       } catch (error) {
         console.error(error);
       }
@@ -583,7 +583,7 @@ $.luma = rgb => (rgb[0] * 0.299) + (rgb[1] * 0.587) + (rgb[2] * 0.114);
 
 $.unescape = function(text) {
   if (text == null) { return text; }
-  return text.replace(/<[^>]*>/g, '').replace(/&(amp|#039|quot|lt|gt|#44);/g, c => ({'&amp;': '&', '&#039;': "'", '&quot;': '"', '&lt;': '<', '&gt;': '>', '&#44;': ','})[c]);
+  return text.replace(/<[^>]*>/g, '').replace(/&(amp|#039|quot|lt|gt|#44);/g, (c: string) => ({'&amp;': '&', '&#039;': "'", '&quot;': '"', '&lt;': '<', '&gt;': '>', '&#44;': ','} as Record<string, string>)[c]);
 };
 
 $.isImage = url => /\.(jpe?g|jfif|png|gif|bmp|webp|avif|jxl)$/i.test(url);
@@ -672,13 +672,13 @@ if (platform === 'crx') {
   $.get = $.oneItemSugar(function(data, cb) {
     if (!$.crxWorking()) { return; }
     const results: any = {};
-    const get = function(area) {
+    const get = function(area: 'local' | 'sync') {
       let keys: string[] | null = Object.keys(data);
       // XXX slow performance in Firefox
       if (($.engine === 'gecko') && (area === 'sync') && (keys.length > 3)) {
         keys = null;
       }
-      return chrome.storage[area].get(keys, function(result) {
+      return chrome.storage[area].get(keys, function(result: Record<string, any>) {
         let key;
         result = dict.clone(result);
         if (chrome.runtime.lastError) {
@@ -710,7 +710,7 @@ if (platform === 'crx') {
       sync:  dict()
     };
 
-    const exceedsQuota = (key, value) => // bytes in UTF-8
+    const exceedsQuota = (key: string, value: any) => // bytes in UTF-8
     unescape(encodeURIComponent(JSON.stringify(key))).length + unescape(encodeURIComponent(JSON.stringify(value))).length > chrome.storage.sync.QUOTA_BYTES_PER_ITEM;
 
     $.delete = function(keys) {
@@ -726,8 +726,8 @@ if (platform === 'crx') {
       return chrome.storage.sync.remove(keys);
     };
 
-    const timeout = {};
-    var setArea = function(area, cb?) {
+    const timeout: Record<string, number> = {};
+    var setArea = function(area: 'local' | 'sync', cb?: (err?: any) => void) {
       const data = dict();
       $.extend(data, items[area]);
       if (!Object.keys(data).length || (timeout[area] > Date.now())) { return; }
@@ -926,7 +926,7 @@ if (platform === 'crx') {
       };
 
       (function() {
-        const onChange = function({key, newValue}) {
+        const onChange = function({key, newValue}: { key: string; newValue: any }) {
           let cb;
           if (!(cb = $.syncing[key])) { return; }
           if (newValue != null) {

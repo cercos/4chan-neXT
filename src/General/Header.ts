@@ -138,7 +138,7 @@ var Header = {
       if ((g.SITE!.software === 'yotsuba') && !(footer = $.id('boardNavDesktopFoot'))) {
         let absbot;
         if (!(absbot = $.id('absbot'))) { return; }
-        footer = $.id('boardNavDesktop').cloneNode(true);
+        footer = $.id('boardNavDesktop').cloneNode(true) as HTMLElement;
         footer.id = 'boardNavDesktopFoot';
         $('#navtopright',        footer).id = 'navbotright';
         $('#settingsWindowLink', footer).id = 'settingsWindowLinkBot';
@@ -246,21 +246,23 @@ var Header = {
     return CatalogLinks.setLinks(list);
   },
 
-  mapCustomNavigation(t) {
-    let a, href, m, url;
+  mapCustomNavigation(t: string) {
+    let a, href, m;
+    let url: string | null;
     if (/^[^\w@]/.test(t)) {
       return $.tn(t);
     }
 
-    let text = (url = null);
-    t = t.replace(/-text:"([^"]+)"(?:,"([^"]+)")?/g, function(m0, m1, m2) {
+    let text: string | null;
+    text = (url = null);
+    t = t.replace(/-text:"([^"]+)"(?:,"([^"]+)")?/g, function(m0: string, m1: string, m2: string) {
       text = m1;
       url  = m2;
       return '';
     });
 
     let indexOptions: any = [];
-    t = t.replace(/-(?:mode|sort):"([^"]+)"/g, function(m0, m1) {
+    t = t.replace(/-(?:mode|sort):"([^"]+)"/g, function(m0: string, m1: string) {
       indexOptions.push(m1.toLowerCase().replace(/\ /g, '-'));
       return '';
     });
@@ -351,7 +353,7 @@ var Header = {
       text || boardID;
 
     if (m = t.match(/-(index|catalog)/)) {
-      const urlIC = CatalogLinks[m[1]]({siteID: '4chan.org', boardID});
+      const urlIC = CatalogLinks[m[1] as 'index' | 'catalog']({siteID: '4chan.org', boardID} as any); // loose: CatalogLinks.index/catalog declare a Board param but accept this URL-id literal (matches their internal `as any` usage)
       if (urlIC) {
         a.dataset.only = m[1];
         a.href = urlIC;
@@ -401,7 +403,7 @@ var Header = {
     return full.hidden   =  showBoardList;
   },
 
-  setLinkJustify(centered) {
+  setLinkJustify(centered: boolean | undefined) {
     Header.linkJustifyToggler.checked = centered;
     if (centered) {
       return $.addClass(doc, 'centered-links');
@@ -418,7 +420,7 @@ var Header = {
     return $.set('Centered links', centered);
   },
 
-  setBarFixed(fixed) {
+  setBarFixed(fixed: boolean) {
     Header.barFixedToggler.checked = fixed;
     if (fixed) {
       $.addClass(doc, 'fixed');
@@ -438,7 +440,7 @@ var Header = {
     return $.set('Fixed Header',  this.checked);
   },
 
-  setShortcutIcons(show) {
+  setShortcutIcons(show: boolean) {
     Header.shortcutToggler.checked = show;
     if (show) {
       return $.addClass(doc, 'shortcut-icons');
@@ -456,7 +458,7 @@ var Header = {
     return $.set('Shortcut Icons',  this.checked);
   },
 
-  setBarVisibility(hide) {
+  setBarVisibility(hide: boolean) {
     Header.headerToggler.checked = hide;
     $.event('CloseMenu');
     (hide ? $.addClass : $.rmClass)(Header.bar, 'autohide');
@@ -479,7 +481,7 @@ var Header = {
     return new Notice('info', message, 2);
   },
 
-  setHideBarOnScroll(hide) {
+  setHideBarOnScroll(hide: boolean) {
     Header.scrollHeaderToggler.checked = hide;
     if (hide) {
       $.on(window, 'scroll', Header.hideBarOnScroll);
@@ -506,7 +508,7 @@ var Header = {
     return Header.previousOffset = offsetY;
   },
 
-  setBarPosition(bottom) {
+  setBarPosition(bottom: boolean) {
     if (Header.barPositionToggler) Header.barPositionToggler.checked = bottom;
     $.event('CloseMenu');
     const args = bottom ? [
@@ -521,7 +523,7 @@ var Header = {
 
     $.addClass(doc, args[0]);
     $.rmClass(doc, args[1]);
-    return $[args[2]](Header.bar, Header.noticesRoot);
+    return $[args[2] as 'after' | 'add'](Header.bar, Header.noticesRoot);
   },
 
   toggleBarPosition(this: HTMLInputElement) {
@@ -529,7 +531,7 @@ var Header = {
     return Header.setBarPosition(this.checked);
   },
 
-  setFooterVisibility(hide) {
+  setFooterVisibility(hide: boolean) {
     Header.footerToggler.checked = hide;
     return doc.classList.toggle('hide-bottom-board-list', hide);
   },
@@ -549,7 +551,7 @@ var Header = {
     return new Notice('info', message, 2);
   },
 
-  setCustomNav(show) {
+  setCustomNav(show: boolean) {
     Header.customNavToggler.checked = show;
     const cust = $('#custom-board-list', Header.bar);
     const full = $('#full-board-list',   Header.bar);
@@ -596,11 +598,11 @@ var Header = {
     }
   },
 
-  scrollToIfNeeded(root, down?) {
+  scrollToIfNeeded(root: HTMLElement, down?: boolean) {
     return Header.scrollTo(root, down, true);
   },
 
-  getTopOf(root) {
+  getTopOf(root: HTMLElement) {
     let {top} = root.getBoundingClientRect();
     if (Conf['Fixed Header'] && !Conf['Bottom Header']) {
       const headRect = Header.toggle.getBoundingClientRect();
@@ -609,7 +611,7 @@ var Header = {
     return top;
   },
 
-  getBottomOf(root) {
+  getBottomOf(root: HTMLElement) {
     const {clientHeight} = doc;
     let bottom = clientHeight - root.getBoundingClientRect().bottom;
     if (Conf['Fixed Header'] && Conf['Bottom Header']) {
@@ -619,7 +621,7 @@ var Header = {
     return bottom;
   },
 
-  isNodeVisible(node) {
+  isNodeVisible(node: HTMLElement) {
     if (d.hidden || !doc.contains(node)) { return false; }
     const {height} = node.getBoundingClientRect();
     return ((Header.getTopOf(node) + height) >= 0) && ((Header.getBottomOf(node) + height) >= 0);
@@ -650,15 +652,15 @@ var Header = {
     return $.add(Header.shortcuts, shortcut);
   },
 
-  rmShortcut(el) {
+  rmShortcut(el: HTMLElement) {
     return $.rm(el.parentElement);
   },
 
-  menuToggle(e) {
+  menuToggle(this: HTMLElement, e: MouseEvent) {
     return Header.menu.toggle(e, this, g);
   },
 
-  createNotification(e) {
+  createNotification(e: CustomEvent) {
     let notice;
     const {type, content, lifetime} = e.detail;
     return notice = new Notice(type, content, lifetime);
@@ -666,7 +668,7 @@ var Header = {
 
   areNotificationsEnabled: false,
   enableDesktopNotifications() {
-    let notice;
+    let notice: Notice;
     if (!window.Notification || !Conf['Desktop Notifications']) { return; }
     switch (Notification.permission) {
       case 'granted':

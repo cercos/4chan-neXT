@@ -83,7 +83,7 @@ var Nav = {
     }
   },
 
-  scroll(delta) {
+  scroll(delta: number) {
     let next;
     (d.activeElement as any)?.blur();
     let thread = Nav.getThread();

@@ -20,7 +20,7 @@ export default class Board {
 
   toString() { return this.ID; }
 
-  constructor(ID) {
+  constructor(ID: string) {
     this.ID = ID;
     this.boardID = this.ID;
     this.siteID  = g.SITE!.ID;
@@ -41,7 +41,7 @@ export default class Board {
     };
     // Pass users have reduced cooldowns.
     if (d.cookie.indexOf('pass_enabled=1') >= 0) {
-      for (var key of ['reply', 'image']) {
+      for (var key of ['reply', 'image'] as Array<keyof typeof c>) {
         c[key] = Math.ceil(c[key] / 2);
       }
     }

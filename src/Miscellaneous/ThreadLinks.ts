@@ -31,7 +31,7 @@ var ThreadLinks = {
     return ThreadLinks.process(this.nodes.thumb.parentNode);
   },
 
-  process(link) {
+  process(link: any) { // loose: .target set on reply/thumb parent of varying element types
     return link.target = '_blank';
   }
 };

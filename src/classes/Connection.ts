@@ -11,7 +11,7 @@ export default class Connection {
   declare origin: string;
   declare cb: { [type: string]: (value: any) => void };
 
-  constructor(target, origin, cb={}) {
+  constructor(target: Window | HTMLIFrameElement, origin: string, cb: { [type: string]: (value: any) => void } = {}) {
     this.send = this.send.bind(this);
     this.onMessage = this.onMessage.bind(this);
     this.target = target;
@@ -28,11 +28,11 @@ export default class Connection {
     }
   }
 
-  send(data) {
+  send(data: any) {
     return this.targetWindow()?.postMessage(`${g.NAMESPACE}${JSON.stringify(data)}`, this.origin);
   }
 
-  onMessage(e) {
+  onMessage(e: MessageEvent) {
     if ((e.source !== this.targetWindow()) ||
       (e.origin !== this.origin) ||
       (typeof e.data !== 'string') ||

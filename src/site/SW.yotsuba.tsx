@@ -15,6 +15,13 @@ import generateFileHtml from "./SW.yotsuba.Build/FileHtml";
 import generateCatalogThreadHtml from "./SW.yotsuba.Build/CatalogThreadHtml";
 import h, { type EscapedHtml, hFragment, isEscaped } from "../globals/jsx";
 import { dict, MINUTE } from "../platform/helpers";
+import type Post from "../classes/Post";
+import type Thread from "../classes/Thread";
+
+// loose: the destructured URL/JSON argument shapes are ad-hoc records of IDs
+// (subsets of Post/Thread/Board); declared locally to avoid a shared-type change.
+type IDArg = { siteID?: string; boardID?: string; threadID?: string | number; postID?: string | number };
+type SiteBoardArg = { siteID: string; boardID: string };
 
 /*
  * decaffeinate suggestions:
@@ -28,28 +35,28 @@ const SWYotsuba = {
   archivedBoardsKnown: true,
 
   urls: {
-    thread({boardID, threadID}) { return `${location.protocol}//${BoardConfig.domain(boardID)}/${boardID}/thread/${threadID}`; },
-    post({postID})            { return `#p${postID}`; },
-    index({boardID})           { return `${location.protocol}//${BoardConfig.domain(boardID)}/${boardID}/`; },
-    catalog({boardID})           { if (boardID === 'f') { return undefined; } else { return `${location.protocol}//${BoardConfig.domain(boardID)}/${boardID}/catalog`; } },
-    archive({boardID})           { if (BoardConfig.isArchived(boardID)) { return `${location.protocol}//${BoardConfig.domain(boardID)}/${boardID}/archive`; } else { return undefined; } },
-    threadJSON({boardID, threadID}) { return `${location.protocol}//a.4cdn.org/${boardID}/thread/${threadID}.json`; },
-    threadsListJSON({boardID})      { return `${location.protocol}//a.4cdn.org/${boardID}/threads.json`; },
-    archiveListJSON({boardID})      { if (BoardConfig.isArchived(boardID)) { return `${location.protocol}//a.4cdn.org/${boardID}/archive.json`; } else { return ''; } },
-    catalogJSON({boardID})      { return `${location.protocol}//a.4cdn.org/${boardID}/catalog.json`; },
-    file({boardID}, filename) {
+    thread({boardID, threadID}: IDArg) { return `${location.protocol}//${BoardConfig.domain(boardID)}/${boardID}/thread/${threadID}`; },
+    post({postID}: IDArg)            { return `#p${postID}`; },
+    index({boardID}: IDArg)           { return `${location.protocol}//${BoardConfig.domain(boardID)}/${boardID}/`; },
+    catalog({boardID}: IDArg)           { if (boardID === 'f') { return undefined; } else { return `${location.protocol}//${BoardConfig.domain(boardID)}/${boardID}/catalog`; } },
+    archive({boardID}: IDArg)           { if (BoardConfig.isArchived(boardID)) { return `${location.protocol}//${BoardConfig.domain(boardID)}/${boardID}/archive`; } else { return undefined; } },
+    threadJSON({boardID, threadID}: IDArg) { return `${location.protocol}//a.4cdn.org/${boardID}/thread/${threadID}.json`; },
+    threadsListJSON({boardID}: IDArg)      { return `${location.protocol}//a.4cdn.org/${boardID}/threads.json`; },
+    archiveListJSON({boardID}: IDArg)      { if (BoardConfig.isArchived(boardID)) { return `${location.protocol}//a.4cdn.org/${boardID}/archive.json`; } else { return ''; } },
+    catalogJSON({boardID}: IDArg)      { return `${location.protocol}//a.4cdn.org/${boardID}/catalog.json`; },
+    file({boardID}: IDArg, filename: string) {
       const hostname = boardID === 'f' ? ImageHost.flashHost() : ImageHost.host();
       return `${location.protocol}//${hostname}/${boardID}/${filename}`;
     },
-    thumb({boardID}, filename) {
+    thumb({boardID}: IDArg, filename: string) {
       return `${location.protocol}//${ImageHost.thumbHost()}/${boardID}/${filename}`;
     }
   },
 
-  isPrunedByAge({boardID}) { return boardID === 'f'; },
-  areMD5sDeferred({boardID}) { return boardID === 'f'; },
-  isOnePage({boardID}) { return boardID === 'f'; },
-  noAudio({boardID}) { return BoardConfig.noAudio(boardID); },
+  isPrunedByAge({boardID}: IDArg) { return boardID === 'f'; },
+  areMD5sDeferred({boardID}: IDArg) { return boardID === 'f'; },
+  isOnePage({boardID}: IDArg) { return boardID === 'f'; },
+  noAudio({boardID}: IDArg) { return BoardConfig.noAudio(boardID); },
 
   selectors: {
     board:         '.board',
@@ -164,15 +171,15 @@ $\
     return (g.VIEW === 'index' || g.VIEW === 'thread') && !$('.board + *');
   },
 
-  isBoardlessPage(url) {
+  isBoardlessPage(url: URL | Location) {
     return ['www.4chan.org', 'www.4channel.org'].includes(url.hostname);
   },
 
-  isAuxiliaryPage(url) {
+  isAuxiliaryPage(url: URL | Location) {
     return !['boards.4chan.org', 'boards.4channel.org'].includes(url.hostname);
   },
 
-  isFileURL(url) {
+  isFileURL(url: URL | Location) {
     return ImageHost.test(url.hostname);
   },
 
@@ -189,7 +196,7 @@ $\
       case 'sys.4chan.org': case 'sys.4channel.org':
         var pathname = location.pathname.split(/\/+/);
         if (pathname[2] === 'imgboard.php') {
-          let match;
+          let match: RegExpMatchArray | null;
           if (/\bmode=report\b/.test(location.search)) {
             Report.init();
           } else if (match = location.search.match(/\bres=(\d+)/)) {
@@ -197,7 +204,7 @@ $\
               if (Conf['404 Redirect'] && g.BOARD && ($.id('errmsg')?.textContent === 'Error: Specified thread does not exist.')) {
                 return (Redirect.navigate as any)('thread', { // loose: optional 3rd arg defined in src/Archive
                   boardID: g.BOARD.ID,
-                  postID:  +match[1]
+                  postID:  +match![1]
                 });
               }});
           }
@@ -215,15 +222,15 @@ $\
     return '';
   },
 
-  parseThreadMetadata(thread) {
+  parseThreadMetadata(thread: Thread) {
     let m;
     const scriptData = this.scriptData();
     thread.postLimit = /\bbumplimit *= *1\b/.test(scriptData);
     thread.fileLimit = /\bimagelimit *= *1\b/.test(scriptData);
-    thread.ipCount   = (m = scriptData.match(/\bunique_ips *= *(\d+)\b/)) ? +m[1] : undefined;
+    thread.ipCount   = ((m = scriptData.match(/\bunique_ips *= *(\d+)\b/)) ? +m[1] : undefined) as number; // loose cast: code assigns undefined though Thread.ipCount is typed number
 
     if ((g.BOARD?.ID === 'f') && thread.OP.file) {
-      const {file} = thread.OP;
+      const {file} = thread.OP as any; // loose: file.text is a DOM node here, not the string typed on the File interface
       return $.ajax(this.urls.threadJSON({boardID: 'f', threadID: thread.ID}), {
         timeout: MINUTE,
         onloadend() {
@@ -236,7 +243,7 @@ $\
     }
   },
 
-  parseNodes(post, nodes) {
+  parseNodes(post: Post, nodes: { info: HTMLElement }) { // loose: nodes is the DOM-node bag; only .info is used here
     // Add CSS classes to sticky/closed icons on /f/ to match other boards.
     if (post.boardID === 'f') {
       return (() => {
@@ -252,11 +259,11 @@ $\
     }
   },
 
-  parseDate(node) {
-    return new Date(node.dataset.utc * 1000);
+  parseDate(node: HTMLElement) {
+    return new Date(Number(node.dataset.utc) * 1000);
   },
 
-  parseFile(post, file) {
+  parseFile(post: Post, file: any) { // loose: file is the in-progress DOM file bag (.text/.link/.thumb nodes), not the finished File interface
     let info;
     const {text, link, thumb} = file;
     if (!(info = link.nextSibling?.textContent.match(/\(([\d.]+ [KMG]?B).*\)/))) { return false; }
@@ -283,7 +290,7 @@ $\
     return true;
   },
 
-  cleanComment(bq) {
+  cleanComment(bq: HTMLElement) {
     let abbr;
     if (abbr = $('.abbr', bq)) { // 'Comment too long' or 'EXIF data available'
       for (var node of $$('.abbr + br, .exif', bq)) {
@@ -297,13 +304,13 @@ $\
     }
   },
 
-  cleanCommentDisplay(bq) {
+  cleanCommentDisplay(bq: HTMLElement) {
     let b;
     if ((b = $('b', bq)) && /^Rolled /.test(b.textContent)) { $.rm(b); }
     return $.rm($('.fortune', bq));
   },
 
-  insertTags(bq) {
+  insertTags(bq: HTMLElement) {
     let node;
     for (node of $$('s, .removed-spoiler', bq)) {
       $.replace(node, [$.tn('[spoiler]'), ...node.childNodes, $.tn('[/spoiler]')]);
@@ -313,15 +320,15 @@ $\
     }
   },
 
-  hasCORS(url) {
+  hasCORS(url: string) {
     return url.split('/').slice(0, 3).join('/') === (location.protocol + '//a.4cdn.org');
   },
 
-  sfwBoards(sfw) {
+  sfwBoards(sfw: boolean) {
     return BoardConfig.sfwBoards(sfw);
   },
 
-  uidColor(uid) {
+  uidColor(uid: string) {
     let msg = 0;
     let i = 0;
     while (i < 8) {
@@ -330,7 +337,7 @@ $\
     return (msg >> 8) & 0xFFFFFF;
   },
 
-  isLinkified(link) {
+  isLinkified(link: URL | HTMLAnchorElement) {
     return ImageHost.test(link.hostname);
   },
 
@@ -369,16 +376,16 @@ $\
     gifIcon: window.devicePixelRatio >= 2 ? '@2x.gif' : '.gif',
     spoilerRange: Object.create(null),
 
-    shortFilename(filename) {
-      const ext = filename.match(/\.?[^\.]*$/)[0];
+    shortFilename(filename: string) {
+      const ext = filename.match(/\.?[^\.]*$/)![0];
       if ((filename.length - ext.length) > 30) {
-        return `${filename.match(/(?:[\uD800-\uDBFF][\uDC00-\uDFFF]|[^]){0,25}/)[0]}(...)${ext}`;
+        return `${filename.match(/(?:[\uD800-\uDBFF][\uDC00-\uDFFF]|[^]){0,25}/)![0]}(...)${ext}`;
       } else {
         return filename;
       }
     },
 
-    spoilerThumb(boardID) {
+    spoilerThumb(boardID: string) {
       let spoilerRange;
       if ((spoilerRange = this.spoilerRange[boardID])) {
         // Randomize the spoiler image.
@@ -388,11 +395,11 @@ $\
       }
     },
 
-    sameThread(boardID, threadID) {
+    sameThread(boardID: string, threadID: string | number) {
       return (g.VIEW === 'thread') && (g.BOARD?.ID === boardID) && (g.THREADID === +threadID);
     },
 
-    threadURL(boardID, threadID) {
+    threadURL(boardID: string, threadID: string | number) {
       if (boardID !== g.BOARD?.ID) {
         return `//${BoardConfig.domain(boardID)}/${boardID}/thread/${threadID}`;
       } else if ((g.VIEW !== 'thread') || (+threadID !== g.THREADID)) {
@@ -402,11 +409,11 @@ $\
       }
     },
 
-    postURL(boardID, threadID, postID) {
+    postURL(boardID: string, threadID: string | number, postID: string | number) {
       return `${this.threadURL(boardID, threadID)}#p${postID}`;
     },
 
-    parseJSON(data, { siteID, boardID }) {
+    parseJSON(data: any, { siteID, boardID }: SiteBoardArg) { // loose: data is the raw 4chan API JSON post object (no shared type)
       const o: any = { // loose: built post object, extended with .info/.files/.extra below
         // id
         ID: data.no,
@@ -441,7 +448,7 @@ $\
         commentHTML: { innerHTML: data.com || '', [isEscaped]: true }
       };
       if (data.capcode) {
-        o.info.capcode = data.capcode.replace(/_highlight$/, '').replace(/_/g, ' ').replace(/\b\w/g, c => c.toUpperCase());
+        o.info.capcode = data.capcode.replace(/_highlight$/, '').replace(/_/g, ' ').replace(/\b\w/g, (c: string) => c.toUpperCase());
         o.capcodeHighlight = /_highlight$/.test(data.capcode);
         delete o.info.uniqueID;
       }
@@ -460,8 +467,8 @@ $\
       return o;
     },
 
-    parseJSONFile(data, { siteID, boardID }) {
-      const site = g.sites[siteID];
+    parseJSONFile(data: any, { siteID, boardID }: SiteBoardArg) { // loose: data is the raw 4chan API JSON post object (no shared type)
+      const site = g.sites[siteID as unknown as number]; // loose: g.sites is typed Site[] but keyed by string siteID at runtime
       const filename = (site.software === 'yotsuba') && (boardID === 'f') ?
         `${encodeURIComponent(data.filename)}${data.ext}`
         :
@@ -484,7 +491,7 @@ $\
       return o;
     },
 
-    parseComment(html) {
+    parseComment(html: string) {
       html = html
         .replace(/<br\b[^<]*>/gi, '\n')
         .replace(/\n\n<span\b[^<]* class="abbr"[^]*$/i, '') // EXIF data (/p/)
@@ -492,7 +499,7 @@ $\
       return $.unescape(html);
     },
 
-    parseCommentDisplay(html) {
+    parseCommentDisplay(html: string) {
       // Hide spoilers.
       if (!Conf['Remove Spoilers'] && !Conf['Reveal Spoilers']) {
         let html2;
@@ -507,12 +514,12 @@ $\
       return this.parseComment(html).trim().replace(/\s+$/gm, '');
     },
 
-    postFromObject(data, boardID) {
+    postFromObject(data: any, boardID: string) { // loose: data is the raw 4chan API JSON post object (no shared type)
       const o = this.parseJSON(data, { boardID, siteID: g.SITE!.ID });
       return this.post(o);
     },
 
-    post(o) {
+    post(o: any) { // loose: o is the built post object produced by parseJSON (returns any)
       const { ID, threadID, boardID, file } = o;
       const { subject, email, name, tripcode, capcode, pass, uniqueID, flagCode, flagCodeTroll, flag, dateUTC, dateText, commentHTML } = o.info;
       const { staticPath, gifIcon } = this;
@@ -543,8 +550,8 @@ $\
         `${url}#q${ID}`;
 
       const postInfo = generatePostInfoHtml(
-        ID, o, subject, capcode, email, name, tripcode, pass, capcodeLC, capcodePlural, staticPath, gifIcon,
-        capcodeDescription, uniqueID, flag, flagCode, flagCodeTroll, dateUTC, dateText, postLink, quoteLink, boardID,
+        ID, o, subject, capcode, email, name, tripcode, pass, capcodeLC as string, capcodePlural as string, staticPath, gifIcon,
+        capcodeDescription as string, uniqueID, flag, flagCode, flagCodeTroll, dateUTC, dateText, postLink, quoteLink, boardID,
         threadID,
       );
 
@@ -612,7 +619,7 @@ $\
       return hoverPreview ? text : `${text} ${status === '-' ? 'shown' : 'omitted'}.`;
     },
 
-    summary(boardID, threadID, posts, files) {
+    summary(boardID: string, threadID: string | number, posts: number, files: number) {
       return $.el('a', {
         className: 'summary',
         textContent: this.summaryText('', posts, files),
@@ -621,7 +628,7 @@ $\
       );
     },
 
-    thread(thread, data, withReplies) {
+    thread(thread: Thread, data: any, withReplies: boolean) { // loose: data is the raw 4chan API JSON thread object (no shared type)
       let root;
       if (root = thread.nodes.root) {
         $.rmAll(root);
@@ -637,7 +644,7 @@ $\
       if (data.omitted_posts || (!withReplies && data.replies)) {
         const [posts, files] = withReplies ?
           // XXX data.omitted_images is not accurate.
-          [data.omitted_posts, data.images - data.last_replies.filter(data => !!data.ext).length]
+          [data.omitted_posts, data.images - data.last_replies.filter((data: any) => !!data.ext).length]
           :
           [data.replies, data.images];
         const summary = this.summary(thread.board.ID, data.no, posts, files);
@@ -646,7 +653,7 @@ $\
       return root;
     },
 
-    catalogThread(thread, data, pageCount) {
+    catalogThread(thread: Thread, data: any, pageCount: number) { // loose: data is the raw 4chan API JSON thread object (no shared type)
       let cssText, imgClass, src;
       const { staticPath, gifIcon } = this;
       const { tn_w, tn_h } = data;
@@ -654,7 +661,7 @@ $\
       if (data.spoiler && !Conf['Reveal Spoiler Thumbnails']) {
         let spoilerRange;
         src = `${staticPath}spoiler`;
-        if (spoilerRange = this.spoilerRange[thread.board]) {
+        if (spoilerRange = this.spoilerRange[thread.board as unknown as string]) {
           // Randomize the spoiler image.
           src += (`-${thread.board}`) + Math.floor(1 + (spoilerRange * Math.random()));
         }
@@ -700,7 +707,7 @@ $\
       return root;
     },
 
-    catalogReply(thread, data) {
+    catalogReply(thread: Thread, data: any) { // loose: data is the raw 4chan API JSON post object (no shared type)
       let excerpt = '';
       if (data.com) {
         excerpt = this.parseCommentDisplay(data.com).replace(/>>\d+/g, '').trim().replace(/\n+/g, ' // ');

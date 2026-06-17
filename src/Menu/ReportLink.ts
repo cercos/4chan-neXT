@@ -1,3 +1,4 @@
+import type Post from "../classes/Post";
 import { g, Conf, d } from "../globals/globals";
 import $ from "../platform/$";
 import Menu from "./Menu";
@@ -25,7 +26,7 @@ var ReportLink = {
     return Menu.menu.addEntry({
       el: a,
       order: 10,
-      open(post) {
+      open(post: Post) {
         ReportLink.url = `//sys.${location.hostname.split('.')[1]}.org/${post.board}/imgboard.php?mode=report&no=${post}`;
         if (d.cookie.indexOf('pass_enabled=1') >= 0) {
           ReportLink.dims = 'width=350,height=275';

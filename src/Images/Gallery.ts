@@ -79,7 +79,7 @@ var Gallery = {
     })();
   },
 
-  build(image?) {
+  build(image?: any) { // loose: image is an HTMLElement used opaquely as a build seed
     let dialog, thumb;
     const {cb} = Gallery;
 
@@ -109,7 +109,7 @@ var Gallery = {
       next:    '.gal-image a',
       current: '.gal-image img'
     };
-    for (var key in object) { var value = object[key]; nodes[key] = $(value, dialog); }
+    for (var key in object) { var value = object[key as keyof typeof object]; nodes[key] = $(value, dialog); }
 
     const menuButton = $('.menu-button', dialog);
     nodes.menu = new UI.Menu('gallery');
@@ -187,7 +187,7 @@ var Gallery = {
     return nodes.total.textContent = Gallery.images.length;
   },
 
-  generateThumb(post, file) {
+  generateThumb(post: Post, file: any) { // loose: file object's precise type cascades dataset/clone errors
     if (post.isClone || post.isHidden) { return; }
     if (!file || !file.thumb || (!file.isImage && !file.isVideo && !Conf['PDF in Gallery'])) { return; }
     if (Gallery.fileIDs[`${post.fullID}.${file.index}`]) { return; }
@@ -216,7 +216,7 @@ var Gallery = {
     return $.add(Gallery.nodes.thumbs, thumb);
   },
 
-  load(thumb, errorCB) {
+  load(thumb: any, errorCB: (e: Event) => void) { // loose: thumb is a gal-thumb anchor accessed opaquely (href/dataset)
     const ext = thumb.href.match(/\w*$/);
     const elType = $.getOwn({'webm': 'video', 'mp4': 'video', 'ogv': 'video', 'pdf': 'iframe'}, ext) || 'img';
     const file = $.el(elType);
@@ -226,7 +226,7 @@ var Gallery = {
     return file;
   },
 
-  open(thumb) {
+  open(thumb: any) { // loose: thumb is a gal-thumb anchor accessed opaquely (dataset/offset/href)
     let el, file, post;
     const {nodes} = Gallery;
     const oldID = +nodes.current.dataset.id;
@@ -305,7 +305,7 @@ var Gallery = {
     if (ImageCommon.isFromArchive(this)) { return; }
     const post = g.posts!.get(this.dataset.post)!;
     const file = post.files[+this.dataset.file!];
-    return ImageCommon.error(this, post, file, null, url => {
+    return ImageCommon.error(this, post, file, null, (url: string | null | undefined) => {
       if (!url) { return; }
       Gallery.images[+this.dataset.id!].href = url;
       if (Gallery.nodes.current === this) { return this.src = url; }
@@ -350,7 +350,7 @@ var Gallery = {
   },
 
   cb: {
-    keybinds(e) {
+    keybinds(e: KeyboardEvent) {
       let key;
       if (!(key = Keybinds.keyCode(e))) { return; }
 
@@ -392,7 +392,7 @@ var Gallery = {
 
     closeLightbox() { return $.rmClass(doc, 'gal-lightbox-open'); },
 
-    image(e) {
+    image(this: HTMLElement, e: Event) {
       e.preventDefault();
       e.stopPropagation();
       return Gallery.build(this);
@@ -411,15 +411,15 @@ var Gallery = {
       );
     },
 
-    click(e) {
-      if (ImageCommon.onControls(e)) { return; }
+    click(e: Event) {
+      if (ImageCommon.onControls(e as MouseEvent)) { return; }
       e.preventDefault();
       return Gallery.cb.advance();
     },
 
     advance() { if (!Conf['Autoplay'] && Gallery.nodes.current.paused) { return Gallery.nodes.current.play(); } else { return Gallery.cb.next(); } },
     toggle() { return (Gallery.nodes ? Gallery.cb.close : Gallery.build)(); },
-    blank(e) {
+    blank(this: HTMLElement, e: Event) {
       if (e.target !== this) { return; }
       // Clicking the dimmed area behind a fullscreen lightbox returns to the
       // grid; everywhere else it closes the gallery.
@@ -433,7 +433,7 @@ var Gallery = {
     // the gallery — but only well below the last image, so a row that holds
     // images (including its blank/trailing spots) never closes, and a near-miss
     // just under an image is forgiven by a 70px buffer.
-    thumbsBlank(e) {
+    thumbsBlank(this: HTMLElement, e: MouseEvent) {
       if (!Gallery.fullscreen || (e.target !== this)) { return; }
       const last = Gallery.images[Gallery.images.length - 1];
       if (last && (e.clientY > (last.getBoundingClientRect().bottom + 70))) {
@@ -471,7 +471,7 @@ var Gallery = {
     rotateLeft() { return (Gallery.cb.rotate as any)(270); },
     rotateRight() { return (Gallery.cb.rotate as any)(90); },
 
-    rotate: debounce(100, function(delta) {
+    rotate: debounce(100, function(delta: number) {
       const {current} = Gallery.nodes;
       if (current.nodeName === 'IFRAME') { return; }
       current.dataRotate = ((current.dataRotate || 0) + delta) % 360;
@@ -579,7 +579,7 @@ var Gallery = {
       const {style} = current;
 
       if (Conf['Stretch to Fit'] && (dim = g.posts!.get(current.dataset.post)?.files[+current.dataset.file].dimensions)) {
-        const [width, height] = dim.split('x');
+        const [width, height] = dim.split('x') as unknown as [number, number]; // loose: split yields strings; arithmetic relies on JS numeric coercion
         let containerWidth = frame.clientWidth;
         let containerHeight = doc.clientHeight - 25;
         if (((current.dataRotate || 0) % 180) === 90) {
@@ -622,7 +622,7 @@ var Gallery = {
       });
     },
 
-    createSubEntry(name) {
+    createSubEntry(name: string) {
       const label = UI.checkbox(name, name);
       const input = label.firstElementChild as HTMLInputElement;
       if (['Hide Thumbnails', 'Fit Width', 'Fit Height'].includes(name)) { $.on(input, 'change', Gallery.cb.setFitness); }

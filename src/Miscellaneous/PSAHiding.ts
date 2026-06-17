@@ -23,7 +23,7 @@ var PSAHiding = {
     });
   },
 
-  setup(psa) {
+  setup(psa: any) { // loose: psa.firstChild.tagName read off a ChildNode
     let btn, hr;
     PSAHiding.psa = psa;
     PSAHiding.text = psa.dataset.utc ?? psa.innerHTML;
@@ -68,7 +68,7 @@ var PSAHiding = {
 
   toggle() {
     const hide = $.hasClass(this, 'hide-announcement-button');
-    const set = function(hiddenPSAList) {
+    const set = function(hiddenPSAList: Record<string, string>) {
       if (hide) {
         return hiddenPSAList[g.SITE!.ID] = PSAHiding.text;
       } else {
@@ -83,7 +83,7 @@ var PSAHiding = {
     });
   },
 
-  sync(hiddenPSAList) {
+  sync(hiddenPSAList: Record<string, string>) {
     const {psa, content} = PSAHiding;
     psa.hidden = (hiddenPSAList[g.SITE!.ID] === PSAHiding.text);
     // Remove content to prevent autoplaying sounds from hidden announcements

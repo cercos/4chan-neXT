@@ -58,12 +58,12 @@ var Banner = {
     }
   },
 
-  setTitle(title) {
+  setTitle(title: string | null) {
     if (Unread.title != null) {
       Unread.title = title;
       return Unread.update();
     } else {
-      return d.title = title;
+      return d.title = title as string;
     }
   },
 
@@ -78,7 +78,7 @@ var Banner = {
       return $('img', this.parentNode as HTMLElement).src = `//s.4cdn.org/image/title/${banner}`;
     },
 
-    click(this: HTMLElement, e) {
+    click(this: HTMLElement, e: MouseEvent) {
       if (!e.ctrlKey && !e.metaKey) { return; }
       if (Banner.original[this.className] == null) { Banner.original[this.className] = this.cloneNode(true); }
       (this as any).contentEditable = true;
@@ -86,7 +86,7 @@ var Banner = {
       return this.focus();
     },
 
-    keydown(this: HTMLElement, e) {
+    keydown(this: HTMLElement, e: KeyboardEvent) {
       e.stopPropagation();
       if (!e.shiftKey && (e.keyCode === 13)) { return this.blur(); }
     },
@@ -116,13 +116,13 @@ var Banner = {
 
   original: dict(),
 
-  custom(child) {
+  custom(child: HTMLElement) {
     let data;
     const {className} = child;
     child.title = `Ctrl/\u2318+click to edit board ${className.slice(5).toLowerCase()}`;
     child.spellcheck = false;
 
-    for (var event of ['click', 'keydown', 'blur']) {
+    for (var event of ['click', 'keydown', 'blur'] as Array<keyof typeof Banner.cb>) {
       $.on(child, event, Banner.cb[event]);
     }
 

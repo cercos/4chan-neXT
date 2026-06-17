@@ -77,7 +77,13 @@ const SEARCH_FIELD_TARGETS: Record<string, { kind: 'text' | 'element'; sel: stri
 // Visible thumbnail (or tile) to glow when nothing field-specific can be shown.
 const SEARCH_FALLBACK_SEL = 'a.catalog-link, .fileThumb';
 
-var Index = {
+// loose: this singleton's methods reference `Index` (the binding) throughout
+// their own bodies, so its type can't be inferred from the initializer without
+// TS bailing to an implicit-any (TS7022 self-reference). Method bodies and
+// parameters are still individually annotated/checked; only the binding's
+// outward-facing type is widened. The sole external consumer (ThreadWatcher)
+// already accesses it via `(Index as any)`, so this loses no real type safety.
+var Index: any = {
   showHiddenThreads: false,
   // Dirty flags toggled by index controls; reset to {} after each pageLoad.
   changed: {} as {
@@ -129,8 +135,8 @@ var Index = {
   // never matches a thread on text you can't see. See ExpandThread.
   expandedSearchText: dict(),
 
-  enabledOn({siteID, boardID}) {
-    return Conf['JSON Index'] && (g.sites[siteID].software === 'yotsuba') && (boardID !== 'f');
+  enabledOn({siteID, boardID}: {siteID: string; boardID: string}) {
+    return Conf['JSON Index'] && (g.sites[siteID as any].software === 'yotsuba') && (boardID !== 'f');
   },
 
   init(this: typeof Index & { selectSize: any; lastLongInputs: any }) {
@@ -188,10 +194,10 @@ var Index = {
     const entries: any[] = [];
     this.inputs = (inputs = dict());
     for (name in Config.Index) {
-      var arr = Config.Index[name];
+      var arr = Config.Index[name as keyof typeof Config.Index];
       if (arr instanceof Array) {
         var label = UI.checkbox(name, `${name[0]}${name.slice(1).toLowerCase()}`);
-        label.title = arr[1];
+        label.title = arr[1] as string;
         entries.push({el: label});
         input = label.firstChild;
         $.on(input, 'change', $.cb.checked);
@@ -203,9 +209,10 @@ var Index = {
     $.on(inputs['Pin Watched Threads'], 'change', this.cb.resort);
     $.on(inputs['Anchor Hidden Threads'], 'change', this.cb.resort);
 
-    const watchSettings = function(e) {
-      if (input = $.getOwn(inputs, e.target.name)) {
-        input.checked = e.target.checked;
+    const watchSettings = function(e: Event) {
+      const target = e.target as HTMLInputElement;
+      if (input = $.getOwn(inputs, target.name)) {
+        input.checked = target.checked;
         return $.event('change', null, input);
       }
     };
@@ -369,7 +376,7 @@ var Index = {
         }
         , {innerHTML: "<span></span><span class=\"shortcut-text\">Shift+click</span>"}),
         order: 20,
-        open({thread}) {
+        open({thread}: {thread: Thread}) {
           if (Conf['Index Mode'] !== 'catalog') { return false; }
           this.el.firstElementChild.textContent = thread.isHidden ?
             'Unhide'
@@ -419,7 +426,7 @@ var Index = {
     });
   },
 
-  toggleHide(thread) {
+  toggleHide(thread: Thread) {
     if (Index.showHiddenThreads) {
       ThreadHiding.show(thread);
       if (!ThreadHiding.db.get({boardID: thread.board.ID, threadID: thread.ID})) { return; }
@@ -432,7 +439,7 @@ var Index = {
 
   cycleSortType() {
     let i;
-    const types = Index.selectSort.options.filter(option => !option.disabled);
+    const types = Index.selectSort.options.filter((option: HTMLOptionElement) => !option.disabled);
     for (i = 0; i < types.length; i++) {
       var type = types[i];
       if (type.selected) { break; }
@@ -459,7 +466,7 @@ var Index = {
       if (n) { return $.event('IndexRefresh'); }
     },
 
-    toggleHiddenThreads(e?) {
+    toggleHiddenThreads(e?: Event) {
       e?.preventDefault();
       $('#hidden-toggle a', Index.navLinks).textContent = (Index.showHiddenThreads = !Index.showHiddenThreads) ?
         'Hide'
@@ -480,7 +487,7 @@ var Index = {
       return Index.pageLoad(false);
     },
 
-    resort(e) {
+    resort(e?: CustomEvent) {
       Index.changed.order = true;
       if (!e?.detail?.deferred) { return Index.pageLoad(false); }
     },
@@ -507,7 +514,7 @@ var Index = {
       return Index.pageLoad(false);
     },
 
-    size(e?) {
+    size(e?: Event) {
       if (Conf['Index Mode'] !== 'catalog') {
         $.rmClass(Index.root, 'catalog-small');
         $.rmClass(Index.root, 'catalog-large');
@@ -529,7 +536,7 @@ var Index = {
       return doc.classList.toggle('catalog-hover-expand', Conf['Catalog Hover Expand']);
     },
 
-    hoverToggle(e) {
+    hoverToggle(e: MouseEvent) {
       if (Conf['Catalog Hover Toggle'] && $.hasClass(doc, 'catalog-mode') && !$.modifiedClick(e) && !$.x('ancestor-or-self::a', e.target)) {
         let thread;
         const input = Index.inputs['Catalog Hover Expand'];
@@ -542,7 +549,7 @@ var Index = {
       }
     },
 
-    popstate(e) {
+    popstate(e?: PopStateEvent) {
       if (e?.state) {
         const {searched, mode, sort} = e.state;
         const page = Index.getCurrentPage();
@@ -559,16 +566,17 @@ var Index = {
       }
     },
 
-    pageNav(e) {
-      let a;
+    pageNav(e: MouseEvent) {
+      let a: any; // loose: holds either an <a> or its parent; only .textContent/.pathname read
       if ($.modifiedClick(e)) { return; }
-      switch (e.target.nodeName) {
+      const target = e.target as HTMLElement;
+      switch (target.nodeName) {
         case 'BUTTON':
-          e.target.blur();
-          a = e.target.parentNode;
+          (target as HTMLButtonElement).blur();
+          a = target.parentNode;
           break;
         case 'A':
-          a = e.target;
+          a = target;
           break;
         default:
           return;
@@ -578,7 +586,7 @@ var Index = {
       return Index.userPageNav(+a.pathname.split(/\/+/)[2] || 1);
     },
 
-    refreshFront(e) {
+    refreshFront(e?: Event) {
       e?.preventDefault();
       Index.pushState({page: 1});
       return Index.update();
@@ -603,7 +611,7 @@ var Index = {
       }
     },
 
-    searchHelp(e) {
+    searchHelp(e: Event) {
       e.preventDefault();
       e.stopPropagation();
       const {popover} = Index.searchHelpNodes();
@@ -611,14 +619,14 @@ var Index = {
       return Index.setSearchHelp(popover.hidden);
     },
 
-    closeSearchHelpOutside(e) {
+    closeSearchHelpOutside(e: Event) {
       const {popover, wrap} = Index.searchHelpNodes();
       if (!popover || popover.hidden) { return; }
-      if (wrap?.contains(e.target)) { return; }
+      if (wrap?.contains(e.target as Node)) { return; }
       return Index.setSearchHelp(false);
     },
 
-    closeSearchHelpOnEscape(e) {
+    closeSearchHelpOnEscape(e: KeyboardEvent) {
       const {popover} = Index.searchHelpNodes();
       if (!popover || popover.hidden || (e.key !== 'Escape')) { return; }
       e.preventDefault();
@@ -635,7 +643,7 @@ var Index = {
     return +window.location.pathname.split(/\/+/)[2] || 1;
   },
 
-  userPageNav(page) {
+  userPageNav(page: number) {
     Index.pushState({page});
     if (Conf['Refreshed Navigation']) {
       return Index.update();
@@ -693,7 +701,7 @@ var Index = {
     return commands.length - leftover.length;
   },
 
-  pushState(state) {
+  pushState(state: {search?: string; hash?: string; replace?: boolean; page?: number; mode?: string; sort?: string}) {
     let {search, hash, replace} = state;
     let pageBeforeSearch = history.state?.oldpage;
     if ((search != null) && (search !== Index.search)) {
@@ -745,7 +753,7 @@ var Index = {
     }
   },
 
-  savePerBoard(key, value) {
+  savePerBoard(key: string, value: any) { // loose: value is a Conf entry of varied type
     if (typeof Conf[key] === 'object') {
       Conf[key][g.BOARD!.ID] = value;
     } else {
@@ -758,7 +766,7 @@ var Index = {
     return Index.savePerBoard('Index Sort', Index.currentSort);
   },
 
-  saveLastLongThresholds(i) {
+  saveLastLongThresholds(i: number) {
     return Index.savePerBoard(`Last Long Reply Thresholds ${i}`, Index.lastLongThresholds[i]);
   },
 
@@ -833,10 +841,10 @@ var Index = {
     // Previous/Next buttons
     const prev = pagesRoot.previousElementSibling?.firstElementChild;
     const next = pagesRoot.nextElementSibling?.firstElementChild;
-    const setNav = function(link, href, disabled) {
+    const setNav = function(link: Element | null | undefined, href: number, disabled: boolean) {
       if (!link) { return; }
-      link.href = href === 1 ? './' : href;
-      const button = link.firstElementChild;
+      (link as HTMLAnchorElement).href = href === 1 ? './' : href as any;
+      const button = link.firstElementChild as HTMLButtonElement | null;
       if (button) { button.disabled = disabled; }
       if (disabled) {
         link.setAttribute('aria-disabled', 'true');
@@ -883,7 +891,7 @@ var Index = {
       `${hiddenCount} hidden threads`;
   },
 
-  update(firstTime?) {
+  update(firstTime?: boolean) {
     let oldReq;
     if (oldReq = Index.req) {
       delete Index.req;
@@ -944,7 +952,7 @@ var Index = {
         Index.pageLoad();
       }
     } catch (error) {
-      err = error;
+      err = error as Error;
       c.error(`Index failure: ${err.message}`, err.stack);
       if (notice) {
         notice.setType('error');
@@ -971,18 +979,18 @@ var Index = {
     return RelativeDates.update(timeEl);
   },
 
-  parse(pages) {
+  parse(pages: any) { // loose: raw catalog JSON page array
     $.cleanCache(url => /^https?:\/\/a\.4cdn\.org\//.test(url));
     Index.parseThreadList(pages);
     Index.changed.threads = true;
     return Index.pageLoad();
   },
 
-  parseThreadList(pages) {
+  parseThreadList(pages: any) { // loose: raw catalog JSON page array
     Index.pagesNum          = pages.length;
     Index.threadsNumPerPage = pages[0]?.threads.length || 1;
-    Index.liveThreadData    = pages.reduce(((arr, next) => arr.concat(next.threads)), []);
-    Index.liveThreadIDs     = Index.liveThreadData.map(data => data.no);
+    Index.liveThreadData    = pages.reduce(((arr: any[], next: any) => arr.concat(next.threads)), []);
+    Index.liveThreadIDs     = Index.liveThreadData.map((data: any) => data.no);
     Index.liveThreadDict    = dict();
     Index.threadPosition    = dict();
     Index.parsedThreads     = dict();
@@ -1013,10 +1021,10 @@ var Index = {
       if (!Index.liveThreadIDs.includes(thread.ID)) { return thread.collect(); }
     });
     $.event('IndexUpdate',
-      {threads: ((Index.liveThreadIDs.map((ID) => `${g.BOARD}.${ID}`)))});
+      {threads: ((Index.liveThreadIDs.map((ID: number) => `${g.BOARD}.${ID}`)))});
   },
 
-  isHidden(threadID) {
+  isHidden(threadID: number) {
     let thread;
     if ((thread = g.BOARD!.threads.get(threadID)) && thread.OP && !thread.OP.isFetchedQuote) {
       return thread.isHidden;
@@ -1025,11 +1033,11 @@ var Index = {
     }
   },
 
-  isHiddenReply(threadID, replyData) {
+  isHiddenReply(threadID: number, replyData: any) { // loose: raw reply JSON
     return PostHiding.isHidden(g.BOARD!.ID, threadID, replyData.no) || Filter.isHidden(g.SITE!.Build.parseJSON(replyData, g.BOARD!));
   },
 
-  threadHasUnreadYous(threadID) {
+  threadHasUnreadYous(threadID: number) {
     if (!Conf['Show Threads With Yous'] || !QuoteYou.db) { return false; }
     const cached = Index.threadsWithYous?.[threadID];
     if (cached != null) { return cached; }
@@ -1080,7 +1088,7 @@ var Index = {
     return Index.threadsWithYous[threadID] = false;
   },
 
-  showThreadInCatalog(threadID) {
+  showThreadInCatalog(threadID: number) {
     const hidden = Index.isHidden(threadID);
     if (Index.showHiddenThreads) {
       return hidden;
@@ -1088,7 +1096,7 @@ var Index = {
     return !hidden || Index.threadHasUnreadYous(threadID);
   },
 
-  buildThreads(threadIDs, isCatalog, withReplies?) {
+  buildThreads(threadIDs: number[], isCatalog: boolean, withReplies?: boolean) {
     let errors;
     const threads: Thread[] = [];
     const newThreads: Thread[] = [];
@@ -1113,7 +1121,7 @@ var Index = {
           }
         } else {
           // loose: globals.Board vs classes/Board nominal mismatch; same shape at runtime.
-          thread = new Thread(ID, g.BOARD as any);
+          thread = new Thread(ID as any, g.BOARD as any);
           newThreads.push(thread);
         }
         var lastPost = threadData.last_replies && threadData.last_replies.length ? threadData.last_replies[threadData.last_replies.length - 1].no : ID;
@@ -1134,7 +1142,7 @@ var Index = {
         }
 
         if (!isCatalog || !thread.nodes.root) {
-          g.SITE!.Build.thread(thread, threadData, withReplies);
+          g.SITE!.Build.thread(thread, threadData, withReplies!);
         }
       } catch (err) {
         // Skip posts that we failed to parse.
@@ -1160,7 +1168,7 @@ var Index = {
     return threads;
   },
 
-  buildReplies(threads) {
+  buildReplies(threads: Thread[]) {
     let errors;
     const posts: Post[] = [];
     for (var thread of threads) {
@@ -1193,7 +1201,7 @@ var Index = {
     return posts;
   },
 
-  buildCatalogViews(threads) {
+  buildCatalogViews(threads: Thread[]) {
     const catalogThreads: CatalogThread[] = [];
     for (var thread of threads) {
       if (!thread.catalogView) {
@@ -1206,7 +1214,7 @@ var Index = {
     Main.callbackNodes('CatalogThread', catalogThreads);
   },
 
-  sizeCatalogViews(threads) {
+  sizeCatalogViews(threads: Thread[]) {
     // XXX When browsers support CSS3 attr(), use it instead.
     const size = Conf['Index Size'] === 'small' ? 150 : 250;
     for (var thread of threads) {
@@ -1219,7 +1227,7 @@ var Index = {
     }
   },
 
-  buildCatalogReplies(thread) {
+  buildCatalogReplies(thread: Thread) {
     let lastReplies;
     const {nodes} = thread.catalogView;
     if (!(lastReplies = Index.liveThreadDict[thread.ID].last_replies)) { return; }
@@ -1246,8 +1254,8 @@ var Index = {
     const sortType = Index.currentSort.replace(/-rev$/, '');
     Index.sortedThreadIDs = (() => { switch (sortType) {
       case 'lastreply': case 'lastlong':
-        var repliesAvailable = liveThreadData.some(thread => thread.last_replies?.length);
-        var lastlong = function(thread) {
+        var repliesAvailable = liveThreadData.some((thread: any) => thread.last_replies?.length);
+        var lastlong = function(thread: any) { // loose: raw thread JSON
           if (!repliesAvailable) {
             return thread.last_modified;
           }
@@ -1284,14 +1292,14 @@ var Index = {
       Index.sortedThreadIDs = threadIDs;
     }
     // Sticky threads
-    Index.sortOnTop(obj => obj.isSticky);
+    Index.sortOnTop((obj: any) => obj.isSticky);
     // Highlighted threads
-    Index.sortOnTop(obj => obj.isOnTop || (Conf['Pin Watched Threads'] && ThreadWatcher.isWatchedRaw(obj.boardID, obj.threadID)));
+    Index.sortOnTop((obj: any) => obj.isOnTop || (Conf['Pin Watched Threads'] && ThreadWatcher.isWatchedRaw(obj.boardID, obj.threadID)));
     // Non-hidden threads
-    if (Conf['Anchor Hidden Threads']) { return Index.sortOnTop(obj => !Index.isHidden(obj.threadID)); }
+    if (Conf['Anchor Hidden Threads']) { return Index.sortOnTop((obj: any) => !Index.isHidden(obj.threadID)); }
   },
 
-  sortOnTop(match) {
+  sortOnTop(match: (obj: any) => unknown) { // loose: predicate over raw parsed-thread JSON
     const topThreads: any[] = [];
     const bottomThreads: any[] = [];
     for (var ID of Index.sortedThreadIDs) {
@@ -1308,7 +1316,7 @@ var Index = {
         threadIDs = Index.sortedThreadIDs;
         break;
       case 'catalog':
-        threadIDs = Index.sortedThreadIDs.filter(ID => Index.showThreadInCatalog(ID));
+        threadIDs = Index.sortedThreadIDs.filter((ID: number) => Index.showThreadInCatalog(ID));
         break;
       default:
         threadIDs = Index.threadsOnPage(Index.currentPage);
@@ -1326,13 +1334,13 @@ var Index = {
     }
   },
 
-  threadsOnPage(pageNum) {
+  threadsOnPage(pageNum: number) {
     const nodesPerPage = Index.threadsNumPerPage;
     const offset = nodesPerPage * (pageNum - 1);
     return Index.sortedThreadIDs.slice(offset ,  offset + nodesPerPage);
   },
 
-  buildStructure(threadIDs) {
+  buildStructure(threadIDs: number[]) {
     const threads = Index.buildThreads(threadIDs, false, Conf['Show Replies']);
     Index.showHiddenThreadsWithYousInIndex(threads);
     const nodes: any[] = [];
@@ -1347,7 +1355,7 @@ var Index = {
     Index.loaded = true;
   },
 
-  showHiddenThreadsWithYousInIndex(threads) {
+  showHiddenThreadsWithYousInIndex(threads: Thread[]) {
     if (Conf['Index Mode'] === 'catalog' || !Conf['Show Threads With Yous']) { return; }
     for (var thread of threads) {
       if (!thread.isHidden || !Index.threadHasUnreadYous(thread.ID)) { continue; }
@@ -1358,7 +1366,7 @@ var Index = {
     }
   },
 
-  buildCatalog(threadIDs) {
+  buildCatalog(threadIDs: number[]) {
     let i = 0;
     const n = threadIDs.length;
     let node0: any = null;
@@ -1381,9 +1389,9 @@ var Index = {
     fn();
   },
 
-  groupHiddenCatalogThreads(threadIDs) {
+  groupHiddenCatalogThreads(threadIDs: number[]) {
     if (!Conf['Group Hidden Threads By Filter']) { return; }
-    const hiddenThreadIDs = threadIDs.filter(ID => Index.isHidden(ID));
+    const hiddenThreadIDs = threadIDs.filter((ID: number) => Index.isHidden(ID));
     if (!hiddenThreadIDs.length) { return; }
 
     const groupedThreads = new Map();
@@ -1438,7 +1446,7 @@ var Index = {
     Index.root.appendChild(frag);
   },
 
-  parseHiddenFilterReason(reason) {
+  parseHiddenFilterReason(reason: string) {
     const match = reason.match(/^Filtered\s+([A-Za-z0-9_]+)\s+(.+)$/);
     if (!match) {
       return { key: reason, label: reason, value: null };
@@ -1464,7 +1472,7 @@ var Index = {
     return { key: `Filtered ${type}`, label: `Filtered ${type}`, value };
   },
 
-  applyHiddenFilterValueToCatalogThread(node, label, value) {
+  applyHiddenFilterValueToCatalogThread(node: HTMLElement, label: string, value: string) {
     // keep one tooltip and one compact value row per card
     const valueLine = label === 'Filtered MD5' ? value : `${label}: ${value}`;
     const link = $('.catalog-link', node);
@@ -1483,7 +1491,7 @@ var Index = {
     }));
   },
 
-  clearHiddenFilterValueFromCatalogThread(node) {
+  clearHiddenFilterValueFromCatalogThread(node: HTMLElement) {
     const old = $('.catalog-group-match', node);
     if (old) { $.rm(old); }
     const link = $('.catalog-link', node);
@@ -1493,7 +1501,7 @@ var Index = {
     }
   },
 
-  buildCatalogPart(threadIDs) {
+  buildCatalogPart(threadIDs: number[]) {
     const threads = Index.buildThreads(threadIDs, true);
     Index.buildCatalogViews(threads);
     Index.sizeCatalogViews(threads);
@@ -1510,7 +1518,7 @@ var Index = {
     return nodes;
   },
 
-  clearSearch(e) {
+  clearSearch(e?: Event) {
     e?.preventDefault();
     Index.searchInput.value = '';
     Index.onSearchInput();
@@ -1536,7 +1544,7 @@ var Index = {
     return $.on(d, 'keydown', Index.cb.closeSearchHelpOnEscape);
   },
 
-  setSearchHelp(open) {
+  setSearchHelp(open: boolean) {
     const {help, popover} = Index.searchHelpNodes();
     if (!help || !popover) { return; }
     popover.hidden = !open;
@@ -1569,10 +1577,10 @@ var Index = {
   // pattern) would be misread as a regex matching every thread while
   // highlighting nothing. Returns the RegExpMatchArray, or null for a plain
   // keyword search.
-  parseRegexQuery(query) {
+  parseRegexQuery(query: string) {
     const match = query.match(/^([\w+]+):\/(.*)\/(\w*)$/);
     if (!match) { return null; }
-    if (!match[1].split('+').every(k => $.hasOwn(Filter.valueF, k))) { return null; }
+    if (!match[1].split('+').every((k: string) => $.hasOwn(Filter.valueF, k))) { return null; }
     return match;
   },
 
@@ -1582,7 +1590,7 @@ var Index = {
   // since the colon makes a separating space feel unnatural. Only the leading
   // occurrence is the flag and the rest is taken verbatim, so `op:op:` searches
   // OP text for the literal `op:`.
-  parseKeywordQuery(query) {
+  parseKeywordQuery(query: string) {
     let opOnly = false;
     const m = query.match(/^op:\s*/i);
     if (m) {
@@ -1601,7 +1609,7 @@ var Index = {
   // stays sensible while the closing quote is still being typed. The quote
   // characters themselves are never part of a term, so `"hello"` searches for
   // `hello`, not `"hello"`.
-  tokenizeKeywords(query) {
+  tokenizeKeywords(query: string) {
     const keywords: string[] = [];
     const rx = /"([^"]*)"?|(\S+)/g;
     let m;
@@ -1614,20 +1622,20 @@ var Index = {
     return keywords;
   },
 
-  querySearch(query) {
-    let match;
+  querySearch(query: string) {
+    let match: RegExpMatchArray | null;
     if (match = Index.parseRegexQuery(query)) {
-      let regexp;
+      let regexp: RegExp;
       try {
         regexp = RegExp(match[2], match[3]);
       } catch (error) {
         return [];
       }
-      return Index.sortedThreadIDs.filter(ID => regexp.test(Filter.values(match[1], Index.parsedThreads[ID]).join('\n')));
+      return Index.sortedThreadIDs.filter((ID: number) => regexp.test(Filter.values(match![1] as any, Index.parsedThreads[ID]).join('\n')));
     }
     const { opOnly, keywords } = Index.parseKeywordQuery(query);
     if (!keywords.length) { return; }
-    return Index.sortedThreadIDs.filter(ID => Index.searchMatch(Index.parsedThreads[ID], keywords, opOnly));
+    return Index.sortedThreadIDs.filter((ID: number) => Index.searchMatch(Index.parsedThreads[ID], keywords, opOnly));
   },
 
   // Keyword terms to highlight in the rendered results. Flag tokens like `op:`
@@ -1673,7 +1681,7 @@ var Index = {
   // giving Custom CSS a hook to style the whole matching post. Driven off the same
   // ranges the highlight uses, so the marker tracks the visible matches — and works
   // even where the Custom Highlight API is unsupported and no text paint appears.
-  markMatchedPosts(ranges) {
+  markMatchedPosts(ranges: Range[]) {
     for (const range of ranges) {
       const node = range.startContainer;
       const el = node.nodeType === Node.TEXT_NODE ? node.parentElement : (node as Element);
@@ -1685,7 +1693,7 @@ var Index = {
   // the matched text where the targeted field is visible, and glow the relevant
   // icon/thumbnail where the value isn't shown as text or the body is hidden
   // (catalog mode). `match` is the [, fields, pattern, flags] from parseRegexQuery.
-  highlightRegexSearch(match) {
+  highlightRegexSearch(match: RegExpMatchArray) {
     let rx;
     try {
       // Force the global flag so rangesFor's exec loop advances; keep the user's
@@ -1695,7 +1703,7 @@ var Index = {
       SearchHighlight.setRanges(INDEX_SEARCH_HL, []);
       return;
     }
-    const fields = match[1].split('+').filter(f => SEARCH_FIELD_TARGETS[f]);
+    const fields = match[1].split('+').filter((f: string) => SEARCH_FIELD_TARGETS[f]);
     const ranges: Range[] = [];
     for (const tile of Index.root.children) {
       if (tile.tagName === 'HR') { continue; }
@@ -1732,7 +1740,7 @@ var Index = {
     SearchHighlight.setRanges(INDEX_SEARCH_HL, ranges);
   },
 
-  searchMatch(obj, keywords, opOnly) {
+  searchMatch(obj: any, keywords: string[], opOnly: boolean) { // loose: parsed-thread JSON
     const text = Index.searchText(obj, opOnly);
     for (var keyword of keywords) {
       if (-1 === text.indexOf(keyword)) { return false; }
@@ -1745,7 +1753,7 @@ var Index = {
   // keeps the thread in the results (and gets painted by highlightSearch); the
   // `op:` flag asks for OP text alone. Both variants are cached on the
   // parsed-thread object, which parseThreadList rebuilds on every refresh.
-  searchText(obj, opOnly) {
+  searchText(obj: any, opOnly: boolean) { // loose: parsed-thread JSON
     if (obj._searchTextOP == null) {
       const {info, file} = obj;
       if (info.comment == null) { info.comment = g.SITE!.Build.parseComment(info.commentHTML.innerHTML); }
@@ -1783,7 +1791,7 @@ var Index = {
   // Record an inline-expanded thread's full text into the search corpus so the
   // index search reaches content past the preview replies *while the thread is
   // expanded and visible*. `postsData` is the raw thread JSON (`response.posts`).
-  setExpandedThreadText(threadID, postsData) {
+  setExpandedThreadText(threadID: number, postsData: any) { // loose: raw thread posts JSON
     if (!postsData) { return; }
     const parts: string[] = [];
     for (var data of postsData) {
@@ -1799,7 +1807,7 @@ var Index = {
 
   // Drop a thread's expanded text from the search corpus when it is collapsed,
   // so a collapsed thread is never matched on text the user can no longer see.
-  clearExpandedThreadText(threadID) {
+  clearExpandedThreadText(threadID: number) {
     delete Index.expandedSearchText[threadID];
   }
 };

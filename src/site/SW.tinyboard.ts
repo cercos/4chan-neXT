@@ -4,6 +4,12 @@ import $ from "../platform/$";
 import $$ from "../platform/$$";
 import { dict } from "../platform/helpers";
 import SWYotsuba from "./SW.yotsuba";
+import type Post from "../classes/Post";
+import type Thread from "../classes/Thread";
+
+type IDArg = { siteID?: string; boardID?: string; threadID?: string | number; postID?: string | number };
+type SiteBoardArg = { siteID: string; boardID: string };
+type TBArg = { siteID: string; boardID: string; threadID?: string | number };
 
 /*
  * decaffeinate suggestions:
@@ -58,7 +64,7 @@ const SWTinyboard = {
     return false;
   },
 
-  awaitBoard(cb) {
+  awaitBoard(cb: () => void) {
     let reactUI;
     if (reactUI = $.id('react-ui')) {
       const s = (this.selectors = Object.create(this.selectors));
@@ -71,35 +77,35 @@ const SWTinyboard = {
   },
 
   urls: {
-    thread({siteID, boardID, threadID}, isArchived) {
+    thread({siteID, boardID, threadID}: TBArg, isArchived?: boolean) {
       return `${Conf['siteProperties'][siteID]?.root || `http://${siteID}/`}${boardID}/${isArchived ? 'archive/' : ''}res/${threadID}.html`;
     },
-    post({postID})                   { return `#${postID}`; },
-    index({siteID, boardID})          { return `${Conf['siteProperties'][siteID]?.root || `http://${siteID}/`}${boardID}/`; },
-    catalog({siteID, boardID})          { return `${Conf['siteProperties'][siteID]?.root || `http://${siteID}/`}${boardID}/catalog.html`; },
-    threadJSON({siteID, boardID, threadID}, isArchived) {
+    post({postID}: IDArg)                   { return `#${postID}`; },
+    index({siteID, boardID}: TBArg)          { return `${Conf['siteProperties'][siteID]?.root || `http://${siteID}/`}${boardID}/`; },
+    catalog({siteID, boardID}: TBArg)          { return `${Conf['siteProperties'][siteID]?.root || `http://${siteID}/`}${boardID}/catalog.html`; },
+    threadJSON({siteID, boardID, threadID}: TBArg, isArchived?: boolean) {
       const root = Conf['siteProperties'][siteID]?.root;
       if (root) { return `${root}${boardID}/${isArchived ? 'archive/' : ''}res/${threadID}.json`; } else { return ''; }
     },
-    archivedThreadJSON(thread) {
+    archivedThreadJSON(thread: TBArg) {
       return SWTinyboard.urls.threadJSON(thread, true);
     },
-    threadsListJSON({siteID, boardID}) {
+    threadsListJSON({siteID, boardID}: TBArg) {
       const root = Conf['siteProperties'][siteID]?.root;
       if (root) { return `${root}${boardID}/threads.json`; } else { return ''; }
     },
-    archiveListJSON({siteID, boardID}) {
+    archiveListJSON({siteID, boardID}: TBArg) {
       const root = Conf['siteProperties'][siteID]?.root;
       if (root) { return `${root}${boardID}/archive/archive.json`; } else { return ''; }
     },
-    catalogJSON({siteID, boardID}) {
+    catalogJSON({siteID, boardID}: TBArg) {
       const root = Conf['siteProperties'][siteID]?.root;
       if (root) { return `${root}${boardID}/catalog.json`; } else { return ''; }
     },
-    file({siteID, boardID}, filename) {
+    file({siteID, boardID}: TBArg, filename: string) {
       return `${Conf['siteProperties'][siteID]?.root || `http://${siteID}/`}${boardID}/${filename}`;
     },
-    thumb(board, filename) {
+    thumb(board: TBArg, filename: string) {
       return SWTinyboard.urls.file(board, filename);
     }
   },
@@ -186,7 +192,7 @@ $\
   },
 
   Build: {
-    parseJSON(data, board) {
+    parseJSON(data: any, board: SiteBoardArg) { // loose: data is the raw 4chan API JSON post object (no shared type)
       const o: any = SWYotsuba.Build.parseJSON(data, board); // loose: built post object, accessed via dynamic props
       if (data.ext === 'deleted') {
         delete o.file;
@@ -221,7 +227,7 @@ $\
       return o;
     },
 
-    parseJSONFile(data, board) {
+    parseJSONFile(data: any, board: SiteBoardArg) { // loose: data is the raw 4chan API JSON post object (no shared type)
       const o = SWYotsuba.Build.parseJSONFile(data, board);
       const {siteID, boardID} = board;
       // Vichan/tinyboard JSON only exposes the source `ext`; thumbnails live in a
@@ -233,7 +239,7 @@ $\
       return o;
     },
 
-    parseComment(html) {
+    parseComment(html: string) {
       html = html
         .replace(/<br\b[^<]*>/gi, '\n')
         .replace(/<[^>]*>/g, '');
@@ -245,11 +251,11 @@ $\
     return $.el('div', {className: 'post reply'});
   },
 
-  isFileURL(url) {
+  isFileURL(url: URL | Location) {
     return /\/src\/[^\/]+/.test(url.pathname);
   },
 
-  preParsingFixes(board) {
+  preParsingFixes(board: HTMLElement) {
     // fixes effects of unclosed link in announcement
     let broken;
     if (broken = $('a > input[name="board"]', board)) {
@@ -257,7 +263,7 @@ $\
     }
   },
 
-  parseNodes(post, nodes) {
+  parseNodes(post: Post, nodes: any) { // loose: nodes is the DOM-node bag (.uniqueID/.nameBlock/.info), not a shared type
     // Add vichan's span.poster_id around the ID if not already present.
     let m;
     if (nodes.uniqueID) { return; }
@@ -279,15 +285,15 @@ $\
     }
   },
 
-  parseDate(node) {
-    let date = Date.parse(node.getAttribute('datetime')?.trim());
+  parseDate(node: HTMLElement) {
+    let date = Date.parse(node.getAttribute('datetime')?.trim() as string);
     if (!isNaN(date)) { return new Date(date); }
-    date = Date.parse(node.textContent.trim() + ' UTC'); // e.g. onesixtwo.club
+    date = Date.parse((node.textContent as string).trim() + ' UTC'); // e.g. onesixtwo.club
     if (!isNaN(date)) { return new Date(date); }
     return undefined;
   },
 
-  parseFile(post, file) {
+  parseFile(post: Post, file: any) { // loose: file is the in-progress DOM file bag (.text/.link/.thumb nodes), not the finished File interface
     let info, infoNode;
     const {text, link, thumb} = file;
     if ($.x(`ancestor::${this.xpath.postContainer}[1]`, text) !== post.nodes.root) { return false; } // file belongs to a reply
@@ -309,16 +315,16 @@ $\
     return true;
   },
 
-  isThumbExpanded(file) {
+  isThumbExpanded(file: any) { // loose: file is the in-progress DOM file bag (.thumb node), not the finished File interface
     // Detect old Tinyboard image expansion that changes src attribute on thumbnail.
     return $.hasClass(file.thumb.parentNode, 'expanded') || (file.thumb.parentNode.dataset.expanded === 'true');
   },
 
-  isLinkified(link) {
+  isLinkified(link: HTMLAnchorElement) {
     return /\bnofollow\b/.test(link.rel);
   },
 
-  catalogPin(threadRoot) {
+  catalogPin(threadRoot: HTMLElement) {
     return threadRoot.dataset.sticky = 'true';
   }
 };

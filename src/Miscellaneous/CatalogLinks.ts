@@ -93,7 +93,7 @@ var CatalogLinks = {
     return CatalogLinks.set(this.checked);
   },
 
-  set(useCatalog) {
+  set(useCatalog: boolean) {
     Conf['Header catalog links'] = useCatalog;
     CatalogLinks.setLinks(Header.boardList);
     CatalogLinks.setLinks(Header.bottomBoardList);
@@ -102,7 +102,7 @@ var CatalogLinks = {
   },
 
   // Also called by Header when board lists are loaded / generated.
-  setLinks(list) {
+  setLinks(list: HTMLElement | null | undefined) {
     if ((!(CatalogLinks.enabled ?? Conf['Catalog Links'])) || !list) { return; }
 
     // do not transform links unless they differ from the expected value at most by this tail
@@ -147,13 +147,13 @@ var CatalogLinks = {
     }
   },
 
-  external({siteID, boardID}) {
+  external({siteID, boardID}: {siteID: string; boardID: string}) {
     if (!CatalogLinks.externalList) { CatalogLinks.externalParse(); }
     const external = (CatalogLinks.externalList[`${siteID}/${boardID}`] || CatalogLinks.externalList[`${siteID}/*`]);
     if (external) { return external.replace(/%board/g, boardID); } else { return undefined; }
   },
 
-  jsonIndex(board, hash) {
+  jsonIndex(board: {siteID: string; boardID: string}, hash: string) {
     if ((g.SITE!.ID === board.siteID) && (g.BOARD!.ID === board.boardID) && (g.VIEW === 'index')) {
       return hash;
     } else {

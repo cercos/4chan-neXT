@@ -23,17 +23,17 @@ export default class Callbacks {
     this.CatalogThreadNative = new Callbacks('Catalog Thread');
   }
 
-  constructor(type) {
+  constructor(type: string) {
     this.type = type;
     this.keys = [];
   }
 
-  push({name, cb}) {
+  push({name, cb}: { name: string; cb: (this: any) => void }) {
     if (!this[name]) { this.keys.push(name); }
     return this[name] = cb;
   }
 
-  execute(node, keys=this.keys, force=false) {
+  execute(node: any, keys=this.keys, force=false) {
     let errors;
     if (node.callbacksExecuted && !force) { return; }
     node.callbacksExecuted = true;

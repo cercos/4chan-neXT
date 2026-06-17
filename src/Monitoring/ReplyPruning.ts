@@ -4,6 +4,7 @@ import UI from "../General/UI";
 import { g, Conf, E, d } from "../globals/globals";
 import $ from "../platform/$";
 import QuoteThreading from "../Quotelinks/QuoteThreading";
+import type Post from "../classes/Post";
 
 /*
  * decaffeinate suggestions:
@@ -78,7 +79,7 @@ var ReplyPruning = {
     return ReplyPruning.active = this.checked;
   },
 
-  showIfHidden(id) {
+  showIfHidden(id: string) {
     if (ReplyPruning.container && $(`#${id}`, ReplyPruning.container)) {
       ReplyPruning.inputs.enabled.checked = false;
       return $.event('change', null, ReplyPruning.inputs.enabled);
@@ -97,7 +98,7 @@ var ReplyPruning = {
       }
     }
 
-    this.posts.forEach(function(post) {
+    this.posts.forEach(function(post: Post) {
       if (post.isReply) {
         ReplyPruning.total++;
         if (post.file) { return ReplyPruning.totalFiles++; }
@@ -123,7 +124,7 @@ var ReplyPruning = {
     return ReplyPruning.update();
   },
 
-  updateCount(e) {
+  updateCount(e: CustomEvent) {
     if (e.detail[404]) { return; }
     for (var fullID of e.detail.newPosts) {
       ReplyPruning.total++;

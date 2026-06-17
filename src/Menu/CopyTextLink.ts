@@ -1,3 +1,4 @@
+import type Post from "../classes/Post";
 import { g, Conf, d } from "../globals/globals";
 import $ from "../platform/$";
 import Menu from "./Menu";
@@ -24,7 +25,7 @@ var CopyTextLink = {
     return Menu.menu.addEntry({
       el: a,
       order: 12,
-      open(post) {
+      open(post: Post) {
         CopyTextLink.text = (post.origin || post).commentOrig();
         return true;
       }

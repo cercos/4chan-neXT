@@ -61,7 +61,7 @@ var ImageExpand = {
         return ImageExpand.expand(this);
 
       } else if (this.file.isExpanded && this.file.isVideo) {
-        Volume.setup(this.file.fullImage);
+        Volume.setup(this.file.fullImage as HTMLVideoElement);
         ImageExpand.setupVideoCB(this);
         return ImageExpand.setupVideo(this, !(this.origin.file.fullImage as HTMLVideoElement)?.paused || this.origin.file.wasPlaying, (this.file.fullImage as HTMLVideoElement).controls);
       }
@@ -74,7 +74,7 @@ var ImageExpand = {
   },
 
   cb: {
-    toggle(e) {
+    toggle(this: HTMLElement, e: MouseEvent) {
       const post = Get.postFromNode(this);
       if (!post?.file) { return; }
       if (e.shiftKey && Conf['MD5 Quick Filter in Threads']) {
@@ -95,10 +95,10 @@ var ImageExpand = {
     },
 
     toggleAll() {
-      let func;
+      let func: (post: Post, src?: string) => void;
       $.event('CloseMenu');
       const threadRoot = Nav.getThread();
-      const toggle = function(post) {
+      const toggle = function(post: Post) {
         const {file} = post;
         if (!file || (!file.isImage && !file.isVideo) || !doc.contains(post.nodes.root)) { return; }
         if (ImageExpand.on &&
@@ -152,9 +152,9 @@ var ImageExpand = {
     }
   },
 
-  toggle(post) {
+  toggle(post: Post) {
     if (!post.file.isExpanding && !post.file.isExpanded) {
-      post.file.scrollIntoView = Conf['Scroll into view'];
+      (post.file as any).scrollIntoView = Conf['Scroll into view']; // loose: File interface lacks scrollIntoView (shared-decl change deferred)
       ImageExpand.expand(post);
       return;
     }
@@ -172,7 +172,7 @@ var ImageExpand = {
     }
   },
 
-  contract(post) {
+  contract(post: Post) {
     let bottom, el, oldHeight, scrollY;
     const {file} = post;
 
@@ -186,18 +186,18 @@ var ImageExpand = {
     $.rmClass(post.nodes.root, 'expanded-image');
     $.rmClass(file.thumb,      'expanding');
     $.rm(file.videoControls);
-    file.thumbLink.href   = file.url;
-    file.thumbLink.target = '_blank';
+    (file.thumbLink as HTMLAnchorElement).href   = file.url;
+    (file.thumbLink as HTMLAnchorElement).target = '_blank';
     for (var x of ['isExpanding', 'isExpanded', 'videoControls', 'wasPlaying', 'scrollIntoView']) {
-      delete file[x];
+      delete (file as any)[x]; // loose: dynamic key delete over File props (shared-decl change deferred)
     }
 
     if (!el) { return; }
 
     if (doc.contains(el)) {
-      if (bottom <= 0) {
+      if (bottom! <= 0) {
         // For images entirely above us, scroll to remain in place.
-        window.scrollBy(0, ((scrollY - window.scrollY) + d.body.clientHeight) - oldHeight);
+        window.scrollBy(0, ((scrollY! - window.scrollY) + d.body.clientHeight) - oldHeight!);
       } else {
         // For images not above us that would be moved above us, scroll to the thumbnail.
         (Header as any).scrollToIfNeeded(post.nodes.root);
@@ -211,9 +211,9 @@ var ImageExpand = {
     $.off(el, 'error', ImageExpand.error);
     ImageCommon.pushCache(el);
     if (file.isVideo) {
-      ImageCommon.pause(el);
+      ImageCommon.pause(el as HTMLVideoElement);
       for (var eventName in ImageExpand.videoCB) {
-        var cb = ImageExpand.videoCB[eventName];
+        var cb = ImageExpand.videoCB[eventName as keyof typeof ImageExpand.videoCB];
         $.off(el, eventName, cb);
       }
     }
@@ -277,7 +277,7 @@ var ImageExpand = {
       thumbLink.removeAttribute('target');
 
       (el as HTMLVideoElement).loop = true;
-      Volume.setup(el);
+      Volume.setup(el as HTMLVideoElement);
       ImageExpand.setupVideoCB(post);
     }
 
@@ -310,7 +310,7 @@ var ImageExpand = {
     }
   },
 
-  completeExpand(post) {
+  completeExpand(post: Post) {
     const {file} = post;
     if (!file.isExpanding) { return; } // contracted before the image loaded
 
@@ -321,7 +321,7 @@ var ImageExpand = {
     $.addClass(post.nodes.root, 'expanded-image');
     $.rmClass(file.thumb,      'expanding');
     file.isExpanded = true;
-    delete file.isExpanding;
+    delete (file as any).isExpanding; // loose: File.isExpanding declared non-optional (shared-decl change deferred)
 
     // Scroll to keep our place in the thread when images are expanded above us.
     if (doc.contains(post.nodes.root) && (bottom <= 0)) {
@@ -329,11 +329,11 @@ var ImageExpand = {
     }
 
     // Scroll to display full image.
-    if (file.scrollIntoView) {
-      delete file.scrollIntoView;
-      const imageBottom = Math.min(doc.clientHeight - file.fullImage.getBoundingClientRect().bottom - 25, Header.getBottomOf(file.fullImage));
+    if ((file as any).scrollIntoView) { // loose: File interface lacks scrollIntoView (shared-decl change deferred)
+      delete (file as any).scrollIntoView;
+      const imageBottom = Math.min(doc.clientHeight - file.fullImage!.getBoundingClientRect().bottom - 25, Header.getBottomOf(file.fullImage!));
       if (imageBottom < 0) {
-        window.scrollBy(0, Math.min(-imageBottom, Header.getTopOf(file.fullImage)));
+        window.scrollBy(0, Math.min(-imageBottom, Header.getTopOf(file.fullImage!)));
       }
     }
 
@@ -365,15 +365,15 @@ var ImageExpand = {
     let mousedown = false;
     return {
       mouseover() { return mousedown = false; },
-      mousedown(e) { if (e.button === 0) { return mousedown = true; } },
-      mouseup(e) { if (e.button === 0) { return mousedown = false; } },
-      mouseout(this: HTMLElement, e) { if (((e.buttons & 1) || mousedown) && (e.clientX <= this.getBoundingClientRect().left)) { return ImageExpand.toggle(Get.postFromNode(this)); } }
+      mousedown(e: MouseEvent) { if (e.button === 0) { return mousedown = true; } },
+      mouseup(e: MouseEvent) { if (e.button === 0) { return mousedown = false; } },
+      mouseout(this: HTMLElement, e: MouseEvent) { if (((e.buttons & 1) || mousedown) && (e.clientX <= this.getBoundingClientRect().left)) { return ImageExpand.toggle(Get.postFromNode(this)!); } }
     };
   })(),
 
-  setupVideoCB(post) {
+  setupVideoCB(post: Post) {
     for (var eventName in ImageExpand.videoCB) {
-      var cb = ImageExpand.videoCB[eventName];
+      var cb = ImageExpand.videoCB[eventName as keyof typeof ImageExpand.videoCB];
       $.on(post.file.fullImage, eventName, cb);
     }
     if (post.file.videoControls) {
@@ -381,7 +381,7 @@ var ImageExpand = {
     }
   },
 
-  error() {
+  error(this: HTMLImageElement) {
     const post = Get.postFromNode(this);
     $.rm(this);
     if (!post?.file) { return; }
@@ -398,7 +398,7 @@ var ImageExpand = {
     if (ImageCommon.isFromArchive(this)) {
       return ImageExpand.contract(post);
     }
-    return ImageCommon.error(this, post, post.file, 10 * SECOND, function(URL) {
+    return ImageCommon.error(this, post, post.file, 10 * SECOND, function(URL: string | null | undefined) {
       if (post.file.isExpanding || post.file.isExpanded) {
         ImageExpand.contract(post);
         if (URL) { return ImageExpand.expand(post, URL); }
@@ -419,8 +419,8 @@ var ImageExpand = {
       const {createSubEntry} = ImageExpand.menu;
       const subEntries: any[] = [];
       for (var name in Config.imageExpansion) {
-        var conf = Config.imageExpansion[name];
-        subEntries.push(createSubEntry(name, conf[1]));
+        var conf = Config.imageExpansion[name as keyof typeof Config.imageExpansion];
+        subEntries.push(createSubEntry(name, conf[1] as string));
       }
 
       return Header.menu.addEntry({
@@ -430,7 +430,7 @@ var ImageExpand = {
       });
     },
 
-    createSubEntry(name, desc) {
+    createSubEntry(name: string, desc: string) {
       const label = UI.checkbox(name, name);
       label.title = desc;
       const input = label.firstElementChild as HTMLInputElement;

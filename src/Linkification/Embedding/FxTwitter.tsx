@@ -21,8 +21,8 @@ export default function EmbedFxTwitter(a: HTMLAnchorElement): HTMLElement {
 
     // console.log(tweet);
 
-    function renderMedia(tweet): EscapedHtml[] {
-      return tweet.media?.all?.map(media => {
+    function renderMedia(tweet: any): EscapedHtml[] { // loose: raw FxTwitter API JSON, no shared type
+      return tweet.media?.all?.map((media: any) => { // loose: raw FxTwitter media JSON
         switch (media.type) {
           case 'photo':
             return <div class="fxt-media">
@@ -44,14 +44,14 @@ export default function EmbedFxTwitter(a: HTMLAnchorElement): HTMLElement {
       }) || [];
     }
 
-    function renderDate(tweet) {
+    function renderDate(tweet: any) { // loose: raw FxTwitter API JSON, no shared type
       return Time.format(new Date(tweet.created_at));
     }
 
-    function renderPoll(tweet): EscapedHtml {
+    function renderPoll(tweet: any): EscapedHtml { // loose: raw FxTwitter API JSON, no shared type
       let maxPercentage = 0;
       let maxChoiceIndex = -1;
-      tweet.poll.choices.forEach((choice, index) => {
+      tweet.poll.choices.forEach((choice: any, index: number) => { // loose: raw FxTwitter poll choice JSON
         if (choice.percentage > maxPercentage) {
           maxPercentage = choice.percentage;
           maxChoiceIndex = index;
@@ -59,7 +59,7 @@ export default function EmbedFxTwitter(a: HTMLAnchorElement): HTMLElement {
       });
 
       return <div class="fxt-poll">
-        {...tweet.poll.choices.map((choice, index) =>
+        {...tweet.poll.choices.map((choice: any, index: number) => // loose: raw FxTwitter poll choice JSON
           <div class={`fxt-choice ${index === maxChoiceIndex ? 'highlight' : ''}`}>
             <span class="fxt-choice_label">{choice.label}</span>
             <span class="fxt-choice_percentage">{choice.percentage}%</span>
@@ -70,7 +70,7 @@ export default function EmbedFxTwitter(a: HTMLAnchorElement): HTMLElement {
       </div>;
     }
 
-    function renderTranslation(tweet): EscapedHtml | '' {
+    function renderTranslation(tweet: any): EscapedHtml | '' { // loose: raw FxTwitter API JSON, no shared type
       if (!tweet?.translation?.target_lang || tweet?.translation?.source_lang === tweet?.translation?.target_lang) {
         return '';
       }
@@ -81,7 +81,7 @@ export default function EmbedFxTwitter(a: HTMLAnchorElement): HTMLElement {
       </>
     }
 
-    function renderMeta(tweet): EscapedHtml {
+    function renderMeta(tweet: any): EscapedHtml { // loose: raw FxTwitter API JSON, no shared type
       return <div class="fxt-meta">
         <a class="fxt-meta_profile" href={tweet.author.url} title={tweet.author.description} target="_blank"
           referrerpolicy="no-referrer">
@@ -117,7 +117,7 @@ export default function EmbedFxTwitter(a: HTMLAnchorElement): HTMLElement {
       return result;
     }
 
-    function renderCommunityNote(note) {
+    function renderCommunityNote(note: any) { // loose: raw FxTwitter API JSON, no shared type
       const content: (string | EscapedHtml)[] = [];
       let i = 0;
       if (note.entities) {
@@ -139,13 +139,13 @@ export default function EmbedFxTwitter(a: HTMLAnchorElement): HTMLElement {
       </div>;
     }
 
-    async function renderQuote(quote): Promise<EscapedHtml> {
+    async function renderQuote(quote: any): Promise<EscapedHtml> { // loose: raw FxTwitter API JSON, no shared type
       return <div class="fxt-quote_container">
         {await renderTweet(quote, 'quote')}
       </div>
     }
 
-    async function renderReplies(tweet) {
+    async function renderReplies(tweet: any) { // loose: raw FxTwitter API JSON, no shared type
       const replies: EscapedHtml[] = [];
       let depth = 0;
       while (tweet.replying_to && tweet.replying_to_status && depth < maxReplies) {
@@ -175,7 +175,7 @@ export default function EmbedFxTwitter(a: HTMLAnchorElement): HTMLElement {
       return <div class="fxt-reply_container">{...replies}</div>;
     }
 
-    async function renderTweet(tweet, type: 'quote' | 'reply' | 'original'): Promise<EscapedHtml> {
+    async function renderTweet(tweet: any, type: 'quote' | 'reply' | 'original'): Promise<EscapedHtml> { // loose: raw FxTwitter API JSON, no shared type
       const media = renderMedia(tweet);
       const quote = (tweet?.quote) ? await renderQuote(tweet.quote) : ''
 
@@ -221,7 +221,7 @@ export default function EmbedFxTwitter(a: HTMLAnchorElement): HTMLElement {
       </article>;
     }
 
-    async function renderFullTweet(tweet) {
+    async function renderFullTweet(tweet: any) { // loose: raw FxTwitter API JSON, no shared type
       const mainTweetHTML = await renderTweet(tweet, 'original');
       const repliesHTML = tweet.replying_to ? await renderReplies(tweet) : '';
       return <>{repliesHTML}{mainTweetHTML}</>;

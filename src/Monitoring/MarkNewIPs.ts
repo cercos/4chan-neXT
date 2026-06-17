@@ -1,6 +1,7 @@
 import Callbacks from "../classes/Callbacks";
 import { g, Conf, d } from "../globals/globals";
 import $ from "../platform/$";
+import type Post from "../classes/Post";
 
 /*
  * decaffeinate suggestions:
@@ -25,7 +26,7 @@ var MarkNewIPs = {
     return $.on(d, 'ThreadUpdate', MarkNewIPs.onUpdate);
   },
 
-  onUpdate(e) {
+  onUpdate(e: CustomEvent) {
     let fullID;
     const {ipCount, postCount, newPosts, deletedPosts} = e.detail;
     if (ipCount == null) { return; }
@@ -49,7 +50,7 @@ var MarkNewIPs = {
     return MarkNewIPs.postCount = postCount;
   },
 
-  markNew(post, ipCount) {
+  markNew(post: Post, ipCount: number) {
     const suffix = ((Math.floor(ipCount / 10)) % 10) === 1 ?
       'th'
     :
@@ -64,7 +65,7 @@ var MarkNewIPs = {
     return $.addClass(post.nodes.root, 'new-ip');
   },
 
-  markOld(post) {
+  markOld(post: Post) {
     post.nodes.nameBlock.title = 'Not the first post from this IP.';
     return $.addClass(post.nodes.root, 'old-ip');
   }

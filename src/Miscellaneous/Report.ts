@@ -11,6 +11,8 @@ import { Conf, d, doc, g } from "../globals/globals";
  * Full docs: https://github.com/decaffeinate/decaffeinate/blob/main/docs/suggestions.md
  */
 
+type ReportResult = [string, { success?: string; error?: string }];
+
 var Report = {
   postID: null as any, // loose:
 
@@ -39,7 +41,7 @@ var Report = {
     return Report.fit('body');
   },
 
-  fit(selector) {
+  fit(selector: string) {
     let el;
     if (!((el = $(selector, doc)) && (getComputedStyle(el).visibility !== 'hidden'))) { return; }
     const dy = (el.getBoundingClientRect().bottom - doc.clientHeight) + 8;
@@ -79,7 +81,7 @@ var Report = {
       $.one(form, 'submit', function(this: HTMLFormElement, e) {
         if (!fieldset.hidden && enabled.checked) {
           e.preventDefault();
-          return Report.archiveSubmit(urls, reason.value, results => {
+          return Report.archiveSubmit(urls, reason.value, (results: ReportResult[]) => {
             this.action = '#archiveresults=' + encodeURIComponent(JSON.stringify(results));
             return this.submit();
           });
@@ -101,7 +103,7 @@ var Report = {
     }
   },
 
-  archiveSubmit(urls, reason, cb) {
+  archiveSubmit(urls: [string, string][], reason: string, cb: (results: ReportResult[]) => void) {
     const form = $.formData({
       board:  g.BOARD!.ID,
       num:    Report.postID,
@@ -123,7 +125,7 @@ var Report = {
     }
   },
 
-  archiveResults(results) {
+  archiveResults(results: ReportResult[]) {
     const fieldset = $.id('archive-report');
     for (var [name, response] of results) {
       var line = $.el('h3',

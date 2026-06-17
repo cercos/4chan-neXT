@@ -1688,8 +1688,9 @@ export const styleVariantKeys = [
 ];
 
 for (const k of styleVariantKeys) {
-  Config[`${k} SFW`] = Config[k];
-  Config[`${k} NSFW`] = Config[k];
+  const cfg = Config as Record<string, unknown>; // loose: dynamic style-variant keys not in static Config shape
+  cfg[`${k} SFW`] = cfg[k];
+  cfg[`${k} NSFW`] = cfg[k];
 }
 
 export default Config;

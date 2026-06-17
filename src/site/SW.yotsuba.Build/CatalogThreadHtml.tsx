@@ -1,7 +1,16 @@
 import h, { hFragment, EscapedHtml } from "../../globals/jsx";
+import type Thread from "../../classes/Thread";
 
 export default function generateCatalogThreadHtml(
-  thread, src, imgClass, data, postCount, fileCount, pageCount, staticPath, gifIcon,
+  thread: Thread,
+  src: string | undefined,
+  imgClass: string | undefined,
+  data: any, // loose: raw 4chan API catalog JSON thread object (no shared type); has tn_w/tn_h/bumplimit/imagelimit
+  postCount: number,
+  fileCount: number,
+  pageCount: number,
+  staticPath: string,
+  gifIcon: string,
 ): EscapedHtml {
   return <>
     <a class="catalog-link" href={`/${thread.board}/thread/${thread.ID}`}>

@@ -36,6 +36,17 @@ import nextSettingsDiff from '../config/nextSettingsDiff.json';
 
 export type StyleVariant = 'sfw' | 'nsfw';
 
+// Shape of an entry in Settings.sections (created by Settings.addSection).
+type SectionInfo = { title: string; hyphenatedTitle: string; open: (section: HTMLElement, globals?: typeof g) => void };
+
+// A row in a settings <select> fieldset (see Settings.addSelectRows).
+type SelectRow = { name: string; label: string; description?: string; options: [string, string][] };
+
+// Keys of Settings.stylingSectionKeys. Declared standalone (rather than as
+// `keyof typeof Settings.stylingSectionKeys` in a method parameter type) so the
+// Settings object literal's type does not reference itself during inference.
+type StylingSectionId = 'siteStyle' | 'highlights' | 'scrollbarMarkers' | 'textColors' | 'customCSS';
+
 // Name of the CSS Custom Highlight that paints settings-search term matches.
 const SETTINGS_SEARCH_HL = 'fourchanx-settings-search';
 
@@ -61,7 +72,13 @@ function nextStatusOf(key: string): '' | 'added' | 'changed' {
   return '';
 }
 
-var Settings = {
+// loose: `Settings` is a large self-referential singleton object literal whose
+// members reference `Settings` in their own signatures/defaults, so under
+// --noImplicitAny TS cannot infer the literal's type and reports TS7022. Its
+// full structural type is not practical to hand-author, and external modules
+// read late-assigned properties off this value, so an explicit `any` keeps both
+// this module and its consumers compiling without narrowing anything away.
+var Settings: any = {
   dialog: undefined as HTMLDivElement | undefined,
   searchQuery: '',
   searchTerms: [] as string[],
@@ -140,7 +157,7 @@ var Settings = {
   styleKeyBase(key: string): string {
     return key.replace(/ (SFW|NSFW)$/, '');
   },
-  prepareDrag(this: HTMLElement, e) {
+  prepareDrag(this: HTMLElement, e: Event) {
     const settingsWindow = $('#fourchanx-settings', Settings.dialog) as HTMLDivElement;
     const rect = settingsWindow.getBoundingClientRect();
     settingsWindow.style.left = `${rect.left}px`;
@@ -235,7 +252,7 @@ var Settings = {
   // after a StyleChan *uninstall* is guaranteed by initStylingSectionDefaults,
   // which resets every flag to true on board pages when StyleChan is absent —
   // so a section can never get stuck off with no checkbox to re-enable it.
-  stylingSectionEnabled(id: keyof typeof Settings.stylingSectionKeys): boolean {
+  stylingSectionEnabled(id: StylingSectionId): boolean {
     return Conf[Settings.stylingSectionKeys[id]] !== false;
   },
 
@@ -288,14 +305,14 @@ var Settings = {
   // checkbox + gray state from Conf (used by "Apply recommended settings").
   setupStylingSectionToggles(section: HTMLElement): () => void {
     const details = $$('details[data-styling-section]', section) as HTMLElement[];
-    const entries: { detail: HTMLElement; id: keyof typeof Settings.stylingSectionKeys; cb: HTMLInputElement }[] = [];
-    const syncOne = (detail: HTMLElement, id: keyof typeof Settings.stylingSectionKeys, cb: HTMLInputElement) => {
+    const entries: { detail: HTMLElement; id: StylingSectionId; cb: HTMLInputElement }[] = [];
+    const syncOne = (detail: HTMLElement, id: StylingSectionId, cb: HTMLInputElement) => {
       const on = Settings.stylingSectionEnabled(id);
       cb.checked = on;
       detail.classList.toggle('styling-section-off', !on);
     };
     for (const detail of details) {
-      const id = detail.dataset.stylingSection as keyof typeof Settings.stylingSectionKeys;
+      const id = detail.dataset.stylingSection as StylingSectionId;
       if (!id || !(id in Settings.stylingSectionKeys)) continue;
       const summary = $('summary', detail) as HTMLElement | null;
       if (!summary) continue;
@@ -362,7 +379,7 @@ var Settings = {
     $.event('CustomSiteThemeChanged');
   },
 
-  open(openSection) {
+  open(openSection: string) {
     let dialog, sectionToOpen;
     if (Settings.dialog) { return; }
     $.event('CloseMenu');
@@ -545,7 +562,7 @@ var Settings = {
     Settings.stylingEditingVariant = null;
   },
 
-  toggleAllDetails(open) {
+  toggleAllDetails(open: boolean) {
     if (!Settings.dialog) return;
     // Accordion mode is, by definition, one-open-at-a-time, so an "expand all"
     // is a contradiction the browser would override anyway. Ignore it loudly
@@ -661,7 +678,7 @@ var Settings = {
       'settings.accordionMode': false,
       'settings.windowLayout': '',
       'settings.detailsState': dict(),
-    }, prefs => {
+    }, (prefs: Record<string, any>) => {
       if (!Settings.dialog) return;
       Settings.rememberLayout = !!prefs['settings.rememberLayout'];
       Settings.highlightNext = !!prefs['settings.highlightNext'];
@@ -1058,7 +1075,7 @@ var Settings = {
     $.set('settings.windowLayout', layout);
   },
 
-  detailStateScope(root, sectionInfo) {
+  detailStateScope(root: HTMLElement, sectionInfo: SectionInfo | null) {
     let sectionTitle = sectionInfo?.title || '';
     if (sectionTitle === 'All Settings') {
       const block = root.closest('.settings-section-block') as HTMLElement | null;
@@ -1069,7 +1086,7 @@ var Settings = {
     return `section:${sectionTitle}`;
   },
 
-  detailsStateKey(details: HTMLDetailsElement, sectionInfo) {
+  detailsStateKey(details: HTMLDetailsElement, sectionInfo: SectionInfo | null) {
     const root = details.parentElement as HTMLElement | null;
     if (!root) return '';
     const scope = Settings.detailStateScope(root, sectionInfo);
@@ -1080,7 +1097,7 @@ var Settings = {
     return `${scope}|${summary}|${index}`;
   },
 
-  decorateDetailsWithKeys(sectionRoot, sectionInfo, applyRememberedState = true) {
+  decorateDetailsWithKeys(sectionRoot: HTMLElement, sectionInfo: SectionInfo | null, applyRememberedState = true) {
     for (const details of $$('details', sectionRoot)) {
       const shouldRememberState = (details as HTMLElement).dataset.rememberLayout !== 'false';
       const key = Settings.detailsStateKey(details as HTMLDetailsElement, sectionInfo);
@@ -1114,7 +1131,7 @@ var Settings = {
     }
   },
 
-  getActiveSection() {
+  getActiveSection(): SectionInfo | null {
     const selectedTab = $('.tab-selected', Settings.dialog);
     if (!selectedTab) return null;
     for (const section of Settings.sections) {
@@ -1137,10 +1154,10 @@ var Settings = {
   // A haystack matches when every search term is found somewhere in it
   // (order-independent), so multi-word queries no longer need the words to
   // appear as one contiguous phrase. No terms means no match.
-  matchesQuery(haystack: string) {
+  matchesQuery(haystack: string): boolean {
     if (!Settings.searchTerms.length) return false;
     const text = haystack.toLowerCase();
-    return Settings.searchTerms.every(term => text.indexOf(term) >= 0);
+    return Settings.searchTerms.every((term: string) => text.indexOf(term) >= 0);
   },
 
   applySearch() {
@@ -1207,16 +1224,16 @@ var Settings = {
     }
   },
 
-  matchesSectionTitle(text, _query) {
+  matchesSectionTitle(text: string, _query?: string): boolean {
     if (!text || !Settings.searchTerms.length) return false;
     // Every term must hit the title as a whole word (order-independent), so a
     // multi-word query matches regardless of word order.
-    return Settings.searchTerms.every(term =>
+    return Settings.searchTerms.every((term: string) =>
       RegExp(`\\b${Settings.escapeRegExp(term)}\\b`, 'i').test(text));
   },
 
-  revealSearchMatch(node, root) {
-    let cur = node;
+  revealSearchMatch(node: Element | null, root: Element) {
+    let cur: Element | null = node;
     while (cur && cur !== root) {
       cur.classList.remove('settings-search-hidden');
       if (cur.tagName === 'DETAILS') {
@@ -1249,13 +1266,13 @@ var Settings = {
   // matching only a hidden data-name field), so the row's match is self-evident.
   hasVisibleMatch(rowEl: HTMLElement) {
     if (!Settings.searchTerms.length) return false;
-    return Settings.highlightableEls(rowEl).some(el => {
+    return Settings.highlightableEls(rowEl).some((el: Element) => {
       const text = (el.textContent || '').toLowerCase();
-      return Settings.searchTerms.some(term => text.indexOf(term) >= 0);
+      return Settings.searchTerms.some((term: string) => text.indexOf(term) >= 0);
     });
   },
 
-  highlightSettingRow(root, _query?) {
+  highlightSettingRow(root: ParentNode, _query?: string) {
     const els = Settings.highlightableEls(root);
     // Preferred path: paint matches with the CSS Custom Highlight API, which
     // covers every matching term (order-independent) without touching the DOM —
@@ -1267,7 +1284,7 @@ var Settings = {
     // Legacy fallback for browsers without the Highlight API: wrap matches in
     // <mark>, stashing the original text so an empty query can restore it.
     const rx = Settings.searchTerms.length
-      ? RegExp(`(${Settings.searchTerms.map(t => Settings.escapeRegExp(t)).join('|')})`, 'ig')
+      ? RegExp(`(${Settings.searchTerms.map((t: string) => Settings.escapeRegExp(t)).join('|')})`, 'ig')
       : null;
     for (const el of els) {
       const source = (el as HTMLElement).dataset.rawText ?? el.textContent ?? '';
@@ -1284,13 +1301,13 @@ var Settings = {
     }
   },
 
-  escapeRegExp(s) {
+  escapeRegExp(s: string) {
     return s.replace(/[.*+?^${}()|[\]\\]/g, '\\$&');
   },
 
-  sections: [],
+  sections: [] as SectionInfo[],
 
-  addSection(title, open) {
+  addSection(title: string | { detail: { title: string; open: SectionInfo['open'] } }, open?: SectionInfo['open']) {
     if (typeof title !== 'string') {
       ({title, open} = title.detail);
     }
@@ -1310,7 +1327,7 @@ var Settings = {
     Settings.renderSection(this);
   },
 
-  selectSectionTab(sectionInfo) {
+  selectSectionTab(sectionInfo: SectionInfo) {
     let selected;
     if (selected = $('.tab-selected', Settings.dialog)) {
       $.rmClass(selected, 'tab-selected');
@@ -1319,7 +1336,7 @@ var Settings = {
   },
 
   getAllSettingsSection() {
-    return Settings.sections.find(section => section.title === 'All Settings') || null;
+    return Settings.sections.find((section: SectionInfo) => section.title === 'All Settings') || null;
   },
 
   ensureAllSettingsRendered() {
@@ -1415,7 +1432,7 @@ var Settings = {
     $.after(shell, handle);
   },
 
-  attachTextareaResizers(section) {
+  attachTextareaResizers(section: HTMLElement) {
     for (const ta of $$('textarea:not(.custom-css-textarea)', section) as HTMLTextAreaElement[]) {
       if (ta.hidden) continue;
       Settings.prepareAutosaveTextarea(ta);
@@ -1428,7 +1445,7 @@ var Settings = {
     Settings.renderSection(section);
   },
 
-  renderSection(sectionInfo) {
+  renderSection(sectionInfo: SectionInfo) {
     const section = $('section', Settings.dialog);
     if (!section) return;
     const leavingStyling = Settings.renderedSection
@@ -1449,7 +1466,7 @@ var Settings = {
     if (leavingStyling) Settings.stylingEditingVariant = null;
   },
 
-  allSettings(section) {
+  allSettings(section: HTMLElement) {
     for (const sectionInfo of Settings.sections) {
       if (sectionInfo.title === 'All Settings') continue;
       const block = $.el('div', {
@@ -1467,7 +1484,7 @@ var Settings = {
   },
 
   warnings: {
-    localStorage(cb) {
+    localStorage(cb: (el: HTMLElement) => void) {
       if ($.cantSync) {
         const why = $.cantSet ? 'save your settings' : 'synchronize settings between tabs';
         cb($.el('li', {
@@ -1480,7 +1497,7 @@ Enable it on boards.${location.hostname.split('.')[1]}.org in your browser's pri
         );
       }
     },
-    ads(cb) {
+    ads(cb: (el: HTMLElement) => void) {
       $.onExists(doc, '.adg-rects > .desktop', ad => $.onExists(ad, 'iframe', function() {
         const url = Redirect.to('thread', {boardID: 'qa', threadID: 362590});
         cb($.el('li',
@@ -1497,20 +1514,20 @@ Enable it on boards.${location.hostname.split('.')[1]}.org in your browser's pri
   getMainSettingLookup() {
     const lookup = dict();
     for (const keyFS in Config.main) {
-      const obj = Config.main[keyFS];
+      const obj = Config.main[keyFS as keyof typeof Config.main];
       for (const key in obj) {
-        const arr = obj[key];
+        const arr = obj[key as keyof typeof obj];
         if (Array.isArray(arr)) lookup[key] = arr;
       }
     }
     return lookup;
   },
 
-  descriptionsAsTooltips() {
+  descriptionsAsTooltips(): boolean {
     return Conf['Settings Descriptions as Tooltips'] === true;
   },
 
-  useDescriptionTooltips(settingsWindow = Settings.dialog && $('#fourchanx-settings', Settings.dialog) as HTMLElement | null) {
+  useDescriptionTooltips(_settingsWindow?: HTMLElement | null): boolean {
     return Settings.descriptionsAsTooltips();
   },
 
@@ -1548,16 +1565,20 @@ Enable it on boards.${location.hostname.split('.')[1]}.org in your browser's pri
     }
   },
 
-  hasTouchDescriptionPointer() {
+  hasTouchDescriptionPointer(): boolean {
     return typeof window.matchMedia === 'function'
       && window.matchMedia('(hover: none) and (pointer: coarse)').matches;
   },
 
-  isTouchDescriptionMode(settingsWindow = Settings.dialog && $('#fourchanx-settings', Settings.dialog) as HTMLElement | null) {
+  isTouchDescriptionMode(settingsWindowArg?: HTMLElement | null): boolean {
+    const settingsWindow = arguments.length === 0
+      ? (Settings.dialog && $('#fourchanx-settings', Settings.dialog) as HTMLElement | null)
+      : settingsWindowArg;
     return !!settingsWindow?.classList.contains('settings-nav-collapsed') && Settings.hasTouchDescriptionPointer();
   },
 
-  applyDescriptionMode(root: HTMLElement | Document = Settings.dialog || d) {
+  applyDescriptionMode(rootArg?: HTMLElement | Document) {
+    const root: HTMLElement | Document = arguments.length === 0 ? (Settings.dialog || d) : rootArg!;
     const settingsWindow = $('#fourchanx-settings', Settings.dialog || d) as HTMLElement | null;
     const useTooltips = Settings.useDescriptionTooltips(settingsWindow);
     const touchDescriptions = Settings.isTouchDescriptionMode(settingsWindow);
@@ -1658,7 +1679,7 @@ Enable it on boards.${location.hostname.split('.')[1]}.org in your browser's pri
     return outer;
   },
 
-  addCheckboxes(root, obj, items, inputs, includeSetting = (_key: string) => true) {
+  addCheckboxes(root: HTMLElement, obj: Record<string, any>, items: Record<string, any>, inputs: Record<string, any>, includeSetting = (_key: string) => true) {
     const containers = [root];
     let count = 0;
     for (const key in obj) {
@@ -1707,7 +1728,7 @@ Enable it on boards.${location.hostname.split('.')[1]}.org in your browser's pri
     return count;
   },
 
-  selectGroup(obj, keys, baseLevel = 0) {
+  selectGroup(obj: Record<string, any>, keys: string[], baseLevel = 0) {
     const group = dict();
     for (const key of keys) {
       const arr = obj[key];
@@ -1719,7 +1740,14 @@ Enable it on boards.${location.hostname.split('.')[1]}.org in your browser's pri
     return group;
   },
 
-  renderMainGroups(section, options) {
+  renderMainGroups(section: HTMLElement, options: {
+    categories: any[];
+    includeWarnings?: boolean;
+    includeJSONIndex?: boolean;
+    includeHiddenCount?: boolean;
+    hideLegendFor?: string[];
+    includeSetting?: (key: string) => boolean;
+  }) {
     const {
       categories,
       includeWarnings,
@@ -1733,12 +1761,12 @@ Enable it on boards.${location.hostname.split('.')[1]}.org in your browser's pri
       const warnings = $.el('details',
         { hidden: true, open: true },
         { innerHTML: '<summary>Warnings</summary><ul></ul>' });
-      const addWarning = function(item) {
+      const addWarning = function(item: HTMLElement) {
         $.add($('ul', warnings), item);
         warnings.hidden = false;
       };
       for (const key in Settings.warnings) {
-        Settings.warnings[key](addWarning);
+        Settings.warnings[key as keyof typeof Settings.warnings](addWarning);
       }
       $.add(section, warnings);
     }
@@ -1755,7 +1783,7 @@ Enable it on boards.${location.hostname.split('.')[1]}.org in your browser's pri
         keyFS = cat.name;
         subgroups = cat.subgroups;
       }
-      const obj = Config.main[keyFS];
+      const obj = Config.main[keyFS as keyof typeof Config.main];
       if (!obj) continue;
 
       if (subgroups) {
@@ -1796,7 +1824,7 @@ Enable it on boards.${location.hostname.split('.')[1]}.org in your browser's pri
       if (root) Settings.addCheckboxes(root, Config.Index, items, inputs);
     }
 
-    $.get(items, function(items) {
+    $.get(items, function(items: Record<string, any>) {
       for (const key in items) {
         const val = items[key];
         if (!inputs[key]) continue;
@@ -1811,7 +1839,7 @@ Enable it on boards.${location.hostname.split('.')[1]}.org in your browser's pri
     const div = $.el('div',
       { innerHTML: '<button></button><span class="description">: Clear manually-hidden threads and posts on all boards. Reload the page to apply.' });
     const button = $('button', div);
-    $.get({ hiddenThreads: dict(), hiddenPosts: dict() }, function({ hiddenThreads, hiddenPosts }) {
+    $.get({ hiddenThreads: dict(), hiddenPosts: dict() }, function({ hiddenThreads, hiddenPosts }: { hiddenThreads: any; hiddenPosts: any }) {
       let board, ID, site, thread;
       let hiddenNum = 0;
       for (ID in hiddenThreads) {
@@ -1868,7 +1896,7 @@ Enable it on boards.${location.hostname.split('.')[1]}.org in your browser's pri
     else $.add(section, div);
   },
 
-  addSelectFieldset(section, title, rows) {
+  addSelectFieldset(section: HTMLElement, title: string, rows: SelectRow[]) {
     const fs = $.el('details',
       { open: true },
       { innerHTML: `<summary>${title}</summary>` });
@@ -1876,7 +1904,7 @@ Enable it on boards.${location.hostname.split('.')[1]}.org in your browser's pri
     $.add(section, fs);
   },
 
-  addSelectRows(root, rows) {
+  addSelectRows(root: HTMLElement, rows: SelectRow[]) {
     const items = dict();
     const inputs = dict();
     for (const row of rows) {
@@ -1908,7 +1936,7 @@ Enable it on boards.${location.hostname.split('.')[1]}.org in your browser's pri
       inputs[row.name] = select;
       $.add(root, div);
     }
-    $.get(items, function(items) {
+    $.get(items, function(items: Record<string, any>) {
       for (const key in items) {
         inputs[key].value = items[key];
       }
@@ -1916,7 +1944,7 @@ Enable it on boards.${location.hostname.split('.')[1]}.org in your browser's pri
     return inputs;
   },
 
-  general(section) {
+  general(section: HTMLElement) {
     Settings.renderMainGroups(section, {
       categories: [{
         name: 'Miscellaneous',
@@ -1930,7 +1958,7 @@ Enable it on boards.${location.hostname.split('.')[1]}.org in your browser's pri
     });
   },
 
-  interface(section) {
+  interface(section: HTMLElement) {
     const items = dict();
     const inputs = dict();
 
@@ -2027,7 +2055,7 @@ Enable it on boards.${location.hostname.split('.')[1]}.org in your browser's pri
 
     $.add(section, fsNav);
 
-    $.get(items, function(items) {
+    $.get(items, function(items: Record<string, any>) {
       for (const key in items) {
         const input = inputs[key];
         if (input.type === 'checkbox') {
@@ -2041,7 +2069,7 @@ Enable it on boards.${location.hostname.split('.')[1]}.org in your browser's pri
     });
   },
 
-  threadsAndPosts(section) {
+  threadsAndPosts(section: HTMLElement) {
     const items = dict();
     const inputs = dict();
 
@@ -2166,7 +2194,7 @@ Enable it on boards.${location.hostname.split('.')[1]}.org in your browser's pri
     $.add(fsUC, soundHint);
     $.add(section, fsUC);
 
-    $.get(items, function(items) {
+    $.get(items, function(items: Record<string, any>) {
       for (const key in items) {
         const input = inputs[key];
         if (input.type === 'checkbox') {
@@ -2179,7 +2207,7 @@ Enable it on boards.${location.hostname.split('.')[1]}.org in your browser's pri
     });
   },
 
-  addThreadWatcherFieldset(section) {
+  addThreadWatcherFieldset(section: HTMLElement) {
     const fs = $.el('details',
       { open: true },
       { innerHTML: '<summary>Thread Watcher</summary>' });
@@ -2221,8 +2249,8 @@ Enable it on boards.${location.hostname.split('.')[1]}.org in your browser's pri
     };
 
     for (const name of watcherOrder) {
-      if (!Config.threadWatcher[name]) continue;
-      const arr = Config.threadWatcher[name];
+      if (!Config.threadWatcher[name as keyof typeof Config.threadWatcher]) continue;
+      const arr = Config.threadWatcher[name as keyof typeof Config.threadWatcher] as any[];
       const description = arr[1] || '';
       const hoverDescription = Config.threadWatcher['Thread Watcher Thumbnail Hover']?.[1] || '';
       let div: HTMLDivElement;
@@ -2321,7 +2349,7 @@ Enable it on boards.${location.hostname.split('.')[1]}.org in your browser's pri
     $.add(fs, heightDiv);
 
     $.add(section, fs);
-    $.get(items, function(items) {
+    $.get(items, function(items: Record<string, any>) {
       for (const key in items) {
         const input = inputs[key];
         if (input.type === 'checkbox') {
@@ -2342,7 +2370,7 @@ Enable it on boards.${location.hostname.split('.')[1]}.org in your browser's pri
     });
   },
 
-  media(section) {
+  media(section: HTMLElement) {
     const items = dict();
     const inputs = dict();
     const lookup = Settings.getMainSettingLookup();
@@ -2366,7 +2394,7 @@ Enable it on boards.${location.hostname.split('.')[1]}.org in your browser's pri
       categories: ['Linkification']
     });
 
-    $.get(items, function(items) {
+    $.get(items, function(items: Record<string, any>) {
       for (const key in items) {
         const input = inputs[key];
         if (!input) continue;
@@ -2391,10 +2419,10 @@ Enable it on boards.${location.hostname.split('.')[1]}.org in your browser's pri
     );
   },
 
-  posting(section) {
+  posting(section: HTMLElement) {
       Settings.renderMainGroups(section, {
         categories: ['Posting and Captchas'],
-        includeSetting: key => ![
+        includeSetting: (key: string) => ![
           'Comment Preview',
           'Comment Preview Default Mode',
           'Comment Preview Attach Location',
@@ -2624,7 +2652,7 @@ Enable it on boards.${location.hostname.split('.')[1]}.org in your browser's pri
 
   },
 
-  styling(section) {
+  styling(section: HTMLElement) {
     let input: HTMLInputElement, name: string;
     $.extend(section, { innerHTML: StylingPage });
 
@@ -3647,7 +3675,7 @@ Enable it on boards.${location.hostname.split('.')[1]}.org in your browser's pri
       markers: Partial<Record<MarkerSlot, string>>,
     ) => {
       const list = Settings.savedHighlightPaletteList();
-      const existing = list.findIndex(p => p.name.toLowerCase() === name.toLowerCase());
+      const existing = list.findIndex((p: { name: string }) => p.name.toLowerCase() === name.toLowerCase());
       const entry = { name, colors, markers };
       if (existing >= 0) list[existing] = entry;
       else list.unshift(entry);
@@ -3881,7 +3909,7 @@ Enable it on boards.${location.hostname.split('.')[1]}.org in your browser's pri
       });
     }
     renderSavedPalettes();
-    $.get({ savedHighlightPalettes: Conf['savedHighlightPalettes'] }, ({ savedHighlightPalettes }) => {
+    $.get({ savedHighlightPalettes: Conf['savedHighlightPalettes'] }, ({ savedHighlightPalettes }: { savedHighlightPalettes: any }) => {
       Conf['savedHighlightPalettes'] = savedHighlightPalettes;
       renderSavedPalettes();
     });
@@ -4168,7 +4196,7 @@ Enable it on boards.${location.hostname.split('.')[1]}.org in your browser's pri
       you: { subject: 'Quotes you', extraClass: 'quotesYou', messageHTML },
       ghost: { subject: 'Ghost post', extraClass: 'from-archive', messageHTML },
     };
-    return states[state] || states.default;
+    return states[state as keyof typeof states] || states.default;
   },
 
   stylingPreviewCatalogState(state = 'default') {
@@ -4202,7 +4230,7 @@ Enable it on boards.${location.hostname.split('.')[1]}.org in your browser's pri
         excerpt: 'watched reply preview',
       }
     };
-    return states[state] || states.default;
+    return states[state as keyof typeof states] || states.default;
   },
 
   stylingPreviewContentHTML() {
@@ -5012,7 +5040,7 @@ Enable it on boards.${location.hostname.split('.')[1]}.org in your browser's pri
       'settings.customCSSEditorTheme': 'xt-system',
       'settings.customCSSEditorBracketHighlight': false,
       'settings.customCSSEditorAutocomplete': true,
-    }, prefs => {
+    }, (prefs: Record<string, any>) => {
       const theme = prefs['settings.customCSSEditorTheme'];
       const bracketHighlight = prefs['settings.customCSSEditorBracketHighlight'] !== false;
       const autocomplete = prefs['settings.customCSSEditorAutocomplete'] !== false;
@@ -6457,7 +6485,7 @@ Enable it on boards.${location.hostname.split('.')[1]}.org in your browser's pri
     setVar('--xt-catalog-filter-dead-link', catalogFilterPalette?.deadLink || '');
   },
 
-  autoTextPalette(rgb?: [number, number, number]) {
+  autoTextPalette(rgb?: [number, number, number]): { text: string; subject: string; link: string; quote: string; deadLink: string } {
     const bg = rgb || Settings.getTextBaseBackground();
     const lightText = '#f2f2f2';
     const darkText = '#111111';
@@ -6516,7 +6544,7 @@ Enable it on boards.${location.hostname.split('.')[1]}.org in your browser's pri
     return [out[0], out[1], out[2]];
   },
 
-  contrastRatio(fg: [number, number, number], bg: [number, number, number]) {
+  contrastRatio(fg: [number, number, number], bg: [number, number, number]): number {
     const l1 = Settings.relativeLuminance(fg);
     const l2 = Settings.relativeLuminance(bg);
     const hi = Math.max(l1, l2);
@@ -6524,7 +6552,7 @@ Enable it on boards.${location.hostname.split('.')[1]}.org in your browser's pri
     return (hi + 0.05) / (lo + 0.05);
   },
 
-  relativeLuminance(rgb: [number, number, number]) {
+  relativeLuminance(rgb: [number, number, number]): number {
     const toLinear = (channel: number) => {
       const c = channel / 255;
       return c <= 0.04045 ? c / 12.92 : Math.pow((c + 0.055) / 1.055, 2.4);
@@ -6654,9 +6682,9 @@ Enable it on boards.${location.hostname.split('.')[1]}.org in your browser's pri
     opacityKey:
       | 'Highlight Own Opacity' | 'Highlight You Opacity' | 'Highlight Ghost Opacity'
       | 'Catalog Highlight Own Opacity' | 'Catalog Highlight Watched Opacity',
-    baseBackground = Settings.getTextBaseBackground(),
+    baseBackground: [number, number, number] = Settings.getTextBaseBackground(),
     variant?: StyleVariant,
-  ) {
+  ): { text: string; subject: string; link: string; quote: string; deadLink: string } | null {
     // loose: styleConf reads as untyped here (TS2347), so drop the explicit type
     // arg; result is `any`, identical at runtime.
     const color = Settings.styleConf(colorKey, variant);
@@ -7066,11 +7094,11 @@ Enable it on boards.${location.hostname.split('.')[1]}.org in your browser's pri
 
   CUSTOM_SITE_THEME_PREFIX: 'custom:' as const,
 
-  isCustomSiteThemeValue(value: string) {
+  isCustomSiteThemeValue(value: string): boolean {
     return typeof value === 'string' && value.startsWith(Settings.CUSTOM_SITE_THEME_PREFIX);
   },
 
-  customSiteThemeName(value: string) {
+  customSiteThemeName(value: string): string {
     return Settings.isCustomSiteThemeValue(value)
       ? value.slice(Settings.CUSTOM_SITE_THEME_PREFIX.length)
       : '';
@@ -7091,7 +7119,7 @@ Enable it on boards.${location.hostname.split('.')[1]}.org in your browser's pri
   },
 
   findCustomSiteTheme(name: string) {
-    return Settings.customSiteThemeList().find(t => t.name === name) || null;
+    return Settings.customSiteThemeList().find((t: { name: string }) => t.name === name) || null;
   },
 
   nativeSiteThemes(): string[] {
@@ -7284,7 +7312,7 @@ Enable it on boards.${location.hostname.split('.')[1]}.org in your browser's pri
 
   removeCustomSiteTheme(name: string) {
     if (!name) return;
-    const list = Settings.customSiteThemeList().filter(t => t.name !== name);
+    const list = Settings.customSiteThemeList().filter((t: { name: string }) => t.name !== name);
     Conf['customSiteThemes'] = list;
     $.set('customSiteThemes', list);
     const activeValue = `${Settings.CUSTOM_SITE_THEME_PREFIX}${name}`;
@@ -7439,10 +7467,10 @@ Enable it on boards.${location.hostname.split('.')[1]}.org in your browser's pri
   exportOptionKeys() {
     const options: Record<string, string[]> = dict();
     const keysIn = (category: string) => {
-      const obj = Config.main[category] || dict();
+      const obj = Config.main[category as keyof typeof Config.main] || dict();
       const keys: string[] = [];
       for (const key in obj) {
-        if (Array.isArray(obj[key])) keys.push(key);
+        if (Array.isArray((obj as Record<string, any>)[key])) keys.push(key);
       }
       return keys;
     };
@@ -7690,13 +7718,13 @@ Enable it on boards.${location.hostname.split('.')[1]}.org in your browser's pri
     // Make sure to export the most recent data, but don't overwrite existing `Conf` object.
     const Conf2 = dict();
     $.extend(Conf2, Conf);
-    $.get(Conf2, function(Conf2) {
+    $.get(Conf2, function(Conf2: Record<string, any>) {
       // Don't export cached JSON data or the remembered checkbox state.
       delete Conf2['boardConfig'];
       delete Conf2['settings.exportGroups'];
       // Default every group to checked, unless the user has exported before,
       // in which case restore their last-used selection.
-      $.get('settings.exportGroups', null, function(items) {
+      $.get('settings.exportGroups', null, function(items: Record<string, any>) {
         const lastUsed = items['settings.exportGroups'];
         const defaultCheckedOptions: Record<string, boolean> = dict();
         for (const name of Settings.exportOptionOrder) {
@@ -7707,7 +7735,7 @@ Enable it on boards.${location.hostname.split('.')[1]}.org in your browser's pri
           action: 'Export',
           conf: Conf2,
           defaultCheckedGroups: defaultCheckedOptions,
-          onConfirm: checkedOptions => Settings.doExport(checkedOptions, Conf2)
+          onConfirm: (checkedOptions: Record<string, boolean>) => Settings.doExport(checkedOptions, Conf2)
         });
       });
     });
@@ -7720,13 +7748,13 @@ Enable it on boards.${location.hostname.split('.')[1]}.org in your browser's pri
       const option = Settings.optionForKey(key, keysByOption);
       if (checkedOptions[option]) out[key] = conf[key];
     }
-    const groups = Settings.exportOptionOrder.filter(name => checkedOptions[name]);
+    const groups = Settings.exportOptionOrder.filter((name: string) => checkedOptions[name]);
     // Remember the selection so the next export defaults to the same checkboxes.
     $.set('settings.exportGroups', checkedOptions);
     Settings.downloadExport({version: g.VERSION, date: Date.now(), groups, Conf: out});
   },
 
-  downloadExport(data) {
+  downloadExport(data: Record<string, any>) {
     const blob = new Blob([JSON.stringify(data, null, 2)], {type: 'application/json'});
     const url = URL.createObjectURL(blob);
     const tag = Settings.groupFilenameTag(data.groups);
@@ -7772,7 +7800,7 @@ Enable it on boards.${location.hostname.split('.')[1]}.org in your browser's pri
           title: 'Import Settings',
           action: 'Import',
           conf: data.Conf,
-          onConfirm: checkedOptions => Settings.doImport(data, checkedOptions)
+          onConfirm: (checkedOptions: Record<string, boolean>) => Settings.doImport(data, checkedOptions)
         });
       } catch (error) {
         const err = error instanceof Error ? error : new Error(String(error));
@@ -7822,7 +7850,7 @@ Enable it on boards.${location.hostname.split('.')[1]}.org in your browser's pri
     }
 
     if (allSelected) {
-      Settings.loadSettings(selected, function(err) {
+      Settings.loadSettings(selected, function(err: any) { // loose: storage callback error is untyped
         if (err) {
           output.textContent = 'Import failed due to an error.';
         } else if (confirm('Import successful. Reload now?')) {
@@ -7832,7 +7860,7 @@ Enable it on boards.${location.hostname.split('.')[1]}.org in your browser's pri
       return;
     }
 
-    $.set(selected.Conf, function(err) {
+    $.set(selected.Conf, function(err: any) { // loose: storage callback error is untyped
       if (err) {
         output.textContent = 'Import failed due to an error.';
       } else if (confirm('Import successful. Reload now?')) {
@@ -7874,7 +7902,7 @@ Enable it on boards.${location.hostname.split('.')[1]}.org in your browser's pri
     let hasAny = false;
     for (const sectionInfo of Settings.exportSectionOrder) {
       const hasSectionOption = !!presentGroups[sectionInfo.option];
-      const childOptions = (sectionInfo.children || []).filter(name => presentGroups[name]);
+      const childOptions = (sectionInfo.children || []).filter((name: string) => presentGroups[name]);
       const sectionOptions = [
         ...(hasSectionOption ? [sectionInfo.option] : []),
         ...childOptions
@@ -8019,10 +8047,10 @@ Enable it on boards.${location.hostname.split('.')[1]}.org in your browser's pri
     Settings.impExpPicker = null;
   },
 
-  upgrade(data, version) {
+  upgrade(data: Record<string, any>, version: string) {
     let corrupted, key, val;
     const changes = dict();
-    const set = (key, value) => data[key] = (changes[key] = value);
+    const set = (key: string, value: any) => data[key] = (changes[key] = value);
     // XXX https://github.com/greasemonkey/greasemonkey/issues/2600
     if (corrupted = (version[0] === '"')) {
       try {
@@ -8206,7 +8234,7 @@ Enable it on boards.${location.hostname.split('.')[1]}.org in your browser's pri
     return changes;
   },
 
-  loadSettings(data, cb) {
+  loadSettings(data: Record<string, any>, cb: (err?: any) => void) {
     if (data.version !== g.VERSION) {
       Settings.upgrade(data.Conf, data.version);
     }
@@ -8240,7 +8268,7 @@ Enable it on boards.${location.hostname.split('.')[1]}.org in your browser's pri
   // edit made right before closing is persisted to Conf synchronously, not lost).
   easyFiltersFlush: null as null | (() => void),
 
-  filter(section) {
+  filter(section: HTMLElement) {
     const simplePanel = $.el('div') as HTMLDivElement;
     const advancedPanel = $.el('div') as HTMLDivElement;
     const previewState = {
@@ -8312,7 +8340,7 @@ Enable it on boards.${location.hostname.split('.')[1]}.org in your browser's pri
     });
   },
 
-  advancedFilter(section, previewState) {
+  advancedFilter(section: HTMLElement, previewState: any) { // loose: internal mutable preview-state bag
     $.extend(section, { innerHTML: FilterSelectPage });
     const select = $('select', section) as HTMLSelectElement & { filterPreviewState?: any };
     select.filterPreviewState = previewState;
@@ -8636,7 +8664,13 @@ Enable it on boards.${location.hostname.split('.')[1]}.org in your browser's pri
     }
   },
 
-  refreshCombinedFilterPreview(previewState = Settings.filtersPreviewState) {
+  refreshCombinedFilterPreview(previewStateArg?: null | {
+    panel: HTMLDivElement | null;
+    simpleContainer: HTMLElement | null;
+    advancedType: string | null;
+    advancedTextarea: HTMLTextAreaElement | null;
+  }) {
+    const previewState = arguments.length === 0 ? Settings.filtersPreviewState : previewStateArg!;
     const panel = previewState?.panel;
     if (!panel) return;
     $.rmAll(panel);
@@ -9063,7 +9097,7 @@ Enable it on boards.${location.hostname.split('.')[1]}.org in your browser's pri
     return { href, text };
   },
 
-  sauce(section) {
+  sauce(section: HTMLElement) {
     $.extend(section, { innerHTML: SaucePage });
     $('.warning', section).hidden = Conf['Sauce'];
     const ta = $('textarea', section);
@@ -9077,7 +9111,7 @@ Enable it on boards.${location.hostname.split('.')[1]}.org in your browser's pri
     // section builder (see media()); nothing to do here.
   },
 
-  advanced(section) {
+  advanced(section: HTMLElement) {
     let input, name;
     $.extend(section, { innerHTML: AdvancedPage });
     for (var warning of $$('.warning', section)) { warning.hidden = Conf[warning.dataset.feature]; }
@@ -9108,7 +9142,7 @@ Enable it on boards.${location.hostname.split('.')[1]}.org in your browser's pri
       }
     }
 
-    $.get(items, function(items) {
+    $.get(items, function(items: Record<string, any>) {
       for (var key in items) {
         var val = items[key];
         input = inputs[key];
@@ -9165,7 +9199,7 @@ Enable it on boards.${location.hostname.split('.')[1]}.org in your browser's pri
 
     const itemsArchive = dict();
     for (name of ['archives', 'selectedArchives', 'lastarchivecheck']) { itemsArchive[name] = Conf[name]; }
-    $.get(itemsArchive, function(itemsArchive) {
+    $.get(itemsArchive, function(itemsArchive: Record<string, any>) {
       $.extend(Conf, itemsArchive);
       Redirect.selectArchives();
       Settings.addArchiveTable(section);
@@ -9210,7 +9244,7 @@ Enable it on boards.${location.hostname.split('.')[1]}.org in your browser's pri
     Settings.addPostSoundOverrides(section);
   },
 
-  addSoundLibrary(section) {
+  addSoundLibrary(section: HTMLElement) {
     SoundManager.init();
     const fileInput = $('#sound-upload', section) as HTMLInputElement;
     const uploadBtn = $('#sound-upload-btn', section);
@@ -9291,7 +9325,7 @@ Enable it on boards.${location.hostname.split('.')[1]}.org in your browser's pri
     render();
   },
 
-  wireSoundUrlAdd(section, render: () => void) {
+  wireSoundUrlAdd(section: HTMLElement, render: () => void) {
     const urlBtn = $('#sound-url-btn', section);
     const urlRow = $('#sound-url-row', section);
     const urlInput = $('#sound-url-input', section) as HTMLInputElement;
@@ -9343,7 +9377,7 @@ Enable it on boards.${location.hostname.split('.')[1]}.org in your browser's pri
     });
   },
 
-  wireSoundExportImport(section, render: () => void) {
+  wireSoundExportImport(section: HTMLElement, render: () => void) {
     const exportBtn = $('#sound-export-btn', section);
     const importBtn = $('#sound-import-btn', section);
     const importInput = $('#sound-import', section) as HTMLInputElement;
@@ -9526,7 +9560,7 @@ Enable it on boards.${location.hostname.split('.')[1]}.org in your browser's pri
     $.add(root, div);
   },
 
-  addBoardSoundOverrides(section) {
+  addBoardSoundOverrides(section: HTMLElement) {
     const list = $('#board-sounds-list', section);
     const boardInput = $('#board-sounds-board', section) as HTMLInputElement;
     const soundSelect = $('#board-sounds-sound', section) as HTMLSelectElement;
@@ -9580,7 +9614,7 @@ Enable it on boards.${location.hostname.split('.')[1]}.org in your browser's pri
     render();
   },
 
-  refreshBoardSoundsSelect(section) {
+  refreshBoardSoundsSelect(section: HTMLElement) {
     const sel = $('#board-sounds-sound', section) as HTMLSelectElement;
     if (!sel) return;
     $.rmAll(sel);
@@ -9590,7 +9624,7 @@ Enable it on boards.${location.hostname.split('.')[1]}.org in your browser's pri
     }
   },
 
-  populateBoardDatalist(section) {
+  populateBoardDatalist(section: HTMLElement) {
     const datalist = $('#board-sounds-datalist', section);
     if (!datalist) return;
     $.rmAll(datalist);
@@ -9611,7 +9645,7 @@ Enable it on boards.${location.hostname.split('.')[1]}.org in your browser's pri
     }
   },
 
-  addPostSoundOverrides(section) {
+  addPostSoundOverrides(section: HTMLElement) {
     const list = $('#post-sounds-list', section);
 
     const render = () => {
@@ -9649,7 +9683,7 @@ Enable it on boards.${location.hostname.split('.')[1]}.org in your browser's pri
     render();
   },
 
-  addArchiveTable(section) {
+  addArchiveTable(section: HTMLElement) {
     let boardID, o;
     $('#lastarchivecheck', section).textContent = Conf['lastarchivecheck'] === 0 ?
       'never'
@@ -9731,7 +9765,7 @@ Enable it on boards.${location.hostname.split('.')[1]}.org in your browser's pri
     }
   },
 
-  addArchiveCell(boardID, data, type) {
+  addArchiveCell(boardID: string, data: Record<string, any>, type: string) {
     const {length} = data[type];
     const td = $.el('td',
       {className: 'archive-cell'});
@@ -9810,7 +9844,7 @@ Enable it on boards.${location.hostname.split('.')[1]}.org in your browser's pri
         tag: 'Loop'
       }
     };
-    FileInfo.format(this.value, data, this.nextElementSibling);
+    FileInfo.format(this.value, data as any, this.nextElementSibling as HTMLElement);
   },
 
   favicon(this: HTMLElement) {
@@ -9856,7 +9890,7 @@ Enable it on boards.${location.hostname.split('.')[1]}.org in your browser's pri
 
   keyBindInputs: (dict() as Record<string, HTMLInputElement>),
 
-  keybinds(section) {
+  keybinds(section: HTMLElement) {
     let key;
     $.extend(section, { innerHTML: KeybindsPage });
     const warning = $('.warning', section);
@@ -9874,7 +9908,7 @@ Enable it on boards.${location.hostname.split('.')[1]}.org in your browser's pri
     const items  = dict();
     const inputs = Settings.keyBindInputs;
     for (key in Config.hotkeys) {
-      var arr = Config.hotkeys[key];
+      var arr = Config.hotkeys[key as keyof typeof Config.hotkeys];
       var marker = Settings.isClickKeybind(key)
         ? '<span class="keybind-click-marker" title="Click modifier: hold the keys and click.">*</span>'
         : '';
@@ -9892,7 +9926,7 @@ Enable it on boards.${location.hostname.split('.')[1]}.org in your browser's pri
       $.add(tbody, tr);
     }
 
-    $.get(items, function (items) {
+    $.get(items, function (items: Record<string, any>) {
       for (key in items) {
         var val = items[key];
         inputs[key].value = val;
@@ -9901,7 +9935,7 @@ Enable it on boards.${location.hostname.split('.')[1]}.org in your browser's pri
     $.on($('#reset-keys', details), 'click', Settings.resetKeybinds);
   },
 
-  keybind(this: HTMLInputElement, e) {
+  keybind(this: HTMLInputElement, e: KeyboardEvent) {
     if (e.keyCode === 9) return; // tab
     e.preventDefault();
     e.stopPropagation();

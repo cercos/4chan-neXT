@@ -1,13 +1,16 @@
 import $ from "../platform/$";
 
 export default class SimpleDict<T> {
+  // loose: any — dynamic string-keyed storage; values are T but `keys` is string[], so a precise union isn't expressible here.
+  [key: string]: any;
+
   keys: string[]
 
   constructor() {
     this.keys = [];
   }
 
-  push(key, data: T) {
+  push(key: any, data: T) { // loose: any — key is coerced via `${key}`; callers pass strings, numbers, and `this`-typed values.
     key = `${key}`;
     if (!this[key]) { this.keys.push(key); }
     this[key] = data;
@@ -53,7 +56,7 @@ export default class SimpleDict<T> {
     this.keys.splice(index, 0, key);
   }
 
-  rm(key) {
+  rm(key: any) { // loose: any — key is coerced via `${key}`; callers pass varied key-like values.
     let i;
     key = `${key}`;
     if ((i = this.keys.indexOf(key)) !== -1) {
@@ -66,7 +69,7 @@ export default class SimpleDict<T> {
     for (var key of this.keys) { fn(this[key]); }
   }
 
-  get(key): T {
+  get(key: any): T { // loose: any — key forwarded to $.getOwn; callers pass varied key-like values.
     if (key === 'keys') {
       return undefined as unknown as T;
     } else {

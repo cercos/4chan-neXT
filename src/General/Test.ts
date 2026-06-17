@@ -28,7 +28,7 @@ const Test = {
       $.on(a, 'click', this.cb.testOne);
       Menu.menu.addEntry({
         el: a,
-        open(post) {
+        open(post: any) { // loose: any — Post passed by Menu; shape accessed loosely
           a.dataset.fullID = post.fullID;
           return true;
         }
@@ -52,13 +52,13 @@ const Test = {
     return $.on(d, 'keydown', this.cb.keydown);
   },
 
-  assert(condition) {
+  assert(condition: () => unknown) {
     if (!condition()) {
       return new Notice('warning', `Assertion failed: ${condition}`, 30);
     }
   },
 
-  normalize(root) {
+  normalize(root: any) { // loose: any — cloneNode result reassigned through DOM helpers loosely
     let el, i;
     let node;
     const root2 = root.cloneNode(true);
@@ -108,7 +108,7 @@ const Test = {
     return root2;
   },
 
-  firstDiff(x, y) {
+  firstDiff(x: any, y: any): [any, any] { // loose: any — recursive DOM-node diff; nodes accessed loosely
     let x2 = x.cloneNode(false);
     let y2 = y.cloneNode(false);
     if (!x2.isEqualNode(y2)) { return [x2, y2]; }
@@ -122,7 +122,7 @@ const Test = {
     }
   },
 
-  testOne(post) {
+  testOne(post: any) { // loose: any — Post shape (board/thread/normalizedOriginal) accessed loosely
     Test.postsRemaining++;
     return $.cache(g.SITE!.urls.threadJSON({boardID: post.boardID, threadID: post.threadID}), function(this: XMLHttpRequest) {
       if (!this.response) { return; }
@@ -156,7 +156,7 @@ const Test = {
             if (((!key as any) === 'General') && !((key === 'MD5') && (post.board.ID === 'f'))) {
               var val1 = Filter.values(key, obj);
               var val2 = Filter.values(key, post2);
-              if ((val1.length !== val2.length) || !val1.every((x, i) => x === val2[i])) {
+              if ((val1.length !== val2.length) || !val1.every((x: any, i: number) => x === val2[i])) {
                 fail = true;
                 c.log(`${post.fullID} has filter bug in ${key}`);
                 c.log(val1);
@@ -242,9 +242,9 @@ const Test = {
       }
     },
 
-    keydown(e) {
+    keydown(e: KeyboardEvent) {
       if (Keybinds.keyCode(e) !== 'v') { return; }
-      if (['INPUT', 'TEXTAREA'].includes(e.target.nodeName)) { return; }
+      if (['INPUT', 'TEXTAREA'].includes((e.target as Element).nodeName)) { return; }
       Test.testAll();
       e.preventDefault();
       return e.stopPropagation();

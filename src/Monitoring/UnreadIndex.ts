@@ -9,6 +9,8 @@ import $ from "../platform/$";
 import { dict } from "../platform/helpers";
 import QuoteYou from "../Quotelinks/QuoteYou";
 import ThreadWatcher from "./ThreadWatcher";
+import type Post from "../classes/Post";
+import type Thread from "../classes/Thread";
 
 /*
  * decaffeinate suggestions:
@@ -48,7 +50,7 @@ var UnreadIndex = {
     }
   },
 
-  onIndexRefresh(e) {
+  onIndexRefresh(e: CustomEvent) {
     return (() => {
       const result: any[] = [];
       for (var threadID of e.detail.threadIDs) {
@@ -59,9 +61,9 @@ var UnreadIndex = {
     })();
   },
 
-  onPostsInserted(e) {
+  onPostsInserted(e: CustomEvent) {
     if (e.target === Index.root) { return; } // onIndexRefresh handles this case
-    const thread = Get.threadFromNode(e.target);
+    const thread = Get.threadFromNode(e.target as Node);
     if (!thread || (thread.nodes.root !== e.target)) { return; }
     const wasVisible = !!UnreadIndex.hr[thread.fullID]?.parentNode;
     UnreadIndex.update(thread);
@@ -85,13 +87,13 @@ var UnreadIndex = {
     });
   },
 
-  update(thread) {
+  update(thread: Thread) {
     let divider;
     const lastReadPost = UnreadIndex.lastReadPost[thread.fullID];
     let repliesShown = 0;
     let repliesRead = 0;
     let firstUnread: any = null;
-    thread.posts.forEach(function(post) {
+    thread.posts.forEach(function(post: Post) {
       if (post.isReply && thread.nodes.root.contains(post.nodes.root)) {
         repliesShown++;
         if (post.ID <= lastReadPost) {
@@ -143,7 +145,7 @@ var UnreadIndex = {
     }
   },
 
-  markRead() {
+  markRead(this: HTMLElement) {
     const thread = Get.threadFromNode(this);
     if (!thread) { return; }
     UnreadIndex.lastReadPost[thread.fullID] = thread.lastPost;

@@ -63,7 +63,7 @@ var Filter = {
    */
   filters: new Map<FilterType, FilterObj[] | Map<string, FilterObj[]>>(),
 
-  init(this: typeof Filter) {
+  init() {
     if (g.VIEW !== 'index' && g.VIEW !== 'thread' && g.VIEW !== 'catalog' || !Conf['Filter']) return;
     if ((g.VIEW === 'catalog') && !Conf['Filter in Native Catalog']) return;
 
@@ -114,7 +114,7 @@ var Filter = {
               $.tn(line),
               $.el('br'),
               $.tn(err instanceof Error ? err.message : String(err))
-            ], 60);
+            ] as unknown as Node, 60);
             continue;
           }
         }
@@ -125,10 +125,10 @@ var Filter = {
         if (options) {
 
           // List of the boards this filter applies to.
-          boards = this.parseBoards(options.match(/(?:^|;)\s*boards:([^;]+)/)?.[1]);
+          boards = Filter.parseBoards(options.match(/(?:^|;)\s*boards:([^;]+)/)?.[1]);
 
           // Boards to exclude from an otherwise global rule.
-          excludes = this.parseBoards(options.match(/(?:^|;)\s*exclude:([^;]+)/)?.[1]);
+          excludes = Filter.parseBoards(options.match(/(?:^|;)\s*exclude:([^;]+)/)?.[1]);
 
           // Filter OPs along with their threads or replies only.
           const op = options.match(/(?:^|;)\s*op:(no|only)/)?.[1] || '';
@@ -194,27 +194,28 @@ var Filter = {
           const types = options.match(/(?:^|;)\s*type:([^;]*)/)?.[1].split(',')
             || ['subject', 'name', 'filename', 'comment'];
           for (var type of types) {
-            this.filters.get(type)?.push(filterObj) ?? this.filters.set(type, [filterObj]);
+            // loose: during init these are always arrays (map conversion happens later)
+            (Filter.filters.get(type as FilterType) as FilterObj[] | undefined)?.push(filterObj) ?? Filter.filters.set(type as FilterType, [filterObj]);
           }
         } else {
-          this.filters.get(key)?.push(filterObj) ?? this.filters.set(key, [filterObj]);
+          (Filter.filters.get(key as FilterType) as FilterObj[] | undefined)?.push(filterObj) ?? Filter.filters.set(key as FilterType, [filterObj]);
         }
       }
     }
 
-    if (!this.filters.size) return;
+    if (!Filter.filters.size) return;
 
     // conversion from array to map for string types
     for (const type of ['MD5', 'uniqueID'] satisfies FilterType[]) {
-      const filtersForType = this.filters.get(type);
+      const filtersForType = Filter.filters.get(type);
       if (!filtersForType) continue;
 
       const map = new Map<string, FilterObj[]>();
-      for (const filter of filtersForType) {
-        map.get(filter.regexp)?.push(filter) ?? map.set(filter.regexp, [filter]);
+      for (const filter of filtersForType as FilterObj[]) {
+        map.get(filter.regexp as string)?.push(filter) ?? map.set(filter.regexp as string, [filter]);
       }
 
-      this.filters.set(type, map);
+      Filter.filters.set(type, map);
     }
 
     if (g.VIEW === 'catalog') {
@@ -222,14 +223,14 @@ var Filter = {
     } else {
       return Callbacks.Post.push({
         name: 'Filter',
-        cb:   this.node
+        cb:   Filter.node
       });
     }
   },
 
   // Parse comma-separated list of boards.
   // Sites can be specified by a beginning part of the site domain followed by a colon.
-  parseBoards(boardsRaw: string) {
+  parseBoards(boardsRaw: string | undefined) {
     let boards;
     if (!boardsRaw) { return false; }
     if (boards = Filter.parseBoardsMemo[boardsRaw]) { return boards; }
@@ -258,6 +259,9 @@ var Filter = {
 
   parseBoardsMemo: dict(),
 
+  // loose: late-assigned in catalog(); holds raw catalog JSON items keyed by thread no.
+  catalogData: undefined as unknown as Record<string, any>,
+
   test(post: Post, hideable = true): FilterResults {
     if (post.filterResults) return post.filterResults;
     let hide           = false;
@@ -280,7 +284,7 @@ var Filter = {
       for (const value of Filter.values(type, post)) {
         const filtersOrMap = Filter.filters.get(type);
 
-        const filtersForType: FilterObj[] | undefined = Array.isArray(filtersOrMap) ? filtersOrMap : filtersOrMap.get(value);
+        const filtersForType: FilterObj[] | undefined = Array.isArray(filtersOrMap) ? filtersOrMap : filtersOrMap!.get(value);
         if (!filtersForType) continue;
 
         const isString = type === 'uniqueID' || type === 'MD5';
@@ -608,7 +612,7 @@ var Filter = {
     subject(post) { return post.info.subject === undefined && post.isReply ? [] : [post.info.subject || '']; },
     comment(post) {
       if (post.info.comment == null) {
-        post.info.comment = g.sites[post.siteID]?.Build?.parseComment?.((post.info as any).commentHTML.innerHTML);
+        post.info.comment = (g.sites as unknown as Record<string, typeof g.sites[number]>)[post.siteID]?.Build?.parseComment?.((post.info as any).commentHTML.innerHTML);
       }
       return [post.info.comment];
     },
@@ -619,9 +623,9 @@ var Filter = {
     MD5(post) { return post.files.map(f => f.MD5).filter(v => v != null); }
   } satisfies Record<FilterType, (post: Post) => string[]>,
 
-  values(key: FilterType, post: Post): string[] {
+  values(key: string, post: Post): string[] {
     if ($.hasOwn(Filter.valueF, key)) {
-      return Filter.valueF[key](post).filter(v => v != null);
+      return Filter.valueF[key as FilterType](post).filter((v: string) => v != null);
     } else {
       return [key.split('+').map(function(k) {
         let f: (post: Post) => string[];
@@ -638,7 +642,7 @@ var Filter = {
     if (!$.hasOwn(Config.filter, type)) { return; }
     return $.get(type, Conf[type], function(item) {
       const existingLines = (item[type] || '').split('\n');
-      const existingSet = new Set(existingLines.map(line => line.trim()).filter(Boolean));
+      const existingSet = new Set(existingLines.map((line: string) => line.trim()).filter(Boolean));
       const linesToAdd = re.split('\n').map(line => line.trim()).filter(Boolean)
         .filter(line => !existingSet.has(line));
       if (!linesToAdd.length) { return cb?.(); }
@@ -647,17 +651,18 @@ var Filter = {
     });
   },
 
-  removeFilters(type: FilterType, res: FilterObj[] | Map<string, FilterObj[]>, cb?: () => void) {
+  removeFilters(type: FilterType, res: FilterObj[] | string[] | Map<string, FilterObj[]>, cb?: () => void) {
     return $.get(type, Conf[type], function (item) {
       let save = item[type];
       const filterArray = Array.isArray(res) ? res : [...res.values()].flat();
-      const r = filterArray.map(Filter.escape).join('|');
+      // loose: filterArray holds FilterObj or string entries; escape() coerces to string.
+      const r = (filterArray as any[]).map(Filter.escape).join('|');
       save = save.replace(RegExp(`(?:$\n|^)(?:${r})$`, 'mg'), '');
       return $.set(type, save, cb);
     });
   },
 
-  showFilters(type) {
+  showFilters(type: FilterType) {
     // Open the settings and display & focus the relevant filter textarea.
     Settings.forcedFiltersMode = 'advanced';
     Settings.forcedFilterType = type;
@@ -675,7 +680,7 @@ var Filter = {
     });
   },
 
-  quickFilterMD5(this: Post | HTMLElement) {
+  quickFilterMD5(this: Post | HTMLElement, e?: Event): void {
     const post: Post = this instanceof Post ? this : Get.postFromNode(this)!;
     const files = post.files.filter(f => f.MD5);
     if (!files.length) { return; }
@@ -723,7 +728,10 @@ var Filter = {
       return;
     }
 
-    let {notice} = Filter.quickFilterMD5;
+    // loose: quickFilterMD5 is a fn with a late-assigned `.notice`; casting the
+    // self-reference avoids a circular type inference on the Filter literal.
+    const qf = Filter.quickFilterMD5 as { notice?: any };
+    let {notice} = qf;
     if (notice) {
       if (!notice.filters.includes(filter)) {
         notice.filters.push(filter);
@@ -736,7 +744,7 @@ var Filter = {
     } else {
       const msg = $.el('div',
         {innerHTML: "<span>MD5 filtered.</span> [<a href=\"javascript:;\">show</a>] [<a href=\"javascript:;\">undo</a>]"});
-      notice = (Filter.quickFilterMD5.notice = new Notice('info', msg, 10, () => delete Filter.quickFilterMD5.notice));
+      notice = (qf.notice = new Notice('info', msg, 10, () => delete qf.notice));
       notice.filters = [filter];
       notice.posts = [origin];
       const links = $$('a', msg);
@@ -775,6 +783,8 @@ var Filter = {
   },
 
   menu: {
+    post: undefined as unknown as Post,
+
     init() {
       if ((g.VIEW !== 'index' && g.VIEW !== 'thread') || !Conf['Menu'] || !Conf['Filter']) { return; }
 
@@ -784,7 +794,7 @@ var Filter = {
       const entry = {
         el: div,
         order: 50,
-        open(post) {
+        open(post: Post) {
           Filter.menu.post = post;
           return true;
         },
@@ -824,7 +834,7 @@ var Filter = {
 
       return {
         el,
-        open(post) {
+        open(post: Post) {
           return Filter.values(type, post).length;
         }
       };
@@ -834,7 +844,7 @@ var Filter = {
       const type = this.dataset.type as FilterType;
       // Convert value -> regexp, unless type is MD5
       const values = Filter.values(type, Filter.menu.post);
-      const res = values.map((value) => {
+      const res = values.map((value: string) => {
         if (['uniqueID', 'MD5'].includes(type)) {
           return `/${value}/`;
         } else {

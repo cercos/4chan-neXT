@@ -24,9 +24,9 @@ import Get from '../General/Get';
  * Full docs: https://github.com/decaffeinate/decaffeinate/blob/main/docs/suggestions.md
  */
 
-var ThreadUpdater = {
+var ThreadUpdater: any = { // loose: self-referencing singleton (TS7022) with late-assigned/cross-module-read props
   init(this: typeof ThreadUpdater) {
-    let sc;
+    let sc: HTMLElement;
 
     // Chromium won't play audio created in an inactive tab until the tab has been focused, so set it up now.
     // XXX Sometimes the loading stalls in Firefox, esp. when opening in private browsing window followed by normal window.
@@ -76,9 +76,9 @@ var ThreadUpdater = {
 
     const subEntries: any[] = [];
     for (const name in Config.updater.checkbox) {
-      var conf = Config.updater.checkbox[name];
+      var conf = Config.updater.checkbox[name as keyof typeof Config.updater.checkbox];
       const el = UI.checkbox(name, name);
-      el.title = conf[1];
+      el.title = conf[1] as string;
       var input = el.firstElementChild as any;
       $.on(input, 'change', $.cb.checked);
       if (input.name === 'Scroll BG') {
@@ -121,7 +121,7 @@ var ThreadUpdater = {
     // as posts may be `kill`ed elsewhere.
     ThreadUpdater.postIDs = [];
     ThreadUpdater.fileIDs = [];
-    this.posts.forEach(function(post) {
+    this.posts.forEach(function(post: Post) {
       ThreadUpdater.postIDs.push(post.ID);
       if (post.file) { return ThreadUpdater.fileIDs.push(post.ID); }
     });
@@ -279,7 +279,7 @@ var ThreadUpdater = {
   },
 
   cb: {
-    checkpost(e) {
+    checkpost(e: CustomEvent) {
       if (e.detail.threadID !== ThreadUpdater.thread.ID) { return; }
       ThreadUpdater.postID = e.detail.postID;
       ThreadUpdater.checkPostCount = 0;
@@ -309,7 +309,7 @@ var ThreadUpdater = {
         () => !d.hidden;
     },
 
-    interval(this: HTMLInputElement, e) {
+    interval(this: HTMLInputElement, e?: Event) {
       let val = parseInt(this.value, 10);
       if (val < 1) { val = 1; }
       ThreadUpdater.interval = ((this as any).value = val);
@@ -366,7 +366,7 @@ var ThreadUpdater = {
     );
   },
 
-  error(req) {
+  error(req: XMLHttpRequest) {
     if (req.status === 304) {
       ThreadUpdater.set('status', '');
     }
@@ -424,7 +424,7 @@ var ThreadUpdater = {
       input?.focus();
     };
     if (Settings.dialog) {
-      const threadsSection = Settings.sections.find(s => s.title === 'Threads & Posts');
+      const threadsSection = Settings.sections.find((s: any) => s.title === 'Threads & Posts');
       if (threadsSection) Settings.openSection.call(threadsSection);
       focusInterval($('section', Settings.dialog) as HTMLElement);
       return;
@@ -437,7 +437,7 @@ var ThreadUpdater = {
     $.on(d, 'OpenSettings', onOpen);
   },
 
-  set(name, text, klass) {
+  set(name: string, text: string | number, klass?: string) {
     let node;
     const el = ThreadUpdater[name];
     if ((node = el.firstChild)) {
@@ -477,7 +477,7 @@ var ThreadUpdater = {
     );
   },
 
-  updateThreadStatus(type, status) {
+  updateThreadStatus(type: string, status: boolean) {
     let hasChanged;
     if (!(hasChanged = ThreadUpdater.thread[`is${type}`] !== status)) { return; }
     ThreadUpdater.thread.setStatus(type, status);
@@ -610,8 +610,8 @@ var ThreadUpdater = {
     // Update IP count in original post form.
     if (OP.unique_ips && (ipCountEl = $.id('unique-ips'))) {
       ipCountEl.textContent = OP.unique_ips;
-      ipCountEl.previousSibling.textContent = ipCountEl.previousSibling.textContent.replace(/\b(?:is|are)\b/, OP.unique_ips === 1 ? 'is' : 'are');
-      ipCountEl.nextSibling.textContent = ipCountEl.nextSibling.textContent.replace(/\bposters?\b/, OP.unique_ips === 1 ? 'poster' : 'posters');
+      ipCountEl.previousSibling!.textContent = ipCountEl.previousSibling!.textContent!.replace(/\b(?:is|are)\b/, OP.unique_ips === 1 ? 'is' : 'are');
+      ipCountEl.nextSibling!.textContent = ipCountEl.nextSibling!.textContent!.replace(/\bposters?\b/, OP.unique_ips === 1 ? 'poster' : 'posters');
     }
 
     return $.event('ThreadUpdate', {

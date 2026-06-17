@@ -29,12 +29,12 @@ var ExpandComment = {
 
   callbacks: [] as Array<(this: any) => void>,
 
-  cb(e) {
+  cb(this: HTMLElement, e: Event) {
     e.preventDefault();
     return ExpandComment.expand(Get.postFromNode(this));
   },
 
-  expand(post) {
+  expand(post: any) { // loose: Post.nodes type lacks late-assigned long/shortComment
     let a;
     if (!post) { return; }
     if (post.nodes.longComment && !post.nodes.longComment.parentNode) {
@@ -47,7 +47,7 @@ var ExpandComment = {
     return $.cache(g.SITE!.urls.threadJSON({boardID: post.boardID, threadID: post.threadID}), function(this: XMLHttpRequest) { return ExpandComment.parse(this, a, post); });
   },
 
-  contract(post) {
+  contract(post: any) { // loose: Post.nodes type lacks late-assigned long/shortComment
     if (!post.nodes.shortComment) { return; }
     const a = $('.abbr > a', post.nodes.shortComment);
     a.textContent = 'here';
@@ -55,7 +55,7 @@ var ExpandComment = {
     return post.nodes.comment = post.nodes.shortComment;
   },
 
-  parse(req, a, post) {
+  parse(req: XMLHttpRequest, a: HTMLAnchorElement, post: any) { // loose: Post.nodes type lacks late-assigned long/shortComment
     let postObj, spoilerRange;
     const {status} = req;
     if (![200, 304].includes(status)) {

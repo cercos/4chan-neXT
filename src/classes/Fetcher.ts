@@ -31,7 +31,7 @@ export default class Fetcher {
     '[/moot]':    {innerHTML: "</div>"},
     '[banned]':   {innerHTML: "<strong style=\"color: red;\">"},
     '[/banned]':  {innerHTML: "</strong>"},
-    '[fortune]'(text) { return {innerHTML: "<span class=\"fortune\" style=\"color:" + E(text.match(/#\w+|$/)[0]) + "\"><b>"}; },
+    '[fortune]'(text: string) { return {innerHTML: "<span class=\"fortune\" style=\"color:" + E(text.match(/#\w+|$/)![0]) + "\"><b>"}; },
     '[/fortune]': {innerHTML: "</b></span>"},
     '[i]':        {innerHTML: "<span class=\"mu-i\">"},
     '[/i]':       {innerHTML: "</span>"},
@@ -65,7 +65,7 @@ export default class Fetcher {
 
     // 4chan X catalog data
     if ((post = Index.replyData?.[`${this.boardID}.${this.postID}`]) && (thread = g.threads!.get(`${this.boardID}.${this.threadID}`))) {
-      const board  = g.boards[this.boardID];
+      const board  = g.boards[this.boardID as unknown as number];
       post = new Post(g.SITE!.Build.postFromObject(post, this.boardID), thread, board, {isFetchedQuote: true});
       Main.callbackNodes('Post', [post]);
       this.insert(post);
@@ -83,7 +83,7 @@ export default class Fetcher {
     }
   }
 
-  insert(post) {
+  insert(post: Post) {
     // Stop here if the container has been removed while loading.
     if (!this.root.parentNode) { return; }
     if (!this.quoter) { this.quoter = post; }
@@ -120,7 +120,7 @@ export default class Fetcher {
     return $.event('PostsInserted', null, this.root);
   }
 
-  fetchedPost(req, isCached) {
+  fetchedPost(req: XMLHttpRequest, isCached: boolean) {
     // In case of multiple callbacks for the same request,
     // don't parse the same original post more than once.
     let post;
@@ -171,7 +171,7 @@ export default class Fetcher {
       return;
     }
 
-    const board = g.boards[this.boardID] ||
+    const board = g.boards[this.boardID as unknown as number] ||
       new Board(this.boardID);
     const thread = g.threads!.get(`${this.boardID}.${this.threadID}`) ||
       new Thread(String(this.threadID), board);
@@ -184,7 +184,7 @@ export default class Fetcher {
     let url: string;
     if (!Conf['Resurrect Quotes']) { return false; }
     if (!(url = Redirect.to('post', {boardID: this.boardID, postID: this.postID}))) { return false; }
-    const archive = Redirect.data.post[this.boardID];
+    const archive = (Redirect.data.post as unknown as Record<string, { name: string }>)[this.boardID];
     const encryptionOK = /^https:\/\//.test(url) || (location.protocol === 'http:');
     if (encryptionOK || Conf['Exempt Archives from Encryption']) {
       const that = this;
@@ -206,7 +206,7 @@ export default class Fetcher {
     return false;
   }
 
-  parseArchivedPost(data, url, archive) {
+  parseArchivedPost(data: any /* loose: XHR response, untyped JSON */, url: string, archive: { name: string }) {
     // In case of multiple callbacks for the same request,
     // don't parse the same original post more than once.
     let post: Post;
@@ -227,6 +227,6 @@ export default class Fetcher {
       return;
     }
 
-    return this.insert(RestoreDeletedFromArchive.insert(data)[0]);
+    return this.insert(RestoreDeletedFromArchive.insert(data)[0]!);
   }
 }

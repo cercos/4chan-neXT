@@ -95,12 +95,12 @@ export const E = (function () {
   };
   const regex = /[&"'<>]/g;
   const fn = function (x: string) {
-    return str[x];
+    return str[x as keyof typeof str];
   };
   const output = function (text: string) {
     return text.toString().replace(regex, fn);
   };
-  output.cat = function (templates) {
+  output.cat = function (templates: ArrayLike<{ innerHTML: string }>) {
     let html = '';
     for (let i = 0; i < templates.length; i++) {
       html += templates[i].innerHTML;

@@ -1,4 +1,5 @@
 import Notice from "../classes/Notice";
+import type Thread from "../classes/Thread";
 import Config from "../config/Config";
 import Filter from "../Filtering/Filter";
 import ThreadHiding from "../Filtering/ThreadHiding";
@@ -51,15 +52,15 @@ var Keybinds = {
     return $.on(d, '4chanXInitFinished', init);
   },
 
-  sync(key, hotkey) {
+  sync(key: string, hotkey: string) {
     return Conf[hotkey] = key;
   },
 
-  keydown(e) {
+  keydown(e: KeyboardEvent) {
     let key, thread, threadRoot;
     let catalog, notifications;
     if (!(key = Keybinds.keyCode(e))) { return; }
-    const {target} = e;
+    const target = e.target as HTMLTextAreaElement;
     if (['INPUT', 'TEXTAREA'].includes(target.nodeName)) {
       if (!/(Esc|Alt|Ctrl|Meta|Shift\+\w{2,})/.test(key) || !!/^Alt\+(\d|Up|Down|Left|Right)$/.test(key)) { return; }
     }
@@ -302,11 +303,11 @@ var Keybinds = {
       hasAction = true;
     }
     if (key === Conf['Open thread'] && g.VIEW === 'index' && threadRoot) {
-      Keybinds.open(thread);
+      Keybinds.open(thread!);
       hasAction = true;
     }
     if (key === Conf['Open thread tab'] && g.VIEW === 'index' && threadRoot) {
-      Keybinds.open(thread, true);
+      Keybinds.open(thread!, true);
       hasAction = true;
     }
     // Reply Navigation
@@ -330,7 +331,7 @@ var Keybinds = {
     if (key === Conf['Quick Filter MD5'] && threadRoot) {
       post = Keybinds.post(threadRoot);
       Keybinds.hl(+1, threadRoot);
-      Filter.quickFilterMD5.call(post, e);
+      Filter.quickFilterMD5.call(post!, e);
       hasAction = true;
     }
     if (key === Conf['Previous Post Quoting You'] && threadRoot && QuoteYou.db) {
@@ -347,7 +348,7 @@ var Keybinds = {
     }
   },
 
-  keyCode(e) {
+  keyCode(e: KeyboardEvent) {
     let key = (() => { let kc;
     switch ((kc = e.keyCode)) {
       case 8: // return
@@ -392,7 +393,7 @@ var Keybinds = {
     return key;
   },
 
-  modifierString(e) {
+  modifierString(e: KeyboardEvent) {
     const parts: string[] = [];
     if (e.altKey)   { parts.push('Alt'); }
     if (e.ctrlKey)  { parts.push('Ctrl'); }
@@ -401,7 +402,7 @@ var Keybinds = {
     return parts.join('+');
   },
 
-  post(thread) {
+  post(thread: HTMLElement) {
     const s = g.SITE!.selectors;
     return (
       $(`${s.postContainer}${s.highlightable.reply}.${g.SITE!.classes.highlight}`, thread) ||
@@ -409,7 +410,7 @@ var Keybinds = {
     );
   },
 
-  qr(thread?) {
+  qr(thread?: HTMLElement) {
     QR.open();
     if (thread != null) {
       QR.quote.call(Keybinds.post(thread), undefined);
@@ -417,7 +418,7 @@ var Keybinds = {
     return QR.nodes.com.focus();
   },
 
-  tags(tag, ta) {
+  tags(tag: string, ta: HTMLTextAreaElement) {
     BoardConfig.ready(function() {
       const {config} = g.BOARD!;
       const supported = (() => { switch (tag) {
@@ -455,7 +456,7 @@ var Keybinds = {
     : "sage";
   },
 
-  open(thread, tab?) {
+  open(thread: Thread, tab?: boolean) {
     if (g.VIEW !== 'index') { return; }
     const url = Get.url('thread', thread);
     if (tab) {
@@ -465,7 +466,7 @@ var Keybinds = {
     }
   },
 
-  hl(delta, thread) {
+  hl(delta: number, thread: HTMLElement) {
     const replySelector = `${g.SITE!.selectors.postContainer}${g.SITE!.selectors.highlightable.reply}`;
     const {highlight} = g.SITE!.classes;
 

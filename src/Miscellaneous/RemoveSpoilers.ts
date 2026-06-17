@@ -31,7 +31,7 @@ var RemoveSpoilers = {
     return RemoveSpoilers.unspoiler(this.nodes.comment);
   },
 
-  unspoiler(el) {
+  unspoiler(el: HTMLElement) {
     const spoilers = $$(g.SITE!.selectors.spoiler, el);
     for (var spoiler of spoilers) {
       var span = $.el('span', {className: 'removed-spoiler'});

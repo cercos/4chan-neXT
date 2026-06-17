@@ -1,7 +1,15 @@
 import h, { EscapedHtml, isEscaped } from "../../globals/jsx";
 
 export default function generateFileHtml(
-  file, ID, boardID, fileURL, shortFilename, fileThumb, o, staticPath, gifIcon
+  file: any, // loose: built post file object (no shared named type); has MD5/width/height/size/dimensions/tag/isSpoiler/hasDownscale/theight/twidth/name
+  ID: string | number,
+  boardID: string,
+  fileURL: string | undefined,
+  shortFilename: string | undefined,
+  fileThumb: string | undefined,
+  o: any, // loose: built post object from parseJSON; has fileDeleted flag
+  staticPath: string,
+  gifIcon: string,
 ): EscapedHtml {
   if (file) {
     const fileContent: (EscapedHtml | string)[] = [];

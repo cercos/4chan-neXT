@@ -1,5 +1,6 @@
 import Callbacks from "../classes/Callbacks";
 import type Post from "../classes/Post";
+import type { File } from "../classes/Post";
 import Notice from "../classes/Notice";
 import Filter from "../Filtering/Filter";
 import { g, Conf, doc } from "../globals/globals";
@@ -46,7 +47,7 @@ var Sauce = {
     });
   },
 
-  parseLink(link) {
+  parseLink(link: string) {
     if (!(link = link.trim())) { return null; }
     const parts = dict();
     const iterable = link.split(/;(?=(?:text|boards|types|regexp|sandbox):?)/);
@@ -56,7 +57,7 @@ var Sauce = {
         parts['url'] = part;
       } else {
         var m = part.match(/^(\w*):?(.*)$/);
-        parts[m[1]] = m[2];
+        parts[m![1]!] = m![2];
       }
     }
     if (!parts['text']) { parts['text'] = parts['url'].match(/(\w+)\.\w+\//)?.[1] || '?'; }
@@ -89,9 +90,10 @@ var Sauce = {
     return parts;
   },
 
-  createSauceLink(link, post, file) {
-    let a, matches, needle;
-    const ext = file.url.match(/[^.]*$/)[0];
+  createSauceLink(link: any, post: Post, file: File) { // loose: link is a parseLink() parts dict()
+    let a, needle;
+    let matches: RegExpMatchArray | null = null;
+    const ext = file.url.match(/[^.]*$/)![0];
     const parts = dict();
     $.extend(parts, link);
 
@@ -101,13 +103,13 @@ var Sauce = {
 
     const missing: string[] = [];
     for (var key of ['url', 'text']) {
-      parts[key] = parts[key].replace(/%(T?URL|IMG|[sh]?MD5|board|name|%|semi|\$\d+)/g, function(orig, parameter) {
+      parts[key] = parts[key].replace(/%(T?URL|IMG|[sh]?MD5|board|name|%|semi|\$\d+)/g, function(orig: string, parameter: string) {
         let type;
         if (parameter[0] === '$') {
           if (!matches) { return orig; }
-          type = matches[parameter.slice(1)] || '';
+          type = matches[Number(parameter.slice(1))] || '';
         } else {
-          type = Sauce.formatters[parameter](post, file, ext);
+          type = Sauce.formatters[parameter as keyof typeof Sauce.formatters](post, file, ext);
           if ((type == null)) {
             missing.push(parameter);
             return '';
@@ -144,7 +146,7 @@ var Sauce = {
     }
   },
 
-  file(post, file) {
+  file(post: Post, file: File) {
     let link, node;
     const nodes: any[] = [];
     const skipped: any[] = [];
@@ -161,7 +163,7 @@ var Sauce = {
 
     if (skipped.length) {
       var observer = new MutationObserver(function() {
-        if (file.text.dataset.md5) {
+        if ((file.text as unknown as HTMLElement).dataset.md5) { // file.text holds the file-container HTMLElement at runtime; Post.File.text is declared string
           for ([link, node] of skipped) {
             var node2;
             if (node2 = Sauce.createSauceLink(link, post, file)) {
@@ -171,23 +173,23 @@ var Sauce = {
           return observer.disconnect();
         }
       });
-      return observer.observe(file.text, {attributes: true});
+      return observer.observe(file.text as unknown as HTMLElement, {attributes: true}); // file.text holds the file-container HTMLElement at runtime; Post.File.text is declared string
     }
   },
 
   formatters: {
-    TURL(post, file) { return file.thumbURL; },
-    URL(post, file) { return file.url; },
-    IMG(post, file, ext) { if (['gif', 'jpg', 'jpeg', 'png'].includes(ext)) { return file.url; } else { return file.thumbURL; } },
-    MD5(post, file) { return file.MD5; },
-    sMD5(post, file) { return file.MD5?.replace(/[+/=]/g, c => ({'+': '-', '/': '_', '=': ''})[c]); },
-    hMD5(post, file) {
+    TURL(post: Post, file: File) { return file.thumbURL; },
+    URL(post: Post, file: File) { return file.url; },
+    IMG(post: Post, file: File, ext: string) { if (['gif', 'jpg', 'jpeg', 'png'].includes(ext)) { return file.url; } else { return file.thumbURL; } },
+    MD5(post: Post, file: File) { return file.MD5; },
+    sMD5(post: Post, file: File) { return file.MD5?.replace(/[+/=]/g, (c: string) => ({'+': '-', '/': '_', '=': ''})[c as '+' | '/' | '=']); },
+    hMD5(post: Post, file: File) {
       if (file.MD5) {
         return Array.from(atob(file.MD5), c => c.charCodeAt(0).toString(16).padStart(2,'0')).join('');
       }
     },
-    board(post) { return post.board.ID; },
-    name(post, file) { return file.name; },
+    board(post: Post) { return post.board.ID; },
+    name(post: Post, file: File) { return file.name; },
     '%'() { return '%'; },
     semi() { return ';'; }
   }

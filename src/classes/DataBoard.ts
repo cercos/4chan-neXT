@@ -9,9 +9,14 @@ import { dict, HOUR } from "../platform/helpers";
  * Full docs: https://github.com/decaffeinate/decaffeinate/blob/main/docs/suggestions.md
  */
 
+// loose: any — board values are deeply heterogeneous (thread->post->val nested
+// dicts, or scalar values) and vary per DataBoard key; precise typing would
+// cascade across .get/.set/.setUnsafe which are explicitly noted as not-yet-typed.
+type DataBoardBoardValue = any;
+
 type DataBoardSite = {
   boards: {
-    [threadId: string]: number;
+    [threadId: string]: DataBoardBoardValue;
   };
   lastChecked?: number;
   version?: number;
@@ -70,12 +75,12 @@ export default class DataBoard {
   }
 
   initData(data: any) {
-    let boards;
+    let boards: DataBoardSite['boards'];
     this.data = data;
     if (this.data.boards) {
-      let lastChecked;
-      ({boards, lastChecked} = this.data);
-      this.data['4chan.org'] = {boards, lastChecked};
+      let lastChecked: DataBoardSite['lastChecked'];
+      ({boards, lastChecked} = this.data as unknown as DataBoardSite);
+      (this.data as Record<string, DataBoardSite>)['4chan.org'] = {boards, lastChecked};
       delete this.data.boards;
       delete this.data.lastChecked;
     }
@@ -101,7 +106,7 @@ export default class DataBoard {
     });
   }
 
-  forceSync(cb) {
+  forceSync(cb?: () => void) {
     return $.get(this.key, { boards: dict() }, (items: DataBoardData) => {
       if ((items[this.key].version || 0) > (this.data.version || 0)) {
         this.initData(items[this.key]);
@@ -192,7 +197,7 @@ export default class DataBoard {
     let board, val;
     if (!siteID) { siteID = g.SITE!.ID; }
     if (board = this.data[siteID]?.boards[boardID]) {
-      let thread;
+      let thread: any; // loose: any — iterates board entries as either index counter or nested dict
       if (threadID == null) {
         if (postID != null) {
           for (thread = 0; thread < board.length; thread++) {
@@ -226,7 +231,7 @@ export default class DataBoard {
     }
   }
 
-  ajaxClean(boardID) {
+  ajaxClean(boardID: string) {
     const that = this;
     const siteID = g.SITE!.ID;
     const threadsList = g.SITE!.urls.threadsListJSON?.({siteID, boardID});

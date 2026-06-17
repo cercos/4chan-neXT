@@ -48,7 +48,7 @@ var BoardConfig = {
     return BoardConfig.set(boards);
   },
 
-  set(this: BoardConfigThis, boards) {
+  set(this: BoardConfigThis, boards: Record<string, any> | undefined) {
     this.boards = boards;
     for (var ID in g.boards) {
       var board = g.boards[ID];
@@ -59,7 +59,7 @@ var BoardConfig = {
     }
   },
 
-  ready(this: BoardConfigThis, cb) {
+  ready(this: BoardConfigThis, cb: (value?: any) => void) {
     if (this.boards) {
       return cb();
     } else {
@@ -67,7 +67,7 @@ var BoardConfig = {
     }
   },
 
-  sfwBoards(this: BoardConfigThis, sfw) {
+  sfwBoards(this: BoardConfigThis, sfw: boolean) {
     return (() => {
       const result: string[] = [];
       const object = this.boards || Conf['boardConfig'].boards;
@@ -81,29 +81,29 @@ var BoardConfig = {
     })();
   },
 
-  isSFW(this: BoardConfigThis, board) {
+  isSFW(this: BoardConfigThis, board: string) {
     return !!(this.boards || Conf['boardConfig'].boards)[board]?.ws_board;
   },
 
-  domain(board) {
+  domain(board?: string) {
     // return `boards.${BoardConfig.isSFW(board) ? '4channel' : '4chan'}.org`;
     return 'boards.4chan.org';
   },
 
-  isArchived(this: BoardConfigThis, board) {
+  isArchived(this: BoardConfigThis, board?: string) {
     // assume archive exists if no data available to prevent cleaning of archived threads
-    const data = (this.boards || Conf['boardConfig'].boards)[board];
+    const data = (this.boards || Conf['boardConfig'].boards)[board!];
     return !data || data.is_archived;
   },
 
-  noAudio(this: BoardConfigThis, boardID) {
+  noAudio(this: BoardConfigThis, boardID?: string) {
     if (g.SITE?.software !== 'yotsuba') { return false; }
     const boards = this.boards || Conf['boardConfig'].boards;
-    return boards && boards[boardID] && !boards[boardID].webm_audio;
+    return boards && boards[boardID!] && !boards[boardID!].webm_audio;
   },
 
-  title(this: BoardConfigThis, boardID) {
-    return (this.boards || Conf['boardConfig'].boards)?.[boardID]?.title || '';
+  title(this: BoardConfigThis, boardID?: string) {
+    return (this.boards || Conf['boardConfig'].boards)?.[boardID!]?.title || '';
   }
 };
 export default BoardConfig;

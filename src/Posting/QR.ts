@@ -241,7 +241,7 @@ var QR = {
     QR.postingIsEnabled = true;
 
     const {config} = g.BOARD!;
-    const prop = (key, def) => +(config[key] ?? def);
+    const prop = (key: string, def: number) => +((config as Record<string, any>)[key] ?? def);
 
     QR.min_width  = prop('min_image_width',  1);
     QR.min_height = prop('min_image_height', 1);
@@ -275,7 +275,7 @@ var QR = {
       });
 
       $.before(origToggle, link);
-      origToggle.firstElementChild.textContent = 'Original Form';
+      origToggle.firstElementChild!.textContent = 'Original Form';
 
       // The native post form is collapsed by default everywhere except the board
       // index, where 4chan shows it expanded at the top. Hide it there too so it
@@ -497,14 +497,14 @@ var QR = {
     if (QR.nodes.el.contains(d.activeElement)) { return (d.activeElement as HTMLElement).blur(); }
   },
 
-  toggleSJIS(e) {
+  toggleSJIS(e: Event) {
     e.preventDefault();
     Conf['sjisPreview'] = !Conf['sjisPreview'];
     $.set('sjisPreview', Conf['sjisPreview']);
     return QR.nodes.el.classList.toggle('sjis-preview', Conf['sjisPreview']);
   },
 
-  toggleCommentPreview(e) {
+  toggleCommentPreview(e: Event) {
     e.preventDefault();
     // 'manual' visibility mode: when the feature is already enabled but the preview is
     // being withheld, the icon reveals/hides it for this session rather than disabling the
@@ -1967,7 +1967,7 @@ var QR = {
     }
   },
 
-  setCustomCooldown(enabled) {
+  setCustomCooldown(enabled: boolean) {
     Conf['customCooldownEnabled'] = enabled;
     QR.cooldown.customCooldown = enabled;
     return QR.nodes.customCooldown.classList.toggle('disabled', !enabled);
@@ -2052,7 +2052,7 @@ var QR = {
     : QR.cooldown.auto ?
       `Auto ${value}`
     :
-      value;
+      value as string;
     status.disabled = disabled || false;
     return status.disabled;
   },
@@ -2103,21 +2103,21 @@ var QR = {
           $.prepend(frag, $.tn('[code]'));
           $.add(frag, $.tn('[/code]'));
         }
-        for (node of $$((insideCode ? 'br' : '.prettyprint br'), frag)) {
+        for (node of $$((insideCode ? 'br' : '.prettyprint br'), frag as unknown as HTMLElement)) {
           $.replace(node, $.tn('\n'));
         }
-        for (node of $$('br', frag)) {
+        for (node of $$('br', frag as unknown as HTMLElement)) {
           if (node !== frag.lastChild) { $.replace(node, $.tn('\n>')); }
         }
-        g.SITE!.insertTags?.(frag);
-        for (node of $$('.linkify[data-original]', frag)) {
+        g.SITE!.insertTags?.(frag as unknown as HTMLElement);
+        for (node of $$('.linkify[data-original]', frag as unknown as HTMLElement)) {
           $.replace(node, $.tn(node.dataset.original));
         }
-        for (node of $$('.embedder', frag)) {
+        for (node of $$('.embedder', frag as unknown as HTMLElement)) {
           if (node.previousSibling?.nodeValue === ' ') { $.rm(node.previousSibling); }
           $.rm(node);
         }
-        text += `>${frag.textContent.trim()}\n`;
+        text += `>${frag.textContent!.trim()}\n`;
       } catch (error) { }
     }
 
@@ -2195,7 +2195,7 @@ var QR = {
     return $.event('QRFile', QR.selected?.file);
   },
 
-  drawFile(e) {
+  drawFile(e: any) { // loose: e.target is the drawn-to canvas; precise typing forces null-guards on getContext()
     const file = QR.selected?.file;
     if (!file || !/^(image|video)\//.test(file.type)) { return; }
     const isVideo = /^video\//.test(file as any); // loose: preserves decaffeinated coercion behavior
@@ -2218,7 +2218,7 @@ var QR = {
     return QR.error(div);
   },
 
-  setFile(e) {
+  setFile(e: CustomEvent) {
     const {file, name, source} = e.detail;
     if (name != null) { file.name   = name; }
     if (source != null) { file.source = source; }
@@ -2226,38 +2226,38 @@ var QR = {
     return QR.handleFiles([file]);
   },
 
-  drag(e) {
+  drag(e: Event) {
     // Let it drag anything from the page.
     const toggle = e.type === 'dragstart' ? $.off : $.on;
     toggle(d, 'dragover', QR.dragOver);
     return toggle(d, 'drop',     QR.dropFile);
   },
 
-  dragOver(e) {
+  dragOver(e: DragEvent) {
     e.preventDefault();
-    return e.dataTransfer.dropEffect = 'copy';
+    return e.dataTransfer!.dropEffect = 'copy';
   }, // cursor feedback
 
-  dropFile(e) {
+  dropFile(e: DragEvent) {
     // Let it only handle files from the desktop.
-    if (!e.dataTransfer.files.length) { return; }
+    if (!e.dataTransfer!.files.length) { return; }
     e.preventDefault();
     QR.open();
     QR.dropTargetPost = QR.findPostFromDropTarget(e.target);
     QR.isDroppingFiles = true;
     try {
-      return QR.handleFiles(e.dataTransfer.files);
+      return QR.handleFiles(e.dataTransfer!.files);
     } finally {
       QR.dropTargetPost = undefined;
       QR.isDroppingFiles = false;
     }
   },
 
-  paste(e) {
-    if (!e.clipboardData.items) { return; }
+  paste(e: ClipboardEvent) {
+    if (!e.clipboardData!.items) { return; }
     let file = null;
     let score = -1;
-    for (var item of e.clipboardData.items) {
+    for (var item of e.clipboardData!.items) {
       var file2;
       if ((item.kind === 'file') && (file2 = item.getAsFile())) {
         var score2 = (2* +(file2.size <= QR.max_size)) + +(file2.type === 'image/png');
@@ -2299,7 +2299,7 @@ var QR = {
     }
   },
 
-  handleUrl(urlDefault) {
+  handleUrl(urlDefault: string) {
     QR.open();
     const { selected } = QR;
     selected.preventAutoPost();
@@ -2469,7 +2469,7 @@ var QR = {
         { innerHTML: QuickReplyPage }))
     } as typeof QR.nodes);
 
-    const setNode = (name, query) => nodes[name] = $(query, dialog);
+    const setNode = (name: keyof typeof QR.nodes, query: string) => nodes[name] = $(query, dialog);
 
     setNode('move',           '.move');
     setNode('autohide',       '#autohide');
@@ -2603,9 +2603,9 @@ var QR = {
     const save = function(this: HTMLInputElement | HTMLTextAreaElement | HTMLSelectElement) { QR.selected.save(this); QR.drafts.save(); };
     while ((name = items[i++])) {
       var node;
-      if (!(node = nodes[name])) { continue; }
+      if (!(node = nodes[name as keyof typeof nodes])) { continue; }
       event = node.nodeName === 'SELECT' ? 'change' : 'input';
-      $.on(nodes[name], event, save);
+      $.on(nodes[name as keyof typeof nodes], event, save);
     }
 
     $.on(nodes.draftsButton, 'click', QR.drafts.togglePanel);
@@ -2980,7 +2980,7 @@ var QR = {
     }
   },
 
-  submit(e?) {
+  submit(e?: MouseEvent) {
     let captcha, err, filetag;
     e?.preventDefault();
     const force = e?.shiftKey;
@@ -3031,7 +3031,7 @@ var QR = {
       if (!err) { err = 'Original comment required.'; }
     }
 
-    const unitLength = str => (str || '').replace(/[\uD800-\uDBFF][\uDC00-\uDFFF]/g, '_').length;
+    const unitLength = (str: string | null | undefined) => (str || '').replace(/[\uD800-\uDBFF][\uDC00-\uDFFF]/g, '_').length;
     if (!err && !QR.forcedAnon && unitLength(post.name) > QR.max_name) {
       err = `Name is too long (${unitLength(post.name)}/${QR.max_name}).`;
     }
@@ -3092,7 +3092,7 @@ var QR = {
       form: $.formData(formData)
     };
     if (Conf['Show Upload Progress']) {
-      options.onprogress = function(e) {
+      options.onprogress = function(e: ProgressEvent) {
         const req = QR.req;
         if (this !== req?.upload || !req) { return; } // aborted
         if (e.loaded < e.total) {
@@ -3139,7 +3139,7 @@ var QR = {
           cb = null;
         }
       } as any; // loose: placeholder req object, not a full XMLHttpRequest
-      captcha(function(response) {
+      captcha(function(response: any) { // loose: captcha response shape varies by v2/t backend, matches cb's (response?: any)
         if ((QR.captcha === Captcha.v2) && Captcha.cache.haveCookie()) {
           cb?.();
           if (response) { return Captcha.cache.save(response); }
@@ -3313,7 +3313,7 @@ var QR = {
     QR.status();
   },
 
-  waitForThread(url, cb) {
+  waitForThread(url: string, cb: () => void) {
     let attempts = 0;
     var check = function() {
       $.ajax(url, {
@@ -3422,7 +3422,7 @@ var QR = {
     seconds: 0,
     delays: {
       deletion: 60
-    }, // cooldown for deleting posts/files
+    } as { deletion: number; [key: string]: number }, // cooldown for deleting posts/files
 
     // set in setup
     maxDelay: 0,
@@ -3475,12 +3475,12 @@ var QR = {
       QR.cooldown.count();
     },
 
-    sync(data) {
+    sync(data: Record<string, any>) {
       QR.cooldown.data = data || dict();
       QR.cooldown.start();
     },
 
-    add(threadID, postID) {
+    add(threadID: number, postID: number) {
       if (!Conf['Cooldown']) { return; }
       const start = Date.now();
       const boardID = g.BOARD!.ID;
@@ -3490,7 +3490,7 @@ var QR = {
       QR.cooldown.start();
     },
 
-    addDelay(post, delay) {
+    addDelay(post: post, delay: number) {
       if (!Conf['Cooldown']) { return; }
       const cooldown = QR.cooldown.categorize(post) as any; // loose: categorize union lacks delay
       cooldown.delay = delay;
@@ -3499,14 +3499,14 @@ var QR = {
       QR.cooldown.start();
     },
 
-    addMute(delay) {
+    addMute(delay: number) {
       if (!Conf['Cooldown']) { return; }
       QR.cooldown.set(g.BOARD!.ID, Date.now(), { type: 'mute', delay });
       QR.cooldown.save();
       QR.cooldown.start();
     },
 
-    delete(post) {
+    delete(post: Post) {
       let cooldown;
       if (!QR.cooldown.data) { return; }
       const cooldowns = (QR.cooldown.data[post.board.ID] || (QR.cooldown.data[post.board.ID] = dict()));
@@ -3519,7 +3519,7 @@ var QR = {
       QR.cooldown.save();
     },
 
-    secondsDeletion(post) {
+    secondsDeletion(post: Post) {
       if (!QR.cooldown.data || !Conf['Cooldown']) { return 0; }
       const cooldowns = QR.cooldown.data[post.board.ID] || dict();
       for (var start in cooldowns) {
@@ -3532,7 +3532,7 @@ var QR = {
       return 0;
     },
 
-    categorize(post) {
+    categorize(post: post) {
       if (post.thread === 'new') {
         return { type: 'thread' };
       } else {
@@ -3543,7 +3543,7 @@ var QR = {
       }
     },
 
-    mergeChange(data, scope, id, value) {
+    mergeChange(data: Record<string, any>, scope: string, id: string | number, value: any) {
       if (value) {
         (data[scope] || (data[scope] = dict()))[id] = value;
       } else if (scope in data) {
@@ -3552,7 +3552,7 @@ var QR = {
       }
     },
 
-    set(scope, id, value) {
+    set(scope: string, id: string | number, value: any) {
       QR.cooldown.mergeChange(QR.cooldown.data, scope, id, value);
       (QR.cooldown.changes[scope] || (QR.cooldown.changes[scope] = dict()))[id] = value;
     },
@@ -3740,7 +3740,7 @@ var QR = {
       const page = QR.oekaki.pageWindow();
       if (!page) { return false; }
       page.FCX ||= {};
-      page.FCX.oekakiCB = () => QR.oekaki.getTegaki()?.flatten().toBlob((file) => {
+      page.FCX.oekakiCB = () => QR.oekaki.getTegaki()?.flatten().toBlob((file: Blob | null) => {
         const source = `oekaki-${Date.now()}`;
         page.FCX.oekakiLatest = source;
         $.event('QRSetFile', {
@@ -3783,8 +3783,8 @@ var QR = {
       if (!(Tegaki && FCX)) { return false; }
       const name = QR.nodes.filename.value.replace(/\.\w+$/, '') + '.png';
       const { source } = QR.nodes.fileSubmit.dataset;
-      const error = content => QR.error(content);
-      const cb = function(this: any, e?) { // loose: invoked both as QRMetadata listener (this=element) and directly
+      const error = (content: string) => QR.error(content);
+      const cb = function(this: any, e?: Event) { // loose: invoked both as QRMetadata listener (this=element) and directly
         if (e) { this.removeEventListener('QRMetadata', cb, false); }
         const selected = QR.selected?.nodes?.el;
         if (!selected?.dataset.type) return error('No file to edit.');
@@ -3860,7 +3860,7 @@ var QR = {
         (Menu as any).menu.addEntry({ // loose: menu owned by ../Menu/Menu
           el: a,
           order: 90,
-          open(post) {
+          open(post: Post) {
             QR.oekaki.menu.post = post;
             const { file } = post;
             return QR.postingIsEnabled && !!file && (file.isImage || file.isVideo);
@@ -3868,7 +3868,7 @@ var QR = {
         });
       },
 
-      preparePost(post): any {
+      preparePost(post: Post): any {
         QR.openPost();
         if (!QR.postCanTakeFile(QR.selected, false)) {
           new QR.post(true);
@@ -3878,10 +3878,10 @@ var QR = {
         return QR.selected;
       },
 
-      editSelectedPost(post) {
+      editSelectedPost(post: post) {
         post.select();
         const { el } = post.nodes;
-        const open = function(e?) {
+        const open = function(e?: Event) {
           if (e) { el.removeEventListener('QRMetadata', open, false); }
           if (!el.dataset.type || !/^(image|video)\//.test(el.dataset.type)) { return; }
           if (el.dataset.height === 'loading') {
@@ -3938,7 +3938,7 @@ var QR = {
       $.global('setupQR');
     },
 
-    load(cb) {
+    load(cb: () => void) {
       if (QR.oekaki.getTegaki()) {
         cb();
       } else if (platform === 'userscript') {
@@ -3951,7 +3951,7 @@ var QR = {
           href: `//s.4cdn.org/css/tegaki.${Date.now()}.css`
         };
         const scriptAttrs = { src: `//s.4cdn.org/js/tegaki.min.${Date.now()}.js` };
-        const add = (tagName, attrs) => {
+        const add = (tagName: string, attrs: Record<string, any>) => {
           if ((platform === 'userscript') && (typeof GM_addElement === 'function')) {
             return GM_addElement(d.head, tagName, attrs);
           }
@@ -4046,7 +4046,7 @@ var QR = {
       return `${QR.drafts.filePrefix()}${Date.now().toString(36)}${Math.random().toString(36).slice(2, 8)}`;
     },
 
-    threadValid(thread) {
+    threadValid(thread: number | 'new' | null | undefined) {
       if (thread == null || thread === 'new') { return true; }
       return $$('option', QR.nodes.thread).some(o => (o as HTMLOptionElement).value === `${thread}`);
     },
@@ -4161,7 +4161,7 @@ var QR = {
         }
         // Expand the dump list when there are attachments or multiple queued
         // posts, so it's obvious the restored files/posts are there.
-        if (data.posts.length > 1 || data.posts.some(p => p.file?.id)) {
+        if (data.posts.length > 1 || data.posts.some((p: any) => p.file?.id)) {
           $.addClass(QR.nodes.el, 'dump');
         }
         QR.selected?.load();
@@ -4547,9 +4547,9 @@ var QR = {
     pwd: '' as string,
 
     types: {
-      name: [],
-      email: [],
-      sub: []
+      name: [] as string[],
+      email: [] as string[],
+      sub: [] as string[]
     },
 
     init() {
@@ -4585,8 +4585,8 @@ var QR = {
         QR.persona.always[type] = val;
       }
 
-      if (!QR.persona.types[type].includes(val)) {
-        QR.persona.types[type].push(val);
+      if (!QR.persona.types[type as keyof typeof QR.persona.types].includes(val)) {
+        QR.persona.types[type as keyof typeof QR.persona.types].push(val);
       }
     },
 
@@ -4640,11 +4640,11 @@ var QR = {
       }
     },
 
-    get(cb) {
+    get(cb: (persona: any) => void) {
       $.get('QR.persona', {}, ({ 'QR.persona': persona }) => cb(persona));
     },
 
-    set(post) {
+    set(post: post) {
       $.get('QR.persona', {}, function ({ 'QR.persona': persona }) {
         persona = {
           name: post.name ?? '',
@@ -4686,7 +4686,7 @@ class post {
   // feature has persisted it. See QR.drafts.
   declare _draftFileId?: string;
 
-  constructor(select?) {
+  constructor(select?: boolean) {
     this.select = this.select.bind(this);
     const el = $.el('a', {
       className: 'qr-preview',
@@ -4730,7 +4730,7 @@ class post {
     $.add(QR.nodes.dumpList, el);
 
     for (var event of ['dragStart', 'dragEnter', 'dragLeave', 'dragOver', 'dragEnd', 'drop']) {
-      $.on(el, event.toLowerCase(), this[event]);
+      $.on(el, event.toLowerCase(), this[event as keyof this] as any);
     }
 
     this.thread = g.VIEW === 'thread' ?
@@ -4744,7 +4744,7 @@ class post {
       prev.spoiler
       :
       false);
-    QR.persona.get(persona => {
+    QR.persona.get((persona: any) => {
       // Priority: a user-configured "always" persona (QR.personas setting) wins; otherwise
       // carry the previous post's identity forward so name/trip stick across a session, the
       // same way vanilla 4chan's static form keeps the fields filled. If this is the first
@@ -4801,8 +4801,8 @@ class post {
     if (this !== QR.selected) { return; }
     for (var name of ['thread', 'name', 'email', 'sub', 'com', 'fileButton', 'filename', 'spoiler', 'flag']) {
       var node;
-      if ((node = QR.nodes[name])) {
-        node.disabled = lock;
+      if ((node = QR.nodes[name as keyof typeof QR.nodes])) {
+        (node as any).disabled = lock;
       }
     }
     this.nodes.rm.style.visibility = lock ? 'hidden' : '';
@@ -4834,8 +4834,8 @@ class post {
 
     for (var name of ['thread', 'name', 'email', 'sub', 'com', 'filename', 'flag']) {
       var node;
-      if (!(node = QR.nodes[name])) { continue; }
-      node.value = this[name] || node.dataset.default || '';
+      if (!(node = QR.nodes[name as keyof typeof QR.nodes])) { continue; }
+      (node as any).value = this[name as keyof this] || node.dataset.default || '';
     }
     QR.updateFlagSelector?.();
 
@@ -4886,8 +4886,8 @@ class post {
     // that do not trigger the `input` event.
     for (var name of ['thread', 'name', 'email', 'sub', 'com', 'filename', 'spoiler', 'flag']) {
       var node;
-      if (!(node = QR.nodes[name])) { continue; }
-      this.save(node, true);
+      if (!(node = QR.nodes[name as keyof typeof QR.nodes])) { continue; }
+      this.save(node as any, true);
     }
   }
 
@@ -4900,8 +4900,8 @@ class post {
     }
   }
 
-  setComment(com) {
-      this.com = com || null;
+  setComment(com: string | null | undefined) {
+      this.com = (com || null) as string | undefined;
     if (this === QR.selected) {
       QR.nodes.com.value = this.com || '';
     }
@@ -4921,7 +4921,7 @@ class post {
     return (this.com || '').trim() === (this.quotedText || '').trim();
   }
 
-  static rmErrored(e) {
+  static rmErrored(e: Event) {
     e.stopPropagation();
     for (let i = QR.posts.length - 1; i >= 0; i--) {
       var errors;
@@ -5144,7 +5144,7 @@ class post {
     el.src = URL.createObjectURL(this.file!);
   }
 
-  checkDimensions(el) {
+  checkDimensions(el: any) { // loose: img|video union accessed via runtime tagName checks TS can't narrow
     let height, width;
     if (el.tagName === 'IMG') {
       ({ height, width } = el);
@@ -5180,7 +5180,7 @@ class post {
     }
   }
 
-  setThumbnail(el) {
+  setThumbnail(el: any) { // loose: img|video union accessed via runtime tagName checks TS can't narrow
     // Create a redimensioned thumbnail.
     let height, width;
     const isVideo = el.tagName === 'VIDEO';
@@ -5288,46 +5288,46 @@ class post {
     QR.nodes.spoiler.checked = this.spoiler;
   }
 
-  pasteText(file) {
+  pasteText(file: File) {
     this.pasting = true;
     this.preventAutoPost();
     const reader = new FileReader();
     reader.onload = e => {
       const { result } = e.target as FileReader;
-      this.setComment((this.com ? `${this.com}\n${result}` : result));
+      this.setComment((this.com ? `${this.com}\n${result}` : result as string));
       delete this.pasting;
     };
     reader.readAsText(file);
   }
 
-  dragStart(e) {
+  dragStart(e: DragEvent) {
     const { left, top } = (this as any).getBoundingClientRect(); // loose: bound as event handler, this is the element
-    e.dataTransfer.setDragImage(this, e.clientX - left, e.clientY - top);
+    e.dataTransfer!.setDragImage(this as any, e.clientX - left, e.clientY - top);
     $.addClass(this, 'drag');
   }
   dragEnd() { $.rmClass(this, 'drag'); }
   dragEnter() { $.addClass(this, 'over'); }
   dragLeave() { $.rmClass(this, 'over'); }
 
-  dragOver(e) {
+  dragOver(e: DragEvent) {
     e.preventDefault();
-    e.dataTransfer.dropEffect = 'move';
+    e.dataTransfer!.dropEffect = 'move';
   }
 
-  drop(e) {
+  drop(e: DragEvent) {
     $.rmClass(this, 'over');
     if (e.dataTransfer?.files?.length) { return; }
     if (!(this as any).draggable) { return; } // loose: this is the element here
     const el = $('.drag', (this as any).parentNode);
     if (!el) { return; }
-    const index = el => {
-      for (let i = 0; i < el.parentNode.children.length; i++) {
-        if (el.parentNode.children[i] === el) return i;
+    const index = (el: Element) => {
+      for (let i = 0; i < el.parentNode!.children.length; i++) {
+        if (el.parentNode!.children[i] === el) return i;
       }
       return -1;
     }
     const oldIndex = index(el);
-    const newIndex = index(this);
+    const newIndex = index(this as any);
     if (QR.posts[oldIndex].isLocked || QR.posts[newIndex].isLocked) { return; }
     (oldIndex < newIndex ? $.after : $.before)(this, el);
     const post = QR.posts.splice(oldIndex, 1)[0];

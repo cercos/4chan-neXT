@@ -7,6 +7,9 @@ import Main from "../main/Main";
 import $ from "../platform/$";
 import $$ from "../platform/$$";
 import { dict } from "../platform/helpers";
+import type Thread from "../classes/Thread";
+
+type ExpandStatus = { req?: XMLHttpRequest; numReplies?: number };
 
 var ExpandThread = {
   statuses: dict(),
@@ -22,12 +25,12 @@ var ExpandThread = {
     } else {
       Callbacks.Thread.push({
         name: 'Expand Thread',
-        cb() { ExpandThread.setButton(this); }
+        cb(this: Thread) { ExpandThread.setButton(this); }
       });
     }
   },
 
-  setButton(thread) {
+  setButton(thread: Thread) {
     if (!thread.nodes.root) return;
     const a = $('a.summary', thread.nodes.root);
     if (!a) return;
@@ -36,7 +39,7 @@ var ExpandThread = {
     $.on(a, 'click', ExpandThread.cbToggle);
   },
 
-  disconnect(refresh) {
+  disconnect(refresh?: boolean) {
     if ((g.VIEW === 'thread') || !Conf['Thread Expansion']) { return; }
     for (var threadID in ExpandThread.statuses) {
       var oldReq;
@@ -54,7 +57,7 @@ var ExpandThread = {
     }
   },
 
-  onIndexRefresh(e) {
+  onIndexRefresh(e: CustomEvent<{ threadIDs?: Array<string | number> }>) {
     ExpandThread.disconnect(true);
     g.BOARD!.threads.forEach(thread => ExpandThread.setButton(thread));
 
@@ -73,13 +76,13 @@ var ExpandThread = {
     }
   },
 
-  cbToggle(e) {
+  cbToggle(this: HTMLElement, e: MouseEvent) {
     if ($.modifiedClick(e)) { return; }
     e.preventDefault();
     ExpandThread.toggle(Get.threadFromNode(this));
   },
 
-  cbToggleBottom(e) {
+  cbToggleBottom(this: HTMLElement, e: MouseEvent) {
     if ($.modifiedClick(e)) { return; }
     e.preventDefault();
     const thread = Get.threadFromNode(this);
@@ -90,7 +93,7 @@ var ExpandThread = {
     return window.scrollBy(0, (thread.nodes.root.getBoundingClientRect().bottom - bottom));
   },
 
-  toggle(thread) {
+  toggle(thread: Thread | null | undefined) {
     if (!thread?.nodes.root) return;
     const a = $('a.summary', thread.nodes.root);
     if (!a) return;
@@ -101,10 +104,10 @@ var ExpandThread = {
     }
   },
 
-  expand(thread, a) {
-    let status;
+  expand(thread: Thread, a: any) { // loose: `a` is a `$()` result (typed `any` codebase-wide); used with textContent spread + DOM mutation
+    let status: ExpandStatus;
     ExpandThread.expanded[thread.ID] = true;
-    ExpandThread.statuses[thread] = (status = {});
+    ExpandThread.statuses[thread as any] = (status = {}); // loose: keyed by Thread, coerced via toString()→ID at runtime
     a.textContent = (g.SITE!.Build.summaryText as any)('...', ...a.textContent.match(/\d+/g));
     status.req = $.cache(g.SITE!.urls.threadJSON({boardID: thread.board.ID, threadID: thread.ID}), function(this: XMLHttpRequest) {
       if (this !== status.req) { return; } // aborted
@@ -114,10 +117,10 @@ var ExpandThread = {
     status.numReplies = $$(g.SITE!.selectors.replyOriginal, thread.nodes.root).length;
   },
 
-  contract(thread, a, threadRoot) {
+  contract(thread: Thread, a: any, threadRoot: any) { // loose: `a`/`threadRoot` are `$()`/node results (typed `any` codebase-wide)
     let oldReq;
-    const status = ExpandThread.statuses[thread];
-    delete ExpandThread.statuses[thread];
+    const status: ExpandStatus = ExpandThread.statuses[thread as any]; // loose: keyed by Thread, coerced via toString()→ID at runtime
+    delete ExpandThread.statuses[thread as any];
     // User-initiated collapse: stop keeping it expanded, and drop its text from
     // the search corpus so it's no longer matched on now-hidden content.
     delete ExpandThread.expanded[thread.ID];
@@ -149,14 +152,14 @@ var ExpandThread = {
     $.rm($('.summary-bottom', threadRoot));
   },
 
-  parse(req, thread, a) {
+  parse(req: XMLHttpRequest, thread: Thread, a: any) { // loose: `a` is a `$()` result (typed `any` codebase-wide); used with DOM mutation/clone
     let root;
     if (![200, 304].includes(req.status)) {
       a.textContent = req.status ? `Error ${req.statusText} (${req.status})` : 'Connection Error';
       return;
     }
 
-    g.SITE!.Build.spoilerRange[thread.board] = req.response.posts[0].custom_spoiler;
+    g.SITE!.Build.spoilerRange[thread.board as any] = req.response.posts[0].custom_spoiler; // loose: keyed by Board, coerced via toString()→ID at runtime
 
     const posts: Post[] = [];
     const postsRoot: any[] = [];

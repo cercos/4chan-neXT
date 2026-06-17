@@ -84,16 +84,16 @@ export const parseArchivePost = (data: RawArchivePost) => {
   // https://github.com/FoolCode/FoolFuuka/blob/800bd090835489e7e24371186db6e336f04b85c0/src/Model/Comment.php#L368-L428
   // https://github.com/bstats/b-stats/blob/6abe7bffaf6e5f523498d760e54b110df5331fbb/inc/classes/Yotsuba.php#L157-L168
   let comment: any = (data.comment || '').split(/(\n|\[\/?(?:b|spoiler|code|moot|banned|fortune(?: color="#\w+")?|i|red|green|blue)\])/);
-  comment = comment.map((text, i) => {
+  comment = comment.map((text: string, i: number) => {
     if ((i % 2) === 1) {
-      var tag = Fetcher.archiveTags[text.replace(/\ .*\]/, ']')];
+      var tag = Fetcher.archiveTags[text.replace(/\ .*\]/, ']') as keyof typeof Fetcher.archiveTags];
       return (typeof tag === 'function') ? tag(text) : tag;
     } else {
       var greentext = text[0] === '>';
       text = text
         .replace(/(\[\/?[a-z]+):lit(\])/g, '$1$2')
         .split(/(>>(?:>\/[a-z\d]+\/)?\d+)/g)
-        .map((text2, j) => ((j % 2) ? `<span class="deadlink">${E(text2)}</span>` : E(text2)))
+        .map((text2: string, j: number) => ((j % 2) ? `<span class="deadlink">${E(text2)}</span>` : E(text2)))
         .join('');
       return { innerHTML: (greentext ? `<span class="quote">${text}</span>` : text) };
     }
@@ -165,7 +165,7 @@ export const parseArchivePost = (data: RawArchivePost) => {
   }
   o.extra = dict();
 
-  const board = g.boards[o.boardID] ||
+  const board = (g.boards as unknown as Record<string, Board>)[o.boardID] ||
     new Board(o.boardID);
   const thread = g.threads!.get(`${o.boardID}.${o.threadID}`) ||
     new Thread(o.threadID, board);

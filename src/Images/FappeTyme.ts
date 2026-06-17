@@ -86,12 +86,12 @@ var FappeTyme = {
     return $.add(this.nodes.thumb.parentNode, filename);
   },
 
-  set(type, enabled) {
+  set(type: string, enabled: boolean) {
     this.enabled[type] = (this.nodes[type].checked = enabled);
     return $[`${enabled ? 'add' : 'rm'}Class`](doc, `${type}Tyme`);
   },
 
-  toggle(type) {
+  toggle(type: string) {
     this.set(type, !this.enabled[type]);
     if (type === 'werk') { return $.cb.checked.call(this.nodes[type]); }
   }

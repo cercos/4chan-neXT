@@ -1,14 +1,15 @@
 // Type-checking-only config (NOT used by the rollup build). Run via `npm run typecheck`.
-// Mirrors the base tsconfig (loose: noImplicitAny:false, strict off except ratcheted strict flags) but scoped to
-// src/ with skipLibCheck, so it's a clean green/red compile signal — exits 0 today.
+// Scoped to src/ with skipLibCheck, so it's a clean green/red compile signal — exits 0 today.
 //
 // This is the ratchet: it must stay at 0 errors. Treat any new error as a regression
-// to fix before merging. The decaffeinated object-literal singletons are now typed
-// (late-assigned properties declared on each literal; loose `any` where a precise
-// type would cascade — grep `// loose:` for the spots to tighten later).
+// to fix before merging. The whole `strict` family is now enabled below, INCLUDING
+// noImplicitAny — i.e. this config is effectively full `--strict` (overriding the base
+// tsconfig's `noImplicitAny: false`). The migration is complete.
 //
-// NOTE: full `strict` still has errors from the remaining strict flags, so strict
-// remains a future burndown, not a freebie. noImplicitAny:false is load-bearing here.
+// The decaffeinated object-literal singletons are typed (late-assigned properties
+// declared on each literal; explicit `any`/`as any` where a precise type would cascade
+// or where a public/shared signature must stay loose to avoid rippling — grep `// loose:`
+// for the spots that could be tightened further).
 //
 // Scoped to src/ — tools/ has its own tools/tsconfig.json (node16 + @types/node).
 // fbegin.js/fend.js are intentionally-invalid dead build fragments, excluded.
@@ -23,7 +24,8 @@
     "strictPropertyInitialization": true,
     "useUnknownInCatchVariables": true,
     "strictBuiltinIteratorReturn": true,
-    "alwaysStrict": true
+    "alwaysStrict": true,
+    "noImplicitAny": true
   },
   "include": ["src"],
   "exclude": [

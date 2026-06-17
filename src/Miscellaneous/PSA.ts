@@ -10,7 +10,7 @@ import $ from "../platform/$";
  */
 const PSA = {
   init() {
-    let el;
+    let el: HTMLElement;
     if ((g.SITE!.software === 'yotsuba') && (g.BOARD!.ID === 'qa')) {
       const announcement = {innerHTML: "Stay in touch with your <a href=\"https://www.4chan-x.net/qa_friends.html\" target=\"_blank\" rel=\"noopener\">/qa/ friends</a>!"};
       el = $.el('div', {className: 'fcx-announcement'}, announcement);

@@ -39,7 +39,7 @@ var PostHiding = {
     });
   },
 
-  isHidden(boardID, threadID, postID) {
+  isHidden(boardID: string, threadID: string | number, postID: string | number) {
     return !!(PostHiding.db && PostHiding.db.get({boardID, threadID, postID}));
   },
 
@@ -110,7 +110,7 @@ var PostHiding = {
           textContent: 'Hide'
         }),
         order: 20,
-        open(post) {
+        open(post: Post) {
           if (!post.isReply || post.isClone || post.isHidden) {
             return false;
           }
@@ -171,7 +171,7 @@ var PostHiding = {
       Menu.menu.addEntry({
         el: hideStubLink,
         order: 15,
-        open(post) {
+        open(post: Post) {
           let data;
           if (!post.isReply || post.isClone || !post.isHidden) {
             return false;
@@ -273,7 +273,7 @@ var PostHiding = {
     }
   },
 
-  makeButton(post, type) {
+  makeButton(post: Post, type: 'hide' | 'show') {
     const span = $.el('span', {
       className: 'stub-icon',
     });

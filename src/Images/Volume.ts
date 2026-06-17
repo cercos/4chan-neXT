@@ -67,7 +67,7 @@ var Volume = {
     return Header.menu.addEntry({el: volumeEntry, order: 201});
   },
 
-  setup(video) {
+  setup(video: HTMLMediaElement) {
     video.muted  = !Conf['Allow Sound'];
     video.volume = Conf['Default Volume'];
     return $.on(video, 'volumechange', Volume.change);
@@ -80,9 +80,9 @@ var Volume = {
       'Default Volume': volume
     };
     for (var key in items) {
-      var val = items[key];
+      var val = items[key as keyof typeof items];
       if (Conf[key] === val) {
-        delete items[key];
+        delete items[key as keyof typeof items];
       }
     }
     $.set(items);
@@ -109,7 +109,7 @@ var Volume = {
     return $.on(this.nodes.thumb, 'wheel', Volume.wheel.bind(Header.hover));
   },
 
-  wheel(this: HTMLElement, e) {
+  wheel(this: HTMLElement, e: WheelEvent) {
     let el;
     if (e.shiftKey || e.altKey || e.ctrlKey || e.metaKey) { return; }
     if (!(el = $('video:not([data-md5])', this))) { return; }

@@ -11,6 +11,18 @@ import { dict } from '../platform/helpers';
 import EmbeddingPage from './Embedding/Embed.html';
 import EmbedFxTwitter from './Embedding/FxTwitter';
 import Icon from '../Icons/icon';
+import type Post from '../classes/Post';
+
+// loose: shape of the data object produced by Embedding.services and threaded
+// through embed/title/preview; runtime structure is dynamic so fields are any.
+interface EmbedData {
+  key: string;
+  uid: string;
+  options: string;
+  link: HTMLAnchorElement;
+  post?: Post;
+  [k: string]: any;
+}
 
 /*
  * decaffeinate suggestions:
@@ -55,7 +67,7 @@ var Embedding = {
     }
   },
 
-  events(post) {
+  events(post: Post) {
     let el, i, items;
     if (g.VIEW === 'archive') { return; }
     if (Conf['Embedding']) {
@@ -79,8 +91,8 @@ var Embedding = {
     }
   },
 
-  process(link, post) {
-    let data;
+  process(link: HTMLAnchorElement, post: Post) {
+    let data: EmbedData | undefined;
     if (!Conf['Embedding'] && !Conf['Link Title'] && !Conf['Cover Preview']) { return; }
     if ($.x('ancestor::pre', link)) { return; }
     if (data = Embedding.services(link)) {
@@ -91,7 +103,7 @@ var Embedding = {
     }
   },
 
-  services(link) {
+  services(link: HTMLAnchorElement): EmbedData | undefined {
     const {href} = link;
     for (var type of Embedding.ordered_types) {
       var match;
@@ -101,8 +113,9 @@ var Embedding = {
     }
   },
 
-  embed(data) {
-    const {key, uid, options, link, post} = data;
+  embed(data: EmbedData) {
+    const {key, uid, options, link} = data;
+    const post = data.post!; // set by Embedding.process before embed() runs
     const {href} = link;
 
     $.addClass(link, key.toLowerCase());
@@ -115,7 +128,7 @@ var Embedding = {
       {innerHTML: '(<span>un</span>embed)'});
 
     const object = {key, uid, options, href};
-    for (var name in object) { var value = object[name]; embed.dataset[name] = value; }
+    for (var name in object) { var value = object[name as keyof typeof object]; embed.dataset[name] = value; }
 
     $.on(embed, 'click', Embedding.cb.click);
     $.after(link, [$.tn(' '), embed]);
@@ -165,7 +178,7 @@ var Embedding = {
     return style.pointerEvents = 'none';
   },
 
-  title(data) {
+  title(data: EmbedData) {
     let service;
     const {key, uid, options, link, post} = data;
     if (!(service = Embedding.types[key].title)) { return; }
@@ -180,7 +193,7 @@ var Embedding = {
     }
   },
 
-  flushTitles(service) {
+  flushTitles(service: any) { // loose: title service descriptor has a dynamic shape (api/queue/batchSize)
     let data;
     const {queue} = service;
     if (!queue?.length) { return; }
@@ -188,14 +201,14 @@ var Embedding = {
     const cb = function(this: XMLHttpRequest) {
       for (data of queue) { Embedding.cb.title(this, data); }
     };
-    return CrossOrigin.cache(service.api(queue.map(data => data.uid)), cb);
+    return CrossOrigin.cache(service.api(queue.map((data: EmbedData) => data.uid)), cb);
   },
 
-  preview(data) {
+  preview(data: EmbedData) {
     let service;
     const {key, uid, link} = data;
     if (!(service = Embedding.types[key].preview)) { return; }
-    return $.on(link, 'mouseover', function(e) {
+    return $.on(link, 'mouseover', function(e: MouseEvent) {
       const src = service.url(uid);
       const {height} = service;
       const el = $.el('img', {
@@ -216,7 +229,7 @@ var Embedding = {
   },
 
   cb: {
-    click(this: HTMLElement, e) {
+    click(this: HTMLElement, e: MouseEvent) {
       e.preventDefault();
       if (!$.hasClass(this, 'embedded') && (Conf['Floating Embeds'] || $.hasClass(doc, 'catalog-mode'))) {
         let div;
@@ -240,11 +253,11 @@ var Embedding = {
       return $.toggleClass(this, 'embedded');
     },
 
-    embed(a) {
+    embed(a: HTMLElement) {
       // We create an element to embed
       let el, type;
       const container = $.el('div', {className: 'media-embed'});
-      $.add(container, (el = (type = Embedding.types[a.dataset.key]).el(a)));
+      $.add(container, (el = (type = Embedding.types[a.dataset.key as string]).el(a)));
 
       // Set style values.
       el.style.cssText = (type.style != null) ?
@@ -263,9 +276,10 @@ var Embedding = {
       }
     },
 
-    title(req, data) {
+    title(req: XMLHttpRequest, data: EmbedData) {
       let text;
-      const {key, uid, options, link, post} = data;
+      const {key, uid, options, link} = data;
+      const post = data.post!; // set by Embedding.process before title() runs
       const service = Embedding.types[key].title;
 
       let {status} = req;
@@ -292,7 +306,7 @@ var Embedding = {
       } })()
       }`;
 
-      link.dataset.original = link.textContent;
+      link.dataset.original = link.textContent as string;
       link.textContent = text;
       for (var post2 of post.clones) {
         for (var link2 of $$('a.linkify', post2.nodes.comment)) {
@@ -309,7 +323,7 @@ var Embedding = {
       key: 'audio',
       regExp: /^[^?#]+\.(?:mp3|m4a|oga|wav|flac)(?:[?#]|$)/i,
       style: '',
-      el(a) {
+      el(a: any) { // loose: embed <a> element; dataset.* accessed dynamically
         return $.el('audio', {
           controls:    true,
           preload:     'auto',
@@ -322,7 +336,7 @@ var Embedding = {
       key: 'image',
       regExp: /^[^?#]+\.(?:gif|png|jpg|jpeg|bmp|webp)(?::\w+)?(?:[?#]|$)/i,
       style: '',
-      el(a) {
+      el(a: any) { // loose: embed <a> element; dataset.* accessed dynamically
         const hrefEsc = E(a.dataset.href);
         return $.el('div', { innerHTML: `<a target="_blank" href="${hrefEsc}"><img src="${hrefEsc}" style="max-width: 80vw; max-height: 80vh;"></a>`});
       }
@@ -331,7 +345,7 @@ var Embedding = {
       key: 'video',
       regExp: /^[^?#]+\.(?:og[gv]|webm|mp4)(?:[?#]|$)/i,
       style: 'max-width: 80vw; max-height: 80vh;',
-      el(a) {
+      el(a: any) { // loose: embed <a> element; dataset.* accessed dynamically
         const el = $.el('video', {
           hidden:   true,
           controls: true,
@@ -352,7 +366,7 @@ var Embedding = {
     , {
       key: 'PeerTube',
       regExp: /^(\w+:\/\/[^\/]+\/videos\/watch\/\w{8}-\w{4}-\w{4}-\w{4}-\w{12})(.*)/,
-      el(a) {
+      el(a: any) { // loose: embed <a> element; dataset.* accessed dynamically
         let start;
         const options = (start = a.dataset.options.match(/[?&](start=\w+)/)) ? `?${start[1]}` : '';
         const el = $.el('iframe',
@@ -364,7 +378,7 @@ var Embedding = {
     , {
       key: 'BitChute',
       regExp:  /^\w+:\/\/(?:www\.)?bitchute\.com\/video\/([\w\-]+)/,
-      el(a) {
+      el(a: any) { // loose: embed <a> element; dataset.* accessed dynamically
         const el = $.el('iframe',
           {src: `https://www.bitchute.com/embed/${a.dataset.uid}/`});
         el.setAttribute("allowfullscreen", "true");
@@ -375,19 +389,19 @@ var Embedding = {
       key: 'Clyp',
       regExp: /^\w+:\/\/(?:www\.)?clyp\.it\/(\w{8})/,
       style: 'border: 0; width: 640px; height: 160px;',
-      el(a) {
+      el(a: any) { // loose: embed <a> element; dataset.* accessed dynamically
         return $.el('iframe',
           {src: `https://clyp.it/${a.dataset.uid}/widget`});
       },
       title: {
-        api(uid) { return `https://api.clyp.it/oembed?url=https://clyp.it/${uid}`; },
-        text(_) { return _.title; }
+        api(uid: string) { return `https://api.clyp.it/oembed?url=https://clyp.it/${uid}`; },
+        text(_: any) { return _.title; } // loose: oembed JSON response shape is dynamic
       }
     }
     , {
       key: 'Dailymotion',
       regExp:  /^\w+:\/\/(?:(?:www\.)?dailymotion\.com\/(?:embed\/)?video|dai\.ly)\/([A-Za-z0-9]+)[^?]*(.*)/,
-      el(a) {
+      el(a: any) { // loose: embed <a> element; dataset.* accessed dynamically
         let start;
         const options = (start = a.dataset.options.match(/[?&](start=\d+)/)) ? `?${start[1]}` : '';
         const el = $.el('iframe',
@@ -396,18 +410,18 @@ var Embedding = {
         return el;
       },
       title: {
-        api(uid) { return `https://api.dailymotion.com/video/${uid}`; },
-        text(_) { return _.title; }
+        api(uid: string) { return `https://api.dailymotion.com/video/${uid}`; },
+        text(_: any) { return _.title; } // loose: oembed JSON response shape is dynamic
       },
       preview: {
-        url(uid) { return `https://www.dailymotion.com/thumbnail/video/${uid}`; },
+        url(uid: string) { return `https://www.dailymotion.com/thumbnail/video/${uid}`; },
         height: 240
       }
     }
     , {
       key: 'Gfycat',
       regExp: /^\w+:\/\/(?:www\.)?gfycat\.com\/(?:iframe\/)?(\w+)/,
-      el(a) {
+      el(a: any) { // loose: embed <a> element; dataset.* accessed dynamically
         const el = $.el('iframe',
           {src: `//gfycat.com/ifr/${a.dataset.uid}`});
         el.setAttribute("allowfullscreen", "true");
@@ -420,7 +434,7 @@ var Embedding = {
       style: '',
       el: (function() {
         let counter = 0;
-        return function(a) {
+        return function(a: any) { // loose: embed <a> element; dataset.* accessed dynamically
           const el = $.el('pre', {
             hidden: true,
             id: `gist-embed-${counter++}`
@@ -436,8 +450,8 @@ var Embedding = {
         };
       })(),
       title: {
-        api(uid) { return `https://api.github.com/gists/${uid}`; },
-        text({files}) {
+        api(uid: string) { return `https://api.github.com/gists/${uid}`; },
+        text({files}: { files: Record<string, any> }) { // loose: GitHub gist API response files map
           for (var file in files) { if (files.hasOwnProperty(file)) { return file; } }
         }
       }
@@ -445,7 +459,7 @@ var Embedding = {
     , {
       key: 'InstallGentoo',
       regExp: /^\w+:\/\/paste\.installgentoo\.com\/view\/(?:raw\/|download\/|embed\/)?(\w+)/,
-      el(a) {
+      el(a: any) { // loose: embed <a> element; dataset.* accessed dynamically
         return $.el('iframe',
           {src: `https://paste.installgentoo.com/view/embed/${a.dataset.uid}`});
       }
@@ -453,7 +467,7 @@ var Embedding = {
     , {
       key: 'LiveLeak',
       regExp: /^\w+:\/\/(?:\w+\.)?liveleak\.com\/.*\?.*[tif]=(\w+)/,
-      el(a) {
+      el(a: any) { // loose: embed <a> element; dataset.* accessed dynamically
         const el = $.el('iframe',
           {src: `https://www.liveleak.com/e/${a.dataset.uid}`,});
         el.setAttribute("allowfullscreen", "true");
@@ -464,7 +478,7 @@ var Embedding = {
       key: 'Loopvid',
       regExp: /^\w+:\/\/(?:www\.)?loopvid.appspot.com\/#?((?:pf|kd|lv|gd|gh|db|dx|nn|cp|wu|ig|ky|mf|m2|pc|1c|pi|ni|wl|ko|mm|ic|gc)\/[\w\-\/]+(?:,[\w\-\/]+)*|fc\/\w+\/\d+|https?:\/\/.+)/,
       style: 'max-width: 80vw; max-height: 80vh;',
-      el(a) {
+      el(a: any) { // loose: embed <a> element; dataset.* accessed dynamically
         const el = $.el('video', {
           controls: true,
           preload:  'auto',
@@ -525,7 +539,7 @@ var Embedding = {
       key: 'Openings.moe',
       regExp: /^\w+:\/\/openings.moe\/\?video=([^.&=]+)/,
       style: 'width: 1280px; height: 720px; max-width: 80vw; max-height: 80vh;',
-      el(a) {
+      el(a: any) { // loose: embed <a> element; dataset.* accessed dynamically
         const el = $.el('iframe',
           {src: `https://openings.moe/?video=${a.dataset.uid}`,});
         el.setAttribute("allowfullscreen", "true");
@@ -535,7 +549,7 @@ var Embedding = {
     , {
       key: 'Pastebin',
       regExp: /^\w+:\/\/(?:\w+\.)?pastebin\.com\/(?!u\/)(?:[\w.]+(?:\/|\?i\=))?(\w+)/,
-      el(a) {
+      el(a: any) { // loose: embed <a> element; dataset.* accessed dynamically
         let div;
         return div = $.el('iframe',
           {src: `//pastebin.com/embed_iframe/${a.dataset.uid}`});
@@ -545,20 +559,20 @@ var Embedding = {
       key: 'SoundCloud',
       regExp: /^\w+:\/\/(?:www\.)?(?:soundcloud\.com\/|snd\.sc\/)([\w\-\/]+)/,
       style: 'border: 0; width: 500px; height: 400px;',
-      el(a) {
+      el(a: any) { // loose: embed <a> element; dataset.* accessed dynamically
         return $.el('iframe',
           {src: `https://w.soundcloud.com/player/?visual=true&show_comments=false&url=https%3A%2F%2Fsoundcloud.com%2F${encodeURIComponent(a.dataset.uid)}`});
       },
       title: {
-        api(uid) { return `${location.protocol}//soundcloud.com/oembed?format=json&url=https%3A%2F%2Fsoundcloud.com%2F${encodeURIComponent(uid)}`; },
-        text(_) { return _.title; }
+        api(uid: string) { return `${location.protocol}//soundcloud.com/oembed?format=json&url=https%3A%2F%2Fsoundcloud.com%2F${encodeURIComponent(uid)}`; },
+        text(_: any) { return _.title; } // loose: oembed JSON response shape is dynamic
       }
     }
     , {
       key: 'StrawPoll',
       regExp: /^\w+:\/\/(?:www\.)?strawpoll\.me\/(?:embed_\d+\/)?(\d+(?:\/r)?)/,
       style: 'border: 0; width: 600px; height: 406px;',
-      el(a) {
+      el(a: any) { // loose: embed <a> element; dataset.* accessed dynamically
         return $.el('iframe',
           {src: `https://www.strawpoll.me/embed_1/${a.dataset.uid}`});
       }
@@ -566,21 +580,21 @@ var Embedding = {
     , {
       key: 'Streamable',
       regExp: /^\w+:\/\/(?:www\.)?streamable\.com\/(\w+)/,
-      el(a) {
+      el(a: any) { // loose: embed <a> element; dataset.* accessed dynamically
         const el = $.el('iframe',
           {src: `https://streamable.com/o/${a.dataset.uid}`});
         el.setAttribute("allowfullscreen", "true");
         return el;
       },
       title: {
-        api(uid) { return `https://api.streamable.com/oembed?url=https://streamable.com/${uid}`; },
-        text(_) { return _.title; }
+        api(uid: string) { return `https://api.streamable.com/oembed?url=https://streamable.com/${uid}`; },
+        text(_: any) { return _.title; } // loose: oembed JSON response shape is dynamic
       }
     }
     , {
       key: 'TwitchTV',
       regExp: /^\w+:\/\/(?:www\.|secure\.|clips\.|m\.)?twitch\.tv\/(\w[^#\&\?]*)/,
-      el(a) {
+      el(a: any) { // loose: embed <a> element; dataset.* accessed dynamically
         let url;
         let m = a.dataset.href.match(/^\w+:\/\/(?:(clips\.)|\w+\.)?twitch\.tv\/(?:\w+\/)?(clip\/)?(\w[^#\&\?]*)/);
         if (m[1] || m[2]) {
@@ -604,13 +618,13 @@ var Embedding = {
       regExp:
         /^\w+:\/\/(?:www\.|mobile\.)?(?:(?:(?:fx|vx)?twitter|(?:fixup|fixv)?x|twittpr|xcancel)\.com|nitter\.\w+.\w+)\/(\w+\/status\/\d+)/,
       style: 'border: none; width: 550px; height: 250px; overflow: hidden; resize: both;',
-      el(a) {
+      el(a: any) { // loose: embed <a> element; dataset.* accessed dynamically
         if (Conf.XEmbedder === 'tf') {
           const el = $.el('iframe');
           $.on(el, 'load', function(this: HTMLIFrameElement) {
             return this.contentWindow!.postMessage({element: 't', query: 'height'}, 'https://twitframe.com');
           });
-          var onMessage = function(e) {
+          var onMessage = function(e: MessageEvent) {
             if ((e.source === el.contentWindow) && (e.origin === 'https://twitframe.com')) {
               $.off(window, 'message', onMessage);
               return (cont || el).style.height = `${+$.minmax(e.data.height, 250, 0.8 * doc.clientHeight)}px`;
@@ -635,7 +649,7 @@ var Embedding = {
       key: 'VidLii',
       regExp:  /^\w+:\/\/(?:www\.)?vidlii\.com\/watch\?v=(\w{11})/,
       style: 'border: none; width: 640px; height: 392px;',
-      el(a) {
+      el(a: any) { // loose: embed <a> element; dataset.* accessed dynamically
         const el = $.el('iframe',
           {src: `https://www.vidlii.com/embed?v=${a.dataset.uid}&a=0`});
         el.setAttribute("allowfullscreen", "true");
@@ -645,22 +659,22 @@ var Embedding = {
     , {
       key: 'Vimeo',
       regExp:  /^\w+:\/\/(?:www\.)?vimeo\.com\/(\d+)/,
-      el(a) {
+      el(a: any) { // loose: embed <a> element; dataset.* accessed dynamically
         const el = $.el('iframe',
           {src: `//player.vimeo.com/video/${a.dataset.uid}?wmode=opaque`});
         el.setAttribute("allowfullscreen", "true");
         return el;
       },
       title: {
-        api(uid) { return `https://vimeo.com/api/oembed.json?url=https://vimeo.com/${uid}`; },
-        text(_) { return _.title; }
+        api(uid: string) { return `https://vimeo.com/api/oembed.json?url=https://vimeo.com/${uid}`; },
+        text(_: any) { return _.title; } // loose: oembed JSON response shape is dynamic
       }
     }
     , {
       key: 'Vine',
       regExp: /^\w+:\/\/(?:www\.)?vine\.co\/v\/(\w+)/,
       style: 'border: none; width: 500px; height: 500px;',
-      el(a) {
+      el(a: any) { // loose: embed <a> element; dataset.* accessed dynamically
         return $.el('iframe',
           {src: `https://vine.co/v/${a.dataset.uid}/card`});
       }
@@ -669,7 +683,7 @@ var Embedding = {
       key: 'Vocaroo',
       regExp: /^\w+:\/\/(?:(?:www\.|old\.)?vocaroo\.com|voca\.ro)\/((?:i\/)?\w+)/,
       style: '',
-      el(a) {
+      el(a: any) { // loose: embed <a> element; dataset.* accessed dynamically
         const el = $.el('iframe') as any;
         el.width = 300;
         el.height = 60;
@@ -681,7 +695,7 @@ var Embedding = {
     , {
       key: 'YouTube',
       regExp: /^\w+:\/\/(?:youtu.be\/|(?:[\w.]*youtube[\w.]*|yewtu\.be)\/.*(?:v=|\bembed\/|\bv\/|shorts\/|live\/|watch\/))([\w\-]{11})(.*)/,
-      el(a) {
+      el(a: any) { // loose: embed <a> element; dataset.* accessed dynamically
         let start = a.dataset.options.match(/\b(?:star)?t\=(\w+)/);
         if (start) { start = start[1]; }
         if (start && !/^\d+$/.test(start)) {
@@ -694,9 +708,9 @@ var Embedding = {
         return el;
       },
       title: {
-        api(uid) { return `https://www.youtube.com/oembed?url=https%3A//www.youtube.com/watch%3Fv%3D${uid}&format=json`; },
-        text(_) { return _.title; },
-        status(_) {
+        api(uid: string) { return `https://www.youtube.com/oembed?url=https%3A//www.youtube.com/watch%3Fv%3D${uid}&format=json`; },
+        text(_: any) { return _.title; }, // loose: oembed JSON response shape is dynamic
+        status(_: any) { // loose: YouTube oembed error response shape is dynamic
           if (_.error) {
             const m = _.error.match(/^(\d*)\s*(.*)/);
             return [+m[1], m[2]];
@@ -706,7 +720,7 @@ var Embedding = {
         }
       },
       preview: {
-        url(uid) { return `https://img.youtube.com/vi/${uid}/0.jpg`; },
+        url(uid: string) { return `https://img.youtube.com/vi/${uid}/0.jpg`; },
         height: 360
       }
     }

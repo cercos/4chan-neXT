@@ -18,6 +18,12 @@ interface MediaItem {
   sizeInBytes: number | null;
 }
 
+interface Progress {
+  update(done: number, failed: number): void;
+  isCancelled(): boolean;
+  close(): void;
+}
+
 const DownloadAll = {
   busy: false,
   dialog: null as HTMLDivElement | null,
@@ -97,7 +103,7 @@ const DownloadAll = {
 
   show() {
     if (!DownloadAll.dialog) DownloadAll.buildDialog();
-    DownloadAll.dialog.hidden = false;
+    DownloadAll.dialog!.hidden = false;
     DownloadAll.refreshDialog();
     if (g.VIEW === 'catalog' && !DownloadAll.catalogItems) {
       DownloadAll.fetchCatalog(() => DownloadAll.refreshDialog());
@@ -318,7 +324,7 @@ const DownloadAll = {
     };
   },
 
-  runZip(items: MediaItem[], progress: ReturnType<typeof DownloadAll.makeProgress>, done: () => void) {
+  runZip(items: MediaItem[], progress: Progress, done: () => void) {
     const entries: Array<{ name: string; data: Uint8Array }> = [];
     let i = 0, failed = 0;
 

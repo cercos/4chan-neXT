@@ -22,14 +22,14 @@ var Time = {
   format(date: Date, formatString: string = Conf['time']) {
     return formatString.replace(/%(.)/g, function(s, c) {
       if ($.hasOwn(Time.formatters, c)) {
-        return Time.formatters[c].call(date);
+        return (Time.formatters[c as keyof typeof Time.formatters] as (this: Date) => string | number).call(date) as string;
       } else {
         return s;
       }
     });
   },
 
-  zeroPad(n) { if (n < 10) { return `0${n}`; } else { return n; } },
+  zeroPad(n: number) { if (n < 10) { return `0${n}`; } else { return n; } },
 
   // Setting up the formatter takes more time than actually formatting the date,
   // So while setting up this cache is a bit more code, it's faster at runtime

@@ -129,7 +129,7 @@ var Linkify = {
     for (link of links) { Embedding.process(link, this); }
   },
 
-  process(node) {
+  process(node: Node) {
     let length;
     const test     = /[^\s"]+/g;
     const space    = /[\s"]/;
@@ -138,8 +138,8 @@ var Linkify = {
     const links: any[] = [];
     while ((node = snapshot.snapshotItem(i++))) {
       var result;
-      var {data} = node;
-      if (!data || (node.parentElement.nodeName === "A")) { continue; }
+      var {data} = (node as Text);
+      if (!data || (node.parentElement!.nodeName === "A")) { continue; }
 
       while ((result = test.exec(data))) {
         var {index} = result;
@@ -222,14 +222,14 @@ aero|asia|biz|cat|com|coop|dance|info|int|jobs|mobi|moe|museum|name|net|org|post
 [-\\w\\d.@]+@[a-z\\d.-]+\\.[a-z\\d]\
 )`, 'i'),
 
-  makeRange(startNode, endNode, startOffset, endOffset) {
+  makeRange(startNode: Node, endNode: Node, startOffset: number, endOffset: number) {
     const range = document.createRange();
     range.setStart(startNode, startOffset);
     range.setEnd(endNode,   endOffset);
     return range;
   },
 
-  makeLink(range) {
+  makeLink(range: Range) {
     let t;
     let encodedDomain;
     let text = range.toString();
@@ -239,7 +239,7 @@ aero|asia|biz|cat|com|coop|dance|info|int|jobs|mobi|moe|museum|name|net|org|post
 
     if (i > 0) {
       text = text.slice(i);
-      while ((range.startOffset + i) >= range.startContainer.data.length) { i--; }
+      while ((range.startOffset + i) >= (range.startContainer as Text).data.length) { i--; }
 
       if (i) { range.setStart(range.startContainer, range.startOffset + i); }
     }
@@ -247,7 +247,7 @@ aero|asia|biz|cat|com|coop|dance|info|int|jobs|mobi|moe|museum|name|net|org|post
     // Clean end of range
     i = 0;
     while (/[)\]}>.,]/.test(t = text.charAt(text.length - (1 + i)))) {
-      if (!/[.,]/.test(t) && !((text.match(/[()\[\]{}<>]/g)).length % 2)) { break; }
+      if (!/[.,]/.test(t) && !((text.match(/[()\[\]{}<>]/g))!.length % 2)) { break; }
       i++;
     }
 
@@ -272,7 +272,7 @@ aero|asia|biz|cat|com|coop|dance|info|int|jobs|mobi|moe|museum|name|net|org|post
 
     // Decode percent-encoded characters in domain so that they behave consistently across browsers.
     if (encodedDomain = text.match(/^(https?:\/\/[^/]*%[0-9a-f]{2})(.*)$/i)) {
-      text = encodedDomain[1].replace(/%([0-9a-f]{2})/ig, function(x, y) {
+      text = encodedDomain[1].replace(/%([0-9a-f]{2})/ig, function(x: string, y: string) {
         if (y === '25') { return x; } else { return String.fromCharCode(parseInt(y, 16)); }
       }) + encodedDomain[2];
     }
@@ -304,49 +304,49 @@ aero|asia|biz|cat|com|coop|dance|info|int|jobs|mobi|moe|museum|name|net|org|post
     return a;
   },
 
-  rewriteXLink(link) {
+  rewriteXLink(link: HTMLAnchorElement) {
     if (!Conf['Convert X to xcancel']) { return; }
     const oldHref = link.href;
     const newHref = Linkify.rewriteXURL(oldHref);
     if (newHref !== oldHref) {
       if (!link.dataset.xcancelOrigHref) {
         link.dataset.xcancelOrigHref = oldHref;
-        if (link.children.length === 0) { link.dataset.xcancelOrigText = link.textContent; }
+        if (link.children.length === 0) { link.dataset.xcancelOrigText = link.textContent as string; }
       }
       link.href = newHref;
       Linkify.rewriteVisibleText(link);
     }
   },
 
-  rewriteYouTubeLink(link) {
+  rewriteYouTubeLink(link: HTMLAnchorElement) {
     if (!Conf['Convert YouTube to yewtu.be']) { return; }
     const oldHref = link.href;
     const newHref = Linkify.rewriteYouTubeURL(oldHref);
     if (newHref !== oldHref) {
       if (!link.dataset.yewtuOrigHref) {
         link.dataset.yewtuOrigHref = oldHref;
-        if (link.children.length === 0) { link.dataset.yewtuOrigText = link.textContent; }
+        if (link.children.length === 0) { link.dataset.yewtuOrigText = link.textContent as string; }
       }
       link.href = newHref;
       Linkify.rewriteVisibleText(link);
     }
   },
 
-  rewriteVisibleText(link) {
+  rewriteVisibleText(link: HTMLAnchorElement) {
     // Replace twitter.com / x.com hostnames in the link's visible text with xcancel.com.
     // Replace youtube.com / youtu.be hostnames in the link's visible text with yewtu.be.
     // Only touches text nodes so we don't disturb embed icons or nested markup.
-    const replaceX = s => s.replace(
+    const replaceX = (s: string) => s.replace(
       /\b((?:www\.|mobile\.)?(?:fx|vx)?twitter\.com|(?:www\.|mobile\.)?(?:fixup|fixv)?x\.com|twittpr\.com)\b/gi,
       'xcancel.com'
     );
-    const replaceYouTube = s => s.replace(
+    const replaceYouTube = (s: string) => s.replace(
       /\b((?:www\.|m\.|music\.|mobile\.)?(?:youtu\.be|youtube\.com|youtube-nocookie\.com))\b/gi,
       'yewtu.be'
     );
     const walker = document.createTreeWalker(link, NodeFilter.SHOW_TEXT);
-    let node;
-    while ((node = walker.nextNode())) {
+    let node: Text | null;
+    while ((node = walker.nextNode() as Text | null)) {
       let updated = node.data;
       if (Conf['Convert X to xcancel']) {
         updated = replaceX(updated);
@@ -358,7 +358,7 @@ aero|asia|biz|cat|com|coop|dance|info|int|jobs|mobi|moe|museum|name|net|org|post
     }
   },
 
-  rewriteXURL(urlString) {
+  rewriteXURL(urlString: string) {
     if (!Conf['Convert X to xcancel']) { return urlString; }
     try {
       const base = (typeof location === 'object' && location?.href) ? location.href : undefined;
@@ -386,7 +386,7 @@ aero|asia|biz|cat|com|coop|dance|info|int|jobs|mobi|moe|museum|name|net|org|post
     return urlString;
   },
 
-  rewriteYouTubeURL(urlString) {
+  rewriteYouTubeURL(urlString: string) {
     if (!Conf['Convert YouTube to yewtu.be']) { return urlString; }
     try {
       const base = (typeof location === 'object' && location?.href) ? location.href : undefined;
@@ -427,7 +427,7 @@ aero|asia|biz|cat|com|coop|dance|info|int|jobs|mobi|moe|museum|name|net|org|post
     return urlString;
   },
 
-  rewriteURLs(urlString) {
+  rewriteURLs(urlString: string) {
     const rewrittenX = Linkify.rewriteXURL(urlString);
     return Linkify.rewriteYouTubeURL(rewrittenX);
   }

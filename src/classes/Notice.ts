@@ -11,10 +11,10 @@ export default class Notice {
   declare closed: boolean;
   declare timeoutId: ReturnType<typeof setTimeout>;
 
-  constructor(type, content, timeout?, onclose?) {
+  constructor(type: string, content: string | Node | Array<string | Node>, timeout?: number, onclose?: (() => void)) {
     this.add = this.add.bind(this);
     this.close = this.close.bind(this);
-    this.timeout = timeout;
+    this.timeout = timeout as number;
     this.onclose = onclose;
     this.el = $.el('div', {
       innerHTML: `<a href="javascript:;" class="close" title="Close">${Icon.get('xmark')}</a><div class="message"></div>`
@@ -30,7 +30,7 @@ export default class Notice {
     $.ready(this.add);
   }
 
-  setType(type) {
+  setType(type: string) {
     this.el.className = `notification ${type}`;
   }
 

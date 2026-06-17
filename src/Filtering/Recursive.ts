@@ -27,7 +27,7 @@ var Recursive = {
     }
   },
 
-  add<Fn extends (post: Post, ...args: any[]) => void>(recursive: Fn, post, ...args: DropFirst<Parameters<Fn>>) {
+  add<Fn extends (post: Post, ...args: any[]) => void>(recursive: Fn, post: Post, ...args: DropFirst<Parameters<Fn>>) {
     let obj = Recursive.recursives.get(post.fullID);
     if (!obj) {
       obj = { recursives: [], args: [] };

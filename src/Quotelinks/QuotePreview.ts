@@ -43,7 +43,7 @@ var QuotePreview = {
     }
   },
 
-  mouseover(this: HTMLAnchorElement, e) {
+  mouseover(this: HTMLAnchorElement, e: MouseEvent) {
     let origin;
     if (($.hasClass(this, 'inlined') && !$.hasClass(doc, 'catalog-mode')) || !d.contains(this)) { return; }
 
@@ -86,7 +86,7 @@ var QuotePreview = {
     const clone = Get.postFromRoot(root);
     if (!clone) { return; }
     let post  = clone.origin;
-    post.rmClone(root.dataset.clone);
+    post.rmClone((root as HTMLElement).dataset.clone);
 
     if (!Conf['Quote Highlighting']) { return; }
     for (post of [post].concat(post.clones)) {

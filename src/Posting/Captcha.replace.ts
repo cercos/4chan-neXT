@@ -38,7 +38,7 @@ const CaptchaReplace = {
     }
   },
 
-  iframe(iframe) {
+  iframe(iframe: HTMLIFrameElement) {
     let lang;
     if (lang = Conf['captchaLanguage'].trim()) {
       const src = /[?&]hl=/.test(iframe.src) ?

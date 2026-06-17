@@ -1,4 +1,5 @@
 import $ from "../platform/$";
+import type Post from "../classes/Post";
 import Redirect from "../Archive/Redirect";
 import Filter from "../Filtering/Filter";
 import { g, Conf } from "../globals/globals";
@@ -20,7 +21,7 @@ const ArchiveLink = {
     const entry = {
       el: div,
       order: 60,
-      open({ID, thread, board}) {
+      open({ID, thread, board}: Post) {
         return !!Redirect.to('thread', {postID: ID, threadID: thread.ID, boardID: board.ID});
       },
       subEntries: [] as any[]
@@ -51,12 +52,12 @@ const ArchiveLink = {
     );
 
     const open = type === 'post' ?
-      function({ID, thread, board}) {
+      function({ID, thread, board}: Post) {
         el.href = Redirect.to('thread', {postID: ID, threadID: thread.ID, boardID: board.ID});
         return true;
       }
     :
-      function(post) {
+      function(post: Post) {
         const typeParam = (type === 'country') && post.info.flagCodeTroll ?
           'troll_country'
         :

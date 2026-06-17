@@ -7,6 +7,8 @@ import { svgPathData as circleExclamationSvg, width as circleExclamationW, heigh
 import { svgPathData as circleNotchSvg, width as circleNotchW, height as circleNotchH } from "@fas/faCircleNotch";
 import { svgPathData as circleXmarkSvg, width as circleXmarkW, height as circleXmarkH } from "@fas/faCircleXmark";
 
+type CaptchaState = 'idle' | 'loading' | 'ready' | 'complete' | 'failed' | 'expired';
+
 const getTCaptcha = () => window.TCaptcha || (window as any).wrappedJSObject?.TCaptcha || (typeof unsafeWindow !== 'undefined' ? unsafeWindow.TCaptcha : undefined); // loose: vendor global wrappedJSObject
 
 const captchaStatusIcon = (svgPathData: string, width: string | number, height: string | number) => (
@@ -44,7 +46,7 @@ const CaptchaT = {
     };
   },
 
-  setup(focus?, force?) { // loose: force unused here, kept for union-compat with Captcha.v2.setup
+  setup(focus?: boolean, force?: boolean) { // loose: force unused here, kept for union-compat with Captcha.v2.setup
     if (!this.isEnabled) { return; }
     const TCaptcha = getTCaptcha();
     if (!TCaptcha?.init) {
@@ -107,7 +109,7 @@ const CaptchaT = {
     }
   },
 
-  parseCssColor(value) {
+  parseCssColor(value: string | null | undefined) {
     const match = /rgba?\(([^)]+)\)/i.exec(value || '');
     if (!match) { return null; }
     const parts = match[1].split(',').map(part => part.trim());
@@ -120,30 +122,30 @@ const CaptchaT = {
     return { r, g, b, a };
   },
 
-  getBackgroundColor(node) {
-    for (let el = node; el; el = el.parentElement) {
+  getBackgroundColor(node: Element | null) {
+    for (let el: Element | null = node; el; el = el.parentElement) {
       const color = this.parseCssColor(getComputedStyle(el).backgroundColor);
       if (color && color.a > 0) { return color; }
     }
     return { r: 255, g: 255, b: 255, a: 1 };
   },
 
-  luminance({ r, g, b }) {
-    const toLinear = channel => {
+  luminance({ r, g, b }: { r: number; g: number; b: number }) {
+    const toLinear = (channel: number) => {
       const c = channel / 255;
       return c <= 0.03928 ? c / 12.92 : ((c + 0.055) / 1.055) ** 2.4;
     };
     return 0.2126 * toLinear(r) + 0.7152 * toLinear(g) + 0.0722 * toLinear(b);
   },
 
-  contrast(a, b) {
+  contrast(a: { r: number; g: number; b: number }, b: { r: number; g: number; b: number }) {
     const la = this.luminance(a);
     const lb = this.luminance(b);
     const [max, min] = la > lb ? [la, lb] : [lb, la];
     return (max + 0.05) / (min + 0.05);
   },
 
-  pickReadableTextColor(node) {
+  pickReadableTextColor(node: Element | null) {
     const bg = this.getBackgroundColor(node);
     const light = { r: 245, g: 245, b: 245 };
     const dark = { r: 17, g: 17, b: 17 };
@@ -287,7 +289,7 @@ const CaptchaT = {
     return !!this.nodes.container;
   },
 
-  setState(state) {
+  setState(state: CaptchaState) {
     const root = $('#qr');
     if (!root) { return; }
     for (const name of ['idle', 'loading', 'ready', 'complete', 'failed', 'expired']) {
@@ -348,7 +350,7 @@ const CaptchaT = {
     loadButton.after(hint);
   },
 
-  setStatusMessage(text, state = 'idle') {
+  setStatusMessage(text: string, state: CaptchaState = 'idle') {
     const container = this.nodes?.container;
     if (!container) { return; }
     const statusNode = $('.fourchanx-captcha-load-hint', container);
@@ -365,7 +367,7 @@ const CaptchaT = {
     statusNode.classList.add(`state-${state}`);
     statusNode.replaceChildren();
 
-    const icon = captchaStatusIcons[state];
+    const icon = captchaStatusIcons[state as keyof typeof captchaStatusIcons];
     if (icon) {
       const iconNode = $.el('span', {
         className: `fourchanx-captcha-status-icon state-${state}`,
@@ -383,31 +385,32 @@ const CaptchaT = {
     this.applyAdaptiveTextColors();
   },
 
-  decodeStatusMessage(text) {
+  decodeStatusMessage(text: string) {
     const decoder = document.createElement('textarea');
     decoder.innerHTML = `${text || ''}`;
     return decoder.value;
   },
 
-  plainStatusMessage(text) {
+  plainStatusMessage(text: string) {
     const html = document.createElement('div');
     html.innerHTML = this.decodeStatusMessage(text);
     return html.textContent || '';
   },
 
-  appendStatusMessage(parent, text) {
+  appendStatusMessage(parent: Node, text: string) {
     const html = document.createElement('div');
     html.innerHTML = this.decodeStatusMessage(text);
 
-    const appendSafe = node => {
+    const appendSafe = (node: ChildNode) => {
       if (node.nodeType === Node.TEXT_NODE) {
         parent.appendChild(document.createTextNode(node.textContent || ''));
         return;
       }
       if (node.nodeType !== Node.ELEMENT_NODE) { return; }
+      const elNode = node as Element;
 
-      if (node.localName === 'a') {
-        const href = node.getAttribute('href') || '';
+      if (elNode.localName === 'a') {
+        const href = elNode.getAttribute('href') || '';
         if (/^https?:\/\//i.test(href)) {
           const link = document.createElement('a');
           link.href = href;
@@ -427,7 +430,7 @@ const CaptchaT = {
     }
   },
 
-  messageStateFromText(text) {
+  messageStateFromText(text: string): CaptchaState {
     const plain = this.plainStatusMessage(text).toLowerCase();
     if (/expired/.test(plain)) { return 'expired'; }
     if (/done|verification not required/.test(plain)) { return 'complete'; }
@@ -436,8 +439,8 @@ const CaptchaT = {
     return 'idle';
   },
 
-  formatTaskMessage(text, state) {
-    const icon = captchaStatusIcons[state] || captchaStatusIcons.idle;
+  formatTaskMessage(text: string, state: CaptchaState) {
+    const icon = captchaStatusIcons[state as keyof typeof captchaStatusIcons] || captchaStatusIcons.idle;
     return `<div id="t-desc" class="tcaptcha-message state-${state}">` +
       `<span class="tcaptcha-message-icon" aria-hidden="true">${icon}</span>` +
       `<span class="tcaptcha-message-text">${text || ''}</span>` +
@@ -455,7 +458,7 @@ const CaptchaT = {
     $.add(ctrl, progress);
   },
 
-  updateProgress(TCaptcha?) {
+  updateProgress(TCaptcha?: any) { // loose: vendor TCaptcha global is typed any
     const container = this.nodes?.container;
     if (!container) { return; }
     const progress = $('.fourchanx-captcha-progress', container);
@@ -469,16 +472,16 @@ const CaptchaT = {
     progress.textContent = `${current}/${tasks.length}`;
   },
 
-  formatDescription(str) {
+  formatDescription(str: string) {
     if (!str) { return ''; }
     return str
       .replace(/Use the scroll bar below to\s*|,\s*then click next\.?/gi, '')
-      .replace(/(?:^|>)\s*([a-z])/i, m => m.toUpperCase()) + '.';
+      .replace(/(?:^|>)\s*([a-z])/i, (m: string) => m.toUpperCase()) + '.';
   },
 
   updateHighlight() {
     this.cachedButtons ||= [];
-    this.cachedButtons.forEach((btn, index) => {
+    this.cachedButtons.forEach((btn: HTMLElement, index: number) => {
       const isActive = index === this.currentHighlightIndex;
       btn.classList.toggle('active', isActive);
       if (isActive) {
@@ -487,9 +490,9 @@ const CaptchaT = {
     });
   },
 
-  initializeEventHandler(container, TCaptcha) {
+  initializeEventHandler(container: HTMLElement | null, TCaptcha: any) { // loose: vendor TCaptcha global is typed any
     if (!container || container.dataset.hasFourChanXStackedClick) { return; }
-    container.addEventListener('click', e => {
+    container.addEventListener('click', (e: MouseEvent) => {
       if (!(e.target instanceof Element)) { return; }
       const button = e.target.closest('.tcaptcha-image');
       if (!button || !this.cachedButtons?.length) { return; }
@@ -501,7 +504,7 @@ const CaptchaT = {
     container.dataset.hasFourChanXStackedClick = '1';
   },
 
-  createImageGrid(TCaptcha) {
+  createImageGrid(TCaptcha: any) { // loose: vendor TCaptcha global is typed any
     const container = $('#t-task', this.nodes.container);
     const task = TCaptcha.getCurrentTask?.();
     if (!TCaptcha.node || !container || !task) { return; }
@@ -520,7 +523,7 @@ const CaptchaT = {
       descriptionHTML = '<div id="t-desc"></div>';
     }
 
-    const imageHTMLs = (task.items || []).map(bitmap =>
+    const imageHTMLs = (task.items || []).map((bitmap: string) =>
       `<button type="button" class="tcaptcha-image">
         <img src="data:image/png;base64,${bitmap}" alt="">
       </button>`
@@ -584,7 +587,7 @@ const CaptchaT = {
     return true;
   },
 
-  submitCaptchaAnswer(imageNumber, TCaptcha) {
+  submitCaptchaAnswer(imageNumber: number, TCaptcha: any) { // loose: vendor TCaptcha global is typed any
     if (!TCaptcha?.respNode || !TCaptcha.tasks || imageNumber < 0) { return; }
     const lastIndex = TCaptcha.tasks.length - 1;
     if (lastIndex < 0) { return; }
@@ -631,7 +634,7 @@ const CaptchaT = {
 
   // Pick the best image to represent a task as a chip: the challenge image,
   // else the reference image embedded in the prompt, else the picked tile.
-  taskChipImage(task, selectedIndex) {
+  taskChipImage(task: any, selectedIndex: number | null) { // loose: vendor TCaptcha task object is typed any
     if (!task) { return null; }
     if (task.img) { return `data:image/png;base64,${task.img}`; }
     if (typeof task.str === 'string' && /<img/i.test(task.str)) {
@@ -644,7 +647,7 @@ const CaptchaT = {
     return bitmap ? `data:image/png;base64,${bitmap}` : null;
   },
 
-  editAnswer(index, TCaptcha) {
+  editAnswer(index: number, TCaptcha: any) { // loose: vendor TCaptcha global is typed any
     if (!TCaptcha?.tasks || this.answerHistory?.[index] == null) { return; }
     // Toggle: clicking the chip you're already editing closes it again.
     if (this.editingIndex === index) {
@@ -661,7 +664,7 @@ const CaptchaT = {
   },
 
   // Leave edit mode: show review if every task is answered, else resume solving.
-  closeEdit(TCaptcha) {
+  closeEdit(TCaptcha: any) { // loose: vendor TCaptcha global is typed any
     this.editingIndex = null;
     const answered = this.answeredCount();
     if (answered > TCaptcha.tasks.length - 1) {
@@ -672,7 +675,7 @@ const CaptchaT = {
     }
   },
 
-  showReview(TCaptcha) {
+  showReview(TCaptcha: any) { // loose: vendor TCaptcha global is typed any
     if (!TCaptcha?.tasks?.length) { return; }
     TCaptcha.taskId = TCaptcha.tasks.length;
     this.editingIndex = null;
@@ -696,7 +699,7 @@ const CaptchaT = {
     $.add(ctrl, $.el('span', {className: 'fourchanx-captcha-crumbs'}));
   },
 
-  renderCrumbs(TCaptcha) {
+  renderCrumbs(TCaptcha: any) { // loose: vendor TCaptcha global is typed any
     const container = this.nodes?.container;
     if (!container) { return; }
     const crumbs = $('.fourchanx-captcha-crumbs', container);
@@ -740,7 +743,7 @@ const CaptchaT = {
     }
   },
 
-  installStackedKeyHandler(TCaptcha) {
+  installStackedKeyHandler(TCaptcha: any) { // loose: vendor TCaptcha global is typed any
     if (this.keyHandlerInstalled) { return; }
     this.keyHandlerInstalled = true;
     window.addEventListener('keydown', e => {
@@ -770,7 +773,7 @@ const CaptchaT = {
     }, true);
   },
 
-  patchFormatter(TCaptcha) {
+  patchFormatter(TCaptcha: any) { // loose: vendor TCaptcha global is typed any
     if (this.formatterPatched) { return; }
     this.formatterPatched = true;
 
@@ -823,13 +826,13 @@ const CaptchaT = {
     }
 
     const o = TCaptcha.__fourchanXOriginal;
-    TCaptcha.onSliderKeyUp = function(e) {
+    TCaptcha.onSliderKeyUp = function(e: KeyboardEvent) {
       if (e?.shiftKey && ((e.code === 'Space') || (e.keyCode === 32))) { return; }
       return o.onSliderKeyUp.call(this, e);
     };
   },
 
-  setStacked(enabled, TCaptcha) {
+  setStacked(enabled: boolean, TCaptcha: any) { // loose: vendor TCaptcha global is typed any
     const root = $('#qr');
     if (!root) { return; }
     root.classList.toggle('fourchanx-stacked-captcha', enabled);
@@ -859,7 +862,7 @@ const CaptchaT = {
         TCaptcha.setTaskNodeContent = o.setTaskNodeContent;
         TCaptcha.buildSliderNode = o.buildSliderNode;
         TCaptcha.buildNextNode = o.buildNextNode;
-        TCaptcha.onSliderKeyUp = function(e) {
+        TCaptcha.onSliderKeyUp = function(e: KeyboardEvent) {
           if (e?.shiftKey && ((e.code === 'Space') || (e.keyCode === 32))) { return; }
           return o.onSliderKeyUp.call(this, e);
         };
@@ -875,7 +878,7 @@ const CaptchaT = {
     this.installStackedKeyHandler(TCaptcha);
 
     const o = TCaptcha.__fourchanXOriginal;
-    TCaptcha.setChallenge = function(challenge) {
+    TCaptcha.setChallenge = function(challenge: any) { // loose: vendor TCaptcha challenge object is typed any
       // A fresh challenge (or a fresh "not required" reply, handled natively
       // below) is a new completion cycle -- allow auto-submit to fire again.
       CaptchaT._autoSubmitted = false;
@@ -888,12 +891,12 @@ const CaptchaT = {
       this.setTaskId(0);
       CaptchaT.createImageGrid(this);
     };
-    TCaptcha.setTaskId = function(index) {
+    TCaptcha.setTaskId = function(index: number) {
       this.taskId = index;
       CaptchaT.setState('ready');
       CaptchaT.updateProgress(this);
     };
-    TCaptcha.setTaskNodeContent = function(text) {
+    TCaptcha.setTaskNodeContent = function(text: string) {
       const container = $('#t-task', CaptchaT.nodes.container);
       const state = CaptchaT.messageStateFromText(text);
       CaptchaT.setState(state);

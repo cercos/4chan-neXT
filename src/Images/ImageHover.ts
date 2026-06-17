@@ -1,5 +1,6 @@
 import Callbacks from "../classes/Callbacks";
 import type Post from "../classes/Post";
+import type { File } from "../classes/Post";
 import type CatalogThread from "../classes/CatalogThread";
 import Header from "../General/Header";
 import UI from "../General/UI";
@@ -42,7 +43,7 @@ var ImageHover = {
     return $.on(this.nodes.thumb, 'mouseover', ImageHover.mouseover(this.thread.OP, file));
   },
 
-  mouseover(post, file) { return function(this: HTMLElement, e) {
+  mouseover(post: Post, file: File) { return function(this: HTMLElement, e: MouseEvent) {
     let el, height, width;
     if (!doc.contains(this)) { return; }
     const {isVideo} = file;
@@ -74,7 +75,7 @@ var ImageHover = {
       }
     }
     if (file.dimensions) {
-      [width, height] = file.dimensions.split('x').map((x) => +x);
+      [width, height] = file.dimensions.split('x').map((x: string) => +x);
       const maxWidth = doc.clientWidth;
       const maxHeight = doc.clientHeight - UI.hover.padding;
       const scale = Math.min(1, maxWidth / width, maxHeight / height);
@@ -101,7 +102,7 @@ var ImageHover = {
     });
   }; },
 
-  error(post, file) { return function(this: HTMLImageElement) {
+  error(post: Post, file: File) { return function(this: HTMLImageElement) {
     if (ImageCommon.decodeError(this, file)) { return; }
     return ImageCommon.error(this, post, file, 3 * SECOND, URL => {
       if (URL) {

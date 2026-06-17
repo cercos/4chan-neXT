@@ -171,8 +171,8 @@ var RelativeDates = {
     RelativeDates.timeout = setTimeout(RelativeDates.flush, RelativeDates.INTERVAL);
   },
 
-  hover(post) {
-    const { date } = post.info;
+  hover(post: Post) {
+    const date = post.info.date!;
     const now  = new Date();
     const diff = now.getTime() - date.getTime();
     post.nodes.date.title = RelativeDates.relative(diff, now, date);
@@ -215,7 +215,7 @@ var RelativeDates = {
     RelativeDates.setOwnTimeout(diff, data);
   },
 
-  setOwnTimeout(diff, data) {
+  setOwnTimeout(diff: number, data: Post | HTMLElement) {
     const delay = diff < MINUTE ?
       SECOND - ((diff + (SECOND / 2)) % SECOND)
     : diff < HOUR ?
@@ -227,7 +227,7 @@ var RelativeDates = {
     setTimeout(RelativeDates.markStale, delay, data);
   },
 
-  markStale(data) {
+  markStale(data: Post | HTMLElement) {
     if (RelativeDates.stale.includes(data)) { return; } // We can call RelativeDates.update() multiple times.
     if (data instanceof Post && !g.posts!.get(data.fullID)) { return; } // collected post.
     if (data instanceof Element && !doc.contains(data)) { return; } // removed catalog reply.

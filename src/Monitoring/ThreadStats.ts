@@ -25,7 +25,7 @@ var ThreadStats = {
   lastPageUpdate: null as unknown as Date,
 
   init() {
-    let sc;
+    let sc: any; // loose: assigned from $.el (span) or UI.dialog; tighten in strict pass
     if ((g.VIEW !== 'thread') || !Conf['Thread Stats']) { return; }
 
     if (Conf['Page Count in Stats']) {
@@ -95,7 +95,7 @@ var ThreadStats = {
     ThreadStats.postIndex = n;
   },
 
-  onUpdate(e) {
+  onUpdate(e: CustomEvent) {
     if (e.detail[404]) { return; }
     const {postCount, fileCount} = e.detail;
     $.extend(ThreadStats, {postCount, fileCount});

@@ -35,7 +35,7 @@ var Metadata = {
         } else {
           el = $.el('span',
             {className: 'webm-title'});
-          el.dataset.index = i;
+          el.dataset.index = String(i);
           $.extend(el,
             {innerHTML: "<a href=\"javascript:;\"></a>"});
           $.add(file.text, [$.tn(' '), el]);
@@ -71,7 +71,7 @@ var Metadata = {
       {Range: 'bytes=0-9999'});
   },
 
-  parse(data) {
+  parse(data: Uint8Array) {
     const readInt = function() {
       let n = data[i++];
       let len = 0;

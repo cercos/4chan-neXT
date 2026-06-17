@@ -52,7 +52,7 @@ var Menu = {
     return $.after((this.nodes as any).icons, Menu.makeButton(this.thread.OP));
   },
 
-  makeButton(post, button?) {
+  makeButton(post: Post, button?: HTMLElement) {
     if (!button) { button = Menu.button.cloneNode(true); }
     $.on(button, 'click', function(this: HTMLElement, e) {
       return Menu.menu.toggle(e, this, post);

@@ -1,4 +1,10 @@
+/**
+ * @param {any} p loose: project params object, shape defined elsewhere
+ * @param {any} xtVersion loose: version object
+ * @param {any} manifestVersion loose: numeric manifest version
+ */
 export default function generateManifestJson(p, xtVersion, manifestVersion) {
+  /** @type {any} */
   const manifest = {
     "name": p.meta.name,
     "version": xtVersion.version,

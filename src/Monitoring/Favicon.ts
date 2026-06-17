@@ -65,10 +65,10 @@ var Favicon = {
     return $.asap((() => d.head && (Favicon.el = $('link[rel="shortcut icon"]', d.head))), Favicon.initAsap);
   },
 
-  set(status) {
+  set(status: string) {
     Favicon.status = status;
     if (Favicon.el) {
-      Favicon.el.href = Favicon[status];
+      Favicon.el.href = Favicon[status as keyof typeof Favicon] as string;
       // `favicon.href = href` doesn't work on Firefox.
       return $.add(d.head, Favicon.el);
     }

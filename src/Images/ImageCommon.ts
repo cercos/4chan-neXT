@@ -5,6 +5,7 @@ import $ from "../platform/$";
 import CrossOrigin from "../platform/CrossOrigin";
 import ImageHost from "./ImageHost";
 import Volume from "./Volume";
+import type Post from "../classes/Post";
 
 /*
  * decaffeinate suggestions:
@@ -20,22 +21,24 @@ var ImageCommon = {
   cache: null as any,
 
   // Pause and mute video in preparation for removing the element from the document.
-  pause(video) {
+  pause(video: HTMLVideoElement) {
     if (video.nodeName !== 'VIDEO') { return; }
     video.pause();
     $.off(video, 'volumechange', Volume.change);
     return video.muted = true;
   },
 
-  rewind(el) {
+  rewind(el: HTMLElement) {
     if (el.nodeName === 'VIDEO') {
-      if (el.readyState >= el.HAVE_METADATA) { return el.currentTime = 0; }
-    } else if (/\.gif$/.test(el.src)) {
-      return $.queueTask(() => el.src = el.src);
+      const video = el as HTMLVideoElement;
+      if (video.readyState >= video.HAVE_METADATA) { return video.currentTime = 0; }
+    } else if (/\.gif$/.test((el as HTMLImageElement).src)) {
+      const img = el as HTMLImageElement;
+      return $.queueTask(() => img.src = img.src);
     }
   },
 
-  pushCache(el) {
+  pushCache(el: HTMLElement) {
     ImageCommon.cache = el;
     return $.on(el, 'error', ImageCommon.cacheError);
   },
@@ -51,7 +54,7 @@ var ImageCommon = {
     if (ImageCommon.cache === this) { return delete ImageCommon.cache; }
   },
 
-  decodeError(file, fileObj) {
+  decodeError(file: any, fileObj: any) { // loose: file is media el, fileObj is domain File object — precise types cascade
     let message;
     if (file.error?.code !== MediaError.MEDIA_ERR_DECODE) { return false; }
     if (!(message = $('.warning', fileObj.thumb.parentNode))) {
@@ -62,12 +65,12 @@ var ImageCommon = {
     return true;
   },
 
-  isFromArchive(file) {
+  isFromArchive(file: { src: string }) {
     return (g.SITE!.software === 'yotsuba') && !ImageHost.test(file.src.split('/')[2]);
   },
 
-  error(file, post, fileObj, delay, cb) {
-    let timeoutID;
+  error(file: { src: string }, post: Post, fileObj: any, delay: number | null, cb: (url: string | null | undefined) => void) { // loose: fileObj is domain File object — precise type cascades
+    let timeoutID: ReturnType<typeof setTimeout> | undefined;
     const src = fileObj.url.split('/');
     let url: string | null = null;
     if ((g.SITE!.software === 'yotsuba') && Conf['404 Redirect']) {
@@ -119,12 +122,13 @@ var ImageCommon = {
   },
 
   // XXX Estimate whether clicks are on the video controls and should be ignored.
-  onControls(e) {
-    return (Conf['Show Controls'] && Conf['Click Passthrough'] && (e.target.nodeName === 'VIDEO')) ||
-      (e.target.controls && ((e.target.getBoundingClientRect().bottom - e.clientY) < 35));
+  onControls(e: MouseEvent) {
+    const target = e.target as any; // loose: target is a video/control element; precise narrowing isn't available here
+    return (Conf['Show Controls'] && Conf['Click Passthrough'] && (target.nodeName === 'VIDEO')) ||
+      (target.controls && ((target.getBoundingClientRect().bottom - e.clientY) < 35));
   },
 
-  download(this: HTMLAnchorElement, e) {
+  download(this: HTMLAnchorElement, e: Event) {
     if (this.protocol === 'blob:') { return true; }
     e.preventDefault();
     const {href, download} = this;

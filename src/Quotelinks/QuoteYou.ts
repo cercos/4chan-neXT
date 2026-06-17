@@ -70,7 +70,7 @@ var QuoteYou = {
     QuoteYou.menu.init();
   },
 
-  isYou(post) {
+  isYou(post: Post) {
     return !!QuoteYou.db?.get({
       boardID:  post.boardID,
       threadID: post.threadID,
@@ -113,7 +113,7 @@ var QuoteYou = {
       Menu.menu?.addEntry({
         el: label,
         order: 80,
-        open(post) {
+        open(post: Post) {
           QuoteYou.menu.post = (post.origin || post);
           input.checked = QuoteYou.isYou(post);
           return true;
@@ -151,7 +151,7 @@ var QuoteYou = {
   },
 
   cb: {
-    seek(type) {
+    seek(type: string) {
       let highlighted, post;
       let result;
       const {highlight} = g.SITE!.classes;
@@ -174,10 +174,10 @@ var QuoteYou = {
       }
 
       const posts = $$('.quotesYou');
-      return QuoteYou.cb.scroll(posts[type === 'following' ? 0 : posts.length - 1]);
+      return QuoteYou.cb.scroll(posts[type === 'following' ? 0 : posts.length - 1] as HTMLElement);
     },
 
-    scroll(root) {
+    scroll(root: HTMLElement) {
       const post = Get.postFromRoot(root);
       if (!post || !post.nodes.post.getBoundingClientRect().height) {
         return false;

@@ -35,7 +35,7 @@ var IDPostCount = {
     if (!post) { return; }
     const {uniqueID} = post.info;
     let n = 0;
-    IDPostCount.thread.posts.forEach(function(post) {
+    IDPostCount.thread.posts.forEach(function(post: Post) {
       if (post.info.uniqueID === uniqueID) { return n++; }
     });
     return this.title = `${n} post${n === 1 ? '' : 's'} by this ID`;

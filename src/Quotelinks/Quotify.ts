@@ -29,24 +29,24 @@ var Quotify = {
 
   node(this: Post) {
     if (this.isClone) {
-      this.nodes.archivelinks = $$('a.linkify.quotelink', this.nodes.comment);
+      this.nodes.archivelinks = $$('a.linkify.quotelink', this.nodes.comment) as HTMLAnchorElement[];
       return;
     }
     for (var link of $$('a.linkify', this.nodes.comment)) {
-      Quotify.parseArchivelink.call(this, link);
+      Quotify.parseArchivelink.call(this, link as HTMLAnchorElement);
     }
     for (var deadlink of $$('.deadlink', this.nodes.comment)) {
-      Quotify.parseDeadlink.call(this, deadlink);
+      Quotify.parseDeadlink.call(this, deadlink as HTMLElement);
     }
   },
 
-  parseArchivelink(this: Post, link) {
+  parseArchivelink(this: Post, link: HTMLAnchorElement) {
     let m;
     if (!(m = link.pathname.match(/^\/([^/]+)\/thread\/S?(\d+)\/?$/))) { return; }
     if (['boards.4chan.org', 'boards.4channel.org'].includes(link.hostname)) { return; }
     const boardID  = m[1];
     const threadID = m[2];
-    const postID   = link.hash.match(/^#[pq]?(\d+)$|$/)[1] || threadID;
+    const postID   = link.hash.match(/^#[pq]?(\d+)$|$/)![1] || threadID;
     if (Redirect.to('post', {boardID, postID})) {
       $.addClass(link, 'quotelink');
       $.extend(link.dataset, {boardID, threadID, postID});
@@ -54,7 +54,7 @@ var Quotify = {
     }
   },
 
-  parseDeadlink(this: Post, deadlink) {
+  parseDeadlink(this: Post, deadlink: HTMLElement) {
     let a, m, post, postID;
     if ($.hasClass(deadlink.parentNode, 'prettyprint')) {
       // Don't quotify deadlinks inside code tags,
@@ -67,13 +67,13 @@ var Quotify = {
     }
 
     const quote = deadlink.textContent;
-    if (!(postID = quote.match(/\d+$/)?.[0])) { return; }
+    if (!(postID = quote!.match(/\d+$/)?.[0])) { return; }
     if (postID[0] === '0') {
       // Fix quotelinks that start with a `0`.
       Quotify.fixDeadlink(deadlink);
       return;
     }
-    const boardID = (m = quote.match(/^>>>\/([a-z\d]+)/)) ?
+    const boardID = (m = quote!.match(/^>>>\/([a-z\d]+)/)) ?
       m[1]
     :
       this.board.ID;
@@ -134,7 +134,7 @@ var Quotify = {
     }
   },
 
-  fixDeadlink(deadlink) {
+  fixDeadlink(deadlink: HTMLElement) {
     let el;
     if (!(el = deadlink.previousSibling) || (el.nodeName === 'BR')) {
       const green = $.el('span',

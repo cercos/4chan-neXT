@@ -66,7 +66,7 @@ var QuoteThreading = {
     this.setThreadingState(!Conf['Thread Quotes']);
   },
 
-  setThreadingState(enabled) {
+  setThreadingState(enabled: boolean) {
     this.input.checked = enabled;
     this.setEnabled.call(this.input);
     this.rethread.call(this.input);
@@ -119,7 +119,7 @@ var QuoteThreading = {
     }
   },
 
-  descendants(post) {
+  descendants(post: Post) {
     let children;
     let posts = [post];
     if (children = QuoteThreading.children[post.fullID]) {
@@ -130,7 +130,7 @@ var QuoteThreading = {
     return posts;
   },
 
-  insert(post) {
+  insert(post: Post) {
     let parent, x;
     if (!(
       Conf['Thread Quotes'] &&
@@ -150,7 +150,7 @@ var QuoteThreading = {
       const children = (QuoteThreading.children[parent.fullID] || (QuoteThreading.children[parent.fullID] = [] as Post[]));
     const threadContainer = parent.nodes.threadContainer || $.el('div', {className: 'threadContainer'});
     const nodes = [post.nodes.root];
-    if (post.nodes.threadContainer) { nodes.push(post.nodes.threadContainer); }
+    if ((post.nodes as any).threadContainer) { nodes.push((post.nodes as any).threadContainer); }
 
     let i = children.length;
     for (let j = children.length - 1; j >= 0; j--) { var child = children[j]; if (child.ID >= post.ID) { i--; } }
@@ -194,15 +194,15 @@ var QuoteThreading = {
       const nodes: HTMLElement[] = [];
       Unread.order = new RandomAccessList();
       QuoteThreading.inserted = dict();
-      posts.forEach(function(post) {
+      posts.forEach(function(post: Post) {
         if (post.isFetchedQuote) { return; }
         Unread.order.push(post);
         if (post.isReply) { nodes.push(post.nodes.root); }
         if (QuoteThreading.children[post.fullID]) {
           delete QuoteThreading.children[post.fullID];
           $.rmClass(post.nodes.root, 'threadOP');
-          $.rm(post.nodes.threadContainer);
-          delete post.nodes.threadContainer;
+          $.rm((post.nodes as any).threadContainer);
+          delete (post.nodes as any).threadContainer;
         }
       });
       $.add(thread.nodes.root, nodes);

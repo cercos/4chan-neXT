@@ -17,7 +17,7 @@ export default class CatalogThread {
 
   toString() { return this.ID; }
 
-  constructor(root, thread) {
+  constructor(root: HTMLElement, thread: Thread) {
     this.thread = thread;
     this.ID    = this.thread.ID;
     this.board = this.thread.board;

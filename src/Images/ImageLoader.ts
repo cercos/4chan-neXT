@@ -62,7 +62,7 @@ var ImageLoader = {
     }
   },
 
-  replaceVideo(post, file) {
+  replaceVideo(post: Post, file: any) { // loose: File interface omits .src/.alt on thumb; tighten in strict pass
     const {thumb} = file;
     const video = $.el('video', {
       preload:     'none',
@@ -75,14 +75,14 @@ var ImageLoader = {
     );
     video.setAttribute('muted', 'muted');
     video.dataset.md5 = thumb.dataset.md5;
-    for (var attr of ['height', 'width', 'maxHeight', 'maxWidth']) { video.style[attr] = thumb.style[attr]; }
+    for (var attr of ['height', 'width', 'maxHeight', 'maxWidth'] as const) { video.style[attr] = thumb.style[attr]; }
     video.src         = file.url;
     $.replace(thumb, video);
     file.thumb      = video;
     return file.videoThumb = true;
   },
 
-  prefetch(post, file) {
+  prefetch(post: Post, file: any) { // loose: File interface omits .isPrefetched/.preload; tighten in strict pass
     let clone, type;
     const {isImage, isVideo, thumb, url} = file;
     if (file.isPrefetched || !(isImage || isVideo) || post.isHidden || post.thread.isHidden) { return; }
@@ -98,7 +98,7 @@ var ImageLoader = {
     if (![post, ...post.clones].some(clone => doc.contains(clone.nodes.root))) { return; }
     file.isPrefetched = true;
     if (file.videoThumb) {
-      for (clone of post.clones) { clone.file.thumb.preload = 'auto'; }
+      for (clone of post.clones) { (clone.file.thumb as HTMLVideoElement).preload = 'auto'; }
       thumb.preload = 'auto';
       // XXX Cloned video elements with poster in Firefox cause momentary display of image loading icon.
       if ($.engine === 'gecko') {
@@ -111,14 +111,14 @@ var ImageLoader = {
     if (isVideo) { (el as HTMLVideoElement).preload = 'auto'; }
     if (replace && isImage) {
       $.on(el, 'load', function() {
-        for (clone of post.clones) { clone.file.thumb.src = url; }
+        for (clone of post.clones) { (clone.file.thumb as HTMLImageElement).src = url; }
         return thumb.src = url;
       });
     }
     return el.src = url;
   },
 
-  prefetchAll(post) {
+  prefetchAll(post: Post) {
     for (var file of post.files) {
       ImageLoader.prefetch(post, file);
     }

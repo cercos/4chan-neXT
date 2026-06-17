@@ -139,8 +139,8 @@ export default class Post {
       this.thread.OP = this;
       for (var key of ['isSticky', 'isClosed', 'isArchived']) {
         var selector;
-        if (selector = g.SITE!.selectors.icons[key]) {
-          this.thread[key] = !!$(selector, this.nodes.info);
+        if (selector = (g.SITE!.selectors.icons as Record<string, string>)[key]) {
+          (this.thread as Record<string, any>)[key] = !!$(selector, this.nodes.info);
         }
       }
       if (this.thread.isArchived) {
@@ -238,8 +238,8 @@ export default class Post {
       uniqueID:     undefined as any,
     };
     for (var key in s.info) {
-      var selector = s.info[key];
-      nodes[key] = $(selector, info);
+      var selector = (s.info as Record<string, string>)[key];
+      (nodes as Record<string, any>)[key] = $(selector, info);
     }
     g.SITE!.parseNodes?.(this, nodes);
     if (!nodes.uniqueIDRoot) { nodes.uniqueIDRoot = nodes.uniqueID; }
@@ -283,7 +283,7 @@ export default class Post {
     return this.nodesToText(bq);
   }
 
-  nodesToText(bq) {
+  nodesToText(bq: Node) {
     let node;
     let text = "";
     const nodes = $.X('.//br|.//text()', bq);
@@ -294,8 +294,8 @@ export default class Post {
     return text;
   }
 
-  cleanSpoilers(bq) {
-    const spoilers = $$(g.SITE!.selectors.spoiler, bq);
+  cleanSpoilers(bq: Node) {
+    const spoilers = $$(g.SITE!.selectors.spoiler, bq as HTMLElement);
     for (var node of spoilers) {
       $.replace(node, $.tn('[spoiler]'));
     }
@@ -308,7 +308,7 @@ export default class Post {
     }
   }
 
-  parseQuote(quotelink) {
+  parseQuote(quotelink: HTMLAnchorElement) {
     // Only add quotes that link to posts on an imageboard.
     // Don't add:
     //  - board links. (>>>/b/)
@@ -323,7 +323,7 @@ export default class Post {
     if (this.isClone) { return; }
 
     // ES6 Set when?
-    const fullID = `${match[1]}.${match[3]}`;
+    const fullID = `${match![1]}.${match![3]}`;
     if (!this.quotes.includes(fullID)) this.quotes.push(fullID);
   }
 
@@ -358,8 +358,8 @@ export default class Post {
 
     const file: Partial<File> = { isDead: false };
     for (var key in g.SITE!.selectors.file) {
-      var selector = g.SITE!.selectors.file[key];
-      file[key] = $(selector, fileRoot);
+      var selector = (g.SITE!.selectors.file as Record<string, string>)[key];
+      (file as Record<string, any>)[key] = $(selector, fileRoot);
     }
     file.thumbLink = file.thumb?.parentNode as HTMLElement;
 
@@ -468,20 +468,20 @@ export default class Post {
     this.board.posts.rm(this);
   }
 
-  addClone(context, contractThumb) {
+  addClone(context: Post, contractThumb: boolean) {
     // Callbacks may not have been run yet due to anti-browser-lock delay in Main.callbackNodesDB.
     Callbacks.Post.execute(this);
     return new PostClone(this, context, contractThumb);
   }
 
-  rmClone(index) {
+  rmClone(index: number) {
     this.clones.splice(index, 1);
     for (var clone of this.clones.slice(index)) {
       clone.nodes.root.dataset.clone = String(index++);
     }
   }
 
-  setCatalogOP(isCatalogOP) {
+  setCatalogOP(isCatalogOP: boolean) {
     this.nodes.root.classList.toggle('catalog-container', isCatalogOP);
     this.nodes.root.classList.toggle('opContainer', !isCatalogOP);
     this.nodes.post.classList.toggle('catalog-post', isCatalogOP);
@@ -495,7 +495,7 @@ export class PostClone extends Post {
 
   static suffix = 0;
 
-  constructor(origin, context, contractThumb) {
+  constructor(origin: Post, context: Post, contractThumb: boolean) {
     super();
     this.isClone = true;
 
@@ -504,7 +504,7 @@ export class PostClone extends Post {
     this.context = context;
     for (key of ['ID', 'postID', 'threadID', 'boardID', 'siteID', 'fullID', 'board', 'thread', 'info', 'quotes', 'isReply']) {
       // Copy or point to the origin's key value.
-      this[key] = this.origin[key];
+      (this as Record<string, any>)[key] = (this.origin as Record<string, any>)[key];
     }
 
     const { nodes } = this.origin;
@@ -546,13 +546,13 @@ export class PostClone extends Post {
       file = { ...originFile };
       var fileRoot = fileRoots[file.docIndex!];
       for (key in g.SITE!.selectors.file) {
-        var selector = g.SITE!.selectors.file[key];
-        file[key] = $(selector, fileRoot);
+        var selector = (g.SITE!.selectors.file as Record<string, string>)[key];
+        (file as Record<string, any>)[key] = $(selector, fileRoot);
       }
-      file.thumbLink = file.thumb?.parentNode;
+      file.thumbLink = file.thumb?.parentNode as HTMLElement;
       if (file.thumbLink) { file.fullImage = $('.full-image', file.thumbLink); }
-      file.videoControls = $('.video-controls', file.text);
-      if (file.videoThumb) { file.thumb.muted = true; }
+      file.videoControls = $('.video-controls', file.text as unknown as HTMLElement);
+      if (file.videoThumb) { (file.thumb as HTMLVideoElement).muted = true; }
       this.files.push(file);
     }
 
@@ -568,7 +568,7 @@ export class PostClone extends Post {
     return this;
   }
 
-  cloneWithoutVideo(node) {
+  cloneWithoutVideo(node: any) { // loose: any — accepts both Element (tagName/dataset) and ChildNode (recursion); precise union cascades through $.add/cloneNode handling
     if ((node.tagName === 'VIDEO') && !node.dataset.md5) { // (exception for WebM thumbnails)
       return [];
     } else if ((node.nodeType === Node.ELEMENT_NODE) && $('video', node)) {

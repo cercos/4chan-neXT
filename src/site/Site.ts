@@ -1,3 +1,4 @@
+import type { Site as SiteInstance } from "../globals/globals";
 import { Conf, doc, g } from "../globals/globals";
 import Main from "../main/Main";
 import $ from "../platform/$";
@@ -19,7 +20,7 @@ var Site = {
     'smug.nepu.moe':   {canonical: 'smuglo.li'}
   },
 
-  init(cb) {
+  init(cb: () => void) {
     $.extend(Conf['siteProperties'], Site.defaultProperties);
     let hostname = Site.resolve();
     if (hostname && $.hasOwn(SW, Conf['siteProperties'][hostname].software)) {
@@ -29,7 +30,7 @@ var Site = {
     $.onExists(doc, 'body', () => {
       for (var software in SW) {
         var changes;
-        if (changes = SW[software].detect?.()) {
+        if (changes = (SW[software as keyof typeof SW] as any).detect?.()) {
           changes.software = software;
           hostname = location.hostname.replace(/^www\./, '');
           var properties = (Conf['siteProperties'][hostname] || (Conf['siteProperties'][hostname] = dict()));
@@ -65,12 +66,13 @@ var Site = {
     return hostname;
   },
 
-  parseURL(url) {
+  parseURL(url: Location) {
     const siteID = Site.resolve(url);
-    return Main.parseURL(g.sites[siteID], url);
+    // g.sites is declared as Site[] in globals but is keyed by string siteID at runtime (shared-decl mismatch).
+    return Main.parseURL((g.sites as unknown as Record<string, SiteInstance>)[siteID as string], url);
   },
 
-  set(hostname) {
+  set(hostname: string) {
     for (var ID in Conf['siteProperties']) {
       var site;
       var properties = Conf['siteProperties'][ID];
@@ -79,10 +81,11 @@ var Site = {
         software
       } = properties;
       if (!software || !$.hasOwn(SW, software)) { continue; }
-      g.sites[ID] = (site = Object.create(SW[software]));
+      // g.sites is declared as Site[] in globals but is keyed by string siteID at runtime (shared-decl mismatch).
+      (g.sites as unknown as Record<string, SiteInstance>)[ID] = (site = Object.create(SW[software as keyof typeof SW]));
       $.extend(site, {ID, siteID: ID, properties, software});
     }
-    return g.SITE = g.sites[hostname];
+    return g.SITE = (g.sites as unknown as Record<string, SiteInstance>)[hostname];
   }
 };
 export default Site;

@@ -22,7 +22,7 @@ export interface CrossOriginAjaxOptions {
 }
 
 var CrossOrigin = {
-  binary(url, cb, headers = dict()) {
+  binary(url: string, cb: (data: Uint8Array | null, headers?: any) => void, headers: Record<string, string> = dict()) {
     // XXX https://forums.lanik.us/viewtopic.php?f=64&t=24173&p=78310
     url = url.replace(/^((?:https?:)?\/\/(?:\w+\.)?(?:4chan|4channel|4cdn)\.org)\/adv\//, '$1//adv/');
     if (platform === 'crx') {
@@ -56,7 +56,7 @@ var CrossOrigin = {
         headers,
         responseType: 'arraybuffer',
         overrideMimeType: 'text/plain; charset=x-user-defined',
-        onload(xhr) {
+        onload(xhr: any) { // loose: any — GM_xmlhttpRequest response object, no shared type decl
           let data;
           if (xhr.response instanceof ArrayBuffer) {
             data = new Uint8Array(xhr.response);
@@ -87,7 +87,7 @@ var CrossOrigin = {
   },
 
   file(url: string, cb: (result: File | null) => void) {
-    return CrossOrigin.binary(url, function(data, headers) {
+    return CrossOrigin.binary(url, function(data: Uint8Array | null, headers: any) { // loose: any — preserves pre-existing untyped header-string parsing
       if (data == null) { return cb(null); }
       let name = url.match(/([^\/?#]+)\/*(?:$|[?#])/)?.[1] || 'file';
       const contentType        = headers.match(/Content-Type:\s*(.*)/i)?.[1];
@@ -124,7 +124,7 @@ var CrossOrigin = {
         this.prototype.response = null;
         this.prototype.responseHeaderString = null;
       }
-      getResponseHeader(headerName) {
+      getResponseHeader(headerName: string) {
         if ((this.responseHeaders == null) && (this.responseHeaderString != null)) {
           this.responseHeaders = dict();
           for (var header of this.responseHeaderString.split('\r\n')) {
@@ -159,7 +159,7 @@ var CrossOrigin = {
   //   `abort` - function for aborting the request (silently fails on some platforms)
   //   `getResponseHeader` - function for reading response headers
   ajax(url: string, options: CrossOriginAjaxOptions ={}) {
-    let gmReq;
+    let gmReq: any; // loose: any — GM_xmlhttpRequest return handle, no shared type decl
     let {onloadend, timeout, responseType, headers} = options;
     if (responseType == null) { responseType = 'json'; }
 
@@ -177,7 +177,7 @@ var CrossOrigin = {
         url,
         headers,
         timeout,
-        onload(xhr) {
+        onload(xhr: any) { // loose: any — GM_xmlhttpRequest response object, no shared type decl
           try {
             let response = xhr.responseText;
             // Only attempt JSON parsing on success statuses. Error responses
@@ -236,7 +236,7 @@ var CrossOrigin = {
     return new Promise((resolve) => CrossOrigin.ajax(url, { ...options, onloadend() { resolve(this); } }))
   },
 
-  cache(url, cb) {
+  cache(url: string, cb: (this: XMLHttpRequest) => void) {
     return $.cache(url, cb,
       {ajax: CrossOrigin.ajax});
   },

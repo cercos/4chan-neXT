@@ -43,15 +43,15 @@ var PostJumper = {
     }
   },
 
-  addButtons(post,type) {
+  addButtons(post: Post, type: 'uniqueID' | 'capcode') {
     const value = post.info[type];
     const buttons = PostJumper.buttons.cloneNode(true);
     $.extend(buttons.dataset, {type, value});
-    $.after(post.nodes[type+(type === 'capcode' ? '' : 'Root')], buttons);
+    $.after((post.nodes as any)[type+(type === 'capcode' ? '' : 'Root')], buttons); // loose: dynamic node key
     return PostJumper.addListeners(buttons);
   },
 
-  addListeners(buttons) {
+  addListeners(buttons: HTMLElement) {
     $.on(buttons.firstChild, 'click', PostJumper.buttonClick);
     return $.on(buttons.lastChild, 'click', PostJumper.buttonClick);
   },
@@ -59,12 +59,12 @@ var PostJumper = {
   buttonClick(this: HTMLElement) {
     let toJumper;
     const dir = $.hasClass(this, 'prev') ? -1 : 1;
-    if (toJumper = PostJumper.find(this.parentNode, dir)) {
-      return PostJumper.scroll(this.parentNode, toJumper);
+    if (toJumper = PostJumper.find(this.parentNode as HTMLElement, dir)) {
+      return PostJumper.scroll(this.parentNode as HTMLElement, toJumper);
     }
   },
 
-  find(jumper, dir) {
+  find(jumper: HTMLElement, dir: number) {
     const {type, value} = jumper.dataset;
     const xpath = `span[contains(@class,\"postJumper\") and @data-value=\"${value}\" and @data-type=\"${type}\"]`;
     const axis = dir < 0 ? 'preceding' : 'following';
@@ -92,7 +92,7 @@ var PostJumper = {
     return span;
   },
 
-  scroll(fromJumper, toJumper) {
+  scroll(fromJumper: HTMLElement, toJumper: HTMLElement) {
     const prevPos = fromJumper.getBoundingClientRect().top;
     const destPos = toJumper.getBoundingClientRect().top;
     return window.scrollBy(0, destPos-prevPos);

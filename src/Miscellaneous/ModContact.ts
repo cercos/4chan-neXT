@@ -21,17 +21,17 @@ var ModContact = {
     let moved;
     if (this.isClone || !$.hasOwn(ModContact.specific, this.info.capcode!)) { return; }
     const links = $.el('span', {className: 'contact-links brackets-wrap'});
-    $.extend(links, ModContact.template(this.info.capcode));
+    $.extend(links, ModContact.template(this.info.capcode!));
     $.after(this.nodes.capcode, links);
     if ((moved = this.info.comment.match(/This thread was moved to >>>\/(\w+)\//)) && $.hasOwn(ModContact.moveNote, moved[1])) {
       const moveNote = $.el('div', {className: 'move-note'});
-      $.extend(moveNote, ModContact.moveNote[moved[1]]);
+      $.extend(moveNote, ModContact.moveNote[moved[1] as keyof typeof ModContact.moveNote]);
       return $.add(this.nodes.post, moveNote);
     }
   },
 
-  template(capcode) {
-    return {innerHTML: "<a href=\"https://www.4chan.org/feedback\" target=\"_blank\">feedback</a>" + (ModContact.specific[capcode]()).innerHTML};
+  template(capcode: string) {
+    return {innerHTML: "<a href=\"https://www.4chan.org/feedback\" target=\"_blank\">feedback</a>" + (ModContact.specific[capcode as keyof typeof ModContact.specific]()).innerHTML};
   },
 
   specific: {

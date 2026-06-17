@@ -34,14 +34,14 @@ var QuoteInline = {
     }
   },
 
-  process(link, clone) {
+  process(link: HTMLAnchorElement, clone: boolean | undefined) {
     if (Conf['Quote Hash Navigation']) {
       if (!clone) { $.after(link, QuoteInline.qiQuote(link, $.hasClass(link, 'filtered'))); }
     }
     return $.on(link, 'click', QuoteInline.toggle);
   },
 
-  qiQuote(link, hidden) {
+  qiQuote(link: HTMLAnchorElement, hidden: boolean) {
     let name = "hashlink";
     if (hidden) { name += " filtered"; }
     return $.el('a', {
@@ -52,7 +52,7 @@ var QuoteInline = {
     );
   },
 
-  toggle(this: HTMLAnchorElement, e) {
+  toggle(this: HTMLAnchorElement, e: MouseEvent) {
     if ($.modifiedClick(e)) { return; }
 
     const {boardID, threadID, postID} = Get.postDataFromLink(this);
@@ -72,7 +72,7 @@ var QuoteInline = {
     return this.classList.toggle('inlined');
   },
 
-  findRoot(quotelink, isBacklink) {
+  findRoot(quotelink: HTMLAnchorElement, isBacklink: boolean) {
     if (isBacklink) {
       return $.x('ancestor::*[parent::*[contains(@class,"post")]][1]', quotelink);
     } else {
@@ -80,7 +80,7 @@ var QuoteInline = {
     }
   },
 
-  add(quotelink, boardID, threadID, postID, context, quoter) {
+  add(quotelink: HTMLAnchorElement, boardID: string, threadID: number, postID: number, context: Post, quoter: Post) {
     let post;
     const isBacklink = $.hasClass(quotelink, 'backlink');
     const inline = $.el('div',
@@ -92,7 +92,7 @@ var QuoteInline = {
     const qroot = $.x('ancestor::*[contains(@class,"postContainer")][1]', root);
 
     $.addClass(qroot, 'hasInline');
-    new Fetcher(boardID, threadID, postID, inline, quoter);
+    new Fetcher(boardID, threadID, postID as unknown as string, inline, quoter); // loose: postDataFromLink returns postID as number, but Fetcher's declared signature expects string; runtime unchanged
 
     if (!(
       (post = g.posts!.get(`${boardID}.${postID}`)) &&
@@ -112,7 +112,7 @@ var QuoteInline = {
     return Unread.readSinglePost(post);
   },
 
-  rm(quotelink, boardID, threadID, postID, context) {
+  rm(quotelink: HTMLAnchorElement, boardID: string, threadID: number, postID: number, context: Post) {
     let el;
     let inlined;
     const isBacklink = $.hasClass(quotelink, 'backlink');

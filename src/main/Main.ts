@@ -126,7 +126,7 @@ var Main = {
       let w = window;
       if (platform === 'crx') { w = ((w as any).wrappedJSObject || w); }
       if (`${meta.name} antidup` in w) { return; }
-      w[`${meta.name} antidup`] = true;
+      (w as any)[`${meta.name} antidup`] = true;
     } catch (error) {}
 
     // Don't run inside ad iframes.
@@ -172,15 +172,15 @@ var Main = {
     d.addEventListener('mounted', mountedCB, true);
 
     // Flatten default values from Config into Conf
-    var flatten = function(parent, obj) {
+    var flatten = function(parent: string | null, obj: any) { // loose: Config is a deeply-nested heterogeneous defaults tree; obj walks arbitrary value types.
       if (obj instanceof Array) {
-        Conf[parent] = dict.clone(obj[0]);
+        Conf[parent as string] = dict.clone(obj[0]);
       } else if (typeof obj === 'object') {
         for (var key in obj) {
           flatten(key, obj[key]);
         }
       } else { // string or number
-        Conf[parent] = obj;
+        Conf[parent as string] = obj;
       }
     };
 
@@ -303,7 +303,7 @@ var Main = {
 
   maybeDisableNativeExtensionEarly() {
     if (!/\.4chan(?:nel)?\.org$/.test(location.hostname)) { return; }
-    const apply = function(disableNativeExtension) {
+    const apply = function(disableNativeExtension: boolean) {
       if (!disableNativeExtension) { return; }
       if ($.hasStorage) {
         $.global('disableNativeExtension');
@@ -336,7 +336,7 @@ var Main = {
     return /^\/(?:index\.php)?\/?$/.test(location.pathname);
   },
 
-  normalizeSiteStyle(style) {
+  normalizeSiteStyle(style: unknown) {
     if (!style) return '';
     const normalized = String(style)
       .trim()
@@ -393,7 +393,7 @@ var Main = {
     });
   },
 
-  applyHomePageSiteStyle(preferred) {
+  applyHomePageSiteStyle(preferred: string) {
     const want = Main.normalizeSiteStyle(preferred);
     if (!want) return;
 
@@ -414,7 +414,7 @@ var Main = {
     }
   },
 
-  installHomePageCustomCSS(usercss) {
+  installHomePageCustomCSS(usercss: string) {
     let style: HTMLStyleElement | null = null;
     const ensure = () => {
       if (!d.head) return;
@@ -436,7 +436,7 @@ var Main = {
     $.on(window, 'load', ensure);
   },
 
-  upgrade(items) {
+  upgrade(items: any) { // loose: items is the heterogeneous saved-settings storage dict.
     const {previousversion} = items;
     const changes = Settings.upgrade(items, previousversion);
     items.previousversion = (changes.previousversion = g.VERSION);
@@ -574,17 +574,17 @@ var Main = {
   },
 
   setClass() {
-    let mainStyleSheet, style, styleSheets;
+    let mainStyleSheet: any, style: any, styleSheets: any; // loose: mainStyleSheet is a <link>/<base> element, style is a theme-name string, styleSheets is a link[] — all reassigned to null mid-function.
     const knownStyles = ['yotsuba', 'yotsuba-b', 'futaba', 'burichan', 'photon', 'tomorrow', 'spooky'];
     const customPrefix = 'custom:';
-    const isCustomSiteStyle = (v) => typeof v === 'string' && v.startsWith(customPrefix);
-    const findCustomTheme = (value) => {
+    const isCustomSiteStyle = (v: unknown) => typeof v === 'string' && v.startsWith(customPrefix);
+    const findCustomTheme = (value: any) => { // loose: value is a siteStyle Conf value (string-ish); only used after isCustomSiteStyle string-guard.
       if (!isCustomSiteStyle(value)) return null;
       const name = value.slice(customPrefix.length);
       const list = Array.isArray(Conf['customSiteThemes']) ? Conf['customSiteThemes'] : [];
       return list.find(t => t && t.name === name) || null;
     };
-    const applyCustomTheme = (theme) => {
+    const applyCustomTheme = (theme: any) => { // loose: theme is a user-defined custom-site-theme record from Conf['customSiteThemes'].
       if (!theme) {
         if (Main.customSiteThemeStyle) {
           $.rm(Main.customSiteThemeStyle);
@@ -809,7 +809,7 @@ var Main = {
     }
   },
 
-  setSiteStyleHomeCookie(style) {
+  setSiteStyleHomeCookie(style: string) {
     const domain = location.hostname.includes('4channel.org') ? '4channel.org' : '4chan.org';
     const expires = 60 * 60 * 24 * 365; // 1 year
     const cleanupDomains = [location.hostname, domain, `.${domain}`];
@@ -907,18 +907,18 @@ var Main = {
     }
   },
 
-  parseThreads(threadRoots, threads, posts, errors) {
+  parseThreads(threadRoots: HTMLElement[], threads: Thread[], posts: Post[], errors: any[]) {
     for (var threadRoot of threadRoots) {
       var boardObj = (() => {
         let boardID;
         if (boardID = threadRoot.dataset.board) {
         boardID = encodeURIComponent(boardID);
-        return g.boards[boardID] || new Board(boardID);
+        return (g.boards as any)[boardID] || new Board(boardID);
       } else {
         return g.BOARD!;
       }
       })();
-      var threadID = +threadRoot.id.match(/\d*$/)[0];
+      var threadID = +threadRoot.id.match(/\d*$/)![0];
       if (!threadID || boardObj.threads.get(threadID)?.nodes.root) { return; }
       var thread = new Thread(threadID as any, boardObj as any);
       thread.nodes.root = threadRoot;
@@ -930,7 +930,7 @@ var Main = {
     }
   },
 
-  parsePosts(postRoots, thread, posts, errors) {
+  parsePosts(postRoots: HTMLElement[], thread: Thread, posts: Post[], errors: any[]) {
     for (var postRoot of postRoots) {
       // The QR comment preview is a fake post stitched into the thread (no real ID, no
       // quote link). It carries .postContainer for styling, so the observer hands it here —
@@ -951,11 +951,11 @@ var Main = {
     }
   },
 
-  addThreads(records) {
-    const threadRoots: Element[] = [];
+  addThreads(records: MutationRecord[]) {
+    const threadRoots: HTMLElement[] = [];
     for (var record of records) {
       for (var node of record.addedNodes) {
-        const el = node as Element;
+        const el = node as HTMLElement;
         if ((node.nodeType === Node.ELEMENT_NODE) && el.matches(g.SITE!.selectors.thread)) {
           threadRoots.push(el);
         }
@@ -971,8 +971,8 @@ var Main = {
     Main.callbackNodesDB('Post', posts, () => $.event('PostsInserted', null, records[0].target));
   },
 
-  addPosts(records) {
-    let thread;
+  addPosts(records: MutationRecord[]) {
+    let thread: Thread | null;
     const threads: Thread[]   = [];
     const threadsRM: Thread[] = [];
     const posts: Post[]       = [];
@@ -980,12 +980,12 @@ var Main = {
     for (var record of records) {
       thread = Get.threadFromRoot(record.target);
       if (!thread) { continue; }
-      var postRoots: Element[] = [];
+      var postRoots: HTMLElement[] = [];
       for (var node of record.addedNodes) {
         if (node.nodeType === Node.ELEMENT_NODE) {
-          let el = node as Element;
+          let el = node as HTMLElement;
           const postContainer = g.SITE!.selectors.postContainer;
-          if (el.matches(postContainer) || (el = $(postContainer, el) as Element)) {
+          if (el.matches(postContainer) || (el = $(postContainer, el) as HTMLElement)) {
             postRoots.push(el);
           }
         }
@@ -1037,7 +1037,7 @@ var Main = {
     return $.event('4chanXInitFinished');
   },
 
-  parseCatalogThreads(threadRoots, threads, errors) {
+  parseCatalogThreads(threadRoots: HTMLElement[], threads: CatalogThreadNative[], errors: any[]) {
     for (var threadRoot of threadRoots) {
       try {
         var thread = new CatalogThreadNative(threadRoot);
@@ -1056,11 +1056,11 @@ var Main = {
     }
   },
 
-  addCatalogThreads(records) {
-    const threadRoots: Element[] = [];
+  addCatalogThreads(records: MutationRecord[]) {
+    const threadRoots: HTMLElement[] = [];
     for (var record of records) {
       for (var node of record.addedNodes) {
-        const el = node as Element;
+        const el = node as HTMLElement;
         if ((node.nodeType === Node.ELEMENT_NODE) && el.matches(g.SITE!.selectors.catalog.thread)) {
           threadRoots.push(el);
         }
@@ -1074,7 +1074,7 @@ var Main = {
     return Main.callbackNodes('CatalogThreadNative', threads);
   },
 
-  callbackNodes(klass, nodes) {
+  callbackNodes(klass: 'Post' | 'Thread' | 'CatalogThread' | 'CatalogThreadNative', nodes: any[]) {
     let node;
     let i = 0;
     const cb = Callbacks[klass];
@@ -1083,7 +1083,7 @@ var Main = {
     }
   },
 
-  callbackNodesDB(klass, nodes, cb) {
+  callbackNodesDB(klass: 'Post' | 'Thread' | 'CatalogThread' | 'CatalogThreadNative', nodes: any[], cb?: () => void) {
     let i   = 0;
     const cbs = Callbacks[klass];
     const fn  = function() {
@@ -1107,7 +1107,7 @@ var Main = {
     softTask();
   },
 
-  handleErrors(errors) {
+  handleErrors(errors: any) { // loose: errors may be a single error record or an array of them (branch on `instanceof Array`).
     // Detect conflicts with 4chan X v2
     let error;
     if (d.body && $.hasClass(d.body, 'fourchan_x') && !$.hasClass(doc, 'tainted')) {
@@ -1117,7 +1117,7 @@ var Main = {
 
     // Detect conflicts with native extension
     if ((g.SITE! as any).testNativeExtension && !$.hasClass(doc, 'tainted')) {
-      (g.SITE! as any).testNativeExtension().then(({enabled}) => {
+      (g.SITE! as any).testNativeExtension().then(({enabled}: {enabled: boolean}) => {
         if (enabled) {
           $.addClass(doc, 'tainted');
           if (Conf['Disable Native Extension'] && !Main.isFirstRun) {
@@ -1157,7 +1157,7 @@ var Main = {
     return new Notice('error', [div, logs], 30);
   },
 
-  parseError(data, reportLink?) {
+  parseError(data: any, reportLink?: { innerHTML: string }) { // loose: data is an error record (message/error/html) of varying shape.
     c.error(data.message, data.error.stack);
     const message = $.el('div',
       { innerHTML: E(data.message) + ((reportLink) ? (reportLink).innerHTML : "") });
@@ -1169,13 +1169,13 @@ var Main = {
     return [message, error, context];
   },
 
-  reportLink(errors) {
+  reportLink(errors: any[]) { // loose: errors is an array of error records of varying shape.
     let info;
     const data = errors[0];
     let title  = data.message;
     if (errors.length > 1) { title += ` (+${errors.length - 1} other errors)`; }
     let details = '';
-    const addDetails = function(text) {
+    const addDetails = function(text: string) {
       if (encodeURIComponent(title + details + text + '\n').length <= meta.newIssueMaxLength - meta.newIssue.replace(/%(title|details)/, '').length) {
         return details += text + '\n';
       }
@@ -1213,13 +1213,13 @@ User agent: ${navigator.userAgent}\
     return (Main as any).thisPageIsLegit;
   },
 
-  ready(cb) {
+  ready(cb: () => void) {
     return $.ready(function() {
       if (Main.isThisPageLegit()) { return cb(); }
     });
   },
 
-  mounted(cb) {
+  mounted(cb: () => void) {
     if (Main.isMounted) {
       return cb();
     } else {

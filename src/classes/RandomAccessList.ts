@@ -16,12 +16,12 @@ export default class RandomAccessList {
   declare last: RALItem;
   [ID: string]: any;
 
-  constructor(items?) {
+  constructor(items?: any) {
     this.length = 0;
     if (items) { for (var item of items) { this.push(item); } }
   }
 
-  push(data) {
+  push(data: any) {
     let item: RALItem;
     let {ID} = data;
     if (!ID) { ID = data.id; }
@@ -41,7 +41,7 @@ export default class RandomAccessList {
     return this.length++;
   }
 
-  before(root, item) {
+  before(root: any, item: any) { // loose: any — RALItem nullable links ripple into body assignments
     if ((item.next === root) || (item === root)) { return; }
 
     this.rmi(item);
@@ -57,7 +57,7 @@ export default class RandomAccessList {
     }
   }
 
-  after(root, item) {
+  after(root: any, item: any) { // loose: any — RALItem nullable links ripple into body assignments
     if ((item.prev === root) || (item === root)) { return; }
 
     this.rmi(item);
@@ -73,7 +73,7 @@ export default class RandomAccessList {
     }
   }
 
-  prepend(item) {
+  prepend(item: any) { // loose: any — `delete item.prev` needs optional; body mutates nullable links
     const {first} = this;
     if ((item === first) || !this[item.ID]) { return; }
     this.rmi(item);
@@ -98,7 +98,7 @@ export default class RandomAccessList {
     return order;
   }
 
-  rm(ID) {
+  rm(ID: string | number) {
     const item = this[ID];
     if (!item) { return; }
     delete this[ID];
@@ -108,7 +108,7 @@ export default class RandomAccessList {
     return delete item.prev;
   }
 
-  rmi(item) {
+  rmi(item: any) { // loose: any — body assigns nullable next/prev into non-null first/last fields
     const {prev, next} = item;
     if (prev) {
       prev.next = next;

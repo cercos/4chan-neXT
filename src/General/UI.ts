@@ -12,7 +12,7 @@ import Icon from "../Icons/icon";
  * DS207: Consider shorter variations of null checks
  * Full docs: https://github.com/decaffeinate/decaffeinate/blob/main/docs/suggestions.md
  */
-const dialog = function(id, properties) {
+const dialog = function(id: string, properties: Record<string, any>) {
   const el = $.el('div', {
     className: 'dialog',
     id
@@ -34,7 +34,10 @@ const dialog = function(id, properties) {
 const threadWatcherAttached = () =>
   Conf['Thread Watcher Attach Controls'] !== false && Conf['Thread Watcher Attached'];
 
-var Menu = (function() {
+// loose: self-referential class-expression IIFE (Menu reassigns its own binding);
+// a construct signature breaks the inference cycle while keeping `new UI.Menu(type)` valid.
+type MenuCtor = { new (type: string): any; initClass(): void };
+var Menu: MenuCtor = (function(): MenuCtor {
   let currentMenu: any = undefined;
   let lastToggledButton: any = undefined;
   // A single #menu node, created once and kept in the DOM. Opening repopulates
@@ -53,7 +56,7 @@ var Menu = (function() {
       lastToggledButton = null;
     }
 
-    constructor(type) {
+    constructor(type: string) {
       // XXX AddMenuEntry event is deprecated
       this.setPosition = this.setPosition.bind(this);
       this.close = this.close.bind(this);
@@ -89,7 +92,7 @@ var Menu = (function() {
       return menuNode;
     }
 
-    toggle(e, button, data) {
+    toggle(e: Event, button: HTMLElement, data?: any) {
       e.preventDefault();
       e.stopPropagation();
 
@@ -105,7 +108,7 @@ var Menu = (function() {
       return this.open(button, data);
     }
 
-    open(button, data) {
+    open(button: HTMLElement, data?: any) {
       let entry;
       const menu = (this.menu = this.makeMenu());
       currentMenu       = this;
@@ -156,7 +159,7 @@ var Menu = (function() {
       return this.menu.classList.toggle('left', right);
     }
 
-    insertEntry(entry, parent, data) {
+    insertEntry(entry: any, parent: HTMLElement, data?: any) {
       let submenu;
       if (typeof entry.open === 'function') {
         try {
@@ -199,13 +202,13 @@ var Menu = (function() {
       return $.off(window, 'resize', this.setPosition);
     }
 
-    findNextEntry(entry, direction) {
+    findNextEntry(entry: any, direction: number) {
       const entries = [...entry.parentNode.children];
       entries.sort((first, second) => first.style.order - second.style.order);
       return entries[entries.indexOf(entry) + direction];
     }
 
-    keybinds(e) {
+    keybinds(e: KeyboardEvent) {
       let subEntry;
       let next, submenu;
       let entry = $('.focused', this.menu);
@@ -253,12 +256,12 @@ var Menu = (function() {
       return e.stopPropagation();
     }
 
-    onFocus(e) {
+    onFocus(e: Event) {
       e.stopPropagation();
       return this.focus(e.target);
     }
 
-    focus(entry) {
+    focus(entry: any) {
       let focused, submenu;
       while ((focused = $.x('parent::*/child::*[contains(@class,"focused")]', entry))) {
         $.rmClass(focused, 'focused');
@@ -289,12 +292,12 @@ var Menu = (function() {
       return style.right  = right;
     }
 
-    addEntry(entry) {
+    addEntry(entry: any) {
       this.parseEntry(entry);
       return this.entries.push(entry);
     }
 
-    parseEntry(entry) {
+    parseEntry(entry: any) {
       const {el, subEntries} = entry;
       $.addClass(el, 'entry');
       $.on(el, 'focus mouseover', this.onFocus);
@@ -315,7 +318,7 @@ var Menu = (function() {
   return Menu;
 })();
 
-export var dragstart = function (this: any, e) {
+export var dragstart = function (this: any, e: any) {
   let isTouching;
   if ((e.type === 'mousedown') && (e.button !== 0)) { return; } // not LMB
   // prevent text selection
@@ -376,7 +379,7 @@ export var dragstart = function (this: any, e) {
   }
 };
 
-export var touchmove = function (this: any, e) {
+export var touchmove = function (this: any, e: TouchEvent) {
   for (var touch of e.changedTouches) {
     if (touch.identifier === this.identifier) {
       drag.call(this, touch);
@@ -385,7 +388,7 @@ export var touchmove = function (this: any, e) {
   }
 };
 
-export var drag = function (this: any, e) {
+export var drag = function (this: any, e: any) {
   const {clientX, clientY} = e;
 
   let left: any = clientX - this.dx;
@@ -425,7 +428,7 @@ export var drag = function (this: any, e) {
   }
 };
 
-export var touchend = function (this: any, e) {
+export var touchend = function (this: any, e: TouchEvent) {
   for (var touch of e.changedTouches) {
     if (touch.identifier === this.identifier) {
       dragend.call(this);
@@ -462,7 +465,16 @@ export var dragend = function (this: any) {
   }
 };
 
-const hoverstart = function ({ root, el, latestEvent, endEvents, height, width, cb, noRemove }) {
+const hoverstart = function ({ root, el, latestEvent, endEvents, height, width, cb, noRemove }: {
+  root: HTMLElement;
+  el: HTMLElement;
+  latestEvent: any;
+  endEvents: string;
+  height?: number;
+  width?: number;
+  cb?: (() => void) | null;
+  noRemove?: boolean;
+}) {
   const rect = root.getBoundingClientRect();
   const o: any = {
     root,
@@ -500,13 +512,13 @@ const hoverstart = function ({ root, el, latestEvent, endEvents, height, width, 
   $.on(root, 'mousemove', o.hover);
 
   // Workaround for https://bugzilla.mozilla.org/show_bug.cgi?id=674955
-  o.workaround = function(e) { if (!root.contains(e.target)) { return o.hoverend(e); } };
+  o.workaround = function(e: any) { if (!root.contains(e.target)) { return o.hoverend(e); } };
   return $.on(doc,  'mousemove', o.workaround);
 };
 
 hoverstart.padding = 25;
 
-export var hover = function (this: any, e) {
+export var hover = function (this: any, e: any) {
   this.latestEvent = e;
   const height = (this.height || this.el.offsetHeight) + hoverstart.padding;
   const width  = (this.width  || this.el.offsetWidth);
@@ -530,7 +542,7 @@ export var hover = function (this: any, e) {
   return style.right = right;
 };
 
-export var hoverend = function (this: any, e) {
+export var hoverend = function (this: any, e: any) {
   if (((e.type === 'keydown') && (e.keyCode !== 13)) || (e.target.nodeName === "TEXTAREA")) { return; }
   if (!this.noRemove) { $.rm(this.el); }
   $.off(this.root, this.endEvents,  this.hoverend);
@@ -541,7 +553,7 @@ export var hoverend = function (this: any, e) {
   if (this.cb) { return this.cb.call(this); }
 };
 
-export const checkbox = function (name, text, checked?) {
+export const checkbox = function (name: string, text: string, checked?: any) {
   if (checked == null) { checked = Conf[name]; }
   const label = $.el('label');
   const input = $.el('input', {type: 'checkbox', name, checked});

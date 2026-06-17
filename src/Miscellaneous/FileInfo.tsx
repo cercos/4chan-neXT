@@ -46,12 +46,12 @@ var FileInfo = {
     return $.prepend(this.file.text, info);
   },
 
-  format(formatString, post, outputNode) {
+  format(formatString: string, post: Post, outputNode: HTMLElement) {
     let a;
     const output: any[] = [];
-    formatString.replace(/%(.)|[^%]+/g, function(s, c) {
+    formatString.replace(/%(.)|[^%]+/g, function(s: string, c: string) {
       output.push($.hasOwn(FileInfo.formatters, c) ?
-        FileInfo.formatters[c].call(post)
+        FileInfo.formatters[c as keyof typeof FileInfo.formatters].call(post)
       :
         {innerHTML: E(s)}
       );

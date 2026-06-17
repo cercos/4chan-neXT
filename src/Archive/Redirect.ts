@@ -12,6 +12,7 @@ type ArchiveData = {
   post: Map<string, Archive>,
   file: Map<string, Archive>,
 };
+type RedirectData = { boardID: string, threadID?: string | number, postID?: string | number, filename?: string, type?: string, value?: string };
 
 var Redirect = {
   archives,
@@ -58,7 +59,7 @@ var Redirect = {
         var archive;
         if ((archive = archives[JSON.stringify(id)]) && $.hasOwn(o, type)) {
           const boards = type === 'file' ? archive.files : archive.boards;
-          if (boards.includes(boardID)) { o[type].set(boardID, archive); }
+          if (boards.includes(boardID)) { o[type as keyof typeof o].set(boardID, archive); }
         }
       }
     }
@@ -66,7 +67,7 @@ var Redirect = {
     Redirect.data = o;
   },
 
-  update(cb?) {
+  update(cb?: () => void) {
     let url;
     const urls: string[] = [];
     const responses: any[][] = [];
@@ -78,9 +79,9 @@ var Redirect = {
       }
     }
 
-    const fail = (url, action, msg) => new Notice('warning', `Error ${action} archive data from\n${url}\n${msg}`, 20);
+    const fail = (url: string, action: string, msg: string) => new Notice('warning', `Error ${action} archive data from\n${url}\n${msg}`, 20);
 
-    const load = i => (function(this: XMLHttpRequest) {
+    const load = (i: number) => (function(this: XMLHttpRequest) {
       if (this.status !== 200) { return fail(urls[i], 'fetching', (this.status ? `Error ${this.statusText} (${this.status})` : 'Connection Error')); }
       let {response} = this;
       if (!(response instanceof Array)) { response = [response]; }
@@ -113,7 +114,7 @@ var Redirect = {
     }
   },
 
-  parse(responses, cb) {
+  parse(responses: any[][], cb?: () => void) {
     const archives: any[] = [];
     const archiveUIDs = dict();
     for (var response of responses) {
@@ -136,14 +137,14 @@ var Redirect = {
 
   to(
     dest: 'post' | 'thread' | 'threadJSON' | 'file' | 'board' | 'search',
-    data: { boardID: string, threadID?: string | number, postID?: string | number, filename?: string, type?: string, value?: string }
+    data: RedirectData
   ): string {
-    const archive = (['search', 'board'].includes(dest) ? Redirect.data.thread : Redirect.data[dest]).get(data.boardID);
+    const archive = (['search', 'board'].includes(dest) ? Redirect.data.thread : Redirect.data[dest as keyof ArchiveData]).get(data.boardID);
     if (!archive) { return ''; }
     return Redirect[dest](archive, data as any);
   },
 
-  protocol(archive) {
+  protocol(archive: Archive) {
     let {
       protocol
     } = location;
@@ -153,7 +154,7 @@ var Redirect = {
     return `${protocol}//`;
   },
 
-  thread(archive, {boardID, threadID, postID}) {
+  thread(archive: Archive, {boardID, threadID, postID}: RedirectData) {
     // Keep the post number only if the location.hash was sent f.e.
     let path = threadID ?
       `${boardID}/thread/${threadID}`
@@ -171,11 +172,11 @@ var Redirect = {
     return `${Redirect.protocol(archive)}${archive.domain}/${path}`;
   },
 
-  threadJSON(archive, { boardID, threadID }) {
+  threadJSON(archive: Archive, { boardID, threadID }: RedirectData) {
     return `${Redirect.protocol(archive)}${archive.domain}/_/api/chan/thread/?board=${boardID}&num=${threadID}`;
   },
 
-  post(archive, {boardID, postID}) {
+  post(archive: Archive, {boardID, postID}: RedirectData) {
     // For fuuka-based archives:
     // https://github.com/eksopl/fuuka/issues/27
     const protocol = Redirect.protocol(archive);
@@ -185,7 +186,7 @@ var Redirect = {
     return url;
   },
 
-  file(archive, {boardID, filename}) {
+  file(archive: Archive, {boardID, filename}: RedirectData) {
     if (!filename) { return ''; }
     if (boardID === 'f') {
       filename = encodeURIComponent($.unescape(decodeURIComponent(filename)));
@@ -202,11 +203,11 @@ var Redirect = {
     return `${Redirect.protocol(archive)}${archive.domain}/${boardID}/full_image/${filename}`;
   },
 
-  board(archive, {boardID}) {
+  board(archive: Archive, {boardID}: RedirectData) {
     return `${Redirect.protocol(archive)}${archive.domain}/${boardID}/`;
   },
 
-  search(archive, {boardID, type, value}) {
+  search(archive: Archive, {boardID, type, value}: RedirectData & { type: string, value: string }) {
     type = type === 'name' ?
       'username'
     : type === 'MD5' ?
@@ -220,7 +221,7 @@ var Redirect = {
         'Verified':  'ver'
       }, value) || value.toLowerCase();
     } else if (type === 'image') {
-      value = value.replace(/[+/=]/g, c => ({'+': '-', '/': '_', '=': ''})[c]);
+      value = value.replace(/[+/=]/g, (c: string) => ({'+': '-', '/': '_', '=': ''} as Record<string, string>)[c]);
     }
     value = encodeURIComponent(value);
     const path  = archive.software === 'foolfuuka' ?
@@ -232,7 +233,7 @@ var Redirect = {
     return `${Redirect.protocol(archive)}${archive.domain}/${path}`;
   },
 
-  report(boardID) {
+  report(boardID: string) {
     const urls: [string, string][] = [];
     for (var archive of Conf['archives']) {
       var {software, https, reports, boards, name, domain} = archive;
@@ -243,13 +244,13 @@ var Redirect = {
     return urls;
   },
 
-  securityCheck(url) {
+  securityCheck(url: string) {
     return /^https:\/\//.test(url) ||
     (location.protocol === 'http:') ||
     Conf['Exempt Archives from Encryption'];
   },
 
-  navigate(dest, data, alternative) {
+  navigate(dest: 'post' | 'thread' | 'threadJSON' | 'file' | 'board' | 'search', data: RedirectData, alternative?: string) {
     if (!Redirect.data) { Redirect.init(); }
     const url = Redirect.to(dest, data);
     if (url && (
