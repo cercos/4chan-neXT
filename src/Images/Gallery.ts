@@ -1,9 +1,3 @@
-/*
- * decaffeinate suggestions:
- * DS102: Remove unnecessary code created because of implicit returns
- * DS205: Consider reworking code to avoid use of IIFEs
- * Full docs: https://github.com/decaffeinate/decaffeinate/blob/main/docs/suggestions.md
- */
 import galleryPage from './Gallery/Gallery.html';
 import $ from '../platform/$';
 import Callbacks from '../classes/Callbacks';

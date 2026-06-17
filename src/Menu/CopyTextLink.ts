@@ -3,11 +3,6 @@ import { g, Conf, d } from "../globals/globals";
 import $ from "../platform/$";
 import Menu from "./Menu";
 
-/*
- * decaffeinate suggestions:
- * DS102: Remove unnecessary code created because of implicit returns
- * Full docs: https://github.com/decaffeinate/decaffeinate/blob/main/docs/suggestions.md
- */
 var CopyTextLink = {
   text: null as any,  // loose: late-assigned post text
 

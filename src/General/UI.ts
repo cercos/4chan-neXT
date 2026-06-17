@@ -5,13 +5,6 @@ import $$ from "../platform/$$";
 import Header from "./Header";
 import Icon from "../Icons/icon";
 
-/*
- * decaffeinate suggestions:
- * DS102: Remove unnecessary code created because of implicit returns
- * DS206: Consider reworking classes to avoid initClass
- * DS207: Consider shorter variations of null checks
- * Full docs: https://github.com/decaffeinate/decaffeinate/blob/main/docs/suggestions.md
- */
 const dialog = function(id: string, properties: Record<string, any>) {
   const el = $.el('div', {
     className: 'dialog',

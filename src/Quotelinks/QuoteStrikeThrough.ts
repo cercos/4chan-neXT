@@ -4,11 +4,6 @@ import { g, Conf } from "../globals/globals";
 import $ from "../platform/$";
 import type Post from "../classes/Post";
 
-/*
- * decaffeinate suggestions:
- * DS102: Remove unnecessary code created because of implicit returns
- * Full docs: https://github.com/decaffeinate/decaffeinate/blob/main/docs/suggestions.md
- */
 const QuoteStrikeThrough = {
   init() {
     if ((g.VIEW !== 'index' && g.VIEW !== 'thread') ||

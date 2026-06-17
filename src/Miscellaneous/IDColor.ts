@@ -4,11 +4,6 @@ import $ from "../platform/$";
 import { dict } from "../platform/helpers";
 import type { default as Post, PostClone } from "../classes/Post";
 
-/*
- * decaffeinate suggestions:
- * DS102: Remove unnecessary code created because of implicit returns
- * Full docs: https://github.com/decaffeinate/decaffeinate/blob/main/docs/suggestions.md
- */
 var IDColor = {
   ids: null as any, // loose:
 

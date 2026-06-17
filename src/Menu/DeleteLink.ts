@@ -5,12 +5,6 @@ import $ from "../platform/$";
 import { dict } from "../platform/helpers";
 import QR from "../Posting/QR";
 import Menu from "./Menu";
-/*
- * decaffeinate suggestions:
- * DS102: Remove unnecessary code created because of implicit returns
- * DS207: Consider shorter variations of null checks
- * Full docs: https://github.com/decaffeinate/decaffeinate/blob/main/docs/suggestions.md
- */
 var DeleteLink = {
   auto: [dict(), dict()],
   post: null as any,   // loose: late-assigned current post

@@ -11,11 +11,6 @@ type IDArg = { siteID?: string; boardID?: string; threadID?: string | number; po
 type SiteBoardArg = { siteID: string; boardID: string };
 type TBArg = { siteID: string; boardID: string; threadID?: string | number };
 
-/*
- * decaffeinate suggestions:
- * DS102: Remove unnecessary code created because of implicit returns
- * Full docs: https://github.com/decaffeinate/decaffeinate/blob/main/docs/suggestions.md
- */
 const SWTinyboard = {
   isOPContainerThread: true,
   mayLackJSON: true,

@@ -5,11 +5,6 @@ import ExpandComment from "../Miscellaneous/ExpandComment";
 import $ from "../platform/$";
 import type Post from "../classes/Post";
 
-/*
- * decaffeinate suggestions:
- * DS102: Remove unnecessary code created because of implicit returns
- * Full docs: https://github.com/decaffeinate/decaffeinate/blob/main/docs/suggestions.md
- */
 var QuoteOP = {
   mark: null as any, // loose: late-assigned singleton prop
   init() {

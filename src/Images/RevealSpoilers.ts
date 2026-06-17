@@ -2,11 +2,6 @@ import Callbacks from "../classes/Callbacks";
 import type Post from "../classes/Post";
 import { g, Conf } from "../globals/globals";
 
-/*
- * decaffeinate suggestions:
- * DS102: Remove unnecessary code created because of implicit returns
- * Full docs: https://github.com/decaffeinate/decaffeinate/blob/main/docs/suggestions.md
- */
 const RevealSpoilers = {
   init() {
     if ((g.VIEW !== 'index' && g.VIEW !== 'thread' && g.VIEW !== 'archive') || !Conf['Reveal Spoiler Thumbnails']) { return; }

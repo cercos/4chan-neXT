@@ -1,11 +1,5 @@
 import Main from "../main/Main";
 
-/*
- * decaffeinate suggestions:
- * DS102: Remove unnecessary code created because of implicit returns
- * DS206: Consider reworking classes to avoid initClass
- * Full docs: https://github.com/decaffeinate/decaffeinate/blob/main/docs/suggestions.md
- */
 export default class Callbacks {
   declare type: string;
   declare keys: string[];

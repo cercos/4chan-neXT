@@ -9,11 +9,6 @@ import $ from "../platform/$";
 import $$ from "../platform/$$";
 import SW from "../site/SW";
 
-/*
- * decaffeinate suggestions:
- * DS102: Remove unnecessary code created because of implicit returns
- * Full docs: https://github.com/decaffeinate/decaffeinate/blob/main/docs/suggestions.md
- */
 var FileInfo = {
   init() {
     if ((g.VIEW !== 'index' && g.VIEW !== 'thread' && g.VIEW !== 'archive') || !Conf['File Info Formatting']) { return; }

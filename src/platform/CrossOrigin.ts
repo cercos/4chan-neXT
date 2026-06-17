@@ -2,14 +2,6 @@ import QR from "../Posting/QR";
 import $ from "./$";
 import { dict, platform } from "./helpers";
 
-/*
- * decaffeinate suggestions:
- * DS102: Remove unnecessary code created because of implicit returns
- * DS205: Consider reworking code to avoid use of IIFEs
- * DS206: Consider reworking classes to avoid initClass
- * DS207: Consider shorter variations of null checks
- * Full docs: https://github.com/decaffeinate/decaffeinate/blob/main/docs/suggestions.md
- */
 export interface CrossOriginAjaxOptions {
   /** called with the returned object as `this` on success or error/abort/timeout. */
   onloadend?: (this: XMLHttpRequest) => void,

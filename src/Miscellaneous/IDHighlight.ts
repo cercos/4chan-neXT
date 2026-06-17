@@ -3,11 +3,6 @@ import { g } from "../globals/globals";
 import $ from "../platform/$";
 import type { default as Post, PostClone } from "../classes/Post";
 
-/*
- * decaffeinate suggestions:
- * DS102: Remove unnecessary code created because of implicit returns
- * Full docs: https://github.com/decaffeinate/decaffeinate/blob/main/docs/suggestions.md
- */
 var IDHighlight = {
   init() {
     if (g.VIEW !== 'index' && g.VIEW !== 'thread') { return; }

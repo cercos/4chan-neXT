@@ -7,14 +7,6 @@ import { g, Conf, doc } from "../globals/globals";
 import $ from "../platform/$";
 import { dict } from "../platform/helpers";
 
-/*
- * decaffeinate suggestions:
- * DS102: Remove unnecessary code created because of implicit returns
- * DS104: Avoid inline assignments
- * DS204: Change includes calls to have a more natural evaluation order
- * DS207: Consider shorter variations of null checks
- * Full docs: https://github.com/decaffeinate/decaffeinate/blob/main/docs/suggestions.md
- */
 var Sauce = {
   // Assigned later; declared so the singleton's type includes them. Loosely typed
   // (read across modules) where a precise type would cascade new errors.

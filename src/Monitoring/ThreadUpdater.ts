@@ -17,13 +17,6 @@ import SoundManager from './SoundManager';
 import QuoteYou from '../Quotelinks/QuoteYou';
 import Get from '../General/Get';
 
-/*
- * decaffeinate suggestions:
- * DS102: Remove unnecessary code created because of implicit returns
- * DS201: Simplify complex destructure assignments
- * Full docs: https://github.com/decaffeinate/decaffeinate/blob/main/docs/suggestions.md
- */
-
 var ThreadUpdater: any = { // loose: self-referencing singleton (TS7022) with late-assigned/cross-module-read props
   init(this: typeof ThreadUpdater) {
     let sc: HTMLElement;

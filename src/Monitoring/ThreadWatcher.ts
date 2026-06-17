@@ -40,14 +40,6 @@ interface TWMenu {
   addThumbnailControls: (this: TWMenu) => unknown;
 }
 
-/*
- * decaffeinate suggestions:
- * DS102: Remove unnecessary code created because of implicit returns
- * DS104: Avoid inline assignments
- * DS207: Consider shorter variations of null checks
- * Full docs: https://github.com/decaffeinate/decaffeinate/blob/main/docs/suggestions.md
- */
-
 var ThreadWatcher = {
   // Assigned later; declared so the singleton's type includes them. Loosely typed
   // where a precise type would cascade new errors; tighten during the strict pass.

@@ -1,12 +1,6 @@
 import { Conf, g } from "../globals/globals";
 import $ from "../platform/$";
 
-/*
- * decaffeinate suggestions:
- * DS102: Remove unnecessary code created because of implicit returns
- * DS207: Consider shorter variations of null checks
- * Full docs: https://github.com/decaffeinate/decaffeinate/blob/main/docs/suggestions.md
- */
 var Get = {
   url(type: string, IDs: any, ...args: any[]) { // loose: any — Get is widely imported; tightening IDs/args ripples across call sites
     let f, site;

@@ -10,14 +10,6 @@ import CrossOrigin from "../platform/CrossOrigin";
 import Get from "../General/Get";
 import RestoreDeletedFromArchive from "../Archive/RestoreDeletedFromArchive";
 
-/*
- * decaffeinate suggestions:
- * DS102: Remove unnecessary code created because of implicit returns
- * DS205: Consider reworking code to avoid use of IIFEs
- * DS206: Consider reworking classes to avoid initClass
- * DS207: Consider shorter variations of null checks
- * Full docs: https://github.com/decaffeinate/decaffeinate/blob/main/docs/suggestions.md
- */
 export default class Fetcher {
   static archiveTags = {
     '\n':         {innerHTML: "<br>"},

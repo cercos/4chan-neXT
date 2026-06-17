@@ -12,12 +12,6 @@ import Get from "../General/Get";
 import { dict } from "../platform/helpers";
 import type { default as Post } from "../classes/Post";
 
-/*
- * decaffeinate suggestions:
- * DS102: Remove unnecessary code created because of implicit returns
- * DS205: Consider reworking code to avoid use of IIFEs
- * Full docs: https://github.com/decaffeinate/decaffeinate/blob/main/docs/suggestions.md
- */
 var CatalogLinks = {
   // Assigned later; declared so the singleton's type includes them. Loosely typed
   // where a precise type would cascade new errors; tighten during the strict pass.

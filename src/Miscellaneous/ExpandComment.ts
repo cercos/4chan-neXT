@@ -5,11 +5,6 @@ import $ from "../platform/$";
 import $$ from "../platform/$$";
 import type { default as Post } from "../classes/Post";
 
-/*
- * decaffeinate suggestions:
- * DS102: Remove unnecessary code created because of implicit returns
- * Full docs: https://github.com/decaffeinate/decaffeinate/blob/main/docs/suggestions.md
- */
 var ExpandComment = {
   init() {
     if ((g.VIEW !== 'index') || !Conf['Comment Expansion'] || Conf['JSON Index']) { return; }

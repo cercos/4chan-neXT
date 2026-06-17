@@ -3,11 +3,6 @@ import Callbacks from "../classes/Callbacks";
 import { g } from "../globals/globals";
 import type { default as Post, PostClone } from "../classes/Post";
 
-/*
- * decaffeinate suggestions:
- * DS102: Remove unnecessary code created because of implicit returns
- * Full docs: https://github.com/decaffeinate/decaffeinate/blob/main/docs/suggestions.md
- */
 var ModContact = {
   init() {
     if ((g.SITE!.software !== 'yotsuba') || (g.VIEW !== 'index' && g.VIEW !== 'thread')) { return; }

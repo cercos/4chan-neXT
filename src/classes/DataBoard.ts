@@ -2,13 +2,6 @@ import { Conf, d, g } from "../globals/globals";
 import $ from "../platform/$";
 import { dict, HOUR } from "../platform/helpers";
 
-/*
- * decaffeinate suggestions:
- * DS104: Avoid inline assignments
- * DS207: Consider shorter variations of null checks
- * Full docs: https://github.com/decaffeinate/decaffeinate/blob/main/docs/suggestions.md
- */
-
 // loose: any — board values are deeply heterogeneous (thread->post->val nested
 // dicts, or scalar values) and vary per DataBoard key; precise typing would
 // cascade across .get/.set/.setUnsafe which are explicitly noted as not-yet-typed.

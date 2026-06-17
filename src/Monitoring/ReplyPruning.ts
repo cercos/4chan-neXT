@@ -6,12 +6,6 @@ import $ from "../platform/$";
 import QuoteThreading from "../Quotelinks/QuoteThreading";
 import type Post from "../classes/Post";
 
-/*
- * decaffeinate suggestions:
- * DS102: Remove unnecessary code created because of implicit returns
- * DS104: Avoid inline assignments
- * Full docs: https://github.com/decaffeinate/decaffeinate/blob/main/docs/suggestions.md
- */
 var ReplyPruning = {
   // Assigned later; declared so the singleton's type includes them. Loosely typed
   // where a precise type would cascade new errors; tighten during the strict pass.

@@ -5,11 +5,6 @@ import { g, Conf } from "../globals/globals";
 import $ from "../platform/$";
 import Icon from "../Icons/icon";
 
-/*
- * decaffeinate suggestions:
- * DS102: Remove unnecessary code created because of implicit returns
- * Full docs: https://github.com/decaffeinate/decaffeinate/blob/main/docs/suggestions.md
- */
 var Menu = {
   button: null as any,  // loose: late-assigned element, read by other modules
   menu: null as any,    // loose: late-assigned UI.Menu instance, read by other modules

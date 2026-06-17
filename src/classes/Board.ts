@@ -5,11 +5,6 @@ import SimpleDict from "./SimpleDict";
 import type Post from "./Post";
 import type Thread from "./Thread";
 
-/*
- * decaffeinate suggestions:
- * DS102: Remove unnecessary code created because of implicit returns
- * Full docs: https://github.com/decaffeinate/decaffeinate/blob/main/docs/suggestions.md
- */
 export default class Board {
   declare ID: string;
   declare boardID: string;

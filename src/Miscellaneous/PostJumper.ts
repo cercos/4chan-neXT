@@ -5,11 +5,6 @@ import $$ from "../platform/$$";
 import Icon from "../Icons/icon";
 import type { default as Post, PostClone } from "../classes/Post";
 
-/*
- * decaffeinate suggestions:
- * DS102: Remove unnecessary code created because of implicit returns
- * Full docs: https://github.com/decaffeinate/decaffeinate/blob/main/docs/suggestions.md
- */
 var PostJumper = {
   buttons: null as any, // loose:
 

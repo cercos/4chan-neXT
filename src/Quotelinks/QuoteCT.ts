@@ -5,11 +5,6 @@ import { g, Conf } from "../globals/globals";
 import Get from "../General/Get";
 import type Post from "../classes/Post";
 
-/*
- * decaffeinate suggestions:
- * DS102: Remove unnecessary code created because of implicit returns
- * Full docs: https://github.com/decaffeinate/decaffeinate/blob/main/docs/suggestions.md
- */
 var QuoteCT = {
   mark: null as any, // loose: late-assigned singleton prop
   init() {

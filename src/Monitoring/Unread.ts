@@ -12,12 +12,6 @@ import ThreadWatcher from "./ThreadWatcher";
 import type Post from "../classes/Post";
 import type Thread from "../classes/Thread";
 
-/*
- * decaffeinate suggestions:
- * DS102: Remove unnecessary code created because of implicit returns
- * DS207: Consider shorter variations of null checks
- * Full docs: https://github.com/decaffeinate/decaffeinate/blob/main/docs/suggestions.md
- */
 var Unread = {
   // Assigned later; declared so the singleton's type includes them. Loosely typed
   // where a precise type would cascade new errors; tighten during the strict pass.

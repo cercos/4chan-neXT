@@ -4,11 +4,6 @@ import ImageCommon from "../Images/ImageCommon";
 import $ from "../platform/$";
 import Menu from "./Menu";
 
-/*
- * decaffeinate suggestions:
- * DS102: Remove unnecessary code created because of implicit returns
- * Full docs: https://github.com/decaffeinate/decaffeinate/blob/main/docs/suggestions.md
- */
 const DownloadLink = {
   init() {
     if ((g.VIEW !== 'index' && g.VIEW !== 'thread') || !Conf['Menu'] || !Conf['Download Link']) { return; }

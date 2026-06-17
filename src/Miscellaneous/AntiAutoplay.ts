@@ -4,11 +4,6 @@ import $ from "../platform/$";
 import $$ from "../platform/$$";
 import type { default as Post } from "../classes/Post";
 
-/*
- * decaffeinate suggestions:
- * DS102: Remove unnecessary code created because of implicit returns
- * Full docs: https://github.com/decaffeinate/decaffeinate/blob/main/docs/suggestions.md
- */
 var AntiAutoplay = {
   init() {
     if (!Conf['Disable Autoplaying Sounds']) { return; }

@@ -12,11 +12,6 @@ import $$ from "../platform/$$";
 import PostRedirect from "../Posting/PostRedirect";
 import type Post from "../classes/Post";
 
-/*
- * decaffeinate suggestions:
- * DS102: Remove unnecessary code created because of implicit returns
- * Full docs: https://github.com/decaffeinate/decaffeinate/blob/main/docs/suggestions.md
- */
 var QuoteYou = {
   // Assigned later; declared so the singleton's type includes them. Loosely typed
   // where a precise type would cascade new errors; tighten during the strict pass.
