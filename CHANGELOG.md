@@ -1,5 +1,9 @@
 ## 4chan-neXT changelog
 
+### Unreleased
+
+- Completed the remaining three phases of the TypeScript migration (strict null checks, `noImplicitThis`, and `noImplicitAny`) via assisted codemods, so the entire `src/` tree now type-checks clean under full strict mode. Only optional tightening of leftover loose types remains.
+
 ### 1.1.8 (2026-06-16)
 
 - Improved the Settings dialog on small screens: navigation collapses into a hamburger menu, horizontal navigation scrolls instead of wrapping, descriptions switch to tooltip mode with a mobile tap-to-reveal fallback, the archives controls use a compact layout, and footer actions move into a drop-up menu.
