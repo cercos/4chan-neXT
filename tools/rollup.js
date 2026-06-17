@@ -139,8 +139,17 @@ const tsPlugin = typescript({
             .replace(/\/\*[\s\S]*?\*\//g, '')
             // Collapse whitespace without deleting descendant-selector spaces.
             .replace(/\s+/g, ' ')
-            // Remove whitespace around CSS punctuation where spaces are optional.
-            .replace(/\s*([{}:;,>+~])\s*/g, '$1')
+            // Remove whitespace around structural punctuation and combinators
+            // where spaces are always optional. ':' is deliberately excluded
+            // here: a space BEFORE ':' can be a descendant combinator targeting
+            // a pseudo-class (e.g. `.win :is(...)`, `.row :hover`), and stripping
+            // it fuses the two into a compound selector, silently changing the
+            // rule's meaning (this broke the "Highlight neXT" settings badges).
+            .replace(/\s*([{};,>+~])\s*/g, '$1')
+            // Colon: only strip the space AFTER it (declaration `prop: value` ->
+            // `prop:value`). A valid stylesheet never has a meaningful space
+            // before ':' to remove, so we leave the leading side untouched.
+            .replace(/:\s+/g, ':')
             // Remove the last semicolon before a rule closes.
             .replace(/;\}/g, '}')
             .trim();
