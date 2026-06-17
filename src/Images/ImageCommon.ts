@@ -91,7 +91,7 @@ var ImageCommon = {
 
     const threadJSON = g.SITE!.urls.threadJSON?.(post);
     if (!threadJSON) { return; }
-    var parseJSON = function(isArchiveURL?: boolean) {
+    var parseJSON = function(this: XMLHttpRequest, isArchiveURL?: boolean) {
       let needle, postObj;
       if (this.status === 404) {
         let archivedThreadJSON;
@@ -124,7 +124,7 @@ var ImageCommon = {
       (e.target.controls && ((e.target.getBoundingClientRect().bottom - e.clientY) < 35));
   },
 
-  download(e) {
+  download(this: HTMLAnchorElement, e) {
     if (this.protocol === 'blob:') { return true; }
     e.preventDefault();
     const {href, download} = this;

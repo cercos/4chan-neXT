@@ -73,7 +73,7 @@ var ThreadStats = {
     });
   },
 
-  node() {
+  node(this: any) {
     ThreadStats.thread = this;
     ThreadStats.count();
     ThreadStats.update();
@@ -156,7 +156,7 @@ var ThreadStats = {
     );
   },
 
-  onThreadsLoad() {
+  onThreadsLoad(this: XMLHttpRequest) {
     if (this.status === 200) {
       let page, thread;
       if (ThreadStats.showPurgePos) {

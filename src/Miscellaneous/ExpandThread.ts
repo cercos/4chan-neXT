@@ -106,7 +106,7 @@ var ExpandThread = {
     ExpandThread.expanded[thread.ID] = true;
     ExpandThread.statuses[thread] = (status = {});
     a.textContent = (g.SITE!.Build.summaryText as any)('...', ...a.textContent.match(/\d+/g));
-    status.req = $.cache(g.SITE!.urls.threadJSON({boardID: thread.board.ID, threadID: thread.ID}), function() {
+    status.req = $.cache(g.SITE!.urls.threadJSON({boardID: thread.board.ID, threadID: thread.ID}), function(this: XMLHttpRequest) {
       if (this !== status.req) { return; } // aborted
       delete status.req;
       ExpandThread.parse(this, thread, a);

@@ -1144,7 +1144,7 @@ var Main = {
       innerHTML:
         `${errors.length} errors occurred.${Main.reportLink(errors).innerHTML} [<a href="javascript:;">show</a>]`
     });
-    $.on(div.lastElementChild, 'click', function () {
+    $.on(div.lastElementChild, 'click', function (this: HTMLElement) {
       return [this.textContent, logs.hidden] = this.textContent === 'show' ? ['hide', false] : ['show', true];
     });
 

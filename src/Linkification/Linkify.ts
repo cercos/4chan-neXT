@@ -1,4 +1,5 @@
 import Callbacks from "../classes/Callbacks";
+import type Post from "../classes/Post";
 // #region tests_enabled
 import Test from "../General/Test";
 // #endregion
@@ -102,7 +103,7 @@ var Linkify = {
     }
   },
 
-  node() {
+  node(this: Post) {
     let link;
     if (this.isClone) { return Embedding.events(this); }
     if (!Linkify.regString.test(this.info.comment)) {

@@ -3,6 +3,7 @@ import Get from "../General/Get";
 import { g, Conf } from "../globals/globals";
 import ExpandComment from "../Miscellaneous/ExpandComment";
 import $ from "../platform/$";
+import type Post from "../classes/Post";
 
 /*
  * decaffeinate suggestions:
@@ -30,7 +31,7 @@ var QuoteOP = {
     });
   },
 
-  node() {
+  node(this: Post) {
     // Stop there if it's a clone of a post in the same thread.
     let i, quotelink, quotes;
     if (this.isClone && (this.thread === this.context.thread)) { return; }

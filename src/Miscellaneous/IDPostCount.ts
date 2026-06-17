@@ -2,6 +2,7 @@ import Callbacks from "../classes/Callbacks";
 import Get from "../General/Get";
 import { g, Conf } from "../globals/globals";
 import $ from "../platform/$";
+import type { default as Post } from "../classes/Post";
 
 /*
  * decaffeinate suggestions:
@@ -23,13 +24,13 @@ var IDPostCount = {
     });
   },
 
-  node() {
+  node(this: Post) {
     if (this.nodes.uniqueID && (this.thread === IDPostCount.thread)) {
       return $.on(this.nodes.uniqueID, 'mouseover', IDPostCount.count);
     }
   },
 
-  count() {
+  count(this: HTMLElement) {
     const post = Get.postFromNode(this);
     if (!post) { return; }
     const {uniqueID} = post.info;

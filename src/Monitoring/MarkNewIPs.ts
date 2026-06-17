@@ -19,7 +19,7 @@ var MarkNewIPs = {
     });
   },
 
-  node() {
+  node(this: any) {
     MarkNewIPs.ipCount = this.ipCount;
     MarkNewIPs.postCount = this.posts.keys.length;
     return $.on(d, 'ThreadUpdate', MarkNewIPs.onUpdate);

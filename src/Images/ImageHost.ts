@@ -1,4 +1,5 @@
 import Callbacks from "../classes/Callbacks";
+import type Post from "../classes/Post";
 import { Conf, g } from "../globals/globals";
 import $$ from "../platform/$$";
 
@@ -9,7 +10,7 @@ import $$ from "../platform/$$";
  */
 var ImageHost = {
   init() {
-    if ((!(this.useFaster = /\S/.test(Conf['fourchanImageHost']))) || (g.SITE!.software !== 'yotsuba') || (g.VIEW !== 'index' && g.VIEW !== 'thread')) { return; }
+    if ((!((this as any).useFaster = /\S/.test(Conf['fourchanImageHost']))) || (g.SITE!.software !== 'yotsuba') || (g.VIEW !== 'index' && g.VIEW !== 'thread')) { return; }
     return Callbacks.Post.push({
       name: 'Image Host Rewriting',
       cb:   this.node
@@ -33,12 +34,12 @@ var ImageHost = {
 
   regex: /^is\d*\.4chan(?:nel)?\.org$/,
 
-  node() {
+  node(this: Post) {
     if (this.isClone) { return; }
     const host = ImageHost.host();
     if (this.file && ImageHost.test(this.file.url.split('/')[2]) && !/\.swf$/.test(this.file.url)) {
       this.file.link.hostname = host;
-      if (this.file.thumbLink) { this.file.thumbLink.hostname = host; }
+      if (this.file.thumbLink) { (this.file.thumbLink as HTMLAnchorElement).hostname = host; }
       this.file.url = this.file.link.href;
     }
     return ImageHost.fixLinks($$('a', this.nodes.comment));

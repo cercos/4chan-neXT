@@ -21,6 +21,7 @@ const PostRedirect = {
   },
 
   delays: 0,
+  event: null as any, // loose: late-assigned singleton state
 
   delay() {
     if (!this.event) { return null; }

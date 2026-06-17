@@ -1,4 +1,6 @@
 import Callbacks from "../classes/Callbacks";
+import type Post from "../classes/Post";
+import type CatalogThread from "../classes/CatalogThread";
 import Config from "../config/Config";
 import Header from "../General/Header";
 import UI from "../General/UI";
@@ -71,7 +73,7 @@ var Volume = {
     return $.on(video, 'volumechange', Volume.change);
   },
 
-  change() {
+  change(this: HTMLVideoElement) {
     const {muted, volume} = this;
     const items = {
       'Allow Sound': !muted,
@@ -91,23 +93,23 @@ var Volume = {
     }
   },
 
-  node() {
+  node(this: Post) {
     if (g.SITE!.noAudio?.(this.board)) { return; }
     for (var file of this.files) {
       if (file.isVideo) {
         if (file.thumb) { $.on(file.thumb, 'wheel', Volume.wheel.bind(Header.hover)); }
-        $.on(($('.file-info', file.text) || file.link), 'wheel', Volume.wheel.bind(file.thumbLink));
+        $.on(($('.file-info', file.text as unknown as Element) || file.link), 'wheel', Volume.wheel.bind(file.thumbLink));
       }
     }
   },
 
-  catalogNode() {
+  catalogNode(this: CatalogThread) {
     const file = this.thread.OP.files[0];
     if (!file?.isVideo) { return; }
     return $.on(this.nodes.thumb, 'wheel', Volume.wheel.bind(Header.hover));
   },
 
-  wheel(e) {
+  wheel(this: HTMLElement, e) {
     let el;
     if (e.shiftKey || e.altKey || e.ctrlKey || e.metaKey) { return; }
     if (!(el = $('video:not([data-md5])', this))) { return; }

@@ -64,7 +64,7 @@ var Report = {
     const reason  = $('#archive-report-reason',  fieldset);
     const submit  = $('#archive-report-submit',  fieldset);
 
-    $.on(enabled, 'change', function() {
+    $.on(enabled, 'change', function(this: HTMLInputElement) {
       return reason.disabled = !this.checked;
     });
 
@@ -76,7 +76,7 @@ var Report = {
       });
       $.after(types, fieldset);
       Report.fit('body');
-      $.one(form, 'submit', function(e) {
+      $.one(form, 'submit', function(this: HTMLFormElement, e) {
         if (!fieldset.hidden && enabled.checked) {
           e.preventDefault();
           return Report.archiveSubmit(urls, reason.value, results => {
@@ -87,7 +87,7 @@ var Report = {
       });
     } else if (message) {
       fieldset.hidden = /Report submitted!/.test(message.textContent);
-      $.on(enabled, 'change', function() {
+      $.on(enabled, 'change', function(this: HTMLInputElement) {
         return submit.hidden = !this.checked;
       });
       $.after(message, fieldset);

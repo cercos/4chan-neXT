@@ -111,7 +111,7 @@ var ThreadUpdater = {
     });
   },
 
-  node() {
+  node(this: any) {
     ThreadUpdater.thread       = this;
     ThreadUpdater.root         = this.nodes.root;
     ThreadUpdater.outdateCount = 0;
@@ -309,10 +309,10 @@ var ThreadUpdater = {
         () => !d.hidden;
     },
 
-    interval(e) {
+    interval(this: HTMLInputElement, e) {
       let val = parseInt(this.value, 10);
       if (val < 1) { val = 1; }
-      ThreadUpdater.interval = (this.value = val);
+      ThreadUpdater.interval = ((this as any).value = val);
       if (e) { return $.cb.value.call(this); }
     },
 

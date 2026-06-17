@@ -66,7 +66,7 @@ var Redirect = {
     Redirect.data = o;
   },
 
-  update(cb) {
+  update(cb?) {
     let url;
     const urls: string[] = [];
     const responses: any[][] = [];
@@ -80,7 +80,7 @@ var Redirect = {
 
     const fail = (url, action, msg) => new Notice('warning', `Error ${action} archive data from\n${url}\n${msg}`, 20);
 
-    const load = i => (function() {
+    const load = i => (function(this: XMLHttpRequest) {
       if (this.status !== 200) { return fail(urls[i], 'fetching', (this.status ? `Error ${this.statusText} (${this.status})` : 'Connection Error')); }
       let {response} = this;
       if (!(response instanceof Array)) { response = [response]; }
@@ -102,7 +102,7 @@ var Redirect = {
             fail(url, 'parsing', err instanceof Error ? err.message : String(err));
             continue;
           }
-          load(i).call({status: 200, response});
+          load(i).call({status: 200, response} as unknown as XMLHttpRequest);
         } else {
           CrossOrigin.ajax(url,
             {onloadend: load(i)});

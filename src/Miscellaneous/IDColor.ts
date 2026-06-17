@@ -2,6 +2,7 @@ import Callbacks from "../classes/Callbacks";
 import { g, Conf } from "../globals/globals";
 import $ from "../platform/$";
 import { dict } from "../platform/helpers";
+import type { default as Post, PostClone } from "../classes/Post";
 
 /*
  * decaffeinate suggestions:
@@ -22,7 +23,7 @@ var IDColor = {
     });
   },
 
-  node() {
+  node(this: Post | PostClone) {
     let span, uid;
     if (this.isClone || !((uid = this.info.uniqueID) && (span = this.nodes.uniqueID))) { return; }
 

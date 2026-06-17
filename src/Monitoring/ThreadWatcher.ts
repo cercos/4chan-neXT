@@ -5,6 +5,7 @@ import Board from '../classes/Board';
 import Callbacks from '../classes/Callbacks';
 import DataBoard from '../classes/DataBoard';
 import Thread from '../classes/Thread';
+import type Post from '../classes/Post';
 import Filter from '../Filtering/Filter';
 import Main from '../main/Main';
 import $$ from '../platform/$$';
@@ -58,7 +59,7 @@ var ThreadWatcher = {
   _qrObs: null as any,
 
   drag: {
-    start(e) {
+    start(this: HTMLElement, e) {
       if (ThreadWatcher.sortMode() !== 'manual') {
         e.preventDefault();
         return;
@@ -73,21 +74,21 @@ var ThreadWatcher = {
     end() {
       ThreadWatcher.clearDragState();
     },
-    enter() {
+    enter(this: HTMLElement) {
       if (ThreadWatcher.draggingLine && ThreadWatcher.draggingLine !== this) {
         this.classList.add('over');
       }
     },
-    leave() {
+    leave(this: HTMLElement) {
       this.classList.remove('over');
     },
-    over(e) {
+    over(this: HTMLElement, e) {
       if (ThreadWatcher.draggingLine && ThreadWatcher.draggingLine !== this) {
         e.preventDefault();
         e.dataTransfer.dropEffect = 'move';
       }
     },
-    drop(e) {
+    drop(this: HTMLElement, e) {
       if (!ThreadWatcher.draggingLine || ThreadWatcher.draggingLine === this) { return; }
       e.preventDefault();
       this.classList.remove('over');
@@ -258,7 +259,7 @@ var ThreadWatcher = {
     return toggler.title = `${isWatched ? 'Unwatch' : 'Watch'} Thread`;
   },
 
-  node() {
+  node(this: Post) {
     let toggler;
     if (this.isReply) { return; }
     if (this.isClone) {
@@ -285,7 +286,7 @@ var ThreadWatcher = {
     }
   },
 
-  catalogNode() {
+  catalogNode(this: Post) {
     if (ThreadWatcher.isWatched(this.thread)) { $.addClass(this.nodes.root, 'watched'); }
     return $.on(this.nodes.root, 'mousedown click', e => {
       if (e.button !== 0) return;
@@ -405,12 +406,12 @@ var ThreadWatcher = {
         });
       }
     },
-    markRead() {
+    markRead(this: HTMLElement) {
       if ($.hasClass(this, 'disabled') || !ThreadWatcher.unreadEnabled) { return; }
-      const line = this.parentNode;
+      const line = this.parentNode as HTMLElement | null;
       if (!line) { return; }
       const {siteID} = line.dataset;
-      const [boardID, threadID] = line.dataset.fullID.split('.');
+      const [boardID, threadID] = line.dataset.fullID!.split('.');
       const data = ThreadWatcher.db?.get({siteID, boardID, threadID: +threadID});
       if (!data) { return; }
       if (data.last != null) {
@@ -442,9 +443,9 @@ var ThreadWatcher = {
       const {thread} = post;
       ThreadWatcher.toggle(thread, true);
     },
-    rm() {
-      const {siteID} = this.parentNode.dataset;
-      const [boardID, threadID] = this.parentNode.dataset.fullID.split('.');
+    rm(this: HTMLElement) {
+      const {siteID} = (this.parentNode as HTMLElement).dataset;
+      const [boardID, threadID] = (this.parentNode as HTMLElement).dataset.fullID!.split('.');
       ThreadWatcher.rm(siteID, boardID, +threadID, undefined, true);
     },
     post(e) {
@@ -496,9 +497,9 @@ var ThreadWatcher = {
       ThreadWatcher.status.textContent = '...';
       $.addClass(ThreadWatcher.refreshButton, 'spin');
     }
-    const onloadend = function() {
-      if (this.finished) { return; }
-      this.finished = true;
+    const onloadend = function(this: XMLHttpRequest) {
+      if ((this as any).finished) { return; }
+      (this as any).finished = true;
       ThreadWatcher.fetched++;
       if (ThreadWatcher.fetched === ThreadWatcher.requests.length) {
         ThreadWatcher.clearRequests();
@@ -630,7 +631,7 @@ var ThreadWatcher = {
     return ThreadWatcher.fetch(url, {siteID, force}, [board, url], ThreadWatcher.parseBoard);
   },
 
-  parseBoard(board, url) {
+  parseBoard(this: XMLHttpRequest, board, url) {
     let page, thread;
     if (this.status !== 200) { return; }
     const {siteID, boardID} = board[0];
@@ -698,7 +699,7 @@ var ThreadWatcher = {
     return ThreadWatcher.fetch(url, {siteID, force}, [thread], ThreadWatcher.parseStatus);
   },
 
-  parseStatus(thread, isArchiveURL) {
+  parseStatus(this: XMLHttpRequest, thread, isArchiveURL) {
     let isDead, last;
     let {siteID, boardID, threadID, data, newData, force} = thread;
     const site = g.sites[siteID];
@@ -1524,10 +1525,10 @@ var ThreadWatcher = {
     // Reassigned by addAttachLocationEntry() to refresh the location checkmarks;
     // declared here so the cross-tab sync handler can call it without type errors.
     updateAttachLocationChecks() {},
-    init() {
+    init(this: typeof ThreadWatcher.menu & { menu: any }) {
       if (!Conf['Thread Watcher']) { return; }
       const menu = (this.menu = new UI.Menu('thread watcher'));
-      $.on($('.menu-button', ThreadWatcher.dialog), 'click', function(e) {
+      $.on($('.menu-button', ThreadWatcher.dialog), 'click', function(this: HTMLElement, e) {
         return menu.toggle(e, this, ThreadWatcher);
       });
       return this.addMenuEntries();
@@ -1554,8 +1555,8 @@ var ThreadWatcher = {
       return $.on(entryEl, 'click', () => ThreadWatcher.toggle(g.threads!.get(`${g.BOARD}.${g.THREADID}`), true));
     },
 
-    addMenuEntries() {
-      const toggleDisabledDead = function () {
+    addMenuEntries(this: typeof ThreadWatcher.menu & { menu: any }) {
+      const toggleDisabledDead = function (this: { el: HTMLElement }) {
         this.el.classList.toggle('disabled', !$('.dead-thread', ThreadWatcher.list));
         return true;
       };
@@ -1565,7 +1566,7 @@ var ThreadWatcher = {
         {
           text: 'Open all threads',
           cb: ThreadWatcher.cb.openAll,
-          open() {
+          open(this: { el: HTMLElement }) {
             this.el.classList.toggle('disabled', !ThreadWatcher.list.firstElementChild);
             return true;
           }
@@ -1573,7 +1574,7 @@ var ThreadWatcher = {
         {
           text: 'Clear all threads',
           cb: ThreadWatcher.cb.clear,
-          open() {
+          open(this: { el: HTMLElement }) {
             this.el.classList.toggle('disabled', !ThreadWatcher.list.firstElementChild);
             return true;
           }
@@ -1582,7 +1583,7 @@ var ThreadWatcher = {
         {
           text: 'Open unread threads',
           cb: ThreadWatcher.cb.openUnread,
-          open() {
+          open(this: { el: HTMLElement }) {
             this.el.classList.toggle('disabled', !$('.replies-unread', ThreadWatcher.list));
             return true;
           }
@@ -1610,14 +1611,14 @@ var ThreadWatcher = {
           text: 'Dismiss posts quoting you',
           title: 'Unhighlight the thread watcher icon and threads until there are new replies quoting you.',
           cb: ThreadWatcher.cb.dismiss,
-          open() {
+          open(this: { el: HTMLElement }) {
             this.el.classList.toggle('disabled', !$.hasClass(ThreadWatcher.shortcut, 'replies-quoting-you'));
             return true;
           }
         },
         {
           text: 'Max H/W',
-          open() {
+          open(this: { el: HTMLElement }) {
             this.el.innerHTML = `Max H <input type="number" value="${ThreadWatcher.maxHeight()}" min="120" max="999" class="field" style="width:4.2em"> W<input type="number" value="${ThreadWatcher.maxWidth()}" min="120" max="999" class="field" style="width:4.2em">`;
             const [heightInput, widthInput] = $$('input', this.el);
             for (const input of [heightInput, widthInput]) {
@@ -1625,7 +1626,7 @@ var ThreadWatcher = {
               $.on(input, 'mousedown', e => e.stopPropagation());
               $.on(input, 'pointerdown', e => e.stopPropagation());
             }
-            $.on(heightInput, 'change', function() {
+            $.on(heightInput, 'change', function(this: HTMLInputElement) {
               let height = parseInt(this.value, 10);
               if (isNaN(height)) { height = 210; }
               height = Math.max(120, Math.min(999, height));
@@ -1634,7 +1635,7 @@ var ThreadWatcher = {
               Conf['Thread Watcher Max Height'] = height;
               ThreadWatcher.applyLayout();
             });
-            $.on(widthInput, 'change', function() {
+            $.on(widthInput, 'change', function(this: HTMLInputElement) {
               let width = parseInt(this.value, 10);
               if (isNaN(width)) { width = 250; }
               width = Math.max(120, Math.min(999, width));
@@ -1720,7 +1721,7 @@ var ThreadWatcher = {
       return entry;
     },
 
-    addSortEntry() {
+    addSortEntry(this: typeof ThreadWatcher.menu & { menu: any }) {
       const sortOptions = [
         ['manual',      'Manual (drag)'],
         ['yous',        '(You)s'],
@@ -1767,14 +1768,14 @@ var ThreadWatcher = {
         }),
         order: 50,
         subEntries,
-        open() {
+        open(this: { el: HTMLElement }) {
           this.el.classList.toggle('disabled', !ThreadWatcher.list.firstElementChild);
           return true;
         }
       });
     },
 
-    addAttachLocationEntry() {
+    addAttachLocationEntry(this: typeof ThreadWatcher.menu & { menu: any }) {
       const locationOptions = [
         ['bottom', 'Bottom'],
         ['top',    'Top'],
@@ -1825,7 +1826,7 @@ var ThreadWatcher = {
         }),
         order: 51,
         subEntries,
-        open() {
+        open(this: { el: HTMLElement }) {
           if (!ThreadWatcher.attachControlsEnabled()) { return false; }
           this.el.title = 'Where to attach the watcher relative to the Quick Reply when attached.\nBottom/top: width follows the QR. Left/right: width uses the manual Max W; height sizes to content.';
           return true;
@@ -1833,14 +1834,14 @@ var ThreadWatcher = {
       });
     },
 
-    addThumbnailControls() {
+    addThumbnailControls(this: typeof ThreadWatcher.menu & { menu: any }) {
       const entry = {
         type: 'thread watcher',
         el: $.el('a', {
           textContent: 'Thumbnails',
           href: 'javascript:;'
         }),
-        open() {
+        open(this: { el: HTMLElement }) {
           this.el.innerHTML = `<span style="display:inline-flex;align-items:center;gap:4px;"><label style="display:inline-flex;align-items:center;gap:4px;"><input type="checkbox"${Conf['Show OP Thumbnails'] ? ' checked' : ''}>Thumbnails</label><input type="number" value="${ThreadWatcher.thumbnailSize()}" min="16" max="160" class="field" style="width:3.2em"></span><br><span style="display:inline-flex;align-items:center;gap:4px;"><label style="display:inline-flex;align-items:center;gap:4px;"><input type="checkbox"${Conf['Thread Watcher Thumbnail Hover'] ? ' checked' : ''}>Hover Preview</label><input type="number" value="${ThreadWatcher.thumbnailPreviewSize()}" min="10" max="99" class="field" style="width:3.2em"><span>%</span></span>`;
           const [thumbToggle, previewToggle] = $$('input[type="checkbox"]', this.el);
           const [sizeInput, previewSizeInput] = $$('input[type="number"]', this.el);
@@ -1849,7 +1850,7 @@ var ThreadWatcher = {
             $.on(input, 'mousedown', e => e.stopPropagation());
             $.on(input, 'pointerdown', e => e.stopPropagation());
           }
-          $.on(thumbToggle, 'change', function() {
+          $.on(thumbToggle, 'change', function(this: HTMLInputElement) {
             $.set('Show OP Thumbnails', this.checked);
             Conf['Show OP Thumbnails'] = this.checked;
             if (!this.checked) {
@@ -1860,7 +1861,7 @@ var ThreadWatcher = {
             }
             ThreadWatcher.refresh();
           });
-          $.on(previewToggle, 'change', function() {
+          $.on(previewToggle, 'change', function(this: HTMLInputElement) {
             $.set('Thread Watcher Thumbnail Hover', this.checked);
             Conf['Thread Watcher Thumbnail Hover'] = this.checked;
             if (!this.checked) {
@@ -1868,7 +1869,7 @@ var ThreadWatcher = {
             }
             ThreadWatcher.refresh();
           });
-          $.on(sizeInput, 'change', function() {
+          $.on(sizeInput, 'change', function(this: HTMLInputElement) {
             let size = parseInt(this.value, 10);
             if (isNaN(size)) { size = 40; }
             size = Math.max(16, Math.min(160, size));
@@ -1878,7 +1879,7 @@ var ThreadWatcher = {
             ThreadWatcher.applyLayout();
             ThreadWatcher.refresh();
           });
-          $.on(previewSizeInput, 'change', function() {
+          $.on(previewSizeInput, 'change', function(this: HTMLInputElement) {
             let size = parseInt(this.value, 10);
             if (isNaN(size)) { size = 40; }
             size = Math.max(10, Math.min(99, size));

@@ -1,4 +1,5 @@
 import Callbacks from "../classes/Callbacks";
+import Post from "../classes/Post";
 import BoardConfig from "../General/BoardConfig";
 import { d, doc, g } from "../globals/globals";
 import Main from "../main/Main";
@@ -76,7 +77,7 @@ var Fourchan = {
     return $.global('disable4chanIdHl');
   },
 
-  code() {
+  code(this: Post) {
     if (this.isClone) { return; }
     return $.ready(() => {
       const iterable = $$('.prettyprint', this.nodes.comment);
@@ -89,7 +90,7 @@ var Fourchan = {
     });
   },
 
-  math() {
+  math(this: Post) {
     let wbrs;
     if (!/\[(math|eqn)\]/.test(this.nodes.comment.textContent)) { return; }
     // XXX <wbr> tags frequently break MathJax; remove them.

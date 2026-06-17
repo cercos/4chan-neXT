@@ -140,7 +140,7 @@ var Settings = {
   styleKeyBase(key: string): string {
     return key.replace(/ (SFW|NSFW)$/, '');
   },
-  prepareDrag(e) {
+  prepareDrag(this: HTMLElement, e) {
     const settingsWindow = $('#fourchanx-settings', Settings.dialog) as HTMLDivElement;
     const rect = settingsWindow.getBoundingClientRect();
     settingsWindow.style.left = `${rect.left}px`;
@@ -798,14 +798,14 @@ var Settings = {
     if (settingsWindow) settingsWindow.classList.toggle('highlight-next-settings', Settings.highlightNext);
   },
 
-  onHighlightNextChange() {
+  onHighlightNextChange(this: HTMLInputElement) {
     const enabled = (this as HTMLInputElement).checked;
     Settings.highlightNext = enabled;
     $.set('settings.highlightNext', enabled);
     Settings.applyNextHighlight();
   },
 
-  onRememberLayoutChange() {
+  onRememberLayoutChange(this: HTMLInputElement) {
     const enabled = (this as HTMLInputElement).checked;
     Settings.rememberLayout = enabled;
     $.set('settings.rememberLayout', enabled);
@@ -1091,7 +1091,7 @@ var Settings = {
       }
       if ((details as any)._detailsStateBound) continue;
       (details as any)._detailsStateBound = true;
-      $.on(details, 'toggle', function() {
+      $.on(details, 'toggle', function(this: HTMLDetailsElement) {
         if (!Settings.rememberLayout || !shouldRememberState) return;
         const stateKey = (this as HTMLElement).dataset.detailsStateKey;
         if (!stateKey) return;
@@ -1123,7 +1123,7 @@ var Settings = {
     return null;
   },
 
-  onSearchInput() {
+  onSearchInput(this: HTMLInputElement) {
     Settings.searchQuery = (this as HTMLInputElement).value.toLowerCase().trim();
     Settings.searchTerms = Settings.searchQuery ? Settings.searchQuery.split(/\s+/) : [];
     if (Settings.searchQuery) {
@@ -1298,7 +1298,7 @@ var Settings = {
     Settings.sections.push({title, hyphenatedTitle, open});
   },
 
-  openSection() {
+  openSection(this: { title: string }) {
     Settings.activeSection = this;
     if (this.title !== 'Styling') Settings.closeStylingPreview();
     Settings.selectSectionTab(this);
@@ -1676,7 +1676,7 @@ Enable it on boards.${location.hostname.split('.')[1]}.org in your browser's pri
       Settings.registerSettingDescription(div, description);
       const input = $('input', div) as HTMLInputElement;
       $.on(input, 'change', $.cb.checked);
-      $.on(input, 'change', function() { this.parentNode.parentNode.dataset.checked = this.checked; });
+      $.on(input, 'change', function(this: HTMLInputElement) { (this.parentNode!.parentNode as HTMLElement).dataset.checked = this.checked as any; });
       if (key === 'Settings Descriptions as Tooltips') {
         $.on(input, 'change', () => Settings.onDescriptionTooltipSettingChange(input));
       }
@@ -1848,7 +1848,7 @@ Enable it on boards.${location.hostname.split('.')[1]}.org in your browser's pri
       }
       button.textContent = `Hidden: ${hiddenNum}`;
     });
-    $.on(button, 'click', function() {
+    $.on(button, 'click', function(this: HTMLElement) {
       this.textContent = 'Hidden: 0';
       $.get('hiddenThreads', dict(), function({ hiddenThreads }) {
         if ($.hasStorage && (g.SITE!.software === 'yotsuba')) {
@@ -2237,7 +2237,7 @@ Enable it on boards.${location.hostname.split('.')[1]}.org in your browser's pri
         const sizeInput = $('input[name="Thread Watcher Thumbnail Size"]', div) as HTMLInputElement;
         const previewToggle = $('input[name="Thread Watcher Thumbnail Hover"]', div) as HTMLInputElement;
         const previewSizeInput = $('input[name="Thread Watcher Thumbnail Preview Size"]', div) as HTMLInputElement;
-        $.on(sizeInput, 'change', function() {
+        $.on(sizeInput, 'change', function(this: HTMLInputElement) {
           let size = parseInt(this.value, 10);
           if (isNaN(size)) size = 40;
           size = Math.max(16, Math.min(160, size));
@@ -2247,7 +2247,7 @@ Enable it on boards.${location.hostname.split('.')[1]}.org in your browser's pri
           syncThumbSizeToDialog(size);
         });
         $.on(previewToggle, 'change', $.cb.checked);
-        $.on(previewToggle, 'change', function() {
+        $.on(previewToggle, 'change', function(this: HTMLInputElement) {
           if (!this.checked) {
             const hover = $.id('tw-ihover');
             if (hover) {
@@ -2257,7 +2257,7 @@ Enable it on boards.${location.hostname.split('.')[1]}.org in your browser's pri
             }
           }
         });
-        $.on(previewSizeInput, 'change', function() {
+        $.on(previewSizeInput, 'change', function(this: HTMLInputElement) {
           let size = parseInt(this.value, 10);
           if (isNaN(size)) size = 40;
           size = Math.max(10, Math.min(99, size));
@@ -2283,7 +2283,7 @@ Enable it on boards.${location.hostname.split('.')[1]}.org in your browser's pri
       if (level > 0) div.classList.add('thread-watcher-subsetting');
       const input = $('input', div) as HTMLInputElement;
       $.on(input, 'change', $.cb.checked);
-      $.on(input, 'change', function() { this.parentNode.parentNode.dataset.checked = this.checked; });
+      $.on(input, 'change', function(this: HTMLInputElement) { (this.parentNode!.parentNode as HTMLElement).dataset.checked = this.checked as any; });
       items[name] = Conf[name];
       inputs[name] = input;
       $.add(fs, div);
@@ -2296,7 +2296,7 @@ Enable it on boards.${location.hostname.split('.')[1]}.org in your browser's pri
     Settings.registerSettingDescription(heightDiv, 'Maximum watched-thread list height and width in pixels.');
     const heightInput = $('input[name="Thread Watcher Max Height"]', heightDiv) as HTMLInputElement;
     const widthInput = $('input[name="Thread Watcher Max Width"]', heightDiv) as HTMLInputElement;
-    $.on(heightInput, 'change', function() {
+    $.on(heightInput, 'change', function(this: HTMLInputElement) {
       let height = parseInt(this.value, 10);
       if (isNaN(height)) height = 210;
       height = Math.max(120, Math.min(999, height));
@@ -2305,7 +2305,7 @@ Enable it on boards.${location.hostname.split('.')[1]}.org in your browser's pri
       Conf[this.name] = height;
       syncWatcherHeightToDialog(height);
     });
-    $.on(widthInput, 'change', function() {
+    $.on(widthInput, 'change', function(this: HTMLInputElement) {
       let width = parseInt(this.value, 10);
       if (isNaN(width)) width = 250;
       width = Math.max(120, Math.min(999, width));
@@ -2423,7 +2423,7 @@ Enable it on boards.${location.hostname.split('.')[1]}.org in your browser's pri
     Settings.registerSettingDescription(row, String(Config.main['Posting and Captchas']['Comment Preview'][1]));
     const toggle = $('input[name="Comment Preview"]', row) as HTMLInputElement;
     $.on(toggle, 'change', $.cb.checked);
-    $.on(toggle, 'change', function() { this.parentNode.parentNode.dataset.checked = this.checked; });
+    $.on(toggle, 'change', function(this: HTMLInputElement) { (this.parentNode!.parentNode as HTMLElement).dataset.checked = this.checked as any; });
     $.on(toggle, 'change', () => $.event('QRCommentPreviewChanged'));
 
       const sub = $.el('div', { className: 'suboption-list' });
@@ -2502,7 +2502,7 @@ Enable it on boards.${location.hostname.split('.')[1]}.org in your browser's pri
       Settings.registerSettingDescription(rememberFloatRow, rememberFloatDescription);
       const rememberFloatToggle = $('input[name="Comment Preview Remember Float Position"]', rememberFloatRow) as HTMLInputElement;
       $.on(rememberFloatToggle, 'change', $.cb.checked);
-      $.on(rememberFloatToggle, 'change', function() { this.parentNode.parentNode.dataset.checked = this.checked; });
+      $.on(rememberFloatToggle, 'change', function(this: HTMLInputElement) { (this.parentNode!.parentNode as HTMLElement).dataset.checked = this.checked as any; });
       $.on(rememberFloatToggle, 'change', () => $.event('QRCommentPreviewChanged'));
 
       const threadBehaviorDescription = String(Config.main['Posting and Captchas']['Comment Preview Thread Behavior'][1]);
@@ -2558,7 +2558,7 @@ Enable it on boards.${location.hostname.split('.')[1]}.org in your browser's pri
       Settings.registerSettingDescription(iconRow, iconDescription);
       const iconToggle = $('input[name="Show Comment Preview Header Icon"]', iconRow) as HTMLInputElement;
     $.on(iconToggle, 'change', $.cb.checked);
-    $.on(iconToggle, 'change', function() { this.parentNode.parentNode.dataset.checked = this.checked; });
+    $.on(iconToggle, 'change', function(this: HTMLInputElement) { (this.parentNode!.parentNode as HTMLElement).dataset.checked = this.checked as any; });
     $.on(iconToggle, 'change', () => $.event('QRCommentPreviewChanged', null));
       // Only show the sub-settings that actually apply to the chosen Default Preview Mode:
       //   inline   -> Inline Behavior only
@@ -3353,7 +3353,7 @@ Enable it on boards.${location.hostname.split('.')[1]}.org in your browser's pri
         $.on(input, 'input', persist);
       }
       if (input.type === 'checkbox') {
-        $.on(input, 'change', function() { setCheckedState(this as HTMLInputElement); });
+        $.on(input, 'change', function(this: HTMLInputElement) { setCheckedState(this as HTMLInputElement); });
         $.on(input, 'change', () => {
           syncAutoHighlightPreviewInputs();
           Settings.applyStylingVars();
@@ -3379,7 +3379,7 @@ Enable it on boards.${location.hostname.split('.')[1]}.org in your browser's pri
       }
       if (name in Settings) $.on(input, event, Settings[name]);
       if (input.type === 'color') {
-        const applyColor = function() {
+        const applyColor = function(this: HTMLInputElement) {
           delete (this as HTMLInputElement).dataset.unset;
           syncAutoHighlightPreviewInputs();
           Settings.applyStylingVars();
@@ -7741,15 +7741,15 @@ Enable it on boards.${location.hostname.split('.')[1]}.org in your browser's pri
     a.click();
   },
 
-  import() {
-    $('input[type=file]', this.parentNode).click();
+  import(this: HTMLElement) {
+    $('input[type=file]', this.parentNode as Element).click();
   },
 
-  onImport() {
+  onImport(this: HTMLInputElement) {
     if ((this as HTMLInputElement).type !== 'file') { return; }
     let file;
-    if (!(file = this.files[0])) { return; }
-    this.value = null;
+    if (!(file = this.files![0])) { return; }
+    this.value = null as any;
     const output = $('.imp-exp-result', Settings.dialog);
 
     const reader = new FileReader();
@@ -9176,7 +9176,7 @@ Enable it on boards.${location.hostname.split('.')[1]}.org in your browser's pri
     const updateArchives = $('#update-archives', section);
 
     if (boardSelect && table) {
-      $.on(boardSelect, 'change', function() {
+      $.on(boardSelect, 'change', function(this: HTMLInputElement) {
         const active = $('tbody > :not([hidden])', table);
         if (active) active.hidden = true;
         const next = $(`tbody > .${this.value}`, table);
@@ -9770,32 +9770,32 @@ Enable it on boards.${location.hostname.split('.')[1]}.org in your browser's pri
     return td;
   },
 
-  saveSelectedArchive() {
+  saveSelectedArchive(this: HTMLSelectElement) {
     $.get('selectedArchives', Conf['selectedArchives'], ({selectedArchives}) => {
-      (selectedArchives[this.dataset.boardid] || (selectedArchives[this.dataset.boardid] = dict()))[this.dataset.type] = JSON.parse(this.value);
+      (selectedArchives[this.dataset.boardid!] || (selectedArchives[this.dataset.boardid!] = dict()))[this.dataset.type!] = JSON.parse(this.value);
       $.set('selectedArchives', selectedArchives);
       Conf['selectedArchives'] = selectedArchives;
       Redirect.selectArchives();
     });
   },
 
-  boardnav() {
+  boardnav(this: HTMLInputElement) {
     Header.generateBoardList(this.value);
   },
 
-  time() {
-    this.nextElementSibling.textContent = Time.format(new Date(), this.value);
+  time(this: HTMLInputElement) {
+    this.nextElementSibling!.textContent = Time.format(new Date(), this.value);
   },
 
   timeLocale() {
     Settings.time.call($('[name=time]', Settings.dialog));
   },
 
-  backlink() {
-    this.nextElementSibling.textContent = this.value.replace(/%(?:id|%)/g, x => ({'%id': '123456789', '%%': '%'})[x]);
+  backlink(this: HTMLInputElement) {
+    this.nextElementSibling!.textContent = this.value.replace(/%(?:id|%)/g, x => ({'%id': '123456789', '%%': '%'} as Record<string, string>)[x]);
   },
 
-  fileInfo() {
+  fileInfo(this: HTMLInputElement) {
     const data = {
       isReply: true,
       file: {
@@ -9813,20 +9813,20 @@ Enable it on boards.${location.hostname.split('.')[1]}.org in your browser's pri
     FileInfo.format(this.value, data, this.nextElementSibling);
   },
 
-  favicon() {
+  favicon(this: HTMLElement) {
     Favicon.switch();
     if ((g.VIEW === 'thread') && Conf['Unread Favicon']) { Unread.update(); }
-    const img = this.nextElementSibling.children;
+    const img = this.nextElementSibling!.children;
     const f = Favicon;
     const iterable = [f.SFW, f.unreadSFW, f.unreadSFWY, f.NSFW, f.unreadNSFW, f.unreadNSFWY, f.dead, f.unreadDead, f.unreadDeadY];
     for (let i = 0; i < iterable.length; i++) {
       var icon = iterable[i];
-      if (!img[i]) { $.add(this.nextElementSibling, $.el('img')); }
-      img[i].src = icon;
+      if (!img[i]) { $.add(this.nextElementSibling!, $.el('img')); }
+      (img[i] as HTMLImageElement).src = icon;
     }
   },
 
-  togglecss() {
+  togglecss(this: HTMLInputElement) {
     const details = $.x('ancestor::details[1]', this) as HTMLElement | null;
     const textarea = details ? ($('.custom-css-textarea', details) as HTMLTextAreaElement | null) : null;
     const disabled = !this.checked;
@@ -9901,7 +9901,7 @@ Enable it on boards.${location.hostname.split('.')[1]}.org in your browser's pri
     $.on($('#reset-keys', details), 'click', Settings.resetKeybinds);
   },
 
-  keybind(e) {
+  keybind(this: HTMLInputElement, e) {
     if (e.keyCode === 9) return; // tab
     e.preventDefault();
     e.stopPropagation();

@@ -548,6 +548,15 @@ const CaptchaT = {
   editingIndex: null as any,
   cachedButtons: null as any,
   currentHighlightIndex: -1 as number,
+  currentThread: null as any,
+  adaptiveColorRaf: 0 as any,
+  themeSettleTimers: null as any,
+  themeObserver: null as any,
+  headObserver: null as any,
+  prefersDarkQuery: null as any,
+  prefersDarkListener: null as any,
+  keyHandlerInstalled: false,
+  formatterPatched: false,
 
   // Auto-submit the post when "Post on Captcha Completion" is on and the captcha
   // is satisfied -- whether that's a solved challenge or 4chan reporting that no

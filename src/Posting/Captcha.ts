@@ -20,7 +20,7 @@ const Captcha = {
       });
     },
 
-    captchas: [],
+    captchas: [] as any[], // loose: array of captcha objects
     submitCB: null as any, // loose: late-assigned callback
     prerequested: null as any, // loose: late-assigned
     timer: null as any, // loose: setTimeout handle
@@ -184,8 +184,8 @@ const Captcha = {
       });
     },
 
-    timeouts: {},
-    prevNeeded: 0,
+    timeouts: {} as Record<string, any>, // loose: setTimeout handles by key
+    prevNeeded: 0 as any, // loose: holds needed() result (boolean | number)
 
     noscriptURL() {
       let lang;
@@ -316,7 +316,7 @@ const Captcha = {
       if (d.activeElement === this.nodes.counter) { iframe.focus(); }
       // XXX Make sure scroll on space prevention (see src/css/style.css) doesn't cause scrolling of div
       if (['blink', 'edge'].includes($.engine) && (needle = iframe.parentNode, $$('#qr .captcha-container > div > div:first-of-type').includes(needle))) {
-        return $.on(iframe.parentNode, 'scroll', function () { return this.scrollTop = 0; });
+        return $.on(iframe.parentNode, 'scroll', function (this: HTMLElement) { return this.scrollTop = 0; });
       }
     },
 
@@ -346,7 +346,7 @@ const Captcha = {
       return Captcha.cache.getOne(isReply);
     },
 
-    save(pasted, token) {
+    save(pasted, token?) {
       Captcha.cache.save({
         response: token || $('textarea', this.nodes.container).value,
         timeout: Date.now() + this.lifetime

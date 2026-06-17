@@ -27,7 +27,7 @@ var Quotify = {
     });
   },
 
-  node() {
+  node(this: Post) {
     if (this.isClone) {
       this.nodes.archivelinks = $$('a.linkify.quotelink', this.nodes.comment);
       return;
@@ -40,7 +40,7 @@ var Quotify = {
     }
   },
 
-  parseArchivelink(link) {
+  parseArchivelink(this: Post, link) {
     let m;
     if (!(m = link.pathname.match(/^\/([^/]+)\/thread\/S?(\d+)\/?$/))) { return; }
     if (['boards.4chan.org', 'boards.4channel.org'].includes(link.hostname)) { return; }
@@ -54,7 +54,7 @@ var Quotify = {
     }
   },
 
-  parseDeadlink(deadlink) {
+  parseDeadlink(this: Post, deadlink) {
     let a, m, post, postID;
     if ($.hasClass(deadlink.parentNode, 'prettyprint')) {
       // Don't quotify deadlinks inside code tags,

@@ -10,6 +10,7 @@ import ScrollMarkers from "../Miscellaneous/ScrollMarkers";
 import $ from "../platform/$";
 import $$ from "../platform/$$";
 import PostRedirect from "../Posting/PostRedirect";
+import type Post from "../classes/Post";
 
 /*
  * decaffeinate suggestions:
@@ -77,7 +78,7 @@ var QuoteYou = {
     });
   },
 
-  node() {
+  node(this: Post) {
     if (this.isClone) { return; }
 
     if (QuoteYou.isYou(this)) {
@@ -120,7 +121,7 @@ var QuoteYou = {
       });
     },
 
-    toggle() {
+    toggle(this: HTMLInputElement) {
       const {post} = QuoteYou.menu;
       const data = {boardID: post.board.ID, threadID: post.thread.ID, postID: post.ID, val: true};
       if (this.checked) {

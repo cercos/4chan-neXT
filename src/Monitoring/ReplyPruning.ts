@@ -69,7 +69,7 @@ var ReplyPruning = {
   total: 0,
   totalFiles: 0,
 
-  setEnabled() {
+  setEnabled(this: HTMLInputElement) {
     const other = (QuoteThreading as any).input;
     if (this.checked && other?.checked) {
       other.checked = false;
@@ -85,7 +85,7 @@ var ReplyPruning = {
     }
   },
 
-  node() {
+  node(this: any) {
     let middle;
     ReplyPruning.thread = this;
 

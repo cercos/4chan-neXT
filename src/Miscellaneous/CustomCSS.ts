@@ -4,6 +4,10 @@ import { Conf } from "../globals/globals";
 import Settings from "../General/Settings";
 
 const CustomCSS = {
+  // Assigned later; declared so the singleton's type includes it. Loosely typed
+  // where a precise type would cascade new errors; tighten during the strict pass.
+  style: null as any,
+
   init() {
     // The Custom CSS section's master switch (only ever off when StyleChan is
     // installed) gates injection without touching the user's `Custom CSS` /

@@ -410,7 +410,7 @@ var Header = {
     }
   },
 
-  toggleLinkJustify() {
+  toggleLinkJustify(this: HTMLInputElement) {
     $.event('CloseMenu');
     const centered = this.nodeName === 'INPUT' ?
       this.checked : undefined;
@@ -429,7 +429,7 @@ var Header = {
     }
   },
 
-  toggleBarFixed() {
+  toggleBarFixed(this: HTMLInputElement) {
     $.event('CloseMenu');
 
     Header.setBarFixed(this.checked);
@@ -447,7 +447,7 @@ var Header = {
     }
   },
 
-  toggleShortcutIcons() {
+  toggleShortcutIcons(this: HTMLInputElement) {
     $.event('CloseMenu');
 
     Header.setShortcutIcons(this.checked);
@@ -463,7 +463,7 @@ var Header = {
     return (hide ? $.addClass : $.rmClass)(doc, 'autohide');
   },
 
-  toggleBarVisibility() {
+  toggleBarVisibility(this: HTMLInputElement | Record<string, any>) {
     const hide = this.nodeName === 'INPUT' ?
       this.checked
     :
@@ -490,7 +490,7 @@ var Header = {
     return Header.bar.classList.toggle('autohide', Conf['Header auto-hide']);
   },
 
-  toggleHideBarOnScroll() {
+  toggleHideBarOnScroll(this: HTMLInputElement) {
     const hide = this.checked;
     $.cb.checked.call(this);
     return Header.setHideBarOnScroll(hide);
@@ -524,7 +524,7 @@ var Header = {
     return $[args[2]](Header.bar, Header.noticesRoot);
   },
 
-  toggleBarPosition() {
+  toggleBarPosition(this: HTMLInputElement) {
     $.cb.checked.call(this);
     return Header.setBarPosition(this.checked);
   },
@@ -534,7 +534,7 @@ var Header = {
     return doc.classList.toggle('hide-bottom-board-list', hide);
   },
 
-  toggleFooterVisibility() {
+  toggleFooterVisibility(this: HTMLInputElement) {
     $.event('CloseMenu');
     const hide = this.nodeName === 'INPUT' ?
       this.checked
@@ -557,7 +557,7 @@ var Header = {
     return [cust.hidden, full.hidden, btn.hidden] = show ? [false, true, false] : [true, false, true];
   },
 
-  toggleCustomNav() {
+  toggleCustomNav(this: HTMLInputElement) {
     $.cb.checked.call(this);
     return Header.setCustomNav(this.checked);
   },

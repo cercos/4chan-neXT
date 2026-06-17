@@ -1,6 +1,7 @@
 import Callbacks from "../classes/Callbacks";
 import { g } from "../globals/globals";
 import $ from "../platform/$";
+import type { default as Post, PostClone } from "../classes/Post";
 
 /*
  * decaffeinate suggestions:
@@ -19,7 +20,7 @@ var IDHighlight = {
 
   uniqueID: null,
 
-  node() {
+  node(this: Post | PostClone) {
     if (this.nodes.uniqueIDRoot) { $.on(this.nodes.uniqueIDRoot, 'click', IDHighlight.click(this)); }
     if (this.nodes.capcode) { $.on(this.nodes.capcode,      'click', IDHighlight.click(this)); }
     if (!this.isClone) { return IDHighlight.set(this); }

@@ -176,7 +176,7 @@ var Embedding = {
         return Embedding.flushTitles(service);
       }
     } else {
-      return CrossOrigin.cache(service.api(uid), (function() { return Embedding.cb.title(this, data); }));
+      return CrossOrigin.cache(service.api(uid), (function(this: XMLHttpRequest) { return Embedding.cb.title(this, data); }));
     }
   },
 
@@ -185,7 +185,7 @@ var Embedding = {
     const {queue} = service;
     if (!queue?.length) { return; }
     service.queue = [];
-    const cb = function() {
+    const cb = function(this: XMLHttpRequest) {
       for (data of queue) { Embedding.cb.title(this, data); }
     };
     return CrossOrigin.cache(service.api(queue.map(data => data.uid)), cb);
@@ -216,7 +216,7 @@ var Embedding = {
   },
 
   cb: {
-    click(e) {
+    click(this: HTMLElement, e) {
       e.preventDefault();
       if (!$.hasClass(this, 'embedded') && (Conf['Floating Embeds'] || $.hasClass(doc, 'catalog-mode'))) {
         let div;
@@ -231,7 +231,7 @@ var Embedding = {
       }
     },
 
-    toggle() {
+    toggle(this: HTMLElement) {
       if ($.hasClass(this, "embedded")) {
         $.rm(this.nextElementSibling);
       } else {
@@ -255,7 +255,7 @@ var Embedding = {
       return container;
     },
 
-    catalogRemove() {
+    catalogRemove(this: HTMLElement) {
       const isCatalog = $.hasClass(doc, 'catalog-mode');
       if ((isCatalog && $.hasClass(this, 'embedded')) || (!isCatalog && $.hasClass(this, 'embed-removed'))) {
         Embedding.cb.toggle.call(this);
@@ -426,7 +426,7 @@ var Embedding = {
             id: `gist-embed-${counter++}`
           }
           );
-          CrossOrigin.cache(`https://api.github.com/gists/${a.dataset.uid}`, function() {
+          CrossOrigin.cache(`https://api.github.com/gists/${a.dataset.uid}`, function(this: XMLHttpRequest) {
             el.textContent = (Object.values(this.response.files)[0] as any).content;
             el.className = 'prettyprint';
             $.global('prettyPrint', {id: el.id});
@@ -607,8 +607,8 @@ var Embedding = {
       el(a) {
         if (Conf.XEmbedder === 'tf') {
           const el = $.el('iframe');
-          $.on(el, 'load', function() {
-            return this.contentWindow.postMessage({element: 't', query: 'height'}, 'https://twitframe.com');
+          $.on(el, 'load', function(this: HTMLIFrameElement) {
+            return this.contentWindow!.postMessage({element: 't', query: 'height'}, 'https://twitframe.com');
           });
           var onMessage = function(e) {
             if ((e.source === el.contentWindow) && (e.origin === 'https://twitframe.com')) {

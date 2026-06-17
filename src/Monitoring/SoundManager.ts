@@ -185,7 +185,7 @@ const SoundManager = {
   /** Walk the DataBoard and list every post-level override across sites/boards/threads. */
   allPostOverrides(): Array<{ siteID: string; boardID: string; threadID: string; postID: string; soundId: string }> {
     const out: Array<{ siteID: string; boardID: string; threadID: string; postID: string; soundId: string }> = [];
-    const data = this.db?.data;
+    const data: any = this.db?.data; // loose: DataBoardData types board values as number; real shape is nested
     if (!data) return out;
     for (const siteID in data) {
       const boards = data[siteID]?.boards;

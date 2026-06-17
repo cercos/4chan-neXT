@@ -2,6 +2,7 @@ import Callbacks from "../classes/Callbacks";
 import { Conf, d, doc } from "../globals/globals";
 import $ from "../platform/$";
 import $$ from "../platform/$$";
+import type { default as Post } from "../classes/Post";
 
 /*
  * decaffeinate suggestions:
@@ -30,7 +31,7 @@ var AntiAutoplay = {
     return $.addClass(audio, 'controls-added');
   },
 
-  node() {
+  node(this: Post) {
     return AntiAutoplay.process(this.nodes.comment);
   },
 

@@ -15,7 +15,7 @@ export const debounce = (wait: number, fn: Function, leading = true) => {
     lastCall = Date.now();
     return fn.apply(that, args as any);
   };
-  return function () {
+  return function (this: any) {
     args = arguments;
     that = this;
     if (leading && lastCall < (Date.now() - wait)) {

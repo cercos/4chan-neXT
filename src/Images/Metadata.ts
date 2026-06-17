@@ -1,5 +1,6 @@
 import $ from "../platform/$";
 import Callbacks from "../classes/Callbacks";
+import type Post from "../classes/Post";
 import CrossOrigin from "../platform/CrossOrigin";
 import { Conf, d, g } from "../globals/globals";
 import Get from "../General/Get";
@@ -24,13 +25,13 @@ var Metadata = {
     });
   },
 
-  node() {
+  node(this: Post) {
     for (let i = 0; i < this.files.length; i++) {
       var file = this.files[i];
       if (/webm$/i.test(file.url)) {var el;
       
         if (this.isClone) {
-          el = $('.webm-title', file.text);
+          el = $('.webm-title', file.text as unknown as Element);
         } else {
           el = $.el('span',
             {className: 'webm-title'});
@@ -44,13 +45,13 @@ var Metadata = {
     }
   },
 
-  load() {
+  load(this: HTMLElement) {
     $.rmClass(this.parentNode, 'error');
     $.addClass(this.parentNode, 'loading');
-    const {index} = this.parentNode.dataset;
+    const {index} = (this.parentNode as HTMLElement).dataset;
     const post = Get.postFromNode(this);
     if (!post) { return; }
-    return CrossOrigin.binary(post.files[+index].url, data => {
+    return CrossOrigin.binary(post.files[+index!].url, data => {
       $.rmClass(this.parentNode, 'loading');
       if (data != null) {
         const title = Metadata.parse(data);
@@ -58,8 +59,8 @@ var Metadata = {
           {textContent: title || ''});
         if (title == null) { $.addClass(this.parentNode, 'not-found'); }
         $.before(this, output);
-        this.parentNode.tabIndex = 0;
-        if (d.activeElement === this) { this.parentNode.focus(); }
+        (this.parentNode as HTMLElement).tabIndex = 0;
+        if (d.activeElement === this) { (this.parentNode as HTMLElement).focus(); }
         return this.tabIndex = -1;
       } else {
         $.addClass(this.parentNode, 'error');

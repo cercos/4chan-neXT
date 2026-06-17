@@ -72,7 +72,7 @@ var QuoteThreading = {
     this.rethread.call(this.input);
   },
 
-  setEnabled() {
+  setEnabled(this: HTMLInputElement) {
     if (this.checked) {
       $.set('Prune All Threads', false);
       const other = ReplyPruning.inputs?.enabled;

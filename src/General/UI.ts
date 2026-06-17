@@ -315,7 +315,7 @@ var Menu = (function() {
   return Menu;
 })();
 
-export var dragstart = function (e) {
+export var dragstart = function (this: any, e) {
   let isTouching;
   if ((e.type === 'mousedown') && (e.button !== 0)) { return; } // not LMB
   // prevent text selection
@@ -376,7 +376,7 @@ export var dragstart = function (e) {
   }
 };
 
-export var touchmove = function (e) {
+export var touchmove = function (this: any, e) {
   for (var touch of e.changedTouches) {
     if (touch.identifier === this.identifier) {
       drag.call(this, touch);
@@ -385,7 +385,7 @@ export var touchmove = function (e) {
   }
 };
 
-export var drag = function (e) {
+export var drag = function (this: any, e) {
   const {clientX, clientY} = e;
 
   let left: any = clientX - this.dx;
@@ -425,7 +425,7 @@ export var drag = function (e) {
   }
 };
 
-export var touchend = function (e) {
+export var touchend = function (this: any, e) {
   for (var touch of e.changedTouches) {
     if (touch.identifier === this.identifier) {
       dragend.call(this);
@@ -434,7 +434,7 @@ export var touchend = function (e) {
   }
 };
 
-export var dragend = function () {
+export var dragend = function (this: any) {
   if (this.isTouching) {
     $.off(d, 'touchmove', this.move);
     $.off(d, 'touchend touchcancel', this.up);
@@ -506,7 +506,7 @@ const hoverstart = function ({ root, el, latestEvent, endEvents, height, width, 
 
 hoverstart.padding = 25;
 
-export var hover = function (e) {
+export var hover = function (this: any, e) {
   this.latestEvent = e;
   const height = (this.height || this.el.offsetHeight) + hoverstart.padding;
   const width  = (this.width  || this.el.offsetWidth);
@@ -530,7 +530,7 @@ export var hover = function (e) {
   return style.right = right;
 };
 
-export var hoverend = function (e) {
+export var hoverend = function (this: any, e) {
   if (((e.type === 'keydown') && (e.keyCode !== 13)) || (e.target.nodeName === "TEXTAREA")) { return; }
   if (!this.noRemove) { $.rm(this.el); }
   $.off(this.root, this.endEvents,  this.hoverend);

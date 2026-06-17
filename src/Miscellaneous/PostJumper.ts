@@ -3,6 +3,7 @@ import { Conf, g, E } from "../globals/globals";
 import $ from "../platform/$";
 import $$ from "../platform/$$";
 import Icon from "../Icons/icon";
+import type { default as Post, PostClone } from "../classes/Post";
 
 /*
  * decaffeinate suggestions:
@@ -25,7 +26,7 @@ var PostJumper = {
     });
   },
 
-  node() {
+  node(this: Post | PostClone) {
     if (this.isClone) {
       for (var buttons of $$('.postJumper', this.nodes.info)) {
         PostJumper.addListeners(buttons);
@@ -55,7 +56,7 @@ var PostJumper = {
     return $.on(buttons.lastChild, 'click', PostJumper.buttonClick);
   },
 
-  buttonClick() {
+  buttonClick(this: HTMLElement) {
     let toJumper;
     const dir = $.hasClass(this, 'prev') ? -1 : 1;
     if (toJumper = PostJumper.find(this.parentNode, dir)) {

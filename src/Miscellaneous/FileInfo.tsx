@@ -1,4 +1,5 @@
 import Callbacks from "../classes/Callbacks";
+import Post from "../classes/Post";
 import Filter from "../Filtering/Filter";
 import { g, Conf, E } from "../globals/globals";
 import h, { isEscaped } from "../globals/jsx";
@@ -23,14 +24,14 @@ var FileInfo = {
     });
   },
 
-  node() {
+  node(this: Post) {
     if (!this.file) { return; }
     if (this.isClone) {
       let a;
-      for (a of $$('.file-info .download-button', this.file.text)) {
+      for (a of $$('.file-info .download-button', this.file.text as unknown as HTMLElement)) {
         $.on(a, 'click', ImageCommon.download);
       }
-      for (a of $$('.file-info .quick-filter-md5', this.file.text)) {
+      for (a of $$('.file-info .quick-filter-md5', this.file.text as unknown as HTMLElement)) {
         $.on(a, 'click', Filter.quickFilterMD5);
       }
       return;
@@ -66,11 +67,11 @@ var FileInfo = {
   },
 
   formatters: {
-    t() { return { innerHTML: E(this.file.url.match(/[^/]*$/)[0]), [isEscaped]: true }; },
-    T() { return <a href={this.file.url} target="_blank">{FileInfo.formatters.t.call(this)}</a> },
-    l() { return <a href={this.file.url} target="_blank">{FileInfo.formatters.n.call(this)}</a> },
-    L() { return <a href={this.file.url} target="_blank">{FileInfo.formatters.N.call(this)}</a> },
-    n() {
+    t(this: Post) { return { innerHTML: E(this.file.url.match(/[^/]*$/)![0]), [isEscaped]: true }; },
+    T(this: Post) { return <a href={this.file.url} target="_blank">{FileInfo.formatters.t.call(this)}</a> },
+    l(this: Post) { return <a href={this.file.url} target="_blank">{FileInfo.formatters.n.call(this)}</a> },
+    L(this: Post) { return <a href={this.file.url} target="_blank">{FileInfo.formatters.N.call(this)}</a> },
+    n(this: Post) {
       const fullname  = this.file.name;
       const shortname = (SW.yotsuba.Build.shortFilename as any)(this.file.name, this.isReply);
       if (fullname === shortname) {
@@ -82,8 +83,8 @@ var FileInfo = {
         </span>;
       }
     },
-    N() { return { innerHTML: E(this.file.name), [isEscaped]: true }; },
-    d() {
+    N(this: Post) { return { innerHTML: E(this.file.name), [isEscaped]: true }; },
+    d(this: Post) {
       return <a href={this.file.url} download={this.file.name} class="download-button">{Icon.raw('download')}</a>;
     },
     f() {
@@ -92,13 +93,13 @@ var FileInfo = {
         [isEscaped]: true,
       };
     },
-    p() { return { innerHTML: ((this.file.isSpoiler) ? "Spoiler, " : ""), [isEscaped]: true }; },
-    s() { return { innerHTML: E(this.file.size), [isEscaped]: true }; },
-    B() { return { innerHTML: Math.round(this.file.sizeInBytes) + " Bytes", [isEscaped]: true }; },
-    K() { return { innerHTML: (Math.round(this.file.sizeInBytes / 1024)) + " KB", [isEscaped]: true }; },
-    M() { return { innerHTML: (Math.round(this.file.sizeInBytes / 1048576 * 100) / 100) + " MB", [isEscaped]: true }; },
-    r() { return { innerHTML: E(this.file.dimensions || "PDF"), [isEscaped]: true }; },
-    g() { return { innerHTML: ((this.file.tag) ? ", " + E(this.file.tag) : ""), [isEscaped]: true }; },
+    p(this: Post) { return { innerHTML: ((this.file.isSpoiler) ? "Spoiler, " : ""), [isEscaped]: true }; },
+    s(this: Post) { return { innerHTML: E(this.file.size), [isEscaped]: true }; },
+    B(this: Post) { return { innerHTML: Math.round(this.file.sizeInBytes) + " Bytes", [isEscaped]: true }; },
+    K(this: Post) { return { innerHTML: (Math.round(this.file.sizeInBytes / 1024)) + " KB", [isEscaped]: true }; },
+    M(this: Post) { return { innerHTML: (Math.round(this.file.sizeInBytes / 1048576 * 100) / 100) + " MB", [isEscaped]: true }; },
+    r(this: Post) { return { innerHTML: E(this.file.dimensions || "PDF"), [isEscaped]: true }; },
+    g(this: Post) { return { innerHTML: ((this.file.tag) ? ", " + E(this.file.tag) : ""), [isEscaped]: true }; },
     '%'() { return { innerHTML: "%", [isEscaped]: true }; }
   }
 };

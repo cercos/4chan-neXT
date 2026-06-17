@@ -10,6 +10,8 @@ import { dict, HOUR } from "../platform/helpers";
  * DS205: Consider reworking code to avoid use of IIFEs
  * Full docs: https://github.com/decaffeinate/decaffeinate/blob/main/docs/suggestions.md
  */
+type BoardConfigThis = { boards?: Record<string, any>; cbs: Array<() => void> };
+
 var BoardConfig = {
   cbs: [] as Array<() => void>,
 
@@ -26,7 +28,7 @@ var BoardConfig = {
     }
   },
 
-  load() {
+  load(this: XMLHttpRequest) {
     let boards;
     if ((this.status === 200) && this.response && this.response.boards) {
       boards = dict();
@@ -46,18 +48,18 @@ var BoardConfig = {
     return BoardConfig.set(boards);
   },
 
-  set(boards) {
+  set(this: BoardConfigThis, boards) {
     this.boards = boards;
     for (var ID in g.boards) {
       var board = g.boards[ID];
-      board.config = this.boards[ID] || {};
+      board.config = this.boards![ID] || {};
     }
     for (var cb of this.cbs) {
       $.queueTask(cb);
     }
   },
 
-  ready(cb) {
+  ready(this: BoardConfigThis, cb) {
     if (this.boards) {
       return cb();
     } else {
@@ -65,7 +67,7 @@ var BoardConfig = {
     }
   },
 
-  sfwBoards(sfw) {
+  sfwBoards(this: BoardConfigThis, sfw) {
     return (() => {
       const result: string[] = [];
       const object = this.boards || Conf['boardConfig'].boards;
@@ -79,7 +81,7 @@ var BoardConfig = {
     })();
   },
 
-  isSFW(board) {
+  isSFW(this: BoardConfigThis, board) {
     return !!(this.boards || Conf['boardConfig'].boards)[board]?.ws_board;
   },
 
@@ -88,19 +90,19 @@ var BoardConfig = {
     return 'boards.4chan.org';
   },
 
-  isArchived(board) {
+  isArchived(this: BoardConfigThis, board) {
     // assume archive exists if no data available to prevent cleaning of archived threads
     const data = (this.boards || Conf['boardConfig'].boards)[board];
     return !data || data.is_archived;
   },
 
-  noAudio(boardID) {
+  noAudio(this: BoardConfigThis, boardID) {
     if (g.SITE?.software !== 'yotsuba') { return false; }
     const boards = this.boards || Conf['boardConfig'].boards;
     return boards && boards[boardID] && !boards[boardID].webm_audio;
   },
 
-  title(boardID) {
+  title(this: BoardConfigThis, boardID) {
     return (this.boards || Conf['boardConfig'].boards)?.[boardID]?.title || '';
   }
 };

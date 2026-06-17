@@ -9,6 +9,8 @@ import { debounce, SECOND } from "../platform/helpers";
 import QuoteYou from "../Quotelinks/QuoteYou";
 import Favicon from "./Favicon";
 import ThreadWatcher from "./ThreadWatcher";
+import type Post from "../classes/Post";
+import type Thread from "../classes/Thread";
 
 /*
  * decaffeinate suggestions:
@@ -70,7 +72,7 @@ var Unread = {
     });
   },
 
-  node() {
+  node(this: Thread) {
     Unread.thread = this;
     Unread.title  = d.title;
     Unread.lastReadPost = Unread.db?.get({
@@ -177,7 +179,7 @@ var Unread = {
     return Unread.update();
   },
 
-  addPost() {
+  addPost(this: Post) {
     if (this.isFetchedQuote || this.isClone) return;
     Unread.order.push(this);
     if ((this.ID <= Unread.lastReadPost) || this.isHidden || QuoteYou.isYou(this)) return;

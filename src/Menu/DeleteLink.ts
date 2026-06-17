@@ -86,7 +86,7 @@ var DeleteLink = {
     return text;
   },
 
-  toggle() {
+  toggle(this: HTMLElement) {
     const {post} = DeleteLink;
     const fileOnly = $.hasClass(this, 'delete-file');
     const auto = DeleteLink.auto[+fileOnly];

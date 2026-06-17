@@ -1,5 +1,6 @@
 import $ from "../platform/$";
 import Callbacks from "../classes/Callbacks";
+import Post from "../classes/Post";
 import { g, Conf } from "../globals/globals";
 
 var Time = {
@@ -12,7 +13,7 @@ var Time = {
     });
   },
 
-  node() {
+  node(this: Post) {
     if (!this.info.date || this.isClone) { return; }
     const {textContent} = this.nodes.date;
     this.nodes.date.textContent = textContent.match(/^\s*/)[0] + Time.format(this.info.date) + textContent.match(/\s*$/)[0];
@@ -35,7 +36,7 @@ var Time = {
   formatterCache: new Map<String, Intl.DateTimeFormat>(),
 
   formatters: {
-    a() {
+    a(this: Date) {
       let formatter = Time.formatterCache.get('a');
       if (!formatter) {
         // || undefined to fall back to browser locale, an empty string gives an error
@@ -44,7 +45,7 @@ var Time = {
       }
       return formatter.format(this);
     },
-    A() {
+    A(this: Date) {
       let formatter = Time.formatterCache.get('A');
       if (!formatter) {
         formatter = Intl.DateTimeFormat(Conf['timeLocale'] || undefined, {weekday: 'long'});
@@ -52,7 +53,7 @@ var Time = {
       }
       return formatter.format(this);
     },
-    b() {
+    b(this: Date) {
       let formatter = Time.formatterCache.get('b');
       if (!formatter) {
         formatter = Intl.DateTimeFormat(Conf['timeLocale'] || undefined, {month: 'short'});
@@ -60,7 +61,7 @@ var Time = {
       }
       return formatter.format(this);
     },
-    B() {
+    B(this: Date) {
       let formatter = Time.formatterCache.get('B');
       if (!formatter) {
         formatter = Intl.DateTimeFormat(Conf['timeLocale'] || undefined, {month: 'long'});
@@ -68,16 +69,16 @@ var Time = {
       }
       return formatter.format(this);
     },
-    d() { return Time.zeroPad(this.getDate()); },
-    e() { return this.getDate(); },
-    H() { return Time.zeroPad(this.getHours()); },
-    I() { return Time.zeroPad((this.getHours() % 12) || 12); },
-    k() { return this.getHours(); },
-    l() { return (this.getHours() % 12) || 12; },
-    m() { return Time.zeroPad(this.getMonth() + 1); },
-    n() { return this.getMonth() + 1; },
-    M() { return Time.zeroPad(this.getMinutes()); },
-    p() {
+    d(this: Date) { return Time.zeroPad(this.getDate()); },
+    e(this: Date) { return this.getDate(); },
+    H(this: Date) { return Time.zeroPad(this.getHours()); },
+    I(this: Date) { return Time.zeroPad((this.getHours() % 12) || 12); },
+    k(this: Date) { return this.getHours(); },
+    l(this: Date) { return (this.getHours() % 12) || 12; },
+    m(this: Date) { return Time.zeroPad(this.getMonth() + 1); },
+    n(this: Date) { return this.getMonth() + 1; },
+    M(this: Date) { return Time.zeroPad(this.getMinutes()); },
+    p(this: Date) {
       let formatter = Time.formatterCache.get('p');
       if (!formatter) {
         formatter = Intl.DateTimeFormat(Conf['timeLocale'] || undefined, {hour: 'numeric', hour12: true});
@@ -86,11 +87,11 @@ var Time = {
       const parts = formatter.formatToParts(this);
       return parts.find((entry) => entry.type === 'dayPeriod')?.value || '';
     },
-    P() { return Time.formatters.p.call(this).toLowerCase(); },
-    S() { return Time.zeroPad(this.getSeconds()); },
-    y() { return this.getFullYear().toString().slice(2); },
-    Y() { return this.getFullYear(); },
-    '%'() { return '%'; }
+    P(this: Date) { return Time.formatters.p.call(this).toLowerCase(); },
+    S(this: Date) { return Time.zeroPad(this.getSeconds()); },
+    y(this: Date) { return this.getFullYear().toString().slice(2); },
+    Y(this: Date) { return this.getFullYear(); },
+    '%'(this: Date) { return '%'; }
   },
 };
 export default Time;

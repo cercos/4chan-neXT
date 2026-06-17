@@ -559,7 +559,7 @@ var Filter = {
     });
   },
 
-  catalogParse() {
+  catalogParse(this: XMLHttpRequest) {
     if (![200, 404].includes(this.status)) {
       new Notice('warning', `Failed to fetch catalog JSON data. ${this.status ? `Error ${this.statusText} (${this.status})` : 'Connection Error'}`, 1);
       return;
@@ -675,8 +675,8 @@ var Filter = {
     });
   },
 
-  quickFilterMD5() {
-    const post: Post = this instanceof Post ? this : Get.postFromNode(this);
+  quickFilterMD5(this: Post | HTMLElement) {
+    const post: Post = this instanceof Post ? this : Get.postFromNode(this)!;
     const files = post.files.filter(f => f.MD5);
     if (!files.length) { return; }
     const md5s = new Set(files.map(f => f.MD5));
@@ -746,12 +746,12 @@ var Filter = {
   },
 
   quickFilterCB: {
-    show() {
+    show(this: any) {
       Settings.forcedFiltersMode = 'advanced';
       Filter.showFilters('MD5');
       return this.close();
     },
-    undo() {
+    undo(this: any) {
       Filter.removeFilters('MD5', this.filters);
       for (var post of this.posts) {
         if (post.isReply) {
@@ -830,7 +830,7 @@ var Filter = {
       };
     },
 
-    makeFilter() {
+    makeFilter(this: HTMLElement) {
       const type = this.dataset.type as FilterType;
       // Convert value -> regexp, unless type is MD5
       const values = Filter.values(type, Filter.menu.post);

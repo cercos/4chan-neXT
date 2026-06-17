@@ -75,7 +75,7 @@ export default class Fetcher {
     this.root.textContent = `Loading post No.${this.postID}...`;
     if (this.threadID) {
       const that = this;
-      $.cache(g.SITE!.urls.threadJSON({boardID: this.boardID, threadID: this.threadID}), function({isCached}) {
+      $.cache(g.SITE!.urls.threadJSON({boardID: this.boardID, threadID: this.threadID}), function(this: XMLHttpRequest, {isCached}) {
         return that.fetchedPost(this, isCached);
       });
     } else {
@@ -157,7 +157,7 @@ export default class Fetcher {
         const api = g.SITE!.urls.threadJSON({boardID: this.boardID, threadID: this.threadID});
         $.cleanCache(url => url === api);
         const that = this;
-        $.cache(api, function() {
+        $.cache(api, function(this: XMLHttpRequest) {
           return that.fetchedPost(this, false);
         });
         return;
@@ -188,7 +188,7 @@ export default class Fetcher {
     const encryptionOK = /^https:\/\//.test(url) || (location.protocol === 'http:');
     if (encryptionOK || Conf['Exempt Archives from Encryption']) {
       const that = this;
-      CrossOrigin.cache(url, function() {
+      CrossOrigin.cache(url, function(this: XMLHttpRequest) {
         if (!encryptionOK && this.response?.media) {
           const {media} = this.response;
           for (var key in media) {

@@ -27,7 +27,7 @@ const CaptchaReplace = {
       {id: 'captcha-forced-noscript'});
     $.replace(noscript, span);
     $.rm(original);
-    const insert = function() {
+    const insert = function(this: any) { // loose: invoked both as click handler (this=element) and directly
       span.innerHTML = noscript.textContent;
       this.iframe($('iframe[src^="https://www.google.com/recaptcha/"]', span));
     };

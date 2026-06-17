@@ -3,6 +3,7 @@ import Get from "../General/Get";
 import { g, Conf } from "../globals/globals";
 import $ from "../platform/$";
 import $$ from "../platform/$$";
+import type { default as Post } from "../classes/Post";
 
 /*
  * decaffeinate suggestions:
@@ -19,7 +20,7 @@ var ExpandComment = {
     });
   },
 
-  node() {
+  node(this: Post) {
     let a;
     if (a = $('.abbr > a:not([onclick])', this.nodes.comment)) {
       return $.on(a, 'click', ExpandComment.cb);
@@ -43,7 +44,7 @@ var ExpandComment = {
     }
     if (!(a = $('.abbr > a', post.nodes.comment))) { return; }
     a.textContent = `Post No.${post} Loading...`;
-    return $.cache(g.SITE!.urls.threadJSON({boardID: post.boardID, threadID: post.threadID}), function() { return ExpandComment.parse(this, a, post); });
+    return $.cache(g.SITE!.urls.threadJSON({boardID: post.boardID, threadID: post.threadID}), function(this: XMLHttpRequest) { return ExpandComment.parse(this, a, post); });
   },
 
   contract(post) {

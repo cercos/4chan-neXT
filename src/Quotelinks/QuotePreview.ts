@@ -6,6 +6,7 @@ import UI from "../General/UI";
 import { Conf, d, doc, g } from "../globals/globals";
 import ExpandComment from "../Miscellaneous/ExpandComment";
 import $ from "../platform/$";
+import type Post from "../classes/Post";
 
 /*
  * decaffeinate suggestions:
@@ -36,13 +37,13 @@ var QuotePreview = {
     });
   },
 
-  node() {
+  node(this: Post) {
     for (var link of this.nodes.quotelinks.concat([...this.nodes.backlinks], this.nodes.archivelinks)) {
       $.on(link, 'mouseover', QuotePreview.mouseover);
     }
   },
 
-  mouseover(e) {
+  mouseover(this: HTMLAnchorElement, e) {
     let origin;
     if (($.hasClass(this, 'inlined') && !$.hasClass(doc, 'catalog-mode')) || !d.contains(this)) { return; }
 
@@ -75,7 +76,7 @@ var QuotePreview = {
     }
   },
 
-  mouseout() {
+  mouseout(this: { el: HTMLElement }) {
     // Stop if it only contains text.
     let root;
     if (!(root = this.el.firstElementChild)) { return; }

@@ -1,4 +1,6 @@
 import Callbacks from "../classes/Callbacks";
+import type Post from "../classes/Post";
+import type CatalogThread from "../classes/CatalogThread";
 import Header from "../General/Header";
 import UI from "../General/UI";
 import { Conf, doc, g } from "../globals/globals";
@@ -45,8 +47,8 @@ var FappeTyme = {
           title: `${type} Tyme active`
         }
         );
-        $.on(indicator, 'click', function() {
-          const check = $.getOwn(FappeTyme.nodes, this.parentNode.id.replace('shortcut-', ''));
+        $.on(indicator, 'click', function(this: HTMLElement) {
+          const check = $.getOwn(FappeTyme.nodes, (this.parentNode as HTMLElement).id.replace('shortcut-', ''));
           check.checked = !check.checked;
           return $.event('change', null, check);
         });
@@ -69,11 +71,11 @@ var FappeTyme = {
     });
   },
 
-  node() {
+  node(this: Post) {
     return this.nodes.root.classList.toggle('noFile', !this.files.length);
   },
 
-  catalogNode() {
+  catalogNode(this: CatalogThread) {
     const file = this.thread.OP.files[0];
     if (!file) { return; }
     const filename = $.el('div', {

@@ -68,33 +68,33 @@ var Banner = {
   },
 
   cb: {
-    toggle() {
+    toggle(this: HTMLElement) {
       if (!Banner.choices?.length) {
         Banner.choices = Conf['knownBanners'].split(',').slice();
       }
       const choices = Banner.choices!;
       const i = Math.floor(choices.length * Math.random());
       const banner = choices.splice(i, 1);
-      return $('img', this.parentNode).src = `//s.4cdn.org/image/title/${banner}`;
+      return $('img', this.parentNode as HTMLElement).src = `//s.4cdn.org/image/title/${banner}`;
     },
 
-    click(e) {
+    click(this: HTMLElement, e) {
       if (!e.ctrlKey && !e.metaKey) { return; }
       if (Banner.original[this.className] == null) { Banner.original[this.className] = this.cloneNode(true); }
-      this.contentEditable = true;
+      (this as any).contentEditable = true;
       for (var br of $$('br', this)) { $.replace(br, $.tn('\n')); }
       return this.focus();
     },
 
-    keydown(e) {
+    keydown(this: HTMLElement, e) {
       e.stopPropagation();
       if (!e.shiftKey && (e.keyCode === 13)) { return this.blur(); }
     },
 
-    blur() {
+    blur(this: HTMLElement) {
       for (var br of $$('br', this)) { $.replace(br, $.tn('\n')); }
-      if (this.textContent = this.textContent.replace(/\n*$/, '')) {
-        this.contentEditable = false;
+      if (this.textContent = this.textContent!.replace(/\n*$/, '')) {
+        (this as any).contentEditable = false;
         return Banner.db.set({
           boardID:  g.BOARD!.ID,
           threadID: this.className,

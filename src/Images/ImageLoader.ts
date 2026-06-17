@@ -1,4 +1,5 @@
 import Callbacks from "../classes/Callbacks";
+import type Post from "../classes/Post";
 import Header from "../General/Header";
 import { g, Conf, d, doc } from "../globals/globals";
 import Icon from "../Icons/icon";
@@ -53,7 +54,7 @@ var ImageLoader = {
     return Header.addShortcut('prefetch', el, 525);
   },
 
-  node() {
+  node(this: Post) {
     if (this.isClone) { return; }
     for (var file of this.files) {
       if (Conf['Replace Thumbnails'] && Conf['Replace WEBM'] && file.isVideo) { ImageLoader.replaceVideo(this, file); }
@@ -101,7 +102,7 @@ var ImageLoader = {
       thumb.preload = 'auto';
       // XXX Cloned video elements with poster in Firefox cause momentary display of image loading icon.
       if ($.engine === 'gecko') {
-        $.on(thumb, 'loadeddata', function() { return this.removeAttribute('poster'); });
+        $.on(thumb, 'loadeddata', function(this: HTMLElement) { return this.removeAttribute('poster'); });
       }
       return;
     }
@@ -123,7 +124,7 @@ var ImageLoader = {
     }
   },
 
-  toggle() {
+  toggle(this: HTMLElement) {
     ImageLoader.prefetchEnabled = !ImageLoader.prefetchEnabled;
     this.classList.toggle('disabled', !ImageLoader.prefetchEnabled);
     if (ImageLoader.prefetchEnabled) {

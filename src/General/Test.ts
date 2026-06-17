@@ -124,7 +124,7 @@ const Test = {
 
   testOne(post) {
     Test.postsRemaining++;
-    return $.cache(g.SITE!.urls.threadJSON({boardID: post.boardID, threadID: post.threadID}), function() {
+    return $.cache(g.SITE!.urls.threadJSON({boardID: post.boardID, threadID: post.threadID}), function(this: XMLHttpRequest) {
       if (!this.response) { return; }
       const {posts} = this.response;
       g.SITE!.Build.spoilerRange[post.board.ID] = posts[0].custom_spoiler;
@@ -202,7 +202,7 @@ const Test = {
   },
 
   cb: {
-    testOne() {
+    testOne(this: HTMLElement) {
       Test.testOne(g.posts!.get(this.dataset.fullID));
       return Menu.menu.close();
     },

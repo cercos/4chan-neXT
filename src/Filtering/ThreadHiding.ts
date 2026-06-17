@@ -1,5 +1,6 @@
 import Callbacks from "../classes/Callbacks";
 import DataBoard from "../classes/DataBoard";
+import type Post from "../classes/Post";
 import Thread from "../classes/Thread";
 import Index from "../General/Index";
 import UI from "../General/UI";
@@ -85,7 +86,7 @@ var ThreadHiding = {
     return !!(ThreadHiding.db && ThreadHiding.db.get({boardID, threadID}));
   },
 
-  node() {
+  node(this: Post) {
     let data;
     if (this.isReply || this.isClone || this.isFetchedQuote) { return; }
 
@@ -181,7 +182,7 @@ var ThreadHiding = {
       });
     },
 
-    hide() {
+    hide(this: any) {
       const makeStub = $('input', this.parentNode).checked;
       const {thread} = ThreadHiding.menu;
       ThreadHiding.hide(thread, makeStub, 'Hidden manually');
@@ -290,7 +291,7 @@ var ThreadHiding = {
     return ThreadHiding.catalogSet(thread.board);
   },
 
-  toggle(thread) {
+  toggle(this: any, thread) {
     if (!(thread instanceof Thread)) {
       thread = g.threads!.get(this.dataset.fullID);
     }

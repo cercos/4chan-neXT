@@ -10,6 +10,7 @@ import { g, Conf } from "../globals/globals";
 import UI from "../General/UI";
 import Get from "../General/Get";
 import { dict } from "../platform/helpers";
+import type { default as Post } from "../classes/Post";
 
 /*
  * decaffeinate suggestions:
@@ -77,7 +78,7 @@ var CatalogLinks = {
     }
   },
 
-  node() {
+  node(this: Post) {
     for (var a of $$('a', this.nodes.comment)) {
       var m;
       if (m = a.href.match(/^https?:\/\/(boards\.4chan(?:nel)?\.org\/[^\/]+)\/catalog(#s=.*)?/)) {
@@ -86,7 +87,7 @@ var CatalogLinks = {
     }
   },
 
-  toggle() {
+  toggle(this: HTMLInputElement) {
     $.event('CloseMenu');
     $.set('Header catalog links', this.checked);
     return CatalogLinks.set(this.checked);

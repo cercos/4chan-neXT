@@ -223,11 +223,11 @@ $.whenModified = function(url, bucket, cb, options={}) {
       }
       return req;
     }
-    const onloadend = function() {
+    const onloadend = function(this: XMLHttpRequest & { callbacks?: any[] }) {
       if (!this.status) {
         delete reqs[url];
       }
-      for (cb of this.callbacks) {
+      for (cb of this.callbacks!) {
         (cb => $.queueTask(() => cb.call(this, {isCached: false})))(cb);
       }
       return delete this.callbacks;
@@ -409,7 +409,7 @@ d.addEventListener('click', function(e) {
 }, true);
 
 $.one = function(el, events, handler) {
-  var cb = function(e) {
+  var cb = function(this: EventTarget, e) {
     $.off(el, events, cb);
     return handler.call(this, e);
   };
@@ -476,7 +476,7 @@ $.debounce = function(wait, fn) {
     lastCall = Date.now();
     return fn.apply(that, args as any);
   };
-  return function() {
+  return function(this: any) {
     args = arguments;
     that = this;
     if (lastCall < (Date.now() - wait)) {

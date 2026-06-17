@@ -1,5 +1,7 @@
 import Callbacks from "../classes/Callbacks";
 import { g, Conf } from "../globals/globals";
+import type { default as Post, PostClone } from "../classes/Post";
+import type CatalogThread from "../classes/CatalogThread";
 
 /*
  * decaffeinate suggestions:
@@ -20,12 +22,12 @@ var ThreadLinks = {
     });
   },
 
-  node() {
+  node(this: Post | PostClone) {
     if (this.isReply || this.isClone) { return; }
     return ThreadLinks.process(this.nodes.reply);
   },
 
-  catalogNode() {
+  catalogNode(this: CatalogThread) {
     return ThreadLinks.process(this.nodes.thumb.parentNode);
   },
 

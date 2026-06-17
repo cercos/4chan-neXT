@@ -1,4 +1,5 @@
 import Callbacks from "../classes/Callbacks";
+import type Post from "../classes/Post";
 import Notice from "../classes/Notice";
 import Filter from "../Filtering/Filter";
 import { g, Conf, doc } from "../globals/globals";
@@ -136,7 +137,7 @@ var Sauce = {
     return a;
   },
 
-  node() {
+  node(this: Post) {
     if (this.isClone) { return; }
     for (var file of this.files) {
       Sauce.file(this, file);

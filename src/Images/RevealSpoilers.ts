@@ -1,4 +1,5 @@
 import Callbacks from "../classes/Callbacks";
+import type Post from "../classes/Post";
 import { g, Conf } from "../globals/globals";
 
 /*
@@ -16,7 +17,7 @@ const RevealSpoilers = {
     });
   },
 
-  node() {
+  node(this: Post) {
     if (this.isClone) { return; }
     for (var file of this.files) {
       if (file.thumb && file.isSpoiler) {
@@ -25,8 +26,8 @@ const RevealSpoilers = {
         thumb.removeAttribute('style');
         // Enforce thumbnail size if thumbnail is replaced.
         thumb.style.maxHeight = (thumb.style.maxWidth = this.isReply ? '125px' : '250px');
-        if (thumb.src) {
-          thumb.src = file.thumbURL;
+        if ((thumb as HTMLImageElement).src) {
+          (thumb as HTMLImageElement).src = file.thumbURL!;
         } else {
           thumb.dataset.src = file.thumbURL;
         }

@@ -5,6 +5,7 @@ import { g, Conf, doc } from "../globals/globals";
 import ExpandComment from "../Miscellaneous/ExpandComment";
 import Unread from "../Monitoring/Unread";
 import $ from "../platform/$";
+import type Post from "../classes/Post";
 
 /*
  * decaffeinate suggestions:
@@ -25,7 +26,7 @@ var QuoteInline = {
     });
   },
 
-  node() {
+  node(this: Post) {
     const {process} = QuoteInline;
     const {isClone} = this;
     for (var link of this.nodes.quotelinks.concat([...this.nodes.backlinks], this.nodes.archivelinks)) {
@@ -51,7 +52,7 @@ var QuoteInline = {
     );
   },
 
-  toggle(e) {
+  toggle(this: HTMLAnchorElement, e) {
     if ($.modifiedClick(e)) { return; }
 
     const {boardID, threadID, postID} = Get.postDataFromLink(this);

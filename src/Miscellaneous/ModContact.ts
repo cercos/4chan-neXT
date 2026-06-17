@@ -1,6 +1,7 @@
 import $ from "../platform/$";
 import Callbacks from "../classes/Callbacks";
 import { g } from "../globals/globals";
+import type { default as Post, PostClone } from "../classes/Post";
 
 /*
  * decaffeinate suggestions:
@@ -16,9 +17,9 @@ var ModContact = {
     });
   },
 
-  node() {
+  node(this: Post | PostClone) {
     let moved;
-    if (this.isClone || !$.hasOwn(ModContact.specific, this.info.capcode)) { return; }
+    if (this.isClone || !$.hasOwn(ModContact.specific, this.info.capcode!)) { return; }
     const links = $.el('span', {className: 'contact-links brackets-wrap'});
     $.extend(links, ModContact.template(this.info.capcode));
     $.after(this.nodes.capcode, links);

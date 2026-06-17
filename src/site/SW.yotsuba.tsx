@@ -632,7 +632,7 @@ $\
         }
         ));
       }
-      if (this.hat) { $.add(root, this.hat.cloneNode(false)); }
+      if ((this as any).hat) { $.add(root, (this as any).hat.cloneNode(false)); }
       $.add(root, thread.OP.nodes.root);
       if (data.omitted_posts || (!withReplies && data.replies)) {
         const [posts, files] = withReplies ?

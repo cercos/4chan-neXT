@@ -3,6 +3,7 @@ import Callbacks from "../classes/Callbacks";
 import ExpandComment from "../Miscellaneous/ExpandComment";
 import { g, Conf } from "../globals/globals";
 import Get from "../General/Get";
+import type Post from "../classes/Post";
 
 /*
  * decaffeinate suggestions:
@@ -29,7 +30,7 @@ var QuoteCT = {
       cb:   this.node
     });
   },
-  node() {
+  node(this: Post) {
     // Stop there if it's a clone of a post in the same thread.
     if (this.isClone && (this.thread === this.context.thread)) { return; }
 

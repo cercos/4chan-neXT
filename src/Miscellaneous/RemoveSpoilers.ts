@@ -2,6 +2,7 @@ import Callbacks from "../classes/Callbacks";
 import { Conf, doc, g } from "../globals/globals";
 import $ from "../platform/$";
 import $$ from "../platform/$$";
+import type { default as Post } from "../classes/Post";
 
 /*
  * decaffeinate suggestions:
@@ -26,7 +27,7 @@ var RemoveSpoilers = {
     }
   },
 
-  node() {
+  node(this: Post) {
     return RemoveSpoilers.unspoiler(this.nodes.comment);
   },
 

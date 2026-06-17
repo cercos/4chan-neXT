@@ -1,4 +1,6 @@
 import Callbacks from "../classes/Callbacks";
+import type Post from "../classes/Post";
+import type CatalogThread from "../classes/CatalogThread";
 import Header from "../General/Header";
 import UI from "../General/UI";
 import { g, Conf, doc } from "../globals/globals";
@@ -29,18 +31,18 @@ var ImageHover = {
     }
   },
 
-  node() {
+  node(this: Post) {
     return this.files.filter((file) => (file.isImage || file.isVideo) && file.thumb).map((file) =>
       $.on(file.thumb, 'mouseover', ImageHover.mouseover(this, file)));
   },
 
-  catalogNode() {
+  catalogNode(this: CatalogThread) {
     const file = this.thread.OP.files[0];
     if (!file || (!file.isImage && !file.isVideo)) { return; }
     return $.on(this.nodes.thumb, 'mouseover', ImageHover.mouseover(this.thread.OP, file));
   },
 
-  mouseover(post, file) { return function(e) {
+  mouseover(post, file) { return function(this: HTMLElement, e) {
     let el, height, width;
     if (!doc.contains(this)) { return; }
     const {isVideo} = file;
@@ -68,7 +70,7 @@ var ImageHover = {
       Volume.setup(el);
       if (Conf['Autoplay']) {
         el.play();
-        if (this.nodeName === 'VIDEO') { this.currentTime = el.currentTime; }
+        if (this.nodeName === 'VIDEO') { (this as HTMLVideoElement).currentTime = el.currentTime; }
       }
     }
     if (file.dimensions) {
@@ -99,7 +101,7 @@ var ImageHover = {
     });
   }; },
 
-  error(post, file) { return function() {
+  error(post, file) { return function(this: HTMLImageElement) {
     if (ImageCommon.decodeError(this, file)) { return; }
     return ImageCommon.error(this, post, file, 3 * SECOND, URL => {
       if (URL) {

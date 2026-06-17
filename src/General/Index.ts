@@ -133,7 +133,7 @@ var Index = {
     return Conf['JSON Index'] && (g.sites[siteID].software === 'yotsuba') && (boardID !== 'f');
   },
 
-  init() {
+  init(this: typeof Index & { selectSize: any; lastLongInputs: any }) {
     let input, inputs, name;
     if (g.VIEW !== 'index') { return; }
 
@@ -387,12 +387,12 @@ var Index = {
     }
   },
 
-  node() {
+  node(this: Post) {
     if (this.isReply || this.isClone || (Index.threadPosition[this.ID] == null)) { return; }
     return this.thread.setPage(Math.floor(Index.threadPosition[this.ID] / Index.threadsNumPerPage) + 1);
   },
 
-  catalogNode() {
+  catalogNode(this: CatalogThread) {
     return $.on(this.nodes.root, 'click', (e: MouseEvent) => {
       if (e.button !== 0) return;
       // The modifier(s) that turn a catalog click into a hide are configurable
@@ -469,7 +469,7 @@ var Index = {
       return Index.buildIndex();
     },
 
-    mode() {
+    mode(this: HTMLSelectElement) {
       Index.pushState({mode: this.value});
       return Index.pageLoad(false);
     },
@@ -485,7 +485,7 @@ var Index = {
       if (!e?.detail?.deferred) { return Index.pageLoad(false); }
     },
 
-    perBoardSort() {
+    perBoardSort(this: HTMLInputElement) {
       Conf['Index Sort'] = this.checked ? dict() : '';
       Index.saveSort();
       for (let i = 0; i < 2; i++) {
@@ -494,8 +494,8 @@ var Index = {
       }
     },
 
-    lastLongThresholds() {
-      const i = [...this.parentNode.children].indexOf(this);
+    lastLongThresholds(this: HTMLInputElement) {
+      const i = [...this.parentNode!.children].indexOf(this);
       const value = +this.value;
       if (!Number.isFinite(value)) {
         this.value = Index.lastLongThresholds[i];
@@ -584,13 +584,13 @@ var Index = {
       return Index.update();
     },
 
-    catalogReplies() {
+    catalogReplies(this: Thread) {
       if (Conf['Show Replies'] && $.hasClass(doc, 'catalog-hover-expand') && !this.catalogView.nodes.replies) {
         return Index.buildCatalogReplies(this);
       }
     },
 
-    hoverAdjust() {
+    hoverAdjust(this: Post['nodes']) {
       // Prevent hovered catalog threads from going offscreen.
       let x;
       if (!$.hasClass(doc, 'catalog-hover-expand')) { return; }
@@ -599,7 +599,7 @@ var Index = {
         const {style} = this.post;
         style.left = `${x}px`;
         style.right = `${-x}px`;
-        return $.one(this.root, 'mouseleave', () => style.left = (style.right = null));
+        return $.one(this.root, 'mouseleave', () => (style as any).left = ((style as any).right = null));
       }
     },
 
@@ -914,7 +914,7 @@ var Index = {
     return $.addClass(Index.button, 'spin');
   },
 
-  load() {
+  load(this: XMLHttpRequest) {
     let err;
     if (this !== Index.req) { return; } // aborted
 
@@ -967,7 +967,7 @@ var Index = {
     }
 
     const timeEl = $('#index-last-refresh time', Index.navLinks);
-    timeEl.dataset.utc = Date.parse(this.getResponseHeader('Last-Modified'));
+    timeEl.dataset.utc = Date.parse(this.getResponseHeader('Last-Modified')!);
     return RelativeDates.update(timeEl);
   },
 

@@ -243,7 +243,7 @@ var CrossOrigin = {
 
   cachePromise(url: string) : Promise<XMLHttpRequest> {
     return new Promise(resolve => {
-      CrossOrigin.cache(url, function() { resolve(this); });
+      CrossOrigin.cache(url, function(this: XMLHttpRequest) { resolve(this); });
     })
   },
 

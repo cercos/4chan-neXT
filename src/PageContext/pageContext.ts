@@ -270,7 +270,7 @@ const PageContextFunctions = {
       bubbles: true,
       detail: { type: 'warning', content, lifetime: 20 }
     }));
-    var cb = function (e?: any) {
+    var cb = function (this: any, e?: any) {
       if (e) { this.removeEventListener('QRMetadata', cb, false); }
       const selected = document.getElementById('selected');
       if (!selected?.dataset.type) return error('No file to edit.');
@@ -295,7 +295,7 @@ const PageContextFunctions = {
       canvas.height = ((canvas as any).naturalHeight = +height);
       canvas.hidden = true;
       document.body.appendChild(canvas);
-      canvas.addEventListener('QRImageDrawn', function () {
+      canvas.addEventListener('QRImageDrawn', function (this: HTMLCanvasElement) {
         this.remove();
         Tegaki.onOpenImageLoaded.call(this);
       }, false);

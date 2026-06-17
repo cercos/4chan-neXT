@@ -38,7 +38,7 @@ var UnreadIndex = {
     return $.on(d, 'PostsInserted PostsRemoved', this.onPostsInserted);
   },
 
-  node() {
+  node(this: any) {
     UnreadIndex.lastReadPost[this.fullID] = UnreadIndex.db.get({
       boardID: this.board.ID,
       threadID: this.ID

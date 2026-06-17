@@ -7,6 +7,7 @@
 import galleryPage from './Gallery/Gallery.html';
 import $ from '../platform/$';
 import Callbacks from '../classes/Callbacks';
+import type Post from '../classes/Post';
 import Notice from '../classes/Notice';
 import Main from '../main/Main';
 import Keybinds from '../Miscellaneous/Keybinds';
@@ -57,7 +58,7 @@ var Gallery = {
     });
   },
 
-  node() {
+  node(this: Post) {
     return (() => {
       const result: any[] = [];
       for (var file of this.files) {
@@ -131,7 +132,7 @@ var Gallery = {
     $.on(stop,  'click', cb.stop);
     $.on(close, 'click', cb.close);
 
-    $.on(menuButton, 'click', function(e) {
+    $.on(menuButton, 'click', function(this: HTMLElement, e) {
       return nodes.menu.toggle(e, this, g);
     });
 
@@ -297,16 +298,16 @@ var Gallery = {
     }
   },
 
-  error() {
+  error(this: HTMLVideoElement) {
     if (this.error?.code === MediaError.MEDIA_ERR_DECODE) {
       return new Notice('error', 'Corrupt or unplayable video', 30);
     }
     if (ImageCommon.isFromArchive(this)) { return; }
-    const post = g.posts!.get(this.dataset.post);
-    const file = post.files[+this.dataset.file];
+    const post = g.posts!.get(this.dataset.post)!;
+    const file = post.files[+this.dataset.file!];
     return ImageCommon.error(this, post, file, null, url => {
       if (!url) { return; }
-      Gallery.images[+this.dataset.id].href = url;
+      Gallery.images[+this.dataset.id!].href = url;
       if (Gallery.nodes.current === this) { return this.src = url; }
     });
   },
@@ -504,7 +505,7 @@ var Gallery = {
       return clearTimeout(Gallery.timeoutID);
     },
 
-    setFitness() {
+    setFitness(this: HTMLInputElement) {
       return (this.checked ? $.addClass : $.rmClass)(doc, `gal-${this.name.toLowerCase().replace(/\s+/g, '-')}`);
     },
 
@@ -563,13 +564,13 @@ var Gallery = {
 
     // Keep a typed-in column count within [0, max-that-fits] so the field can't
     // hold a value larger than the cap allows.
-    clampColumns() {
+    clampColumns(this: HTMLInputElement) {
       const max = parseInt(this.max, 10);
       let v = parseInt(this.value, 10);
       if (isNaN(v)) { return; }
       v = Math.max(0, v);
       if (max && (v > max)) { v = max; }
-      this.value = v;
+      this.value = v as any;
     },
 
     setHeight: debounce(100, function () {
@@ -601,7 +602,7 @@ var Gallery = {
       }
     }),
 
-    setDelay() { return Gallery.delay = +this.value; }
+    setDelay(this: HTMLInputElement) { return Gallery.delay = +this.value; }
   },
 
   menu: {

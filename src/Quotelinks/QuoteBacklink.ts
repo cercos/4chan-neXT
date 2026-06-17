@@ -1,4 +1,5 @@
 import Callbacks from "../classes/Callbacks";
+import type Post from "../classes/Post";
 import { g, Conf, doc } from "../globals/globals";
 import $ from "../platform/$";
 import { dict } from "../platform/helpers";
@@ -43,7 +44,7 @@ var QuoteBacklink = {
       cb:   this.secondNode
     });
   },
-  firstNode() {
+  firstNode(this: Post) {
     if (this.isClone || !this.quotes.length || this.isRebuilt) { return; }
     const markYours = Conf['Mark Quotes of You'] && QuoteYou.isYou(this);
     const a = $.el('a', {
@@ -80,15 +81,15 @@ var QuoteBacklink = {
       }
     }
   },
-  secondNode() {
+  secondNode(this: Post) {
     if (this.isClone && (this.origin.isReply || Conf['OP Backlinks'])) {
-      this.nodes.backlinkContainer = $('.container', this.nodes.post);
+      (this.nodes as any).backlinkContainer = $('.container', this.nodes.post);
       return;
     }
     // Don't backlink the OP.
     if (!this.isReply && !Conf['OP Backlinks']) { return; }
     const container = QuoteBacklink.getContainer(this.fullID);
-    this.nodes.backlinkContainer = container;
+    (this.nodes as any).backlinkContainer = container;
     if (QuoteBacklink.bottomBacklinks) {
       return $.add(this.nodes.post, container);
     } else {

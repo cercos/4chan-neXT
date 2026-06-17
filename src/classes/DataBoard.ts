@@ -112,13 +112,13 @@ export default class DataBoard {
     });
   }
 
-  delete({siteID, boardID, threadID, postID}, cb) {
+  delete({siteID, boardID, threadID, postID}: PostInfo, cb?: () => void) {
     if (!siteID) { siteID = g.SITE!.ID; }
     if (!this.data[siteID]) { return; }
     this.save(() => {
       if (postID) {
-        if (!this.data[siteID].boards[boardID]?.[threadID]) { return; }
-        delete this.data[siteID].boards[boardID][threadID][postID];
+        if (!(this.data[siteID].boards[boardID] as any)?.[threadID!]) { return; } // loose: DataBoardData board values mistyped as number
+        delete (this.data[siteID].boards[boardID] as any)[threadID!][postID];
         this.deleteIfEmpty({siteID, boardID, threadID});
       } else if (threadID) {
         if (!this.data[siteID].boards[boardID]) { return; }
@@ -231,12 +231,12 @@ export default class DataBoard {
     const siteID = g.SITE!.ID;
     const threadsList = g.SITE!.urls.threadsListJSON?.({siteID, boardID});
     if (!threadsList) { return; }
-    $.cache(threadsList, function() {
+    $.cache(threadsList, function(this: XMLHttpRequest) {
       if (this.status !== 200) { return; }
       const archiveList = g.SITE!.urls.archiveListJSON?.({siteID, boardID});
       if (!archiveList) return that.ajaxCleanParse(boardID, this.response);
       const response1 = this.response;
-      $.cache(archiveList, function() {
+      $.cache(archiveList, function(this: XMLHttpRequest) {
         if ((this.status !== 200) && (!!g.SITE!.archivedBoardsKnown || (this.status !== 404))) { return; }
         that.ajaxCleanParse(boardID, response1, this.response);
       });

@@ -2,6 +2,7 @@ import Callbacks from "../classes/Callbacks";
 import Get from "../General/Get";
 import { g, Conf } from "../globals/globals";
 import $ from "../platform/$";
+import type Post from "../classes/Post";
 
 /*
  * decaffeinate suggestions:
@@ -19,7 +20,7 @@ const QuoteStrikeThrough = {
     });
   },
 
-  node() {
+  node(this: Post) {
     if (this.isClone) { return; }
     for (var quotelink of this.nodes.quotelinks) {
       var {boardID, postID} = Get.postDataFromLink(quotelink);

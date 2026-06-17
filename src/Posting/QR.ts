@@ -18,6 +18,7 @@ import { VideoStripper } from './VideoStripper';
 import QRFileStore from '../platform/QRFileStore';
 import { DAY, dict, platform, SECOND } from '../platform/helpers';
 import Icon from '../Icons/icon';
+import type Post from '../classes/Post';
 
 interface ConvertOptions {
   /** Max file size, optional, but passing it will prevent re-calculation */
@@ -283,7 +284,7 @@ var QR = {
       // 4chan core's inline display toggle) so the toggle stays in sync.
       if (Conf['Hide Original Post Form'] && g.VIEW === 'index') {
         $.addClass(doc, 'hide-original-post-form');
-        $.on(origToggle.firstElementChild, 'click', function() {
+        $.on(origToggle.firstElementChild, 'click', function(this: HTMLElement) {
           const shown = $.toggleClass(doc, 'show-original-post-form');
           this.textContent = shown ? 'Hide Original Form' : 'Original Form';
         });
@@ -389,7 +390,7 @@ var QR = {
     }
   },
 
-  node() {
+  node(this: Post) {
     $.on(this.nodes.quote, 'click', QR.quote);
     if (this.isFetchedQuote) { return QR.generatePostableThreadsList(); }
   },
@@ -484,7 +485,7 @@ var QR = {
     return QR.nodes.autohide.checked = false;
   },
 
-  toggleHide() {
+  toggleHide(this: HTMLInputElement) {
     if (this.checked) {
       return QR.hide();
     } else {
@@ -2317,7 +2318,7 @@ var QR = {
     });
   },
 
-  handleFiles(files: File[] | FileList) {
+  handleFiles(this: any, files: File[] | FileList) { // loose: dual this (QR singleton or file input element)
     if (this !== QR) { // file input
       files  = Array.from(this.files as ArrayLike<File>);
       this.value = null;
@@ -2566,8 +2567,8 @@ var QR = {
       QR.selected.restoreName();
       QR.blurMouseFocusedAction(e);
     });
-    $.on(nodes.filename,       'focus',     function() { return $.addClass(this.parentNode, 'focus'); });
-    $.on(nodes.filename,       'blur',      function() { return $.rmClass(this.parentNode, 'focus'); });
+    $.on(nodes.filename,       'focus',     function(this: HTMLElement) { return $.addClass(this.parentNode, 'focus'); });
+    $.on(nodes.filename,       'blur',      function(this: HTMLElement) { return $.rmClass(this.parentNode, 'focus'); });
     $.on(nodes.spoiler,        'change',    () => QR.selected.nodes.spoiler.click());
     $.on(nodes.oekakiButton,   'click',     e => {
       QR.oekaki.button();
@@ -2599,7 +2600,7 @@ var QR = {
     // save selected post's data
     const items = ['thread', 'name', 'email', 'sub', 'com', 'filename', 'flag'];
     let i = 0;
-    const save = function() { QR.selected.save(this); QR.drafts.save(); };
+    const save = function(this: HTMLInputElement | HTMLTextAreaElement | HTMLSelectElement) { QR.selected.save(this); QR.drafts.save(); };
     while ((name = items[i++])) {
       var node;
       if (!(node = nodes[name])) { continue; }
@@ -2616,7 +2617,7 @@ var QR = {
 
     if (Conf['Remember QR Size']) {
       $.get('QR Size', '', item => nodes.com.style.cssText = item['QR Size']);
-      $.on(nodes.com, 'mouseup', function(e) {
+      $.on(nodes.com, 'mouseup', function(this: HTMLElement, e) {
         if (e.button !== 0) { return; }
         $.set('QR Size', this.style.cssText);
       });
@@ -3160,7 +3161,7 @@ var QR = {
     QR.status();
   },
 
-  response() {
+  response(this: XMLHttpRequest) {
     let connErr, err;
     if (this !== QR.req) { return; } // aborted
     delete QR.req;
@@ -3783,7 +3784,7 @@ var QR = {
       const name = QR.nodes.filename.value.replace(/\.\w+$/, '') + '.png';
       const { source } = QR.nodes.fileSubmit.dataset;
       const error = content => QR.error(content);
-      const cb = function(e?) {
+      const cb = function(this: any, e?) { // loose: invoked both as QRMetadata listener (this=element) and directly
         if (e) { this.removeEventListener('QRMetadata', cb, false); }
         const selected = QR.selected?.nodes?.el;
         if (!selected?.dataset.type) return error('No file to edit.');
@@ -3811,7 +3812,7 @@ var QR = {
           hidden: true
         }) as HTMLCanvasElement;
         $.add(d.body, canvas);
-        canvas.addEventListener('QRImageDrawn', function() {
+        canvas.addEventListener('QRImageDrawn', function(this: HTMLElement) {
           this.remove();
           // Tegaki.onOpenImageLoaded reads this.naturalWidth/naturalHeight,
           // which only <img> has — passing the canvas directly throws inside

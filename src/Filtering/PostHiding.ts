@@ -184,7 +184,7 @@ var PostHiding = {
       });
     },
 
-    hide() {
+    hide(this: any) {
       const parent   = this.parentNode;
       const thisPost = $('input[name=thisPost]', parent).checked;
       const replies  = $('input[name=replies]',  parent).checked;
@@ -221,7 +221,7 @@ var PostHiding = {
       $.event('CloseMenu');
     },
 
-    show() {
+    show(this: any) {
       const parent   = this.parentNode;
       const thisPost = $('input[name=thisPost]', parent).checked;
       const replies  = $('input[name=replies]',  parent).checked;

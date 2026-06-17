@@ -1,4 +1,5 @@
 import Callbacks from "../classes/Callbacks";
+import type Post from "../classes/Post";
 import UI from "../General/UI";
 import { g, Conf } from "../globals/globals";
 import $ from "../platform/$";
@@ -36,7 +37,7 @@ var Menu = {
     });
   },
 
-  node() {
+  node(this: Post) {
     if (this.isClone) {
       const button = $('.menu-button', this.nodes.info);
       $.rmClass(button, 'active');
@@ -47,13 +48,13 @@ var Menu = {
     return $.add(this.nodes.info, Menu.makeButton(this));
   },
 
-  catalogNode() {
-    return $.after(this.nodes.icons, Menu.makeButton(this.thread.OP));
+  catalogNode(this: Post) {
+    return $.after((this.nodes as any).icons, Menu.makeButton(this.thread.OP));
   },
 
   makeButton(post, button?) {
     if (!button) { button = Menu.button.cloneNode(true); }
-    $.on(button, 'click', function(e) {
+    $.on(button, 'click', function(this: HTMLElement, e) {
       return Menu.menu.toggle(e, this, post);
     });
     return button;

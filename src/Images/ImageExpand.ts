@@ -147,7 +147,7 @@ var ImageExpand = {
       });
     },
 
-    setFitness() {
+    setFitness(this: HTMLInputElement) {
       return $[this.checked ? 'addClass' : 'rmClass'](doc, this.name.toLowerCase().replace(/\s+/g, '-'));
     }
   },
@@ -367,7 +367,7 @@ var ImageExpand = {
       mouseover() { return mousedown = false; },
       mousedown(e) { if (e.button === 0) { return mousedown = true; } },
       mouseup(e) { if (e.button === 0) { return mousedown = false; } },
-      mouseout(e) { if (((e.buttons & 1) || mousedown) && (e.clientX <= this.getBoundingClientRect().left)) { return ImageExpand.toggle(Get.postFromNode(this)); } }
+      mouseout(this: HTMLElement, e) { if (((e.buttons & 1) || mousedown) && (e.clientX <= this.getBoundingClientRect().left)) { return ImageExpand.toggle(Get.postFromNode(this)); } }
     };
   })(),
 
