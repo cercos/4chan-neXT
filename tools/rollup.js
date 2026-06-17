@@ -41,10 +41,17 @@ const channelBaseUrl = process.argv.find(arg => arg.startsWith('-channel-base=')
 // license banner are added after this runs, so they're unaffected). Saves ~7%.
 // Pass -keep-comments for a fully commented build.
 const stripComments = !process.argv.includes('-keep-comments');
+const sourcemap = minify;
+
+const onwarn = (warning, warn) => {
+  // The legacy feature registry has tolerated singleton cycles; keep testbuild output focused on actionable warnings.
+  if (warning.code === 'CIRCULAR_DEPENDENCY') return;
+  warn(warning);
+};
 
 // https://github.com/rollup/plugins/discussions/1777
 const tsPlugin = typescript({
-  compilerOptions: { outDir: buildDir, },
+  compilerOptions: { outDir: buildDir, sourceMap: sourcemap },
 });
 
 (async () => {
@@ -66,11 +73,12 @@ const tsPlugin = typescript({
     comments: stripComments ? 'none' : 'all',
     lineEndings: 'unix',
     maxEmptyLines: 1,
-    sourcemap: minify,
+    sourcemap,
   });
 
   const bundle = await rollup({
     input: resolve(__dirname, '../src/main/Main.ts'),
+    onwarn,
     plugins: [
       platform ? platformSpecific({
         platform,
@@ -89,7 +97,7 @@ const tsPlugin = typescript({
           "**/src/classes/Post.ts",
           "**/src/Linkification/Linkify.ts",
         ],
-        sourceMap: minify,
+        sourceMap: sourcemap,
       }),
       noFormat || minify ? undefined : removeDecaffeinateComments({
         include: ["**/*.js", "**/*.ts", "**/*.tsx"],
@@ -173,6 +181,8 @@ const tsPlugin = typescript({
       // needed for possible circular dependencies
       constBindings: false,
     },
+    name: "FourchanNeXT",
+    sourcemap,
     // Can't be none as long as the root file defined exports
     // exports: 'none',
   };
@@ -191,7 +201,6 @@ const tsPlugin = typescript({
           comments: /^(?: ==\/?UserScript==| @|!)|license|\bcc\b|copyright/i,
         },
       })] : [tabIndent()],
-      sourcemap: minify,
     });
 
     await writeFile(resolve(buildDir, metaFileName), metadata);
@@ -210,6 +219,7 @@ const tsPlugin = typescript({
 
     const eventPage = await rollup({
       input: resolve(__dirname, '../src/meta/eventPage.ts'),
+      onwarn,
       plugins: [
         tsPlugin,
         noFormat ? undefined : fixTsOutputFormat({ include: ["**/*.ts", "**/*.tsx"] }),
@@ -220,6 +230,7 @@ const tsPlugin = typescript({
     await eventPage.write({
       format: 'module',
       file: resolve(crxDir, 'eventPage.js'),
+      sourcemap,
     });
 
     await writeFile(
