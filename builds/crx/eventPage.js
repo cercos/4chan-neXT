@@ -2,7 +2,7 @@ const PageContextFunctions = {
   stubCloneTopNav: () => { window.cloneTopNav = function () { }; },
   disableNativeExtension: () => {
     try {
-      const settings = JSON.parse(localStorage.getItem('4chan-settings')) || {};
+      const settings = JSON.parse(localStorage.getItem('4chan-settings') || '{}') || {};
       if (settings.disableAll)
         return;
       settings.disableAll = true;
@@ -131,6 +131,8 @@ const PageContextFunctions = {
   initTinyBoard: ({ boardID, threadID }) => {
     threadID = +threadID;
     const form = document.querySelector('form[name="post"]');
+    if (!form)
+      return;
     window.$(document).ajaxComplete(function (event, request, settings) {
       let postID;
       if (settings.url !== form.action)
@@ -155,6 +157,8 @@ const PageContextFunctions = {
     const render = function () {
       const { classList } = document.documentElement;
       const container = document.querySelector('#qr .captcha-container');
+      if (!container)
+        return;
       container.dataset.widgetID = window.grecaptcha.render(container, {
         sitekey: recaptchaKey,
         theme: classList.contains('tomorrow') || classList.contains('spooky') || classList.contains('dark-captcha') ? 'dark' : 'light',
@@ -179,7 +183,10 @@ const PageContextFunctions = {
     }
   },
   resetCaptcha: () => {
-    window.grecaptcha.reset(document.querySelector('#qr .captcha-container').dataset.widgetID);
+    const container = document.querySelector('#qr .captcha-container');
+    if (!container)
+      return;
+    window.grecaptcha.reset(container.dataset.widgetID);
   },
   setupTCaptcha: ({ boardID, threadID, autoLoad }) => {
     const { TCaptcha } = window;
@@ -190,7 +197,7 @@ const PageContextFunctions = {
       return;
     }
     TCaptcha.init(document.querySelector('#qr .captcha-container'), boardID, +threadID);
-    TCaptcha.setErrorCb(err => window.dispatchEvent(new CustomEvent('CreateNotification', {
+    TCaptcha.setErrorCb((err) => window.dispatchEvent(new CustomEvent('CreateNotification', {
       detail: { type: 'warning', content: '' + err }
     })));
     if (autoLoad === '1')
@@ -208,11 +215,19 @@ const PageContextFunctions = {
       }));
     });
     if (window.Tegaki) {
-      document.querySelector('#qr .oekaki').hidden = false;
+      const oekaki = document.querySelector('#qr .oekaki');
+      if (oekaki)
+        oekaki.hidden = false;
     }
   },
   qrTegakiDraw: () => {
     const { Tegaki, FCX } = window;
+    const widthInput = document.querySelector('#qr [name=oekaki-width]');
+    const heightInput = document.querySelector('#qr [name=oekaki-height]');
+    const bgInput = document.querySelector('#qr [name=oekaki-bg]');
+    const bgColorInput = document.querySelector('#qr [name=oekaki-bgcolor]');
+    if (!widthInput || !heightInput || !bgInput || !bgColorInput)
+      return;
     if (Tegaki.bg) {
       Tegaki.destroy();
     }
@@ -220,18 +235,18 @@ const PageContextFunctions = {
     Tegaki.open({
       onDone: FCX.oekakiCB,
       onCancel() { Tegaki.bgColor = '#ffffff'; },
-      width: +document.querySelector('#qr [name=oekaki-width]').value,
-      height: +document.querySelector('#qr [name=oekaki-height]').value,
-      bgColor: document.querySelector('#qr [name=oekaki-bg]').checked ?
-        document.querySelector('#qr [name=oekaki-bgcolor]').value :
+      width: +widthInput.value,
+      height: +heightInput.value,
+      bgColor: bgInput.checked ?
+        bgColorInput.value :
         'transparent'
     });
   },
   qrTegakiLoad: () => {
     const { Tegaki, FCX } = window;
     const name = document.getElementById('qr-filename').value.replace(/\.\w+$/, '') + '.png';
-    const { source } = document.getElementById('file-n-submit').dataset;
-    const error = content => document.dispatchEvent(new CustomEvent('CreateNotification', {
+    const source = document.getElementById('file-n-submit')?.dataset.source;
+    const error = (content) => document.dispatchEvent(new CustomEvent('CreateNotification', {
       bubbles: true,
       detail: { type: 'warning', content, lifetime: 20 }
     }));
@@ -245,9 +260,10 @@ const PageContextFunctions = {
       if (!/^(image|video)\//.test(selected.dataset.type)) {
         return error('Not an image.');
       }
-      if (!selected.dataset.height)
+      const { width, height } = selected.dataset;
+      if (!width || !height)
         return error('Metadata not available.');
-      if (selected.dataset.height === 'loading') {
+      if (height === 'loading') {
         selected.addEventListener('QRMetadata', cb, false);
         return;
       }
@@ -258,13 +274,13 @@ const PageContextFunctions = {
       Tegaki.open({
         onDone: FCX.oekakiCB,
         onCancel() { Tegaki.bgColor = '#ffffff'; },
-        width: +selected.dataset.width,
-        height: +selected.dataset.height,
+        width: +width,
+        height: +height,
         bgColor: 'transparent'
       });
       const canvas = document.createElement('canvas');
-      canvas.width = (canvas.naturalWidth = +selected.dataset.width);
-      canvas.height = (canvas.naturalHeight = +selected.dataset.height);
+      canvas.width = (canvas.naturalWidth = +width);
+      canvas.height = (canvas.naturalHeight = +height);
       canvas.hidden = true;
       document.body.appendChild(canvas);
       canvas.addEventListener('QRImageDrawn', function () {
@@ -291,8 +307,10 @@ let requestID = 0;
 chrome.runtime.onMessage.addListener(function (request, sender, sendResponse) {
   const id = requestID;
   requestID++;
-  handlers[request.type](request, sender).then(data => {
-    chrome.tabs.sendMessage(sender.tab.id, { id, data });
+  handlers[request.type](request, sender).then((data) => {
+    const tabId = sender.tab?.id;
+    if (tabId != null)
+      chrome.tabs.sendMessage(tabId, { id, data });
   });
   sendResponse(id);
 });
@@ -332,10 +350,13 @@ var handlers = {
     }
   },
   async runInPageContext(request, sender) {
+    const tabId = sender.tab?.id;
+    if (tabId == null)
+      return undefined;
     const results = await chrome.scripting.executeScript({
       func: PageContextFunctions[request.fn],
       args: request.data ? [request.data] : [],
-      target: { tabId: sender.tab.id },
+      target: { tabId },
       world: 'MAIN',
     });
     return results[0].result;

@@ -1,10 +1,10 @@
 ## 4chan-neXT changelog
 
-### Unreleased
+### 1.1.9 (2026-06-17)
 
 - Completed the remaining three phases of the TypeScript migration (strict null checks, `noImplicitThis`, and `noImplicitAny`) via assisted codemods, so the entire `src/` tree now type-checks clean under full strict mode. Only optional tightening of leftover loose types remains.
 - Fixed search not highlighting words that were split by line-break points in the text (e.g. inside long URLs).
-- Fixed hilight neXT badges not showing due to issue with rollup.js.
+- Fixed highlight neXT badges not showing due to issue with rollup.js.
 
 ### 1.1.8 (2026-06-16)
 

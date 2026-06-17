@@ -17,13 +17,11 @@ You will need a userscript manager:
 
 ## Latest Version
 
-`1.1.8` (2026-06-16)
+`1.1.9` (2026-06-17)
 
-- Improved the Settings dialog on small screens: navigation collapses into a hamburger menu, horizontal navigation scrolls instead of wrapping, descriptions switch to tooltip mode with a mobile tap-to-reveal fallback, the archives controls use a compact layout, and footer actions move into a drop-up menu.
-- Settings textareas that autosave on change now flash a "Saved" badge, and Ctrl+S/Cmd+S saves the focused settings textarea instead of triggering textarea tag shortcuts.
-- Fixed the Quick Reply not remembering the last-used Name (and Options) after posting, restoring the pre-1.1.0 behavior where the name carries forward across posts and survives a page reload.
-- Added a "Clear Name and Options After Posting" Quick Reply setting (off by default) for anyone who preferred the fields auto-clearing. When on, the Name and Options fields blank out after each post and aren't remembered across sessions. Subject and comment always clear regardless, and an "always" persona still overrides it.
-- Scoped the old reCAPTCHA helper-layer CSS so it no longer disables post menu transitions.
+- Completed the remaining three phases of the TypeScript migration (strict null checks, `noImplicitThis`, and `noImplicitAny`) via assisted codemods, so the entire `src/` tree now type-checks clean under full strict mode. Only optional tightening of leftover loose types remains.
+- Fixed search not highlighting words that were split by line-break points in the text (e.g. inside long URLs).
+- Fixed hilight neXT badges not showing due to issue with rollup.js.
 
 
 ## Migration from 4chan X / 4chan XT
