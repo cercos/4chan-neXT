@@ -4795,6 +4795,11 @@ textarea.copy-text-element {
 .expanded-image {
   clear: left;
 }
+.expanded-image .full-image,
+.expanded-image > .post > .file > .fileThumb {
+  position: relative;
+  z-index: 1;
+}
 .expanding {
   opacity: .5;
 }
