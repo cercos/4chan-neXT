@@ -274,10 +274,21 @@ var Menu: MenuCtor = (function(): MenuCtor {
         ['0px', 'auto']
       :
         ['auto', '0px'];
-      const [left, right] = (eRect.right + sRect.width) < (cWidth - 150) ?
-        ['100%', 'auto']
+      // Cascade submenus in the same direction their parent opened, so a chain
+      // of nested submenus keeps flowing outward instead of folding back over
+      // the parent menu. The root menu's direction is its `left` class; each
+      // nested submenu records its own direction in `submenu-left` for its
+      // children to follow.
+      const container = entry.parentNode;
+      const preferLeft = container && container.classList.contains('submenu') ?
+        container.classList.contains('submenu-left')
       :
-        ['auto', '100%'];
+        this.menu.classList.contains('left');
+      const fitsRight = (eRect.right + sRect.width) < (cWidth - 150);
+      const fitsLeft  = (eRect.left - sRect.width) > 4;
+      const openLeft  = preferLeft ? (fitsLeft || !fitsRight) : !fitsRight;
+      submenu.classList.toggle('submenu-left', openLeft);
+      const [left, right] = openLeft ? ['auto', '100%'] : ['100%', 'auto'];
       const {style} = submenu;
       style.top    = top;
       style.bottom = bottom;

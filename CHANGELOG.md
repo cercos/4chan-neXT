@@ -2,6 +2,9 @@
 
 ### Unreleased
 
+- Added an "Undo" bar in the Thread Watcher after Mark All Read, so an accidental click can be reversed (restores unread counts and last-read positions) for 10 seconds.
+- Added a "Then by" secondary sort to the Thread Watcher Sort menu. The primary's own option now drops out of the "Then by" list live, so you can't pick e.g. "(You)s then (You)s".
+- Added a bouncing down-arrow hint at the bottom of the Thread Watcher when the list has entries scrolled out of view.
 - Fixed an expanded image not contracting on click when the Quick Reply comment preview was beside it in inline preview mode.
 - Fixed thumbnail and hover preview toggle not toggling in thread watcher dropdown menu.
 

@@ -52,6 +52,9 @@ var ThreadWatcher = {
   list: null as any,
   refreshButton: null as any,
   markReadButton: null as any,
+  markReadUndo: null as any,
+  undoBar: null as any,
+  undoTimeout: null as any,
   menuButton: null as any,
   closeButton: null as any,
   attachButton: null as any,
@@ -422,7 +425,20 @@ var ThreadWatcher = {
     },
     markAllRead() {
       if ($.hasClass(this, 'disabled') || !ThreadWatcher.unreadEnabled) { return; }
+      const snapshot: any[] = [];
       for (var {siteID, boardID, threadID, data} of ThreadWatcher.getAll()) {
+        // Only remember threads that actually had something unread, so the undo
+        // restores the prior state (and reports an accurate count).
+        if (data.unread || data.quotingYou || data.yousCount) {
+          snapshot.push({
+            siteID, boardID, threadID,
+            prevRead: ThreadWatcher.unreaddb.get({siteID, boardID, threadID}),
+            unread: data.unread,
+            quotingYou: data.quotingYou,
+            yousCount: data.yousCount,
+            dismiss: data.dismiss
+          });
+        }
         if (data.last != null) {
           ThreadWatcher.unreaddb.set({siteID, boardID, threadID, val: data.last});
         }
@@ -433,6 +449,13 @@ var ThreadWatcher = {
           dismiss: data.quotingYou || 0
         });
       }
+      if (snapshot.length) { ThreadWatcher.showMarkReadUndo(snapshot); }
+    },
+    undoMarkAllRead() {
+      ThreadWatcher.undoMarkAllRead();
+    },
+    dismissMarkReadUndo() {
+      ThreadWatcher.hideMarkReadUndo();
     },
     markRead(this: HTMLElement) {
       if ($.hasClass(this, 'disabled') || !ThreadWatcher.unreadEnabled) { return; }
@@ -1167,6 +1190,61 @@ var ThreadWatcher = {
     }
   },
 
+  showMarkReadUndo(snapshot: any[]) {
+    // Drop any pending undo without restoring it; the new mark-all-read wins.
+    ThreadWatcher.hideMarkReadUndo();
+    ThreadWatcher.markReadUndo = snapshot;
+    const n = snapshot.length;
+    const bar = ThreadWatcher.undoBar = $.el('div', {className: 'watcher-undo-bar'});
+    const text = $.el('span', {
+      className: 'watcher-undo-text',
+      textContent: `Marked ${n} thread${n === 1 ? '' : 's'} read`
+    });
+    const undo = $.el('a', {
+      className: 'watcher-undo-link',
+      href: 'javascript:;',
+      textContent: 'Undo'
+    });
+    const close = $.el('a', {
+      className: 'watcher-undo-close',
+      href: 'javascript:;',
+      title: 'Dismiss'
+    });
+    Icon.set(close, 'xmark');
+    $.on(undo, 'click', ThreadWatcher.cb.undoMarkAllRead);
+    $.on(close, 'click', ThreadWatcher.cb.dismissMarkReadUndo);
+    $.add(bar, [text, undo, close]);
+    const header = $('.move', ThreadWatcher.dialog);
+    if (header) { $.after(header, bar); }
+    ThreadWatcher.undoTimeout = setTimeout(ThreadWatcher.cb.dismissMarkReadUndo, 10000);
+  },
+
+  hideMarkReadUndo() {
+    if (ThreadWatcher.undoTimeout) {
+      clearTimeout(ThreadWatcher.undoTimeout);
+      ThreadWatcher.undoTimeout = null;
+    }
+    if (ThreadWatcher.undoBar) {
+      $.rm(ThreadWatcher.undoBar);
+      ThreadWatcher.undoBar = null;
+    }
+    ThreadWatcher.markReadUndo = null;
+  },
+
+  undoMarkAllRead() {
+    const snapshot = ThreadWatcher.markReadUndo;
+    if (!snapshot) { return; }
+    for (const {siteID, boardID, threadID, prevRead, unread, quotingYou, yousCount, dismiss} of snapshot) {
+      if (prevRead == null) {
+        ThreadWatcher.unreaddb.delete({siteID, boardID, threadID});
+      } else {
+        ThreadWatcher.unreaddb.set({siteID, boardID, threadID, val: prevRead});
+      }
+      ThreadWatcher.update(siteID, boardID, threadID, {unread, quotingYou, yousCount, dismiss});
+    }
+    ThreadWatcher.hideMarkReadUndo();
+  },
+
   updateScrollMore() {
     const {list, scrollMore} = ThreadWatcher;
     if (!list || !scrollMore) { return; }
@@ -1175,6 +1253,20 @@ var ThreadWatcher = {
     // than fits before the user hovers to expand it.
     const hasMore = (list.scrollHeight - list.clientHeight - list.scrollTop) > 2;
     scrollMore.hidden = !hasMore;
+    // Tint the hint red when a thread quoting you is among the entries hidden
+    // below the fold, so a (You) off-screen is noticeable without scrolling.
+    let youBelow = false;
+    if (hasMore) {
+      const listBottom = list.getBoundingClientRect().bottom;
+      for (const line of list.children) {
+        if (line.classList.contains('replies-quoting-you') &&
+            line.getBoundingClientRect().bottom > listBottom + 1) {
+          youBelow = true;
+          break;
+        }
+      }
+    }
+    scrollMore.classList.toggle('has-you', youBelow);
   },
 
   ensureThumbnailHover() {
@@ -1802,7 +1894,10 @@ var ThreadWatcher = {
       // Primary and secondary submenus share this list so a change in either
       // refreshes the checkmarks in both.
       const allOptions: any[] = [];
-      const refreshChecks = () => { for (const o of allOptions) { o.updateCheck(); } };
+      // Resync both checkmarks and row visibility after any selection, so
+      // changing the primary live-updates which rows the secondary list offers
+      // (e.g. the new primary's own option drops out of "Then by").
+      const refreshChecks = () => { for (const o of allOptions) { o.updateVisible(); o.updateCheck(); } };
 
       // Build one selectable option row. `isActive` decides the checkmark,
       // `onSelect` runs on click, and an optional `visibleFor` omits the row
@@ -1822,6 +1917,9 @@ var ThreadWatcher = {
         const check = $('.watcher-sort-check', el);
         $('.watcher-sort-label', el).textContent = label;
         const updateCheck = () => { check.textContent = isActive() ? '✓' : ''; };
+        // Hide via display (rather than omitting the row) so visibility can be
+        // re-toggled live when the primary changes without closing the menu.
+        const updateVisible = () => { el.style.display = (visibleFor && !visibleFor()) ? 'none' : ''; };
         $.on(el, 'mousedown', e => e.stopPropagation());
         $.on(el, 'click', function(e) {
           e.stopPropagation();
@@ -1831,8 +1929,9 @@ var ThreadWatcher = {
         const entry: any = {
           el,
           updateCheck,
+          updateVisible,
           open() {
-            if (visibleFor && !visibleFor()) { return false; }
+            updateVisible();
             updateCheck();
             return true;
           }

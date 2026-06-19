@@ -4520,6 +4520,10 @@ textarea.copy-text-element {
 #thread-watcher > .watcher-scroll-more[hidden] {
   display: none;
 }
+/* A thread quoting you is hidden below the fold: tint the fade and caret red. */
+#thread-watcher > .watcher-scroll-more.has-you {
+  background: linear-gradient(to bottom, transparent, color-mix(in srgb, #F00 35%, var(--xt-dialog-bg, var(--background, Canvas))) 80%);
+}
 #thread-watcher > .watcher-scroll-more > .icon {
   width: 11px;
   height: 11px;
@@ -4527,6 +4531,10 @@ textarea.copy-text-element {
   animation: watcher-scroll-more-bounce 1.4s ease-in-out infinite;
 }
 #thread-watcher > .watcher-scroll-more:hover > .icon {
+  opacity: 1;
+}
+#thread-watcher > .watcher-scroll-more.has-you > .icon {
+  color: #F00;
   opacity: 1;
 }
 @keyframes watcher-scroll-more-bounce {
@@ -4567,6 +4575,51 @@ textarea.copy-text-element {
 }
 #thread-watcher > .move > a > .icon {
   display: block;
+}
+/* Transient "Marked N threads read — Undo" bar shown after Mark All Read. */
+#thread-watcher > .watcher-undo-bar {
+  display: flex;
+  align-items: center;
+  gap: 6px;
+  margin: 2px 3px 0;
+  padding: 3px 6px;
+  border-radius: 3px;
+  font-size: 11px;
+  background: color-mix(in srgb, currentColor 12%, var(--xt-dialog-bg, var(--background, Canvas)));
+  animation: watcher-undo-in .15s ease-out;
+}
+#thread-watcher > .watcher-undo-bar > .watcher-undo-text {
+  flex: 1 1 auto;
+  opacity: .85;
+}
+#thread-watcher > .watcher-undo-bar > .watcher-undo-link {
+  flex: 0 0 auto;
+  font-weight: bold;
+  text-decoration: underline;
+  cursor: pointer;
+}
+#thread-watcher > .watcher-undo-bar > .watcher-undo-close {
+  flex: 0 0 auto;
+  display: inline-flex;
+  align-items: center;
+  opacity: .6;
+  cursor: pointer;
+}
+#thread-watcher > .watcher-undo-bar > .watcher-undo-close:hover {
+  opacity: 1;
+}
+#thread-watcher > .watcher-undo-bar > .watcher-undo-close > .icon {
+  width: 10px;
+  height: 10px;
+}
+@keyframes watcher-undo-in {
+  from { opacity: 0; transform: translateY(-3px); }
+  to { opacity: 1; transform: translateY(0); }
+}
+@media (prefers-reduced-motion: reduce) {
+  #thread-watcher > .watcher-undo-bar {
+    animation: none;
+  }
 }
 #watched-threads > div {
   padding-left: 3px;
