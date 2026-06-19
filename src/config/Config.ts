@@ -899,6 +899,7 @@ const Config = {
   'Thread Watcher Max Height': 210,
   'Thread Watcher Max Width': 250,
   'Thread Watcher Sort': 'manual',
+  'Thread Watcher Sort 2': '',
   'Thread Watcher Attach Controls': true,
   'Thread Watcher Attached': false,
   'Thread Watcher Attach Location': 'bottom',

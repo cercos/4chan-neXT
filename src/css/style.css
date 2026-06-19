@@ -1428,6 +1428,17 @@ div[data-checked="false"] > .suboption-list {
   text-align: center;
   margin-right: 4px;
 }
+/* "Then by" secondary submenu inside the Sort submenu: separated from the
+   primary options by a divider. While greyed out (primary doesn't support a
+   secondary sort) pointer-events are disabled so its submenu can't open. */
+.entry.watcher-sort-then-by {
+  margin-top: 3px;
+  padding-top: 5px;
+  border-top: 1px solid color-mix(in srgb, currentColor 25%, transparent);
+}
+.entry.watcher-sort-then-by.disabled {
+  pointer-events: none;
+}
 .section-filters .settings-subnav {
   display: flex;
   flex-wrap: wrap;

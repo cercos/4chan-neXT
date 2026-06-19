@@ -821,6 +821,9 @@ var ThreadWatcher = {
     }
   },
 
+  // Pure single-dimension comparators: each compares ONE field so they can be
+  // composed (primary, then secondary, then a stable tiebreak). Tiebreaks that
+  // used to live inside `yous`/`board` now come from sortComparator() instead.
   sortComparators: {
     // loose: a/b are dynamic watcher records ({siteID, boardID, threadID, data, ...})
     manual(a: any, b: any) {
@@ -836,24 +839,43 @@ var ThreadWatcher = {
     replies: (a: any, b: any) => (b.data.replies || 0) - (a.data.replies || 0),
     unread: (a: any, b: any) => (b.data.unread || 0) - (a.data.unread || 0),
     activity: (a: any, b: any) => (b.data.modified || 0) - (a.data.modified || 0),
-    yous(a: any, b: any) {
-      const ay = ThreadWatcher.activeYous(a.data);
-      const by = ThreadWatcher.activeYous(b.data);
-      if (ay !== by) { return by - ay; }
-      return (b.data.addedAt || 0) - (a.data.addedAt || 0);
-    },
+    yous: (a: any, b: any) => ThreadWatcher.activeYous(b.data) - ThreadWatcher.activeYous(a.data),
     board(a: any, b: any) {
       const sa = `${a.siteID}/${a.boardID}`;
       const sb = `${b.siteID}/${b.boardID}`;
-      if (sa < sb) { return -1; }
-      if (sa > sb) { return 1; }
-      return (a.data.order || 0) - (b.data.order || 0);
+      return sa < sb ? -1 : sa > sb ? 1 : 0;
     }
   },
+
+  // Primaries whose values cluster into ties, where a secondary sort is useful.
+  // The near-unique modes (manual, date-added, thread-date) are deliberately
+  // excluded — a secondary would never get a chance to run.
+  secondarySortablePrimaries: ['yous', 'unread', 'replies', 'board', 'activity'],
 
   sortMode(): string {
     const mode = Conf['Thread Watcher Sort'] || 'manual';
     return ThreadWatcher.sortComparators[mode as keyof typeof ThreadWatcher.sortComparators] ? mode : 'manual';
+  },
+
+  // The effective secondary mode, or '' when there is none. Only honored when
+  // the primary produces ties, and never the same as (or weaker than) primary.
+  sortMode2(): string {
+    const primary = ThreadWatcher.sortMode();
+    if (!ThreadWatcher.secondarySortablePrimaries.includes(primary)) { return ''; }
+    const mode = Conf['Thread Watcher Sort 2'];
+    if (!mode || mode === 'manual' || mode === primary) { return ''; }
+    return ThreadWatcher.sortComparators[mode as keyof typeof ThreadWatcher.sortComparators] ? mode : '';
+  },
+
+  // Composed comparator: primary, then the optional secondary, then a stable
+  // date-added tiebreak so the order is always deterministic.
+  sortComparator() {
+    const cmp = ThreadWatcher.sortComparators;
+    const primary = cmp[ThreadWatcher.sortMode() as keyof typeof cmp];
+    const sec = ThreadWatcher.sortMode2();
+    const secondary = sec ? cmp[sec as keyof typeof cmp] : null;
+    const tiebreak = cmp['date-added'];
+    return (a: any, b: any) => primary(a, b) || (secondary ? secondary(a, b) : 0) || tiebreak(a, b);
   },
 
   activeYous(data: any): number { // loose: data is a dynamic watcher record value
@@ -884,7 +906,7 @@ var ThreadWatcher = {
       }
     }
     if (!groupByBoard) {
-      all.sort(ThreadWatcher.sortComparators[ThreadWatcher.sortMode() as keyof typeof ThreadWatcher.sortComparators]);
+      all.sort(ThreadWatcher.sortComparator());
     }
     return all;
   },
@@ -1776,42 +1798,109 @@ var ThreadWatcher = {
         ['activity',    'Last activity'],
         ['board',       'Board'],
       ];
-      const subEntries: any[] = [];
-      sortOptions.forEach(([value, label]) => {
+
+      // Primary and secondary submenus share this list so a change in either
+      // refreshes the checkmarks in both.
+      const allOptions: any[] = [];
+      const refreshChecks = () => { for (const o of allOptions) { o.updateCheck(); } };
+
+      // Build one selectable option row. `isActive` decides the checkmark,
+      // `onSelect` runs on click, and an optional `visibleFor` omits the row
+      // from the menu when it returns false (the menu rebuilds on each open, so
+      // omitted rows reappear once they're relevant again).
+      const makeOption = (
+        value: string,
+        label: string,
+        isActive: () => boolean,
+        onSelect: () => void,
+        visibleFor?: () => boolean
+      ) => {
         const el = $.el('a', {
           href: 'javascript:;',
           innerHTML: '<span class="watcher-sort-check"></span><span class="watcher-sort-label"></span>'
         });
         const check = $('.watcher-sort-check', el);
-        const labelEl = $('.watcher-sort-label', el);
-        labelEl.textContent = label;
-        const updateCheck = () => {
-          check.textContent = ThreadWatcher.sortMode() === value ? '✓' : '';
-        };
+        $('.watcher-sort-label', el).textContent = label;
+        const updateCheck = () => { check.textContent = isActive() ? '✓' : ''; };
         $.on(el, 'mousedown', e => e.stopPropagation());
         $.on(el, 'click', function(e) {
           e.stopPropagation();
-          $.set('Thread Watcher Sort', value);
-          Conf['Thread Watcher Sort'] = value;
-          ThreadWatcher.refresh();
-          for (const entry of subEntries) { entry.updateCheck(); }
+          onSelect();
+          refreshChecks();
         });
-        subEntries.push({
+        const entry: any = {
           el,
           updateCheck,
           open() {
+            if (visibleFor && !visibleFor()) { return false; }
             updateCheck();
             return true;
           }
+        };
+        allOptions.push(entry);
+        return entry;
+      };
+
+      // Whether the current primary is one whose values cluster into ties, in
+      // which case the "Then by" secondary submenu is selectable.
+      const secondaryShown = () =>
+        ThreadWatcher.secondarySortablePrimaries.includes(ThreadWatcher.sortMode());
+
+      // Greys out / re-enables the "Then by" submenu live when the primary
+      // changes (assigned once its element exists). pointer-events is disabled
+      // via CSS while greyed so the submenu can't be opened.
+      let updateThenBy = () => {};
+
+      // Primary sort: every mode is selectable.
+      const primaryEntries = sortOptions.map(([value, label], i) => {
+        const entry = makeOption(value, label, () => ThreadWatcher.sortMode() === value, () => {
+          $.set('Thread Watcher Sort', value);
+          Conf['Thread Watcher Sort'] = value;
+          ThreadWatcher.refresh();
+          updateThenBy();
         });
+        entry.order = i + 1;
+        return entry;
       });
-      this.menu.addEntry({
-        el: $.el('a', {
-          href: 'javascript:;',
-          textContent: 'Sort'
-        }),
+
+      // Secondary (tiebreak) sort: a None option plus every mode except Manual
+      // and whichever mode is the current primary.
+      const setSecondary = (value: string) => () => {
+        $.set('Thread Watcher Sort 2', value);
+        Conf['Thread Watcher Sort 2'] = value;
+        ThreadWatcher.refresh();
+      };
+      const secondaryEntries = [
+        makeOption('none', 'None', () => !ThreadWatcher.sortMode2(), setSecondary('')),
+        ...sortOptions
+          .filter(([value]) => value !== 'manual')
+          .map(([value, label]) => makeOption(
+            value, label,
+            () => ThreadWatcher.sortMode2() === value,
+            setSecondary(value),
+            () => value !== ThreadWatcher.sortMode()
+          ))
+      ].map((entry, i) => { entry.order = i + 1; return entry; });
+
+      // "Then by" nested submenu: always present, greyed out (and un-openable)
+      // unless the primary produces ties.
+      const thenByEl = $.el('a', { href: 'javascript:;', textContent: 'Then by' });
+      updateThenBy = () => thenByEl.classList.toggle('disabled', !secondaryShown());
+      const thenByEntry = {
+        el: thenByEl,
         order: 50,
-        subEntries,
+        subEntries: secondaryEntries,
+        open() {
+          updateThenBy();
+          return true;
+        }
+      };
+      $.addClass(thenByEl, 'watcher-sort-then-by');
+
+      this.menu.addEntry({
+        el: $.el('a', { href: 'javascript:;', textContent: 'Sort' }),
+        order: 50,
+        subEntries: [...primaryEntries, thenByEntry],
         open(this: { el: HTMLElement }) {
           this.el.classList.toggle('disabled', !ThreadWatcher.list.firstElementChild);
           return true;
