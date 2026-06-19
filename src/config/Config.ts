@@ -957,7 +957,7 @@ const Config = {
     ],
     'Show Undo Message': [
       false,
-      'After "Mark all read", briefly show a notice with an Undo button. It auto-dismisses after a few seconds.'
+      'After "Mark all read", the watcher icon briefly becomes an Undo button with a countdown ring. Click it within a few seconds to restore.'
     ],
     'Show Site Prefix': [
       true,

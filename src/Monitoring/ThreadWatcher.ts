@@ -24,10 +24,10 @@ import Get from '../General/Get';
 import { dict, HOUR, MINUTE } from '../platform/helpers';
 import Icon from '../Icons/icon';
 
-// How long the "Marked N threads read" undo notice lingers before auto-dismissing.
-// A countdown bar shrinks across this span, then the notice fades out.
-const MARK_READ_UNDO_MS = 8000;
-const MARK_READ_UNDO_FADE_MS = 300;
+// After "Mark all read", the header icon becomes an Undo button for this long.
+// A circular countdown ring depletes across the span, then it reverts to the
+// check icon and the undo snapshot is dropped.
+const MARK_READ_UNDO_MS = 5000;
 
 // Local structural type for the ThreadWatcher.menu sub-object's `this`. Declared
 // outside the singleton so the methods' `this:` annotations don't reference
@@ -58,7 +58,6 @@ var ThreadWatcher = {
   refreshButton: null as any,
   markReadButton: null as any,
   markReadUndo: null as any,
-  undoBar: null as any,
   undoTimeout: null as any,
   menuButton: null as any,
   closeButton: null as any,
@@ -429,6 +428,9 @@ var ThreadWatcher = {
       $.event('CloseMenu');
     },
     markAllRead() {
+      // While the undo window is open the same icon is the Undo button, so a
+      // click restores the prior state instead of marking read again.
+      if (ThreadWatcher.markReadUndo) { ThreadWatcher.undoMarkAllRead(); return; }
       if ($.hasClass(this, 'disabled') || !ThreadWatcher.unreadEnabled) { return; }
       const snapshot: any[] = [];
       for (var {siteID, boardID, threadID, data} of ThreadWatcher.getAll()) {
@@ -458,9 +460,6 @@ var ThreadWatcher = {
     },
     undoMarkAllRead() {
       ThreadWatcher.undoMarkAllRead();
-    },
-    dismissMarkReadUndo() {
-      ThreadWatcher.hideMarkReadUndo();
     },
     expireMarkReadUndo() {
       ThreadWatcher.expireMarkReadUndo();
@@ -1186,7 +1185,10 @@ var ThreadWatcher = {
     for (var className of ['replies-unread', 'replies-quoting-you']) {
       ThreadWatcher.shortcut.classList.toggle(className, !!$(`.${className}`, ThreadWatcher.dialog));
     }
-    if (ThreadWatcher.markReadButton) {
+    // Leave the button alone while it's showing the Undo affordance; marking
+    // everything read flips hasUnread to false, which would otherwise disable
+    // and reset the icon mid-countdown.
+    if (ThreadWatcher.markReadButton && !ThreadWatcher.markReadUndo) {
       const hasUnread = !!$('.replies-unread, .replies-quoting-you', ThreadWatcher.list);
       ThreadWatcher.markReadButton.classList.toggle('disabled', !ThreadWatcher.unreadEnabled || !hasUnread);
       ThreadWatcher.markReadButton.title = !ThreadWatcher.unreadEnabled ?
@@ -1199,67 +1201,49 @@ var ThreadWatcher = {
   },
 
   showMarkReadUndo(snapshot: any[]) {
-    // Opt-in notice; off by default. When disabled the mark-all-read still
+    // Opt-in affordance; off by default. When disabled the mark-all-read still
     // happens, there's just no undo prompt.
     if (!Conf['Show Undo Message']) { return; }
+    const btn = ThreadWatcher.markReadButton;
+    if (!btn) { return; }
     // Drop any pending undo without restoring it; the new mark-all-read wins.
     ThreadWatcher.hideMarkReadUndo();
     ThreadWatcher.markReadUndo = snapshot;
-    const n = snapshot.length;
-    const bar = ThreadWatcher.undoBar = $.el('div', {className: 'watcher-undo-bar'});
-    bar.style.setProperty('--undo-duration', `${MARK_READ_UNDO_MS}ms`);
-    const text = $.el('span', {
-      className: 'watcher-undo-text',
-      textContent: `Marked ${n} thread${n === 1 ? '' : 's'} read`
-    });
-    const undo = $.el('a', {
-      className: 'watcher-undo-link',
-      href: 'javascript:;',
-      textContent: 'Undo'
-    });
-    const close = $.el('a', {
-      className: 'watcher-undo-close',
-      href: 'javascript:;',
-      title: 'Dismiss'
-    });
-    Icon.set(close, 'xmark');
-    // Shrinking countdown bar pinned to the notice's bottom edge; the CSS
-    // animation runs for --undo-duration to mirror the auto-dismiss timer.
-    const timer = $.el('div', {className: 'watcher-undo-timer'});
-    $.on(undo, 'click', ThreadWatcher.cb.undoMarkAllRead);
-    $.on(close, 'click', ThreadWatcher.cb.dismissMarkReadUndo);
-    $.add(bar, [text, undo, close, timer]);
-    // Float above the title bar by default, but flip below the watcher when the
-    // space above is taken: docked under the QR (attach location 'bottom'), or
-    // the watcher sits flush against the top of the viewport. Otherwise the
-    // notice would hide behind the QR / off the top edge.
-    const dockedBottom = ThreadWatcher.attached() && ThreadWatcher.attachLocation() === 'bottom';
-    if (dockedBottom || ThreadWatcher.dialog.getBoundingClientRect().top < 28) {
-      $.addClass(bar, 'watcher-undo-below');
-    }
-    $.add(ThreadWatcher.dialog, bar);
+    // Morph the header check into an Undo arrow wrapped by a circular countdown
+    // ring. The ring depletes over --undo-duration; the JS timer reverts it.
+    btn.classList.remove('disabled');
+    $.addClass(btn, 'watcher-undo-pending');
+    btn.title = 'Undo mark all read';
+    Icon.set(btn, 'undo');
+    const ring = $.el('span', {className: 'watcher-undo-ring'});
+    ring.style.setProperty('--undo-duration', `${MARK_READ_UNDO_MS}ms`);
+    ring.innerHTML =
+      '<svg viewBox="0 0 18 18" aria-hidden="true"><circle cx="9" cy="9" r="7.5"/></svg>';
+    $.add(btn, ring);
     ThreadWatcher.undoTimeout = setTimeout(ThreadWatcher.cb.expireMarkReadUndo, MARK_READ_UNDO_MS);
   },
 
-  // Auto-dismiss path: fade the notice out before removing it. Manual paths
-  // (undo, close, a fresh mark-all-read) skip the fade and remove immediately.
+  // Countdown elapsed without an undo click: just tear the affordance down.
   expireMarkReadUndo() {
-    const bar = ThreadWatcher.undoBar;
-    if (!bar) { return; }
-    $.addClass(bar, 'watcher-undo-fading');
-    ThreadWatcher.undoTimeout = setTimeout(ThreadWatcher.cb.dismissMarkReadUndo, MARK_READ_UNDO_FADE_MS);
+    ThreadWatcher.hideMarkReadUndo();
   },
 
+  // Revert the icon to its resting state and forget the snapshot. Safe to call
+  // when nothing is pending. Icon.set wipes the appended ring as a side effect.
   hideMarkReadUndo() {
     if (ThreadWatcher.undoTimeout) {
       clearTimeout(ThreadWatcher.undoTimeout);
       ThreadWatcher.undoTimeout = null;
     }
-    if (ThreadWatcher.undoBar) {
-      $.rm(ThreadWatcher.undoBar);
-      ThreadWatcher.undoBar = null;
+    const btn = ThreadWatcher.markReadButton;
+    if (btn && $.hasClass(btn, 'watcher-undo-pending')) {
+      $.rmClass(btn, 'watcher-undo-pending');
+      btn.title = 'Mark all watched threads as read';
+      Icon.set(btn, 'check');
     }
     ThreadWatcher.markReadUndo = null;
+    // Restore the correct disabled state / title now that nothing is pending.
+    ThreadWatcher.refreshIcon();
   },
 
   undoMarkAllRead() {
