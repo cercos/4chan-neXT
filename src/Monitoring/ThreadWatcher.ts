@@ -1203,7 +1203,7 @@ var ThreadWatcher = {
   showMarkReadUndo(snapshot: any[]) {
     // Opt-in affordance; off by default. When disabled the mark-all-read still
     // happens, there's just no undo prompt.
-    if (!Conf['Show Undo Message']) { return; }
+    if (!Conf['Show Undo Button']) { return; }
     const btn = ThreadWatcher.markReadButton;
     if (!btn) { return; }
     // Drop any pending undo without restoring it; the new mark-all-read wins.
@@ -1839,7 +1839,7 @@ var ThreadWatcher = {
 
       // Settings checkbox entries, grouped into submenus to save vertical space:
       const automationNames = ['Auto Update Thread Watcher', 'Auto Watch', 'Auto Watch Reply', 'Auto Prune'];
-      const displayNames = ['Show Page', 'Show Unread Count', 'Show Mark All Read Icon', 'Show Mark Thread Read Icons', 'Show Undo Message', 'Show Site Prefix'];
+      const displayNames = ['Show Page', 'Show Unread Count', 'Show Mark All Read Icon', 'Show Mark Thread Read Icons', 'Show Undo Button', 'Show Site Prefix'];
       // Names that live in a submenu or have their own dedicated control, so they
       // shouldn't also appear as a standalone top-level checkbox.
       const grouped = new Set([...automationNames, ...displayNames, 'Show OP Thumbnails', 'Thread Watcher Thumbnail Hover']);

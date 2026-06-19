@@ -955,7 +955,7 @@ const Config = {
       false,
       'Show a per-thread mark-as-read icon in each watched thread entry.'
     ],
-    'Show Undo Message': [
+    'Show Undo Button': [
       false,
       'After "Mark all read", the watcher icon briefly becomes an Undo button with a countdown ring. Click it within a few seconds to restore.'
     ],
