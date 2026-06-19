@@ -4489,6 +4489,44 @@ textarea.copy-text-element {
     scrollbar-color: var(--xt-border, rgba(128, 128, 128, .5)) transparent;
   }
 }
+/* Bottom "more below" hint: shown only when the list has entries scrolled out
+   of view. Overlays the bottom edge of the list with a short fade + bouncing
+   caret so it's obvious there's more to scroll to. */
+#thread-watcher > .watcher-scroll-more {
+  position: absolute;
+  left: 3px;
+  right: 3px;
+  bottom: 3px;
+  height: 15px;
+  display: flex;
+  align-items: flex-end;
+  justify-content: center;
+  cursor: pointer;
+  color: inherit;
+  background: linear-gradient(to bottom, transparent, var(--xt-dialog-bg, var(--background, Canvas)) 80%);
+  z-index: 2;
+}
+#thread-watcher > .watcher-scroll-more[hidden] {
+  display: none;
+}
+#thread-watcher > .watcher-scroll-more > .icon {
+  width: 11px;
+  height: 11px;
+  opacity: .6;
+  animation: watcher-scroll-more-bounce 1.4s ease-in-out infinite;
+}
+#thread-watcher > .watcher-scroll-more:hover > .icon {
+  opacity: 1;
+}
+@keyframes watcher-scroll-more-bounce {
+  0%, 100% { transform: translateY(0); }
+  50% { transform: translateY(2px); }
+}
+@media (prefers-reduced-motion: reduce) {
+  #thread-watcher > .watcher-scroll-more > .icon {
+    animation: none;
+  }
+}
 :root.fixed-watcher #thread-watcher {
   position: fixed;
 }

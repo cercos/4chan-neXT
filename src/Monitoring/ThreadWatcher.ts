@@ -55,6 +55,7 @@ var ThreadWatcher = {
   menuButton: null as any,
   closeButton: null as any,
   attachButton: null as any,
+  scrollMore: null as any,
   unreaddb: null as any,
   unreadEnabled: false,
   draggingLine: null as any,
@@ -121,7 +122,8 @@ var ThreadWatcher = {
     this.dbLM   = new DataBoard('watcherLastModified', undefined, true);
     this.dialog = UI.dialog('thread-watcher', { innerHTML: ThreadWatcherPage });
     this.status = $('#watcher-status', this.dialog);
-    this.list   = this.dialog.lastElementChild;
+    this.list   = $('#watched-threads', this.dialog);
+    this.scrollMore = $('.watcher-scroll-more', this.dialog);
     this.refreshButton = $('.refresh', this.dialog);
     this.markReadButton = $('.mark-read', this.dialog);
     this.menuButton = $('.menu-button', this.dialog);
@@ -137,6 +139,9 @@ var ThreadWatcher = {
     if (this.attachButton) {
       Icon.set(this.attachButton, 'link');
     }
+    if (this.scrollMore) {
+      Icon.set(this.scrollMore, 'caretDown');
+    }
     ThreadWatcher.applyAttachControlsSetting(Conf['Thread Watcher Attach Controls']);
 
     $.on(d, 'QRPostSuccessful',   this.cb.post);
@@ -148,7 +153,15 @@ var ThreadWatcher = {
       $.on(this.attachButton, 'click', this.toggleAttach);
     }
     $.on(window, 'resize scroll', () => ThreadWatcher.positionThumbnailHover(ThreadWatcher.hoveredThumbnail));
-    $.on(this.list, 'scroll', () => ThreadWatcher.positionThumbnailHover(ThreadWatcher.hoveredThumbnail));
+    $.on(this.list, 'scroll', () => {
+      ThreadWatcher.positionThumbnailHover(ThreadWatcher.hoveredThumbnail);
+      ThreadWatcher.updateScrollMore();
+    });
+    $.on(this.list, 'mouseenter mouseleave', () => ThreadWatcher.updateScrollMore());
+    $.on(window, 'resize', () => ThreadWatcher.updateScrollMore());
+    if (this.scrollMore) {
+      $.on(this.scrollMore, 'click', ThreadWatcher.cb.scrollMore);
+    }
 
     this.menu.addHeaderMenuEntry();
     $.on(d, 'QRDialogCreation', ThreadWatcher.onQRDialogCreation);
@@ -328,7 +341,10 @@ var ThreadWatcher = {
     if (QR.nodes?.el) {
       ThreadWatcher.onQRDialogCreation();
     }
-    return $.prepend(d.body, ThreadWatcher.dialog);
+    $.prepend(d.body, ThreadWatcher.dialog);
+    // build() measured the list while the dialog was still detached (zero-size),
+    // so the scroll hint couldn't be sized. Re-measure now that it's in the DOM.
+    return requestAnimationFrame(() => ThreadWatcher.updateScrollMore());
   },
 
   toggleWatcher() {
@@ -336,6 +352,10 @@ var ThreadWatcher = {
     const hidden = (ThreadWatcher.dialog.hidden = !ThreadWatcher.dialog.hidden);
     if (hidden) {
       ThreadWatcher.hideThumbnailHover();
+    } else {
+      // The list was measured while hidden during build(), so the hint couldn't
+      // be sized yet; re-evaluate now that the dialog is laid out and visible.
+      ThreadWatcher.updateScrollMore();
     }
     return hidden;
   },
@@ -431,6 +451,11 @@ var ThreadWatcher = {
         yousCount: 0,
         dismiss: data.quotingYou || 0
       });
+    },
+    scrollMore() {
+      const {list} = ThreadWatcher;
+      if (!list) { return; }
+      list.scrollBy({ top: Math.max(40, list.clientHeight - 30), behavior: 'smooth' });
     },
     thumbnailHoverIn(this: HTMLImageElement) {
       ThreadWatcher.showThumbnailHover(this);
@@ -1078,6 +1103,7 @@ var ThreadWatcher = {
     $.add(list, nodes);
 
     const ret = ThreadWatcher.refreshIcon();
+    ThreadWatcher.updateScrollMore();
     if (ThreadWatcher.attached()) { ThreadWatcher.positionIfAttached(true); }
     return ret;
   },
@@ -1117,6 +1143,16 @@ var ThreadWatcher = {
       :
         'No unread watched threads';
     }
+  },
+
+  updateScrollMore() {
+    const {list, scrollMore} = ThreadWatcher;
+    if (!list || !scrollMore) { return; }
+    // scrollHeight/clientHeight stay valid even when overflow is clamped to
+    // hidden (non-fixed, unhovered), so the hint also shows the list has more
+    // than fits before the user hovers to expand it.
+    const hasMore = (list.scrollHeight - list.clientHeight - list.scrollTop) > 2;
+    scrollMore.hidden = !hasMore;
   },
 
   ensureThumbnailHover() {
