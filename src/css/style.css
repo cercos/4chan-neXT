@@ -4585,10 +4585,16 @@ textarea.copy-text-element {
   opacity: 1;
   pointer-events: auto;
 }
+/* Shrink the arrow a hair so it sits inside the tightened ring with a little
+   breathing room rather than touching it. */
+#thread-watcher > .move > a.mark-read.watcher-undo-pending > .icon {
+  font-size: .82em;
+}
 .watcher-undo-ring {
   position: absolute;
-  /* Sit just outside the 18px icon so the ring frames it without clipping. */
-  inset: -2px;
+  /* Tuck the ring inside the 18px button so its footprint matches the
+     neighbouring header icons instead of bulging past them. */
+  inset: 1px;
   pointer-events: none;
 }
 .watcher-undo-ring > svg {
@@ -4613,13 +4619,9 @@ textarea.copy-text-element {
   from { stroke-dashoffset: 0; }
   to { stroke-dashoffset: var(--circumference); }
 }
-@media (prefers-reduced-motion: reduce) {
-  /* Hold the ring full and still; the JS timer still reverts the icon. */
-  .watcher-undo-ring circle {
-    animation: none;
-    stroke-dashoffset: 0;
-  }
-}
+/* The depletion sweep is functional, not decorative — it's the only on-screen
+   indication of how much undo time is left — so it intentionally keeps running
+   even when the user prefers reduced motion. */
 #watched-threads > div {
   padding-left: 3px;
   padding-right: 3px;
