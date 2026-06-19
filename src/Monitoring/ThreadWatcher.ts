@@ -24,6 +24,11 @@ import Get from '../General/Get';
 import { dict, HOUR, MINUTE } from '../platform/helpers';
 import Icon from '../Icons/icon';
 
+// How long the "Marked N threads read" undo notice lingers before auto-dismissing.
+// A countdown bar shrinks across this span, then the notice fades out.
+const MARK_READ_UNDO_MS = 8000;
+const MARK_READ_UNDO_FADE_MS = 300;
+
 // Local structural type for the ThreadWatcher.menu sub-object's `this`. Declared
 // outside the singleton so the methods' `this:` annotations don't reference
 // `typeof ThreadWatcher.menu`, which would make the singleton's type circular
@@ -456,6 +461,9 @@ var ThreadWatcher = {
     },
     dismissMarkReadUndo() {
       ThreadWatcher.hideMarkReadUndo();
+    },
+    expireMarkReadUndo() {
+      ThreadWatcher.expireMarkReadUndo();
     },
     markRead(this: HTMLElement) {
       if ($.hasClass(this, 'disabled') || !ThreadWatcher.unreadEnabled) { return; }
@@ -1191,11 +1199,15 @@ var ThreadWatcher = {
   },
 
   showMarkReadUndo(snapshot: any[]) {
+    // Opt-in notice; off by default. When disabled the mark-all-read still
+    // happens, there's just no undo prompt.
+    if (!Conf['Show Undo Message']) { return; }
     // Drop any pending undo without restoring it; the new mark-all-read wins.
     ThreadWatcher.hideMarkReadUndo();
     ThreadWatcher.markReadUndo = snapshot;
     const n = snapshot.length;
     const bar = ThreadWatcher.undoBar = $.el('div', {className: 'watcher-undo-bar'});
+    bar.style.setProperty('--undo-duration', `${MARK_READ_UNDO_MS}ms`);
     const text = $.el('span', {
       className: 'watcher-undo-text',
       textContent: `Marked ${n} thread${n === 1 ? '' : 's'} read`
@@ -1211,12 +1223,31 @@ var ThreadWatcher = {
       title: 'Dismiss'
     });
     Icon.set(close, 'xmark');
+    // Shrinking countdown bar pinned to the notice's bottom edge; the CSS
+    // animation runs for --undo-duration to mirror the auto-dismiss timer.
+    const timer = $.el('div', {className: 'watcher-undo-timer'});
     $.on(undo, 'click', ThreadWatcher.cb.undoMarkAllRead);
     $.on(close, 'click', ThreadWatcher.cb.dismissMarkReadUndo);
-    $.add(bar, [text, undo, close]);
-    const header = $('.move', ThreadWatcher.dialog);
-    if (header) { $.after(header, bar); }
-    ThreadWatcher.undoTimeout = setTimeout(ThreadWatcher.cb.dismissMarkReadUndo, 10000);
+    $.add(bar, [text, undo, close, timer]);
+    // Float above the title bar by default, but flip below the watcher when the
+    // space above is taken: docked under the QR (attach location 'bottom'), or
+    // the watcher sits flush against the top of the viewport. Otherwise the
+    // notice would hide behind the QR / off the top edge.
+    const dockedBottom = ThreadWatcher.attached() && ThreadWatcher.attachLocation() === 'bottom';
+    if (dockedBottom || ThreadWatcher.dialog.getBoundingClientRect().top < 28) {
+      $.addClass(bar, 'watcher-undo-below');
+    }
+    $.add(ThreadWatcher.dialog, bar);
+    ThreadWatcher.undoTimeout = setTimeout(ThreadWatcher.cb.expireMarkReadUndo, MARK_READ_UNDO_MS);
+  },
+
+  // Auto-dismiss path: fade the notice out before removing it. Manual paths
+  // (undo, close, a fresh mark-all-read) skip the fade and remove immediately.
+  expireMarkReadUndo() {
+    const bar = ThreadWatcher.undoBar;
+    if (!bar) { return; }
+    $.addClass(bar, 'watcher-undo-fading');
+    ThreadWatcher.undoTimeout = setTimeout(ThreadWatcher.cb.dismissMarkReadUndo, MARK_READ_UNDO_FADE_MS);
   },
 
   hideMarkReadUndo() {
@@ -1824,7 +1855,7 @@ var ThreadWatcher = {
 
       // Settings checkbox entries, grouped into submenus to save vertical space:
       const automationNames = ['Auto Update Thread Watcher', 'Auto Watch', 'Auto Watch Reply', 'Auto Prune'];
-      const displayNames = ['Show Page', 'Show Unread Count', 'Show Mark All Read Icon', 'Show Mark Thread Read Icons', 'Show Site Prefix'];
+      const displayNames = ['Show Page', 'Show Unread Count', 'Show Mark All Read Icon', 'Show Mark Thread Read Icons', 'Show Undo Message', 'Show Site Prefix'];
       // Names that live in a submenu or have their own dedicated control, so they
       // shouldn't also appear as a standalone top-level checkbox.
       const grouped = new Set([...automationNames, ...displayNames, 'Show OP Thumbnails', 'Thread Watcher Thumbnail Hover']);
@@ -1832,12 +1863,16 @@ var ThreadWatcher = {
         .filter(name => Config.threadWatcher[name as keyof typeof Config.threadWatcher])
         .map(name => this.makeCheckbox(name, Config.threadWatcher[name as keyof typeof Config.threadWatcher][1] as string));
 
+      // No href on these submenu parents: the checkboxes live inside the
+      // submenu (a child of this anchor), so a click on a checkbox bubbles up
+      // here and an `href="javascript:;"` would fire the anchor's navigation,
+      // swallowing the toggle (same bug fixed for the Thumbnails entry).
       this.menu.addEntry({
-        el: $.el('a', {href: 'javascript:;', textContent: 'Auto'}),
+        el: $.el('a', {textContent: 'Auto'}),
         subEntries: makeCheckboxes(automationNames)
       });
       this.menu.addEntry({
-        el: $.el('a', {href: 'javascript:;', textContent: 'Display'}),
+        el: $.el('a', {textContent: 'Display'}),
         subEntries: makeCheckboxes(displayNames)
       });
 

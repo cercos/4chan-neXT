@@ -2,7 +2,7 @@
 
 ### Unreleased
 
-- Added an Undo for Mark All Read in the Thread Watcher.
+- Added an Undo for Mark All Read in the Thread Watcher, shown via "Show Undo Message" setting (Display menu, off by default).
 - Added a "Then by" secondary sort to the Thread Watcher Sort menu.
 - Added a bouncing down-arrow hint at the bottom of the Thread Watcher when the list has entries scrolled out of view.
 - Fixed an expanded image not contracting on click when the Quick Reply comment preview was beside it in inline preview mode.

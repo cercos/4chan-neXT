@@ -4576,17 +4576,55 @@ textarea.copy-text-element {
 #thread-watcher > .move > a > .icon {
   display: block;
 }
-/* Transient "Marked N threads read — Undo" bar shown after Mark All Read. */
+/* Transient "Marked N threads read — Undo" bar shown after Mark All Read.
+   Floats just above the watcher's title bar (outside the dialog box) so it
+   never disturbs the header or thread list; slides up into view on show. */
 #thread-watcher > .watcher-undo-bar {
+  position: absolute;
+  bottom: 100%;
+  left: 0;
+  right: 0;
+  margin-bottom: 3px;
+  overflow: hidden;
   display: flex;
   align-items: center;
   gap: 6px;
-  margin: 2px 3px 0;
   padding: 3px 6px;
   border-radius: 3px;
   font-size: 11px;
-  background: color-mix(in srgb, currentColor 12%, var(--xt-dialog-bg, var(--background, Canvas)));
-  animation: watcher-undo-in .15s ease-out;
+  background: var(--xt-dialog-bg, var(--background, Canvas));
+  box-shadow: 0 1px 4px rgba(0, 0, 0, .3);
+  border: 1px solid color-mix(in srgb, currentColor 18%, transparent);
+  animation: watcher-undo-in .2s ease-out;
+}
+#thread-watcher > .watcher-undo-bar.watcher-undo-fading {
+  animation: watcher-undo-out .3s ease-in forwards;
+}
+/* When the space above the title bar is occupied (docked under the QR, or the
+   watcher is flush against the top of the viewport), flip the notice below the
+   watcher's bottom edge instead and slide it down. JS adds this class on show. */
+#thread-watcher > .watcher-undo-bar.watcher-undo-below {
+  top: 100%;
+  bottom: auto;
+  margin-top: 3px;
+  margin-bottom: 0;
+  animation-name: watcher-undo-in-below;
+}
+#thread-watcher > .watcher-undo-bar.watcher-undo-below.watcher-undo-fading {
+  animation-name: watcher-undo-out-below;
+}
+/* Thin countdown bar along the bottom edge; shrinks left-to-right over the
+   auto-dismiss window (--undo-duration set in JS). */
+#thread-watcher > .watcher-undo-bar > .watcher-undo-timer {
+  position: absolute;
+  left: 0;
+  bottom: 0;
+  width: 100%;
+  height: 2px;
+  background: currentColor;
+  opacity: .45;
+  transform-origin: left center;
+  animation: watcher-undo-countdown var(--undo-duration, 8000ms) linear forwards;
 }
 #thread-watcher > .watcher-undo-bar > .watcher-undo-text {
   flex: 1 1 auto;
@@ -4612,13 +4650,37 @@ textarea.copy-text-element {
   width: 10px;
   height: 10px;
 }
+/* Emerge upward from behind the title bar, then settle into place above it. */
 @keyframes watcher-undo-in {
-  from { opacity: 0; transform: translateY(-3px); }
+  from { opacity: 0; transform: translateY(100%); }
   to { opacity: 1; transform: translateY(0); }
 }
+@keyframes watcher-undo-out {
+  from { opacity: 1; transform: translateY(0); }
+  to { opacity: 0; transform: translateY(-4px); }
+}
+/* Below-the-watcher variant: emerge downward from behind the title bar. */
+@keyframes watcher-undo-in-below {
+  from { opacity: 0; transform: translateY(-100%); }
+  to { opacity: 1; transform: translateY(0); }
+}
+@keyframes watcher-undo-out-below {
+  from { opacity: 1; transform: translateY(0); }
+  to { opacity: 0; transform: translateY(4px); }
+}
+@keyframes watcher-undo-countdown {
+  from { transform: scaleX(1); }
+  to { transform: scaleX(0); }
+}
 @media (prefers-reduced-motion: reduce) {
-  #thread-watcher > .watcher-undo-bar {
+  #thread-watcher > .watcher-undo-bar,
+  #thread-watcher > .watcher-undo-bar.watcher-undo-fading {
     animation: none;
+  }
+  /* Keep the countdown bar still but visible as a static accent. */
+  #thread-watcher > .watcher-undo-bar > .watcher-undo-timer {
+    animation: none;
+    transform: scaleX(1);
   }
 }
 #watched-threads > div {

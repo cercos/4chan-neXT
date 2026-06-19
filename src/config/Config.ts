@@ -955,6 +955,10 @@ const Config = {
       false,
       'Show a per-thread mark-as-read icon in each watched thread entry.'
     ],
+    'Show Undo Message': [
+      false,
+      'After "Mark all read", briefly show a notice with an Undo button. It auto-dismisses after a few seconds.'
+    ],
     'Show Site Prefix': [
       true,
       'When multiple sites are shown in the thread watcher, add a prefix to board names to distinguish them.'
