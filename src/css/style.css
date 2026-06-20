@@ -4606,7 +4606,7 @@ textarea.copy-text-element {
 .watcher-undo-ring circle {
   --circumference: 47.124;
   fill: none;
-  stroke: currentColor;
+  stroke: var(--xt-undo-ring-color, var(--xt-border-highlight, #d83030));
   stroke-width: 1.5;
   stroke-linecap: round;
   opacity: .8;
@@ -6716,15 +6716,19 @@ div.post {
   background: var(--xt-scroll-marker-ghost, #888888);
   opacity: var(--xt-scroll-marker-ghost-opacity, 1);
 }
-/* Beside modes: hide the native scrollbar's track color (the 4chan
-   theme tints it dark blue, which reads as a backdrop behind our
-   markers). Only the native thumb stays visible. Over modes draw their
-   own track and aren't affected. */
+/* Transparent track (the theme otherwise tints it blue behind the markers) +
+   --xt-border thumb. */
 :root.scrollbar-markers-offset,
-:root.scrollbar-markers-offset-single { scrollbar-color: auto transparent; }
+:root.scrollbar-markers-offset-single {
+  scrollbar-color: var(--xt-border, rgba(128, 128, 128, .5)) transparent;
+}
 :root.scrollbar-markers-offset::-webkit-scrollbar-track,
 :root.scrollbar-markers-offset-single::-webkit-scrollbar-track {
   background: transparent;
+}
+:root.scrollbar-markers-offset::-webkit-scrollbar-thumb,
+:root.scrollbar-markers-offset-single::-webkit-scrollbar-thumb {
+  background: var(--xt-border, rgba(128, 128, 128, .5));
 }
 /* Beside scrollbar (columns): N narrow sub-columns hugging the scrollbar.
    Per-marker `right` and `width` are set inline by ScrollMarkers.refresh
@@ -6757,97 +6761,6 @@ div.post {
 }
 :root.scrollbar-markers-offset-single .scroll-marker:hover {
   transform: scaleY(1.35);
-  filter: brightness(1.2);
-}
-/* Over scrollbar (shared): hide the native scrollbar and draw our own
-   thumb. The track stays invisible but keeps its click target. */
-:root.scrollbar-markers-over,
-:root.scrollbar-markers-over-columns { scrollbar-width: none; }
-:root.scrollbar-markers-over::-webkit-scrollbar,
-:root.scrollbar-markers-over-columns::-webkit-scrollbar { width: 0; height: 0; display: none; }
-/* Rather than shoving the header bar aside to clear our custom track
-   (which the "beside" modes never do), start the track below a fixed
-   header so it doesn't sit under the header's dropdown button stealing
-   clicks, and so the topmost markers aren't hidden behind the header.
-   The offset is measured in JS (ScrollMarkers.updateHeaderOffset): top
-   header -> --xt-scroll-marker-top, bottom header -> ...-bottom, 0 when
-   the header isn't fixed. */
-:root.scrollbar-markers-over #scroll-markers,
-:root.scrollbar-markers-over-columns #scroll-markers {
-  right: 0;
-  top: var(--xt-scroll-marker-top, 0px);
-  height: calc(100vh - var(--xt-scroll-marker-top, 0px) - var(--xt-scroll-marker-bottom, 0px));
-  pointer-events: none;
-  z-index: 4;
-}
-:root.scrollbar-markers-over #scroll-markers {
-  width: var(--xt-scroll-marker-track, 14px);
-}
-:root.scrollbar-markers-over-columns #scroll-markers {
-  width: var(--xt-scroll-marker-track, 14px);
-}
-:root.scrollbar-markers-over .scroll-marker-track,
-:root.scrollbar-markers-over-columns .scroll-marker-track {
-  position: absolute;
-  inset: 0;
-  background: transparent;
-  pointer-events: auto;
-  cursor: pointer;
-  z-index: 0;
-}
-:root.scrollbar-markers-over .scroll-marker-thumb,
-:root.scrollbar-markers-over-columns .scroll-marker-thumb {
-  position: absolute;
-  left: 2px;
-  right: 2px;
-  min-height: 24px;
-  background: var(--xt-scroll-thumb-bg,
-    color-mix(in srgb, var(--xt-border, currentColor) 75%, transparent));
-  border-radius: 3px;
-  pointer-events: auto;
-  cursor: grab;
-  z-index: 1;
-  transition: background-color .12s ease;
-  touch-action: none;
-}
-:root.scrollbar-markers-over .scroll-marker-thumb[hidden],
-:root.scrollbar-markers-over-columns .scroll-marker-thumb[hidden] { display: none; }
-:root.scrollbar-markers-over .scroll-marker-thumb:hover,
-:root.scrollbar-markers-over .scroll-marker-thumb.dragging,
-:root.scrollbar-markers-over-columns .scroll-marker-thumb:hover,
-:root.scrollbar-markers-over-columns .scroll-marker-thumb.dragging {
-  background: var(--xt-scroll-thumb-bg-hover,
-    color-mix(in srgb, var(--xt-border, currentColor) 100%, transparent));
-}
-:root.scrollbar-markers-over .scroll-marker-thumb.dragging,
-:root.scrollbar-markers-over-columns .scroll-marker-thumb.dragging { cursor: grabbing; }
-/* Over (single): markers span the full gutter, stacked vertically. */
-:root.scrollbar-markers-over .scroll-marker {
-  left: 0;
-  right: 0;
-  width: auto;
-  min-height: 3px;
-  border-radius: 0;
-  transform-origin: center center;
-  z-index: 2;
-  box-shadow: 0 0 0 1px rgba(0, 0, 0, .55);
-}
-:root.scrollbar-markers-over .scroll-marker:hover {
-  transform: scaleY(1.4);
-  filter: brightness(1.25);
-}
-/* Over (columns): markers in N sub-columns over the thumb, like JetBrains.
-   Per-marker `right` and `width` are set inline by ScrollMarkers.refresh
-   so absent types collapse and the remaining ones split the full width. */
-:root.scrollbar-markers-over-columns .scroll-marker {
-  min-height: 3px;
-  border-radius: 0;
-  transform-origin: right center;
-  z-index: 2;
-  box-shadow: 0 0 0 1px rgba(0, 0, 0, .55);
-}
-:root.scrollbar-markers-over-columns .scroll-marker:hover {
-  transform: scaleX(1.6);
   filter: brightness(1.2);
 }
 .scroll-marker-unread {

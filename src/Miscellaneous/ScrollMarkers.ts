@@ -7,7 +7,7 @@ import { debounce } from '../platform/helpers';
 import type Post from '../classes/Post';
 import type Thread from '../classes/Thread';
 
-type ScrollMarkerPosition = 'offset' | 'offset-single' | 'over' | 'over-columns';
+type ScrollMarkerPosition = 'offset' | 'offset-single';
 
 type MarkerType = 'you' | 'own' | 'ghost';
 type MarkerItem = { post: Post; type: MarkerType; cls: string; topPct: number; heightStyle: string };
@@ -16,22 +16,16 @@ const ScrollMarkers = {
   container: undefined as HTMLElement | undefined,
   thread: undefined as Thread | undefined,
   wired: false,
+  ready: false,
   flashPost: undefined as Post | undefined,
   flashTimer: 0 as ReturnType<typeof setTimeout> | 0,
   preview: undefined as { el: HTMLElement; post: Post; marker: HTMLElement } | undefined,
+  scrollbarWidth: undefined as number | undefined,
 
   position(): ScrollMarkerPosition {
     const pos = Conf['Scrollbar Marker Position'];
-    // Legacy values from prior builds collapsed into the unified Over (single) mode.
-    if (pos === 'scrollbar' || pos === 'overlay' || pos === 'over') return 'over';
-    if (pos === 'over-columns') return 'over-columns';
-    if (pos === 'offset-single') return 'offset-single';
+    if (pos === 'scrollbar' || pos === 'overlay' || pos === 'over' || pos === 'offset-single') return 'offset-single';
     return 'offset';
-  },
-
-  isOverMode(): boolean {
-    const pos = ScrollMarkers.position();
-    return pos === 'over' || pos === 'over-columns';
   },
 
   applyPosition() {
@@ -44,32 +38,12 @@ const ScrollMarkers = {
     );
     $.addClass(doc, `scrollbar-markers-${pos}`);
     ScrollMarkers.updateScrollbarMetrics();
-    ScrollMarkers.updateHeaderOffset();
-    if (ScrollMarkers.isOverMode()) ScrollMarkers.scrollbar.install();
-    else ScrollMarkers.scrollbar.uninstall();
-  },
-
-  // In "over" modes our custom track spans the full height at right:0.
-  // A fixed header would otherwise sit on top of the track (eating its
-  // dropdown button's clicks) and hide the topmost markers, so inset the
-  // marker container past the header instead of pushing the header aside.
-  // Top header -> reserve at the top; bottom header -> at the bottom; no
-  // reservation when the header isn't fixed (it scrolls away with content).
-  updateHeaderOffset() {
-    const style = d.documentElement.style;
-    let top = 0, bottom = 0;
-    if (ScrollMarkers.isOverMode() && Conf['Fixed Header'] && Header.bar?.isConnected) {
-      const height = Header.bar.getBoundingClientRect().height || 0;
-      if (Conf['Bottom Header']) bottom = height;
-      else top = height;
-    }
-    style.setProperty('--xt-scroll-marker-top', `${top}px`);
-    style.setProperty('--xt-scroll-marker-bottom', `${bottom}px`);
   },
 
   measureScrollbarWidth() {
+    if (ScrollMarkers.scrollbarWidth != null) return ScrollMarkers.scrollbarWidth;
     let width = window.innerWidth - d.documentElement.clientWidth;
-    if (width > 0) return width;
+    if (width > 0) return (ScrollMarkers.scrollbarWidth = width);
     const outer = $.el('div', {
       style: 'width:100px;height:100px;overflow:scroll;position:absolute;top:-9999px;visibility:hidden;pointer-events:none',
     });
@@ -78,7 +52,7 @@ const ScrollMarkers = {
     $.add(d.body, outer);
     width = outer.offsetWidth - inner.offsetWidth;
     $.rm(outer);
-    return width;
+    return (ScrollMarkers.scrollbarWidth = width);
   },
 
   updateScrollbarMetrics() {
@@ -94,156 +68,6 @@ const ScrollMarkers = {
     d.documentElement.style.setProperty('--xt-scroll-marker-track', '14px');
   },
 
-  scrollbar: {
-    track: undefined as HTMLElement | undefined,
-    thumb: undefined as HTMLElement | undefined,
-    rafId: 0,
-    dragOffset: 0,
-    activePointer: -1,
-    onScrollListener: undefined as (() => void) | undefined,
-
-    install() {
-      const container = ScrollMarkers.container;
-      if (!container || ScrollMarkers.scrollbar.thumb) return;
-      const track = $.el('div', { className: 'scroll-marker-track' });
-      const thumb = $.el('div', { className: 'scroll-marker-thumb' });
-      ScrollMarkers.scrollbar.track = track;
-      ScrollMarkers.scrollbar.thumb = thumb;
-      $.add(container, track);
-      $.add(container, thumb);
-      const sched = () => ScrollMarkers.scrollbar.scheduleUpdate();
-      ScrollMarkers.scrollbar.onScrollListener = sched;
-      $.on(window, 'scroll', sched);
-      $.on(window, 'resize', sched);
-      $.on(thumb, 'pointerdown', ScrollMarkers.scrollbar.onThumbDown as (e: Event) => void);
-      $.on(track, 'pointerdown', ScrollMarkers.scrollbar.onTrackDown as (e: Event) => void);
-      ScrollMarkers.scrollbar.update();
-    },
-
-    uninstall() {
-      const sb = ScrollMarkers.scrollbar;
-      if (!sb.thumb) return;
-      if (sb.onScrollListener) {
-        $.off(window, 'scroll', sb.onScrollListener);
-        $.off(window, 'resize', sb.onScrollListener);
-        sb.onScrollListener = undefined;
-      }
-      if (sb.rafId) { cancelAnimationFrame(sb.rafId); sb.rafId = 0; }
-      $.rm(sb.thumb);
-      if (sb.track) $.rm(sb.track);
-      sb.thumb = undefined;
-      sb.track = undefined;
-    },
-
-    scheduleUpdate() {
-      const sb = ScrollMarkers.scrollbar;
-      if (sb.rafId) return;
-      sb.rafId = requestAnimationFrame(() => {
-        sb.rafId = 0;
-        sb.update();
-      });
-    },
-
-    update() {
-      const thumb = ScrollMarkers.scrollbar.thumb;
-      if (!thumb) return;
-      const docHeight = d.documentElement.scrollHeight || d.body.scrollHeight || 0;
-      const viewHeight = window.innerHeight;
-      if (docHeight <= viewHeight + 1) {
-        thumb.hidden = true;
-        return;
-      }
-      thumb.hidden = false;
-      const heightPct = Math.max((viewHeight / docHeight) * 100, 3);
-      const scrollMax = docHeight - viewHeight;
-      const topPct = scrollMax > 0
-        ? (window.scrollY / scrollMax) * (100 - heightPct)
-        : 0;
-      thumb.style.top = `${topPct}%`;
-      thumb.style.height = `${heightPct}%`;
-    },
-
-    onThumbDown(e: PointerEvent) {
-      const sb = ScrollMarkers.scrollbar;
-      const thumb = sb.thumb;
-      if (!thumb || e.button !== 0) return;
-      e.preventDefault();
-      e.stopPropagation();
-      const rect = thumb.getBoundingClientRect();
-      sb.dragOffset = e.clientY - rect.top;
-      sb.activePointer = e.pointerId;
-      thumb.classList.add('dragging');
-      try { thumb.setPointerCapture(e.pointerId); } catch { /* ignore */ }
-      $.on(thumb, 'pointermove', sb.onThumbMove as (e: Event) => void);
-      $.on(thumb, 'pointerup', sb.onThumbUp as (e: Event) => void);
-      $.on(thumb, 'pointercancel', sb.onThumbUp as (e: Event) => void);
-    },
-
-    // Begin a thumb drag from a pointer that started somewhere else
-    // (e.g. on a marker overlapping the thumb). Snaps the thumb under
-    // the pointer first, then continues normal drag handling.
-    startDragFromPointer(e: PointerEvent) {
-      const sb = ScrollMarkers.scrollbar;
-      const thumb = sb.thumb;
-      const container = ScrollMarkers.container;
-      if (!thumb || !container) return;
-      const trackRect = container.getBoundingClientRect();
-      const thumbHeight = thumb.offsetHeight;
-      const range = trackRect.height - thumbHeight;
-      if (range > 0) {
-        const desiredTop = e.clientY - trackRect.top - thumbHeight / 2;
-        const clampedTop = Math.max(0, Math.min(desiredTop, range));
-        const scrollMax = (d.documentElement.scrollHeight || d.body.scrollHeight || 0) - window.innerHeight;
-        window.scrollTo(0, (clampedTop / range) * scrollMax);
-      }
-      sb.dragOffset = thumbHeight / 2;
-      sb.activePointer = e.pointerId;
-      thumb.classList.add('dragging');
-      try { thumb.setPointerCapture(e.pointerId); } catch { /* ignore */ }
-      $.on(thumb, 'pointermove', sb.onThumbMove as (e: Event) => void);
-      $.on(thumb, 'pointerup', sb.onThumbUp as (e: Event) => void);
-      $.on(thumb, 'pointercancel', sb.onThumbUp as (e: Event) => void);
-    },
-
-    onThumbMove(e: PointerEvent) {
-      const sb = ScrollMarkers.scrollbar;
-      const container = ScrollMarkers.container;
-      const thumb = sb.thumb;
-      if (!container || !thumb || e.pointerId !== sb.activePointer) return;
-      const trackRect = container.getBoundingClientRect();
-      const trackHeight = trackRect.height;
-      const thumbHeight = thumb.offsetHeight;
-      const range = trackHeight - thumbHeight;
-      if (range <= 0) return;
-      const desiredTop = e.clientY - trackRect.top - sb.dragOffset;
-      const clampedTop = Math.max(0, Math.min(desiredTop, range));
-      const scrollMax = (d.documentElement.scrollHeight || d.body.scrollHeight || 0) - window.innerHeight;
-      window.scrollTo(0, (clampedTop / range) * scrollMax);
-    },
-
-    onThumbUp(e: PointerEvent) {
-      const sb = ScrollMarkers.scrollbar;
-      const thumb = sb.thumb;
-      if (!thumb || e.pointerId !== sb.activePointer) return;
-      sb.activePointer = -1;
-      thumb.classList.remove('dragging');
-      try { thumb.releasePointerCapture(e.pointerId); } catch { /* ignore */ }
-      $.off(thumb, 'pointermove', sb.onThumbMove as (e: Event) => void);
-      $.off(thumb, 'pointerup', sb.onThumbUp as (e: Event) => void);
-      $.off(thumb, 'pointercancel', sb.onThumbUp as (e: Event) => void);
-    },
-
-    onTrackDown(e: PointerEvent) {
-      const sb = ScrollMarkers.scrollbar;
-      const track = sb.track;
-      const thumb = sb.thumb;
-      if (!track || !thumb || e.target !== track || e.button !== 0) return;
-      e.preventDefault();
-      const thumbRect = thumb.getBoundingClientRect();
-      const direction = e.clientY < thumbRect.top ? -1 : 1;
-      window.scrollBy({ top: direction * window.innerHeight * 0.9, behavior: 'smooth' });
-    },
-  },
 
   menu: {
     entry: undefined as { el: HTMLElement; order: number; open: () => boolean; subEntries: { el: HTMLElement }[] } | undefined,
@@ -266,10 +90,8 @@ const ScrollMarkers = {
 
     buildSubEntries() {
       const options: Array<[ScrollMarkerPosition, string]> = [
-        ['offset', 'Beside scrollbar (columns)'],
-        ['offset-single', 'Beside scrollbar (single)'],
-        ['over-columns', 'Over scrollbar (columns)'],
-        ['over', 'Over scrollbar (single)'],
+        ['offset-single', 'Single'],
+        ['offset', 'Columns'],
       ];
       const current = ScrollMarkers.position();
       const entries = options.map(([value, label]) => {
@@ -330,13 +152,6 @@ const ScrollMarkers = {
       ScrollMarkers.applyPosition();
       ScrollMarkers.refreshDeferred();
     });
-    // Header geometry feeds the over-mode top/bottom inset.
-    for (const key of ['Fixed Header', 'Bottom Header'] as const) {
-      $.sync(key, (val: boolean) => {
-        Conf[key] = val;
-        ScrollMarkers.updateHeaderOffset();
-      });
-    }
 
     // thread/archive get a per-Thread callback (to capture the Thread object);
     // index/catalog have many/no threads, so mount directly — the
@@ -375,16 +190,17 @@ const ScrollMarkers = {
       ScrollMarkers.wired = true;
       // One listener set for all views. IndexRefresh/ThreadUpdate are
       // harmless no-ops in the views where they never fire.
-      $.on(d, '4chanXInitFinished', ScrollMarkers.refreshDeferred);
+      $.on(d, '4chanXInitFinished', ScrollMarkers.markReady);
       $.on(d, 'PostsInserted', ScrollMarkers.refreshDeferred);
       $.on(d, 'IndexRefresh', ScrollMarkers.refreshDeferred);
       $.on(d, 'ThreadUpdate', ScrollMarkers.refreshDeferred);
       $.on(d, 'RefreshScrollMarkers', ScrollMarkers.refreshDeferred);
       $.on(window, 'resize', () => {
+        ScrollMarkers.scrollbarWidth = undefined;
         ScrollMarkers.updateScrollbarMetrics();
         ScrollMarkers.refreshDeferred();
       });
-      $.on(window, 'load', ScrollMarkers.refreshDeferred);
+      $.on(window, 'load', ScrollMarkers.markReady);
     }
 
     ScrollMarkers.refreshDeferred();
@@ -392,10 +208,15 @@ const ScrollMarkers = {
 
   refreshDeferred: debounce(150, () => ScrollMarkers.refresh(), false),
 
+  markReady() {
+    ScrollMarkers.ready = true;
+    ScrollMarkers.refreshDeferred();
+  },
+
   // Collect marker descriptors for the current view. Thread/archive read the
   // active thread's posts; index (including the JSON catalog mode) sweeps all
   // visible posts via g.posts. Native catalog has no Post objects or "(You)"
-  // data, so it yields nothing — the custom scrollbar still installs.
+  // data, so it yields nothing.
   // TODO: native-catalog "your thread" markers could be derived from QuoteYou.db.
   collectMarkerItems(
     docHeight: number, onTrack: boolean,
@@ -448,8 +269,8 @@ const ScrollMarkers = {
       container.hidden = true;
       return;
     }
+    if (!ScrollMarkers.ready) return;
     ScrollMarkers.hidePreview();
-    ScrollMarkers.applyPosition();
 
     const docHeight =
       d.documentElement.scrollHeight || d.body.scrollHeight || 0;
@@ -458,7 +279,7 @@ const ScrollMarkers = {
     const frag = $.frag();
     const pos = ScrollMarkers.position();
     const onTrack = pos !== 'offset';
-    const isColumnsMode = pos === 'offset' || pos === 'over-columns';
+    const isColumnsMode = pos === 'offset';
     const showOwn = Conf['Scrollbar Mark Own Posts'];
     const showYou = Conf['Scrollbar Mark Quotes You'];
     const showGhost = Conf['Scrollbar Mark Ghost Posts'];
@@ -505,9 +326,7 @@ const ScrollMarkers = {
 
     for (const m of Array.from(container.querySelectorAll('.scroll-marker'))) m.remove();
     $.add(container, frag);
-    const overMode = ScrollMarkers.isOverMode();
-    container.hidden = !overMode && !container.querySelector('.scroll-marker');
-    if (overMode) ScrollMarkers.scrollbar.update();
+    container.hidden = !container.querySelector('.scroll-marker');
   },
 
   bind(marker: HTMLElement, post: Post) {
@@ -520,50 +339,11 @@ const ScrollMarkers = {
       ScrollMarkers.unhighlightPost(post);
       ScrollMarkers.hidePreview();
     });
-    // pointerdown lets us tell a click apart from a drag: release-without-
-    // movement = jump to the post, drag past threshold in Over mode = hand
-    // the gesture off to the custom scrollbar thumb. Markers are only a
-    // few pixels tall, so we capture the pointer to keep receiving move
-    // events once the cursor leaves the marker's box.
-    $.on(marker, 'pointerdown', (downEvent: PointerEvent) => {
-      if (downEvent.button !== 0) return;
-      const startY = downEvent.clientY;
-      const overMode = ScrollMarkers.isOverMode();
-      let handedOff = false;
-      try { marker.setPointerCapture(downEvent.pointerId); } catch { /* ignore */ }
-
-      const cleanup = () => {
-        $.off(marker, 'pointermove', move as (e: Event) => void);
-        $.off(marker, 'pointerup', up as (e: Event) => void);
-        $.off(marker, 'pointercancel', up as (e: Event) => void);
-      };
-
-      const move = (moveEvent: PointerEvent) => {
-        if (handedOff) return;
-        if (!overMode) return;
-        if (Math.abs(moveEvent.clientY - startY) <= 2) return;
-        handedOff = true;
-        cleanup();
-        ScrollMarkers.hidePreview();
-        ScrollMarkers.unhighlightPost(post);
-        // Release the marker's capture so setPointerCapture on the thumb
-        // takes over cleanly.
-        try { marker.releasePointerCapture(moveEvent.pointerId); } catch { /* ignore */ }
-        ScrollMarkers.scrollbar.startDragFromPointer(moveEvent);
-      };
-
-      const up = (upEvent: PointerEvent) => {
-        cleanup();
-        try { marker.releasePointerCapture(upEvent.pointerId); } catch { /* ignore */ }
-        if (handedOff) return;
-        upEvent.preventDefault();
-        ScrollMarkers.hidePreview();
-        ScrollMarkers.jumpTo(post);
-      };
-
-      $.on(marker, 'pointermove', move as (e: Event) => void);
-      $.on(marker, 'pointerup', up as (e: Event) => void);
-      $.on(marker, 'pointercancel', up as (e: Event) => void);
+    $.on(marker, 'click', (e: MouseEvent) => {
+      if (e.button !== 0) return;
+      e.preventDefault();
+      ScrollMarkers.hidePreview();
+      ScrollMarkers.jumpTo(post);
     });
   },
 

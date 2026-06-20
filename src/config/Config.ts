@@ -564,7 +564,7 @@ const Config = {
       ],
       'Scrollbar Marker Position': [
         'offset',
-        'Where markers are drawn: beside the scrollbar (single or 3 columns) or over a custom scrollbar in IDE-style (single or 3 columns).',
+        'How markers are laid out beside the scrollbar: a single column or 3 columns split by post type.',
         1
       ]
     },
