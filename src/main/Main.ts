@@ -258,9 +258,11 @@ var Main = {
           // since this branch never runs for them. Apply in-memory for this session and
           // persist so it survives once `previousversion` is set below.
           items['Stacked TCaptcha'] = true;
+          items['Scrollbar Markers'] = false;
           Main.ready(function() {
             $.set('previousversion', g.VERSION);
             $.set('Stacked TCaptcha', true);
+            $.set('Scrollbar Markers', false);
             return Settings.open();
           });
 
