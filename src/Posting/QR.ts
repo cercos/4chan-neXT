@@ -146,6 +146,8 @@ var QR = {
   // Internal: bound scroll/resize handler for the 'inplace' inline-follow behavior.
   _inplaceScrollHandler: undefined as ((e?: Event) => void) | undefined,
   _inplaceRafPending: false,
+  _widthSyncTargets: null as Set<HTMLElement> | null,
+  _widthSyncRaf: 0,
 
   // Remembers a user-dragged float position so undocking (inline -> floating) returns
   // the preview to where it was, instead of snapping back to the QR. Only set when the
@@ -1179,10 +1181,25 @@ var QR = {
     // Light file indicator
     QR.updatePreviewFileIndicator(container, postEl);
 
-    QR.syncFloatingPreviewWidth(container);
+    QR.scheduleWidthSync(container);
 
     // Keep the inline-toggle arrow pointing the right way for the current mode.
     QR.refreshInlineToggleLabel(container);
+  },
+
+  scheduleWidthSync(container: HTMLElement | null) {
+    if (!container) return;
+    (QR._widthSyncTargets ||= new Set()).add(container);
+    if (QR._widthSyncRaf) return;
+    QR._widthSyncRaf = requestAnimationFrame(() => {
+      QR._widthSyncRaf = 0;
+      const targets = QR._widthSyncTargets;
+      QR._widthSyncTargets = null;
+      if (!targets) return;
+      for (const el of targets) {
+        if (el.isConnected) QR.syncFloatingPreviewWidth(el);
+      }
+    });
   },
 
   syncFloatingPreviewWidth(container: HTMLElement) {
@@ -1421,7 +1438,7 @@ var QR = {
           style: 'max-width: 125px; max-height: 125px; display: block;'
         }) as HTMLImageElement;
       }
-      $.on(media, isVideo ? 'loadedmetadata' : 'load', () => QR.syncFloatingPreviewWidth(container));
+      $.on(media, isVideo ? 'loadedmetadata' : 'load', () => QR.scheduleWidthSync(container));
       $.add(thumbLink, media);
     }
 
@@ -1535,7 +1552,7 @@ var QR = {
         $.prepend(root, QR.previewPost);
       }
     }
-    QR.syncFloatingPreviewWidth(QR.previewPost);
+    QR.scheduleWidthSync(QR.previewPost);
   },
 
   // --- Floating preview (just the post, no window frame, draggable, positioned near QR initially) ---
@@ -1656,10 +1673,10 @@ var QR = {
     }
     const postShell = float ? $('.qr-preview-post', float) as HTMLDivElement | null : null;
     if (!skipWidthSync && postShell) {
-      QR.syncFloatingPreviewWidth(postShell);
+      QR.scheduleWidthSync(postShell);
     }
     if (!skipWidthSync && QR.previewPost) {
-      QR.syncFloatingPreviewWidth(QR.previewPost);
+      QR.scheduleWidthSync(QR.previewPost);
     }
   },
 

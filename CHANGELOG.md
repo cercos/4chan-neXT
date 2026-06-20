@@ -7,6 +7,7 @@
 - Added a bouncing down-arrow hint at the bottom of the Thread Watcher when the list has entries scrolled out of view.
 - Fixed an expanded image not contracting on click when the Quick Reply comment preview was beside it in inline preview mode.
 - Fixed thumbnail and hover preview toggle not toggling in thread watcher dropdown menu.
+- Made the Quick Reply comment preview cheaper to update, so typing stays smooth with a big thread open.
 
 ### 1.1.9 (2026-06-17)
 
