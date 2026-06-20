@@ -553,10 +553,11 @@ var Main = {
     $.onExists(doc, '.ad-cnt, .adg-rects > .desktop', ad => $.onExists(ad, 'img, iframe', () => $.addClass(doc, 'ads-loaded')));
     if (Conf['Autohiding Scrollbar']) { $.addClass(doc, 'autohiding-scrollbar'); }
     $.ready(function() {
-      if ((d.body.clientHeight > doc.clientHeight) && ((window.innerWidth === doc.clientWidth) !== Conf['Autohiding Scrollbar'])) {
-        Conf['Autohiding Scrollbar'] = !Conf['Autohiding Scrollbar'];
-        $.set('Autohiding Scrollbar', Conf['Autohiding Scrollbar']);
-        return $.toggleClass(doc, 'autohiding-scrollbar');
+      const autohiding = ScrollMarkers.measureScrollbarWidth() === 0;
+      if (autohiding !== Conf['Autohiding Scrollbar']) {
+        Conf['Autohiding Scrollbar'] = autohiding;
+        $.set('Autohiding Scrollbar', autohiding);
+        (autohiding ? $.addClass : $.rmClass)(doc, 'autohiding-scrollbar');
       }
     });
     $.addStyle(CSS.sub(CSS.boards), 'fourchanx-css');
@@ -605,7 +606,7 @@ var Main = {
         $.add(d.head, Main.customSiteThemeStyle);
       }
       $.addClass(doc, 'xt-custom-site-theme');
-      Settings.applyStylingVars();
+      Settings.applyStylingVarsDeferred();
       return true;
     };
     let preferredStyleApplied = false;
@@ -711,7 +712,7 @@ var Main = {
         if (style) {
           $.addClass(doc, style);
           $.rm(Main.bgColorStyle);
-          Settings.applyStylingVars();
+          Settings.applyStylingVarsDeferred();
           return;
         }
       }
@@ -742,7 +743,7 @@ var Main = {
       }
       Main.bgColorStyle.textContent = css;
       $.after($.id('fourchanx-css'), Main.bgColorStyle);
-      Settings.applyStylingVars();
+      Settings.applyStylingVarsDeferred();
       return;
     };
 

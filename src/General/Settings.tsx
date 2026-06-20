@@ -2120,6 +2120,7 @@ Enable it on boards.${location.hostname.split('.')[1]}.org in your browser's pri
       'Scrollbar Mark Ghost Posts',
       'Scrollbar Mark Unread Line',
       'Scrollbar Marker Position',
+      'Scrollbar Marker Hover Preview',
       'Highlight Posts Quoting You',
       'Highlight Own Posts',
       'Highlight Ghost Posts',
@@ -6115,19 +6116,34 @@ Enable it on boards.${location.hostname.split('.')[1]}.org in your browser's pri
   // dialog + preview visually reflect what's being edited even while the
   // board behind it stays on its own variant.
   applyStylingVars() {
-    Settings.writeStyleVarsTo(doc as HTMLElement, Settings.getBoardVariant(), true);
-    Settings.syncLinkedMarkerColors(undefined, Settings.getBoardVariant());
-    if (Settings.dialog && Settings.stylingEditingVariant
-        && Settings.stylingEditingVariant !== Settings.getBoardVariant()) {
-      Settings.writeStyleVarsTo(Settings.dialog, Settings.stylingEditingVariant, false);
-    } else if (Settings.dialog) {
-      // Same variant — clear any leftover dialog-scoped overrides so the
-      // dialog inherits from :root.
-      Settings.clearStyleVarsOn(Settings.dialog);
+    const prevBgCache = Settings.styleBgCache;
+    Settings.styleBgCache = {};
+    try {
+      Settings.writeStyleVarsTo(doc as HTMLElement, Settings.getBoardVariant(), true);
+      Settings.syncLinkedMarkerColors(undefined, Settings.getBoardVariant());
+      if (Settings.dialog && Settings.stylingEditingVariant
+          && Settings.stylingEditingVariant !== Settings.getBoardVariant()) {
+        Settings.writeStyleVarsTo(Settings.dialog, Settings.stylingEditingVariant, false);
+      } else if (Settings.dialog) {
+        // Same variant: clear any leftover dialog-scoped overrides so the
+        // dialog inherits from :root.
+        Settings.clearStyleVarsOn(Settings.dialog);
+      }
+      Settings.resolvedStyleColorCache = null;
+      Settings.refreshUnsetStylingColorInputs();
+      Settings.refreshStylingPreviewFromDialog();
+    } finally {
+      Settings.styleBgCache = prevBgCache;
     }
-    Settings.resolvedStyleColorCache = null;
-    Settings.refreshUnsetStylingColorInputs();
-    Settings.refreshStylingPreviewFromDialog();
+  },
+
+  applyStylingVarsRaf: 0 as number,
+  applyStylingVarsDeferred() {
+    if (Settings.applyStylingVarsRaf) return;
+    Settings.applyStylingVarsRaf = requestAnimationFrame(() => {
+      Settings.applyStylingVarsRaf = 0;
+      Settings.applyStylingVars();
+    });
   },
 
   // The list of CSS variables we write, kept here so clearStyleVarsOn can
@@ -6638,18 +6654,24 @@ Enable it on boards.${location.hostname.split('.')[1]}.org in your browser's pri
     el.style.backgroundAttachment = background.backgroundAttachment;
   },
 
+  styleBgCache: null as { text?: [number, number, number]; post?: [number, number, number] } | null,
+
   getTextBaseBackground(): [number, number, number] {
+    const cache = Settings.styleBgCache;
+    if (cache?.text) return cache.text;
     const style = Settings.resolveCanvasBackgroundStyle();
     const rgba = Settings.parseCSSColorRGBA(style.backgroundColor);
-    if (rgba && rgba[3] > 0) {
-      return [rgba[0], rgba[1], rgba[2]];
-    }
     // Transparent background color with only an image has no reliable average
     // color; use white as a neutral fallback for contrast calculations.
-    return [255, 255, 255];
+    const result: [number, number, number] =
+      rgba && rgba[3] > 0 ? [rgba[0], rgba[1], rgba[2]] : [255, 255, 255];
+    if (cache) cache.text = result;
+    return result;
   },
 
   getPostBaseBackground(): [number, number, number] {
+    const cache = Settings.styleBgCache;
+    if (cache?.post) return cache.post;
     const fallback = Settings.getTextBaseBackground();
     let bgColor = '';
     try {
@@ -6665,9 +6687,14 @@ Enable it on boards.${location.hostname.split('.')[1]}.org in your browser's pri
     }
 
     const rgba = Settings.parseCSSColorRGBA(bgColor);
-    if (!rgba || rgba[3] <= 0) return fallback;
-    const postRgb: [number, number, number] = [rgba[0], rgba[1], rgba[2]];
-    return rgba[3] >= 1 ? postRgb : Settings.mixRgb(fallback, postRgb, rgba[3]);
+    let result: [number, number, number];
+    if (!rgba || rgba[3] <= 0) result = fallback;
+    else {
+      const postRgb: [number, number, number] = [rgba[0], rgba[1], rgba[2]];
+      result = rgba[3] >= 1 ? postRgb : Settings.mixRgb(fallback, postRgb, rgba[3]);
+    }
+    if (cache) cache.post = result;
+    return result;
   },
 
   getPostBaseBackgroundCSS(): string {
@@ -7481,6 +7508,7 @@ Enable it on boards.${location.hostname.split('.')[1]}.org in your browser's pri
       'Scrollbar Mark Ghost Posts',
       'Scrollbar Mark Unread Line',
       'Scrollbar Marker Position',
+      'Scrollbar Marker Hover Preview',
       'Highlight Posts Quoting You',
       'Highlight Own Posts',
       'Highlight Ghost Posts'

@@ -8,6 +8,11 @@
 - Fixed an expanded image not contracting on click when the Quick Reply comment preview was beside it in inline preview mode.
 - Fixed thumbnail and hover preview toggle not toggling in thread watcher dropdown menu.
 - Made the Quick Reply comment preview cheaper to update, so typing stays smooth with a big thread open.
+- Improved load performance on large threads: theme color and styling work that previously ran many times during load is now cached and batched, and the scrollbar markers no longer rebuild on every post as the thread loads.
+- Scrollbar markers now ride the native scrollbar instead of a custom JavaScript one, so scrolling stays smooth on long threads. Pick a mode from the Scroll markers header menu: "Beside scrollbar" (Single or Columns) sits the markers next to the native bar with its thumb tinted to the theme, and "Over scrollbar" (Single or Columns) floats them over the bar's lane, fading the native thumb on hover so the markers underneath stay visible. Over modes need overlay (floating) scrollbars and are greyed out otherwise; in Chromium enable the `#overlay-scrollbars` flag (`chrome://flags/#overlay-scrollbars`, also `brave://`, `edge://`, etc.). On Firefox and some browsers the native scrollbar is drawn over the markers, so hovering to preview in the Over modes can be unreliable; use a Beside mode if hovering is essential to you.
+- Added a "Show preview" checkbox to the Scroll markers header menu (on by default) to turn off the post preview shown when hovering a scrollbar marker.
+- Stopped the index unread line from bordering threads in the catalog; it now only applies to the index, as it did in XT.
+- Improved page load on large threads by removing a layout reflow from the scrollbar check.
 
 ### 1.1.9 (2026-06-17)
 

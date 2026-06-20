@@ -516,9 +516,6 @@
 .unread-line {
   border-color: var(--xt-unread-line, rgb(255,0,0));
 }
-:root.catalog-mode .catalog-thread.unread-thread {
-  border-color: var(--xt-unread-line, rgb(255,0,0));
-}
 
 :root.tomorrow,
 :root.spooky {

@@ -118,7 +118,7 @@ var UnreadIndex = {
     thread.nodes.root.classList.toggle('unread-thread', hasUnread);
     thread.nodes.root.classList.toggle('read-thread', !!lastReadPost && !hasUnread);
     if (thread.catalogView?.nodes.root) {
-      thread.catalogView.nodes.root.classList.toggle('unread-thread', hasUnread);
+      thread.catalogView.nodes.root.classList.toggle('unread-thread', hasUnread && !!lastReadPost);
       thread.catalogView.nodes.root.classList.toggle('read-thread', !!lastReadPost && !hasUnread);
     }
 

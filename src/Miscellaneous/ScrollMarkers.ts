@@ -7,7 +7,7 @@ import { debounce } from '../platform/helpers';
 import type Post from '../classes/Post';
 import type Thread from '../classes/Thread';
 
-type ScrollMarkerPosition = 'offset' | 'offset-single';
+type ScrollMarkerPosition = 'offset' | 'offset-single' | 'over' | 'over-columns';
 
 type MarkerType = 'you' | 'own' | 'ghost';
 type MarkerItem = { post: Post; type: MarkerType; cls: string; topPct: number; heightStyle: string };
@@ -24,8 +24,16 @@ const ScrollMarkers = {
 
   position(): ScrollMarkerPosition {
     const pos = Conf['Scrollbar Marker Position'];
-    if (pos === 'scrollbar' || pos === 'overlay' || pos === 'over' || pos === 'offset-single') return 'offset-single';
+    if (pos === 'over-columns') return 'over-columns';
+    // Legacy values fold into the single Over mode.
+    if (pos === 'scrollbar' || pos === 'overlay' || pos === 'over') return 'over';
+    if (pos === 'offset-single') return 'offset-single';
     return 'offset';
+  },
+
+  // 0 width means overlay scrollbars (the only kind the over modes can sit on).
+  overlayScrollbars(): boolean {
+    return ScrollMarkers.measureScrollbarWidth() === 0;
   },
 
   applyPosition() {
@@ -66,6 +74,8 @@ const ScrollMarkers = {
     d.documentElement.style.setProperty('--xt-scrollbar-offset', `${offset}px`);
     d.documentElement.style.setProperty('--xt-scroll-marker-gutter', '6px');
     d.documentElement.style.setProperty('--xt-scroll-marker-track', '14px');
+    // Scrollbar lane width the over modes size their strip to (12px for overlay).
+    d.documentElement.style.setProperty('--xt-scrollbar-width', `${measured > 0 ? measured : 12}px`);
   },
 
 
@@ -89,27 +99,54 @@ const ScrollMarkers = {
     },
 
     buildSubEntries() {
-      const options: Array<[ScrollMarkerPosition, string]> = [
-        ['offset-single', 'Single'],
-        ['offset', 'Columns'],
+      const options: Array<[ScrollMarkerPosition, string, boolean]> = [
+        ['offset-single', 'Beside scrollbar (single)', false],
+        ['offset', 'Beside scrollbar (columns)', false],
+        ['over', 'Over scrollbar (single)', true],
+        ['over-columns', 'Over scrollbar (columns)', true],
       ];
       const current = ScrollMarkers.position();
-      const entries = options.map(([value, label]) => {
+      const overlay = ScrollMarkers.overlayScrollbars();
+      const entries: { el: HTMLElement }[] = options.map(([value, label, needsOverlay]) => {
+        const disabled = needsOverlay && !overlay;
         const a = $.el('a', {
           href: 'javascript:;',
           textContent: `${current === value ? '✓ ' : '  '}${label}`,
-          className: 'entry scroll-marker-position-option',
+          className: `entry scroll-marker-position-option${disabled ? ' disabled' : ''}`,
         });
-        $.on(a, 'click', (e: Event) => {
-          e.preventDefault();
-          Conf['Scrollbar Marker Position'] = value;
-          $.set('Scrollbar Marker Position', value);
-          ScrollMarkers.applyPosition();
-          ScrollMarkers.refreshDeferred();
-          $.event('CloseMenu');
-        });
+        if (disabled) {
+          a.title = 'Requires overlay scrollbars (#overlay-scrollbars flag).';
+        } else {
+          $.on(a, 'click', (e: Event) => {
+            e.preventDefault();
+            Conf['Scrollbar Marker Position'] = value;
+            $.set('Scrollbar Marker Position', value);
+            ScrollMarkers.applyPosition();
+            ScrollMarkers.refreshDeferred();
+            $.event('CloseMenu');
+          });
+        }
         return { el: a };
       });
+      if (!overlay) {
+        const note = $.el('div', {
+          className: 'scroll-marker-note',
+          textContent:
+            'Over modes need overlay scrollbars: turn on the #overlay-scrollbars '
+            + 'flag (chrome/brave/edge://flags/#overlay-scrollbars).',
+        });
+        entries.push({ el: note });
+      } else if ($.engine === 'gecko') {
+        // Firefox has no ::-webkit-scrollbar, so over modes can't fade the native thumb; it steals pointer events from the markers.
+        const note = $.el('div', {
+          className: 'scroll-marker-note',
+          textContent:
+            'Firefox and some browsers draw the scrollbar over the markers, so '
+            + 'hovering to preview can be unreliable. Use a Beside mode if '
+            + 'hovering is essential to you.',
+        });
+        entries.push({ el: note });
+      }
       const manage = $.el('a', {
         href: 'javascript:;',
         textContent: 'Manage styles',
@@ -121,6 +158,23 @@ const ScrollMarkers = {
         $.event('CloseMenu');
       });
       entries.push({ el: manage });
+
+      const previewLabel = $.el('label', {
+        className: 'entry scroll-marker-hover-preview-option',
+        title: 'Show a post preview when hovering a marker.',
+        innerHTML: '<input type="checkbox"> Show preview',
+      });
+      const previewBox = $('input', previewLabel) as HTMLInputElement;
+      previewBox.checked = Conf['Scrollbar Marker Hover Preview'];
+      // Keep the menu open so the checkbox state is visible after toggling.
+      $.on(previewLabel, 'click', (e: Event) => e.stopPropagation());
+      $.on(previewBox, 'change', () => {
+        const next = previewBox.checked;
+        Conf['Scrollbar Marker Hover Preview'] = next;
+        $.set('Scrollbar Marker Hover Preview', next);
+        if (!next) ScrollMarkers.hidePreview();
+      });
+      entries.push({ el: previewLabel });
       return entries;
     },
   },
@@ -139,6 +193,7 @@ const ScrollMarkers = {
       'Scrollbar Mark Quotes You',
       'Scrollbar Mark Ghost Posts',
       'Scrollbar Mark Unread Line',
+      'Scrollbar Marker Hover Preview',
       'Unread Line',
       'stylingSectionScrollbarMarkers',
     ] as const) {
@@ -279,7 +334,7 @@ const ScrollMarkers = {
     const frag = $.frag();
     const pos = ScrollMarkers.position();
     const onTrack = pos !== 'offset';
-    const isColumnsMode = pos === 'offset';
+    const isColumnsMode = pos === 'offset' || pos === 'over-columns';
     const showOwn = Conf['Scrollbar Mark Own Posts'];
     const showYou = Conf['Scrollbar Mark Quotes You'];
     const showGhost = Conf['Scrollbar Mark Ghost Posts'];
@@ -348,6 +403,7 @@ const ScrollMarkers = {
   },
 
   showPreview(marker: HTMLElement, post: Post, e: MouseEvent) {
+    if (!Conf['Scrollbar Marker Hover Preview']) return;
     if (!post?.nodes?.root?.isConnected) return;
     ScrollMarkers.hidePreview();
 

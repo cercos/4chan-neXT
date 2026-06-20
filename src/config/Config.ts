@@ -564,7 +564,12 @@ const Config = {
       ],
       'Scrollbar Marker Position': [
         'offset',
-        'How markers are laid out beside the scrollbar: a single column or 3 columns split by post type.',
+        'Where markers are drawn: beside the scrollbar (single or 3 columns) or over the scrollbar (single or 3 columns). Over modes require overlay (floating) scrollbars.',
+        1
+      ],
+      'Scrollbar Marker Hover Preview': [
+        true,
+        'Show a post preview when hovering a scrollbar marker. Turn off if the scrollbar makes markers hard to hover (e.g. the Over modes on Firefox).',
         1
       ]
     },

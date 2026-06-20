@@ -6763,6 +6763,77 @@ div.post {
   transform: scaleY(1.35);
   filter: brightness(1.2);
 }
+/* Over scrollbar: float the click-through marker strip over the native bar's
+   lane. Markers keep pointer-events; the bar underneath still scrolls. Only
+   works with overlay scrollbars (the menu grays it out otherwise). */
+:root.scrollbar-markers-over #scroll-markers,
+:root.scrollbar-markers-over-columns #scroll-markers {
+  right: 0;
+  width: var(--xt-scrollbar-width, 12px);
+}
+/* Over (single): markers span the full bar lane. */
+:root.scrollbar-markers-over .scroll-marker {
+  left: 0;
+  right: 0;
+  width: auto;
+  min-height: 3px;
+  border-radius: 0;
+  transform-origin: center center;
+}
+:root.scrollbar-markers-over .scroll-marker:hover {
+  transform: scaleY(1.4);
+  filter: brightness(1.3);
+}
+/* Over (columns): sub-columns over the bar; per-marker right/width set inline. */
+:root.scrollbar-markers-over-columns .scroll-marker {
+  min-height: 3px;
+  border-radius: 0;
+  transform-origin: right center;
+}
+:root.scrollbar-markers-over-columns .scroll-marker:hover {
+  transform: scaleX(1.6);
+  filter: brightness(1.2);
+}
+/* Both over modes: show only the thumb (track/pieces/corner transparent), and
+   fade the thumb out on hover so markers underneath show through. */
+:root.scrollbar-markers-over,
+:root.scrollbar-markers-over-columns {
+  scrollbar-width: thin;
+  scrollbar-color: var(--xt-scroll-thumb-bg, color-mix(in srgb, currentColor 70%, transparent)) transparent;
+}
+:root.scrollbar-markers-over::-webkit-scrollbar,
+:root.scrollbar-markers-over-columns::-webkit-scrollbar {
+  background: transparent;
+}
+:root.scrollbar-markers-over::-webkit-scrollbar-track,
+:root.scrollbar-markers-over::-webkit-scrollbar-track-piece,
+:root.scrollbar-markers-over::-webkit-scrollbar-corner,
+:root.scrollbar-markers-over-columns::-webkit-scrollbar-track,
+:root.scrollbar-markers-over-columns::-webkit-scrollbar-track-piece,
+:root.scrollbar-markers-over-columns::-webkit-scrollbar-corner {
+  background: transparent;
+}
+:root.scrollbar-markers-over::-webkit-scrollbar-thumb,
+:root.scrollbar-markers-over-columns::-webkit-scrollbar-thumb {
+  background: var(--xt-scroll-thumb-bg, color-mix(in srgb, currentColor 70%, transparent));
+}
+:root.scrollbar-markers-over::-webkit-scrollbar-thumb:hover,
+:root.scrollbar-markers-over-columns::-webkit-scrollbar-thumb:hover {
+  background: transparent;
+}
+.entry.scroll-marker-position-option.disabled {
+  pointer-events: none;
+  opacity: .45;
+  cursor: default;
+}
+.scroll-marker-note {
+  padding: 4px 8px;
+  max-width: 220px;
+  font-size: 11px;
+  line-height: 1.35;
+  opacity: .7;
+  white-space: normal;
+}
 .scroll-marker-unread {
   left: 0;
   right: 0;
