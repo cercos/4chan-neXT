@@ -2,6 +2,7 @@
 
 ### Unreleased
 
+- Added an "Icon style" setting (Settings > Icons) to pick the icon set used across the script's buttons and UI, with eight sets to choose from: Font Awesome (default), Lucide, Material Icons, Phosphor, Tabler, Bootstrap Icons, Heroicons, and Ionicons. Reload the page to apply the change everywhere.
 - Added an Undo button for Mark All Read in the Thread Watcher, enabled via the "Show Undo Button" setting (Display menu, off by default).
 - Added a "Then by" secondary sort to the Thread Watcher Sort menu.
 - Added a bouncing down-arrow hint at the bottom of the Thread Watcher when the list has entries scrolled out of view.
