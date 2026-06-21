@@ -5,7 +5,6 @@ import Icon from '../../Icons/icon';
 
 const settingsHtml = <div id="fourchanx-settings" class="dialog">
   <div class="settings-titlebar move">
-    <span class="settings-title">{meta.name} Settings</span>
     <button type="button" class="settings-nav-scroll settings-nav-scroll-left" aria-label="Scroll sections left" title="Previous sections">{Icon.raw('caretLeft')}</button>
     <button type="button" class="settings-nav-scroll settings-nav-scroll-right" aria-label="Scroll sections right" title="More sections">{Icon.raw('caretRight')}</button>
     <span class="settings-titlebar-actions">

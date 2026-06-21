@@ -883,7 +883,7 @@ var Settings: any = {
       titlebar.insertBefore(navScrollRight, actions);
       $.addClass(settingsWindow, 'settings-nav-horizontal');
     } else {
-      nav.appendChild(search);
+      titlebar.insertBefore(search, actions);
       nav.appendChild(sectionsList);
       $.rmClass(settingsWindow, 'settings-nav-horizontal');
     }

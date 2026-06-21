@@ -503,8 +503,13 @@ audio.controls-added {
   padding: 6px 8px;
   cursor: move;
 }
-.settings-title {
-  font-weight: 700;
+.settings-titlebar > .settings-search {
+  flex: 0 0 auto;
+  margin: 0;
+}
+.settings-titlebar > .settings-search input {
+  box-sizing: border-box;
+  width: 15ch;
 }
 .settings-titlebar-actions {
   display: flex;
@@ -919,20 +924,9 @@ audio.controls-added {
   flex-wrap: nowrap;
   gap: 4px 10px;
 }
-#fourchanx-settings.settings-nav-horizontal .settings-title {
-  display: none;
-}
 #fourchanx-settings.settings-nav-horizontal .settings-titlebar-actions {
   flex: 0 0 auto;
   white-space: nowrap;
-}
-#fourchanx-settings.settings-nav-horizontal .settings-titlebar > .settings-search {
-  flex: 0 0 auto;
-  margin: 0;
-}
-#fourchanx-settings.settings-nav-horizontal .settings-titlebar > .settings-search input {
-  box-sizing: border-box;
-  width: 15ch;
 }
 #fourchanx-settings.settings-nav-horizontal .settings-titlebar > .sections-list {
   flex: 1 1 auto;
@@ -1015,9 +1009,6 @@ audio.controls-added {
 }
 #fourchanx-settings.settings-nav-collapsed .settings-titlebar {
   gap: 6px;
-}
-#fourchanx-settings.settings-nav-collapsed .settings-title {
-  display: none;
 }
 #fourchanx-settings.settings-nav-collapsed .settings-titlebar-actions {
   flex: 1;
@@ -3677,6 +3668,10 @@ body > #overlay:not(.media-preview) {
   margin-bottom: 6px;
   border-bottom: 1px solid rgba(128, 128, 128, .2);
   border-bottom: 1px solid color-mix(in srgb, currentColor 14%, transparent);
+}
+#xt-settings-overlay .section-container section > details > summary,
+#xt-settings-overlay .settings-section-content > details > summary {
+  font-size: 1.08em;
 }
 #xt-settings-overlay summary::-webkit-details-marker,
 #xt-settings-overlay summary::marker {
