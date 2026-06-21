@@ -122,6 +122,7 @@ export class VideoStripper {
   private static stripWebm(uint8: Uint8Array): boolean {
     let offset = 0;
     let stripped = false;
+    const audioTracks = new Set<number>();
 
     const readVint = (off: number): { val: number, length: number } => {
       if (off >= uint8.length) return { val: 0, length: 1 };
@@ -148,6 +149,62 @@ export class VideoStripper {
       }
       const sizeInfo = readVint(from + idLength);
       return from + idLength + sizeInfo.length + sizeInfo.val;
+    };
+
+    // EBML element *values* are raw big-endian unsigned integers, not vints
+    // (unlike element IDs and sizes), so they must not be decoded with readVint.
+    const readUint = (off: number, length: number): number => {
+      let val = 0;
+      for (let i = 0; i < length; i++) {
+        if (off + i >= uint8.length) break;
+        val = (val * 256) + uint8[off + i];
+      }
+      return val;
+    };
+
+    // Void every audio block inside a Cluster. Cluster blocks are inline-tagged
+    // with their track number, so dropping only the audio TrackEntry would leave
+    // these orphaned and corrupt the file (demuxers abort on the unknown track).
+    const stripClusterAudio = (from: number, end: number) => {
+      let curr = from;
+      while (curr + 1 <= end && curr < uint8.length) {
+        const id = uint8[curr];
+        if (id === 0xA3) {
+          // SimpleBlock: track number is the first vint of the block data.
+          const sizeInfo = readVint(curr + 1);
+          const dataOffset = curr + 1 + sizeInfo.length;
+          const trackInfo = readVint(dataOffset);
+          if (audioTracks.has(trackInfo.val)) {
+            uint8[curr] = 0xEC;
+            stripped = true;
+          }
+          curr = dataOffset + sizeInfo.val;
+        } else if (id === 0xA0) {
+          // BlockGroup: its track is determined by the inner Block (0xA1).
+          const sizeInfo = readVint(curr + 1);
+          const dataOffset = curr + 1 + sizeInfo.length;
+          const groupEnd = dataOffset + sizeInfo.val;
+          let isAudio = false;
+          let inner = dataOffset;
+          while (inner < groupEnd && inner < uint8.length) {
+            if (uint8[inner] === 0xA1) {
+              const blockSizeInfo = readVint(inner + 1);
+              const trackInfo = readVint(inner + 1 + blockSizeInfo.length);
+              if (audioTracks.has(trackInfo.val)) isAudio = true;
+              inner += 1 + blockSizeInfo.length + blockSizeInfo.val;
+            } else {
+              inner = skipEbmlElement(inner);
+            }
+          }
+          if (isAudio) {
+            uint8[curr] = 0xEC;
+            stripped = true;
+          }
+          curr = groupEnd;
+        } else {
+          curr = skipEbmlElement(curr);
+        }
+      }
     };
 
     while (offset + 4 <= uint8.length) {
@@ -181,24 +238,29 @@ export class VideoStripper {
               const entryDataOffset = tracksOffset + 1 + entrySizeInfo.length;
               const entryEnd = entryDataOffset + entrySizeInfo.val;
 
-              let isAudio = false;
+              let trackType = -1;
+              let trackNumber = -1;
               let curr = entryDataOffset;
               while (curr < entryEnd && curr < uint8.length) {
                 if (uint8[curr] === 0x83) {
-                  const typeSizeInfo = readVint(curr + 1);
-                  const typeValInfo = readVint(curr + 1 + typeSizeInfo.length);
-                  if (typeValInfo.val === 2) {
-                    isAudio = true;
-                    break;
-                  }
-                  curr += 1 + typeSizeInfo.length + typeSizeInfo.val;
+                  // TrackType: 2 = audio.
+                  const sizeInfo = readVint(curr + 1);
+                  trackType = readUint(curr + 1 + sizeInfo.length, sizeInfo.val);
+                  curr += 1 + sizeInfo.length + sizeInfo.val;
+                } else if (uint8[curr] === 0xD7) {
+                  // TrackNumber: needed to find this track's blocks in the clusters.
+                  const sizeInfo = readVint(curr + 1);
+                  trackNumber = readUint(curr + 1 + sizeInfo.length, sizeInfo.val);
+                  curr += 1 + sizeInfo.length + sizeInfo.val;
                 } else {
                   curr = skipEbmlElement(curr);
                 }
               }
 
-              if (isAudio) {
-                // Replace TrackEntry with Void.
+              if (trackType === 2) {
+                // Replace TrackEntry with Void and remember the track number so
+                // its blocks can be voided out of the clusters below.
+                if (trackNumber >= 0) audioTracks.add(trackNumber);
                 uint8[entryStart] = 0xEC;
                 stripped = true;
               }
@@ -209,6 +271,17 @@ export class VideoStripper {
           }
 
           offset = tracksEnd;
+        } else if (uint8[offset] === 0x1F && uint8[offset + 1] === 0x43 && uint8[offset + 2] === 0xB6 && uint8[offset + 3] === 0x75) {
+          // Cluster: void any blocks belonging to the audio track(s). Tracks
+          // always precede clusters, so `audioTracks` is already populated.
+          const clusterSizeInfo = readVint(offset + 4);
+          const clusterDataOffset = offset + 4 + clusterSizeInfo.length;
+          let clusterEnd = clusterDataOffset + clusterSizeInfo.val;
+          if (clusterEnd > segmentEnd || clusterEnd > uint8.length) {
+            clusterEnd = Math.min(segmentEnd, uint8.length);
+          }
+          if (audioTracks.size) stripClusterAudio(clusterDataOffset, clusterEnd);
+          offset = clusterDataOffset + clusterSizeInfo.val;
         } else {
           offset = skipEbmlElement(offset);
         }
