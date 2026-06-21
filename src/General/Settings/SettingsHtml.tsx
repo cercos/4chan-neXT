@@ -3,7 +3,7 @@ import h from "../../globals/jsx";
 import meta from '../../../package.json';
 import Icon from '../../Icons/icon';
 
-const settingsHtml = <div id="fourchanx-settings" class="dialog">
+const settingsHtml = () => <div id="fourchanx-settings" class="dialog">
   <div class="settings-titlebar move">
     <button type="button" class="settings-nav-scroll settings-nav-scroll-left" aria-label="Scroll sections left" title="Previous sections">{Icon.raw('caretLeft')}</button>
     <button type="button" class="settings-nav-scroll settings-nav-scroll-right" aria-label="Scroll sections right" title="More sections">{Icon.raw('caretRight')}</button>

@@ -8,6 +8,7 @@ import Post from "../classes/Post";
 import SimpleDict from "../classes/SimpleDict";
 import Thread from "../classes/Thread";
 import Config from "../config/Config";
+import Icon from "../Icons/icon";
 import Anonymize from "../Filtering/Anonymize";
 import Filter from "../Filtering/Filter";
 import PostHiding from "../Filtering/PostHiding";
@@ -275,6 +276,8 @@ var Main = {
         for (const key in Conf) {
           Conf[key] = items[key] ?? Conf[key];
         }
+        // Select the icon set before any feature renders an icon.
+        Icon.setIconSet(Conf['Icon Set']);
         if (!Conf['Replace Thumbnails'] && legacyReplaceThumbnailKeys.some((key) => items[key] === true)) {
           Conf['Replace Thumbnails'] = true;
           $.set('Replace Thumbnails', true);

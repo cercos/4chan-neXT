@@ -910,6 +910,7 @@ const Config = {
   'Thread Watcher Attach Location': 'bottom',
   'Thread Title': 'excerpt',
   'Unread Title Count': 'always',
+  'Icon Set': 'fontAwesome',
   'Comment Preview Position': 'thread', // deprecated/unused: preview is always floating + on-demand inline
   'Comment Preview Default Mode': 'attached', // 'attached' | 'inline' | 'remember'
   'Comment Preview Last Mode': 'attached', // internal state for Default Mode = remember

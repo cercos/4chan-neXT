@@ -26,7 +26,7 @@ import Header from './Header';
 import { SearchHighlight } from './SearchHighlight';
 import h, { hFragment } from '../globals/jsx';
 import { dict } from '../platform/helpers';
-import Icon from '../Icons/icon';
+import Icon, { ICON_SETS } from '../Icons/icon';
 import { dragstart } from './UI';
 import Filter from '../Filtering/Filter';
 import QuoteYou from '../Quotelinks/QuoteYou';
@@ -389,7 +389,7 @@ var Settings: any = {
     // of the DOM when its show()/close() called `document.getElementById`.
     Settings.dialog = (dialog = $.el('div',
       { id: 'xt-settings-overlay' }
-      , SettingsPage));
+      , SettingsPage()));
     const settingsWindow = $('#fourchanx-settings', dialog) as HTMLDivElement;
 
     $.on($('.export', dialog), 'click', e => { e.preventDefault(); Settings.export(); Settings.closeFooterActions(); });
@@ -1900,8 +1900,9 @@ Enable it on boards.${location.hostname.split('.')[1]}.org in your browser's pri
     const fs = $.el('details',
       { open: true },
       { innerHTML: `<summary>${title}</summary>` });
-    Settings.addSelectRows(fs, rows);
+    const inputs = Settings.addSelectRows(fs, rows);
     $.add(section, fs);
+    return inputs;
   },
 
   addSelectRows(root: HTMLElement, rows: SelectRow[]) {
@@ -2050,6 +2051,24 @@ Enable it on boards.${location.hostname.split('.')[1]}.org in your browser's pri
       $.on(navLayoutSelect, 'change', function(this: HTMLSelectElement) {
         const win = Settings.dialog && $('#fourchanx-settings', Settings.dialog) as HTMLDivElement | null;
         if (win) Settings.setNavLayout(win, this.value);
+      });
+    }
+
+    const iconInputs = Settings.addSelectFieldset(section, 'Icons', [
+      {
+        name: 'Icon Set',
+        label: 'Icon style',
+        description: 'Which icon set the script uses for its buttons and UI. Reload the page to apply.',
+        options: ICON_SETS.map(({ id, name }) => [id, name] as [string, string])
+      }
+    ]);
+    const iconSetSelect = iconInputs['Icon Set'] as HTMLSelectElement | undefined;
+    if (iconSetSelect) {
+      $.on(iconSetSelect, 'change', function(this: HTMLSelectElement) {
+        Icon.setIconSet(this.value);
+        if (confirm('Icon set changed. Reload the page to apply it everywhere?')) {
+          window.location.reload();
+        }
       });
     }
 
