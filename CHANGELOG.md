@@ -1,6 +1,6 @@
 ## 4chan-neXT changelog
 
-### Unreleased
+### 1.2.0 (2026-06-21)
 
 - Added an "Icon style" setting (Settings > Icons) to pick the icon set used across the script's buttons and UI, with eight sets to choose from: Font Awesome (default), Lucide, Material Icons, Phosphor, Tabler, Bootstrap Icons, Heroicons, and Ionicons. Reload the page to apply the change everywhere.
 - Added an Undo button for Mark All Read in the Thread Watcher, enabled via the "Show Undo Button" setting (Display menu, off by default).
