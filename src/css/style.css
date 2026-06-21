@@ -506,10 +506,31 @@ audio.controls-added {
 .settings-titlebar > .settings-search {
   flex: 0 0 auto;
   margin: 0;
+  /* Reserve the resting slot so the input can lift to position:absolute on focus
+     and grow without shifting the section links / actions beside it. */
+  position: relative;
+  width: 15ch;
 }
 .settings-titlebar > .settings-search input {
   box-sizing: border-box;
-  width: 15ch;
+  width: 100%;
+  transition: width .28s cubic-bezier(.22, .61, .36, 1), background-color .28s ease, box-shadow .28s ease;
+}
+/* Focused: float over neighbouring titlebar content instead of pushing it. The
+   wrapper keeps its 15ch slot so nothing reflows; the input lifts out of flow,
+   widens rightward, and gets an opaque background so it cleanly covers whatever
+   sits beside it. The doubled-id selector outranks the (1,5,0) transparent-field
+   rule above so the background actually paints. */
+#xt-settings-overlay #fourchanx-settings .settings-titlebar > .settings-search input:focus {
+  position: absolute;
+  top: 50%;
+  left: 0;
+  transform: translateY(-50%);
+  width: 30ch;
+  max-width: 70vw;
+  z-index: 5;
+  background-color: var(--xt-dialog-bg, var(--background, Canvas));
+  box-shadow: 0 1px 6px rgba(0, 0, 0, .35);
 }
 .settings-titlebar-actions {
   display: flex;
