@@ -110,6 +110,10 @@ var QR = {
   dropTargetPost: undefined as post | undefined,
   isDroppingFiles: false,
   isProcessingPendingFiles: false,
+  // While a "removed audio" notice is still on screen, further strips bump its
+  // count in place instead of stacking new notices.
+  audioStrippedCount: 0,
+  audioStripNotice: null as Notice | null,
   fileBatchSize: 3,
   heavyBatchFileCount: 8,
   heavyBatchSize: 64 * 1024 * 1024,
@@ -2425,6 +2429,33 @@ var QR = {
     } finally {
       QR.isProcessingPendingFiles = false;
     }
+  },
+
+  // setFile reports each stripped video here. If a prior notice is still
+  // showing (a batch dump, or a file dropped onto the list moments later) we
+  // bump its count in place and refresh its dismiss timer rather than stacking
+  // a second notice; otherwise we open a fresh one.
+  noteAudioStripped() {
+    if (QR.audioStripNotice && !QR.audioStripNotice.closed) {
+      QR.audioStrippedCount++;
+      const msg = QR.audioStripNotice.el.querySelector('.message');
+      if (msg) { msg.textContent = QR.audioStripMessage(); }
+      QR.audioStripNotice.resetTimer();
+      return;
+    }
+    QR.audioStrippedCount = 1;
+    QR.audioStripNotice = new Notice('info', QR.audioStripMessage(), 4, () => {
+      // Notice dismissed or expired: the next strip starts a new count.
+      QR.audioStripNotice = null;
+      QR.audioStrippedCount = 0;
+    });
+  },
+
+  audioStripMessage() {
+    return QR.audioStrippedCount === 1 ?
+      'Removed audio from video for this board.'
+    :
+      `Removed audio from ${QR.audioStrippedCount} videos for this board.`;
   },
 
   warnHeavyBatch(files: File[] | FileList) {
@@ -5069,7 +5100,7 @@ class post {
         const stripped = await VideoStripper.stripAudio(file);
         if (stripped !== file) {
           file = stripped;
-          new Notice('info', 'Removed audio from video for this board.', 4);
+          QR.noteAudioStripped();
         }
       }
 
