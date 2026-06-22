@@ -154,6 +154,8 @@
     "removebuild": "node ./tools/remove-build-changes.js",
     "removebuild:all": "node ./tools/remove-build-changes.js --all",
     "serve:8123": "http-server . -p 8123 -c-1",
+    "//gen:icons": "Regenerates src/Icons/icon-data.generated.ts from the installed icon packages. Run after changing icon sets in tools/gen-icons.js, then commit the regenerated file. CI fails if the committed file is stale.",
+    "gen:icons": "node ./tools/gen-icons.js",
     "gen:next-diff": "node ./tools/gen-next-settings-diff.js"
   }
 }

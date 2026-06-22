@@ -25,5 +25,13 @@ jobs:
       - name: Install dependencies
         run: npm ci
 
+      - name: Check generated icon data is up to date
+        run: |
+          npm run gen:icons
+          if ! git diff --exit-code -- src/Icons/icon-data.generated.ts; then
+            echo "::error file=src/Icons/icon-data.generated.ts::Generated icon data is stale. Run 'npm run gen:icons' and commit the result."
+            exit 1
+          fi
+
       - name: Run TypeScript ratchet
         run: npm run typecheck
