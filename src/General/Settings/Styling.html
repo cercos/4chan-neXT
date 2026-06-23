@@ -312,8 +312,9 @@
     <button type="button" id="custom-css-format" title="Reformat the CSS: fix indentation, braces and spacing. Shortcut: Shift+Alt+F">Format CSS</button>
     <label class="ccss-controls-right" title="Bracket matching scans the editor as you move the caret and may degrade browser performance on large Custom CSS."><input type="checkbox" id="custom-css-bracket-highlight"> Highlight brackets</label>
     <label title="Suggest class names that exist on the page while typing a .class selector."><input type="checkbox" id="custom-css-autocomplete" checked> Suggest class names</label>
+    <button type="button" id="custom-css-shortcuts-toggle" class="ccss-shortcuts-toggle" aria-expanded="false" aria-controls="custom-css-shortcuts" title="Show keyboard shortcuts">?</button>
   </div>
-  <div class="custom-css-shortcuts" aria-label="Custom CSS editor shortcuts">
+  <div class="custom-css-shortcuts" id="custom-css-shortcuts" aria-label="Custom CSS editor shortcuts" hidden>
     <span><kbd>Ctrl</kbd>+<kbd>/</kbd> comment</span>
     <span><kbd>Ctrl</kbd>+<kbd>S</kbd> save</span>
     <span><kbd>Shift</kbd>+<kbd>Alt</kbd>+<kbd>F</kbd> format</span>

@@ -4827,6 +4827,13 @@ Enable it on boards.${location.hostname.split('.')[1]}.org in your browser's pri
     $.on(bracketToggle, 'change', () => updateBracketHighlight(bracketToggle.checked, true));
     $.on(autocompleteToggle, 'change', () => updateAutocomplete(autocompleteToggle.checked, true));
     if (formatButton) $.on(formatButton, 'click', () => Settings.applyCustomCSSFormat(textarea, highlight));
+    const shortcutsToggle = $('#custom-css-shortcuts-toggle', section) as HTMLButtonElement | null;
+    const shortcuts = $('#custom-css-shortcuts', section) as HTMLElement | null;
+    if (shortcutsToggle && shortcuts) $.on(shortcutsToggle, 'click', () => {
+      const show = shortcuts.hidden;
+      shortcuts.hidden = !show;
+      shortcutsToggle.setAttribute('aria-expanded', String(show));
+    });
     Settings.customCSSEditorThemeObserver?.disconnect();
     Settings.customCSSEditorThemeObserver = new MutationObserver(() => {
       if (themeSelect.value === 'xt-system') updateTheme(false);

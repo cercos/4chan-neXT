@@ -1846,8 +1846,13 @@ div[data-checked="false"] > .suboption-list {
   gap: 8px;
 }
 /* Give the palette manager body a little breathing room below its header so
-   the first row isn't jammed against the title. */
-.section-styling .styling-hl-acc-item-palette .styling-hl-acc-body {
+   the first row isn't jammed against the title. Unlike the catalog rows, the
+   palette body stacks its sections full-width instead of using the generic
+   two-column accordion grid, so the toprow can span the whole width and let
+   the Suggest-palettes button ride to the top right. */
+.section-styling .styling-hl-group-palette .styling-hl-acc-item-palette.styling-hl-open .styling-hl-acc-body {
+  display: block;
+  grid-template-columns: none;
   padding-top: 8px;
 }
 /* Save controls + action buttons share one row; the action buttons ride to the
@@ -3178,6 +3183,20 @@ body > #overlay:not(.media-preview) {
    the syntax-theme select and Format CSS on the left. */
 .section-styling .custom-css-controls > .ccss-controls-right {
   margin-left: auto;
+}
+.section-styling .ccss-shortcuts-toggle {
+  align-items: center;
+  aspect-ratio: 1;
+  border-radius: 50%;
+  display: inline-flex;
+  font-weight: 700;
+  justify-content: center;
+  line-height: 1;
+  padding: 0;
+  width: 1.7em;
+}
+.section-styling .ccss-shortcuts-toggle[aria-expanded="true"] {
+  background: rgba(128, 128, 128, .25);
 }
 .section-styling .custom-css-shortcuts {
   align-items: center;
