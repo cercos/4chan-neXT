@@ -900,7 +900,7 @@ const Config = {
 
   'Default Volume': 1.0,
   'Thread Watcher Thumbnail Size': 40,
-  'Thread Watcher Thumbnail Preview Size': 40,
+  'Thread Watcher Thumbnail Preview Size': 20,
   'Thread Watcher Max Height': 210,
   'Thread Watcher Max Width': 250,
   'Thread Watcher Sort': 'manual',

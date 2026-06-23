@@ -1339,7 +1339,7 @@ var ThreadWatcher = {
       ThreadWatcher.hideThumbnailHover();
       return;
     }
-    const targetWidth = Math.max(80, Math.floor((availableWidth * ThreadWatcher.thumbnailPreviewSize()) / 99));
+    const targetWidth = Math.max(80, Math.floor((availableWidth * ThreadWatcher.thumbnailPreviewSize()) / 100));
     hover.style.width = `${targetWidth}px`;
     hover.style.maxWidth = `${targetWidth}px`;
     hover.style.maxHeight = `${Math.max(120, doc.clientHeight - (viewportPadding * 2))}px`;
@@ -1365,8 +1365,12 @@ var ThreadWatcher = {
 
   thumbnailPreviewSize() {
     let size = parseInt(Conf['Thread Watcher Thumbnail Preview Size'], 10);
-    if (isNaN(size)) { size = 40; }
-    return Math.max(10, Math.min(99, size));
+    if (isNaN(size)) { size = 20; }
+    return Math.max(10, Math.min(20, size));
+  },
+
+  thumbnailPreviewScale() {
+    return (ThreadWatcher.thumbnailPreviewSize() / 10).toFixed(1);
   },
 
   maxHeight() {
@@ -2089,13 +2093,15 @@ var ThreadWatcher = {
       const entry = {
         type: 'thread watcher',
         el: $.el('a', {
-          textContent: 'Thumbnails'
+          textContent: 'Thumbnails',
+          className: 'watcher-thumbnail-controls'
         }),
         open(this: { el: HTMLElement }) {
-          this.el.innerHTML = `<span style="display:inline-flex;align-items:center;gap:4px;"><label style="display:inline-flex;align-items:center;gap:4px;"><input type="checkbox"${Conf['Show OP Thumbnails'] ? ' checked' : ''}>Thumbnails</label><input type="number" value="${ThreadWatcher.thumbnailSize()}" min="16" max="160" class="field" style="width:3.2em"></span><br><span style="display:inline-flex;align-items:center;gap:4px;"><label style="display:inline-flex;align-items:center;gap:4px;"><input type="checkbox"${Conf['Thread Watcher Thumbnail Hover'] ? ' checked' : ''}>Hover Preview</label><input type="number" value="${ThreadWatcher.thumbnailPreviewSize()}" min="10" max="99" class="field" style="width:3.2em"><span>%</span></span>`;
+          this.el.innerHTML = `<span class="watcher-thumb-row"><label class="watcher-thumb-toggle"><input type="checkbox"${Conf['Show OP Thumbnails'] ? ' checked' : ''}>Thumbnails</label><span class="watcher-thumb-slider"><input type="range" value="${ThreadWatcher.thumbnailSize()}" min="16" max="160" step="1"><input type="number" value="${ThreadWatcher.thumbnailSize()}" min="16" max="160" step="1" class="watcher-thumb-number" aria-label="Thumbnail size"><span class="watcher-thumb-unit">px</span></span></span><span class="watcher-thumb-row"><label class="watcher-thumb-toggle"><input type="checkbox"${Conf['Thread Watcher Thumbnail Hover'] ? ' checked' : ''}>Hover Scale</label><span class="watcher-thumb-slider"><input type="range" value="${ThreadWatcher.thumbnailPreviewSize()}" min="10" max="20" step="1"><input type="number" value="${ThreadWatcher.thumbnailPreviewScale()}" min="1" max="2" step="0.1" class="watcher-thumb-number" aria-label="Hover preview scale"><span class="watcher-thumb-unit">x</span></span></span>`;
           const [thumbToggle, previewToggle] = $$('input[type="checkbox"]', this.el);
-          const [sizeInput, previewSizeInput] = $$('input[type="number"]', this.el);
-          for (const input of [thumbToggle, previewToggle, sizeInput, previewSizeInput]) {
+          const [sizeInput, previewSizeInput] = $$('input[type="range"]', this.el) as HTMLInputElement[];
+          const [sizeNumber, previewScaleNumber] = $$('input[type="number"]', this.el) as HTMLInputElement[];
+          for (const input of [thumbToggle, previewToggle, sizeInput, previewSizeInput, sizeNumber, previewScaleNumber]) {
             $.on(input, 'click', e => e.stopPropagation());
             $.on(input, 'mousedown', e => e.stopPropagation());
             $.on(input, 'pointerdown', e => e.stopPropagation());
@@ -2119,25 +2125,31 @@ var ThreadWatcher = {
             }
             ThreadWatcher.refresh();
           });
-          $.on(sizeInput, 'change', function(this: HTMLInputElement) {
-            let size = parseInt(this.value, 10);
+          const updateThumbnailSize = function(value: string) {
+            let size = parseInt(value, 10);
             if (isNaN(size)) { size = 40; }
             size = Math.max(16, Math.min(160, size));
-            this.value = `${size}`;
+            sizeInput.value = `${size}`;
+            sizeNumber.value = `${size}`;
             $.set('Thread Watcher Thumbnail Size', size);
             Conf['Thread Watcher Thumbnail Size'] = size;
             ThreadWatcher.applyLayout();
             ThreadWatcher.refresh();
-          });
-          $.on(previewSizeInput, 'change', function(this: HTMLInputElement) {
-            let size = parseInt(this.value, 10);
-            if (isNaN(size)) { size = 40; }
-            size = Math.max(10, Math.min(99, size));
-            this.value = `${size}`;
+          };
+          $.on(sizeInput, 'input', function(this: HTMLInputElement) { updateThumbnailSize(this.value); });
+          $.on(sizeNumber, 'change', function(this: HTMLInputElement) { updateThumbnailSize(this.value); });
+          const updatePreviewSize = function(value: string, isScale = false) {
+            let size = isScale ? Math.round(parseFloat(value) * 10) : parseInt(value, 10);
+            if (isNaN(size)) { size = 20; }
+            size = Math.max(10, Math.min(20, size));
+            previewSizeInput.value = `${size}`;
+            previewScaleNumber.value = (size / 10).toFixed(1);
             $.set('Thread Watcher Thumbnail Preview Size', size);
             Conf['Thread Watcher Thumbnail Preview Size'] = size;
             ThreadWatcher.positionThumbnailHover(ThreadWatcher.hoveredThumbnail);
-          });
+          };
+          $.on(previewSizeInput, 'input', function(this: HTMLInputElement) { updatePreviewSize(this.value); });
+          $.on(previewScaleNumber, 'change', function(this: HTMLInputElement) { updatePreviewSize(this.value, true); });
           return true;
         }
       };

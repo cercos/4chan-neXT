@@ -6431,6 +6431,53 @@ input[type="checkbox"]:checked ~ .checkbox-letter {
 .entry input[type="number"] {
   width: 4.5em;
 }
+.entry.watcher-thumbnail-controls {
+  min-width: 270px;
+}
+.entry.watcher-thumbnail-controls .watcher-thumb-row {
+  display: grid;
+  grid-template-columns: 100px max-content;
+  align-items: center;
+  gap: 8px;
+  padding: 1px 0;
+}
+.entry.watcher-thumbnail-controls .watcher-thumb-row + .watcher-thumb-row {
+  margin-top: 4px;
+}
+.entry.watcher-thumbnail-controls .watcher-thumb-toggle {
+  display: inline-flex;
+  align-items: center;
+  gap: 4px;
+}
+.entry.watcher-thumbnail-controls .watcher-thumb-slider {
+  display: inline-grid;
+  grid-template-columns: 100px 44px 18px;
+  align-items: center;
+  gap: 6px;
+}
+.entry.watcher-thumbnail-controls input[type="range"] {
+  width: 100%;
+  min-width: 0;
+  margin: 0;
+  accent-color: currentColor;
+}
+.entry.watcher-thumbnail-controls input[type="number"].watcher-thumb-number {
+  box-sizing: border-box;
+  width: 44px;
+  min-width: 0;
+  padding: 1px 4px 1px 2px;
+  font: inherit;
+  line-height: 1.2;
+  text-align: right;
+}
+.entry.watcher-thumbnail-controls .watcher-thumb-unit {
+  box-sizing: border-box;
+  display: inline-block;
+  min-width: 18px;
+  font-variant-numeric: tabular-nums;
+  line-height: 1.2;
+  opacity: .75;
+}
 .entry.has-shortcut-text,
 .entry.has-submenu {
   display: flex;
