@@ -1,3 +1,131 @@
+/* Custom property declarations
+   These are intentionally `initial`: many values are supplied later by theme
+   CSS, root inline settings, or component JS. `initial` keeps existing
+   var(..., fallback) behavior while making the property names explicit. */
+:root {
+  --ac-bg: initial;
+  --ac-border: initial;
+  --ac-fg: initial;
+  --gal-cols: initial;
+  --gal-thumbs-width: initial;
+  --tn-w: initial;
+  --undo-duration: initial;
+  --xt-background: initial;
+  --xt-border: initial;
+  --xt-border-field-focus: initial;
+  --xt-border-highlight: initial;
+  --xt-catalog-border-style-filter: initial;
+  --xt-catalog-border-style-own: initial;
+  --xt-catalog-border-style-watched: initial;
+  --xt-catalog-border-width: initial;
+  --xt-catalog-border-width-filter: initial;
+  --xt-catalog-border-width-own: initial;
+  --xt-catalog-border-width-watched: initial;
+  --xt-catalog-filter-dead-link: initial;
+  --xt-catalog-filter-glow-intensity: initial;
+  --xt-catalog-filter-highlight: initial;
+  --xt-catalog-filter-highlight-opacity: initial;
+  --xt-catalog-filter-link: initial;
+  --xt-catalog-filter-quote: initial;
+  --xt-catalog-filter-subject: initial;
+  --xt-catalog-filter-text: initial;
+  --xt-catalog-own-dead-link: initial;
+  --xt-catalog-own-glow-intensity: initial;
+  --xt-catalog-own-highlight: initial;
+  --xt-catalog-own-highlight-opacity: initial;
+  --xt-catalog-own-link: initial;
+  --xt-catalog-own-quote: initial;
+  --xt-catalog-own-subject: initial;
+  --xt-catalog-own-text: initial;
+  --xt-catalog-watched-dead-link: initial;
+  --xt-catalog-watched-glow-intensity: initial;
+  --xt-catalog-watched-highlight: initial;
+  --xt-catalog-watched-highlight-opacity: initial;
+  --xt-catalog-watched-link: initial;
+  --xt-catalog-watched-quote: initial;
+  --xt-catalog-watched-subject: initial;
+  --xt-catalog-watched-text: initial;
+  --xt-dead-link: initial;
+  --xt-dead-link-text-color: initial;
+  --xt-dialog-bg: initial;
+  --xt-edge-style-ghost: initial;
+  --xt-edge-style-own: initial;
+  --xt-edge-style-you: initial;
+  --xt-edge-width-ghost: initial;
+  --xt-edge-width-own: initial;
+  --xt-edge-width-you: initial;
+  --xt-entry-focus-bg: initial;
+  --xt-entry-size: initial;
+  --xt-filter-highlight: initial;
+  --xt-fxt-fg: initial;
+  --xt-header-dialog-bg: initial;
+  --xt-header-dialog-fg: initial;
+  --xt-header-link: initial;
+  --xt-highlight-edge-width: initial;
+  --xt-highlight-ghost: initial;
+  --xt-highlight-ghost-dead-link: initial;
+  --xt-highlight-ghost-link: initial;
+  --xt-highlight-ghost-opacity: initial;
+  --xt-highlight-ghost-quote: initial;
+  --xt-highlight-ghost-text: initial;
+  --xt-highlight-own: initial;
+  --xt-highlight-own-dead-link: initial;
+  --xt-highlight-own-link: initial;
+  --xt-highlight-own-opacity: initial;
+  --xt-highlight-own-quote: initial;
+  --xt-highlight-own-text: initial;
+  --xt-highlight-shadow: initial;
+  --xt-highlight-side-arrow: initial;
+  --xt-highlight-you: initial;
+  --xt-highlight-you-dead-link: initial;
+  --xt-highlight-you-link: initial;
+  --xt-highlight-you-opacity: initial;
+  --xt-highlight-you-quote: initial;
+  --xt-highlight-you-text: initial;
+  --xt-inline: initial;
+  --xt-link-hover-bg: initial;
+  --xt-link-text-color: initial;
+  --xt-menu-fg: initial;
+  --xt-notification-size: initial;
+  --xt-post-background: initial;
+  --xt-qphl: initial;
+  --xt-qr-bg: initial;
+  --xt-qr-com-preview-quote-color: initial;
+  --xt-qr-link-border: initial;
+  --xt-qr-preview-accent: initial;
+  --xt-qr-preview-bg: initial;
+  --xt-quote-color: initial;
+  --xt-quote-text-color: initial;
+  --xt-scroll-marker-ghost: initial;
+  --xt-scroll-marker-ghost-opacity: initial;
+  --xt-scroll-marker-gutter: initial;
+  --xt-scroll-marker-own: initial;
+  --xt-scroll-marker-own-opacity: initial;
+  --xt-scroll-marker-track: initial;
+  --xt-scroll-marker-unread: initial;
+  --xt-scroll-marker-unread-opacity: initial;
+  --xt-scroll-marker-you: initial;
+  --xt-scroll-marker-you-opacity: initial;
+  --xt-scroll-thumb-bg: initial;
+  --xt-scrollbar-offset: initial;
+  --xt-scrollbar-width: initial;
+  --xt-search-match-bg: initial;
+  --xt-text-color: initial;
+  --xt-undo-ring-color: initial;
+  --xt-unread: initial;
+  --xt-unread-line: initial;
+  --xt-watched-border: initial;
+  --xt-watcher: initial;
+  --xt-watcher-quoting-you: initial;
+}
+
+@layer custom-property-declarations {
+  :root {
+    --background: initial;
+    --reply-background-color: initial;
+  }
+}
+
 /* General */
 .dialog {
   border: 1px solid;
@@ -56,7 +184,7 @@ a[href="javascript:;"] {
 :root.sw-yotsuba #boardNavDesktop, :root.sw-yotsuba #boardNavMobile {
   display: none !important;
 }
-:root.hide-bottom-board-list $site$boardListBottom {
+:root.hide-bottom-board-list __xt-site-boardListBottom {
   display: none;
 }
 body.hasDropDownNav{
@@ -114,7 +242,7 @@ body.hasDropDownNav{
   display: inline;
 }
 :root.sw-yotsuba .fileText {
-  max-width: auto;
+  max-width: none;
   white-space: normal;
 }
 
@@ -4454,7 +4582,7 @@ textarea.copy-text-element {
 }
 
 /* Announcement Hiding */
-:root.hide-announcement $site$psa {
+:root.hide-announcement __xt-site-psa {
   display: none;
 }
 .hide-announcement-button {
@@ -5026,12 +5154,12 @@ input[name="beepVolume"] {
   margin: 0px;
 }
 /* Fappe and Werk Tyme */
-:root.fappeTyme $site$replyOriginal.noFile,
-:root.fappeTyme $site$replyOriginal.noFile + br {
+:root.fappeTyme __xt-site-replyOriginal.noFile,
+:root.fappeTyme __xt-site-replyOriginal.noFile + br {
   display: none;
 }
-:root.werkTyme $site$thumbLink,
-:root.werkTyme $site$file$thumb,
+:root.werkTyme __xt-site-thumbLink,
+:root.werkTyme __xt-site-file-thumb,
 :root.werkTyme .catalog-thumb:not(.deleted-file):not(.no-file),
 :root:not(.werkTyme) .werkTyme-filename {
   display: none;
@@ -5075,17 +5203,17 @@ input[name="beepVolume"] {
 :root.catalog-mode #navlinks {
   display: none;
 }
-:root.highlight-own .yourPost$site$highlightable$op::after,
-:root.highlight-you .quotesYou$site$highlightable$op::after,
-.filter-highlight$site$highlightable$op::after {
+:root.highlight-own .yourPost__xt-site-highlightable-op::after,
+:root.highlight-you .quotesYou__xt-site-highlightable-op::after,
+.filter-highlight__xt-site-highlightable-op::after {
   content: "";
   display: block;
   clear: both;
 }
 
 /* Spoiler text */
-:root.reveal-spoilers $site$spoiler,
-:root.reveal-spoilers $site$spoiler > a {
+:root.reveal-spoilers __xt-site-spoiler,
+:root.reveal-spoilers __xt-site-spoiler > a {
   color: white !important;
 }
 :root.reveal-spoilers .removed-spoiler::before {
@@ -5102,7 +5230,7 @@ input[name="beepVolume"] {
   margin-right: 4px;
   padding: 2px;
 }
-$site$infoRoot a.hide-reply-button {
+__xt-site-infoRoot a.hide-reply-button {
   margin-right: 6px;
   padding: 0;
 }
@@ -5138,10 +5266,10 @@ $site$infoRoot a.hide-reply-button {
 .stub-reasons::before { content: ' ('; }
 .stub-reasons::after { content: ')'; }
 .stub-reason:not(:last-of-type)::after { content: ' & '; }
-$site$thread[hidden] + hr {
+__xt-site-thread[hidden] + hr {
   display: none;
 }
-:root.reply-hide $site$sideArrows {
+:root.reply-hide __xt-site-sideArrows {
   display: none;
 }
 :root.sw-yotsuba.thread-hide .party-hat {
@@ -5149,15 +5277,15 @@ $site$thread[hidden] + hr {
 }
 
 /* Anonymize */
-:root.anonymize $site$info$name,
+:root.anonymize __xt-site-info-name,
 :root.sw-yotsuba.anonymize .post-author:not([class*=capcode]) {
   font-size: 0;
 }
-:root.anonymize $site$info$tripcode,
+:root.anonymize __xt-site-info-tripcode,
 :root.sw-yotsuba.anonymize .n-pu {
   display: none;
 }
-:root.anonymize $site$info$name::before,
+:root.anonymize __xt-site-info-name::before,
 :root.sw-yotsuba.anonymize .post-author:not([class*=capcode])::before {
   content: "Anonymous";
   font-size: 10pt;

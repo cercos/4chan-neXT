@@ -1,3 +1,12 @@
+@layer custom-property-declarations {
+  :root {
+    --xt-background: initial;
+    --xt-border: initial;
+    --xt-dead-link: initial;
+    --xt-fxt-fg: initial;
+  }
+}
+
 :root {
   --xt-fxt-bg: var(--xt-background);
   --xt-fxt-border: var(--xt-border);

@@ -1,3 +1,95 @@
+/* Custom property declarations
+   Values are supplied by theme CSS or Styling-page inline vars. `initial`
+   preserves each var(..., fallback) chain while making names explicit. */
+:root {
+  --xt-background: initial;
+  --xt-border: initial;
+  --xt-border-field-focus: initial;
+  --xt-border-highlight: initial;
+  --xt-catalog-border-style-filter: initial;
+  --xt-catalog-border-style-own: initial;
+  --xt-catalog-border-style-watched: initial;
+  --xt-catalog-border-width: initial;
+  --xt-catalog-border-width-filter: initial;
+  --xt-catalog-border-width-own: initial;
+  --xt-catalog-border-width-watched: initial;
+  --xt-catalog-filter-dead-link: initial;
+  --xt-catalog-filter-glow-intensity: initial;
+  --xt-catalog-filter-highlight: initial;
+  --xt-catalog-filter-highlight-opacity: initial;
+  --xt-catalog-filter-link: initial;
+  --xt-catalog-filter-quote: initial;
+  --xt-catalog-filter-subject: initial;
+  --xt-catalog-filter-text: initial;
+  --xt-catalog-own-dead-link: initial;
+  --xt-catalog-own-glow-intensity: initial;
+  --xt-catalog-own-highlight: initial;
+  --xt-catalog-own-highlight-opacity: initial;
+  --xt-catalog-own-link: initial;
+  --xt-catalog-own-quote: initial;
+  --xt-catalog-own-subject: initial;
+  --xt-catalog-own-text: initial;
+  --xt-catalog-watched-dead-link: initial;
+  --xt-catalog-watched-glow-intensity: initial;
+  --xt-catalog-watched-highlight: initial;
+  --xt-catalog-watched-highlight-opacity: initial;
+  --xt-catalog-watched-link: initial;
+  --xt-catalog-watched-quote: initial;
+  --xt-catalog-watched-subject: initial;
+  --xt-catalog-watched-text: initial;
+  --xt-dead-link: initial;
+  --xt-dead-link-text-color: initial;
+  --xt-edge-style-ghost: initial;
+  --xt-edge-style-own: initial;
+  --xt-edge-style-you: initial;
+  --xt-edge-width-ghost: initial;
+  --xt-edge-width-own: initial;
+  --xt-edge-width-you: initial;
+  --xt-entry-focus-bg: initial;
+  --xt-entry-size: initial;
+  --xt-filter-highlight: initial;
+  --xt-header-dialog-bg: initial;
+  --xt-header-dialog-fg: initial;
+  --xt-header-link: initial;
+  --xt-highlight-edge-width: initial;
+  --xt-highlight-ghost: initial;
+  --xt-highlight-ghost-dead-link: initial;
+  --xt-highlight-ghost-link: initial;
+  --xt-highlight-ghost-opacity: initial;
+  --xt-highlight-ghost-quote: initial;
+  --xt-highlight-ghost-text: initial;
+  --xt-highlight-own: initial;
+  --xt-highlight-own-dead-link: initial;
+  --xt-highlight-own-link: initial;
+  --xt-highlight-own-opacity: initial;
+  --xt-highlight-own-quote: initial;
+  --xt-highlight-own-text: initial;
+  --xt-highlight-shadow: initial;
+  --xt-highlight-side-arrow: initial;
+  --xt-highlight-you: initial;
+  --xt-highlight-you-dead-link: initial;
+  --xt-highlight-you-link: initial;
+  --xt-highlight-you-opacity: initial;
+  --xt-highlight-you-quote: initial;
+  --xt-highlight-you-text: initial;
+  --xt-inline: initial;
+  --xt-link-hover-bg: initial;
+  --xt-link-text-color: initial;
+  --xt-menu-fg: initial;
+  --xt-notification-size: initial;
+  --xt-post-background: initial;
+  --xt-qphl: initial;
+  --xt-qr-bg: initial;
+  --xt-qr-link-border: initial;
+  --xt-qr-preview-bg: initial;
+  --xt-quote-text-color: initial;
+  --xt-text-color: initial;
+  --xt-unread: initial;
+  --xt-unread-line: initial;
+  --xt-watched-border: initial;
+  --xt-watcher-quoting-you: initial;
+}
+
 /* General */
 .dialog {
   background-color: var(--xt-background);
@@ -9,10 +101,10 @@
 }
 
 /* 4chan style fixes */
-:root:not(.oneechan).highlight-you.xt-edge-you .quotesYou$site$highlightable$reply {
+:root:not(.oneechan).highlight-you.xt-edge-you .quotesYou__xt-site-highlightable-reply {
   border-left: var(--xt-edge-width-you, var(--xt-highlight-edge-width, 3px)) var(--xt-edge-style-you, solid) var(--xt-border-highlight) !important;
 }
-:root:not(.oneechan).highlight-own.xt-edge-own .yourPost$site$highlightable$reply {
+:root:not(.oneechan).highlight-own.xt-edge-own .yourPost__xt-site-highlightable-reply {
   border-left: var(--xt-edge-width-own, var(--xt-highlight-edge-width, 3px)) var(--xt-edge-style-own, dashed) var(--xt-border-highlight) !important;
 }
 
@@ -81,90 +173,90 @@
 }
 
 /* Highlight-specific auto text colors derived from highlight background colors. */
-:root.xt-custom-text-colors .quotesYou$site$highlightable$op,
-:root.xt-custom-text-colors .quotesYou$site$highlightable$reply {
+:root.xt-custom-text-colors .quotesYou__xt-site-highlightable-op,
+:root.xt-custom-text-colors .quotesYou__xt-site-highlightable-reply {
   color: var(--xt-highlight-you-text, var(--xt-text-color));
 }
-:root.xt-custom-text-colors .quotesYou$site$highlightable$op .postInfo,
-:root.xt-custom-text-colors .quotesYou$site$highlightable$reply .postInfo,
-:root.xt-custom-text-colors .quotesYou$site$highlightable$op .postMessage,
-:root.xt-custom-text-colors .quotesYou$site$highlightable$reply .postMessage,
-:root.xt-custom-text-colors .quotesYou$site$highlightable$op .summary,
-:root.xt-custom-text-colors .quotesYou$site$highlightable$reply .summary,
-:root.xt-custom-text-colors .quotesYou$site$highlightable$op .fileText,
-:root.xt-custom-text-colors .quotesYou$site$highlightable$reply .fileText {
+:root.xt-custom-text-colors .quotesYou__xt-site-highlightable-op .postInfo,
+:root.xt-custom-text-colors .quotesYou__xt-site-highlightable-reply .postInfo,
+:root.xt-custom-text-colors .quotesYou__xt-site-highlightable-op .postMessage,
+:root.xt-custom-text-colors .quotesYou__xt-site-highlightable-reply .postMessage,
+:root.xt-custom-text-colors .quotesYou__xt-site-highlightable-op .summary,
+:root.xt-custom-text-colors .quotesYou__xt-site-highlightable-reply .summary,
+:root.xt-custom-text-colors .quotesYou__xt-site-highlightable-op .fileText,
+:root.xt-custom-text-colors .quotesYou__xt-site-highlightable-reply .fileText {
   color: var(--xt-highlight-you-text, var(--xt-text-color));
 }
-:root.xt-custom-text-colors .quotesYou$site$highlightable$op a,
-:root.xt-custom-text-colors .quotesYou$site$highlightable$reply a {
+:root.xt-custom-text-colors .quotesYou__xt-site-highlightable-op a,
+:root.xt-custom-text-colors .quotesYou__xt-site-highlightable-reply a {
   color: var(--xt-highlight-you-link, var(--xt-link-text-color)) !important;
 }
-:root.xt-custom-text-colors .quotesYou$site$highlightable$op .quote,
-:root.xt-custom-text-colors .quotesYou$site$highlightable$reply .quote {
+:root.xt-custom-text-colors .quotesYou__xt-site-highlightable-op .quote,
+:root.xt-custom-text-colors .quotesYou__xt-site-highlightable-reply .quote {
   color: var(--xt-highlight-you-quote, var(--xt-quote-text-color)) !important;
 }
-:root.xt-custom-text-colors .quotesYou$site$highlightable$op .backlink.deadlink,
-:root.xt-custom-text-colors .quotesYou$site$highlightable$reply .backlink.deadlink,
-:root.xt-custom-text-colors .quotesYou$site$highlightable$op .quotelink.deadlink,
-:root.xt-custom-text-colors .quotesYou$site$highlightable$reply .quotelink.deadlink {
+:root.xt-custom-text-colors .quotesYou__xt-site-highlightable-op .backlink.deadlink,
+:root.xt-custom-text-colors .quotesYou__xt-site-highlightable-reply .backlink.deadlink,
+:root.xt-custom-text-colors .quotesYou__xt-site-highlightable-op .quotelink.deadlink,
+:root.xt-custom-text-colors .quotesYou__xt-site-highlightable-reply .quotelink.deadlink {
   color: var(--xt-highlight-you-dead-link, var(--xt-dead-link-text-color, var(--xt-dead-link))) !important;
 }
 
-:root.xt-custom-text-colors .yourPost$site$highlightable$op,
-:root.xt-custom-text-colors .yourPost$site$highlightable$reply {
+:root.xt-custom-text-colors .yourPost__xt-site-highlightable-op,
+:root.xt-custom-text-colors .yourPost__xt-site-highlightable-reply {
   color: var(--xt-highlight-own-text, var(--xt-text-color));
 }
-:root.xt-custom-text-colors .yourPost$site$highlightable$op .postInfo,
-:root.xt-custom-text-colors .yourPost$site$highlightable$reply .postInfo,
-:root.xt-custom-text-colors .yourPost$site$highlightable$op .postMessage,
-:root.xt-custom-text-colors .yourPost$site$highlightable$reply .postMessage,
-:root.xt-custom-text-colors .yourPost$site$highlightable$op .summary,
-:root.xt-custom-text-colors .yourPost$site$highlightable$reply .summary,
-:root.xt-custom-text-colors .yourPost$site$highlightable$op .fileText,
-:root.xt-custom-text-colors .yourPost$site$highlightable$reply .fileText {
+:root.xt-custom-text-colors .yourPost__xt-site-highlightable-op .postInfo,
+:root.xt-custom-text-colors .yourPost__xt-site-highlightable-reply .postInfo,
+:root.xt-custom-text-colors .yourPost__xt-site-highlightable-op .postMessage,
+:root.xt-custom-text-colors .yourPost__xt-site-highlightable-reply .postMessage,
+:root.xt-custom-text-colors .yourPost__xt-site-highlightable-op .summary,
+:root.xt-custom-text-colors .yourPost__xt-site-highlightable-reply .summary,
+:root.xt-custom-text-colors .yourPost__xt-site-highlightable-op .fileText,
+:root.xt-custom-text-colors .yourPost__xt-site-highlightable-reply .fileText {
   color: var(--xt-highlight-own-text, var(--xt-text-color));
 }
-:root.xt-custom-text-colors .yourPost$site$highlightable$op a,
-:root.xt-custom-text-colors .yourPost$site$highlightable$reply a {
+:root.xt-custom-text-colors .yourPost__xt-site-highlightable-op a,
+:root.xt-custom-text-colors .yourPost__xt-site-highlightable-reply a {
   color: var(--xt-highlight-own-link, var(--xt-link-text-color)) !important;
 }
-:root.xt-custom-text-colors .yourPost$site$highlightable$op .quote,
-:root.xt-custom-text-colors .yourPost$site$highlightable$reply .quote {
+:root.xt-custom-text-colors .yourPost__xt-site-highlightable-op .quote,
+:root.xt-custom-text-colors .yourPost__xt-site-highlightable-reply .quote {
   color: var(--xt-highlight-own-quote, var(--xt-quote-text-color)) !important;
 }
-:root.xt-custom-text-colors .yourPost$site$highlightable$op .backlink.deadlink,
-:root.xt-custom-text-colors .yourPost$site$highlightable$reply .backlink.deadlink,
-:root.xt-custom-text-colors .yourPost$site$highlightable$op .quotelink.deadlink,
-:root.xt-custom-text-colors .yourPost$site$highlightable$reply .quotelink.deadlink {
+:root.xt-custom-text-colors .yourPost__xt-site-highlightable-op .backlink.deadlink,
+:root.xt-custom-text-colors .yourPost__xt-site-highlightable-reply .backlink.deadlink,
+:root.xt-custom-text-colors .yourPost__xt-site-highlightable-op .quotelink.deadlink,
+:root.xt-custom-text-colors .yourPost__xt-site-highlightable-reply .quotelink.deadlink {
   color: var(--xt-highlight-own-dead-link, var(--xt-dead-link-text-color, var(--xt-dead-link))) !important;
 }
 
-:root.xt-custom-text-colors .from-archive$site$highlightable$op,
-:root.xt-custom-text-colors .from-archive$site$highlightable$reply {
+:root.xt-custom-text-colors .from-archive__xt-site-highlightable-op,
+:root.xt-custom-text-colors .from-archive__xt-site-highlightable-reply {
   color: var(--xt-highlight-ghost-text, var(--xt-text-color));
 }
-:root.xt-custom-text-colors .from-archive$site$highlightable$op .postInfo,
-:root.xt-custom-text-colors .from-archive$site$highlightable$reply .postInfo,
-:root.xt-custom-text-colors .from-archive$site$highlightable$op .postMessage,
-:root.xt-custom-text-colors .from-archive$site$highlightable$reply .postMessage,
-:root.xt-custom-text-colors .from-archive$site$highlightable$op .summary,
-:root.xt-custom-text-colors .from-archive$site$highlightable$reply .summary,
-:root.xt-custom-text-colors .from-archive$site$highlightable$op .fileText,
-:root.xt-custom-text-colors .from-archive$site$highlightable$reply .fileText {
+:root.xt-custom-text-colors .from-archive__xt-site-highlightable-op .postInfo,
+:root.xt-custom-text-colors .from-archive__xt-site-highlightable-reply .postInfo,
+:root.xt-custom-text-colors .from-archive__xt-site-highlightable-op .postMessage,
+:root.xt-custom-text-colors .from-archive__xt-site-highlightable-reply .postMessage,
+:root.xt-custom-text-colors .from-archive__xt-site-highlightable-op .summary,
+:root.xt-custom-text-colors .from-archive__xt-site-highlightable-reply .summary,
+:root.xt-custom-text-colors .from-archive__xt-site-highlightable-op .fileText,
+:root.xt-custom-text-colors .from-archive__xt-site-highlightable-reply .fileText {
   color: var(--xt-highlight-ghost-text, var(--xt-text-color));
 }
-:root.xt-custom-text-colors .from-archive$site$highlightable$op a,
-:root.xt-custom-text-colors .from-archive$site$highlightable$reply a {
+:root.xt-custom-text-colors .from-archive__xt-site-highlightable-op a,
+:root.xt-custom-text-colors .from-archive__xt-site-highlightable-reply a {
   color: var(--xt-highlight-ghost-link, var(--xt-link-text-color)) !important;
 }
-:root.xt-custom-text-colors .from-archive$site$highlightable$op .quote,
-:root.xt-custom-text-colors .from-archive$site$highlightable$reply .quote {
+:root.xt-custom-text-colors .from-archive__xt-site-highlightable-op .quote,
+:root.xt-custom-text-colors .from-archive__xt-site-highlightable-reply .quote {
   color: var(--xt-highlight-ghost-quote, var(--xt-quote-text-color)) !important;
 }
-:root.xt-custom-text-colors .from-archive$site$highlightable$op .backlink.deadlink,
-:root.xt-custom-text-colors .from-archive$site$highlightable$reply .backlink.deadlink,
-:root.xt-custom-text-colors .from-archive$site$highlightable$op .quotelink.deadlink,
-:root.xt-custom-text-colors .from-archive$site$highlightable$reply .quotelink.deadlink {
+:root.xt-custom-text-colors .from-archive__xt-site-highlightable-op .backlink.deadlink,
+:root.xt-custom-text-colors .from-archive__xt-site-highlightable-reply .backlink.deadlink,
+:root.xt-custom-text-colors .from-archive__xt-site-highlightable-op .quotelink.deadlink,
+:root.xt-custom-text-colors .from-archive__xt-site-highlightable-reply .quotelink.deadlink {
   color: var(--xt-highlight-ghost-dead-link, var(--xt-dead-link-text-color, var(--xt-dead-link))) !important;
 }
 
@@ -222,64 +314,64 @@
    Edge and fill are mutually exclusive: the colored edge only draws in edge mode
    (.xt-edge-*), the fill only in background mode (:not(.xt-edge-*)). Otherwise a
    lowered-opacity fill would let the edge bleed through as a second layer. */
-:root.highlight-you.xt-edge-you .quotesYou$site$highlightable$op,
-:root.highlight-you.xt-edge-you .quotesYou$site$highlightable$reply {
+:root.highlight-you.xt-edge-you .quotesYou__xt-site-highlightable-op,
+:root.highlight-you.xt-edge-you .quotesYou__xt-site-highlightable-reply {
   border-left: var(--xt-edge-width-you, var(--xt-highlight-edge-width, 3px)) var(--xt-edge-style-you, solid) color-mix(in srgb, var(--xt-highlight-you, var(--xt-border-highlight)) calc(var(--xt-highlight-you-opacity, 1) * 100%), transparent);
 }
-:root.highlight-you:not(.xt-edge-you) .quotesYou$site$highlightable$op,
-:root.highlight-you:not(.xt-edge-you) .quotesYou$site$highlightable$reply {
+:root.highlight-you:not(.xt-edge-you) .quotesYou__xt-site-highlightable-op,
+:root.highlight-you:not(.xt-edge-you) .quotesYou__xt-site-highlightable-reply {
   background-color: color-mix(in srgb, var(--xt-highlight-you, var(--xt-border-highlight)) calc(var(--xt-highlight-you-opacity, 1) * 100%), var(--xt-post-background, var(--xt-background, transparent)));
 }
-:root.highlight-own.xt-edge-own .yourPost$site$highlightable$op,
-:root.highlight-own.xt-edge-own .yourPost$site$highlightable$reply {
+:root.highlight-own.xt-edge-own .yourPost__xt-site-highlightable-op,
+:root.highlight-own.xt-edge-own .yourPost__xt-site-highlightable-reply {
   border-left: var(--xt-edge-width-own, var(--xt-highlight-edge-width, 3px)) var(--xt-edge-style-own, dashed) color-mix(in srgb, var(--xt-highlight-own, var(--xt-border-highlight)) calc(var(--xt-highlight-own-opacity, 1) * 100%), transparent);
 }
-:root.highlight-own:not(.xt-edge-own) .yourPost$site$highlightable$op,
-:root.highlight-own:not(.xt-edge-own) .yourPost$site$highlightable$reply {
+:root.highlight-own:not(.xt-edge-own) .yourPost__xt-site-highlightable-op,
+:root.highlight-own:not(.xt-edge-own) .yourPost__xt-site-highlightable-reply {
   background-color: color-mix(in srgb, var(--xt-highlight-own, var(--xt-border-highlight)) calc(var(--xt-highlight-own-opacity, 1) * 100%), var(--xt-post-background, var(--xt-background, transparent)));
 }
-:root.highlight-ghost.xt-edge-ghost .from-archive$site$highlightable$op,
-:root.highlight-ghost.xt-edge-ghost .from-archive$site$highlightable$reply {
+:root.highlight-ghost.xt-edge-ghost .from-archive__xt-site-highlightable-op,
+:root.highlight-ghost.xt-edge-ghost .from-archive__xt-site-highlightable-reply {
   border-left: var(--xt-edge-width-ghost, var(--xt-highlight-edge-width, 3px)) var(--xt-edge-style-ghost, dotted) color-mix(in srgb, var(--xt-highlight-ghost, #888) calc(var(--xt-highlight-ghost-opacity, 1) * 100%), transparent);
 }
-:root.highlight-ghost:not(.xt-edge-ghost) .from-archive$site$highlightable$op,
-:root.highlight-ghost:not(.xt-edge-ghost) .from-archive$site$highlightable$reply {
+:root.highlight-ghost:not(.xt-edge-ghost) .from-archive__xt-site-highlightable-op,
+:root.highlight-ghost:not(.xt-edge-ghost) .from-archive__xt-site-highlightable-reply {
   background-color: color-mix(in srgb, var(--xt-highlight-ghost, #888) calc(var(--xt-highlight-ghost-opacity, 1) * 100%), var(--xt-post-background, var(--xt-background, transparent)));
 }
 /* When a highlight color is explicitly configured, force it with !important so
    custom site themes that use `!important` on `.reply` can't suppress it. The
    background fill stays gated on :not(.xt-edge-*) for the same reason as above. */
-:root.xt-set-you-highlight.highlight-you.xt-edge-you .quotesYou$site$highlightable$op,
-:root.xt-set-you-highlight.highlight-you.xt-edge-you .quotesYou$site$highlightable$reply {
+:root.xt-set-you-highlight.highlight-you.xt-edge-you .quotesYou__xt-site-highlightable-op,
+:root.xt-set-you-highlight.highlight-you.xt-edge-you .quotesYou__xt-site-highlightable-reply {
   border-left: var(--xt-edge-width-you, var(--xt-highlight-edge-width, 3px)) var(--xt-edge-style-you, solid) color-mix(in srgb, var(--xt-highlight-you) calc(var(--xt-highlight-you-opacity, 1) * 100%), transparent) !important;
 }
-:root.xt-set-you-highlight.highlight-you:not(.xt-edge-you) .quotesYou$site$highlightable$op,
-:root.xt-set-you-highlight.highlight-you:not(.xt-edge-you) .quotesYou$site$highlightable$reply {
+:root.xt-set-you-highlight.highlight-you:not(.xt-edge-you) .quotesYou__xt-site-highlightable-op,
+:root.xt-set-you-highlight.highlight-you:not(.xt-edge-you) .quotesYou__xt-site-highlightable-reply {
   background-color: color-mix(in srgb, var(--xt-highlight-you) calc(var(--xt-highlight-you-opacity, 1) * 100%), var(--xt-post-background, var(--xt-background, transparent))) !important;
 }
-:root.xt-set-own-highlight.highlight-own.xt-edge-own .yourPost$site$highlightable$op,
-:root.xt-set-own-highlight.highlight-own.xt-edge-own .yourPost$site$highlightable$reply {
+:root.xt-set-own-highlight.highlight-own.xt-edge-own .yourPost__xt-site-highlightable-op,
+:root.xt-set-own-highlight.highlight-own.xt-edge-own .yourPost__xt-site-highlightable-reply {
   border-left: var(--xt-edge-width-own, var(--xt-highlight-edge-width, 3px)) var(--xt-edge-style-own, dashed) color-mix(in srgb, var(--xt-highlight-own) calc(var(--xt-highlight-own-opacity, 1) * 100%), transparent) !important;
 }
-:root.xt-set-own-highlight.highlight-own:not(.xt-edge-own) .yourPost$site$highlightable$op,
-:root.xt-set-own-highlight.highlight-own:not(.xt-edge-own) .yourPost$site$highlightable$reply {
+:root.xt-set-own-highlight.highlight-own:not(.xt-edge-own) .yourPost__xt-site-highlightable-op,
+:root.xt-set-own-highlight.highlight-own:not(.xt-edge-own) .yourPost__xt-site-highlightable-reply {
   background-color: color-mix(in srgb, var(--xt-highlight-own) calc(var(--xt-highlight-own-opacity, 1) * 100%), var(--xt-post-background, var(--xt-background, transparent))) !important;
 }
-:root.xt-set-ghost-highlight.highlight-ghost.xt-edge-ghost .from-archive$site$highlightable$op,
-:root.xt-set-ghost-highlight.highlight-ghost.xt-edge-ghost .from-archive$site$highlightable$reply {
+:root.xt-set-ghost-highlight.highlight-ghost.xt-edge-ghost .from-archive__xt-site-highlightable-op,
+:root.xt-set-ghost-highlight.highlight-ghost.xt-edge-ghost .from-archive__xt-site-highlightable-reply {
   border-left: var(--xt-edge-width-ghost, var(--xt-highlight-edge-width, 3px)) var(--xt-edge-style-ghost, dotted) color-mix(in srgb, var(--xt-highlight-ghost) calc(var(--xt-highlight-ghost-opacity, 1) * 100%), transparent) !important;
 }
-:root.xt-set-ghost-highlight.highlight-ghost:not(.xt-edge-ghost) .from-archive$site$highlightable$op,
-:root.xt-set-ghost-highlight.highlight-ghost:not(.xt-edge-ghost) .from-archive$site$highlightable$reply {
+:root.xt-set-ghost-highlight.highlight-ghost:not(.xt-edge-ghost) .from-archive__xt-site-highlightable-op,
+:root.xt-set-ghost-highlight.highlight-ghost:not(.xt-edge-ghost) .from-archive__xt-site-highlightable-reply {
   background-color: color-mix(in srgb, var(--xt-highlight-ghost) calc(var(--xt-highlight-ghost-opacity, 1) * 100%), var(--xt-post-background, var(--xt-background, transparent))) !important;
 }
-.filter-highlight$site$highlightable$op,
-.filter-highlight$site$highlightable$reply {
+.filter-highlight__xt-site-highlightable-op,
+.filter-highlight__xt-site-highlightable-reply {
   box-shadow: inset 5px 0 var(--xt-filter-highlight, rgba(221, 0, 0, .5));
 }
-:root.highlight-own .yourPost > $site$sideArrows,
-:root.highlight-you .quotesYou > $site$sideArrows,
-.filter-highlight > $site$sideArrows {
+:root.highlight-own .yourPost > __xt-site-sideArrows,
+:root.highlight-you .quotesYou > __xt-site-sideArrows,
+.filter-highlight > __xt-site-sideArrows {
   color: var(--xt-highlight-side-arrow, rgba(221, 0, 0, .8));
 }
 
@@ -290,7 +382,7 @@
 :root.werkTyme .catalog-thread.filter-highlight:not(:hover),
 :root.werkTyme:not(.catalog-hover-expand) .catalog-thread.filter-highlight,
 :root.werkTyme.catalog-hover-expand .catalog-thread.filter-highlight > .catalog-container:hover > .catalog-post,
-:root.catalog $site$catalog$thread.filter-highlight:not(.filter-glow-tile)$site$highlightable$catalog {
+:root.catalog __xt-site-catalog-thread.filter-highlight:not(.filter-glow-tile)__xt-site-highlightable-catalog {
   box-shadow: 0 0 calc(var(--xt-catalog-filter-glow-intensity, .5) * 6px) calc(var(--xt-catalog-filter-glow-intensity, .5) * 6px) var(--xt-catalog-filter-highlight, var(--xt-highlight-shadow, rgba(255, 0, 0, .5)));
 }
 /* Per-filter `;tile` keyword: glow around the whole catalog entry (image +

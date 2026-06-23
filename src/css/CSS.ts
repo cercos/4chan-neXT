@@ -80,8 +80,12 @@ const CSS = {
     var variables = {
       site: g.SITE?.selectors || {}
     };
-    return css.replace(/\$[\w\$]+/g, function(name) {
-      var words = name.slice(1).split('$');
+    return css.replace(/\$[\w\$]+|__xt-[\w-]+/g, function(name) {
+      // `__xt-site-...` is an IDE-valid equivalent of the older dollar-token
+      // placeholder syntax used inside raw CSS selectors.
+      var words = name[0] === '$'
+        ? name.slice(1).split('$')
+        : name.slice('__xt-'.length).split('-');
       var sel = variables;
       for (var i = 0; i < words.length; i++) {
         if (typeof sel !== 'object') return ':not(*)';
