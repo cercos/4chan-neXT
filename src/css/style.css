@@ -2768,8 +2768,9 @@ body > #overlay:not(.media-preview) {
 }
 .section-styling .styling-hl-olabel {
   min-width: 0;
-  opacity: .95;
   font-size: 11.5px;
+  font-weight: 500;
+  opacity: .9;
 }
 .section-styling .styling-hl-octl {
   align-items: center;
