@@ -103,10 +103,6 @@ var Settings: any = {
   detailsState: dict() as Record<string, boolean>,
   pointerDownInsideDialog: false,
   customCSSEditorThemeObserver: null as MutationObserver | null,
-  stylingPreviewPanel: null as HTMLDivElement | null,
-  stylingPreviewAttached: true,
-  stylingPreviewAttachResizeObserver: null as ResizeObserver | null,
-  stylingPreviewAttachRaf: null as number | null,
   activeSiteStylePicker: null as HTMLElement | null,
   siteStylePickerOutsideHandler: null as ((e: Event) => void) | null,
   textareaSavedFlashTimers: new WeakMap<HTMLTextAreaElement, number>(),
@@ -167,7 +163,6 @@ var Settings: any = {
     settingsWindow.style.margin = '0';
     settingsWindow.style.transform = 'none';
     dragstart.call(this, e);
-    Settings.followAttachedStylingPreviewDuringDrag(e);
   },
 
   init() {
@@ -479,8 +474,7 @@ var Settings: any = {
     $.on(window, 'beforeunload', Settings.close);
     $.on(dialog, 'mousedown touchstart', e => {
       const target = e.target as Node;
-      Settings.pointerDownInsideDialog =
-        settingsWindow.contains(target) || !!Settings.stylingPreviewPanel?.contains(target);
+      Settings.pointerDownInsideDialog = settingsWindow.contains(target);
     });
     $.on(dialog, 'click', e => {
       if (e.target !== dialog) { return; }
@@ -550,7 +544,6 @@ var Settings: any = {
     Settings.detailsState = dict();
     Settings.customCSSEditorThemeObserver?.disconnect();
     Settings.customCSSEditorThemeObserver = null;
-    Settings.closeStylingPreview();
     if (Settings.siteStylePickerOutsideHandler) {
       d.removeEventListener('mousedown', Settings.siteStylePickerOutsideHandler, true);
       Settings.siteStylePickerOutsideHandler = null;
@@ -1317,7 +1310,6 @@ var Settings: any = {
 
   openSection(this: { title: string }) {
     Settings.activeSection = this;
-    if (this.title !== 'Styling') Settings.closeStylingPreview();
     Settings.selectSectionTab(this);
     if (Settings.searchQuery && this.title !== 'All Settings') {
       Settings.ensureAllSettingsRendered();
@@ -3262,24 +3254,6 @@ Enable it on boards.${location.hostname.split('.')[1]}.org in your browser's pri
     // Highlight rows are an accordion: one open at a time. Clicks on a row's
     // colour swatch edit in place rather than collapsing it.
     const accItems = $$('.styling-hl-acc-item', section) as HTMLElement[];
-    let activePreviewHoverRow = '';
-    const setPreviewHoverRow = (row = '') => {
-      activePreviewHoverRow = row;
-      Settings.setStylingPreviewHoverState(row);
-    };
-    for (const item of accItems) {
-      const row = item.dataset.highlightRow || '';
-      if (!row || row === 'unread') continue;
-      $.on(item, 'mouseenter', () => setPreviewHoverRow(row));
-      $.on(item, 'mouseleave', () => {
-        if (activePreviewHoverRow === row) setPreviewHoverRow();
-      });
-      $.on(item, 'focusin', () => setPreviewHoverRow(row));
-      $.on(item, 'focusout', (e: FocusEvent) => {
-        if (item.contains(e.relatedTarget as Node | null)) return;
-        if (activePreviewHoverRow === row) setPreviewHoverRow();
-      });
-    }
     const updatePreviewStateFromRows = refreshStylingPreview;
     for (const head of $$('.styling-hl-acc-head', section) as HTMLElement[]) {
       $.on(head, 'click', (e: Event) => {
@@ -3301,6 +3275,10 @@ Enable it on boards.${location.hostname.split('.')[1]}.org in your browser's pri
       'Highlight Own Edge Width', 'Highlight You Edge Width', 'Highlight Ghost Edge Width',
       'Catalog Highlight Own Border Width', 'Catalog Highlight Watched Border Width', 'Catalog Highlight Filter Border Width',
     ];
+    // Thread edges always show (min 1), but a catalog border can be turned off (min 0).
+    const zeroWidthAllowedKeys = new Set([
+      'Catalog Highlight Own Border Width', 'Catalog Highlight Watched Border Width', 'Catalog Highlight Filter Border Width',
+    ]);
     const borderStyleInputKeys = new Set([
       'Highlight Own Border Style', 'Highlight You Border Style', 'Highlight Ghost Border Style',
       'Catalog Highlight Own Border Style', 'Catalog Highlight Watched Border Style', 'Catalog Highlight Filter Border Style',
@@ -3310,12 +3288,13 @@ Enable it on boards.${location.hostname.split('.')[1]}.org in your browser's pri
     for (const key of widthInputKeys) {
       const inp = inputs[key];
       if (!inp) continue;
+      const min = zeroWidthAllowedKeys.has(key) ? 0 : 1;
       const apply = () => { Settings.applyStylingVars(); refreshStylingPreview(); };
       $.on(inp, 'input', apply);
       $.on(inp, 'change', () => {
         let n = parseInt(inp.value, 10);
         if (!Number.isFinite(n)) n = 3;
-        n = Math.min(12, Math.max(1, n));
+        n = Math.min(12, Math.max(min, n));
         inp.value = String(n);
         writeEditConf(key, n);
         apply();
@@ -3934,16 +3913,6 @@ Enable it on boards.${location.hostname.split('.')[1]}.org in your browser's pri
       renderSavedPalettes();
     });
 
-    const openPreview = $('#styling-open-preview', section);
-    if (openPreview) {
-      if (Settings.stylingPreviewPanel?.isConnected) {
-        openPreview.textContent = 'Hide preview';
-      }
-      $.on(openPreview, 'click', () => {
-        Settings.openStylingPreview(section);
-        updatePreviewStateFromRows();
-      });
-    }
     const siteStyleInput = inputs['siteStyle'];
     if (siteStyleInput) {
       $.on(siteStyleInput, 'change', refreshSuggestedPalettesIfOpen);
@@ -4231,320 +4200,131 @@ Enable it on boards.${location.hostname.split('.')[1]}.org in your browser's pri
         summary: '4 posts and 2 image replies',
         excerpt: 'recent reply preview',
       },
+      // Preview-only trigger classes (xtcat-*) instead of the real
+      // yourPost/watched/filter-highlight, so the document-level real-board
+      // catalog rules can't leak into and fight this live preview.
       'catalog-own': {
         subject: 'Your catalog post',
-        extraThreadClass: 'yourPost',
-        extraContainerClass: 'yourPost',
-        extraPostClass: 'yourPost',
+        extraThreadClass: 'xtcat-own',
+        extraContainerClass: 'xtcat-own',
+        extraPostClass: 'xtcat-own',
         messageHTML: sampleMessageHTML,
         summary: 'You replied in this thread',
         excerpt: 'your reply preview',
       },
       'catalog-watched': {
         subject: 'Watched catalog',
-        extraThreadClass: 'watched',
+        extraThreadClass: 'xtcat-watched',
         extraContainerClass: '',
         extraPostClass: '',
         messageHTML: sampleMessageHTML,
         summary: 'Watched thread preview',
         excerpt: 'watched reply preview',
+      },
+      'catalog-filter': {
+        subject: 'Filtered thread',
+        extraThreadClass: 'xtcat-filter',
+        extraContainerClass: 'xtcat-filter',
+        extraPostClass: 'xtcat-filter',
+        messageHTML: sampleMessageHTML,
+        summary: 'Filtered thread preview',
+        excerpt: 'filtered reply preview',
       }
     };
     return states[state as keyof typeof states] || states.default;
   },
 
-  stylingPreviewContentHTML() {
-    const threadState = Settings.stylingPreviewThreadState();
-    const catalogState = Settings.stylingPreviewCatalogState();
-    return `
-      <div class="styling-preview-layout">
-        <div class="board styling-preview-thread" data-preview-panel="thread" aria-label="Thread highlight states">
-          <div class="thread" id="t503286550">
-            ${Settings.stylingPreviewPostHTML({ postID: 503286554, subject: threadState.subject, extraClass: threadState.extraClass, messageHTML: threadState.messageHTML })}
-          </div>
-        </div>
-        <div class="board styling-preview-catalog catalog-small" data-preview-panel="catalog" aria-label="Catalog highlight states">
-          ${Settings.stylingPreviewCatalogThreadHTML({ threadID: 503286581, postID: 503286581, ...catalogState })}
-        </div>
-      </div>
-    `;
-  },
-
-  setStylingPreviewHoverState(row = '') {
-    const panel = Settings.stylingPreviewPanel;
-    if (!panel) return;
-    const threadStateName = ['own', 'you', 'ghost'].includes(row) ? row : 'default';
-    const catalogStateName = ['catalog-own', 'catalog-watched'].includes(row) ? row : 'default';
-    const threadState = Settings.stylingPreviewThreadState(threadStateName);
-    const catalogState = Settings.stylingPreviewCatalogState(catalogStateName);
-
-    panel.dataset.previewHoverState = row || 'default';
-
-    const postContainer = $('.styling-preview-post', panel) as HTMLElement | null;
-    const postSubject = $('.styling-preview-post .postInfo.desktop .subject', panel) as HTMLElement | null;
-    const postMessage = $('.styling-preview-post .postMessage', panel) as HTMLElement | null;
-    if (postContainer) {
-      postContainer.className = `postContainer replyContainer styling-preview-post ${threadState.extraClass}`.trim();
-    }
-    if (postSubject) postSubject.textContent = threadState.subject;
-    if (postMessage) postMessage.innerHTML = threadState.messageHTML;
-
-    const catalogThread = $('.styling-preview-catalog > .catalog-thread', panel) as HTMLElement | null;
-    const catalogContainer = $('.styling-preview-catalog .catalog-container', panel) as HTMLElement | null;
-    const catalogPost = $('.styling-preview-catalog .catalog-post', panel) as HTMLElement | null;
-    const catalogSubject = $('.styling-preview-catalog .catalog-post > .postInfo .subject', panel) as HTMLElement | null;
-    const catalogMessage = $('.styling-preview-catalog .catalog-post > .postMessage', panel) as HTMLElement | null;
-    const catalogSummary = $('.styling-preview-catalog .preview-summary', panel) as HTMLElement | null;
-    const catalogExcerpt = $('.styling-preview-catalog .catalog-reply-excerpt', panel) as HTMLElement | null;
-    if (catalogThread) catalogThread.className = `thread catalog-thread ${catalogState.extraThreadClass}`.trim();
-    if (catalogContainer) catalogContainer.className = `postContainer catalog-container ${catalogState.extraContainerClass}`.trim();
-    if (catalogPost) catalogPost.className = `post catalog-post ${catalogState.extraPostClass}`.trim();
-    if (catalogSubject) catalogSubject.textContent = catalogState.subject;
-    if (catalogMessage) catalogMessage.innerHTML = catalogState.messageHTML;
-    if (catalogSummary) catalogSummary.textContent = catalogState.summary;
-    if (catalogExcerpt) catalogExcerpt.textContent = catalogState.excerpt;
-  },
-
-  openStylingPreview(section?: HTMLElement) {
-    if (!Settings.dialog) return;
-    const targetSection = section || ($('.section-styling', Settings.dialog) as HTMLElement | null);
-    const trigger = Settings.dialog ? ($('#styling-open-preview', Settings.dialog) as HTMLButtonElement | null) : null;
-
-    if (Settings.stylingPreviewPanel && Settings.stylingPreviewPanel.isConnected) {
-      Settings.closeStylingPreview();
-      return;
-    }
-
-    if (!targetSection) return;
-
-    const panel = $.el('div', { id: 'styling-preview-window', className: 'styling-preview dialog' }) as HTMLDivElement;
-    panel.dataset.previewView = 'both';
-    panel.innerHTML = `
-      <div class="styling-preview-titlebar move">
-        <span class="styling-preview-title">Styling Preview</span>
-        <span class="styling-preview-titlebar-actions">
-          <a href="#" class="attach styling-preview-attach" title="Attach to Settings"></a>
-          <a href="#" class="close styling-preview-close" title="Close">✕</a>
-        </span>
-      </div>
-      ${Settings.stylingPreviewContentHTML()}
-    `;
-
-    const attach = $('.styling-preview-attach', panel) as HTMLAnchorElement | null;
-    if (attach) {
-      Icon.set(attach, 'link');
-      $.on(attach, 'click', e => {
-        e.preventDefault();
-        if (Settings.stylingPreviewAttached) {
-          Settings.detachStylingPreview();
-        } else {
-          Settings.attachStylingPreview();
-        }
-      });
-      $.on(attach, 'touchstart mousedown', e => e.stopPropagation());
-    }
-    $.on($('.styling-preview-close', panel), 'click', e => {
-      e.preventDefault();
-      Settings.closeStylingPreview();
-    });
-    $.on($('.styling-preview-close', panel), 'touchstart mousedown', e => e.stopPropagation());
-    $.on($('.move', panel), 'touchstart mousedown', e => Settings.prepareStylingPreviewDrag(e));
-    $.on(panel, 'click', e => e.stopPropagation());
-
-    $.add(Settings.dialog, panel);
-    Settings.stylingPreviewPanel = panel;
-    Settings.stylingPreviewAttached = true;
-    Settings.attachStylingPreview();
-    if (trigger) trigger.textContent = 'Hide preview';
-    Settings.setStylingPreviewHoverState();
-    Settings.refreshStylingPreviewFromDialog();
-  },
-
-  updateStylingPreviewAttachButton() {
-    const panel = Settings.stylingPreviewPanel;
-    if (!panel) return;
-    const attach = $('.styling-preview-attach', panel) as HTMLElement | null;
-    if (!attach) return;
-    attach.classList.toggle('attached', Settings.stylingPreviewAttached);
-    attach.title = Settings.stylingPreviewAttached ? 'Detach from Settings' : 'Attach to Settings';
-  },
-
-  attachStylingPreview() {
-    const panel = Settings.stylingPreviewPanel;
-    if (!panel || !Settings.dialog) return;
-    Settings.stylingPreviewAttached = true;
-    panel.classList.add('styling-preview-attached');
-    panel.classList.remove('styling-preview-detached');
-    Settings.updateStylingPreviewAttachButton();
-    Settings.positionAttachedStylingPreview();
-    Settings.observeStylingPreviewAttachTarget();
-  },
-
-  detachStylingPreview() {
-    const panel = Settings.stylingPreviewPanel;
-    if (!panel) return;
-    const rect = panel.getBoundingClientRect();
-    Settings.stylingPreviewAttached = false;
-    panel.classList.remove('styling-preview-attached');
-    panel.classList.add('styling-preview-detached');
-    Settings.stopObservingStylingPreviewAttachTarget();
-    panel.style.left = `${rect.left}px`;
-    panel.style.top = `${rect.top}px`;
-    panel.style.width = `${rect.width}px`;
-    panel.style.height = `${rect.height}px`;
-    panel.style.right = '';
-    panel.style.bottom = '';
-    panel.style.maxHeight = '';
-    Settings.updateStylingPreviewAttachButton();
-  },
-
-  stylingPreviewDefaultHeight() {
-    const panel = Settings.stylingPreviewPanel;
-    if (!panel) return 280;
-
-    const titlebar = $('.styling-preview-titlebar', panel) as HTMLElement | null;
-    const layout = $('.styling-preview-layout', panel) as HTMLElement | null;
-    const catalogThread = $('.styling-preview-catalog > .catalog-thread', panel) as HTMLElement | null;
-    const titlebarHeight = Math.ceil(titlebar?.getBoundingClientRect().height || 0);
-    const catalogHeight = Math.ceil(catalogThread?.getBoundingClientRect().height || 225);
-    let layoutChrome = 24;
-
-    if (layout) {
-      const cs = window.getComputedStyle(layout);
-      layoutChrome =
-        parseFloat(cs.paddingTop || '0') +
-        parseFloat(cs.paddingBottom || '0') +
-        parseFloat(cs.borderTopWidth || '0') +
-        parseFloat(cs.borderBottomWidth || '0');
-    }
-
-    return Math.ceil(titlebarHeight + layoutChrome + catalogHeight + 52);
-  },
-
-  prepareStylingPreviewDrag(e: Event) {
-    const panel = Settings.stylingPreviewPanel;
-    if (!panel) return;
-    const target = e.target as HTMLElement;
-    if (target.closest('.styling-preview-titlebar-actions')) return;
-    if (Settings.stylingPreviewAttached) Settings.detachStylingPreview();
-    dragstart.call(target, e);
-  },
-
-  positionAttachedStylingPreview() {
-    const panel = Settings.stylingPreviewPanel;
-    if (!panel || !Settings.dialog || !Settings.stylingPreviewAttached) return;
-    const settingsWindow = $('#fourchanx-settings', Settings.dialog) as HTMLDivElement | null;
-    if (!settingsWindow) return;
-    const rect = settingsWindow.getBoundingClientRect();
-    panel.style.left = `${Math.max(0, rect.left)}px`;
-    panel.style.right = '';
-    panel.style.top = `${Math.max(0, rect.bottom)}px`;
-    panel.style.bottom = '';
-    panel.style.width = `${Math.max(320, rect.width)}px`;
-    if (!panel.style.height) {
-      const height = Math.min(Settings.stylingPreviewDefaultHeight(), Math.max(260, window.innerHeight - rect.bottom));
-      panel.style.height = `${height}px`;
-    }
-    panel.style.maxHeight = '';
-  },
-
-  queueAttachedStylingPreviewPosition() {
-    if (Settings.stylingPreviewAttachRaf != null) return;
-    Settings.stylingPreviewAttachRaf = requestAnimationFrame(() => {
-      Settings.stylingPreviewAttachRaf = null;
-      Settings.positionAttachedStylingPreview();
-    });
-  },
-
-  followAttachedStylingPreviewDuringDrag(e: Event) {
-    if (!Settings.stylingPreviewPanel || !Settings.stylingPreviewAttached) return;
-    const isTouch = e.type === 'touchstart';
-    const move = () => Settings.queueAttachedStylingPreviewPosition();
-    const stop = () => {
-      $.off(d, isTouch ? 'touchmove' : 'mousemove', move);
-      $.off(d, isTouch ? 'touchend touchcancel' : 'mouseup', stop);
-      Settings.positionAttachedStylingPreview();
-    };
-    $.on(d, isTouch ? 'touchmove' : 'mousemove', move);
-    $.on(d, isTouch ? 'touchend touchcancel' : 'mouseup', stop);
-  },
-
-  observeStylingPreviewAttachTarget() {
-    if (!Settings.dialog || !Settings.stylingPreviewPanel) return;
-    const settingsWindow = $('#fourchanx-settings', Settings.dialog) as HTMLDivElement | null;
-    if (!settingsWindow) return;
-    Settings.stopObservingStylingPreviewAttachTarget();
-    if (typeof ResizeObserver !== 'undefined') {
-      Settings.stylingPreviewAttachResizeObserver = new ResizeObserver(() => Settings.queueAttachedStylingPreviewPosition());
-      Settings.stylingPreviewAttachResizeObserver.observe(settingsWindow);
-    }
-    $.on(window, 'resize', Settings.positionAttachedStylingPreview);
-  },
-
-  stopObservingStylingPreviewAttachTarget() {
-    Settings.stylingPreviewAttachResizeObserver?.disconnect();
-    Settings.stylingPreviewAttachResizeObserver = null;
-    if (Settings.stylingPreviewAttachRaf != null) {
-      cancelAnimationFrame(Settings.stylingPreviewAttachRaf);
-      Settings.stylingPreviewAttachRaf = null;
-    }
-    $.off(window, 'resize', Settings.positionAttachedStylingPreview);
-  },
-
-  closeStylingPreview() {
-    if (!Settings.stylingPreviewPanel) return;
-    const trigger = Settings.dialog ? ($('#styling-open-preview', Settings.dialog) as HTMLButtonElement | null) : null;
-    if (trigger) trigger.textContent = 'Preview states';
-    Settings.stopObservingStylingPreviewAttachTarget();
-    $.rm(Settings.stylingPreviewPanel);
-    Settings.stylingPreviewPanel = null;
-    Settings.stylingPreviewAttached = true;
-  },
-
   refreshStylingPreviewFromDialog() {
-    const panel = Settings.stylingPreviewPanel;
-    if (!panel) return;
-    if (!panel.isConnected) {
-      Settings.stylingPreviewPanel = null;
-      return;
-    }
+    const editVariant = Settings.stylingEditingVariant || Settings.getBoardVariant();
+    const storageKeyFor = (name: string) => Settings.styleVariantKeySet.has(name)
+      ? Settings.variantKey(name, editVariant)
+      : name;
+    const findInput = (name: string) => {
+      if (!Settings.dialog) return null;
+      return $(`[name="${name}"], [name="${storageKeyFor(name)}"]`, Settings.dialog) as HTMLInputElement | HTMLSelectElement | null;
+    };
+    const readConf = (name: string) => {
+      const storageKey = storageKeyFor(name);
+      return Conf[storageKey] == null ? Conf[name] : Conf[storageKey];
+    };
     const readChecked = (name: string, fallback = false) => {
-      const input = Settings.dialog ? ($(`[name="${name}"]`, Settings.dialog) as HTMLInputElement | null) : null;
+      const input = findInput(name) as HTMLInputElement | null;
       if (input) return !!input.checked;
-      return Conf[name] == null ? fallback : !!Conf[name];
+      const value = readConf(name);
+      return value == null ? fallback : !!value;
     };
     const readOpacity = (name: string) => {
-      const input = Settings.dialog ? ($(`[name="${name}"]`, Settings.dialog) as HTMLInputElement | null) : null;
-      const value = input ? input.value : Conf[name];
+      const input = findInput(name) as HTMLInputElement | null;
+      const value = input ? input.value : readConf(name);
       if (value === '' || value == null) return 1;
       const opacity = parseFloat(String(value));
       return Number.isFinite(opacity) ? $.minmax(opacity, 0, 1) : 1;
     };
-    // The preview is a pure style demonstrator: it always renders every highlight so
-    // hovering a row previews that style even when its on-page toggle is off (you can
-    // see what it would look like before enabling it). The enable toggles only govern
-    // the real board, not this preview; edge/background and colours still reflect the
-    // configured style so the preview is accurate.
-    panel.dataset.highlightOwn = 'true';
-    panel.dataset.highlightYou = 'true';
-    panel.dataset.highlightGhost = 'true';
-    panel.dataset.highlightCatalogOwn = 'true';
-    panel.dataset.highlightCatalogWatched = 'true';
+    const readValue = (name: string) => {
+      const input = findInput(name);
+      if (input) return input.value;
+      const value = readConf(name);
+      return value == null ? '' : String(value);
+    };
 
-    // dataset.edge* drives the preview's edge-only styling: edge-only === background off.
-    panel.dataset.edgeOwn = readChecked('Highlight Own Background', false) ? 'false' : 'true';
-    panel.dataset.edgeYou = readChecked('Highlight You Background', false) ? 'false' : 'true';
-    panel.dataset.edgeGhost = readChecked('Highlight Ghost Background', false) ? 'false' : 'true';
-    panel.dataset.edgeCatalogOwn = readChecked('Catalog Highlight Own Background', false) ? 'false' : 'true';
-    panel.dataset.edgeCatalogWatched = readChecked('Catalog Highlight Watched Background', false) ? 'false' : 'true';
-    panel.dataset.textCatalogOwn =
-      (panel.dataset.edgeCatalogOwn !== 'true' && readOpacity('Catalog Highlight Own Opacity') > 0) ? 'true' : 'false';
-    panel.dataset.textCatalogWatched =
-      (panel.dataset.edgeCatalogWatched !== 'true' && readOpacity('Catalog Highlight Watched Opacity') > 0) ? 'true' : 'false';
+    if (!Settings.dialog) return;
 
+    // Each highlight row owns a permanent inline preview (data-preview-inline). The
+    // preview is a pure style demonstrator: it always renders its highlight so the row
+    // shows the style even when its on-page toggle is off. Edge/background and colours
+    // reflect the configured style (via the shared --xt-* vars) so it stays accurate.
+    const threadIDs: { [row: string]: number } = { own: 503286550, you: 503286551, ghost: 503286552 };
+    const catalogIDs: { [row: string]: number } = {
+      'catalog-own': 503286560, 'catalog-watched': 503286561, 'catalog-filter': 503286562,
+    };
     const background = Settings.resolveCanvasBackgroundStyle();
-    for (const previewPane of $$('.styling-preview-thread, .styling-preview-catalog', panel) as HTMLElement[]) {
-      Settings.applyBackgroundStyle(previewPane, background);
+
+    for (const inline of $$('[data-preview-inline]', Settings.dialog) as HTMLElement[]) {
+      const row = inline.dataset.previewInline || '';
+      inline.dataset.highlightOwn = 'true';
+      inline.dataset.highlightYou = 'true';
+      inline.dataset.highlightGhost = 'true';
+      inline.dataset.highlightCatalogOwn = 'true';
+      inline.dataset.highlightCatalogWatched = 'true';
+
+      // dataset.edge* drives the preview's edge-only styling: edge-only === background off.
+      inline.dataset.edgeOwn = readChecked('Highlight Own Background', false) ? 'false' : 'true';
+      inline.dataset.edgeYou = readChecked('Highlight You Background', false) ? 'false' : 'true';
+      inline.dataset.edgeGhost = readChecked('Highlight Ghost Background', false) ? 'false' : 'true';
+      inline.dataset.edgeCatalogOwn = readChecked('Catalog Highlight Own Background', false) ? 'false' : 'true';
+      inline.dataset.edgeCatalogWatched = readChecked('Catalog Highlight Watched Background', false) ? 'false' : 'true';
+      inline.dataset.textCatalogOwn =
+        (inline.dataset.edgeCatalogOwn !== 'true' && readOpacity('Catalog Highlight Own Opacity') > 0) ? 'true' : 'false';
+      inline.dataset.textCatalogWatched =
+        (inline.dataset.edgeCatalogWatched !== 'true' && readOpacity('Catalog Highlight Watched Opacity') > 0) ? 'true' : 'false';
+
+      // dataset.loc* mirrors the "Highlight location" select: in image mode the
+      // highlight sits on the thumbnail, not the whole tile.
+      inline.dataset.locCatalogOwn = readValue('Catalog Highlight Own Location') === 'image' ? 'image' : 'tile';
+      inline.dataset.locCatalogWatched = readValue('Catalog Highlight Watched Location') === 'image' ? 'image' : 'tile';
+      inline.dataset.locCatalogFilter = readValue('Catalog Highlight Filter Location') === 'image' ? 'image' : 'tile';
+
+      // dataset.glow* mirrors the Glow checkbox: the halo follows the location too.
+      inline.dataset.glowCatalogOwn = readChecked('Catalog Highlight Own Glow', false) ? 'true' : 'false';
+      inline.dataset.glowCatalogWatched = readChecked('Catalog Highlight Watched Glow', false) ? 'true' : 'false';
+
+      const container = $('.styling-preview-container', inline) as HTMLElement | null;
+      if (container && !container.firstElementChild) {
+        if (threadIDs[row] != null) {
+          const state = Settings.stylingPreviewThreadState(row);
+          container.innerHTML =
+            `<div class="board styling-preview-thread"><div class="thread">${Settings.stylingPreviewPostHTML({ postID: threadIDs[row], ...state })}</div></div>`;
+        } else if (catalogIDs[row] != null) {
+          const state = Settings.stylingPreviewCatalogState(row);
+          const id = catalogIDs[row];
+          container.innerHTML =
+            `<div class="board styling-preview-catalog catalog-small">${Settings.stylingPreviewCatalogThreadHTML({ threadID: id, postID: id, ...state })}</div>`;
+        }
+      }
+
+      for (const pane of $$('.styling-preview-thread, .styling-preview-catalog', inline) as HTMLElement[]) {
+        Settings.applyBackgroundStyle(pane, background);
+      }
     }
   },
 
@@ -6272,9 +6052,9 @@ Enable it on boards.${location.hostname.split('.')[1]}.org in your browser's pri
     setVar('--xt-catalog-border-width', Number.isFinite(catalogBorderWidth) ? `${$.minmax(catalogBorderWidth, 1, 12)}px` : '');
     // Per-state widths. When unset the var is removed so the rule falls back to
     // the shared --xt-…-width above (the "linked" value), then to 3px.
-    const setWidthVar = (key: string, varName: string) => {
+    const setWidthVar = (key: string, varName: string, min = 1) => {
       const w = parseFloat(String(cv(key)));
-      setVar(varName, Number.isFinite(w) ? `${$.minmax(w, 1, 12)}px` : '');
+      setVar(varName, Number.isFinite(w) ? `${$.minmax(w, min, 12)}px` : '');
     };
     const setStyleVar = (key: string, varName: string) => {
       const style = String(cv(key) || '');
@@ -6286,11 +6066,11 @@ Enable it on boards.${location.hostname.split('.')[1]}.org in your browser's pri
     setStyleVar('Highlight Own Border Style', '--xt-edge-style-own');
     setStyleVar('Highlight You Border Style', '--xt-edge-style-you');
     setStyleVar('Highlight Ghost Border Style', '--xt-edge-style-ghost');
-    setWidthVar('Catalog Highlight Own Border Width', '--xt-catalog-border-width-own');
-    setWidthVar('Catalog Highlight Watched Border Width', '--xt-catalog-border-width-watched');
+    setWidthVar('Catalog Highlight Own Border Width', '--xt-catalog-border-width-own', 0);
+    setWidthVar('Catalog Highlight Watched Border Width', '--xt-catalog-border-width-watched', 0);
     setStyleVar('Catalog Highlight Own Border Style', '--xt-catalog-border-style-own');
     setStyleVar('Catalog Highlight Watched Border Style', '--xt-catalog-border-style-watched');
-    setWidthVar('Catalog Highlight Filter Border Width', '--xt-catalog-border-width-filter');
+    setWidthVar('Catalog Highlight Filter Border Width', '--xt-catalog-border-width-filter', 0);
     setStyleVar('Catalog Highlight Filter Border Style', '--xt-catalog-border-style-filter');
     // Set catalog highlight colours unconditionally: the real board only paints them
     // under the enable-gated .xt-highlight-catalog-* classes, so an unused var is

@@ -1735,20 +1735,10 @@ div[data-checked="false"] > .suboption-list {
   margin-top: 0;
 }
 .section-styling .styling-highlight-intro {
-  align-items: start;
-  display: grid;
-  gap: 8px 12px;
-  grid-template-columns: minmax(0, 1fr) auto;
+  margin: 0 0 4px;
 }
 .section-styling .styling-highlight-intro > p {
   margin: 0;
-}
-.section-styling #styling-open-preview {
-  justify-self: end;
-  white-space: nowrap;
-}
-#styling-preview-anchor {
-  height: 0;
 }
 .section-styling .styling-palette-suggestions {
   margin-top: 8px;
@@ -1854,76 +1844,6 @@ div[data-checked="false"] > .suboption-list {
 .section-styling .styling-saved-palette-row:hover {
   background: color-mix(in srgb, currentColor 10%, transparent);
 }
-.styling-preview {
-  box-sizing: border-box;
-  box-shadow: 0 0 18px rgba(0, 0, 0, .25);
-  display: flex;
-  flex-direction: column;
-  max-width: 96vw;
-  min-height: 260px;
-  min-width: min(420px, 96vw);
-  overflow: hidden;
-  padding: 0;
-  position: absolute;
-  resize: both;
-  z-index: 2;
-}
-.styling-preview-attached {
-  resize: vertical;
-}
-.styling-preview-detached {
-  max-height: min(85vh, 640px);
-}
-.styling-preview-titlebar {
-  align-items: center;
-  border-bottom: 1px solid rgba(128, 128, 128, .25);
-  box-sizing: border-box;
-  cursor: move;
-  display: flex;
-  flex: 0 0 auto;
-  justify-content: space-between;
-  padding: 6px 8px;
-}
-.styling-preview-title {
-  font-weight: 700;
-}
-.styling-preview-titlebar-actions {
-  align-items: center;
-  display: inline-flex;
-  gap: 4px;
-  margin-left: auto;
-}
-.styling-preview-attach {
-  align-items: center;
-  display: inline-flex;
-  justify-content: center;
-  min-height: 18px;
-  min-width: 18px;
-  opacity: .7;
-  padding: 2px 4px;
-  text-decoration: none;
-}
-.styling-preview-attach:hover,
-.styling-preview-attach.attached {
-  opacity: 1;
-}
-.styling-preview-close {
-  margin: 0;
-  padding: 2px 4px;
-  text-decoration: none;
-}
-.styling-preview-layout {
-  align-items: start;
-  /* Cover the whole sample area with the board's current background so the previews
-     sit on the real page colour instead of the dialog's grey chrome. */
-  background: var(--xt-background, Canvas);
-  display: grid;
-  flex: 1 1 auto;
-  gap: 12px;
-  grid-template-columns: minmax(360px, max-content) max-content;
-  overflow: auto;
-  padding: 10px 12px;
-}
 .styling-preview-thread {
   background: transparent;
   border: 0;
@@ -1992,13 +1912,6 @@ div[data-checked="false"] > .suboption-list {
   margin-right: 4px;
 }
 @media (max-width: 700px) {
-  .styling-preview {
-    min-width: 0;
-    width: 96vw !important;
-  }
-  .styling-preview-layout {
-    display: block;
-  }
   .styling-preview-catalog {
     flex-wrap: wrap;
     min-width: 0;
@@ -2006,12 +1919,6 @@ div[data-checked="false"] > .suboption-list {
   .styling-preview-catalog > .catalog-thread {
     flex-basis: 140px;
     width: 140px;
-  }
-  .section-styling .styling-highlight-intro {
-    grid-template-columns: 1fr;
-  }
-  .section-styling #styling-open-preview {
-    justify-self: start;
   }
 }
 .styling-preview-post .postInfo,
@@ -2121,81 +2028,119 @@ div[data-checked="false"] > .suboption-list {
 .styling-preview .styling-preview-post.from-archive .quotelink.deadlink {
   color: var(--xt-highlight-ghost-dead-link, var(--xt-dead-link-text-color, var(--xt-dead-link))) !important;
 }
-.styling-preview[data-highlight-catalog-own="true"]:not([data-edge-catalog-own="true"]) .catalog-thread:is(:has(.yourPost), .yourPost) {
+/* The preview reuses the real catalog markup for layout (.catalog-thread,
+   .catalog-thumb, …) but uses its OWN highlight-trigger classes (.xtcat-own /
+   -watched / -filter) instead of the real .yourPost/.watched/.filter-highlight.
+   That keeps the document-level :root.xt-…catalog rules — which track the saved
+   board state — from leaking into the dialog and fighting this live preview. */
+.styling-preview[data-highlight-catalog-own="true"]:not([data-edge-catalog-own="true"]):not([data-loc-catalog-own="image"]) .catalog-thread:is(:has(.xtcat-own), .xtcat-own) {
   background: color-mix(in srgb, var(--xt-catalog-own-highlight, var(--xt-highlight-own)) calc(var(--xt-catalog-own-highlight-opacity, 1) * 100%), var(--xt-post-background, var(--xt-background, #d6daf0))) !important;
   overflow: hidden;
 }
-.styling-preview[data-highlight-catalog-own="true"][data-edge-catalog-own="true"] .catalog-thread:is(:has(.yourPost), .yourPost) {
+.styling-preview[data-highlight-catalog-own="true"][data-edge-catalog-own="true"]:not([data-loc-catalog-own="image"]) .catalog-thread:is(:has(.xtcat-own), .xtcat-own) {
   border-color: color-mix(in srgb, var(--xt-catalog-own-highlight, var(--xt-highlight-own, var(--xt-border-highlight))) calc(var(--xt-catalog-own-highlight-opacity, 1) * 100%), transparent) !important;
   border-style: var(--xt-catalog-border-style-own, solid) !important;
   border-width: var(--xt-catalog-border-width-own, var(--xt-catalog-border-width, 3px)) !important;
 }
+/* Image location: draw the highlight on the thumbnail instead of the tile. */
+.styling-preview[data-highlight-catalog-own="true"][data-edge-catalog-own="true"][data-loc-catalog-own="image"] .catalog-thread:is(:has(.xtcat-own), .xtcat-own) .catalog-thumb {
+  border: var(--xt-catalog-border-width-own, var(--xt-catalog-border-width, 3px)) var(--xt-catalog-border-style-own, solid) color-mix(in srgb, var(--xt-catalog-own-highlight, var(--xt-highlight-own, var(--xt-border-highlight))) calc(var(--xt-catalog-own-highlight-opacity, 1) * 100%), transparent) !important;
+  box-sizing: border-box;
+}
+.styling-preview[data-highlight-catalog-own="true"]:not([data-edge-catalog-own="true"])[data-loc-catalog-own="image"] .catalog-thread:is(:has(.xtcat-own), .xtcat-own) .catalog-thumb {
+  background: color-mix(in srgb, var(--xt-catalog-own-highlight, var(--xt-highlight-own)) calc(var(--xt-catalog-own-highlight-opacity, 1) * 100%), var(--xt-post-background, var(--xt-background, #d6daf0))) !important;
+  box-sizing: border-box;
+  padding: var(--xt-catalog-border-width-own, var(--xt-catalog-border-width, 3px)) !important;
+}
 .styling-preview[data-highlight-catalog-own="true"]:not([data-edge-catalog-own="true"]) :is(
-  .catalog-thread:is(:has(.yourPost), .yourPost) > .catalog-container,
-  .catalog-thread > .catalog-container.yourPost,
-  .catalog-thread:has(.yourPost) .post.catalog-post.yourPost,
-  .catalog-thread.yourPost .post.catalog-post,
-  .catalog-thread > .catalog-container.yourPost .post.catalog-post
+  .catalog-thread:is(:has(.xtcat-own), .xtcat-own) > .catalog-container,
+  .catalog-thread > .catalog-container.xtcat-own,
+  .catalog-thread:has(.xtcat-own) .post.catalog-post.xtcat-own,
+  .catalog-thread.xtcat-own .post.catalog-post,
+  .catalog-thread > .catalog-container.xtcat-own .post.catalog-post
 ) {
   background: transparent !important;
   border-color: transparent !important;
 }
 .styling-preview[data-highlight-catalog-own="true"][data-text-catalog-own="true"] :is(
-  .catalog-thread:has(.yourPost) .post.catalog-post.yourPost,
-  .catalog-thread.yourPost .post.catalog-post,
-  .catalog-thread > .catalog-container.yourPost .post.catalog-post
+  .catalog-thread:has(.xtcat-own) .post.catalog-post.xtcat-own,
+  .catalog-thread.xtcat-own .post.catalog-post,
+  .catalog-thread > .catalog-container.xtcat-own .post.catalog-post
 ) {
   color: var(--xt-catalog-own-text, var(--xt-text-color)) !important;
 }
-.styling-preview[data-highlight-catalog-own="true"][data-text-catalog-own="true"] :is(.catalog-thread.yourPost, .catalog-thread > .catalog-container.yourPost) .post.catalog-post :is(.postInfo, .postMessage, .summary, .catalog-stats) {
+.styling-preview[data-highlight-catalog-own="true"][data-text-catalog-own="true"] :is(.catalog-thread.xtcat-own, .catalog-thread > .catalog-container.xtcat-own) .post.catalog-post :is(.postInfo, .postMessage, .summary, .catalog-stats) {
   color: var(--xt-catalog-own-text, var(--xt-text-color)) !important;
 }
-.styling-preview[data-highlight-catalog-own="true"][data-text-catalog-own="true"] :is(.catalog-thread.yourPost, .catalog-thread > .catalog-container.yourPost) .post.catalog-post .subject {
+.styling-preview[data-highlight-catalog-own="true"][data-text-catalog-own="true"] :is(.catalog-thread.xtcat-own, .catalog-thread > .catalog-container.xtcat-own) .post.catalog-post .subject {
   color: var(--xt-catalog-own-subject, var(--xt-catalog-own-text, var(--xt-text-color))) !important;
 }
-.styling-preview[data-highlight-catalog-own="true"][data-text-catalog-own="true"] :is(.catalog-thread.yourPost, .catalog-thread > .catalog-container.yourPost) .post.catalog-post a {
+.styling-preview[data-highlight-catalog-own="true"][data-text-catalog-own="true"] :is(.catalog-thread.xtcat-own, .catalog-thread > .catalog-container.xtcat-own) .post.catalog-post a {
   color: var(--xt-catalog-own-link, var(--xt-link-text-color)) !important;
 }
-.styling-preview[data-highlight-catalog-own="true"][data-text-catalog-own="true"] :is(.catalog-thread.yourPost, .catalog-thread > .catalog-container.yourPost) .post.catalog-post .quote {
+.styling-preview[data-highlight-catalog-own="true"][data-text-catalog-own="true"] :is(.catalog-thread.xtcat-own, .catalog-thread > .catalog-container.xtcat-own) .post.catalog-post .quote {
   color: var(--xt-catalog-own-quote, var(--xt-quote-text-color)) !important;
 }
-.styling-preview[data-highlight-catalog-own="true"][data-text-catalog-own="true"] :is(.catalog-thread.yourPost, .catalog-thread > .catalog-container.yourPost) .post.catalog-post .deadlink {
+.styling-preview[data-highlight-catalog-own="true"][data-text-catalog-own="true"] :is(.catalog-thread.xtcat-own, .catalog-thread > .catalog-container.xtcat-own) .post.catalog-post .deadlink {
   color: var(--xt-catalog-own-dead-link, var(--xt-dead-link-text-color, var(--xt-dead-link))) !important;
 }
-.styling-preview[data-highlight-catalog-watched="true"]:not([data-edge-catalog-watched="true"]) .catalog-thread.watched {
+.styling-preview[data-highlight-catalog-watched="true"]:not([data-edge-catalog-watched="true"]):not([data-loc-catalog-watched="image"]) .catalog-thread.xtcat-watched {
   background: color-mix(in srgb, var(--xt-catalog-watched-highlight, var(--xt-watched-border, rgba(255, 0, 0, .75))) calc(var(--xt-catalog-watched-highlight-opacity, 0.2) * 100%), var(--xt-post-background, var(--xt-background, #d6daf0))) !important;
   overflow: hidden;
 }
-.styling-preview[data-highlight-catalog-watched="true"][data-edge-catalog-watched="true"] .catalog-thread.watched {
+.styling-preview[data-highlight-catalog-watched="true"][data-edge-catalog-watched="true"]:not([data-loc-catalog-watched="image"]) .catalog-thread.xtcat-watched {
   border-color: color-mix(in srgb, var(--xt-catalog-watched-highlight, var(--xt-watched-border, rgba(255, 0, 0, .75))) calc(var(--xt-catalog-watched-highlight-opacity, 0.2) * 100%), transparent) !important;
   border-style: var(--xt-catalog-border-style-watched, solid) !important;
   border-width: var(--xt-catalog-border-width-watched, var(--xt-catalog-border-width, 3px)) !important;
 }
-.styling-preview[data-highlight-catalog-watched="true"]:not([data-edge-catalog-watched="true"]) .catalog-thread.watched > .catalog-container,
-.styling-preview[data-highlight-catalog-watched="true"]:not([data-edge-catalog-watched="true"]) .catalog-thread.watched .post.catalog-post {
+/* Image location: draw the highlight on the thumbnail instead of the tile. */
+.styling-preview[data-highlight-catalog-watched="true"][data-edge-catalog-watched="true"][data-loc-catalog-watched="image"] .catalog-thread.xtcat-watched .catalog-thumb {
+  border: var(--xt-catalog-border-width-watched, var(--xt-catalog-border-width, 3px)) var(--xt-catalog-border-style-watched, solid) color-mix(in srgb, var(--xt-catalog-watched-highlight, var(--xt-watched-border, rgba(255, 0, 0, .75))) calc(var(--xt-catalog-watched-highlight-opacity, 0.2) * 100%), transparent) !important;
+  box-sizing: border-box;
+}
+.styling-preview[data-highlight-catalog-watched="true"]:not([data-edge-catalog-watched="true"])[data-loc-catalog-watched="image"] .catalog-thread.xtcat-watched .catalog-thumb {
+  background: color-mix(in srgb, var(--xt-catalog-watched-highlight, var(--xt-watched-border, rgba(255, 0, 0, .75))) calc(var(--xt-catalog-watched-highlight-opacity, 0.2) * 100%), var(--xt-post-background, var(--xt-background, #d6daf0))) !important;
+  box-sizing: border-box;
+  padding: var(--xt-catalog-border-width-watched, var(--xt-catalog-border-width, 3px)) !important;
+}
+.styling-preview[data-highlight-catalog-watched="true"]:not([data-edge-catalog-watched="true"]) .catalog-thread.xtcat-watched > .catalog-container,
+.styling-preview[data-highlight-catalog-watched="true"]:not([data-edge-catalog-watched="true"]) .catalog-thread.xtcat-watched .post.catalog-post {
   background: transparent !important;
   border-color: transparent !important;
 }
-.styling-preview[data-highlight-catalog-watched="true"][data-text-catalog-watched="true"] .catalog-thread.watched .post.catalog-post {
+.styling-preview[data-highlight-catalog-watched="true"][data-text-catalog-watched="true"] .catalog-thread.xtcat-watched .post.catalog-post {
   color: var(--xt-catalog-watched-text, var(--xt-text-color)) !important;
 }
-.styling-preview[data-highlight-catalog-watched="true"][data-text-catalog-watched="true"] .catalog-thread.watched .post.catalog-post :is(.postInfo, .postMessage, .summary, .catalog-stats) {
+.styling-preview[data-highlight-catalog-watched="true"][data-text-catalog-watched="true"] .catalog-thread.xtcat-watched .post.catalog-post :is(.postInfo, .postMessage, .summary, .catalog-stats) {
   color: var(--xt-catalog-watched-text, var(--xt-text-color)) !important;
 }
-.styling-preview[data-highlight-catalog-watched="true"][data-text-catalog-watched="true"] .catalog-thread.watched .post.catalog-post .subject {
+.styling-preview[data-highlight-catalog-watched="true"][data-text-catalog-watched="true"] .catalog-thread.xtcat-watched .post.catalog-post .subject {
   color: var(--xt-catalog-watched-subject, var(--xt-catalog-watched-text, var(--xt-text-color))) !important;
 }
-.styling-preview[data-highlight-catalog-watched="true"][data-text-catalog-watched="true"] .catalog-thread.watched .post.catalog-post a {
+.styling-preview[data-highlight-catalog-watched="true"][data-text-catalog-watched="true"] .catalog-thread.xtcat-watched .post.catalog-post a {
   color: var(--xt-catalog-watched-link, var(--xt-link-text-color)) !important;
 }
-.styling-preview[data-highlight-catalog-watched="true"][data-text-catalog-watched="true"] .catalog-thread.watched .post.catalog-post .quote {
+.styling-preview[data-highlight-catalog-watched="true"][data-text-catalog-watched="true"] .catalog-thread.xtcat-watched .post.catalog-post .quote {
   color: var(--xt-catalog-watched-quote, var(--xt-quote-text-color)) !important;
 }
-.styling-preview[data-highlight-catalog-watched="true"][data-text-catalog-watched="true"] .catalog-thread.watched .post.catalog-post .deadlink {
+.styling-preview[data-highlight-catalog-watched="true"][data-text-catalog-watched="true"] .catalog-thread.xtcat-watched .post.catalog-post .deadlink {
   color: var(--xt-catalog-watched-dead-link, var(--xt-dead-link-text-color, var(--xt-dead-link))) !important;
 }
-.styling-preview .catalog-thread.filter-highlight:not(.filter-glow-tile) .catalog-thumb,
-.styling-preview .catalog-thread.filter-highlight.filter-glow-tile {
+/* Own/watched glow: matches the board — a halo on the tile, or on the
+   thumbnail when the highlight location is set to image. */
+.styling-preview[data-glow-catalog-own="true"]:not([data-loc-catalog-own="image"]) .catalog-thread:is(:has(.xtcat-own), .xtcat-own) {
+  box-shadow: 0 0 calc(var(--xt-catalog-own-glow-intensity, .5) * 6px) calc(var(--xt-catalog-own-glow-intensity, .5) * 6px) color-mix(in srgb, var(--xt-catalog-own-highlight, var(--xt-highlight-own)) 70%, transparent) !important;
+}
+.styling-preview[data-glow-catalog-own="true"][data-loc-catalog-own="image"] .catalog-thread:is(:has(.xtcat-own), .xtcat-own) .catalog-thumb {
+  box-shadow: 0 0 calc(var(--xt-catalog-own-glow-intensity, .5) * 6px) calc(var(--xt-catalog-own-glow-intensity, .5) * 6px) color-mix(in srgb, var(--xt-catalog-own-highlight, var(--xt-highlight-own)) 70%, transparent) !important;
+}
+.styling-preview[data-glow-catalog-watched="true"]:not([data-loc-catalog-watched="image"]) .catalog-thread.xtcat-watched {
+  box-shadow: 0 0 calc(var(--xt-catalog-watched-glow-intensity, .5) * 6px) calc(var(--xt-catalog-watched-glow-intensity, .5) * 6px) color-mix(in srgb, var(--xt-catalog-watched-highlight, var(--xt-watched-border, rgba(255, 0, 0, .75))) 70%, transparent) !important;
+}
+.styling-preview[data-glow-catalog-watched="true"][data-loc-catalog-watched="image"] .catalog-thread.xtcat-watched .catalog-thumb {
+  box-shadow: 0 0 calc(var(--xt-catalog-watched-glow-intensity, .5) * 6px) calc(var(--xt-catalog-watched-glow-intensity, .5) * 6px) color-mix(in srgb, var(--xt-catalog-watched-highlight, var(--xt-watched-border, rgba(255, 0, 0, .75))) 70%, transparent) !important;
+}
+.styling-preview .catalog-thread.xtcat-filter .catalog-thumb {
   box-shadow: 0 0 3px 3px var(--xt-highlight-shadow, rgba(255, 0, 0, .5));
 }
 .section-styling .styling-variant-bar {
@@ -2680,36 +2625,40 @@ body > #overlay:not(.media-preview) {
   width: 92px;
 }
 .section-styling .styling-hl-acc-item {
-  background: color-mix(in srgb, currentColor 3%, transparent);
-  border: 1px solid color-mix(in srgb, currentColor 20%, transparent);
-  border-radius: 6px;
-  margin: 3px 0;
+  background: rgba(128, 128, 128, 0.05);
+  border: 1px solid rgba(128, 128, 128, 0.18);
+  border-radius: 8px;
+  margin: 6px 0;
   overflow: hidden;
+  transition: all 0.2s cubic-bezier(0.4, 0, 0.2, 1);
+  box-shadow: 0 1px 2px rgba(0, 0, 0, 0.05);
 }
 /* An expanded row reads as a raised, self-contained panel — stronger border
    and a soft drop shadow — so its body doesn't blend into the sections below. */
 .section-styling .styling-hl-acc-item.styling-hl-open {
-  border-color: color-mix(in srgb, currentColor 34%, transparent);
-  box-shadow: 0 1px 3px color-mix(in srgb, currentColor 10%, transparent);
-  margin: 8px 0;
+  background: rgba(128, 128, 128, 0.08);
+  border-color: rgba(128, 128, 128, 0.35);
+  box-shadow: 0 8px 24px rgba(0, 0, 0, 0.15);
+  margin: 10px 0;
 }
 .section-styling .styling-hl-acc-head {
   align-items: center;
   cursor: pointer;
   display: flex;
-  gap: 8px;
-  padding: 4px 10px;
+  gap: 10px;
+  padding: 6px 12px;
   user-select: none;
+  transition: background-color 0.2s;
 }
 .section-styling .styling-hl-acc-head:hover {
-  background: color-mix(in srgb, currentColor 10%, transparent);
+  background: rgba(128, 128, 128, 0.12);
 }
 .section-styling .styling-hl-acc-item.styling-hl-open .styling-hl-acc-head {
-  background: color-mix(in srgb, currentColor 7%, transparent);
-  border-bottom: 1px solid color-mix(in srgb, currentColor 16%, transparent);
+  background: rgba(128, 128, 128, 0.1);
+  border-bottom: 1px solid rgba(128, 128, 128, 0.2);
 }
 .section-styling .styling-hl-acc-item.styling-hl-open .styling-hl-acc-head:hover {
-  background: color-mix(in srgb, currentColor 12%, transparent);
+  background: rgba(128, 128, 128, 0.15);
 }
 .section-styling .styling-hl-acc-name {
   align-items: center;
@@ -2718,6 +2667,7 @@ body > #overlay:not(.media-preview) {
   font-weight: 600;
   gap: 6px;
   min-width: 0;
+  font-size: 12.5px;
 }
 .section-styling .styling-hl-type-note {
   font-size: 10px;
@@ -2739,27 +2689,31 @@ body > #overlay:not(.media-preview) {
 }
 .section-styling .styling-hl-acc-body {
   display: none;
-  padding: 1px 12px 4px;
+  padding: 10px 14px 12px;
+  border-top: 1px solid rgba(128, 128, 128, 0.05);
 }
 .section-styling .styling-hl-acc-item.styling-hl-open .styling-hl-acc-body {
-  background: color-mix(in srgb, currentColor 5%, transparent);
-  display: block;
+  display: grid;
+  grid-template-columns: repeat(auto-fit, minmax(240px, 1fr));
+  gap: 8px 20px;
+  background: rgba(128, 128, 128, 0.03);
 }
 /* ID prefix beats `#xt-settings-overlay label { display: inline }`, so the
    subsection label lays out as a full-width flex row and keeps its full-width
    underline. */
 #xt-settings-overlay .section-styling .styling-hl-sub {
   align-items: center;
-  border-bottom: 1px solid color-mix(in srgb, currentColor 18%, transparent);
+  border-bottom: 1px solid rgba(128, 128, 128, 0.25);
   box-sizing: border-box;
   display: flex;
   font-size: 11px;
   gap: 6px;
-  letter-spacing: .04em;
+  letter-spacing: .05em;
   line-height: 16px;
-  margin: 5px 0 1px;
+  margin: 8px 0 2px;
   min-height: 21px;
   padding: 2px 0;
+  grid-column: 1 / -1;
 }
 /* A subsection header doubling as its on/off toggle: the checkbox sits inline
    with the (dimmed, uppercase) section label and stays at full opacity. */
@@ -2779,40 +2733,43 @@ body > #overlay:not(.media-preview) {
   display: inline-flex;
   line-height: 16px;
   min-height: 16px;
-  opacity: .6;
+  opacity: .7;
+  font-weight: 700;
   text-transform: uppercase;
 }
 .section-styling .styling-hl-rowactions {
   border-bottom: 0;
   justify-content: flex-end;
   padding-top: 6px;
+  grid-column: 1 / -1;
 }
 .section-styling .styling-hl-rowactions button {
   font-size: 11px;
 }
 .section-styling .styling-hl-orow {
   align-items: center;
-  border-bottom: 1px solid color-mix(in srgb, currentColor 8%, transparent);
+  background: rgba(128, 128, 128, 0.065);
+  border-bottom: 1px solid rgba(128, 128, 128, 0.1);
+  border-radius: 4px;
   display: flex;
   gap: 10px;
   justify-content: space-between;
-  padding: 2px 0;
+  margin: 0 -4px;
+  padding: 4px 4px;
+  transition: background-color 0.15s;
 }
 .section-styling .styling-hl-orow:last-child {
   border-bottom: 0;
 }
-/* Subtle per-setting hover so the row under the cursor reads as a unit. The
-   negative margin + matching padding lets the tint reach the body's edges
-   instead of sitting inset within its horizontal padding. */
+/* Subtle per-setting shading keeps each label/control pair readable at rest,
+   with a stronger hover state for the row under the cursor. */
 .section-styling .styling-hl-orow:hover {
-  background: color-mix(in srgb, currentColor 6%, transparent);
-  border-radius: 4px;
-  margin: 0 -8px;
-  padding: 2px 8px;
+  background: rgba(128, 128, 128, 0.12);
 }
 .section-styling .styling-hl-olabel {
   min-width: 0;
-  opacity: .9;
+  opacity: .95;
+  font-size: 11.5px;
 }
 .section-styling .styling-hl-octl {
   align-items: center;
@@ -2835,13 +2792,51 @@ body > #overlay:not(.media-preview) {
 .section-styling .styling-hl-color input[type="color"],
 .section-styling .styling-hl-octl input[type="color"] {
   background: transparent;
-  border: 1px solid rgba(128, 128, 128, .35);
+  border: 1.5px solid rgba(128, 128, 128, .4);
+  border-radius: 50%;
+  cursor: pointer;
   height: 22px;
   padding: 0;
-  width: 44px;
+  width: 22px;
+  transition: transform 0.15s, border-color 0.15s;
+}
+.section-styling .styling-hl-color input[type="color"]:hover,
+.section-styling .styling-hl-octl input[type="color"]:hover {
+  transform: scale(1.15);
+  border-color: rgba(128, 128, 128, .75);
+}
+.section-styling .styling-hl-color input[type="color"]::-webkit-color-swatch-wrapper,
+.section-styling .styling-hl-octl input[type="color"]::-webkit-color-swatch-wrapper {
+  padding: 0;
+}
+.section-styling .styling-hl-color input[type="color"]::-webkit-color-swatch,
+.section-styling .styling-hl-octl input[type="color"]::-webkit-color-swatch {
+  border: none;
+  border-radius: 50%;
 }
 .section-styling .styling-hl-octl input[type="range"] {
-  width: 150px;
+  -webkit-appearance: none;
+  appearance: none;
+  background: rgba(128, 128, 128, 0.2);
+  border-radius: 4px;
+  height: 5px;
+  outline: none;
+  width: 130px;
+}
+.section-styling .styling-hl-octl input[type="range"]::-webkit-slider-thumb {
+  -webkit-appearance: none;
+  appearance: none;
+  background: currentColor;
+  border: 1px solid rgba(255, 255, 255, 0.8);
+  border-radius: 50%;
+  cursor: pointer;
+  height: 12px;
+  width: 12px;
+  box-shadow: 0 1px 3px rgba(0, 0, 0, 0.3);
+  transition: transform 0.1s;
+}
+.section-styling .styling-hl-octl input[type="range"]::-webkit-slider-thumb:hover {
+  transform: scale(1.2);
 }
 .section-styling .styling-hl-widthnum {
   text-align: right;
@@ -2854,7 +2849,7 @@ body > #overlay:not(.media-preview) {
 .section-styling .styling-hl-valout {
   font-size: 11px;
   font-variant-numeric: tabular-nums;
-  min-width: 30px;
+  min-width: 34px;
   opacity: .75;
   text-align: right;
 }
@@ -2874,6 +2869,56 @@ body > #overlay:not(.media-preview) {
   border-color: #d33;
   box-shadow: 0 0 0 1px color-mix(in srgb, #d33 45%, transparent);
 }
+
+/* ── Highlights: inline live preview ────────────────────────────── */
+.section-styling .styling-hl-inline-preview {
+  margin-top: 10px;
+  grid-column: 1 / -1;
+  display: flex;
+  flex-direction: column;
+  gap: 6px;
+}
+.section-styling .styling-hl-preview-title {
+  font-size: 10px;
+  font-weight: 700;
+  text-transform: uppercase;
+  opacity: 0.55;
+  letter-spacing: 0.05em;
+  margin-bottom: 2px;
+}
+/* The generated post/catalog markup sits in a shared .styling-preview-thread /
+   .styling-preview-catalog pane (sized by their own rules above); here we just
+   frame each pane as a small preview card sitting on the board background. */
+.section-styling .styling-hl-inline-preview .styling-preview-thread,
+.section-styling .styling-hl-inline-preview .styling-preview-catalog {
+  border: 1px solid rgba(128, 128, 128, 0.2);
+  border-radius: 6px;
+  max-width: 100%;
+  overflow: hidden;
+}
+
+/* Catalog highlight rows: the preview tile is small, so sit it beside its
+   settings (to the right) rather than as a full-width block below them. The
+   controls keep their own two-column grid; the preview wraps below only when
+   there isn't room for both side by side. */
+.section-styling .styling-hl-group-catalog .styling-hl-acc-item.styling-hl-open .styling-hl-acc-body {
+  display: flex;
+  flex-wrap: wrap;
+  align-items: flex-start;
+  gap: 8px 20px;
+}
+.section-styling .styling-hl-group-catalog .styling-hl-controls {
+  flex: 1 1 320px;
+  min-width: 0;
+  display: grid;
+  grid-template-columns: repeat(auto-fit, minmax(220px, 1fr));
+  gap: 8px 20px;
+}
+.section-styling .styling-hl-group-catalog .styling-hl-inline-preview {
+  flex: 0 0 auto;
+  margin-top: 0;
+}
+
 /* ── Merged colour control ──────────────────────────────────────────
    The swatch and hex field are fused into a single box: the hex field
    carries the chosen colour as its background, and the native picker is
