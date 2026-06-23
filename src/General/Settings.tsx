@@ -103,6 +103,7 @@ var Settings: any = {
   detailsState: dict() as Record<string, boolean>,
   pointerDownInsideDialog: false,
   customCSSEditorThemeObserver: null as MutationObserver | null,
+  customCSSFormatOptions: { indent: '  ', blankLines: true, selectorPerLine: true } as { indent: string; blankLines: boolean; selectorPerLine: boolean },
   activeSiteStylePicker: null as HTMLElement | null,
   siteStylePickerOutsideHandler: null as ((e: Event) => void) | null,
   textareaSavedFlashTimers: new WeakMap<HTMLTextAreaElement, number>(),
@@ -4356,6 +4357,7 @@ Enable it on boards.${location.hostname.split('.')[1]}.org in your browser's pri
 
     const gutter = $('.custom-css-gutter', editor) as HTMLElement | null;
     const gutterInner = gutter ? ($('.custom-css-gutter-inner', gutter) as HTMLElement | null) : null;
+    const lineNumbers = gutterInner ? ($('.custom-css-linenumbers', gutterInner) as HTMLElement | null) : null;
     const colorInput = $('.ccss-color-input', editor) as HTMLInputElement | null;
 
     const syncScroll = () => {
@@ -4506,14 +4508,48 @@ Enable it on boards.${location.hostname.split('.')[1]}.org in your browser's pri
       colorInput.click();
     };
 
+    // Monospace digit width, measured once against the editor font (re-measured if
+    // the first attempt runs while the editor is hidden and reports zero).
+    let charWidth = 0;
+    const measureCharW = () => {
+      if (charWidth) return charWidth;
+      const probe = $.el('span', { textContent: '0000000000' }) as HTMLElement;
+      probe.style.cssText = 'position:absolute;top:-9999px;left:0;visibility:hidden;white-space:pre;font:var(--custom-css-font)';
+      editor.appendChild(probe);
+      const w = probe.getBoundingClientRect().width;
+      probe.remove();
+      if (w > 0) charWidth = w / 10;
+      return charWidth || 7.2;
+    };
+
     const renderSwatches = () => {
       if (!gutterInner) return;
-      gutterInner.textContent = '';
+      // Clear only the swatches; the line-number layer is a persistent child.
+      for (const old of gutterInner.querySelectorAll('.ccss-swatch')) old.remove();
       const text = textarea.value;
       const ignored = Settings.customCSSIgnoredCharMask(text);
       const cs = window.getComputedStyle(textarea);
       const lineHeight = parseFloat(cs.lineHeight) || 17;
       const padTop = parseFloat(cs.paddingTop) || 8;
+
+      // Line numbers: one text layer ("1\n2\n…"), not one node per line, so even
+      // large CSS stays cheap to re-render. The gutter width tracks the digit
+      // count via --ccss-gutter-digits (the text layers pad-left off the same var).
+      if (lineNumbers) {
+        let lineCount = 1;
+        for (let i = 0; i < text.length; i++) if (text[i] === '\n') lineCount++;
+        let nums = '';
+        for (let n = 1; n <= lineCount; n++) nums += `${n}\n`;
+        lineNumbers.textContent = nums;
+        lineNumbers.style.top = `${padTop}px`;
+        // Size the gutter to the digit count, in pixels. Done in JS (not a CSS
+        // calc) because the build's CSS minifier strips the spaces the spec
+        // requires around `+`, which would invalidate a calc(... + ...) width and
+        // collapse the gutter. Plain var() values survive minification.
+        const gutterW = Math.ceil(`${lineCount}`.length * measureCharW()) + 24;
+        editor.style.setProperty('--ccss-gutter-w', `${gutterW}px`);
+        editor.style.setProperty('--ccss-pad-l', `${gutterW + 4}px`);
+      }
       const seen = new Set<number>();
       let line = 0, scan = 0;
       COLOR_RE.lastIndex = 0;
@@ -4805,8 +4841,27 @@ Enable it on boards.${location.hostname.split('.')[1]}.org in your browser's pri
       if (save) $.set('settings.customCSSEditorAutocomplete', enabled);
     };
 
+    // Bracket matching re-highlights on every caret move. Re-tokenizing the whole
+    // editor on each keyup/click is wasteful, so coalesce events into one rAF and
+    // skip the render entirely when the matched-bracket set hasn't changed (the
+    // common case: moving the caret within the same brackets).
+    let bracketRaf = 0;
+    let lastBracketKey = '';
+    const bracketKey = () => {
+      if (!bracketToggle.checked || textarea.selectionStart !== textarea.selectionEnd) return '';
+      const marks = Settings.customCSSBracketHighlights(textarea.value, textarea.selectionStart, textarea.selectionEnd);
+      return marks ? Object.keys(marks).sort((a, b) => +a - +b).map(k => `${k}:${marks[k]}`).join(',') : '';
+    };
     const renderForCaret = () => {
-      if (bracketToggle.checked) Settings.renderCustomCSSHighlight(textarea, highlight);
+      if (!bracketToggle.checked || bracketRaf) return;
+      bracketRaf = requestAnimationFrame(() => {
+        bracketRaf = 0;
+        if (!bracketToggle.checked) return;
+        const key = bracketKey();
+        if (key === lastBracketKey) return;
+        lastBracketKey = key;
+        Settings.renderCustomCSSHighlight(textarea, highlight);
+      });
     };
 
     $.on(textarea, 'input', () => { Settings.renderCustomCSSHighlight(textarea, highlight); renderSwatches(); });
@@ -4834,6 +4889,66 @@ Enable it on boards.${location.hostname.split('.')[1]}.org in your browser's pri
       shortcuts.hidden = !show;
       shortcutsToggle.setAttribute('aria-expanded', String(show));
     });
+
+    // ── Formatting options popover ─────────────────────────────────────────
+    // A small gear next to "Format CSS" exposes the formatter's tunable knobs
+    // (indent, blank lines between rules, selector-list stacking). The values
+    // live on Settings.customCSSFormatOptions so formatCustomCSS reads them
+    // without threading anything through its call sites.
+    const formatOpts = $('.ccss-format-opts', section) as HTMLElement | null;
+    const formatGear = $('#custom-css-format-gear', section) as HTMLButtonElement | null;
+    const formatPopover = formatOpts ? ($('.ccss-format-popover', formatOpts) as HTMLElement | null) : null;
+    const indentSelect = $('#custom-css-format-indent', section) as HTMLSelectElement | null;
+    const blankLinesToggle = $('#custom-css-format-blanklines', section) as HTMLInputElement | null;
+    const selectorPerLineToggle = $('#custom-css-format-selectorperline', section) as HTMLInputElement | null;
+    if (formatOpts && formatGear && formatPopover && indentSelect && blankLinesToggle && selectorPerLineToggle) {
+      const indentValue = (v: string) => (v === 'tab' ? '\t' : v === '4' ? '    ' : '  ');
+      const syncFormatOptions = (save = false) => {
+        Settings.customCSSFormatOptions = {
+          indent: indentValue(indentSelect.value),
+          blankLines: blankLinesToggle.checked,
+          selectorPerLine: selectorPerLineToggle.checked,
+        };
+        if (save) $.set({
+          'settings.customCSSFormatIndent': indentSelect.value,
+          'settings.customCSSFormatBlankLines': blankLinesToggle.checked,
+          'settings.customCSSFormatSelectorPerLine': selectorPerLineToggle.checked,
+        });
+      };
+      let formatOutsideHandler: ((e: Event) => void) | null = null;
+      const closePopover = () => {
+        formatOpts.dataset.open = 'false';
+        formatPopover.hidden = true;
+        formatGear.setAttribute('aria-expanded', 'false');
+        if (formatOutsideHandler) { d.removeEventListener('mousedown', formatOutsideHandler, true); formatOutsideHandler = null; }
+      };
+      const openPopover = () => {
+        formatOpts.dataset.open = 'true';
+        formatPopover.hidden = false;
+        formatGear.setAttribute('aria-expanded', 'true');
+        formatOutsideHandler = (e: Event) => {
+          const target = e.target as Node | null;
+          if (target && !formatOpts.contains(target)) closePopover();
+        };
+        d.addEventListener('mousedown', formatOutsideHandler, true);
+      };
+      $.on(formatGear, 'click', () => { (formatPopover.hidden ? openPopover : closePopover)(); });
+      $.on(indentSelect, 'change', () => syncFormatOptions(true));
+      $.on(blankLinesToggle, 'change', () => syncFormatOptions(true));
+      $.on(selectorPerLineToggle, 'change', () => syncFormatOptions(true));
+      $.get({
+        'settings.customCSSFormatIndent': '2',
+        'settings.customCSSFormatBlankLines': true,
+        'settings.customCSSFormatSelectorPerLine': true,
+      }, (prefs: Record<string, any>) => {
+        const indent = prefs['settings.customCSSFormatIndent'];
+        indentSelect.value = ['2', '4', 'tab'].includes(indent) ? indent : '2';
+        blankLinesToggle.checked = prefs['settings.customCSSFormatBlankLines'] !== false;
+        selectorPerLineToggle.checked = prefs['settings.customCSSFormatSelectorPerLine'] !== false;
+        syncFormatOptions(false);
+      });
+    }
+
     Settings.customCSSEditorThemeObserver?.disconnect();
     Settings.customCSSEditorThemeObserver = new MutationObserver(() => {
       if (themeSelect.value === 'xt-system') updateTheme(false);
@@ -5185,13 +5300,22 @@ Enable it on boards.${location.hostname.split('.')[1]}.org in your browser's pri
       const before = val[start - 1];
       const after = val[end];
 
+      // One indent level follows the formatter's Indent setting (2/4 spaces or a
+      // tab), so typing matches what Format CSS would produce. Read live so the
+      // gear popover takes effect without rebinding. Dedent is forgiving: it
+      // strips a leading tab or up to indentWidth spaces, so mixed indentation
+      // (e.g. legacy 2-space content after switching to tabs) still outdents.
+      const indentUnit = Settings.customCSSFormatOptions.indent;
+      const indentWidth = indentUnit === '\t' ? 1 : indentUnit.length;
+      const dedentPattern = `(?:\\t| {1,${indentWidth}})`;
+
       if (e.key === 'Enter' && !e.shiftKey && !hasSel) {
         const indent = lineIndent(val, start);
         if (before === '{' && after === '}') {
           // Expand "{|}" into a 3-line block with the caret indented inside.
-          insert(`\n${indent}  \n${indent}`, indent.length + 1);
+          insert(`\n${indent}${indentUnit}\n${indent}`, indent.length + 1);
         } else {
-          insert(`\n${indent}${before === '{' ? '  ' : ''}`);
+          insert(`\n${indent}${before === '{' ? indentUnit : ''}`);
         }
         e.preventDefault();
         refresh();
@@ -5204,7 +5328,7 @@ Enable it on boards.${location.hostname.split('.')[1]}.org in your browser's pri
         const multiline = val.slice(start, end).includes('\n');
         if (multiline) {
           const block = val.slice(blockStart, end);
-          const next = e.shiftKey ? block.replace(/^[ \t]{1,2}/gm, '') : block.replace(/^/gm, '  ');
+          const next = e.shiftKey ? block.replace(new RegExp(`^${dedentPattern}`, 'gm'), '') : block.replace(/^/gm, indentUnit);
           textarea.selectionStart = blockStart;
           textarea.selectionEnd = end;
           let ok = false;
@@ -5213,14 +5337,14 @@ Enable it on boards.${location.hostname.split('.')[1]}.org in your browser's pri
           textarea.selectionStart = blockStart;
           textarea.selectionEnd = blockStart + next.length;
         } else if (e.shiftKey) {
-          const lead = (val.slice(blockStart).match(/^[ \t]{1,2}/) || [''])[0];
+          const lead = (val.slice(blockStart).match(new RegExp(`^${dedentPattern}`)) || [''])[0];
           if (lead) {
             textarea.value = val.slice(0, blockStart) + val.slice(blockStart + lead.length);
             const caret = Math.max(blockStart, start - lead.length);
             textarea.selectionStart = textarea.selectionEnd = caret;
           }
         } else {
-          insert('  ');
+          insert(indentUnit);
         }
         refresh();
         return;
@@ -5603,8 +5727,10 @@ Enable it on boards.${location.hostname.split('.')[1]}.org in your browser's pri
   // spacing, with a blank line between top-level rules. Anything it can't
   // classify is preserved verbatim, so the worst case is a no-op rather than
   // corrupted CSS.
-  formatCustomCSS(css: string): string {
-    const INDENT = '  ';
+  formatCustomCSS(css: string, opts: { indent?: string; blankLines?: boolean; selectorPerLine?: boolean } = Settings.customCSSFormatOptions): string {
+    const INDENT = opts.indent ?? '  ';
+    const blankLines = opts.blankLines !== false;
+    const selectorPerLine = opts.selectorPerLine !== false;
     // 1. Pull comments and strings out so their braces / semicolons / colons
     //    can't be mistaken for structure. Restored at the end.
     const stash: string[] = [];
@@ -5664,16 +5790,19 @@ Enable it on boards.${location.hostname.split('.')[1]}.org in your browser's pri
     for (let i = 0; i < work.length; i++) {
       const ch = work[i];
       if (ch === '{') {
-        if (depth === 0 && out && !out.endsWith('\n\n')) out += '\n'; // blank line between top-level rules
+        // Blank line between sibling rules at any depth, but not right after a
+        // block's opening brace (no stray blank as the first line inside @media).
+        if (blankLines && out && !out.endsWith('\n\n') && !out.endsWith('{\n')) out += '\n';
         const sel = peelComments(buf.replace(/\s+/g, ' ').trim()).trim();
         buf = '';
-        const parts = splitTopLevel(sel, ',');
-        if (parts.length > 1) {
+        const parts = splitTopLevel(sel, ',').map(p => p.trim());
+        if (parts.length > 1 && selectorPerLine) {
           // Stack a selector list one-per-line (the last carries the brace), so
           // long lists stay readable instead of collapsing onto one line.
-          parts.forEach((p, n) => { out += pad() + p.trim() + (n < parts.length - 1 ? ',\n' : ' {\n'); });
+          parts.forEach((p, n) => { out += pad() + p + (n < parts.length - 1 ? ',\n' : ' {\n'); });
         } else {
-          out += pad() + (sel ? sel + ' ' : '') + '{\n';
+          const joined = parts.join(', ');
+          out += pad() + (joined ? joined + ' ' : '') + '{\n';
         }
         depth++;
       } else if (ch === '}') {

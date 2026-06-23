@@ -3184,16 +3184,57 @@ body > #overlay:not(.media-preview) {
 .section-styling .custom-css-controls > .ccss-controls-right {
   margin-left: auto;
 }
-.section-styling .ccss-shortcuts-toggle {
+.section-styling .ccss-format-opts {
+  position: relative;
+}
+.section-styling .ccss-format-gear {
   align-items: center;
-  aspect-ratio: 1;
-  border-radius: 50%;
   display: inline-flex;
-  font-weight: 700;
   justify-content: center;
   line-height: 1;
-  padding: 0;
-  width: 1.7em;
+  padding: 2px 6px;
+}
+.section-styling .ccss-format-opts[data-open="true"] .ccss-format-gear {
+  background: rgba(128, 128, 128, .25);
+}
+.section-styling .ccss-format-popover {
+  background: var(--xt-dialog-bg, var(--background, Canvas));
+  border: 1px solid rgba(128, 128, 128, .45);
+  border-radius: 5px;
+  box-shadow: 0 4px 14px rgba(0, 0, 0, .25);
+  display: flex;
+  flex-direction: column;
+  gap: 8px;
+  left: 0;
+  min-width: 220px;
+  padding: 10px;
+  position: absolute;
+  top: 100%;
+  margin-top: 4px;
+  z-index: 200;
+}
+.section-styling .ccss-format-title {
+  border-bottom: 1px solid rgba(128, 128, 128, .3);
+  font-weight: 700;
+  margin: -2px 0 2px;
+  opacity: .85;
+  padding-bottom: 6px;
+}
+.section-styling .ccss-format-row {
+  align-items: center;
+  display: flex;
+  gap: 6px;
+  white-space: nowrap;
+}
+.section-styling .ccss-format-row > select {
+  margin-left: auto;
+}
+.section-styling .ccss-shortcuts-toggle {
+  align-items: center;
+  display: inline-flex;
+  justify-content: center;
+  line-height: 1;
+  padding: 2px 6px;
 }
 .section-styling .ccss-shortcuts-toggle[aria-expanded="true"] {
   background: rgba(128, 128, 128, .25);
@@ -3232,6 +3273,8 @@ body > #overlay:not(.media-preview) {
   --custom-css-bracket-error-bg: rgba(220, 38, 38, .28);
   --custom-css-bracket-error-border: rgba(190, 18, 60, .72);
   --custom-css-font: 12px/1.42 ui-monospace, SFMono-Regular, Menlo, Monaco, Consolas, "Liberation Mono", "Courier New", monospace;
+  --ccss-gutter-w: 40px;
+  --ccss-pad-l: 44px;
   background: var(--custom-css-bg);
   border: 1px solid var(--custom-css-border);
   border-radius: 4px;
@@ -3604,19 +3647,21 @@ body > #overlay:not(.media-preview) {
 .custom-css-editor > .custom-css-textarea:focus {
   outline: none;
 }
-/* Colour swatches: a clickable swatch in a left gutter on each line that holds a
-   colour. The text layers are nudged right to make room; the gutter scrolls with
-   the content (transform synced in syncScroll). Must follow the base padding rule
-   above so this padding-left wins the !important tie. */
+/* Left gutter: always-on line numbers plus a clickable colour swatch on each line
+   that holds a colour. The text layers are nudged right to clear it; the gutter
+   scrolls with the content (transform synced in syncScroll). Width tracks the line
+   count via --ccss-gutter-digits (set in renderSwatches). 1ch resolves to the
+   monospace digit width on every element below, so the columns stay aligned. Must
+   follow the base padding rule above so this padding-left wins the !important tie. */
 .custom-css-editor > :is(.custom-css-highlight, .custom-css-textarea) {
-  padding-left: 28px !important;
+  padding-left: var(--ccss-pad-l) !important;
 }
 .custom-css-editor > .custom-css-gutter {
   position: absolute;
   left: 0;
   top: 0;
   bottom: 12px;
-  width: 24px;
+  width: var(--ccss-gutter-w);
   overflow: hidden;
   pointer-events: none;
   z-index: 3;
@@ -3626,9 +3671,20 @@ body > #overlay:not(.media-preview) {
   inset: 0 0 auto 0;
   will-change: transform;
 }
+.custom-css-editor .custom-css-linenumbers {
+  position: absolute;
+  top: 0;
+  left: 0;
+  right: 18px;
+  font: var(--custom-css-font);
+  color: var(--custom-css-text);
+  opacity: .4;
+  text-align: right;
+  white-space: pre;
+}
 .custom-css-editor .ccss-swatch {
   position: absolute;
-  left: 5px;
+  right: 4px;
   width: 13px;
   height: 13px;
   margin: 0;

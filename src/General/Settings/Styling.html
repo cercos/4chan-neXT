@@ -310,9 +310,24 @@
       </select>
     </label>
     <button type="button" id="custom-css-format" title="Reformat the CSS: fix indentation, braces and spacing. Shortcut: Shift+Alt+F">Format CSS</button>
-    <label class="ccss-controls-right" title="Bracket matching scans the editor as you move the caret and may degrade browser performance on large Custom CSS."><input type="checkbox" id="custom-css-bracket-highlight"> Highlight brackets</label>
+    <span class="ccss-format-opts" data-open="false">
+      <button type="button" id="custom-css-format-gear" class="ccss-format-gear" aria-haspopup="true" aria-expanded="false" title="Formatting options">&#9881;</button>
+      <div class="ccss-format-popover" role="menu" hidden>
+        <div class="ccss-format-title">Format options</div>
+        <label class="ccss-format-row">Indent
+          <select id="custom-css-format-indent">
+            <option value="2">2 spaces</option>
+            <option value="4">4 spaces</option>
+            <option value="tab">Tab</option>
+          </select>
+        </label>
+        <label class="ccss-format-row"><input type="checkbox" id="custom-css-format-blanklines"> Blank line between rules</label>
+        <label class="ccss-format-row"><input type="checkbox" id="custom-css-format-selectorperline"> One selector per line</label>
+      </div>
+    </span>
+    <label class="ccss-controls-right" title="Highlight the bracket matching the one at the caret."><input type="checkbox" id="custom-css-bracket-highlight"> Highlight brackets</label>
     <label title="Suggest class names that exist on the page while typing a .class selector."><input type="checkbox" id="custom-css-autocomplete" checked> Suggest class names</label>
-    <button type="button" id="custom-css-shortcuts-toggle" class="ccss-shortcuts-toggle" aria-expanded="false" aria-controls="custom-css-shortcuts" title="Show keyboard shortcuts">?</button>
+    <button type="button" id="custom-css-shortcuts-toggle" class="ccss-shortcuts-toggle" aria-expanded="false" aria-controls="custom-css-shortcuts" title="Show keyboard shortcuts">&#9000;</button>
   </div>
   <div class="custom-css-shortcuts" id="custom-css-shortcuts" aria-label="Custom CSS editor shortcuts" hidden>
     <span><kbd>Ctrl</kbd>+<kbd>/</kbd> comment</span>
@@ -324,7 +339,7 @@
   <div class="custom-css-editor" data-theme="xt-system-default">
     <pre class="custom-css-highlight" aria-hidden="true"></pre>
     <textarea hidden name="usercss" class="field custom-css-textarea" spellcheck="false" wrap="off"></textarea>
-    <div class="custom-css-gutter" aria-hidden="true"><div class="custom-css-gutter-inner"></div></div>
+    <div class="custom-css-gutter" aria-hidden="true"><div class="custom-css-gutter-inner"><div class="custom-css-linenumbers"></div></div></div>
     <input type="color" class="ccss-color-input" aria-hidden="true" tabindex="-1">
     <div class="custom-css-saved" aria-hidden="true">Saved</div>
   </div>
