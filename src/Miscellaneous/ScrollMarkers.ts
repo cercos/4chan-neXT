@@ -85,6 +85,8 @@ const ScrollMarkers = {
     init() {
       if (g.VIEW !== 'thread' && g.VIEW !== 'index' && g.VIEW !== 'archive' && g.VIEW !== 'catalog') return;
       const el = $.el('span', { textContent: 'Scroll markers' });
+      // Wholly-neXT menu: one green dot on the header, no per-row dots inside.
+      el.dataset.nextKey = 'Scrollbar Markers';
       const entry = {
         el,
         order: 112,

@@ -129,6 +129,26 @@ var Header = {
           {el: editCustomNav}
       ]});
 
+    // Quick access to the "Highlight neXT" toggle (also in the settings footer) so
+    // the neXT dots in menus can be dismissed without opening settings. Shares the
+    // one state via Settings.setHighlightNext; stopPropagation keeps the menu open
+    // so the dots update live as it is toggled.
+    const highlightNextToggle = $.el('label', {
+      title: 'Mark settings and menu items neXT added or changed compared to 4chan-X.',
+      innerHTML: '<input type="checkbox"> Highlight neXT'
+    }) as HTMLLabelElement;
+    const highlightNextInput = $('input', highlightNextToggle) as HTMLInputElement;
+    $.on(highlightNextToggle, 'click', (e: Event) => e.stopPropagation());
+    $.on(highlightNextInput, 'change', () => Settings.setHighlightNext(highlightNextInput.checked));
+    this.menu.addEntry({
+      el: highlightNextToggle,
+      order: 800,
+      open() {
+        highlightNextInput.checked = Settings.highlightNext;
+        return true;
+      }
+    });
+
     $.on(d, 'CreateNotification', this.createNotification);
 
     this.setBoardList();
@@ -544,7 +564,6 @@ var Header = {
   },
 
   toggleBannerVisibility(this: HTMLInputElement) {
-    $.event('CloseMenu');
     Header.setBannerVisibility(this.checked);
     return $.set('Hide Board Banner', this.checked);
   },

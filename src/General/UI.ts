@@ -189,24 +189,58 @@ var Menu: MenuCtor = (function(): MenuCtor {
       $.add(entry.el, submenu);
     }
 
-    // Mark menu items whose checkbox maps to a neXT-added/changed setting (matched
-    // by the input's `name`, the Conf key). The dot is also propagated to each
-    // ancestor submenu-parent entry so a collapsed submenu still signals it holds
-    // something new. Visibility is gated by html.highlight-next-global (set from
-    // the "Highlight neXT" toggle, see Settings.applyNextHighlight) in CSS, so the
-    // attribute can be set unconditionally here.
+    // Mark menu items that map to a neXT-added/changed setting. Two ways to match:
+    //   - a checkbox whose `name` is the Conf key (UI.checkbox items), or
+    //   - an entry that declares its Conf key via `data-next-key` (for links,
+    //     sliders, and number fields that carry no `name`, e.g. the Thread Watcher
+    //     Sort / Thumbnails / Max H-W controls).
+    // Colors carry meaning (see the menu dot rules in style.css):
+    //   - GREEN ('added'): an entry that is itself a neXT feature — a directly
+    //     matched item, or a wholly-neXT menu keyed on its parent (Download Media,
+    //     Sort, ...). Mark the parent's data-next-key and leave its children bare.
+    //   - AMBER ('changed'): a pre-existing (upstream) menu that merely GAINED a
+    //     neXT item (Header -> Hide board banner, Display -> Show Undo Button). The
+    //     parent is flagged amber while the new item stays green inside it.
+    // Visibility is gated by html.highlight-next-global (set from the "Highlight
+    // neXT" toggle, see Settings.applyNextHighlight), so attributes are set here
+    // unconditionally.
     tagNextEntries(menu: HTMLElement) {
       for (const el of $$('[data-next-status]', menu) as HTMLElement[]) delete el.dataset.nextStatus;
-      for (const input of $$('input[name]', menu) as HTMLInputElement[]) {
-        const name = input.getAttribute('name') || '';
-        const status = NEXT_ADDED.has(name) ? 'added' : NEXT_CHANGED.has(name) ? 'changed' : '';
-        if (!status) continue;
-        let node: HTMLElement | null = input.closest('.entry') as HTMLElement | null;
+      const statusOf = (key: string) =>
+        NEXT_ADDED.has(key) ? 'added' : NEXT_CHANGED.has(key) ? 'changed' : '';
+      // Pass 1: entries that are themselves neXT (own name / data-next-key). Track
+      // them so pass 2 doesn't recolor a wholly-neXT feature as a mere container.
+      const own = new Set<HTMLElement>();
+      const markOwn = (start: HTMLElement, status: string) => {
+        const entry = start.closest('.entry') as HTMLElement | null;
+        if (!entry || !menu.contains(entry)) return;
+        own.add(entry);
+        if (entry.dataset.nextStatus !== 'added') entry.dataset.nextStatus = status;
+      };
+      for (const input of $$('input[name], select[name], textarea[name]', menu) as HTMLElement[]) {
+        const status = statusOf(input.getAttribute('name') || '');
+        if (status) markOwn(input, status);
+      }
+      for (const el of $$('[data-next-key]', menu) as HTMLElement[]) {
+        const status = statusOf(el.dataset.nextKey || '');
+        if (status) markOwn(el, status);
+      }
+      // Pass 2: an ancestor submenu that holds a neXT item but isn't itself a neXT
+      // feature is an existing menu that gained one -> amber container badge.
+      for (const entry of own) {
+        let node: HTMLElement | null =
+          entry.parentElement ? (entry.parentElement.closest('.entry') as HTMLElement | null) : null;
         while (node && menu.contains(node)) {
-          // 'added' outranks 'changed' when a submenu mixes both.
-          if (node.dataset.nextStatus !== 'added') node.dataset.nextStatus = status;
+          if (!own.has(node) && !node.dataset.nextStatus) node.dataset.nextStatus = 'changed';
           node = node.parentElement ? (node.parentElement.closest('.entry') as HTMLElement | null) : null;
         }
+      }
+      // Pass 3: a wholly-neXT submenu (its parent is itself a neXT feature, green)
+      // collapses to that single header dot — drop any dots on its descendants so
+      // it reads as one green dot, not a wall of them.
+      for (const entry of own) {
+        if (entry.dataset.nextStatus !== 'added' || !entry.classList.contains('has-submenu')) continue;
+        for (const child of $$('[data-next-status]', entry) as HTMLElement[]) delete child.dataset.nextStatus;
       }
     }
 

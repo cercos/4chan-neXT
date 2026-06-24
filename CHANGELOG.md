@@ -1,5 +1,10 @@
 ## 4chan-neXT changelog
 
+### Unreleased
+
+- Added neXT settings highlights for the header menu as green dot for next and orangish dot for changed menu's or settings.
+- Added a "Hide board banner" setting (Header menu, off by default) that hides the rotating board banner image at the top of the page.
+
 ### 1.2.1 (2026-06-23)
 
 - Added a "Video Duration Badge" setting (off by default) that shows a video length badge on webm/mp4 thumbnails. It reads each video's length from its metadata lazily, only as thumbnails scroll into view, so it uses a little extra bandwidth.

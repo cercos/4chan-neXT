@@ -1794,6 +1794,7 @@ var ThreadWatcher = {
         },
         {
           text: 'Max H/W',
+          nextKey: 'Thread Watcher Max Height',
           open(this: { el: HTMLElement }) {
             this.el.innerHTML = `Max H <input type="number" value="${ThreadWatcher.maxHeight()}" min="120" max="999" class="field" style="width:4.2em"> W<input type="number" value="${ThreadWatcher.maxWidth()}" min="120" max="999" class="field" style="width:4.2em">`;
             const [heightInput, widthInput] = $$('input', this.el);
@@ -1825,7 +1826,7 @@ var ThreadWatcher = {
         },
       ];
 
-      for (var {text, title, cb, open} of entries) {
+      for (var {text, title, cb, open, nextKey} of entries as any[]) {
         var entry: any = {
           el: $.el('a', {
             textContent: text,
@@ -1833,6 +1834,7 @@ var ThreadWatcher = {
           })
         };
         if (title) { entry.el.title = title; }
+        if (nextKey) { entry.el.dataset.nextKey = nextKey; }
         if (cb) { $.on(entry.el, 'click', cb); }
         entry.open = open.bind(entry);
         this.menu.addEntry(entry);
@@ -2024,6 +2026,7 @@ var ThreadWatcher = {
         order: 50,
         subEntries: [...primaryEntries, thenByEntry],
         open(this: { el: HTMLElement }) {
+          this.el.dataset.nextKey = 'Thread Watcher Sort';
           this.el.classList.toggle('disabled', !ThreadWatcher.list.firstElementChild);
           return true;
         }
@@ -2083,6 +2086,7 @@ var ThreadWatcher = {
         subEntries,
         open(this: { el: HTMLElement }) {
           if (!ThreadWatcher.attachControlsEnabled()) { return false; }
+          this.el.dataset.nextKey = 'Thread Watcher Attach Location';
           this.el.title = 'Where to attach the watcher relative to the Quick Reply when attached.\nBottom/top: width follows the QR. Left/right: width uses the manual Max W; height sizes to content.';
           return true;
         }
@@ -2097,6 +2101,7 @@ var ThreadWatcher = {
           className: 'watcher-thumbnail-controls'
         }),
         open(this: { el: HTMLElement }) {
+          this.el.dataset.nextKey = 'Thread Watcher Thumbnail Size';
           this.el.innerHTML = `<span class="watcher-thumb-row"><label class="watcher-thumb-toggle"><input type="checkbox"${Conf['Show OP Thumbnails'] ? ' checked' : ''}>Thumbnails</label><span class="watcher-thumb-slider"><input type="range" value="${ThreadWatcher.thumbnailSize()}" min="16" max="160" step="1"><input type="number" value="${ThreadWatcher.thumbnailSize()}" min="16" max="160" step="1" class="watcher-thumb-number" aria-label="Thumbnail size"><span class="watcher-thumb-unit">px</span></span></span><span class="watcher-thumb-row"><label class="watcher-thumb-toggle"><input type="checkbox"${Conf['Thread Watcher Thumbnail Hover'] ? ' checked' : ''}>Hover Scale</label><span class="watcher-thumb-slider"><input type="range" value="${ThreadWatcher.thumbnailPreviewSize()}" min="10" max="20" step="1"><input type="number" value="${ThreadWatcher.thumbnailPreviewScale()}" min="1" max="2" step="0.1" class="watcher-thumb-number" aria-label="Hover preview scale"><span class="watcher-thumb-unit">x</span></span></span>`;
           const [thumbToggle, previewToggle] = $$('input[type="checkbox"]', this.el);
           const [sizeInput, previewSizeInput] = $$('input[type="range"]', this.el) as HTMLInputElement[];

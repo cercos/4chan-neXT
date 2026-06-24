@@ -821,11 +821,22 @@ var Settings: any = {
     d.documentElement.classList.toggle('highlight-next-global', Settings.highlightNext);
   },
 
-  onHighlightNextChange(this: HTMLInputElement) {
-    const enabled = (this as HTMLInputElement).checked;
+  // Single entry point for changing the state, so the settings-dialog toggle and
+  // the Header-menu toggle stay in sync (and either reflects a change made by the
+  // other). Updates in-memory state, persists, repaints, and re-checks the dialog
+  // toggle if the dialog is open.
+  setHighlightNext(enabled: boolean) {
     Settings.highlightNext = enabled;
     $.set('settings.highlightNext', enabled);
     Settings.applyNextHighlight();
+    const toggle = Settings.dialog
+      ? ($('#settings-highlight-next', Settings.dialog) as HTMLInputElement | null)
+      : null;
+    if (toggle) toggle.checked = enabled;
+  },
+
+  onHighlightNextChange(this: HTMLInputElement) {
+    Settings.setHighlightNext((this as HTMLInputElement).checked);
   },
 
   onRememberLayoutChange(this: HTMLInputElement) {

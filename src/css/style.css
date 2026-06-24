@@ -813,15 +813,24 @@ audio.controls-added {
   background: #d29922;
 }
 /* "Highlight neXT" also flags neXT features that live in dropdown menus (Header,
-   Scroll markers, Thread Watcher Display, etc.) so they are discoverable outside
-   the settings dialog. A small dot marks each neXT menu item; the dot is also
-   propagated to its submenu-parent entry so a collapsed submenu signals it holds
-   something new (see UI.Menu.tagNextEntries). Gated by .highlight-next-global on
-   <html>, set from the same toggle (Settings.applyNextHighlight). Leaf entries use
-   ::after after the label; submenu parents are flex with a caret on the right, so
-   their dot sits before the caret via .menu-indicator::before. */
-html.highlight-next-global #menu .entry[data-next-status]:not(.has-submenu)::after,
-html.highlight-next-global #menu .entry.has-submenu[data-next-status] > .menu-indicator::before {
+   Scroll markers, Thread Watcher Sort/Thumbnails/Max-H-W/Display, etc.) so they
+   are discoverable outside the settings dialog. A small dot marks each one; its
+   color carries meaning (see UI.Menu.tagNextEntries): GREEN ('added') = the entry
+   is itself a neXT feature (a neXT item, or a wholly-neXT menu); AMBER ('changed')
+   = a pre-existing menu that merely gained a neXT item, shown on the parent while
+   the new item stays green inside it. Gated by .highlight-next-global on <html>,
+   set from the same toggle (Settings.applyNextHighlight). The dot has three
+   placements:
+   - leaf entries: ::after, after the label;
+   - submenu parents (a flex row with a caret on the right): ::before on the caret,
+     so it sits left of the caret instead of being flung to the far edge;
+   - the multi-row Thread Watcher "Thumbnails" control: ::after on its first-row
+     toggle label, so it sits beside "Thumbnails" rather than below the rows.
+   --next-dot (set per status on the entry, inherited by descendant pseudos) keeps
+   the color in one place. */
+html.highlight-next-global #menu .entry[data-next-status]:not(.has-submenu):not(.watcher-thumbnail-controls)::after,
+html.highlight-next-global #menu .entry.has-submenu[data-next-status] > .menu-indicator::before,
+html.highlight-next-global #menu .entry.watcher-thumbnail-controls[data-next-status] .watcher-thumb-row:first-child .watcher-thumb-toggle::after {
   content: '';
   display: inline-block;
   width: 7px;
@@ -829,20 +838,20 @@ html.highlight-next-global #menu .entry.has-submenu[data-next-status] > .menu-in
   border-radius: 50%;
   vertical-align: middle;
   flex: none;
+  background: var(--next-dot, #3fb950);
 }
-html.highlight-next-global #menu .entry[data-next-status]:not(.has-submenu)::after {
+html.highlight-next-global #menu .entry[data-next-status]:not(.has-submenu):not(.watcher-thumbnail-controls)::after,
+html.highlight-next-global #menu .entry.watcher-thumbnail-controls[data-next-status] .watcher-thumb-row:first-child .watcher-thumb-toggle::after {
   margin-left: 6px;
 }
 html.highlight-next-global #menu .entry.has-submenu[data-next-status] > .menu-indicator::before {
   margin-right: 6px;
 }
-html.highlight-next-global #menu .entry[data-next-status="added"]:not(.has-submenu)::after,
-html.highlight-next-global #menu .entry.has-submenu[data-next-status="added"] > .menu-indicator::before {
-  background: #3fb950;
+html.highlight-next-global #menu .entry[data-next-status="added"] {
+  --next-dot: #3fb950;
 }
-html.highlight-next-global #menu .entry[data-next-status="changed"]:not(.has-submenu)::after,
-html.highlight-next-global #menu .entry.has-submenu[data-next-status="changed"] > .menu-indicator::before {
-  background: #d29922;
+html.highlight-next-global #menu .entry[data-next-status="changed"] {
+  --next-dot: #d29922;
 }
 #fourchanx-settings > .settings-body {
   flex: 1;

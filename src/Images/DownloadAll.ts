@@ -57,6 +57,7 @@ const DownloadAll = {
         textContent: 'Download Media',
         className: 'download-all-link',
       });
+      el.dataset.nextKey = 'Download All Media';
       (Header as any).menu.addEntry({
         el,
         order: 106,
