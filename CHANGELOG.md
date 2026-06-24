@@ -1,5 +1,16 @@
 ## 4chan-neXT changelog
 
+### Unreleased
+
+- Added a "Video Duration Badge" setting (off by default) that shows a video length badge on webm/mp4 thumbnails. It reads each video's length from its metadata lazily, only as thumbnails scroll into view, so it uses a little extra bandwidth.
+- Expanded the Custom CSS editor:
+  - Added a line-number gutter.
+  - Added a formatting options popover (the gear) to choose the indent (2 spaces, 4 spaces, or tab), a blank line between rules, and one selector per line.
+  - Added a collapsible keyboard-shortcuts guide (Ctrl+/ comment, Ctrl+S save, Shift+Alt+F format, Tab/Shift+Tab indent, Enter auto-indent).
+- Reorganized the Styling settings into clearer subsections, and added number inputs (with px units) beside the sliders for the catalog highlight border widths.
+- Added number inputs beside the Thread Watcher dropdown's thumbnail size and hover-preview scale sliders, so you can type an exact value instead of only dragging.
+- Various appearance and styling refinements across the settings pages and UI.
+
 ### 1.2.0 (2026-06-21)
 
 - Added an "Icon style" setting (Settings > Icons) to pick the icon set used across the script's buttons and UI, with eight sets to choose from: Font Awesome (default), Lucide, Material Icons, Phosphor, Tabler, Bootstrap Icons, Heroicons, and Ionicons. Reload the page to apply the change everywhere.
