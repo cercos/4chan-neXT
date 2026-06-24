@@ -4537,8 +4537,58 @@ Enable it on boards.${location.hostname.split('.')[1]}.org in your browser's pri
       return charWidth || 7.2;
     };
 
+    type SwatchColor = { start: number; end: number; format: string; alpha: string; hex: string; title: string };
+
+    const makeSwatch = (c: SwatchColor) => {
+      const sw = $.el('button', { className: 'ccss-swatch', type: 'button' }) as HTMLButtonElement;
+      sw.style.background = c.hex;
+      sw.dataset.start = String(c.start);
+      sw.dataset.end = String(c.end);
+      sw.dataset.format = c.format;
+      sw.dataset.alpha = c.alpha;
+      sw.title = c.title;
+      $.on(sw, 'mousedown', (e: Event) => e.preventDefault());
+      $.on(sw, 'click', (e: Event) => { e.preventDefault(); openColorPicker(sw); });
+      return sw;
+    };
+
+    // Fan-out overlay for lines holding more than one color. The gutter clips
+    // (overflow:hidden) so a deck can't spread inside it; this layer is a fixed,
+    // unclipped sibling positioned from the deck's screen rect on hover/tap, so
+    // the cards fan right over the text. Mirrors how .ccss-color-input is placed.
+    const swatchFan = $.el('div', { className: 'ccss-swatch-fan' }) as HTMLElement;
+    swatchFan.dataset.show = 'false';
+    $.add(editor, swatchFan);
+    let fanHideTimer = 0;
+    let fanOpenDeck: HTMLElement | null = null;
+    const hideSwatchFan = () => {
+      clearTimeout(fanHideTimer);
+      swatchFan.dataset.show = 'false';
+      fanOpenDeck = null;
+    };
+    const showSwatchFan = (deck: HTMLElement) => {
+      clearTimeout(fanHideTimer);
+      const colors = (deck as any)._ccssColors as SwatchColor[] | undefined;
+      if (!colors) return;
+      swatchFan.textContent = '';
+      colors.forEach((c, i) => {
+        const card = makeSwatch(c);
+        card.style.setProperty('--ccss-fan-i', String(i));
+        $.add(swatchFan, card);
+      });
+      const r = deck.getBoundingClientRect();
+      swatchFan.style.left = `${r.left}px`;
+      swatchFan.style.top = `${r.top}px`;
+      swatchFan.dataset.show = 'true';
+      fanOpenDeck = deck;
+    };
+    $.on(swatchFan, 'mouseenter', () => clearTimeout(fanHideTimer));
+    $.on(swatchFan, 'mouseleave', () => { fanHideTimer = window.setTimeout(hideSwatchFan, 180); });
+
     const renderSwatches = () => {
       if (!gutterInner) return;
+      // A re-render invalidates fan positions/spans; close it first.
+      hideSwatchFan();
       // Clear only the swatches; the line-number layer is a persistent child.
       for (const old of gutterInner.querySelectorAll('.ccss-swatch')) old.remove();
       const text = textarea.value;
@@ -4565,28 +4615,55 @@ Enable it on boards.${location.hostname.split('.')[1]}.org in your browser's pri
         editor.style.setProperty('--ccss-gutter-w', `${gutterW}px`);
         editor.style.setProperty('--ccss-pad-l', `${gutterW + 4}px`);
       }
-      const seen = new Set<number>();
+      // Collect every color, grouped by line (Map keeps lines in document order).
+      const byLine = new Map<number, SwatchColor[]>();
       let line = 0, scan = 0;
       COLOR_RE.lastIndex = 0;
       let m: RegExpExecArray | null;
       while ((m = COLOR_RE.exec(text))) {
         const start = m.index;
         while (scan < start) { if (text[scan] === '\n') line++; scan++; }
-        if (ignored[start] || seen.has(line)) continue;
+        if (ignored[start]) continue;
         const parsed = parseColor(m[0]);
         if (!parsed) continue;
-        seen.add(line);
-        const sw = $.el('button', { className: 'ccss-swatch', type: 'button' }) as HTMLButtonElement;
-        sw.style.top = `${padTop + line * lineHeight + (lineHeight - 13) / 2}px`;
-        sw.style.background = rgbToHex(parsed.r, parsed.g, parsed.b);
-        sw.dataset.start = String(start);
-        sw.dataset.end = String(start + m[0].length);
-        sw.dataset.format = parsed.format;
-        sw.dataset.alpha = parsed.a == null ? '' : String(parsed.a);
-        sw.title = m[0];
-        $.on(sw, 'mousedown', (e: Event) => e.preventDefault());
-        $.on(sw, 'click', (e: Event) => { e.preventDefault(); openColorPicker(sw); });
-        $.add(gutterInner, sw);
+        const entry: SwatchColor = {
+          start,
+          end: start + m[0].length,
+          format: parsed.format,
+          alpha: parsed.a == null ? '' : String(parsed.a),
+          hex: rgbToHex(parsed.r, parsed.g, parsed.b),
+          title: m[0],
+        };
+        const list = byLine.get(line);
+        if (list) { list.push(entry); } else { byLine.set(line, [entry]); }
+      }
+
+      for (const [ln, list] of byLine) {
+        const top = padTop + ln * lineHeight + (lineHeight - 13) / 2;
+        if (list.length === 1) {
+          const sw = makeSwatch(list[0]);
+          sw.style.top = `${top}px`;
+          $.add(gutterInner, sw);
+          continue;
+        }
+        // Multiple colors on one line: a multi-band "deck" swatch (first up to
+        // three colors as vertical bands) that fans the full set out on hover/tap.
+        const deck = $.el('button', { className: 'ccss-swatch ccss-deck', type: 'button' }) as HTMLButtonElement;
+        deck.style.top = `${top}px`;
+        const bands = list.slice(0, 3);
+        const step = 100 / bands.length;
+        deck.style.background = `linear-gradient(90deg, ${bands.map((c, i) => `${c.hex} ${i * step}% ${(i + 1) * step}%`).join(', ')})`;
+        deck.dataset.count = String(list.length);
+        deck.title = `${list.length} colors on this line`;
+        (deck as any)._ccssColors = list;
+        $.on(deck, 'mousedown', (e: Event) => e.preventDefault());
+        $.on(deck, 'mouseenter', () => showSwatchFan(deck));
+        $.on(deck, 'mouseleave', () => { fanHideTimer = window.setTimeout(hideSwatchFan, 180); });
+        $.on(deck, 'click', (e: Event) => {
+          e.preventDefault();
+          if (fanOpenDeck === deck) { hideSwatchFan(); } else { showSwatchFan(deck); }
+        });
+        $.add(gutterInner, deck);
       }
     };
 
@@ -4885,7 +4962,7 @@ Enable it on boards.${location.hostname.split('.')[1]}.org in your browser's pri
     // isn't resolvable and falls back to an approximation).
     $.on(textarea, 'focus', renderSwatches);
     $.on(textarea, 'keyup mouseup select focus', renderForCaret);
-    $.on(textarea, 'scroll', syncScroll);
+    $.on(textarea, 'scroll', () => { syncScroll(); hideSwatchFan(); });
     Settings.bindCustomCSSEditorKeys(textarea, highlight);
     $.on(textarea, 'change', () => {
       Settings.renderCustomCSSHighlight(textarea, highlight);

@@ -3713,6 +3713,35 @@ body > #overlay:not(.media-preview) {
   opacity: 0;
   pointer-events: none;
 }
+/* A line with more than one color: the band swatch reads as a small stack and
+   fans the full set out over the text on hover/tap. */
+.custom-css-editor .ccss-deck {
+  box-shadow: inset 0 0 0 1px rgba(255, 255, 255, .2), 1px 1px 0 rgba(128, 128, 128, .5), 2px 2px 0 rgba(128, 128, 128, .3);
+}
+.custom-css-editor > .ccss-swatch-fan {
+  position: fixed;
+  z-index: 6;
+  display: flex;
+  gap: 3px;
+  pointer-events: none;
+}
+.custom-css-editor > .ccss-swatch-fan[data-show="false"] {
+  display: none;
+}
+.custom-css-editor .ccss-swatch-fan .ccss-swatch {
+  position: static;
+  right: auto;
+  top: auto;
+  flex: none;
+  pointer-events: auto;
+  opacity: 0;
+  transform: translateX(calc(var(--ccss-fan-i, 0) * -16px));
+  animation: ccss-fan-in .14s ease forwards;
+  animation-delay: calc(var(--ccss-fan-i, 0) * .018s);
+}
+@keyframes ccss-fan-in {
+  to { opacity: 1; transform: translateX(0); }
+}
 .section-styling .custom-css-highlight .css-token-comment {
   color: #73838a;
   font-style: italic;
