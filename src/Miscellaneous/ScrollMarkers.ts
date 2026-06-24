@@ -162,7 +162,7 @@ const ScrollMarkers = {
       const previewLabel = $.el('label', {
         className: 'entry scroll-marker-hover-preview-option',
         title: 'Show a post preview when hovering a marker.',
-        innerHTML: '<input type="checkbox"> Show preview',
+        innerHTML: '<input type="checkbox" name="Scrollbar Marker Hover Preview"> Show preview',
       });
       const previewBox = $('input', previewLabel) as HTMLInputElement;
       previewBox.checked = Conf['Scrollbar Marker Hover Preview'];

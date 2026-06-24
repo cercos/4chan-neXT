@@ -198,6 +198,13 @@ var Settings: any = {
     $.on(d, 'AddSettingsSection',   Settings.addSection);
     $.on(d, 'OpenSettings', e => Settings.open(e.detail));
 
+    // Reflect the persisted "Highlight neXT" state on <html> at startup so neXT
+    // markers show in dropdown menus even before the settings dialog is opened.
+    $.get({ 'settings.highlightNext': false }, (items: Record<string, any>) => {
+      Settings.highlightNext = !!items['settings.highlightNext'];
+      d.documentElement.classList.toggle('highlight-next-global', Settings.highlightNext);
+    });
+
     if ((g.SITE!.software === 'yotsuba') && Conf['Disable Native Extension']) {
       if ($.hasStorage) {
         // Run in page context to handle case where 4chan X has localStorage access but not the page.
@@ -808,6 +815,10 @@ var Settings: any = {
   applyNextHighlight() {
     const settingsWindow = $('#fourchanx-settings', Settings.dialog || d) as HTMLElement | null;
     if (settingsWindow) settingsWindow.classList.toggle('highlight-next-settings', Settings.highlightNext);
+    // Global gate for neXT markers that live outside the dialog (dropdown menus).
+    // #menu is not inside #fourchanx-settings, so it needs a class on a shared
+    // ancestor; see UI.Menu.tagNextEntries and the menu dot rules in style.css.
+    d.documentElement.classList.toggle('highlight-next-global', Settings.highlightNext);
   },
 
   onHighlightNextChange(this: HTMLInputElement) {

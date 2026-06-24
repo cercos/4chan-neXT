@@ -812,6 +812,38 @@ audio.controls-added {
   color: #1a1a1a;
   background: #d29922;
 }
+/* "Highlight neXT" also flags neXT features that live in dropdown menus (Header,
+   Scroll markers, Thread Watcher Display, etc.) so they are discoverable outside
+   the settings dialog. A small dot marks each neXT menu item; the dot is also
+   propagated to its submenu-parent entry so a collapsed submenu signals it holds
+   something new (see UI.Menu.tagNextEntries). Gated by .highlight-next-global on
+   <html>, set from the same toggle (Settings.applyNextHighlight). Leaf entries use
+   ::after after the label; submenu parents are flex with a caret on the right, so
+   their dot sits before the caret via .menu-indicator::before. */
+html.highlight-next-global #menu .entry[data-next-status]:not(.has-submenu)::after,
+html.highlight-next-global #menu .entry.has-submenu[data-next-status] > .menu-indicator::before {
+  content: '';
+  display: inline-block;
+  width: 7px;
+  height: 7px;
+  border-radius: 50%;
+  vertical-align: middle;
+  flex: none;
+}
+html.highlight-next-global #menu .entry[data-next-status]:not(.has-submenu)::after {
+  margin-left: 6px;
+}
+html.highlight-next-global #menu .entry.has-submenu[data-next-status] > .menu-indicator::before {
+  margin-right: 6px;
+}
+html.highlight-next-global #menu .entry[data-next-status="added"]:not(.has-submenu)::after,
+html.highlight-next-global #menu .entry.has-submenu[data-next-status="added"] > .menu-indicator::before {
+  background: #3fb950;
+}
+html.highlight-next-global #menu .entry[data-next-status="changed"]:not(.has-submenu)::after,
+html.highlight-next-global #menu .entry.has-submenu[data-next-status="changed"] > .menu-indicator::before {
+  background: #d29922;
+}
 #fourchanx-settings > .settings-body {
   flex: 1;
   min-height: 0;

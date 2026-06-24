@@ -6,8 +6,8 @@
   },
   "counts": {
     "xt": 259,
-    "next": 422,
-    "added": 157,
+    "next": 426,
+    "added": 161,
     "changed": 3
   },
   "added": [
@@ -82,6 +82,7 @@
     "Gallery Thumbnails Position",
     "Grid Thumbnails",
     "Group Hidden Threads By Filter",
+    "Hide Board Banner",
     "Hide Original Post Form",
     "Hide thread (catalog click)",
     "Highlight Ghost Background",
@@ -118,6 +119,7 @@
     "Highlight You Text Auto",
     "Highlight You Text Color",
     "Highlight You Text Mode",
+    "Icon Set",
     "Link Text Color",
     "Persistent Download Media",
     "QR Drafts",
@@ -138,6 +140,7 @@
     "Scrollbar Mark Own Posts",
     "Scrollbar Mark Quotes You",
     "Scrollbar Mark Unread Line",
+    "Scrollbar Marker Hover Preview",
     "Scrollbar Marker Position",
     "Scrollbar Markers",
     "Settings Descriptions as Tooltips",
@@ -167,6 +170,7 @@
     "Toggle comment preview",
     "Toggle drafts",
     "Undo last hide/filter",
+    "Video Duration Badge",
     "Watch (catalog click)"
   ],
   "changed": [

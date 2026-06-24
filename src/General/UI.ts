@@ -4,6 +4,13 @@ import $ from "../platform/$";
 import $$ from "../platform/$$";
 import Header from "./Header";
 import Icon from "../Icons/icon";
+import nextSettingsDiff from "../config/nextSettingsDiff.json";
+
+// neXT-added/changed setting keys (same source the settings page uses). Lets the
+// "Highlight neXT" toggle mark neXT features that live in dropdown menus, not just
+// rows in the settings dialog. See Menu.tagNextEntries and style.css.
+const NEXT_ADDED = new Set<string>((nextSettingsDiff as any).added);
+const NEXT_CHANGED = new Set<string>((nextSettingsDiff as any).changed);
 
 const dialog = function(id: string, properties: Record<string, any>) {
   const el = $.el('div', {
@@ -115,6 +122,8 @@ var Menu: MenuCtor = (function(): MenuCtor {
         this.insertEntry(entry, menu, data);
       }
 
+      this.tagNextEntries(menu);
+
       $.addClass(lastToggledButton, 'active');
 
       $.on(d, 'click CloseMenu', this.close);
@@ -178,6 +187,27 @@ var Menu: MenuCtor = (function(): MenuCtor {
         this.insertEntry(subEntry, submenu, data);
       }
       $.add(entry.el, submenu);
+    }
+
+    // Mark menu items whose checkbox maps to a neXT-added/changed setting (matched
+    // by the input's `name`, the Conf key). The dot is also propagated to each
+    // ancestor submenu-parent entry so a collapsed submenu still signals it holds
+    // something new. Visibility is gated by html.highlight-next-global (set from
+    // the "Highlight neXT" toggle, see Settings.applyNextHighlight) in CSS, so the
+    // attribute can be set unconditionally here.
+    tagNextEntries(menu: HTMLElement) {
+      for (const el of $$('[data-next-status]', menu) as HTMLElement[]) delete el.dataset.nextStatus;
+      for (const input of $$('input[name]', menu) as HTMLInputElement[]) {
+        const name = input.getAttribute('name') || '';
+        const status = NEXT_ADDED.has(name) ? 'added' : NEXT_CHANGED.has(name) ? 'changed' : '';
+        if (!status) continue;
+        let node: HTMLElement | null = input.closest('.entry') as HTMLElement | null;
+        while (node && menu.contains(node)) {
+          // 'added' outranks 'changed' when a submenu mixes both.
+          if (node.dataset.nextStatus !== 'added') node.dataset.nextStatus = status;
+          node = node.parentElement ? (node.parentElement.closest('.entry') as HTMLElement | null) : null;
+        }
+      }
     }
 
     close() {
