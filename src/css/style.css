@@ -2889,21 +2889,25 @@ body > #overlay:not(.media-preview) {
   justify-content: space-between;
   margin: 0 -4px;
   padding: 4px 4px;
-  transition: background-color 0.15s;
+  box-shadow: 0 1px 2px rgba(0, 0, 0, 0.08);
+  transition: background-color 0.15s, box-shadow 0.15s, transform 0.15s;
 }
 .section-styling .styling-hl-orow:last-child {
   border-bottom: 0;
 }
-/* Subtle per-setting shading keeps each label/control pair readable at rest,
-   with a stronger hover state for the row under the cursor. */
+/* Subtle per-setting shading keeps each label/control pair readable at rest.
+   On hover the cell brightens, scales up slightly, and picks up a soft drop
+   shadow so the option under the cursor lifts forward instead of blending into
+   its neighbors. */
 .section-styling .styling-hl-orow:hover {
   background: rgba(128, 128, 128, 0.12);
+  box-shadow: 0 2px 4px rgba(0, 0, 0, 0.13);
+  transform: scale(1.005);
 }
 .section-styling .styling-hl-olabel {
   min-width: 0;
   font-size: 11.5px;
   font-weight: 500;
-  opacity: .9;
 }
 .section-styling .styling-hl-octl {
   align-items: center;
