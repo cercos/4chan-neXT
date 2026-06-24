@@ -824,13 +824,14 @@ audio.controls-added {
    - leaf entries: ::after, after the label;
    - submenu parents (a flex row with a caret on the right): ::before on the caret,
      so it sits left of the caret instead of being flung to the far edge;
-   - the multi-row Thread Watcher "Thumbnails" control: ::after on its first-row
-     toggle label, so it sits beside "Thumbnails" rather than below the rows.
+   - the multi-row Thread Watcher "Thumbnails" control: ::after on each grid row
+     (Thumbnails and Hover Scale) as an extra grid item, so the dot lands at the
+     end of each row (past its slider) like single-line entries, not below them.
    --next-dot (set per status on the entry, inherited by descendant pseudos) keeps
    the color in one place. */
 html.highlight-next-global #menu .entry[data-next-status]:not(.has-submenu):not(.watcher-thumbnail-controls)::after,
 html.highlight-next-global #menu .entry.has-submenu[data-next-status] > .menu-indicator::before,
-html.highlight-next-global #menu .entry.watcher-thumbnail-controls[data-next-status] .watcher-thumb-row:first-child .watcher-thumb-toggle::after {
+html.highlight-next-global #menu .entry.watcher-thumbnail-controls[data-next-status] .watcher-thumb-row::after {
   content: '';
   display: inline-block;
   width: 7px;
@@ -840,12 +841,24 @@ html.highlight-next-global #menu .entry.watcher-thumbnail-controls[data-next-sta
   flex: none;
   background: var(--next-dot, #3fb950);
 }
-html.highlight-next-global #menu .entry[data-next-status]:not(.has-submenu):not(.watcher-thumbnail-controls)::after,
-html.highlight-next-global #menu .entry.watcher-thumbnail-controls[data-next-status] .watcher-thumb-row:first-child .watcher-thumb-toggle::after {
+html.highlight-next-global #menu .entry[data-next-status]:not(.has-submenu):not(.watcher-thumbnail-controls)::after {
   margin-left: 6px;
 }
 html.highlight-next-global #menu .entry.has-submenu[data-next-status] > .menu-indicator::before {
   margin-right: 6px;
+}
+/* The Thumbnails rows are a 2-column grid (toggle | slider); the ::after dot is a
+   3rd grid item, so reserve a trailing column for it (only while highlighted) or
+   it wraps onto its own line under the row. The narrower range track makes room so
+   the row width and the px/x boxes stay put. */
+html.highlight-next-global #menu .entry.watcher-thumbnail-controls[data-next-status] .watcher-thumb-row {
+  grid-template-columns: 100px max-content auto;
+}
+html.highlight-next-global #menu .entry.watcher-thumbnail-controls[data-next-status] .watcher-thumb-slider {
+  grid-template-columns: 84px 44px 18px;
+}
+html.highlight-next-global #menu .entry.watcher-thumbnail-controls[data-next-status] .watcher-thumb-row::after {
+  justify-self: end;
 }
 html.highlight-next-global #menu .entry[data-next-status="added"] {
   --next-dot: #3fb950;
