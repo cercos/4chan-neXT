@@ -31,7 +31,7 @@ const settingsHtml = () => <div id="fourchanx-settings" class="dialog">
         <a href="#" class="export">Export</a>
         <a href="#" class="import">Import</a>
         <a href="#" class="reset">Reset Settings</a>
-        <label class="highlight-next-toggle" title={`Highlight settings ${meta.name} added or changed compared to 4chan-X. Added settings are marked green; changed defaults are marked amber.`}>
+        <label class="highlight-next-toggle" title="Mark settings added by neXT. Green = new, orange = changed.">
           <input id="settings-highlight-next" type="checkbox" autocomplete="off" />
           <span>Highlight neXT</span>
         </label>

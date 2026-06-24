@@ -134,7 +134,7 @@ var Header = {
     // one state via Settings.setHighlightNext; stopPropagation keeps the menu open
     // so the dots update live as it is toggled.
     const highlightNextToggle = $.el('label', {
-      title: 'Mark settings and menu items neXT added or changed compared to 4chan-X.',
+      title: 'Mark settings added by neXT. Green = new, orange = changed.',
       innerHTML: '<input type="checkbox"> Highlight neXT'
     }) as HTMLLabelElement;
     const highlightNextInput = $('input', highlightNextToggle) as HTMLInputElement;
