@@ -469,6 +469,9 @@ audio.controls-added {
   text-decoration: none;
   padding: 1px;
 }
+:root.hide-board-banner #bannerCnt {
+  display: none;
+}
 #shortcuts:empty {
   display: none;
 }

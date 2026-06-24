@@ -24,6 +24,7 @@ var Header = {
   linkJustifyToggler: null as any,
   headerToggler: null as any,
   footerToggler: null as any,
+  bannerToggler: null as any,
   shortcutToggler: null as any,
   customNavToggler: null as any,
   previousOffset: 0,
@@ -53,6 +54,7 @@ var Header = {
     const linkJustifyToggler  = box('Centered links',             'Centered links');
     const customNavToggler    = box('Custom Board Navigation',    'Custom board navigation');
     const footerToggler       = box('Bottom Board List',          'Hide bottom board list');
+    const bannerToggler       = box('Hide Board Banner',          'Hide board banner');
     const shortcutToggler     = box('Shortcut Icons',             'Shortcut Icons');
     const editCustomNav = $.el('a', {
       textContent: 'Edit custom board navigation',
@@ -66,6 +68,7 @@ var Header = {
     this.linkJustifyToggler  = linkJustifyToggler.firstElementChild;
     this.headerToggler       = headerToggler.firstElementChild;
     this.footerToggler       = footerToggler.firstElementChild;
+    this.bannerToggler       = bannerToggler.firstElementChild;
     this.shortcutToggler     = shortcutToggler.firstElementChild;
     this.customNavToggler    = customNavToggler.firstElementChild;
 
@@ -76,6 +79,7 @@ var Header = {
     $.on(this.scrollHeaderToggler, 'change', this.toggleHideBarOnScroll);
     $.on(this.linkJustifyToggler,  'change', this.toggleLinkJustify);
     $.on(this.footerToggler,       'change', this.toggleFooterVisibility);
+    $.on(this.bannerToggler,       'change', this.toggleBannerVisibility);
     $.on(this.shortcutToggler,     'change', this.toggleShortcutIcons);
     $.on(this.customNavToggler,    'change', this.toggleCustomNav);
     $.on(editCustomNav,        'click',  this.editCustomNav);
@@ -86,6 +90,7 @@ var Header = {
     this.setLinkJustify(Conf['Centered links']);
     this.setShortcutIcons(Conf['Shortcut Icons']);
     this.setFooterVisibility(Conf['Bottom Board List']);
+    this.setBannerVisibility(Conf['Hide Board Banner']);
 
     $.sync('Fixed Header',               this.setBarFixed);
     $.sync('Header auto-hide on scroll', this.setHideBarOnScroll);
@@ -94,6 +99,7 @@ var Header = {
     $.sync('Header auto-hide',           this.setBarVisibility);
     $.sync('Centered links',             this.setLinkJustify);
     $.sync('Bottom Board List',          this.setFooterVisibility);
+    $.sync('Hide Board Banner',          this.setBannerVisibility);
 
     this.addShortcut('menu', menuButton, 900);
 
@@ -113,6 +119,8 @@ var Header = {
           {el: linkJustifyToggler}
         ,
           {el: footerToggler}
+        ,
+          {el: bannerToggler}
         ,
           {el: shortcutToggler}
         ,
@@ -528,6 +536,17 @@ var Header = {
   setFooterVisibility(hide: boolean) {
     Header.footerToggler.checked = hide;
     return doc.classList.toggle('hide-bottom-board-list', hide);
+  },
+
+  setBannerVisibility(hide: boolean) {
+    Header.bannerToggler.checked = hide;
+    return doc.classList.toggle('hide-board-banner', hide);
+  },
+
+  toggleBannerVisibility(this: HTMLInputElement) {
+    $.event('CloseMenu');
+    Header.setBannerVisibility(this.checked);
+    return $.set('Hide Board Banner', this.checked);
   },
 
   toggleFooterVisibility(this: HTMLInputElement) {

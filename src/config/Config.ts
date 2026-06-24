@@ -1252,6 +1252,7 @@ http://eye.swfchan.com/search/?q=%name;types:swf
     'Centered links':             false,
     'Header catalog links':       false,
     'Bottom Board List':          true,
+    'Hide Board Banner':          false,
     'Shortcut Icons':             true,
     'Custom Board Navigation':    true
   },
