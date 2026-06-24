@@ -1,6 +1,6 @@
 ## 4chan-neXT changelog
 
-### Unreleased
+### 1.2.1 (2026-06-23)
 
 - Added a "Video Duration Badge" setting (off by default) that shows a video length badge on webm/mp4 thumbnails. It reads each video's length from its metadata lazily, only as thumbnails scroll into view, so it uses a little extra bandwidth.
 - Expanded the Custom CSS editor:
