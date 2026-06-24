@@ -9,6 +9,7 @@ import StylingPage from './Settings/Styling.html';
 import Redirect from '../Archive/Redirect';
 import Config, { styleVariantKeys } from '../config/Config';
 import ImageHost from '../Images/ImageHost';
+import { noWebmTitleMetadataSites } from '../Images/Metadata';
 import CustomCSS from '../Miscellaneous/CustomCSS';
 import FileInfo from '../Miscellaneous/FileInfo';
 import Keybinds from '../Miscellaneous/Keybinds';
@@ -2391,7 +2392,7 @@ Enable it on boards.${location.hostname.split('.')[1]}.org in your browser's pri
     const groups: [string, string[]][] = [
       ['Image Behavior', ['Image Expansion', 'Image Hover', 'Image Hover in Catalog', 'Replace Thumbnails', 'Replace GIF', 'Replace JPG', 'Replace PNG', 'Replace WEBM', 'Restart when Opened']],
       ['Images', ['Gallery', 'Fullscreen Gallery', 'PDF in Gallery', 'Sauce', 'Reveal Spoiler Thumbnails', 'Image Prefetching', 'Fappe Tyme', 'Werk Tyme']],
-      ['Videos', ['WEBM Metadata', 'Autoplay', 'Show Controls', 'Click Passthrough', 'Allow Sound', 'Mouse Wheel Volume', 'Loop in New Tab', 'Volume in New Tab', 'Enable sound posts']]
+      ['Videos', ['WEBM Metadata', 'Video Duration Badge', 'Autoplay', 'Show Controls', 'Click Passthrough', 'Allow Sound', 'Mouse Wheel Volume', 'Loop in New Tab', 'Volume in New Tab', 'Enable sound posts']]
     ];
     for (const [legendTitle, keys] of groups) {
       const fs = $.el('details', { open: true }, { innerHTML: `<summary>${legendTitle}</summary>` });
@@ -2401,6 +2402,20 @@ Enable it on boards.${location.hostname.split('.')[1]}.org in your browser's pri
       }
       if (!Settings.addCheckboxes(fs, group, items, inputs)) continue;
       $.add(section, fs);
+    }
+
+    // WEBM title metadata is stripped by some sites (e.g. 4chan), so the feature
+    // can only ever report "no title" there. Grey out its toggle and explain why
+    // instead of leaving a dead option the user can enable to no effect.
+    if (g.SITE && noWebmTitleMetadataSites.includes(g.SITE.ID)) {
+      const wmInput = inputs['WEBM Metadata'] as HTMLInputElement | undefined;
+      if (wmInput) {
+        wmInput.disabled = true;
+        const row = wmInput.parentNode!.parentNode as HTMLElement;
+        $.addClass(row, 'setting-unavailable');
+        const desc = $('.setting-description', row);
+        if (desc) { $.add(desc, $.tn(' (not available on 4chan, which strips webm titles)')); }
+      }
     }
 
     Settings.renderMainGroups(section, {

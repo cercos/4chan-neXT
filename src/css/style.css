@@ -3110,9 +3110,13 @@ body > #overlay:not(.media-preview) {
   position: absolute;
   width: 100%;
 }
-/* The whole control dims together when disabled or colour-linked. */
+/* The whole control dims together when disabled or colour-linked. The
+   translateZ(0) pins the dimmed (translucent) control to its own compositing
+   layer so it stays a fixed brightness — otherwise a neighbouring row's hover
+   shadow/repaint re-blends it and it visibly flickers brighter/darker. */
 .section-styling .styling-color-merged:has(.styling-color-hex:disabled) {
   opacity: .5;
+  transform: translateZ(0);
 }
 /* Manual highlight text colours sit inline, just left of the mode dropdown,
    and only appear when the row's text mode is "Manual" (toggled via [hidden]). */
@@ -3134,6 +3138,7 @@ body > #overlay:not(.media-preview) {
 /* Marker color slaved to its highlight colour → dim the now-inert picker. */
 .section-styling .styling-hl-mkcolor[data-color-linked="true"] .styling-color-merged {
   opacity: .45;
+  transform: translateZ(0);
 }
 /* Disabled controls (gated by a master/per-row switch) read as muted, and
    their row label dims with them. */
@@ -5213,6 +5218,33 @@ textarea.copy-text-element {
 }
 .fileThumb > .warning {
   clear: both;
+}
+/* YouTube-style video length badge, pinned to the corner of a video thumbnail. */
+.fileThumb.has-video-duration {
+  position: relative;
+}
+.video-duration-badge {
+  position: absolute;
+  bottom: 4px;
+  right: 4px;
+  background: rgba(0, 0, 0, 0.8);
+  color: #fff;
+  font-size: 11px;
+  font-weight: 600;
+  line-height: 1;
+  padding: 2px 4px;
+  border-radius: 3px;
+  pointer-events: none;
+  font-variant-numeric: tabular-nums;
+  z-index: 1;
+}
+/* Hide it once the thumbnail is expanded to full size (it would cover controls). */
+.expanded-image .video-duration-badge {
+  display: none;
+}
+/* A settings row that's inert on the current site (e.g. WEBM Metadata on 4chan). */
+.setting-unavailable {
+  opacity: 0.5;
 }
 #ihover {
   pointer-events: none;

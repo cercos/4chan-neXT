@@ -6,7 +6,7 @@ import { Conf, d, g } from "../globals/globals";
 import Get from "../General/Get";
 
 // Sites known to strip WebM title metadata, making this feature only show "no title" and pointless to display.
-const noWebmTitleMetadataSites = ['4chan.org'];
+export const noWebmTitleMetadataSites = ['4chan.org'];
 
 var Metadata = {
   init() {

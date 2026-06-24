@@ -307,6 +307,11 @@ const Config = {
         true,
         'Add link to fetch title metadata from webm videos.'
       ],
+      'Video Duration Badge': [
+        false,
+        'Show a video length badge on webm/mp4 thumbnails. Reads each video\'s metadata ' +
+          '(lazily, as thumbnails scroll into view), so it uses a little extra bandwidth.'
+      ],
       'Reveal Spoiler Thumbnails': [
         false,
         'Replace spoiler thumbnails with the original image.'

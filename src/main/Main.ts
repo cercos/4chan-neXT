@@ -24,6 +24,7 @@ import ImageHost from "../Images/ImageHost";
 import ImageHover from "../Images/ImageHover";
 import ImageLoader from "../Images/ImageLoader";
 import Metadata from "../Images/Metadata";
+import VideoDuration from "../Images/VideoDuration";
 import RevealSpoilers from "../Images/RevealSpoilers";
 import Sauce from "../Images/Sauce";
 import Volume from "../Images/Volume";
@@ -1310,6 +1311,7 @@ User agent: ${navigator.userAgent}\
     ['Image Hover',               ImageHover],
     ['Volume Control',            Volume],
     ['WEBM Metadata',             Metadata],
+    ['Video Duration Badge',      VideoDuration],
     ['Comment Expansion',         ExpandComment],
     ['Thread Expansion',          ExpandThread],
     ['Favicon',                   Favicon],
