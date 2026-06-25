@@ -10,6 +10,12 @@ import $ from "../platform/$";
 import $$ from "../platform/$$";
 import Embedding from "./Embedding";
 
+// Hostname rewrites shared by rewriteVisibleText (link text in the DOM) and
+// rewriteDisplayText (plain text, used so index search matches the displayed
+// host). Global flag is safe here: String.replace resets lastIndex each call.
+const X_HOST_RE = /\b((?:www\.|mobile\.)?(?:fx|vx)?twitter\.com|(?:www\.|mobile\.)?(?:fixup|fixv)?x\.com|twittpr\.com)\b/gi;
+const YOUTUBE_HOST_RE = /\b((?:www\.|m\.|music\.|mobile\.)?(?:youtu\.be|youtube\.com|youtube-nocookie\.com))\b/gi;
+
 var Linkify = {
   init() {
     if (g.VIEW !== 'index' && g.VIEW !== 'thread' && g.VIEW !== 'archive') { return; }
@@ -328,29 +334,26 @@ aero|asia|biz|cat|com|coop|dance|info|int|jobs|mobi|moe|museum|name|net|org|post
   },
 
   rewriteVisibleText(link: HTMLAnchorElement) {
-    // Replace twitter.com / x.com hostnames in the link's visible text with xcancel.com.
-    // Replace youtube.com / youtu.be hostnames in the link's visible text with yewtu.be.
-    // Only touches text nodes so we don't disturb embed icons or nested markup.
-    const replaceX = (s: string) => s.replace(
-      /\b((?:www\.|mobile\.)?(?:fx|vx)?twitter\.com|(?:www\.|mobile\.)?(?:fixup|fixv)?x\.com|twittpr\.com)\b/gi,
-      'xcancel.com'
-    );
-    const replaceYouTube = (s: string) => s.replace(
-      /\b((?:www\.|m\.|music\.|mobile\.)?(?:youtu\.be|youtube\.com|youtube-nocookie\.com))\b/gi,
-      'yewtu.be'
-    );
+    // Rewrite twitter/x -> xcancel and youtube -> yewtu.be in the link's visible
+    // text. Only touches text nodes so we don't disturb embed icons or nested
+    // markup.
     const walker = document.createTreeWalker(link, NodeFilter.SHOW_TEXT);
     let node: Text | null;
     while ((node = walker.nextNode() as Text | null)) {
-      let updated = node.data;
-      if (Conf['Convert X to xcancel']) {
-        updated = replaceX(updated);
-      }
-      if (Conf['Convert YouTube to yewtu.be']) {
-        updated = replaceYouTube(updated);
-      }
+      const updated = Linkify.rewriteDisplayText(node.data);
       if (updated !== node.data) { node.data = updated; }
     }
+  },
+
+  // Apply the same hostname rewrites Linkify shows in links to a plain text
+  // string, gated by the same settings. Lets index search match what the user
+  // sees (e.g. searching "xcancel" finds a converted x.com link) rather than the
+  // original host buried in the raw comment text.
+  rewriteDisplayText(text: string): string {
+    let updated = text;
+    if (Conf['Convert X to xcancel']) { updated = updated.replace(X_HOST_RE, 'xcancel.com'); }
+    if (Conf['Convert YouTube to yewtu.be']) { updated = updated.replace(YOUTUBE_HOST_RE, 'yewtu.be'); }
+    return updated;
   },
 
   rewriteXURL(urlString: string) {

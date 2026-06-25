@@ -504,6 +504,10 @@ var Settings: any = {
     });
 
     $.add(d.body, dialog);
+    // Lock the page scroller while the dialog is open so wheel/touch scrolling
+    // over the backdrop (or chaining out of a settings textarea once its own
+    // scroll bottoms out) doesn't scroll the thread behind it. Removed in close().
+    d.documentElement.classList.add('xt-settings-open');
     Settings.restoreWindowLayout(settingsWindow);
     Settings.watchSettingsNavWidth(settingsWindow);
     Settings.applyResponsiveNavLayout(settingsWindow);
@@ -541,6 +545,7 @@ var Settings: any = {
       Settings.settingsNavResizeFallback = null;
     }
     $.rm(Settings.dialog);
+    d.documentElement.classList.remove('xt-settings-open');
     // The overlay (and every detached panel inside it) is gone now; drop the
     // registry so the next open starts with no stale detach controllers.
     Settings.detached = Object.create(null);

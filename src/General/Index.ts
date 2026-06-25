@@ -6,6 +6,7 @@ import Post from '../classes/Post';
 import Thread from '../classes/Thread';
 import Config from '../config/Config';
 import Filter from '../Filtering/Filter';
+import Linkify from '../Linkification/Linkify';
 import PostHiding from '../Filtering/PostHiding';
 import ThreadHiding from '../Filtering/ThreadHiding';
 import Main from '../main/Main';
@@ -1756,8 +1757,10 @@ var Index: any = {
       }
       if (file) { parts.push(file.name); }
       // Collapse whitespace so a quoted phrase still matches across the line
-      // breaks parseComment leaves in place (`<br>` becomes `\n`).
-      obj._searchTextOP = parts.join(' ').replace(/\s+/g, ' ').toLowerCase();
+      // breaks parseComment leaves in place (`<br>` becomes `\n`). Rewrite hosts
+      // (x.com -> xcancel, etc.) so search matches the converted text the user
+      // sees, not the original URL in the raw comment.
+      obj._searchTextOP = Linkify.rewriteDisplayText(parts.join(' ')).replace(/\s+/g, ' ').toLowerCase();
     }
     if (opOnly) { return obj._searchTextOP; }
     if (obj._searchText == null) {
@@ -1772,7 +1775,7 @@ var Index: any = {
           if (reply.com) { parts.push(g.SITE!.Build.parseComment(reply.com)); }
         }
       }
-      obj._searchText = parts.join(' ').replace(/\s+/g, ' ').toLowerCase();
+      obj._searchText = Linkify.rewriteDisplayText(parts.join(' ')).replace(/\s+/g, ' ').toLowerCase();
     }
     // Append the expanded thread's text (if any) at lookup time rather than
     // baking it into the cache, so collapsing/expanding takes effect without

@@ -589,6 +589,13 @@ audio.controls-added {
 :root.fourchan-x body {
   box-sizing: border-box;
 }
+/* While the settings dialog is open, lock the page scroller (set in
+   Settings.open/close) so wheel/touch over the backdrop, or chaining out of an
+   inner settings scroll area, can't scroll the thread behind the overlay. The
+   fixed overlay and its own scroll containers are unaffected. */
+html.xt-settings-open {
+  overflow: hidden;
+}
 #overlay,
 #xt-settings-overlay {
   background-color: rgba(0, 0, 0, .5);
@@ -3706,6 +3713,7 @@ body > #overlay:not(.media-preview) {
   display: block !important;
   -webkit-text-fill-color: transparent !important;
   overflow: auto !important;
+  overscroll-behavior: contain;
   pointer-events: auto !important;
   resize: none !important;
   z-index: 2 !important;
