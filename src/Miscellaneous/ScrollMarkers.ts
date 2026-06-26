@@ -21,6 +21,7 @@ const ScrollMarkers = {
   flashTimer: 0 as ReturnType<typeof setTimeout> | 0,
   preview: undefined as { el: HTMLElement; post: Post; marker: HTMLElement } | undefined,
   scrollbarWidth: undefined as number | undefined,
+  scrollbarDPR: undefined as number | undefined,
 
   position(): ScrollMarkerPosition {
     const pos = Conf['Scrollbar Marker Position'];
@@ -59,17 +60,17 @@ const ScrollMarkers = {
   },
 
   measureScrollbarWidth() {
-    if (ScrollMarkers.scrollbarWidth != null) return ScrollMarkers.scrollbarWidth;
-    let width = window.innerWidth - d.documentElement.clientWidth;
-    if (width > 0) return (ScrollMarkers.scrollbarWidth = width);
+    const dpr = window.devicePixelRatio || 1;
+    if (ScrollMarkers.scrollbarWidth != null && ScrollMarkers.scrollbarDPR === dpr) {
+      return ScrollMarkers.scrollbarWidth;
+    }
     const outer = $.el('div', {
       style: 'width:100px;height:100px;overflow:scroll;position:absolute;top:-9999px;visibility:hidden;pointer-events:none',
     });
-    const inner = $.el('div', { style: 'width:100%' });
-    $.add(outer, inner);
     $.add(d.body, outer);
-    width = outer.offsetWidth - inner.offsetWidth;
+    const width = outer.offsetWidth - outer.clientWidth;
     $.rm(outer);
+    ScrollMarkers.scrollbarDPR = dpr;
     return (ScrollMarkers.scrollbarWidth = width);
   },
 
