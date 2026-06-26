@@ -24,11 +24,21 @@ const ScrollMarkers = {
 
   position(): ScrollMarkerPosition {
     const pos = Conf['Scrollbar Marker Position'];
-    if (pos === 'over-columns') return 'over-columns';
+    let resolved: ScrollMarkerPosition;
+    if (pos === 'over-columns') resolved = 'over-columns';
     // Legacy values fold into the single Over mode.
-    if (pos === 'scrollbar' || pos === 'overlay' || pos === 'over') return 'over';
-    if (pos === 'offset-single') return 'offset-single';
-    return 'offset';
+    else if (pos === 'scrollbar' || pos === 'overlay' || pos === 'over') resolved = 'over';
+    else if (pos === 'offset-single') resolved = 'offset-single';
+    else resolved = 'offset';
+    // Over modes only work on overlay scrollbars; on classic scrollbars the native
+    // bar paints over the markers and they vanish. The menu forbids *selecting* an
+    // over mode without overlay scrollbars, but a value already saved in storage (or
+    // a legacy 'over'/'overlay'/'scrollbar') bypasses that, so degrade it here to the
+    // beside equivalent — markers can never be silently hidden.
+    if ((resolved === 'over' || resolved === 'over-columns') && !ScrollMarkers.overlayScrollbars()) {
+      resolved = resolved === 'over-columns' ? 'offset' : 'offset-single';
+    }
+    return resolved;
   },
 
   // 0 width means overlay scrollbars (the only kind the over modes can sit on).
@@ -101,6 +111,23 @@ const ScrollMarkers = {
     },
 
     buildSubEntries() {
+      const enabledLabel = $.el('label', {
+        className: 'entry scroll-marker-enabled-option',
+        title: 'Show colored markers along the right edge of the page.',
+        innerHTML: '<input type="checkbox" name="Scrollbar Markers"> Enabled',
+      });
+      const enabledBox = $('input', enabledLabel) as HTMLInputElement;
+      enabledBox.checked = Conf['Scrollbar Markers'];
+      // Keep the menu open so the checkbox state is visible after toggling.
+      $.on(enabledLabel, 'click', (e: Event) => e.stopPropagation());
+      $.on(enabledBox, 'change', () => {
+        const next = enabledBox.checked;
+        Conf['Scrollbar Markers'] = next;
+        $.set('Scrollbar Markers', next);
+        if (!next) ScrollMarkers.hidePreview();
+        ScrollMarkers.refreshDeferred();
+      });
+
       const options: Array<[ScrollMarkerPosition, string, boolean]> = [
         ['offset-single', 'Beside scrollbar (single)', false],
         ['offset', 'Beside scrollbar (columns)', false],
@@ -130,6 +157,7 @@ const ScrollMarkers = {
         }
         return { el: a };
       });
+      entries.unshift({ el: enabledLabel });
       if (!overlay) {
         const note = $.el('div', {
           className: 'scroll-marker-note',

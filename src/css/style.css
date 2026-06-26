@@ -7183,10 +7183,10 @@ div.post {
   opacity: var(--xt-scroll-marker-ghost-opacity, 1);
 }
 /* Transparent track (the theme otherwise tints it blue behind the markers) +
-   --xt-border thumb. */
+   the same thumb color used by over-scrollbar marker modes. */
 :root.scrollbar-markers-offset,
 :root.scrollbar-markers-offset-single {
-  scrollbar-color: var(--xt-border, rgba(128, 128, 128, .5)) transparent;
+  scrollbar-color: var(--xt-scroll-thumb-bg, color-mix(in srgb, currentColor 70%, transparent)) transparent;
 }
 :root.scrollbar-markers-offset::-webkit-scrollbar-track,
 :root.scrollbar-markers-offset-single::-webkit-scrollbar-track {
@@ -7194,7 +7194,7 @@ div.post {
 }
 :root.scrollbar-markers-offset::-webkit-scrollbar-thumb,
 :root.scrollbar-markers-offset-single::-webkit-scrollbar-thumb {
-  background: var(--xt-border, rgba(128, 128, 128, .5));
+  background: var(--xt-scroll-thumb-bg, color-mix(in srgb, currentColor 70%, transparent));
 }
 /* Beside scrollbar (columns): N narrow sub-columns hugging the scrollbar.
    Per-marker `right` and `width` are set inline by ScrollMarkers.refresh
