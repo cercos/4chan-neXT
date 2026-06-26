@@ -2,8 +2,11 @@
 
 ### Unreleased
 
+### 1.2.2 (2026-06-26)
+
 - Added neXT settings highlights for the header menu as green dot for next and orangish dot for changed menu's or settings.
 - Added a "Hide board banner" setting (Header menu, off by default) that hides the rotating board banner image at the top of the page.
+- Fixed beside-scrollbar marker mode using a darker scrollbar thumb than over-scrollbar mode.
 
 ### 1.2.1 (2026-06-23)
 
