@@ -96,7 +96,9 @@ export default async function generateMetadata(packageJson, fileName, metaFileNa
 // @downloadURL  ${base}/${fileName}
 `;
   } else {
-    output += `// @updateURL    ${meta.downloads}/latest/download/${metaFileName}
+    const repoPath = meta.downloads.replace(/^https?:\/\/github\.com\//i, '').replace(/\/releases\/?$/i, '');
+    const updateBase = `https://raw.githubusercontent.com/${repoPath}/${meta.updateBranch}/builds`;
+    output += `// @updateURL    ${updateBase}/${metaFileName}
 // @downloadURL  ${meta.downloads}/latest/download/${fileName}
 `;
   }

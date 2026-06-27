@@ -7,6 +7,7 @@
     "fork": "cercos",
     "page": "https://4chan-next.com",
     "downloads": "https://github.com/cercos/4chan-next/releases",
+    "updateBranch": "project-neXT",
     "oldVersions": "https://raw.githubusercontent.com/ccd0/4chan-x/",
     "faq": "https://github.com/cercos/4chan-next/wiki/Frequently-Asked-Questions",
     "upstreamFaq": "https://github.com/ccd0/4chan-x/wiki/Frequently-Asked-Questions",

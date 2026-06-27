@@ -2,6 +2,7 @@
 
 ### Unreleased
 
+- Reworked auto-update hosting so rollbacks stick. Update checks now track new releases through the repository instead of always pulling the very latest, so installing an older release and turning off "Check for updates" in your userscript manager keeps you on that version instead of being force-updated forward. Normal updates still arrive automatically when a new release is published.
 - Made compatibility with site styling scripts generic so it works across styling scripts rather than a single one. When a styling script is detected the Styling page names it, lets you hand individual sections (Site Style, Text Colors, Custom CSS) over to it with per-section checkboxes, and shows a shortcut to open that script's own settings when it exposes one.
 - Fixed the per-section styling toggles resetting back to all-on after navigating between pages when a styling script loaded later than the page. Detection now waits for the script to appear before deciding, so your section choices stick.
 - Made inputs, dialogs, menus, dropdown (select) popups, and detached settings windows follow the active theme instead of rendering as hardcoded white boxes. They now pull from a shared background color sampled from the live page, so they match custom and styling-script themes too.
