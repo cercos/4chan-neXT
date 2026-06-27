@@ -2012,6 +2012,13 @@ Enable it on boards.${location.hostname.split('.')[1]}.org in your browser's pri
           '<div>Full board list toggle: <code>toggle-all</code></div>' +
           '<br>' +
           '<div class="note">' +
+            'You can apply one modifier to a whole group of boards by prefixing it before a brace, instead of suffixing every board:<br>' +
+            '<code>replace{ g biz pol b gif }</code> &rarr; <code>g-replace biz-replace pol-replace b-replace gif-replace</code><br>' +
+            'Combine modifiers with spaces: <code>title nt{ g a biz }</code> &rarr; <code>g-title-nt a-title-nt biz-title-nt</code><br>' +
+            'Boards before/after the braces and any board that already has its own <code>-modifier</code> are left untouched, so per-board overrides still win: <code>title{ g a-full biz }</code> keeps <code>a-full</code>.' +
+          '</div>' +
+          '<br>' +
+          '<div class="note">' +
             '<code>[ toggle-all ] [current-title] [g-title / a-title / jp-title] [x / wsg / h] [t-text:"Piracy"]</code><br>' +
             'will give you<br>' +
             '<code>[ + ] [Technology] [Technology / Anime &amp; Manga / Otaku Culture] [x / wsg / h] [Piracy]</code><br>' +
@@ -2030,6 +2037,7 @@ Enable it on boards.${location.hostname.split('.')[1]}.org in your browser's pri
     $.on(textarea, 'change', Settings.boardnav);
     items['boardnav'] = Conf['boardnav'];
     inputs['boardnav'] = textarea;
+    fsNav.dataset.nextSection = 'changed';
     $.add(fsNav, navContent);
     // Detach button lives in the section's <summary> (mirrors Sauce/Personas);
     // relocate the inner content so the summary stays put with the re-attach note.

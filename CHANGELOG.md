@@ -2,6 +2,8 @@
 
 ### Unreleased
 
+- Added grouped modifiers to the Custom Board Navigation syntax: prefix a modifier before a brace to apply it to every board inside, instead of suffixing each one. For example `replace{ g biz pol }` is the same as `g-replace biz-replace pol-replace`, and you can combine modifiers like `title nt{ g a biz }`. Boards outside the braces, and any board that already has its own `-modifier`, are left untouched so per-board overrides still win.
+
 ### 1.2.2 (2026-06-26)
 
 - Added neXT settings highlights for the header menu as green dot for next and orangish dot for changed menu's or settings.

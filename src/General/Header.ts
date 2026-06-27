@@ -260,12 +260,25 @@ var Header = {
         spanStack.pop();
         currentContainer = spanStack.length > 0 ? spanStack[spanStack.length - 1] : list;
       } else {
+        segment = Header.expandNavGroups(segment);
         const re = /[\w@]+(-(all|title|replace|full|index|catalog|archive|expired|nt|(mode|sort|text):"[^"]+"(,"[^"]+")?))*|[^\w@]+/g;
         const segmentNodes = (segment.match(re) || []).map((t) => Header.mapCustomNavigation(t));
         segmentNodes.forEach(node => currentContainer.appendChild(node));
       }
     });
     return CatalogLinks.setLinks(list);
+  },
+
+  expandNavGroups(segment: string) {
+    const MODS = 'title|replace|full|index|catalog|archive|expired|nt';
+    const groupRe = new RegExp(`((?:\\b(?:${MODS})\\b[ \\t]*)+)\\{([^{}]*)\\}`, 'g');
+    const tokenRe = /[\w@]+(-(all|title|replace|full|index|catalog|archive|expired|nt|(mode|sort|text):"[^"]+"(,"[^"]+")?))*|[^\w@]+/g;
+    return segment.replace(groupRe, (_m, modWords: string, inner: string) => {
+      const suffix = '-' + modWords.trim().split(/\s+/).join('-');
+      return inner.replace(tokenRe, (tok) =>
+        /^[\w@]/.test(tok) && !tok.includes('-') ? tok + suffix : tok
+      );
+    });
   },
 
   mapCustomNavigation(t: string) {
