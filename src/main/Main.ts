@@ -538,7 +538,7 @@ var Main = {
   initStyle() {
     if (!Main.isThisPageLegit()) { return; }
     const homeSiteStyle = Settings.styleConf('siteStyle');
-    Settings.onExternalStylerReady(present => {
+    Settings.onExternalStylerReady((present: boolean) => {
       (present ? $.addClass : $.rmClass)(doc, 'xt-external-style');
       Settings.initStylingSectionDefaults(present);
     });
