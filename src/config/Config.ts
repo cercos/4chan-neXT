@@ -1095,14 +1095,6 @@ http://eye.swfchan.com/search/?q=%name;types:swf
   customCSSHome: false,
   siteStyle: '',
   siteStyleHome: false,
-  // Per-section master switches for the Styling page. Each gates one Styling
-  // subsection (Site Style, Highlight Colors, Scrollbar Markers, Text Colors,
-  // Custom CSS) at runtime *without* touching the section's inner settings, so
-  // toggling a section off and back on restores the user's prior config. The
-  // title checkboxes that flip these only appear when StyleChan is installed;
-  // defaults are all-on so non-StyleChan users see no behavior change.
-  // `stylingSectionsInitialized` guards the one-time recommendation that
-  // disables StyleChan-owned sections the first time StyleChan is detected.
   stylingSectionSiteStyle: true,
   stylingSectionHighlights: true,
   stylingSectionScrollbarMarkers: true,

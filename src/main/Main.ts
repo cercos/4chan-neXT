@@ -357,9 +357,6 @@ var Main = {
       'Custom CSS': true,
       'usercss SFW': '',
       'usercss NSFW': '',
-      // Per-section master switches. The home page can't detect StyleChan
-      // (it doesn't run here), so we read the persisted flags a board visit
-      // synced. Default-true ⇒ non-StyleChan users are unaffected.
       stylingSectionSiteStyle: true,
       stylingSectionCustomCSS: true,
     };
@@ -541,11 +538,10 @@ var Main = {
   initStyle() {
     if (!Main.isThisPageLegit()) { return; }
     const homeSiteStyle = Settings.styleConf('siteStyle');
-    // On a board page StyleChan detection is reliable, so this is where we run
-    // the one-time "hand StyleChan-owned sections over" recommendation (and the
-    // reverse reset once StyleChan is uninstalled). The per-section master
-    // switches then gate styling at runtime instead of force-disabling settings.
-    Settings.initStylingSectionDefaults();
+    Settings.onExternalStylerReady(present => {
+      (present ? $.addClass : $.rmClass)(doc, 'xt-external-style');
+      Settings.initStylingSectionDefaults(present);
+    });
     if (Conf['siteStyleHome'] && Settings.stylingSectionEnabled('siteStyle') && homeSiteStyle) {
       Main.setSiteStyleHomeCookie(homeSiteStyle);
     }
@@ -618,8 +614,6 @@ var Main = {
     let preferredStyleApplied = false;
     const applyPreferredStyle = function() {
       const activeSiteStyle = Settings.styleConf('siteStyle');
-      // Site Style section off ⇒ don't actively switch the site theme; leave
-      // whatever the page / native extension / StyleChan rendered in place.
       if (!Settings.stylingSectionEnabled('siteStyle')) { return; }
       if (preferredStyleApplied || g.SITE!.software !== 'yotsuba' || !activeSiteStyle) { return; }
       const preferred = activeSiteStyle;
@@ -728,16 +722,22 @@ var Main = {
       div.style.position = 'absolute';
       div.style.visibility = 'hidden';
       $.add(d.body, div);
-      let bgColor = window.getComputedStyle(div).backgroundColor;
+      const divStyle = window.getComputedStyle(div);
+      let bgColor = divStyle.backgroundColor;
+      let solidBg = divStyle.backgroundColor;
       $.rm(div);
       const rgb = bgColor.match(/[\d.]+/g) as any;
       // Use body background if reply background is transparent
       if (!/^rgb\(/.test(bgColor)) {
         const s = window.getComputedStyle(d.body);
         bgColor = `${s.backgroundColor} ${s.backgroundImage} ${s.backgroundRepeat} ${s.backgroundPosition}`;
+        solidBg = s.backgroundColor;
       }
       let css = `\
-.dialog, .suboption-list > div:last-of-type, :root.catalog-hover-expand .catalog-container:hover > .post {
+:root {
+  --xt-background: ${solidBg};
+}
+.dialog, .suboption-list > div:last-of-type, #xt-settings-overlay .xt-detach-panel, :root.catalog-hover-expand .catalog-container:hover > .post {
   background: ${bgColor};
 }
 .unread-mark-read {
@@ -766,11 +766,6 @@ var Main = {
           const activeSiteStyle = Settings.styleConf('siteStyle');
           // Don't clobber a custom theme selection with the native dropdown's value.
           if (isCustomSiteStyle(activeSiteStyle)) { return; }
-          // Only mirror the native dropdown back into the saved slot while our
-          // Site Style section is actually in charge. When it's been handed off
-          // to StyleChan (section off), StyleChan drives the native selector, so
-          // capturing its value here would clobber the user's stored theme — the
-          // theme would then fail to come back after StyleChan is removed.
           if (activeSiteStyle !== selected && Settings.stylingSectionEnabled('siteStyle')) {
             const siteStyleKey = Settings.variantKey('siteStyle');
             Conf[siteStyleKey] = selected;

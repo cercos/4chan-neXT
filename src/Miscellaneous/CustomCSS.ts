@@ -9,9 +9,6 @@ const CustomCSS = {
   style: null as any,
 
   init() {
-    // The Custom CSS section's master switch (only ever off when StyleChan is
-    // installed) gates injection without touching the user's `Custom CSS` /
-    // `usercss` settings, so re-enabling the section restores their CSS.
     if (!Settings.stylingSectionEnabled('customCSS')) { return; }
     if (!Conf['Custom CSS']) { return; }
     return this.addStyle();

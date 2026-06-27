@@ -144,29 +144,26 @@
   box-shadow: -1px 2px 2px rgba(0, 0, 0, 0.25);
 }
 .field {
-  background-color: #FFF;
+  background-color: transparent;
   padding: 2px 4px 3px;
-  border: 1px solid #CCC;
+  border: 1px solid rgba(128, 128, 128, .45);
+  border-radius: 3px;
   box-sizing: border-box;
-  color: #333;
+  color: inherit;
   font: 13px sans-serif;
   outline: none;
   margin: 0px;
   transition: color .25s, border-color .25s;
 }
 .field::placeholder {
-  color: #AAA;
+  color: rgba(128, 128, 128, .85);
   opacity: 1;
 }
 .field:hover {
-  border-color: #999;
-}
-.field:hover, .field:focus, .field.focus {
-  color: #000;
+  border-color: rgba(128, 128, 128, .7);
 }
 .field[disabled] {
-  background-color: #F2F2F2;
-  color: #888;
+  opacity: .55;
 }
 .move {
   cursor: move;
@@ -667,7 +664,7 @@ html.xt-settings-open {
   width: 30ch;
   max-width: 70vw;
   z-index: 5;
-  background-color: var(--xt-dialog-bg, var(--background, Canvas));
+  background-color: var(--xt-dialog-bg, var(--xt-background, var(--background, Canvas)));
   box-shadow: 0 1px 6px rgba(0, 0, 0, .35);
 }
 .settings-titlebar-actions {
@@ -919,7 +916,7 @@ html.highlight-next-global #menu .entry[data-next-status="changed"] {
    board update sound, …). Re-theme the options to the dialog background, matching
    the styling-section and #qr selects which already do this. */
 #xt-settings-overlay select.field option {
-  background-color: var(--xt-dialog-bg, var(--background, Canvas));
+  background-color: var(--xt-dialog-bg, var(--xt-background, var(--background, Canvas)));
   color: inherit;
 }
 #xt-settings-overlay .close {
@@ -934,81 +931,71 @@ html.highlight-next-global #menu .entry[data-next-status="changed"] {
   padding: 8px 10px;
   overscroll-behavior: contain;
 }
-.section-container::-webkit-scrollbar {
+:root:not(.xt-external-style) .section-container::-webkit-scrollbar {
   width: 6px;
 }
-.section-container::-webkit-scrollbar-button {
+:root:not(.xt-external-style) .section-container::-webkit-scrollbar-button {
   display: none;
   width: 0;
   height: 0;
 }
-.section-container::-webkit-scrollbar-track {
+:root:not(.xt-external-style) .section-container::-webkit-scrollbar-track {
   background: transparent;
 }
-.section-container::-webkit-scrollbar-thumb {
-  background-color: var(--xt-border, rgba(128, 128, 128, .5));
+:root:not(.xt-external-style) .section-container::-webkit-scrollbar-thumb {
+  background-color: rgba(128, 128, 128, .5);
   border-radius: 3px;
 }
-.section-container::-webkit-scrollbar-thumb:hover {
-  background-color: var(--xt-border, rgba(128, 128, 128, .8));
+:root:not(.xt-external-style) .section-container::-webkit-scrollbar-thumb:hover {
+  background-color: rgba(128, 128, 128, .8);
 }
-/* Firefox: no ::-webkit-scrollbar support — use the standard thin scrollbar.
-   Scoped so it never disables the webkit rules on Chromium (where setting
-   scrollbar-width makes the engine ignore ::-webkit-scrollbar entirely). */
+/* Firefox fallback; scoped so it doesn't disable the webkit rules on Chromium. */
 @supports not selector(::-webkit-scrollbar) {
-  .section-container {
+  :root:not(.xt-external-style) .section-container {
     scrollbar-width: thin;
-    scrollbar-color: var(--xt-border, rgba(128, 128, 128, .5)) transparent;
+    scrollbar-color: rgba(128, 128, 128, .5) transparent;
   }
 }
-/* Match every other scrollable surface in the settings dialog to the panel's
-   themed scrollbar (above), so the textareas — boardnav, sauce, filters,
-   archive lists, banners, JS whitelist, personas, external catalogs — and the
-   section nav list stop falling back to the bulky OS-default scrollbar. */
-#xt-settings-overlay textarea::-webkit-scrollbar,
-.sections-list::-webkit-scrollbar {
+:root:not(.xt-external-style) #xt-settings-overlay textarea::-webkit-scrollbar,
+:root:not(.xt-external-style) .sections-list::-webkit-scrollbar {
   width: 6px;
   height: 6px;
 }
-#xt-settings-overlay textarea::-webkit-scrollbar-button,
-.sections-list::-webkit-scrollbar-button {
+:root:not(.xt-external-style) #xt-settings-overlay textarea::-webkit-scrollbar-button,
+:root:not(.xt-external-style) .sections-list::-webkit-scrollbar-button {
   display: none;
   width: 0;
   height: 0;
 }
-#xt-settings-overlay textarea::-webkit-scrollbar-track,
-.sections-list::-webkit-scrollbar-track {
+:root:not(.xt-external-style) #xt-settings-overlay textarea::-webkit-scrollbar-track,
+:root:not(.xt-external-style) .sections-list::-webkit-scrollbar-track {
   background: transparent;
 }
-#xt-settings-overlay textarea::-webkit-scrollbar-thumb,
-.sections-list::-webkit-scrollbar-thumb {
-  background-color: var(--xt-border, rgba(128, 128, 128, .5));
+:root:not(.xt-external-style) #xt-settings-overlay textarea::-webkit-scrollbar-thumb,
+:root:not(.xt-external-style) .sections-list::-webkit-scrollbar-thumb {
+  background-color: rgba(128, 128, 128, .5);
   border-radius: 3px;
 }
-#xt-settings-overlay textarea::-webkit-scrollbar-thumb:hover,
-.sections-list::-webkit-scrollbar-thumb:hover {
-  background-color: var(--xt-border, rgba(128, 128, 128, .8));
+:root:not(.xt-external-style) #xt-settings-overlay textarea::-webkit-scrollbar-thumb:hover,
+:root:not(.xt-external-style) .sections-list::-webkit-scrollbar-thumb:hover {
+  background-color: rgba(128, 128, 128, .8);
 }
 @supports not selector(::-webkit-scrollbar) {
-  #xt-settings-overlay textarea,
-  .sections-list {
+  :root:not(.xt-external-style) #xt-settings-overlay textarea,
+  :root:not(.xt-external-style) .sections-list {
     scrollbar-width: thin;
-    scrollbar-color: var(--xt-border, rgba(128, 128, 128, .5)) transparent;
+    scrollbar-color: rgba(128, 128, 128, .5) transparent;
   }
 }
-/* Custom CSS editor keeps a slimmer bar, themed to the editor's own palette so
-   it reads against whatever editor theme is picked (which can differ from the
-   surrounding panel). Width/colour override the shared textarea rule above; the
-   ID+class selector outranks the ID+element one so these win. */
-#xt-settings-overlay .custom-css-textarea::-webkit-scrollbar {
+:root:not(.xt-external-style) #xt-settings-overlay .custom-css-textarea::-webkit-scrollbar {
   width: 4px;
   height: 4px;
 }
-#xt-settings-overlay .custom-css-textarea::-webkit-scrollbar-thumb {
+:root:not(.xt-external-style) #xt-settings-overlay .custom-css-textarea::-webkit-scrollbar-thumb {
   background-color: var(--custom-css-border, var(--xt-border, rgba(128, 128, 128, .5)));
 }
 @supports not selector(::-webkit-scrollbar) {
-  #xt-settings-overlay .custom-css-textarea {
+  :root:not(.xt-external-style) #xt-settings-overlay .custom-css-textarea {
     scrollbar-color: var(--custom-css-border, var(--xt-border, rgba(128, 128, 128, .5))) transparent;
   }
 }
@@ -1197,21 +1184,21 @@ html.highlight-next-global #menu .entry[data-next-status="changed"] {
 #fourchanx-settings.settings-nav-horizontal.settings-nav-overflow-left > .settings-titlebar > .settings-nav-scroll-left {
   margin: 0 -10px 0 -6px;
   padding: 2px 12px 2px 3px;
-  background: linear-gradient(to left, transparent, var(--xt-dialog-bg, var(--background, Canvas)) 45%);
+  background: linear-gradient(to left, transparent, var(--xt-dialog-bg, var(--xt-background, var(--background, Canvas))) 45%);
 }
 #fourchanx-settings.settings-nav-horizontal.settings-nav-overflow-right > .settings-titlebar > .settings-nav-scroll-right {
   margin: 0 -6px 0 -10px;
   padding: 2px 3px 2px 12px;
-  background: linear-gradient(to right, transparent, var(--xt-dialog-bg, var(--background, Canvas)) 45%);
+  background: linear-gradient(to right, transparent, var(--xt-dialog-bg, var(--xt-background, var(--background, Canvas))) 45%);
 }
 #fourchanx-settings.settings-nav-horizontal.settings-nav-overflow-left > .settings-titlebar > .settings-nav-scroll-left:hover,
 #fourchanx-settings.settings-nav-horizontal.settings-nav-overflow-left > .settings-titlebar > .settings-nav-scroll-left:focus {
-  background: linear-gradient(to left, transparent, var(--xt-dialog-bg, var(--background, Canvas)) 35%),
+  background: linear-gradient(to left, transparent, var(--xt-dialog-bg, var(--xt-background, var(--background, Canvas))) 35%),
     rgba(128, 128, 128, .16);
 }
 #fourchanx-settings.settings-nav-horizontal.settings-nav-overflow-right > .settings-titlebar > .settings-nav-scroll-right:hover,
 #fourchanx-settings.settings-nav-horizontal.settings-nav-overflow-right > .settings-titlebar > .settings-nav-scroll-right:focus {
-  background: linear-gradient(to right, transparent, var(--xt-dialog-bg, var(--background, Canvas)) 35%),
+  background: linear-gradient(to right, transparent, var(--xt-dialog-bg, var(--xt-background, var(--background, Canvas))) 35%),
     rgba(128, 128, 128, .16);
 }
 #fourchanx-settings.settings-nav-horizontal > .settings-body > nav {
@@ -1256,7 +1243,7 @@ html.highlight-next-global #menu .entry[data-next-status="changed"] {
   padding: 8px;
   border: 1px solid var(--xt-border, rgba(128, 128, 128, .45));
   border-radius: 5px;
-  background: var(--xt-dialog-bg, var(--background, Canvas));
+  background: var(--xt-dialog-bg, var(--xt-background, var(--background, Canvas)));
   box-shadow: 0 8px 28px rgba(0, 0, 0, .4);
   overflow: auto;
 }
@@ -1345,7 +1332,7 @@ html.highlight-next-global #menu .entry[data-next-status="changed"] {
   gap: 2px;
   border: 1px solid var(--xt-border, rgba(128, 128, 128, .45));
   border-radius: 5px;
-  background: var(--xt-dialog-bg, var(--background, Canvas));
+  background: var(--xt-dialog-bg, var(--xt-background, var(--background, Canvas)));
   box-shadow: 0 8px 24px rgba(0, 0, 0, .35);
   overflow: auto;
   white-space: normal;
@@ -2399,19 +2386,12 @@ div[data-checked="false"] > .suboption-list {
   display: none;
 }
 
-/* StyleChan compatibility: each Styling subsection carries a master-switch
-   checkbox in its <summary> title. Disabling one grays its body out while the
-   runtime gates remove its effect from the page. The inner controls stay
-   editable so users can keep working on saved values before re-enabling. */
 .styling-section-summary-label {
   display: inline-flex;
   align-items: center;
   gap: .45em;
   min-width: 0;
 }
-/* The toggle is a <label> wrapping a hidden native checkbox + a custom box that
-   we draw ourselves, so it stays visible even when a host/StyleChan theme zeroes
-   out native checkbox rendering. */
 .styling-section-toggle {
   flex: 0 0 auto;
   display: inline-flex;
@@ -2464,18 +2444,12 @@ details[data-styling-section].styling-section-off > summary {
   opacity: .7;
 }
 
-/* StyleChan injects `<div id="overlay">` (same id as ours used to be — we
-   renamed ours to `xt-settings-overlay`). Their overlay needs to stack above
-   ours when opened on top from the StyleChan info box's "Open StyleChan
-   Settings" shortcut. The QR media preview also uses #overlay but is excluded
-   by its `.media-preview` class. `!important` is required because StyleChan's
-   own CSS pins their overlay at `z-index: 99 !important`. */
+/* Stack a styling script's #overlay above ours; !important beats its z-index:99. */
 body > #overlay:not(.media-preview) {
   z-index: 1003 !important;
 }
 
-/* StyleChan info box: sits at the top of the Styling page with shortcuts. */
-.styling-stylechan-box {
+.styling-extstyle-box {
   border: 1px solid rgba(128, 128, 128, .35);
   border-radius: 4px;
   display: flex;
@@ -2484,16 +2458,16 @@ body > #overlay:not(.media-preview) {
   margin: 0 0 12px;
   padding: 10px 12px;
 }
-.styling-stylechan-text {
+.styling-extstyle-text {
   font-size: 12px;
   line-height: 1.4;
 }
-.styling-stylechan-buttons {
+.styling-extstyle-buttons {
   display: flex;
   flex-wrap: wrap;
   gap: 8px;
 }
-.styling-stylechan-buttons > button {
+.styling-extstyle-buttons > button {
   cursor: pointer;
   padding: 6px 12px;
 }
@@ -2593,7 +2567,7 @@ body > #overlay:not(.media-preview) {
   transform: rotate(180deg);
 }
 .section-styling .styling-theme-menu {
-  background: var(--xt-dialog-bg, var(--background, Canvas));
+  background: var(--xt-dialog-bg, var(--xt-background, var(--background, Canvas)));
   border: 1px solid rgba(128, 128, 128, .45);
   border-radius: 3px;
   box-shadow: 0 4px 12px rgba(0, 0, 0, .18);
@@ -2739,7 +2713,7 @@ body > #overlay:not(.media-preview) {
 /* Keep the popped-open option list readable: an inherited light text colour
    would otherwise sit on the browser's default light popup on dark themes. */
 .section-styling :is(.styling-variant-mode, .styling-theme-row, .styling-hl-octl, .custom-css-controls) select option {
-  background: var(--xt-dialog-bg, var(--background, Canvas));
+  background: var(--xt-dialog-bg, var(--xt-background, var(--background, Canvas)));
   color: inherit;
 }
 .section-styling .styling-inline-controls .styling-color-hex {
@@ -3271,7 +3245,7 @@ body > #overlay:not(.media-preview) {
   background: rgba(128, 128, 128, .25);
 }
 .section-styling .ccss-format-popover {
-  background: var(--xt-dialog-bg, var(--background, Canvas));
+  background: var(--xt-dialog-bg, var(--xt-background, var(--background, Canvas)));
   border: 1px solid rgba(128, 128, 128, .45);
   border-radius: 5px;
   box-shadow: 0 4px 14px rgba(0, 0, 0, .25);
@@ -3674,12 +3648,8 @@ body > #overlay:not(.media-preview) {
   --custom-css-text: #2b2b2b;
   --custom-css-caret: #2b2b2b;
 }
-/* StyleChan (and similar) apply broad `textarea`/`pre` overrides with
-   `!important` that, if they hit only one of the two layers, shift the
-   textarea's text relative to the highlighted overlay. The user then sees
-   selections covering the wrong rows and backspace deleting the wrong
-   character. Pin every layout-affecting property on BOTH layers with
-   `!important` so the two stay glued together regardless of outside CSS. */
+/* Pin layout props on BOTH layers with !important so outside CSS can't shift
+   the textarea text out of sync with the highlight overlay. */
 .custom-css-editor > :is(.custom-css-highlight, .custom-css-textarea) {
   background: var(--custom-css-bg) !important;
   box-sizing: border-box !important;
@@ -4906,7 +4876,7 @@ textarea.copy-text-element {
   justify-content: center;
   cursor: pointer;
   color: inherit;
-  background: linear-gradient(to bottom, transparent, var(--xt-dialog-bg, var(--background, Canvas)) 80%);
+  background: linear-gradient(to bottom, transparent, var(--xt-dialog-bg, var(--xt-background, var(--background, Canvas))) 80%);
   z-index: 2;
 }
 #thread-watcher > .watcher-scroll-more[hidden] {
@@ -4914,7 +4884,7 @@ textarea.copy-text-element {
 }
 /* A thread quoting you is hidden below the fold: tint the fade and caret red. */
 #thread-watcher > .watcher-scroll-more.has-you {
-  background: linear-gradient(to bottom, transparent, color-mix(in srgb, #F00 35%, var(--xt-dialog-bg, var(--background, Canvas))) 80%);
+  background: linear-gradient(to bottom, transparent, color-mix(in srgb, #F00 35%, var(--xt-dialog-bg, var(--xt-background, var(--background, Canvas)))) 80%);
 }
 #thread-watcher > .watcher-scroll-more > .icon {
   width: 11px;
@@ -6059,7 +6029,7 @@ input.field.tripped:not(:hover):not(:focus) {
   padding: 4px;
   border: 1px solid var(--xt-border, rgba(0, 0, 0, .35));
   border-radius: 3px;
-  background: var(--xt-dialog-bg, var(--background, Canvas));
+  background: var(--xt-dialog-bg, var(--xt-background, var(--background, Canvas)));
   color: var(--xt-menu-fg, var(--xt-header-dialog-fg, inherit));
   box-shadow: -2px 2px 8px rgba(0, 0, 0, .35);
   font-size: 11px;
@@ -6698,6 +6668,10 @@ input[type="checkbox"]:checked ~ .checkbox-letter {
   font: inherit;
   line-height: 1.2;
   text-align: right;
+  background-color: transparent;
+  color: inherit;
+  border: 1px solid rgba(128, 128, 128, .45);
+  border-radius: 3px;
 }
 .entry.watcher-thumbnail-controls .watcher-thumb-unit {
   box-sizing: border-box;

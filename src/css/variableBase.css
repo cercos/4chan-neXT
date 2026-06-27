@@ -266,9 +266,8 @@
 }
 
 /* QR */
-#dump-list::-webkit-scrollbar-thumb {
-  background-color: var(--xt-background);
-  border-color: var(--xt-border);
+:root:not(.xt-external-style) #dump-list::-webkit-scrollbar-thumb {
+  background-color: rgba(128, 128, 128, .5);
 }
 .qr-preview {
   background-color: var(--xt-qr-preview-bg, rgba(0, 0, 0, .15));

@@ -207,8 +207,7 @@ var Settings: any = {
 
     if ((g.SITE!.software === 'yotsuba') && Conf['Disable Native Extension']) {
       if ($.hasStorage) {
-        // Run in page context to handle case where 4chan X has localStorage access but not the page.
-        // (e.g. Pale Moon 26.2.2, GM 3.8, cookies disabled for 4chan only)
+
         $.global('disableNativeExtension');
       } else {
         $.global('disableNativeExtensionNoStorage');
@@ -218,31 +217,49 @@ var Settings: any = {
     Settings.applyStylingVars();
   },
 
-  // StyleChan injects `<style id="ch4SS">` into <head> and a header shortcut
-  // anchor `#StyleChanLink`. Either is sufficient as a "present" signal; the
-  // style tag goes in earlier so it's the more reliable check.
-  isStylechanInstalled(): boolean {
-    return !!(d.getElementById('ch4SS') || d.getElementById('StyleChanLink'));
+  externalStyleMarkers: ['#ch4SS', '#oneechan-options'],
+  externalStyleLinks: ['#StyleChanLink', '#OneeChanLink'],
+
+  detectExternalStyler(): { name: string; settingsLink: string | null } | null {
+    const has = (sel: string) => !!d.querySelector(sel);
+    if (!d.documentElement.classList.contains('oneechan') && !Settings.externalStyleMarkers.some(has)) {
+      return null;
+    }
+    let name = 'A styling script';
+    if (has('#StyleChanLink')) name = 'StyleChan';
+    else if (has('#mascot-section') || has('#add-mascot') || has('#OneeChanLink')) name = 'OneeChan';
+    const settingsLink = Settings.externalStyleLinks.find(has) || null;
+    return { name, settingsLink };
   },
 
-  // Open StyleChan's settings without closing ours. StyleChan appends its
-  // own `<div id="overlay">` + `#oneechan-options` dialog to <body>. Our
-  // overlay uses `id="xt-settings-overlay"` to avoid an id collision (their
-  // show()/close() did `document.getElementById('overlay')` and would tear
-  // ours out of the DOM). Their overlay sits above ours in stacking order
-  // and intercepts clicks, so clicking the dim backdrop closes StyleChan
-  // first (via their own outside-click handler) and a second click closes us.
-  openStylechanSettings(): boolean {
-    const link = d.getElementById('StyleChanLink') as HTMLAnchorElement | null;
+  externalStylerActive(): boolean {
+    return !!Settings.detectExternalStyler();
+  },
+
+  onExternalStylerReady(cb: (present: boolean) => void) {
+    if (Settings.externalStylerActive()) { cb(true); return; }
+    let settled = false;
+    let obs: MutationObserver | null = null;
+    const finish = (present: boolean) => {
+      if (settled) return;
+      settled = true;
+      obs?.disconnect();
+      cb(present);
+    };
+    obs = new MutationObserver(() => { if (Settings.externalStylerActive()) finish(true); });
+    if (d.head) obs.observe(d.head, { childList: true });
+    const decide = () => window.setTimeout(() => finish(Settings.externalStylerActive()), 500);
+    if (d.readyState === 'complete') { decide(); } else { $.on(window, 'load', decide); }
+  },
+
+  openExternalStylerSettings(): boolean {
+    const info = Settings.detectExternalStyler();
+    const link = info && info.settingsLink ? d.querySelector(info.settingsLink) as HTMLElement | null : null;
     if (!link) return false;
     link.click();
     return true;
   },
 
-  // Maps a Styling subsection id to its master-switch Conf key. The title
-  // checkbox for each section (shown only when StyleChan is installed) flips
-  // the corresponding flag; runtime apply paths read it via
-  // stylingSectionEnabled to gate the section's effect on the page.
   stylingSectionKeys: {
     siteStyle: 'stylingSectionSiteStyle',
     highlights: 'stylingSectionHighlights',
@@ -251,19 +268,12 @@ var Settings: any = {
     customCSS: 'stylingSectionCustomCSS',
   } as const,
 
-  // Whether a Styling subsection is active. A pure flag read: works on board
-  // pages, the home page, and the scroll-marker renderer alike. Correctness
-  // after a StyleChan *uninstall* is guaranteed by initStylingSectionDefaults,
-  // which resets every flag to true on board pages when StyleChan is absent —
-  // so a section can never get stuck off with no checkbox to re-enable it.
+
   stylingSectionEnabled(id: StylingSectionId): boolean {
     return Conf[Settings.stylingSectionKeys[id]] !== false;
   },
 
-  // The StyleChan recommendation: hand the sections StyleChan owns (site theme,
-  // text colors, custom CSS) over to it, keep the ones it doesn't (highlight +
-  // scrollbar marker colors) on. Used by the one-time init and the "Apply
-  // recommended settings" button. Does NOT touch any inner section settings.
+
   applyRecommendedStylingSections() {
     const recommended: Record<string, boolean> = {
       stylingSectionSiteStyle: false,
@@ -278,13 +288,9 @@ var Settings: any = {
     }
   },
 
-  // One-time recommendation + uninstall reset, run from Main.initStyle on board
-  // pages (where StyleChan detection is reliable). On first detection of
-  // StyleChan, hand its owned sections over; never re-applied automatically so
-  // the user's later choices stick. When StyleChan is absent, clear any stale
-  // StyleChan-era state so all sections come back on.
-  initStylingSectionDefaults() {
-    if (Settings.isStylechanInstalled()) {
+
+  initStylingSectionDefaults(present: boolean = Settings.externalStylerActive()) {
+    if (present) {
       if (!Conf['stylingSectionsInitialized']) {
         Settings.applyRecommendedStylingSections();
         Conf['stylingSectionsInitialized'] = true;
@@ -320,13 +326,10 @@ var Settings: any = {
       if (!id || !(id in Settings.stylingSectionKeys)) continue;
       const summary = $('summary', detail) as HTMLElement | null;
       if (!summary) continue;
-      // Wrap the toggle in a <label> with an explicit visual box. Bare native
-      // checkboxes are zeroed out by some host/StyleChan themes; the label's
-      // `.styling-section-toggle-box` is a plain styled element that always
-      // shows the on/off state regardless of native `appearance`.
+
       const label = $.el('label', {
         className: 'styling-section-toggle',
-        title: 'Enable this styling section (off hands it to StyleChan)',
+        title: 'Enable this styling section (off hands it to your styling script)',
       });
       const cb = $.el('input', { type: 'checkbox' }) as HTMLInputElement;
       const boxIcon = $.el('span', { className: 'styling-section-toggle-box', 'aria-hidden': 'true' } as any);
@@ -388,9 +391,6 @@ var Settings: any = {
     if (Settings.dialog) { return; }
     $.event('CloseMenu');
 
-    // id `xt-settings-overlay` avoids a collision with StyleChan, which also
-    // injects an `<div id="overlay">` and would otherwise tear our dialog out
-    // of the DOM when its show()/close() called `document.getElementById`.
     Settings.dialog = (dialog = $.el('div',
       { id: 'xt-settings-overlay' }
       , SettingsPage()));
@@ -2719,36 +2719,35 @@ Enable it on boards.${location.hostname.split('.')[1]}.org in your browser's pri
     let input: HTMLInputElement, name: string;
     $.extend(section, { innerHTML: StylingPage });
 
-    // When StyleChan is present, each Styling subsection gets a master-switch
-    // checkbox in its title (see setupStylingSectionToggles) so the user can
-    // hand individual sections over to StyleChan. We surface a small info box at
-    // the top with shortcuts. Sections are no longer hidden — the per-section
-    // gates remove their effect when toggled off.
-    if (Settings.isStylechanInstalled()) {
+    const externalStyler = Settings.detectExternalStyler();
+    if (externalStyler) {
       const refreshToggles = Settings.setupStylingSectionToggles(section);
 
-      const box = $.el('div', { className: 'styling-stylechan-box' });
+      const box = $.el('div', { className: 'styling-extstyle-box' });
       const text = $.el('div', {
-        className: 'styling-stylechan-text',
+        className: 'styling-extstyle-text',
         innerHTML:
-          '<b>StyleChan is detected.</b> '
-          + 'Use the checkbox in each section title below to choose what 4chan-neXT styles and what StyleChan owns. '
+          `<b>${externalStyler.name} is detected.</b> `
+          + 'Use the checkbox in each section title below to choose what 4chan-neXT styles and what your styling script owns. '
           + 'Turning a section off removes its effect from the page without changing the settings inside it.'
       });
-      const buttons = $.el('div', { className: 'styling-stylechan-buttons' });
-      const openButton = $.el('button', {
-        type: 'button',
-        className: 'styling-stylechan-open',
-        textContent: 'Open StyleChan Settings',
-      }) as HTMLButtonElement;
-      $.on(openButton, 'click', e => {
-        e.preventDefault();
-        Settings.openStylechanSettings();
-      });
+      const buttons = $.el('div', { className: 'styling-extstyle-buttons' });
+      if (externalStyler.settingsLink) {
+        const openButton = $.el('button', {
+          type: 'button',
+          className: 'styling-extstyle-open',
+          textContent: `Open ${externalStyler.name} Settings`,
+        }) as HTMLButtonElement;
+        $.on(openButton, 'click', e => {
+          e.preventDefault();
+          Settings.openExternalStylerSettings();
+        });
+        $.add(buttons, openButton);
+      }
       const recommendButton = $.el('button', {
         type: 'button',
-        className: 'styling-stylechan-recommend',
-        title: 'Turn off the sections StyleChan owns (Site Style, Text Colors, Custom CSS) and keep the others on. Does not change the settings inside any section.',
+        className: 'styling-extstyle-recommend',
+        title: 'Turn off the sections a styling script owns (Site Style, Text Colors, Custom CSS) and keep the others on. Does not change the settings inside any section.',
         textContent: 'Apply recommended settings',
       }) as HTMLButtonElement;
       $.on(recommendButton, 'click', e => {
@@ -2757,7 +2756,7 @@ Enable it on boards.${location.hostname.split('.')[1]}.org in your browser's pri
         refreshToggles();
         Settings.applyStylingSectionRuntime();
       });
-      $.add(buttons, [openButton, recommendButton]);
+      $.add(buttons, recommendButton);
       $.add(box, [text, buttons]);
       section.insertBefore(box, section.firstChild);
     }
@@ -4945,8 +4944,6 @@ Enable it on boards.${location.hostname.split('.')[1]}.org in your browser's pri
     const updateTheme = (save = false) => {
       const choice = themeSelect.value || 'xt-system';
       editor.dataset.theme = Settings.resolveCustomCSSEditorTheme(choice);
-      // Pin live-sampled colours when StyleChan/custom themes leave no native
-      // class to drive the palette; clears the overrides for every other theme.
       Settings.applyCustomCSSEditorSystemColors(editor);
       refreshPanelTheme(); // keep the detached panel chrome in sync (no-op when docked)
       if (save) $.set('settings.customCSSEditorTheme', choice);
@@ -5959,18 +5956,9 @@ Enable it on boards.${location.hostname.split('.')[1]}.org in your browser's pri
     if (classList.contains('yotsuba')) return 'xt-system-yotsuba';
     if (classList.contains('futaba')) return 'xt-system-futaba';
     if (classList.contains('photon')) return 'xt-system-photon';
-    // No native 4chan theme class on <html> — e.g. StyleChan or a custom site
-    // theme is driving the page. The class-scoped --xt-* palette vars aren't
-    // present either, so the static CSS palette would fall back to white.
-    // Signal updateTheme to sample the live, rendered colours instead.
     return 'xt-system-live';
   },
 
-  // When the editor is in "Match site" mode but no native theme class is on
-  // <html> (StyleChan / custom site theme), read the colours actually painted on
-  // the page and pin them onto the editor so it follows the real look instead of
-  // defaulting to white. For every other theme this clears the overrides and lets
-  // the static CSS palette govern.
   applyCustomCSSEditorSystemColors(editor: HTMLElement) {
     const clear = () => {
       for (const v of ['--custom-css-bg', '--custom-css-text', '--custom-css-caret', '--custom-css-border']) {
@@ -6248,9 +6236,6 @@ Enable it on boards.${location.hostname.split('.')[1]}.org in your browser's pri
       else target.style.removeProperty(cssVar);
     };
     const cv = (key: string) => Settings.styleConf(key, variant);
-    // Per-section master switches (only ever off when StyleChan is installed).
-    // When a section is off its whole effect is removed from the page without
-    // touching the inner settings, so flipping it back on restores the look.
     const highlightsOn = Settings.stylingSectionEnabled('highlights');
     const markersOn = Settings.stylingSectionEnabled('scrollbarMarkers');
     const textColorsOn = Settings.stylingSectionEnabled('textColors');

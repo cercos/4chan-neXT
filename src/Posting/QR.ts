@@ -2768,11 +2768,11 @@ var QR = {
     // The menu is appended to document.body so it escapes the QR form's
     // overflow, but that means it can't inherit the QR's theme. We mirror
     // colors from the QR onto the menu (and re-pin them on the toggle) so
-    // the dropdown matches whatever theme — StyleChan or otherwise — is
+    // the dropdown matches whatever theme — a styling script or otherwise — is
     // styling the QR.
     //
     // For the text color we sample from the QR form (a non-button parent),
-    // because host themes like StyleChan apply their own `button { color }`
+    // because host / styling-script themes apply their own `button { color }`
     // rule and reading from the toggle itself would inherit that. For the
     // background we walk up from the toggle until we hit the first opaque
     // ancestor. For borders we copy the computed border from a sibling input,

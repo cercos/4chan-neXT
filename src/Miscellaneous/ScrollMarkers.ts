@@ -346,9 +346,7 @@ const ScrollMarkers = {
   refresh() {
     const container = ScrollMarkers.container;
     if (!container?.parentNode) return;
-    // `stylingSectionScrollbarMarkers` is the Styling page's per-section master
-    // switch (only ever off when StyleChan is installed). Read Conf directly to
-    // avoid a Settings <-> ScrollMarkers import cycle.
+    // Read Conf directly to avoid a Settings <-> ScrollMarkers import cycle.
     if (!Conf['Scrollbar Markers'] || Conf['stylingSectionScrollbarMarkers'] === false) {
       ScrollMarkers.hidePreview();
       container.textContent = '';
