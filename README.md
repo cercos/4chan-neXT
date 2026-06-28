@@ -29,11 +29,13 @@ New users should start with the [User Guide](./docs/user-guide.md).
 
 ## Current Release
 
-`1.2.2` (2026-06-26)
+`1.2.3` (2026-06-27)
 
-- Added neXT settings highlights for the header menu as a green dot for neXT settings and an amber dot for changed menus or settings.
-- Added a "Hide board banner" setting (Header menu, off by default) that hides the rotating board banner image at the top of the page.
-- Fixed beside-scrollbar marker mode using a darker scrollbar thumb than over-scrollbar mode.
+- Reworked auto-update hosting so rollbacks stick while normal updates still arrive automatically.
+- Made compatibility with site styling scripts generic, with per-section Styling ownership controls.
+- Made inputs, dialogs, menus, dropdown popups, and detached settings windows follow the active theme.
+- Added grouped modifiers to the Custom Board Navigation syntax, such as `replace{ g biz pol }`.
+- Updated the README screenshot and development guidance.
 
 See [CHANGELOG.md](./CHANGELOG.md) for full release notes.
 

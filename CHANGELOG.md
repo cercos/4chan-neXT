@@ -2,16 +2,19 @@
 
 ### Unreleased
 
+### 1.2.3 (2026-06-27)
+
 - Reworked auto-update hosting so rollbacks stick. Update checks now track new releases through the repository instead of always pulling the very latest, so installing an older release and turning off "Check for updates" in your userscript manager keeps you on that version instead of being force-updated forward. Normal updates still arrive automatically when a new release is published.
 - Made compatibility with site styling scripts generic so it works across styling scripts rather than a single one. When a styling script is detected the Styling page names it, lets you hand individual sections (Site Style, Text Colors, Custom CSS) over to it with per-section checkboxes, and shows a shortcut to open that script's own settings when it exposes one.
 - Fixed the per-section styling toggles resetting back to all-on after navigating between pages when a styling script loaded later than the page. Detection now waits for the script to appear before deciding, so your section choices stick.
 - Made inputs, dialogs, menus, dropdown (select) popups, and detached settings windows follow the active theme instead of rendering as hardcoded white boxes. They now pull from a shared background color sampled from the live page, so they match custom and styling-script themes too.
 - Settings-dialog scrollbars now use a neutral gray by default and step aside so a styling script can theme them when one is active.
 - Added grouped modifiers to the Custom Board Navigation syntax: prefix a modifier before a brace to apply it to every board inside, instead of suffixing each one. For example `replace{ g biz pol }` is the same as `g-replace biz-replace pol-replace`, and you can combine modifiers like `title nt{ g a biz }`. Boards outside the braces, and any board that already has its own `-modifier`, are left untouched so per-board overrides still win.
+- Updated the README screenshot and development guidance.
 
 ### 1.2.2 (2026-06-26)
 
-- Added neXT settings highlights for the header menu as green dot for next and orangish dot for changed menu's or settings.
+- Added neXT settings highlights for the header menu as a green dot for neXT settings and an amber dot for changed menus or settings.
 - Added a "Hide board banner" setting (Header menu, off by default) that hides the rotating board banner image at the top of the page.
 - Fixed beside-scrollbar marker mode using a darker scrollbar thumb than over-scrollbar mode.
 
