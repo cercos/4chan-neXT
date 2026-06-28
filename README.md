@@ -124,6 +124,7 @@ Useful commands:
 - `npm run build:min`: minified userscript build.
 - `npm run build:crx`: production Chrome extension build.
 - `npm run build:crxp`: build and pack CRX using a key from `../4chan-next.keys/*.pem` (override with `CRX_KEY_FILE`).
+- `npm run build:all`: full multi-platform release build. Slow and writes release artifacts to `builds/`.
 
 Useful build flags for `tools/rollup`:
 - `-min`: minified output.
