@@ -5,6 +5,8 @@
 
 4chan-neXT is an actively maintained 4chan X fork with compatibility fixes, UI improvements, and fork-specific features.
 
+![4chan-neXT screenshot](img/screenshot.png)
+
 ## Install
 
 - **Stable userscript (recommended):**
@@ -18,14 +20,22 @@ You will need a userscript manager:
 - Firefox: [Violentmonkey](https://addons.mozilla.org/en-US/firefox/addon/violentmonkey/) or [Tampermonkey](https://addons.mozilla.org/en-US/firefox/addon/tampermonkey/)
 - Chrome/Edge: [Violentmonkey](https://chromewebstore.google.com/detail/violentmonkey/jinjaccalgkegednnccohejagnlnfdag) or [Tampermonkey](https://tampermonkey.net/)
 
-## Latest Version
+Minimum supported versions:
+- Chrome 90+
+- Firefox 78+
+- Greasemonkey 1.14+
+
+New users should start with the [User Guide](./docs/user-guide.md).
+
+## Current Release
 
 `1.2.2` (2026-06-26)
 
-- Added neXT settings highlights for the header menu as green dot for next and orangish dot for changed menu's or settings.
+- Added neXT settings highlights for the header menu as a green dot for neXT settings and an amber dot for changed menus or settings.
 - Added a "Hide board banner" setting (Header menu, off by default) that hides the rotating board banner image at the top of the page.
 - Fixed beside-scrollbar marker mode using a darker scrollbar thumb than over-scrollbar mode.
 
+See [CHANGELOG.md](./CHANGELOG.md) for full release notes.
 
 ## Migration from 4chan X / 4chan XT
 
@@ -93,19 +103,31 @@ To migrate settings:
 - CSS Custom Highlight API search highlighting and a search-friendly layout
 - Local user/styling docs
 
-## Build from Source
+## Development
 
 ```bash
 npm install
-npm run build
+npm run testbuild
+npm run typecheck
 ```
 
-Useful build flags:
+Requirements:
+- Node.js 16+
+
+Useful commands:
+- `npm run testbuild`: development build for local testing. Outputs to `testbuilds/`.
+- `npm run typecheck`: TypeScript compile check for `src/`.
+- `npm run build`: production release build. Writes release artifacts to `builds/`.
+- `npm run build:userscript`: production userscript build.
+- `npm run build:min`: minified userscript build.
+- `npm run build:crx`: production Chrome extension build.
+- `npm run build:crxp`: build and pack CRX using a key from `../4chan-next.keys/*.pem` (override with `CRX_KEY_FILE`).
+
+Useful build flags for `tools/rollup`:
 - `-min`: minified output.
 - `-platform=userscript` or `-platform=crx`: build only one target.
 - `-no-format`: skip output formatting steps.
 - `-test`: include tests in build.
-- `npm run build:crxp`: build and pack CRX using a key from `../4chan-next.keys/*.pem` (override with `CRX_KEY_FILE`).
 
 ## Links
 
