@@ -1,4 +1,7 @@
-# 4chan-neXT
+<h1>
+  <img src="img/icon-trimmed.png" alt="" height="72" align="middle">
+  4chan-neXT
+</h1>
 
 4chan-neXT is an actively maintained 4chan X fork with compatibility fixes, UI improvements, and fork-specific features.
 
@@ -57,7 +60,7 @@ To migrate settings:
 
 ### Styling and themes
 - Built-in site themes with SFW/NSFW styling variants
-- Styling-script section handoff and home-page mirroring (currently StyleChan)
+- Generic styling-script integration: detects and names the active styling script, hands individual sections (Site Style, Text Colors, Custom CSS) over to it per-section, and links to its own settings
 - Theme-aware highlight colors and text color modes
 - Custom CSS editor pairing/indent helpers
 - A local styling guide
@@ -78,12 +81,14 @@ To migrate settings:
 - Grid gallery thumbnails with configurable columns and thumbnail dock position
 - ZIP-based download-all-media support
 - Thumbnail replacement and metadata visibility controls
+- Video duration badge on webm/mp4 thumbnails, read lazily as they scroll into view
 
 ### Linkification
 - YouTube -> yewtu.be link rewriting
 - X/Twitter -> xcancel link rewriting
 
 ### Settings and UI
+- Selectable icon set across the UI (Font Awesome, Lucide, Material, Phosphor, Tabler, Bootstrap, Heroicons, Ionicons)
 - Highlight neXT markers for fork-specific settings
 - Vertical or horizontal Settings navigation
 - CSS Custom Highlight API search highlighting and a search-friendly layout
