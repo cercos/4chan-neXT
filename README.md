@@ -46,7 +46,6 @@ To migrate settings:
 
 ### Quick Reply and posting
 - Per-thread `QR Drafts` restore with attachment persistence and a recoverable discard bin
-- Upload progress and dump-list file-first removal
 - Image auto-processing and audio stripping for boards that disallow audio
 - Stacked TCaptcha editing
 - Auto-close Tags
