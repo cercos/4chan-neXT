@@ -1,7 +1,5 @@
 ## 4chan-neXT changelog
 
-### Unreleased
-
 ### 1.2.3 (2026-06-27)
 
 - Reworked auto-update hosting so rollbacks stick. Update checks now track new releases through the repository instead of always pulling the very latest, so installing an older release and turning off "Check for updates" in your userscript manager keeps you on that version instead of being force-updated forward. Normal updates still arrive automatically when a new release is published.
