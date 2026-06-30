@@ -8162,7 +8162,7 @@ Enable it on boards.${location.hostname.split('.')[1]}.org in your browser's pri
       }
     }
     if (compareString < '00001.00014.00017.00002') {
-      if (data['jsWhitelist'] != null) {
+      if (data['jsWhitelist'] != null && !data['jsWhitelist'].includes('hcaptcha.com')) {
         set('jsWhitelist', data['jsWhitelist'] + '\n\nhttps://hcaptcha.com\nhttps://*.hcaptcha.com');
       }
     }
@@ -8187,7 +8187,7 @@ Enable it on boards.${location.hostname.split('.')[1]}.org in your browser's pri
         ));
       }
     }
-    if (compareString < '00002.00003.00006.00000') {
+    if (compareString < '00002.00003.00006.00000' && data['RelativeTime'] === undefined && data['Relative Post Dates'] !== undefined) {
       set('RelativeTime', data['Relative Post Dates'] ? (data['Relative Date Title'] ? 'Hover' : 'Show') : 'No');
     }
     if (data['Spoiler Mode'] === undefined && (data['Remove Spoilers'] !== undefined || data['Reveal Spoilers'] !== undefined)) {

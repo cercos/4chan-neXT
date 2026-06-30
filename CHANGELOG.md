@@ -1,5 +1,10 @@
 ## 4chan-neXT changelog
 
+### Unreleased
+
+- Stopped settings migrations from overwriting your existing preferences on update. The hcaptcha whitelist entries are no longer re-added if you already have them, and the relative-time setting is only migrated from the old option when you have not already set it yourself.
+- Fixed the header board links sitting slightly off-center when "Centered links" is on. The centering previously assumed a fixed shortcuts width, so any other width (for example one set by a styling script) shifted the links off to one side. The header now uses a real centered layout, so the links stay centered no matter how wide the shortcuts area is.
+
 ### 1.2.3 (2026-06-27)
 
 - Reworked auto-update hosting so rollbacks stick. Update checks now track new releases through the repository instead of always pulling the very latest, so installing an older release and turning off "Check for updates" in your userscript manager keeps you on that version instead of being force-updated forward. Normal updates still arrive automatically when a new release is published.

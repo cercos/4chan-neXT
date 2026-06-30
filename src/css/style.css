@@ -408,17 +408,20 @@ audio.controls-added {
 :root.fixed #header-bar {
   box-shadow: -5px 1px 10px rgba(0, 0, 0, 0.20);
 }
-:root.centered-links #shortcuts {
-  width: 300px;
-  text-align: right;
-  justify-content: right;
-}
 :root.centered-links #header-bar {
-  text-align: center;
+  display: grid;
+  grid-template-columns: 1fr auto 1fr;
+  align-items: center;
 }
-:root.centered-links #custom-board-list {
-  position: relative;
-  left: 150px;
+:root.centered-links #board-list {
+  grid-column: 2;
+  justify-self: center;
+}
+:root.centered-links #shortcuts {
+  grid-column: 3;
+  justify-self: end;
+  justify-content: end;
+  text-align: right;
 }
 .fixed.top-header #header-bar {
   border-bottom-width: 1px;
