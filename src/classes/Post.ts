@@ -45,6 +45,7 @@ export interface File {
   source?:        any,
   tag?:           any,
   videoControls?: any,
+  videoOverlay?:  any,
   videoThumb?:    any,
 };
 
@@ -551,6 +552,7 @@ export class PostClone extends Post {
       }
       file.thumbLink = file.thumb?.parentNode as HTMLElement;
       if (file.thumbLink) { file.fullImage = $('.full-image', file.thumbLink); }
+      file.videoOverlay = (file.thumbLink && $('.video-click-overlay', file.thumbLink)) || undefined;
       file.videoControls = $('.video-controls', file.text as unknown as HTMLElement);
       if (file.videoThumb) { (file.thumb as HTMLVideoElement).muted = true; }
       this.files.push(file);

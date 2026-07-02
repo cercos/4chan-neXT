@@ -5594,11 +5594,12 @@ select.flagSelector {
   appearance: none;
   background-color: transparent;
   border: 1px solid color-mix(in srgb, currentColor 25%, transparent);
+  border-color: var(--xt-qr-sampled-border, color-mix(in srgb, currentColor 25%, transparent)) !important;
   cursor: pointer;
   display: flex;
   gap: 6px;
   font: inherit;
-  color: inherit;
+  color: var(--xt-qr-sampled-fg, inherit) !important;
   min-height: 22px;
   padding: 2px 20px 2px 6px;
   position: relative;
@@ -5626,10 +5627,11 @@ select.flagSelector {
   opacity: 0.6;
 }
 .flagSelector-menu {
-  background-color: #fff;
+  background-color: var(--xt-qr-sampled-bg, #fff) !important;
   border: 1px solid color-mix(in srgb, currentColor 25%, transparent);
+  border-color: var(--xt-qr-sampled-border, color-mix(in srgb, currentColor 25%, transparent)) !important;
   border-radius: 2px;
-  color: inherit;
+  color: var(--xt-qr-sampled-fg, inherit) !important;
   box-shadow: 0 2px 4px color-mix(in srgb, currentColor 25%, transparent);
   box-sizing: border-box;
   overflow-y: auto;

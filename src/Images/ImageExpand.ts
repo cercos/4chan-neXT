@@ -38,6 +38,10 @@ var ImageExpand = {
     this.videoControls = $.el('span', {className: 'video-controls'});
     $.extend(this.videoControls, {innerHTML: " <a href=\"javascript:;\" title=\"You can also contract the video by dragging it to the left.\">contract</a>"});
 
+    if ($.engine === 'gecko') {
+      $.addStyle('.video-click-overlay { position: absolute; top: 0; left: 0; right: 0; bottom: 40px; z-index: 2; cursor: pointer; }', 'xt-video-click-overlay');
+    }
+
     return Callbacks.Post.push({
       name: 'Image Expansion',
       cb: this.node
@@ -46,7 +50,7 @@ var ImageExpand = {
 
   node(this: Post | PostClone) {
     if (!this.file || (!this.file.isImage && !this.file.isVideo)) { return; }
-    $.on(this.file.thumbLink, 'click', ImageExpand.cb.toggle);
+    this.file.thumbLink.addEventListener('click', ImageExpand.cb.toggle, true);
 
     if (this.isClone) {
       if (this.file.isExpanding) {
@@ -82,6 +86,10 @@ var ImageExpand = {
       const {file} = post;
       if (file.isExpanded && ImageCommon.onControls(e)) { return; }
       e.preventDefault();
+      if (file.isExpanded && file.isVideo) {
+        e.stopPropagation();
+        $.event('CloseMenu');
+      }
       if (!Conf['Autoplay'] && (file.fullImage as HTMLVideoElement)?.paused) {
         return (file.fullImage as HTMLVideoElement).play();
       } else {
@@ -181,9 +189,10 @@ var ImageExpand = {
     $.rmClass(post.nodes.root, 'expanded-image');
     $.rmClass(file.thumb,      'expanding');
     $.rm(file.videoControls);
+    if (file.videoOverlay) { $.rm(file.videoOverlay); }
     (file.thumbLink as HTMLAnchorElement).href   = file.url;
     (file.thumbLink as HTMLAnchorElement).target = '_blank';
-    for (var x of ['isExpanding', 'isExpanded', 'videoControls', 'wasPlaying', 'scrollIntoView']) {
+    for (var x of ['isExpanding', 'isExpanded', 'videoControls', 'videoOverlay', 'wasPlaying', 'scrollIntoView']) {
       delete (file as any)[x]; // loose: dynamic key delete over File props (shared-decl change deferred)
     }
 
@@ -342,6 +351,7 @@ var ImageExpand = {
     const fullImage = post.file.fullImage as HTMLVideoElement
     if (!playing && !audio) {
       fullImage.controls = controls;
+      ImageExpand.setupOverlay(post);
       return;
     }
     fullImage.controls = false;
@@ -353,6 +363,31 @@ var ImageExpand = {
       }
     });
     fullImage.controls = controls && !audio;
+    ImageExpand.setupOverlay(post);
+  },
+
+  setupOverlay(post: Post | PostClone) {
+    if ($.engine !== 'gecko') { return; }
+    const {file} = post;
+    const video = file.fullImage as HTMLVideoElement;
+    let overlay = file.videoOverlay || (file.thumbLink && $('.video-click-overlay', file.thumbLink));
+    if (video?.controls && !Conf['Click Passthrough']) {
+      if (!overlay) {
+        overlay = $.el('span', {className: 'video-click-overlay'});
+        $.after(video, overlay);
+      }
+      $.on(overlay, 'mousedown', ImageExpand.overlayPassthrough);
+      file.videoOverlay = overlay;
+    } else if (overlay) {
+      $.rm(overlay);
+      delete file.videoOverlay;
+    }
+  },
+
+  overlayPassthrough(this: HTMLElement, e: MouseEvent) {
+    if (e.button === 0) { return; }
+    this.style.pointerEvents = 'none';
+    setTimeout(() => { this.style.pointerEvents = ''; }, 500);
   },
 
   videoCB: (function() {

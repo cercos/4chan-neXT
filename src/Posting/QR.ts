@@ -2766,19 +2766,18 @@ var QR = {
     };
 
     // The menu is appended to document.body so it escapes the QR form's
-    // overflow, but that means it can't inherit the QR's theme. We mirror
-    // colors from the QR onto the menu (and re-pin them on the toggle) so
-    // the dropdown matches whatever theme — a styling script or otherwise — is
-    // styling the QR.
+    // overflow, but that means it can't inherit the QR's theme. We sample
+    // colors from the QR and publish them as --xt-qr-sampled-* variables on
+    // the root element; the stylesheet paints the toggle and menu from those,
+    // so the dropdown matches whatever theme — a styling script or otherwise —
+    // is styling the QR, while staying overridable from Custom CSS.
     //
     // For the text color we sample from the QR form (a non-button parent),
     // because host / styling-script themes apply their own `button { color }`
     // rule and reading from the toggle itself would inherit that. For the
     // background we walk up from the toggle until we hit the first opaque
     // ancestor. For borders we copy the computed border from a sibling input,
-    // which has already been styled by the host theme. `setProperty(..., '',
-    // 'important')` is used so the inline styles beat any !important rules
-    // a host stylesheet may use against `button`.
+    // which has already been styled by the host theme.
     const syncTheme = () => {
       const formEl = (QR.nodes?.form || picker.parentElement) as HTMLElement | undefined;
       const fg = formEl ? window.getComputedStyle(formEl).color : '';
@@ -2792,20 +2791,19 @@ var QR = {
         el = el.parentElement;
       }
 
+      const root = d.documentElement;
       if (bg) {
-        menu.style.setProperty('background-color', bg, 'important');
+        root.style.setProperty('--xt-qr-sampled-bg', bg);
       }
       if (fg) {
-        menu.style.setProperty('color', fg, 'important');
-        toggle.style.setProperty('color', fg, 'important');
+        root.style.setProperty('--xt-qr-sampled-fg', fg);
       }
 
       const sibling = QR.nodes?.name as HTMLElement | undefined;
       if (sibling) {
         const cs = window.getComputedStyle(sibling);
         if (cs.borderTopColor) {
-          toggle.style.setProperty('border-color', cs.borderTopColor, 'important');
-          menu.style.setProperty('border-color', cs.borderTopColor, 'important');
+          root.style.setProperty('--xt-qr-sampled-border', cs.borderTopColor);
         }
       }
     };

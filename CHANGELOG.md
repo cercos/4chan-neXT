@@ -2,6 +2,7 @@
 
 ### Unreleased
 
+- Fixed the "Click Passthrough" setting not applying properly when off in Firefox: clicking an expanded video now contracts it instead of pausing.
 - Stopped settings migrations from overwriting your existing preferences on update. The hcaptcha whitelist entries are no longer re-added if you already have them, and the relative-time setting is only migrated from the old option when you have not already set it yourself.
 - Fixed the header board links sitting slightly off-center when "Centered links" is on. The centering previously assumed a fixed shortcuts width, so any other width (for example one set by a styling script) shifted the links off to one side. The header now uses a real centered layout, so the links stay centered no matter how wide the shortcuts area is.
 
