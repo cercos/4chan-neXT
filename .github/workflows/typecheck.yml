@@ -1,4 +1,4 @@
-name: Typecheck
+name: CI
 
 on:
   pull_request:
@@ -8,8 +8,8 @@ permissions:
   contents: read
 
 jobs:
-  typecheck:
-    name: npm run typecheck
+  check:
+    name: typecheck / test / build
     runs-on: ubuntu-latest
 
     steps:
@@ -35,3 +35,11 @@ jobs:
 
       - name: Run TypeScript ratchet
         run: npm run typecheck
+
+      - name: Run unit tests
+        run: npm test
+
+      # Proves the rollup pipeline (custom plugins included) still produces a
+      # bundle; the output goes to the gitignored testbuilds/ and is discarded.
+      - name: Verify the bundle builds
+        run: npm run testbuild

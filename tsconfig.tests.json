@@ -1,0 +1,20 @@
+// Strict typecheck for the vitest unit tests (src/**/*.test.ts), run as the second
+// half of `npm run typecheck`. Separate from tsconfig.typecheck.json (which excludes
+// test files) only because resolving the `vitest` package needs modern module
+// resolution, while the app config keeps the classic resolution the build was
+// migrated under. Strictness is inherited from tsconfig.typecheck.json: the ratchet
+// applies to test code too.
+{
+  "extends": "./tsconfig.typecheck.json",
+  "compilerOptions": {
+    "module": "ESNext",
+    "moduleResolution": "bundler",
+    // Keep json imports resolving through the ambient declarations in
+    // src/types/customImports.d.ts (the build rewrites package.json imports to the
+    // trimmed `meta` object; resolving the real file would type them wrong).
+    "resolveJsonModule": false
+  },
+  // src/types is included explicitly: ambient declarations (html/css/json imports)
+  // are not pulled in by the test files' import graph on their own.
+  "include": ["src/**/*.test.ts", "src/**/*.test.tsx", "src/types"]
+}

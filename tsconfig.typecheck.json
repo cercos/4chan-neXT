@@ -29,6 +29,10 @@
   },
   "include": ["src"],
   "exclude": [
+    // Vitest unit tests are checked by tsconfig.tests.json (same strictness, modern
+    // module resolution so the vitest import resolves).
+    "src/**/*.test.ts",
+    "src/**/*.test.tsx",
     "src/meta/fbegin.js",
     "src/meta/fend.js",
     // Node build-time script (uses fs/promises, path, url); not browser runtime
