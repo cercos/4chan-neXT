@@ -1,6 +1,6 @@
 ## 4chan-neXT changelog
 
-### Unreleased
+### 1.2.4 (2026-07-02)
 
 - Fixed the "Click Passthrough" setting not applying properly when off in Firefox: clicking an expanded video now contracts it instead of pausing.
 - Stopped settings migrations from overwriting your existing preferences on update. The hcaptcha whitelist entries are no longer re-added if you already have them, and the relative-time setting is only migrated from the old option when you have not already set it yourself.

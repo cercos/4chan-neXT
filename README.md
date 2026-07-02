@@ -29,13 +29,11 @@ New users should start with the [User Guide](./docs/user-guide.md).
 
 ## Current Release
 
-`1.2.3` (2026-06-27)
+`1.2.4` (2026-07-02)
 
-- Reworked auto-update hosting so rollbacks stick while normal updates still arrive automatically.
-- Made compatibility with site styling scripts generic, with per-section Styling ownership controls.
-- Made inputs, dialogs, menus, dropdown popups, and detached settings windows follow the active theme.
-- Added grouped modifiers to the Custom Board Navigation syntax, such as `replace{ g biz pol }`.
-- Updated the README screenshot and development guidance.
+- Fixed the "Click Passthrough" setting not applying when off in Firefox.
+- Stopped settings migrations from overwriting your existing preferences on update.
+- Fixed the header board links sitting slightly off-center when "Centered links" is on.
 
 See [CHANGELOG.md](./CHANGELOG.md) for full release notes.
 
