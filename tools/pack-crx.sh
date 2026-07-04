@@ -83,6 +83,7 @@ trap 'rm -rf "$TMP_DIR"' EXIT
 
 WORK_DIR="$TMP_DIR/$EXT_NAME"
 cp -R "$BUILD_DIR" "$WORK_DIR"
+rm -f "$WORK_DIR/manifestV2.json" "$WORK_DIR/manifestV3.json"
 
 args=(
   "--pack-extension=$WORK_DIR"

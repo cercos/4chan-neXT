@@ -24,12 +24,25 @@ const defaultRestoreTargets = [
   'builds/crx/icon16.png',
   'builds/crx/icon48.png',
   'builds/crx/manifest.json',
-  'builds/crx/manifestV3.json',
+  'builds/crx/manifestV2.json',
   'builds/crx/script.js',
 ];
 const allRestoreTargets = [...defaultRestoreTargets, 'version.json'];
 const deleteTargets = [`builds/${buildBaseName}.min.user.js.map`];
-const restoreTargets = removeAll ? allRestoreTargets : defaultRestoreTargets;
+
+const lsTree = spawnSync(
+  'git',
+  ['ls-tree', '-r', 'HEAD', '--name-only', '--', 'builds', 'version.json'],
+  { cwd: rootDir, encoding: 'utf8' },
+);
+if (lsTree.status !== 0) {
+  process.stderr.write(lsTree.stderr ?? '');
+  process.exit(lsTree.status ?? 1);
+}
+const trackedInHead = new Set(lsTree.stdout.split('\n').filter(Boolean));
+
+const restoreTargets = (removeAll ? allRestoreTargets : defaultRestoreTargets)
+  .filter(target => trackedInHead.has(target));
 
 const restore = spawnSync(
   'git',

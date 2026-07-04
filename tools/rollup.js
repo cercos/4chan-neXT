@@ -145,7 +145,11 @@ const tsPlugin = typescript({
             // a pseudo-class (e.g. `.win :is(...)`, `.row :hover`), and stripping
             // it fuses the two into a compound selector, silently changing the
             // rule's meaning (this broke the "Highlight neXT" settings badges).
-            .replace(/\s*([{};,>+~])\s*/g, '$1')
+            // '+' is also excluded: calc() requires whitespace around binary
+            // +/-, so stripping it corrupts `calc(44px + var(...))` and the
+            // browser drops the declaration (this broke the gallery buttons
+            // and labels, which fell back to static positions).
+            .replace(/\s*([{};,>~])\s*/g, '$1')
             // Colon: only strip the space AFTER it (declaration `prop: value` ->
             // `prop:value`). A valid stylesheet never has a meaningful space
             // before ':' to remove, so we leave the leading side untouched.
@@ -244,12 +248,12 @@ const tsPlugin = typescript({
 
     await writeFile(
       resolve(crxDir, 'manifest.json'),
-      generateManifestJson(packageJson, version, 2),
+      generateManifestJson(packageJson, version, 3),
     );
 
     await writeFile(
-      resolve(crxDir, 'manifestV3.json'),
-      generateManifestJson(packageJson, version, 3),
+      resolve(crxDir, 'manifestV2.json'),
+      generateManifestJson(packageJson, version, 2),
     );
 
     for (const file of ['icon16.png', 'icon48.png', 'icon128.png']) {

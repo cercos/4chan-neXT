@@ -611,19 +611,19 @@
   border-color: var(--xt-unread-line, rgb(255,0,0));
 }
 
-:root.tomorrow,
-:root.spooky {
+:root.tomorrow:not(.xt-external-style),
+:root.spooky:not(.xt-external-style) {
   color-scheme: dark;
 }
 
-:root.tomorrow .field,
-:root.spooky .field {
+:root.tomorrow:not(.xt-external-style) .field,
+:root.spooky:not(.xt-external-style) .field {
   background-color: unset;
   color: unset;
   border-color: unset;
 }
 
-:root.tomorrow input[type="button"],
-:root.spooky input[type="button"] {
+:root.tomorrow:not(.xt-external-style) input[type="button"],
+:root.spooky:not(.xt-external-style) input[type="button"] {
   filter: brightness(80%);
 }

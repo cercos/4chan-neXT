@@ -35,9 +35,11 @@ export default function generateManifestJson(p, xtVersion, manifestVersion) {
   if (manifestVersion === 3) {
     manifest.background.service_worker = "eventPage.js";
 
-    manifest.permissions = ["storage", "scripting", "webRequest"];
+    manifest.permissions = ["storage", "scripting"];
     manifest.host_permissions = p.meta.matches_only.concat(p.meta.matches);
     manifest.optional_host_permissions = ["*://*/"];
+    manifest.minimum_chrome_version = "102";
+    delete manifest.applications;
   } else {
     manifest.background.scripts = ["eventPage.js"],
     manifest.background.persistent = false;
