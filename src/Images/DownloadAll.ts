@@ -119,7 +119,7 @@ const DownloadAll = {
         '<label title="Persistent Download Media">' +
           '<input type="checkbox" name="Persistent Download Media"> Download media' +
         '</label>' +
-        '<a href="javascript:;" class="jump close" title="Hide">' + Icon.get('xmark') + '</a>' +
+        '<a href="javascript:;" class="close" title="Hide">' + Icon.get('xmark') + '</a>' +
       '</div>' +
       '<div class="da-body">' +
         '<div class="da-buttons">' +
