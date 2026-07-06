@@ -86,6 +86,7 @@
   --xt-link-hover-bg: initial;
   --xt-link-text-color: initial;
   --xt-menu-fg: initial;
+  --xt-notification-link: initial;
   --xt-notification-size: initial;
   --xt-post-background: initial;
   --xt-qphl: initial;
@@ -564,7 +565,7 @@ audio.controls-added {
   background-color: hsla(104, 100%, 38%, .9);
 }
 .notification a {
-  color: white;
+  color: var(--xt-notification-link, currentColor) !important;
 }
 .notification > .close {
   order: 1;

@@ -265,6 +265,7 @@ If you need CSS-level control, these variables are available:
 | `--xt-link-text-color` | Links |
 | `--xt-quote-text-color` | Greentext and quote text |
 | `--xt-dead-link-text-color` | Dead quote links |
+| `--xt-notification-link` | Links inside notification banners (defaults to the banner's text color; set with `!important` in the rare case a theme also targets `.notification a` with `!important`) |
 
 Per-highlight text variables require the matching text-color mode/root class
 to be active from the Styling settings.

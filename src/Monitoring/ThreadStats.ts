@@ -144,7 +144,7 @@ var ThreadStats = {
       $.addClass(ThreadStats.pageCountEl, 'warning');
       return;
     }
-    ThreadStats.timeout = setTimeout(
+    ThreadStats.timeout = window.setTimeout(
       ThreadStats.fetchPage,
       Conf['Purge Position'] && ThreadStats.pageCountEl.classList.contains('warning')
         ? (5 * SECOND) : (2 * MINUTE)
@@ -209,7 +209,7 @@ var ThreadStats = {
       (ThreadStats.thread.posts.get(ThreadStats.thread.lastPost).info.date <= ThreadStats.lastPageUpdate)
     ) { return; }
     clearTimeout(ThreadStats.timeout);
-    ThreadStats.timeout = setTimeout(ThreadStats.fetchPage, 5 * SECOND);
+    ThreadStats.timeout = window.setTimeout(ThreadStats.fetchPage, 5 * SECOND);
   }
 };
 export default ThreadStats;

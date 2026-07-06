@@ -247,7 +247,8 @@ Important settings:
 - `Show Upload Progress`: shows upload progress in the submit button.
 - `Auto-load captcha`: loads captcha before the post is ready.
 - `Post on Captcha Completion`: submits immediately after captcha completion.
-- `Stacked TCaptcha`: changes 4chan's TCaptcha into a stacked grid UI and lets you edit selected answers before submitting.
+- `Stacked TCaptcha`: changes 4chan's TCaptcha into a stacked grid UI and lets you edit selected answers before submitting. Keyboard controls work whenever focus is on the QR window but outside its text fields (click the QR or a captcha tile first): arrow keys move the tile highlight, Enter picks the highlighted tile, `1`-`9` pick a tile directly, and Backspace steps back into the previous answer. On the review screen, Left/Right move between your answers and Enter opens one for editing; Escape cancels an edit without changing it.
+- `Stacked TCaptcha Style`: how the stacked captcha shows your progress and the review screen. "Classic row" is the original layout with large chips on their own row and status text. "Inline chips" (default) docks compact chips next to the Get Captcha button with no status text. "Stepper dots" shrinks progress to small dots beside the counter; hover a filled dot to peek at that step, click it to edit. Keyboard controls are identical in every style. Error messages (Failed, Expired, "Verification not required") always show regardless of style.
 - `Auto-process Images`: converts/resizes unsupported or oversized images.
 - `Strip Video Audio`: removes audio when the board does not allow audio.
 - `Comment Preview`: adds a preview mode for the QR comment box.

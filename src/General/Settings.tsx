@@ -34,6 +34,7 @@ import QuoteYou from '../Quotelinks/QuoteYou';
 import Index from './Index';
 import BoardConfig from './BoardConfig';
 import nextSettingsDiff from '../config/nextSettingsDiff.json';
+import { normalizeCaptchaStyle } from "../Posting/CaptchaStyles";
 
 export type StyleVariant = 'sfw' | 'nsfw';
 
@@ -2493,6 +2494,7 @@ Enable it on boards.${location.hostname.split('.')[1]}.org in your browser's pri
           'Comment Preview Thread Behavior',
           'Comment Preview Catalog Behavior',
           'Show Comment Preview Header Icon',
+          'Stacked TCaptcha Style',
         ].includes(key),
       });
 
@@ -2501,6 +2503,35 @@ Enable it on boards.${location.hostname.split('.')[1]}.org in your browser's pri
     const rememberQRState = $('input[name="QR Drafts"]', section) as HTMLInputElement | null;
     if (rememberQRState) {
       $.on(rememberQRState, 'change', () => $.event('QRStateChanged', null));
+    }
+
+    const stackedToggle = $('input[name="Stacked TCaptcha"]', section) as HTMLInputElement | null;
+    const stackedRow = stackedToggle?.closest('div[data-name="Stacked TCaptcha"]') as HTMLDivElement | null;
+    if (stackedRow) {
+      const styleDescription = String(Config.main['Posting and Captchas']['Stacked TCaptcha Style'][1]);
+      const styleRow = $.el('div') as HTMLDivElement;
+      styleRow.dataset.name = 'Stacked TCaptcha Style';
+      styleRow.dataset.settingTitle = 'Stacked Captcha Style';
+      Settings.registerSettingDescription(styleRow, styleDescription);
+      const styleLabel = $.el('label');
+      const styleSelect = $.el('select', { name: 'Stacked TCaptcha Style' }) as HTMLSelectElement;
+      for (const [value, text] of [
+        ['classic', 'Classic row'],
+        ['inline', 'Inline chips'],
+        ['dots', 'Stepper dots'],
+      ] as const) {
+        $.add(styleSelect, $.el('option', { value, textContent: text }));
+      }
+      $.on(styleSelect, 'change', $.cb.value);
+      $.on(styleSelect, 'change', () => $.event('StackedCaptchaStyleChanged', null));
+      $.add(styleLabel, [$.el('span', { className: 'setting-title', textContent: 'Stacked Captcha Style: ' }), styleSelect]);
+      $.add(styleRow, [styleLabel, Settings.descriptionSpan(styleDescription)]);
+      const stackedSub = $.el('div', { className: 'suboption-list' });
+      $.add(stackedSub, styleRow);
+      $.add(stackedRow, stackedSub);
+      $.get({ 'Stacked TCaptcha Style': Conf['Stacked TCaptcha Style'] }, (items: Record<string, any>) => {
+        styleSelect.value = normalizeCaptchaStyle(items['Stacked TCaptcha Style']);
+      });
     }
 
     const fs = $.el('details',

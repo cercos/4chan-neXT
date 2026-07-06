@@ -318,7 +318,7 @@ var Gallery = {
   },
 
   startTimer() {
-    return Gallery.timeoutID = setTimeout(Gallery.checkTimer, Gallery.delay * SECOND);
+    return Gallery.timeoutID = window.setTimeout(Gallery.checkTimer, Gallery.delay * SECOND);
   },
 
   setupTimer() {

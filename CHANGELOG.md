@@ -1,5 +1,13 @@
 ## 4chan-neXT changelog
 
+### Unreleased
+
+- Switched the Chrome extension to Manifest V3.
+- Added unit tests and CI test and build steps.
+- Fixed the scrollbar thumb color fallback when an external styling script is active.
+- Added a "Stacked Captcha Style" setting with three layouts for the stacked TCaptcha: Classic row (the original), Inline chips (default; compact chips beside the Get Captcha button, no status text), and Stepper dots (minimal dots beside the counter with hover previews). Keyboard controls work the same in all three, and error messages always show. The prompt's reference image is also drawn larger for easier matching.
+- Various small styling and UI fixes.
+
 ### 1.2.4 (2026-07-02)
 
 - Fixed the "Click Passthrough" setting not applying properly when off in Firefox: clicking an expanded video now contracts it instead of pausing.

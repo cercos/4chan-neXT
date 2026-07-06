@@ -258,3 +258,20 @@ rather than a flat fill.
 /* Recolor (You) post text too (requires the text-colors setting on) */
 :root.xt-custom-text-colors { --xt-highlight-you-text: #553; }
 ```
+
+---
+
+## 10. Stacked captcha chips
+
+With `Stacked TCaptcha` on, `#qr` carries `fourchanx-captcha-style-<value>` for the
+chosen style (`classic`, `inline`, `dots`). The chips container is always
+`.fourchanx-captcha-crumbs` and each chip or dot is a `.fourchanx-captcha-crumb`
+button, so custom CSS can restyle or re-align them:
+
+```css
+/* right-aligned chips (Inline chips style) */
+#qr .fourchanx-captcha-crumbs { margin-left: auto; }
+
+/* centered chips (Inline chips style) */
+#qr .fourchanx-captcha-crumbs { margin-left: auto; margin-right: auto; }
+```

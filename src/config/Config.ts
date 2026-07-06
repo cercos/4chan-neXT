@@ -736,7 +736,12 @@ const Config = {
       ],
       'Stacked TCaptcha': [
         false,
-        'Show 4chan\'s TCaptcha as a stacked image grid in Quick Reply instead of the default slider/next UI.'
+        'Show 4chan\'s TCaptcha as a stacked image grid in Quick Reply instead of the default slider/next UI. Supports keyboard controls: arrows/1-9/Enter pick tiles, Backspace revisits answers.'
+      ],
+      'Stacked TCaptcha Style': [
+        'inline',
+        'Layout for the stacked captcha\'s progress chips and review screen. Classic row: large chips on their own row with status text. Inline chips: compact chips beside the Get Captcha button. Stepper dots: minimal dots beside the counter; hover to peek, click to edit.',
+        2
       ],
       'Pass Link': [
         false,

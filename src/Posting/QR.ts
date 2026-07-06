@@ -3481,7 +3481,7 @@ var QR = {
     customCooldown: false,
     isCounting: false,
     changes: null as any,
-    timeout: 0 as ReturnType<typeof setTimeout>,
+    timeout: 0,
 
     // Called from Main
     init() {
@@ -3701,7 +3701,7 @@ var QR = {
 
       if (nCooldowns) {
         clearTimeout(QR.cooldown.timeout);
-        QR.cooldown.timeout = setTimeout(QR.cooldown.count, SECOND);
+        QR.cooldown.timeout = window.setTimeout(QR.cooldown.count, SECOND);
       } else {
         delete (QR.cooldown as any).isCounting;
       }
@@ -4061,7 +4061,7 @@ var QR = {
   // IndexedDB via QRFileStore (the JSON layer can't hold blobs) and referenced
   // by id; the total kept per thread is capped at FILE_CAP.
   drafts: {
-    timeout: undefined as ReturnType<typeof setTimeout> | undefined,
+    timeout: undefined as number | undefined,
     // Cap on total attachment bytes persisted per thread. Files past the cap
     // (largest first) are not saved; the user is warned once.
     FILE_CAP: 100 * 1024 * 1024,
@@ -4101,7 +4101,7 @@ var QR = {
     save() {
       if (!Conf['QR Drafts'] || QR.drafts._suspended) { return; }
       clearTimeout(QR.drafts.timeout);
-      QR.drafts.timeout = setTimeout(QR.drafts.flush, 500);
+      QR.drafts.timeout = window.setTimeout(QR.drafts.flush, 500);
     },
 
     // Serialize the current posts' text + state for this board. Posts with

@@ -168,7 +168,7 @@ var RelativeDates = {
 
     // Reset automatic flush.
     clearTimeout(RelativeDates.timeout);
-    RelativeDates.timeout = setTimeout(RelativeDates.flush, RelativeDates.INTERVAL);
+    RelativeDates.timeout = window.setTimeout(RelativeDates.flush, RelativeDates.INTERVAL);
   },
 
   hover(post: Post) {

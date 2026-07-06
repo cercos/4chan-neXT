@@ -393,22 +393,30 @@ var Index: any = {
     return this.thread.setPage(Math.floor(Index.threadPosition[this.ID] / Index.threadsNumPerPage) + 1);
   },
 
+  hideModsMatch(e: MouseEvent): boolean {
+    // The modifier(s) that turn a catalog click into a hide are configurable
+    // (Keybinds → "Hide thread (catalog click)", default Shift). Empty disables
+    // it. Build a canonical modifier string ordered to match the value stored
+    // by the Settings keybind UI (Keybinds.modifierString).
+    const hideMods = Conf['Hide thread (catalog click)'];
+    if (!hideMods) return false;
+    const mods = [
+      e.altKey  && 'Alt',
+      e.ctrlKey && 'Ctrl',
+      e.metaKey && 'Meta',
+      e.shiftKey && 'Shift',
+    ].filter(Boolean).join('+');
+    return mods === hideMods;
+  },
+
   catalogNode(this: CatalogThread) {
+    // Selection is initiated on mousedown, so preventing the click's default
+    // is too late to stop the shift-click selection flash.
+    $.on(this.nodes.root, 'mousedown', (e: MouseEvent) => {
+      if (e.button === 0 && Index.hideModsMatch(e)) e.preventDefault();
+    });
     return $.on(this.nodes.root, 'click', (e: MouseEvent) => {
-      if (e.button !== 0) return;
-      // The modifier(s) that turn a catalog click into a hide are configurable
-      // (Keybinds → "Hide thread (catalog click)", default Shift). Empty disables
-      // it. Build a canonical modifier string ordered to match the value stored
-      // by the Settings keybind UI (Keybinds.modifierString).
-      const hideMods = Conf['Hide thread (catalog click)'];
-      if (!hideMods) return;
-      const mods = [
-        e.altKey  && 'Alt',
-        e.ctrlKey && 'Ctrl',
-        e.metaKey && 'Meta',
-        e.shiftKey && 'Shift',
-      ].filter(Boolean).join('+');
-      if (mods !== hideMods) return;
+      if (e.button !== 0 || !Index.hideModsMatch(e)) return;
 
       e.preventDefault();
       getSelection()?.removeAllRanges();
