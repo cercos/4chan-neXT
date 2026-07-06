@@ -1,6 +1,6 @@
 ## 4chan-neXT changelog
 
-### Unreleased
+### 1.2.5 (2026-07-06)
 
 - Switched the Chrome extension to Manifest V3.
 - Added unit tests and CI test and build steps.

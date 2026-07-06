@@ -1,7 +1,7 @@
 {
   "name": "4chan-neXT",
   "version": "1.2.5",
-  "manifest_version": 3,
+  "manifest_version": 2,
   "description": "4chan-neXT is a script that adds various features to anonymous imageboards.",
   "icons": {
     "16": "icon16.png",
@@ -52,15 +52,19 @@
     }
   ],
   "background": {
-    "service_worker": "eventPage.js"
+    "scripts": [
+      "eventPage.js"
+    ],
+    "persistent": false
   },
   "homepage_url": "https://4chan-next.com",
-  "minimum_chrome_version": "102",
+  "minimum_chrome_version": "90",
+  "applications": {
+    "gecko": {
+      "id": "4chan-x@4chan-x.net"
+    }
+  },
   "permissions": [
-    "storage",
-    "scripting"
-  ],
-  "host_permissions": [
     "https://*.4chan.org/*",
     "https://*.4cdn.org/*",
     "https://erischan.org/*",
@@ -86,9 +90,10 @@
     "https://www.sportschan.org/*",
     "https://sushigirl.us/*",
     "https://www.sushigirl.us/*",
-    "https://tvch.moe/*"
+    "https://tvch.moe/*",
+    "storage"
   ],
-  "optional_host_permissions": [
+  "optional_permissions": [
     "*://*/"
   ]
 }

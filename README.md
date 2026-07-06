@@ -29,11 +29,13 @@ New users should start with the [User Guide](./docs/user-guide.md).
 
 ## Current Release
 
-`1.2.4` (2026-07-02)
+`1.2.5` (2026-07-06)
 
-- Fixed the "Click Passthrough" setting not applying when off in Firefox.
-- Stopped settings migrations from overwriting your existing preferences on update.
-- Fixed the header board links sitting slightly off-center when "Centered links" is on.
+- Switched the Chrome extension to Manifest V3.
+- Added unit tests and CI test and build steps.
+- Added a "Stacked Captcha Style" setting with three layouts: Classic row, Inline chips (default), and Stepper dots.
+- Fixed the scrollbar thumb color fallback when an external styling script is active.
+- Various small styling and UI fixes.
 
 See [CHANGELOG.md](./CHANGELOG.md) for full release notes.
 
