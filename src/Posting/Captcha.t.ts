@@ -978,7 +978,7 @@ const CaptchaT = {
         #qr.fourchanx-captcha-style-dots .fourchanx-captcha-crumb--dot.current { outline: none; border-color: var(--xt-variant-accent, #00c06f); box-shadow: 0 0 0 2px color-mix(in srgb, var(--xt-variant-accent, #00c06f) 40%, transparent); }
         #qr.fourchanx-captcha-style-dots .fourchanx-captcha-dot-pop { display: none; position: absolute; bottom: 16px; left: 50%; transform: translateX(-50%); width: 48px; height: 48px; border: 1px solid currentColor; border-radius: 3px; overflow: hidden; background: #fff; z-index: 5; }
         #qr.fourchanx-captcha-style-dots .fourchanx-captcha-dot-pop img { width: 100%; height: 100%; display: block; }
-        #qr.fourchanx-captcha-style-dots .fourchanx-captcha-crumb--dot:hover .fourchanx-captcha-dot-pop, #qr.fourchanx-captcha-style-dots .fourchanx-captcha-crumb--dot.active .fourchanx-captcha-dot-pop { display: block; }
+        #qr.fourchanx-captcha-style-dots .fourchanx-captcha-crumb--dot:hover .fourchanx-captcha-dot-pop { display: block; }
       `;
       document.head.appendChild(style);
     }
