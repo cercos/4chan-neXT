@@ -224,6 +224,7 @@ var ThreadWatcher = {
     });
     $.sync('Thread Watcher Attach Controls', (val) => {
       ThreadWatcher.applyAttachControlsSetting(val);
+      ThreadWatcher.menu?.updateAttachLocationChecks?.();
     });
     $.sync('Thread Watcher Attach Location', (val) => {
       Conf['Thread Watcher Attach Location'] = val;
@@ -2045,9 +2046,34 @@ var ThreadWatcher = {
       this.updateAttachLocationChecks = () => {
         for (const entry of subEntries) { entry.updateCheck(); }
       };
+      const enabledLabel = $.el('label', {
+        className: 'watcher-attach-enabled-option',
+        title: 'Show the attach button and allow attaching the watcher to the Quick Reply.',
+        innerHTML: '<input type="checkbox" name="Thread Watcher Attach Controls"> Enable',
+      });
+      const enabledBox = $('input', enabledLabel) as HTMLInputElement;
+      $.on(enabledLabel, 'mousedown', e => e.stopPropagation());
+      $.on(enabledLabel, 'click', (e: Event) => e.stopPropagation());
+      $.on(enabledBox, 'change', () => {
+        const next = enabledBox.checked;
+        $.set('Thread Watcher Attach Controls', next);
+        ThreadWatcher.applyAttachControlsSetting(next);
+        for (const entry of subEntries) { entry.updateCheck(); }
+      });
+      subEntries.push({
+        el: enabledLabel,
+        updateCheck() {
+          enabledBox.checked = ThreadWatcher.attachControlsEnabled();
+        },
+        open() {
+          this.updateCheck();
+          return true;
+        }
+      });
       locationOptions.forEach(([value, label]) => {
         const el = $.el('a', {
           href: 'javascript:;',
+          className: 'watcher-attach-location-option',
           innerHTML: '<span class="watcher-sort-check"></span><span class="watcher-sort-label"></span>'
         });
         const check = $('.watcher-sort-check', el);
@@ -2055,10 +2081,12 @@ var ThreadWatcher = {
         labelEl.textContent = label;
         const updateCheck = () => {
           check.textContent = ThreadWatcher.attachLocation() === value ? '✓' : '';
+          el.classList.toggle('disabled', !ThreadWatcher.attachControlsEnabled());
         };
         $.on(el, 'mousedown', e => e.stopPropagation());
         $.on(el, 'click', function(e) {
           e.stopPropagation();
+          if (!ThreadWatcher.attachControlsEnabled()) { return; }
           $.set('Thread Watcher Attach Location', value);
           Conf['Thread Watcher Attach Location'] = value;
           if (ThreadWatcher.attached()) {
@@ -2079,13 +2107,11 @@ var ThreadWatcher = {
       });
       this.menu.addEntry({
         el: $.el('a', {
-          href: 'javascript:;',
           textContent: 'Attach Location'
         }),
         order: 51,
         subEntries,
         open(this: { el: HTMLElement }) {
-          if (!ThreadWatcher.attachControlsEnabled()) { return false; }
           this.el.dataset.nextKey = 'Thread Watcher Attach Location';
           this.el.title = 'Where to attach the watcher relative to the Quick Reply when attached.\nBottom/top: width follows the QR. Left/right: width uses the manual Max W; height sizes to content.';
           return true;
