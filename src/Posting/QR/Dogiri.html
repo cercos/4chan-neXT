@@ -1,0 +1,125 @@
+<div class="dogiri-header">
+  <span class="dogiri-title">Dōgiri <span id="dogiri-wip" title="Dōgiri is a work in progress; expect rough edges">(WIP)</span></span>
+  <span id="dogiri-filename"></span>
+  <span id="dogiri-duration"></span>
+  <a href="javascript:;" id="dogiri-reset" class="dogiri-button" title="Clear all clips and captions and discard the unsaved edits kept for this video">Reset</a>
+  <a href="javascript:;" id="dogiri-save" class="dogiri-button" title="Save the clips and captions as a project">Save</a>
+  <a href="javascript:;" id="dogiri-projects" class="dogiri-button" title="Load or manage saved projects">Projects</a>
+  <a href="javascript:;" id="dogiri-close" title="Close">✕</a>
+</div>
+<div class="dogiri-body">
+  <div id="dogiri-resize" title="Drag to resize"></div>
+  <div id="dogiri-preview-box">
+    <video id="dogiri-video" playsinline></video>
+    <div id="dogiri-caption-overlay" hidden></div>
+    <div id="dogiri-toasts"></div>
+    <div id="dogiri-clip-panel" hidden>
+      <div class="dogiri-clip-panel-header">
+        <label><input type="checkbox" id="dogiri-clips-all" title="Select all clips"> <span id="dogiri-clips-count"></span></label>
+        <a href="javascript:;" id="dogiri-clips-close" title="Close">✕</a>
+      </div>
+      <div id="dogiri-clip-rows"></div>
+      <div class="dogiri-clip-panel-actions">
+        <a href="javascript:;" id="dogiri-clips-delete" class="dogiri-button" title="Remove the selected clips">Delete</a>
+        <a href="javascript:;" id="dogiri-clips-keep" class="dogiri-button" title="Remove every clip that is not selected">Keep only</a>
+        <a href="javascript:;" id="dogiri-clips-merge" class="dogiri-button" title="Combine the selected clips into one, spanning from the first to the last">Merge</a>
+      </div>
+    </div>
+  </div>
+  <div class="dogiri-toolbar">
+    <a href="javascript:;" id="dogiri-play" class="dogiri-button" title="Play/Pause">▶</a>
+    <span id="dogiri-time">0:00.0</span>
+    <span class="dogiri-toolbar-spacer"></span>
+    <a href="javascript:;" id="dogiri-strip-audio" class="dogiri-button">Strip audio</a>
+    <a href="javascript:;" id="dogiri-captions-toggle" class="dogiri-button">Captions</a>
+    <span class="dogiri-toolbar-spacer"></span>
+    <span id="dogiri-clip-times" hidden>
+      <input id="dogiri-clip-start" class="field" spellcheck="false" title="Start time of the selected clip. Type a time like 1:23.4 and press Enter.">
+      -
+      <input id="dogiri-clip-end" class="field" spellcheck="false" title="End time of the selected clip. Type a time like 1:23.4 and press Enter.">
+    </span>
+    <a href="javascript:;" id="dogiri-add-clip" class="dogiri-button dogiri-primary">+ Add clip</a>
+    <a href="javascript:;" id="dogiri-clip-list" class="dogiri-button" title="List all clips; select several to delete or merge them in one go">Clips</a>
+  </div>
+  <div id="dogiri-caption-editor" hidden>
+    <input id="dogiri-caption-text" class="field" placeholder="Type caption text, Enter adds it at the playhead" spellcheck="false">
+    <select id="dogiri-caption-position">
+      <option value="bottom" selected>Bottom</option>
+      <option value="top">Top</option>
+    </select>
+    <select id="dogiri-caption-size">
+      <option value="small">Small</option>
+      <option value="medium" selected>Medium</option>
+      <option value="large">Large</option>
+    </select>
+    <a href="javascript:;" id="dogiri-add-caption" class="dogiri-button dogiri-primary">+ Add caption</a>
+    <a href="javascript:;" id="dogiri-caption-remove" class="dogiri-button" hidden>Remove</a>
+  </div>
+  <div id="dogiri-timeline">
+    <div id="dogiri-strip"><canvas id="dogiri-strip-canvas"></canvas></div>
+    <div id="dogiri-regions"></div>
+    <div id="dogiri-playhead"></div>
+    <div id="dogiri-scrub-handle" title="Drag to seek">▼</div>
+    <div id="dogiri-region-menu" hidden>
+      <span id="dogiri-region-menu-label"></span>
+      <a href="javascript:;" id="dogiri-region-menu-rm" title="Remove this clip">✕ Remove</a>
+    </div>
+  </div>
+  <div id="dogiri-caption-lane" hidden></div>
+  <div class="dogiri-output">
+    <a href="javascript:;" id="dogiri-play-clips" class="dogiri-button" title="Play only the clipped regions">▶ Play clips</a>
+    <span id="dogiri-stats" title="The size is an estimate; the rendered file may come in under or over it. Estimates improve as renders complete."></span>
+    <span class="dogiri-toolbar-spacer"></span>
+    <a href="javascript:;" id="dogiri-export-options" class="dogiri-button" title="Render options">⚙︎</a>
+    <a href="javascript:;" id="dogiri-cancel" class="dogiri-button">Cancel</a>
+    <a href="javascript:;" id="dogiri-render" class="dogiri-button dogiri-primary" title="Compile the clips into a video">Render</a>
+    <span id="dogiri-export-group" hidden>
+      <a href="javascript:;" id="dogiri-export" class="dogiri-button dogiri-primary">Send → QR</a><a href="javascript:;" id="dogiri-export-arrow" class="dogiri-button dogiri-primary" title="Send target">▾</a>
+    </span>
+  </div>
+  <div id="dogiri-export-target-menu" hidden>
+    <a href="javascript:;" class="dogiri-menu-item" data-target="qr">Send → QR</a>
+    <a href="javascript:;" class="dogiri-menu-item" data-target="file">Save → file</a>
+  </div>
+  <div id="dogiri-export-menu" hidden>
+    <label class="dogiri-menu-row"><span>Quality</span>
+      <select id="dogiri-quality" title="Export quality">
+        <option value="high">High</option>
+        <option value="medium" selected>Medium</option>
+        <option value="low">Low</option>
+        <option value="min">Minimum</option>
+        <option value="fit">Fit to size</option>
+      </select>
+    </label>
+    <label class="dogiri-menu-row" id="dogiri-fit-row" hidden><span>Target size (MB)</span>
+      <input type="number" id="dogiri-fit-target" min="0.1" step="0.1" title="The render aims to come in under this size">
+    </label>
+    <label class="dogiri-menu-row"><span>Timeline size</span>
+      <select id="dogiri-timeline-size" title="Size of the timeline and its frame thumbnails">
+        <option value="small" selected>Small</option>
+        <option value="medium">Medium</option>
+        <option value="large">Large</option>
+      </select>
+    </label>
+    <label class="dogiri-menu-row"><input type="checkbox" id="dogiri-filmstrip" checked> <span>Show frame thumbnails in the timeline</span></label>
+    <label class="dogiri-menu-row"><input type="checkbox" id="dogiri-delete-original" checked> <span>Delete original file when sent to QR</span></label>
+  </div>
+  <div id="dogiri-save-panel" hidden>
+    <label class="dogiri-menu-row"><span>Project name</span> <input id="dogiri-save-name" class="field" spellcheck="false"></label>
+    <div class="dogiri-confirm-buttons">
+      <a href="javascript:;" id="dogiri-save-cancel" class="dogiri-button">Cancel</a>
+      <a href="javascript:;" id="dogiri-save-ok" class="dogiri-button dogiri-primary">Save project</a>
+    </div>
+  </div>
+  <div id="dogiri-projects-menu" hidden></div>
+  <input type="file" id="dogiri-relink" accept="video/*" hidden>
+  <div id="dogiri-confirm" hidden>
+    <div id="dogiri-confirm-text"></div>
+    <label id="dogiri-confirm-remember-row" hidden><input type="checkbox" id="dogiri-confirm-remember"> <span>Don't ask again</span></label>
+    <div class="dogiri-confirm-buttons">
+      <a href="javascript:;" id="dogiri-confirm-ok" class="dogiri-button dogiri-primary"></a>
+      <a href="javascript:;" id="dogiri-confirm-alt" class="dogiri-button" hidden></a>
+      <a href="javascript:;" id="dogiri-confirm-cancel" class="dogiri-button">Back to edit</a>
+    </div>
+  </div>
+</div>

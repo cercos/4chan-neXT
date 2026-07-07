@@ -286,6 +286,20 @@ Examples:
 }
 ```
 
+## Dogiri Editor
+
+The Dogiri video editor follows the active theme through the shared dialog
+variables and exposes three accents of its own: `--xt-dogiri-accent` (buttons,
+clip regions, caption blocks), `--xt-dogiri-accent-alt` (alternating clip
+regions), and `--xt-dogiri-playhead` (playhead and scrub handle). Fills are
+derived from the accents, so one override recolors the editor consistently:
+
+```css
+:root { --xt-dogiri-accent: #2d7d46; }
+```
+
+See [styling-hooks.md](./styling-hooks.md) section 9 for the full reference.
+
 ## Practical Snippets
 
 Force replies-to-you Thread Watcher links to red:

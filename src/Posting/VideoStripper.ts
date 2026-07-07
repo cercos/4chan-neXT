@@ -25,7 +25,23 @@ export class VideoStripper {
     return file;
   }
 
-  private static stripMp4(uint8: Uint8Array, view: DataView): boolean {
+  static async hasAudioTrack(file: File): Promise<boolean | null> {
+    try {
+      const buffer = await file.arrayBuffer();
+      const uint8 = new Uint8Array(buffer);
+      if (file.type === 'video/mp4' || file.name.toLowerCase().endsWith('.mp4')) {
+        return this.stripMp4(uint8, new DataView(buffer), true);
+      }
+      if (file.type === 'video/webm' || file.name.toLowerCase().endsWith('.webm')) {
+        return this.stripWebm(uint8, true);
+      }
+    } catch (error) {
+      console.warn('Failed to detect audio track in video:', error);
+    }
+    return null;
+  }
+
+  private static stripMp4(uint8: Uint8Array, view: DataView, detectOnly = false): boolean {
     let offset = 0;
     let stripped = false;
     const utf8Decoder = new TextDecoder('utf8');
@@ -101,6 +117,7 @@ export class VideoStripper {
           }
 
           if (isAudio) {
+            if (detectOnly) { return true; }
             // Replace `trak` with `free` to keep box sizes intact while dropping the track from use.
             uint8[moovOffset + 4] = 0x66; // f
             uint8[moovOffset + 5] = 0x72; // r
@@ -119,7 +136,7 @@ export class VideoStripper {
     return stripped;
   }
 
-  private static stripWebm(uint8: Uint8Array): boolean {
+  private static stripWebm(uint8: Uint8Array, detectOnly = false): boolean {
     let offset = 0;
     let stripped = false;
     const audioTracks = new Set<number>();
@@ -258,6 +275,7 @@ export class VideoStripper {
               }
 
               if (trackType === 2) {
+                if (detectOnly) { return true; }
                 // Replace TrackEntry with Void and remember the track number so
                 // its blocks can be voided out of the clusters below.
                 if (trackNumber >= 0) audioTracks.add(trackNumber);

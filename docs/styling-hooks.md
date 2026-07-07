@@ -261,6 +261,35 @@ rather than a flat fill.
 
 ---
 
+## 9. Dogiri video editor variables
+
+The Dogiri editor (`#dogiri`) builds its chrome from the shared dialog variables
+(`--xt-dialog-bg`, `--xt-background`, `--xt-border`, `--xt-text-color`) and
+adds three of its own accents:
+
+| Variable | Controls | Default |
+|---|---|---|
+| `--xt-dogiri-accent` | Primary buttons, pressed toggles, clip regions, caption blocks, confirm border | `#6a5acd` |
+| `--xt-dogiri-accent-alt` | Alternating (even) clip regions on the timeline | `#3fbfae` |
+| `--xt-dogiri-playhead` | Playhead line and scrub handle | `#e33` |
+
+Region fills and the caption sweep ghost are derived from the accents with
+`color-mix`, so overriding the variable recolors the fills and edges together.
+Caption blocks in the lane cycle through hue rotations of `--xt-dogiri-accent`
+(`.dogiri-caption-block[data-hue="0"..."4"]`) so overlapping captions stay
+distinguishable; they follow an accent override automatically. The block being
+edited carries `.editing` (outlined with `--xt-text-color`).
+
+```css
+/* Recolor the whole editor accent */
+:root { --xt-dogiri-accent: #b58900; }
+
+/* Calmer playhead on Tomorrow only */
+:root.tomorrow { --xt-dogiri-playhead: #6ea0c8; }
+```
+
+---
+
 ## 10. Stacked captcha chips
 
 With `Stacked TCaptcha` on, `#qr` carries `fourchanx-captcha-style-<value>` for the

@@ -18,6 +18,7 @@ import { VideoStripper } from './VideoStripper';
 import QRFileStore from '../platform/QRFileStore';
 import { DAY, dict, platform, SECOND } from '../platform/helpers';
 import Icon from '../Icons/icon';
+import Dogiri from './Dogiri';
 import type Post from '../classes/Post';
 
 interface ConvertOptions {
@@ -83,6 +84,7 @@ var QR = {
     filename: HTMLInputElement,
     spoiler: HTMLInputElement,
     oekakiButton: HTMLAnchorElement,
+    dogiriButton: HTMLAnchorElement,
     randomizeButton: HTMLAnchorElement,
     compress: HTMLAnchorElement,
     view: HTMLAnchorElement,
@@ -2551,6 +2553,7 @@ var QR = {
     setNode('filename',       '#qr-filename');
     setNode('spoiler',        '#qr-file-spoiler');
     setNode('oekakiButton',   '#qr-oekaki-button');
+    setNode('dogiriButton',   '#qr-dogiri-button');
     setNode('fileRM',         '#qr-filerm');
     setNode('urlButton',      '#url-button');
     setNode('pasteArea',      '#paste-area');
@@ -2620,6 +2623,26 @@ var QR = {
     $.on(nodes.spoiler,        'change',    () => QR.selected.nodes.spoiler.click());
     $.on(nodes.oekakiButton,   'click',     e => {
       QR.oekaki.button();
+      QR.blurMouseFocusedAction(e);
+    });
+    $.on(nodes.dogiriButton,   'click',     e => {
+      const selected = QR.selected;
+      if (selected?.file) {
+        Dogiri.open(selected.file, {
+          audioStripped: selected.audioWasStripped,
+          originalFile: selected.preStripFile,
+          maxSize: QR.getMaxSize(selected.file),
+          onExportDone: (exported, keepOriginal) => {
+            if (keepOriginal) {
+              $.addClass(QR.nodes.el, 'dump');
+              new QR.post(true).setFile(exported);
+              return;
+            }
+            selected.dismissErrors(error => $.hasClass(error, 'file-error'));
+            selected.setFile(exported);
+          },
+        });
+      }
       QR.blurMouseFocusedAction(e);
     });
     $.on(nodes.fileRM,         'click',     () => QR.selected.rmFile());
@@ -2698,6 +2721,8 @@ var QR = {
     $.event('QRDialogCreation', null, dialog);
 
     Icon.set(nodes.oekakiButton, 'pencil');
+    Icon.set(nodes.dogiriButton, 'film');
+    nodes.dogiriButton.hidden = !Conf['Dogiri Editor'];
     Icon.set(nodes.urlButton, 'link');
     Icon.set(nodes.pasteArea, 'clipboard');
     Icon.set(nodes.customCooldown, 'clock');
@@ -3071,6 +3096,13 @@ var QR = {
       err = 'No comment or file.';
     } else if (post.file && thread!.fileLimit) {
       err = 'Max limit of image replies has been reached.';
+    }
+
+    if (!err && post.file) {
+      const maxSize = QR.getMaxSize(post.file);
+      if (post.file.size > maxSize) {
+        err = `File too large (file: ${$.bytesToString(post.file.size)}, max: ${$.bytesToString(maxSize)}).`;
+      }
     }
 
     if ((board.ID === 'r9k') && !post.com?.match(/[a-z-]/i)) {
@@ -4726,6 +4758,8 @@ class post {
   declare com?: string;
   declare pasting?: boolean;
   declare pendingFile?: boolean;
+  declare audioWasStripped?: boolean;
+  declare preStripFile?: File;
   declare quotedText?: string;
   declare errors?: any[]; // loose: array of error nodes, late-assigned
   // id of this post's attached file in QRFileStore (IndexedDB), when the draft
@@ -4983,14 +5017,19 @@ class post {
     }
   }
 
-  error(className: string, message: string, link?: string) {
+  error(className: string, message: string, link?: string, actions?: { label: string, onClick: () => void }[]) {
     const div = $.el('div', { className });
+    const actionsHTML = (actions || [])
+      .map(action => `[<a href="javascript:;" class="qr-error-action">${E(action.label)}</a>] `)
+      .join('');
     $.extend(div, {
       innerHTML: message + (link ? ` [<a href="${E(link)}" target="_blank">More info</a>]` : '') +
-        `<br>[<a href="javascript:;">delete post</a>] [<a href="javascript:;">delete all</a>]`
+        `<br>${actionsHTML}[<a href="javascript:;">delete post</a>] [<a href="javascript:;">delete all</a>]`
     });
     (this.errors || (this.errors = [])).push(div);
-    const [rm, rmAll] = $$('a', div);
+    const anchors = $$('a', div);
+    const rm = anchors[anchors.length - 2];
+    const rmAll = anchors[anchors.length - 1];
     $.on(div, 'click', () => {
       if (QR.posts.includes(this)) this.select();
     });
@@ -4999,11 +5038,20 @@ class post {
       if (QR.posts.includes(this)) this.rm();
     });
     $.on(rmAll, 'click', QR.post.rmErrored);
+    $$('.qr-error-action', div).forEach((anchor, index) => {
+      $.on(anchor, 'click', e => {
+        e.stopPropagation();
+        actions![index].onClick();
+        if (doc.contains(div)) {
+          ((div.parentNode as HTMLElement)?.previousElementSibling as HTMLElement)?.click?.();
+        }
+      });
+    });
     QR.error(div, true);
   }
 
-  fileError(message: string, link?: string) {
-    this.error('file-error', `${this.filename}: ${message}`, link);
+  fileError(message: string, link?: string, actions?: { label: string, onClick: () => void }[]) {
+    this.error('file-error', `${this.filename}: ${message}`, link, actions);
   }
 
   dismissErrors(test: (error?: any) => boolean = () => true) {
@@ -5075,7 +5123,36 @@ class post {
           );
       }
     } else if (file.size > maxSize) {
-      throw new Error(`File too large (file: ${$.bytesToString(file.size)}, max: ${$.bytesToString(maxSize)}).`);
+      if (!file.type.startsWith('video/')) {
+        throw new Error(`File too large (file: ${$.bytesToString(file.size)}, max: ${$.bytesToString(maxSize)}).`);
+      }
+      const sizes = `file: ${$.bytesToString(file.size)}, max: ${$.bytesToString(maxSize)}`;
+      if (Conf['Dogiri Editor']) {
+        this.fileError(`File too large (${sizes}). Trim it before posting.`, undefined, [
+          {
+            label: 'edit in Dōgiri',
+            onClick: () => {
+              if (!this.file) { return; }
+              Dogiri.open(this.file, {
+                audioStripped: this.audioWasStripped,
+                originalFile: this.preStripFile,
+                maxSize: QR.getMaxSize(this.file),
+                onExportDone: (exported, keepOriginal) => {
+                  if (keepOriginal) {
+                    $.addClass(QR.nodes.el, 'dump');
+                    new QR.post(true).setFile(exported);
+                    return;
+                  }
+                  this.dismissErrors(error => $.hasClass(error, 'file-error'));
+                  this.setFile(exported);
+                },
+              });
+            },
+          },
+        ]);
+      } else {
+        this.fileError(`File too large (${sizes}). It cannot be posted until it is under the limit.`);
+      }
     }
 
     return file;
@@ -5086,6 +5163,10 @@ class post {
     // A fresh user-supplied file invalidates any previously persisted copy so
     // it gets re-saved; a restored file keeps its existing store id (set below).
     if (!opts.restore) { delete this._draftFileId; }
+    if (!opts.restore) {
+      this.audioWasStripped = false;
+      delete this.preStripFile;
+    }
     try {
       // On restore the file was already audio-stripped/renamed when first added,
       // so skip that reprocessing (and its notices).
@@ -5097,7 +5178,9 @@ class post {
       ) {
         const stripped = await VideoStripper.stripAudio(file);
         if (stripped !== file) {
+          this.preStripFile = file;
           file = stripped;
+          this.audioWasStripped = true;
           QR.noteAudioStripped();
         }
       }
@@ -5282,6 +5365,8 @@ class post {
     delete this.filename;
     delete this.filesize;
     delete this._draftFileId;
+    delete this.audioWasStripped;
+    delete this.preStripFile;
     QR.drafts.persistFiles();
     this.nodes.el.removeAttribute('title');
     QR.nodes.filename.removeAttribute('title');

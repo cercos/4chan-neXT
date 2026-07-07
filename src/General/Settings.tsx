@@ -2494,6 +2494,7 @@ Enable it on boards.${location.hostname.split('.')[1]}.org in your browser's pri
           'Comment Preview Thread Behavior',
           'Comment Preview Catalog Behavior',
           'Show Comment Preview Header Icon',
+          'Dogiri Timeline Size',
           'Stacked TCaptcha Style',
         ].includes(key),
       });

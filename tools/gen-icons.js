@@ -50,7 +50,7 @@ const CANON = [
   'link', 'pencil', 'clipboard', 'clock', 'shuffle', 'undo', 'download', 'bookOpen',
   'shrink', 'heart', 'caretRight', 'caretLeft', 'caretDown', 'scissors', 'xmark', 'check',
   'arrowRightLong', 'plus', 'squarePlus', 'squareMinus', 'play', 'stop', 'arrowUpLong',
-  'arrowDownLong', 'bars', 'barsStaggered', 'sliders',
+  'arrowDownLong', 'bars', 'barsStaggered', 'sliders', 'film',
 ];
 
 const SETS = [
@@ -67,7 +67,7 @@ const SETS = [
       plus: ['solid', 'faPlus'], squarePlus: ['regular', 'faSquarePlus'], squareMinus: ['regular', 'faSquareMinus'],
       play: ['solid', 'faPlay'], stop: ['solid', 'faStop'], arrowUpLong: ['solid', 'faArrowUpLong'],
       arrowDownLong: ['solid', 'faArrowDownLong'], bars: ['solid', 'faBars'], barsStaggered: ['solid', 'faBarsStaggered'],
-      sliders: ['solid', 'faSliders'],
+      sliders: ['solid', 'faSliders'], film: ['solid', 'faFilm'],
     },
   },
   {
@@ -78,7 +78,7 @@ const SETS = [
       heart: 'heart', caretRight: 'chevron-right', caretLeft: 'chevron-left', caretDown: 'chevron-down', scissors: 'scissors',
       xmark: 'x', check: 'check', arrowRightLong: 'arrow-right', plus: 'plus', squarePlus: 'square-plus',
       squareMinus: 'square-minus', play: 'play', stop: 'square', arrowUpLong: 'arrow-up', arrowDownLong: 'arrow-down',
-      bars: 'menu', barsStaggered: 'align-left', sliders: 'sliders-horizontal',
+      bars: 'menu', barsStaggered: 'align-left', sliders: 'sliders-horizontal', film: 'film',
     },
   },
   {
@@ -89,7 +89,7 @@ const SETS = [
       shrink: 'close_fullscreen', heart: 'favorite', caretRight: 'arrow_right', caretLeft: 'arrow_left',
       caretDown: 'arrow_drop_down', scissors: 'content_cut', xmark: 'close', check: 'check', arrowRightLong: 'arrow_forward',
       plus: 'add', squarePlus: 'add_box', squareMinus: 'indeterminate_check_box', play: 'play_arrow', stop: 'stop',
-      arrowUpLong: 'arrow_upward', arrowDownLong: 'arrow_downward', bars: 'menu', barsStaggered: 'notes', sliders: 'tune',
+      arrowUpLong: 'arrow_upward', arrowDownLong: 'arrow_downward', bars: 'menu', barsStaggered: 'notes', sliders: 'tune', film: 'movie',
     },
   },
   {
@@ -100,7 +100,7 @@ const SETS = [
       shrink: 'arrows-in', heart: 'heart', caretRight: 'caret-right', caretLeft: 'caret-left', caretDown: 'caret-down',
       scissors: 'scissors', xmark: 'x', check: 'check', arrowRightLong: 'arrow-right', plus: 'plus', squarePlus: 'plus-square',
       squareMinus: 'minus-square', play: 'play', stop: 'stop', arrowUpLong: 'arrow-up', arrowDownLong: 'arrow-down',
-      bars: 'list', barsStaggered: 'list-dashes', sliders: 'sliders-horizontal',
+      bars: 'list', barsStaggered: 'list-dashes', sliders: 'sliders-horizontal', film: 'film-strip',
     },
   },
   {
@@ -111,7 +111,7 @@ const SETS = [
       shrink: 'arrows-minimize', heart: 'heart', caretRight: 'caret-right', caretLeft: 'caret-left', caretDown: 'caret-down',
       scissors: 'scissors', xmark: 'x', check: 'check', arrowRightLong: 'arrow-right', plus: 'plus', squarePlus: 'square-plus',
       squareMinus: 'square-minus', play: 'player-play', stop: 'player-stop', arrowUpLong: 'arrow-up', arrowDownLong: 'arrow-down',
-      bars: 'menu-2', barsStaggered: 'list', sliders: 'adjustments-horizontal',
+      bars: 'menu-2', barsStaggered: 'list', sliders: 'adjustments-horizontal', film: 'movie',
     },
   },
   {
@@ -122,7 +122,7 @@ const SETS = [
       bookOpen: 'book-fill', shrink: 'fullscreen-exit', heart: 'heart-fill', caretRight: 'caret-right-fill', caretLeft: 'caret-left-fill',
       caretDown: 'caret-down-fill', scissors: 'scissors', xmark: 'x-lg', check: 'check-lg', arrowRightLong: 'arrow-right',
       plus: 'plus-lg', squarePlus: 'plus-square-fill', squareMinus: 'dash-square-fill', play: 'play-fill', stop: 'stop-fill',
-      arrowUpLong: 'arrow-up', arrowDownLong: 'arrow-down', bars: 'list', barsStaggered: 'text-left', sliders: 'sliders',
+      arrowUpLong: 'arrow-up', arrowDownLong: 'arrow-down', bars: 'list', barsStaggered: 'text-left', sliders: 'sliders', film: 'film',
     },
   },
   {
@@ -133,7 +133,7 @@ const SETS = [
       shrink: 'arrows-pointing-in', heart: 'heart', caretRight: 'chevron-right', caretLeft: 'chevron-left', caretDown: 'chevron-down',
       scissors: 'scissors', xmark: 'x-mark', check: 'check', arrowRightLong: 'arrow-long-right', plus: 'plus',
       squarePlus: 'plus-circle', squareMinus: 'minus-circle', play: 'play', stop: 'stop', arrowUpLong: 'arrow-long-up',
-      arrowDownLong: 'arrow-long-down', bars: 'bars-3', barsStaggered: 'bars-3-bottom-left', sliders: 'adjustments-horizontal',
+      arrowDownLong: 'arrow-long-down', bars: 'bars-3', barsStaggered: 'bars-3-bottom-left', sliders: 'adjustments-horizontal', film: 'film',
     },
   },
   {
@@ -144,7 +144,7 @@ const SETS = [
       heart: 'heart', caretRight: 'caret-forward', caretLeft: 'caret-back', caretDown: 'caret-down', scissors: 'cut',
       xmark: 'close', check: 'checkmark', arrowRightLong: 'arrow-forward', plus: 'add', squarePlus: 'add-circle',
       squareMinus: 'remove-circle', play: 'play', stop: 'stop', arrowUpLong: 'arrow-up', arrowDownLong: 'arrow-down',
-      bars: 'menu', barsStaggered: 'list', sliders: 'options',
+      bars: 'menu', barsStaggered: 'list', sliders: 'options', film: 'film',
     },
   },
 ];

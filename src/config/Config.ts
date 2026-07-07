@@ -695,6 +695,31 @@ const Config = {
         'Remove audio from MP4 and WebM uploads in Quick Reply on boards that do not allow audio.',
         1
       ],
+      'Dogiri Editor': [
+        true,
+        'Add a button to edit attached videos in Dōgiri, the video editor. Requires Quick Reply.',
+        1
+      ],
+      'Dogiri Oversize Render Warning': [
+        true,
+        'Ask for confirmation before rendering in Dōgiri when the estimated file size is over the board limit.',
+        2
+      ],
+      'Dogiri Filmstrip': [
+        true,
+        'Show frames from the video behind the Dōgiri timeline.',
+        2
+      ],
+      'Dogiri Timeline Size': [
+        'small',
+        'Size of the Dōgiri timeline and its frame thumbnails.',
+        2
+      ],
+      'Dogiri Autosave': [
+        true,
+        'Keep an automatic backup of unsaved Dōgiri edits and offer to restore it when the same video is opened again.',
+        2
+      ],
       'Comment Preview': [
         false,
         'Live preview of how your comment will render. Shows as a draggable floating window; the arrow in its header docks it inline as a literal post in the thread (and back).',

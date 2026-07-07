@@ -6,8 +6,8 @@
   },
   "counts": {
     "xt": 259,
-    "next": 426,
-    "added": 161,
+    "next": 431,
+    "added": 166,
     "changed": 3
   },
   "added": [
@@ -72,6 +72,11 @@
     "Convert X to xcancel",
     "Convert YouTube to yewtu.be",
     "Dead Link Text Color",
+    "Dogiri Autosave",
+    "Dogiri Editor",
+    "Dogiri Filmstrip",
+    "Dogiri Oversize Render Warning",
+    "Dogiri Timeline Size",
     "Download All Media",
     "Download all media",
     "Dump List Remove File First",

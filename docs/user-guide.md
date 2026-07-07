@@ -14,7 +14,7 @@ If you use StyleChan, read Styling And Themes before tuning colors. 4chan-neXT d
 
 A settings-level comparison against 4chan XT shows these main 4chan-neXT additions:
 
-- **Quick Reply and posting:** `QR Drafts` restore with attachment persistence, native board-index form hiding, upload progress, dump-list file-first removal, image auto-processing, board-aware video audio stripping, stacked TCaptcha answer editing, autofill-resistant QR identity fields, auto-closing board tags, and post-styled comment preview modes.
+- **Quick Reply and posting:** the Dōgiri video editor (clips, captions, audio stripping, size-targeted webm renders), `QR Drafts` restore with attachment persistence, native board-index form hiding, upload progress, dump-list file-first removal, image auto-processing, board-aware video audio stripping, stacked TCaptcha answer editing, autofill-resistant QR identity fields, auto-closing board tags, and post-styled comment preview modes.
 - **Thread Watcher and monitoring:** Quick Reply docking, attach location controls, manual max size controls, OP thumbnails, hover thumbnail previews, mark-all-read and per-thread mark-read icons, detailed thread stats, and replies-to-you watcher link state.
 - **Styling and themes:** built-in themes, SFW/NSFW styling variants, StyleChan section ownership, home-page StyleChan mirroring, highlight color controls, text color modes, edge/background modes, edge and border styles, catalog own/watched highlights, saved palettes, and local styling docs.
 - **Scrollbar markers:** own-post, quotes-you, ghost-post, and unread-line markers with per-marker colors, opacity, match-highlight controls, plus beside-scrollbar and IDE-style over-scrollbar layouts.
@@ -289,6 +289,32 @@ How it behaves:
 - **Turning the setting off clears storage.** Disabling `QR Drafts` removes all saved QR drafts and stored draft attachments across boards.
 
 If drafts still do not return after enabling this, make sure the Quick Reply is empty when you reopen it (existing text or a file blocks the restore).
+
+### Dōgiri Video Editor (WIP)
+
+Dōgiri edits an attached video before you post it: cut it into clips, add captions, strip the audio, and render a new webm without leaving the page. Attach a video to the Quick Reply and click the film button to open it. Dōgiri is a work in progress, marked (WIP) in its title bar, so expect rough edges.
+
+Important settings:
+
+- Settings -> Posting and Captchas -> `Dogiri Editor`: adds the film button to QR (on by default; requires Quick Reply).
+- `Dogiri Oversize Render Warning`: asks for confirmation before rendering when the estimated size is over the board limit or a fit target looks unreachable.
+- `Dogiri Filmstrip`: shows frames from the video behind the timeline.
+- `Dogiri Timeline Size`: size of the timeline and its frame thumbnails.
+- `Dogiri Autosave`: keeps a backup of unsaved edits per video and offers to restore it when the same file is opened again.
+
+**Clips.** The video starts as one clip covering the whole timeline. Drag a clip's edges to trim it, drag its middle to move it, and use `+ Add clip` to place a new clip in the largest empty gap. The x on a clip removes it. `Play clips` previews only the kept parts, skipping the gaps. Everything outside a clip is cut from the render.
+
+**Clip list.** The `Clips` button in the toolbar slides out a panel listing every clip with its times, which is easier to work with than tiny slivers on the timeline. Clicking a row selects that clip and seeks to its start. Check several clips (or use the select-all box) and `Delete` removes them, `Keep only` removes everything else, and `Merge` combines them into one clip spanning from the first to the last, absorbing anything in between. Each action is a single undo step.
+
+**Captions.** The `Captions` button opens the caption editor and a caption lane under the timeline. Type text and press Enter (or `+ Add caption`) to add it at the playhead, pick top or bottom placement and a size, then fine-tune: drag a caption on the video preview to reposition it, and drag its block on the lane to retime it or its edges to change how long it stays up. Captions are burned into the rendered video.
+
+**Audio.** `Strip audio` removes the audio track from the render. On boards that do not allow audio this pairs with the QR's own `Strip Video Audio` handling.
+
+**Rendering.** The gear button next to Render holds the render options. Pick a quality tier (High, Medium, Low, Minimum), or pick `Fit to size` and set a target size in MB: the bitrate and resolution are then computed to land under that target, which defaults to the board's file limit. The stats line above Render shows the clip count, kept duration, and an estimated output size; the estimate learns from your finished renders and is replaced by the real size once a render completes. Rendering plays the clips through in real time, so a 30-second result takes about 30 seconds; you can cancel mid-render. When it finishes, `Send -> QR` attaches the result (the arrow next to it switches to `Save -> file`), and `Delete original file when sent to QR` controls whether the source file stays attached.
+
+**Projects and autosave.** `Save` stores the current clips and captions as a named project; `Projects` reloads or deletes them. Projects remember the source video by a fingerprint, so if the file is missing you are asked to relocate it. Separately from named projects, Dōgiri keeps an automatic per-video backup of unsaved edits and restores it when you reopen the same file. The `Reset` button in the title bar clears the editor back to a clean slate and discards that backup; Reset is undoable like any other edit.
+
+Keyboard shortcuts: Space plays or pauses, Left/Right arrows seek 1 second (5 with Shift), `,` and `.` step a single frame, Home/End jump to the start or end, Ctrl+Z undoes, Ctrl+Shift+Z or Ctrl+Y redoes, and Escape backs out of a prompt or closes Dōgiri.
 
 ## Gallery And Media
 
