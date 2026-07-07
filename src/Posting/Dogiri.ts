@@ -130,6 +130,7 @@ const Dogiri = {
   // Dropdown value when editing started; used to tell "user changed it" from "left as-is".
   editingInitialPosition: 'bottom' as CaptionPosition,
   selectedRegionId: 0,
+  regionMenuVisible: false,
   checkedClipIds: new Set<number>(),
   dragTarget: null as TimelineDrag | null,
   // Seek that landed in a gap during clips-only playback; applied on pointer up.
@@ -375,6 +376,7 @@ const Dogiri = {
     $.on(nodes.resize,         'pointerup',   Dogiri.onResizePointerUp);
     $.on(nodes.resize,         'pointercancel', Dogiri.onResizePointerUp);
     window.addEventListener('resize', Dogiri.onWindowResize);
+    $.on(nodes.el,             'pointerdown', Dogiri.onDialogPointerDown);
     $.on(nodes.timeline,       'pointerdown', Dogiri.onTimelinePointerDown);
     $.on(nodes.timeline,       'pointermove', Dogiri.onTimelinePointerMove);
     $.on(nodes.timeline,       'pointerup',   Dogiri.onTimelinePointerUp);
@@ -444,6 +446,7 @@ const Dogiri = {
     Dogiri.fileSize = 0;
     Dogiri.editingCaptionId = 0;
     Dogiri.selectedRegionId = 0;
+    Dogiri.regionMenuVisible = false;
     Dogiri.checkedClipIds = new Set();
     Dogiri.dragTarget = null;
     Dogiri.pendingClipSeek = null;
@@ -1298,7 +1301,7 @@ const Dogiri = {
   positionRegionMenu() {
     const { nodes, state } = Dogiri;
     if (!nodes || !state) { return; }
-    const selected = state.duration ? Dogiri.selectedRegion() : null;
+    const selected = state.duration && Dogiri.regionMenuVisible ? Dogiri.selectedRegion() : null;
     if (!selected) {
       nodes.regionMenu.hidden = true;
       return;
@@ -1319,6 +1322,7 @@ const Dogiri = {
     const before = snapshot(state);
     removeRegion(state, selected.id);
     commitHistory(Dogiri.history, before, state);
+    Dogiri.regionMenuVisible = false;
     Dogiri.renderRegions();
   },
 
@@ -1424,6 +1428,14 @@ const Dogiri = {
     return fraction * state.duration;
   },
 
+  onDialogPointerDown(e: PointerEvent) {
+    if (!Dogiri.regionMenuVisible) { return; }
+    const target = e.target as HTMLElement;
+    if (target.closest?.('.dogiri-region, #dogiri-region-menu, .dogiri-clip-row')) { return; }
+    Dogiri.regionMenuVisible = false;
+    Dogiri.positionRegionMenu();
+  },
+
   onTimelinePointerDown(e: PointerEvent) {
     const { nodes, state } = Dogiri;
     if (!nodes || !state?.duration) { return; }
@@ -1436,6 +1448,7 @@ const Dogiri = {
     } else if (handle && regionEl) {
       const id = +regionEl.dataset.id!;
       Dogiri.selectedRegionId = id;
+      Dogiri.regionMenuVisible = true;
       Dogiri.dragTarget = {
         kind: 'edge',
         id,
@@ -1446,6 +1459,7 @@ const Dogiri = {
       const region = state.regions.find(r => r.id === id);
       if (!region) { return; }
       Dogiri.selectedRegionId = id;
+      Dogiri.regionMenuVisible = true;
       Dogiri.dragTarget = {
         kind: 'move',
         id,
@@ -1569,6 +1583,7 @@ const Dogiri = {
       }));
       $.on(row, 'click', () => {
         Dogiri.selectedRegionId = region.id;
+        Dogiri.regionMenuVisible = true;
         if (Dogiri.nodes && Dogiri.state) {
           Dogiri.nodes.video.currentTime = region.start;
         }
