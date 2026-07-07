@@ -155,6 +155,8 @@
     "build:userscript:min": "node ./tools/rollup -min -platform=userscript",
     "build:crx:min": "node ./tools/rollup -min -platform=crx",
     "build:crxp": "npm run build:crx && bash ./tools/pack-crx.sh",
+    "//build:beta": "Beta-channel userscript release. Run on the beta branch, then commit builds/ and push; beta installs auto-update from raw.githubusercontent.com on that branch. Installs alongside stable as '4chan-neXT (beta)'.",
+    "build:beta": "node ./tools/rollup -platform=userscript -channel=beta -channel-base=https://raw.githubusercontent.com/cercos/4chan-neXT/beta/builds",
     "//build:all": "Full multi-platform release build. Slow and writes to builds/. Only run when explicitly preparing a release.",
     "build:all": "node ./tools/build-all.js",
     "removebuild": "node ./tools/remove-build-changes.js",
