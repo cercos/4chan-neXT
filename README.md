@@ -15,6 +15,9 @@
   - https://github.com/cercos/4chan-next/releases/latest/download/4chan-neXT.min.user.js
 - **Releases page:**
   - https://github.com/cercos/4chan-next/releases
+- **Beta userscript (for testers):**
+  - https://raw.githubusercontent.com/cercos/4chan-neXT/beta/builds/4chan-neXT.user.js
+  - Gets new features before they reach stable, so expect occasional bugs. Installs as "4chan-neXT (beta)" alongside the stable script and updates automatically; keep only one of the two enabled at a time. Bug reports are welcome on the [issues page](https://github.com/cercos/4chan-next/issues).
 
 You will need a userscript manager:
 - Firefox: [Violentmonkey](https://addons.mozilla.org/en-US/firefox/addon/violentmonkey/) or [Tampermonkey](https://addons.mozilla.org/en-US/firefox/addon/tampermonkey/)
