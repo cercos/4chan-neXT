@@ -1,6 +1,6 @@
 // ==UserScript==
 // @name         4chan-neXT (beta)
-// @version      1.2.6.20260706213143
+// @version      1.2.6.20260707072452
 // @minGMVer     1.14
 // @minFFVer     78
 // @namespace    4chan-neXT-beta
@@ -21384,6 +21384,7 @@ aero|asia|biz|cat|com|coop|dance|info|int|jobs|mobi|moe|museum|name|net|org|post
 
 		editingInitialPosition: 'bottom',
 		selectedRegionId: 0,
+		regionMenuVisible: false,
 		checkedClipIds: new Set(),
 		dragTarget: null,
 
@@ -21649,6 +21650,7 @@ aero|asia|biz|cat|com|coop|dance|info|int|jobs|mobi|moe|museum|name|net|org|post
 			$.on(nodes.resize, 'pointerup', Dogiri.onResizePointerUp);
 			$.on(nodes.resize, 'pointercancel', Dogiri.onResizePointerUp);
 			window.addEventListener('resize', Dogiri.onWindowResize);
+			$.on(nodes.el, 'pointerdown', Dogiri.onDialogPointerDown);
 			$.on(nodes.timeline, 'pointerdown', Dogiri.onTimelinePointerDown);
 			$.on(nodes.timeline, 'pointermove', Dogiri.onTimelinePointerMove);
 			$.on(nodes.timeline, 'pointerup', Dogiri.onTimelinePointerUp);
@@ -21719,6 +21721,7 @@ aero|asia|biz|cat|com|coop|dance|info|int|jobs|mobi|moe|museum|name|net|org|post
 			Dogiri.fileSize = 0;
 			Dogiri.editingCaptionId = 0;
 			Dogiri.selectedRegionId = 0;
+			Dogiri.regionMenuVisible = false;
 			Dogiri.checkedClipIds = new Set();
 			Dogiri.dragTarget = null;
 			Dogiri.pendingClipSeek = null;
@@ -22693,7 +22696,7 @@ aero|asia|biz|cat|com|coop|dance|info|int|jobs|mobi|moe|museum|name|net|org|post
 			if (!nodes || !state) {
 				return;
 			}
-			const selected = state.duration ? Dogiri.selectedRegion() : null;
+			const selected = state.duration && Dogiri.regionMenuVisible ? Dogiri.selectedRegion() : null;
 			if (!selected) {
 				nodes.regionMenu.hidden = true;
 				return;
@@ -22715,6 +22718,7 @@ aero|asia|biz|cat|com|coop|dance|info|int|jobs|mobi|moe|museum|name|net|org|post
 			const before = snapshot(state);
 			removeRegion(state, selected.id);
 			commitHistory(Dogiri.history, before, state);
+			Dogiri.regionMenuVisible = false;
 			Dogiri.renderRegions();
 		},
 		onQualityChange() {
@@ -22826,6 +22830,17 @@ aero|asia|biz|cat|com|coop|dance|info|int|jobs|mobi|moe|museum|name|net|org|post
 			const fraction = Math.min(Math.max((e.clientX - rect.left) / rect.width, 0), 1);
 			return fraction * state.duration;
 		},
+		onDialogPointerDown(e) {
+			if (!Dogiri.regionMenuVisible) {
+				return;
+			}
+			const target = e.target;
+			if (target.closest?.('.dogiri-region, #dogiri-region-menu, .dogiri-clip-row')) {
+				return;
+			}
+			Dogiri.regionMenuVisible = false;
+			Dogiri.positionRegionMenu();
+		},
 		onTimelinePointerDown(e) {
 			const { nodes, state } = Dogiri;
 			if (!nodes || !state?.duration) {
@@ -22842,6 +22857,7 @@ aero|asia|biz|cat|com|coop|dance|info|int|jobs|mobi|moe|museum|name|net|org|post
 			} else if (handle && regionEl) {
 				const id = +regionEl.dataset.id;
 				Dogiri.selectedRegionId = id;
+				Dogiri.regionMenuVisible = true;
 				Dogiri.dragTarget = {
 					kind: 'edge',
 					id,
@@ -22854,6 +22870,7 @@ aero|asia|biz|cat|com|coop|dance|info|int|jobs|mobi|moe|museum|name|net|org|post
 					return;
 				}
 				Dogiri.selectedRegionId = id;
+				Dogiri.regionMenuVisible = true;
 				Dogiri.dragTarget = {
 					kind: 'move',
 					id,
@@ -22983,6 +23000,7 @@ aero|asia|biz|cat|com|coop|dance|info|int|jobs|mobi|moe|museum|name|net|org|post
 				}));
 				$.on(row, 'click', () => {
 					Dogiri.selectedRegionId = region.id;
+					Dogiri.regionMenuVisible = true;
 					if (Dogiri.nodes && Dogiri.state) {
 						Dogiri.nodes.video.currentTime = region.start;
 					}
