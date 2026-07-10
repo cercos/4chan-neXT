@@ -2797,41 +2797,74 @@ var QR = {
     // so the dropdown matches whatever theme — a styling script or otherwise —
     // is styling the QR, while staying overridable from Custom CSS.
     //
-    // For the text color we sample from the QR form (a non-button parent),
-    // because host / styling-script themes apply their own `button { color }`
-    // rule and reading from the toggle itself would inherit that. For the
-    // background we walk up from the toggle until we hit the first opaque
-    // ancestor. For borders we copy the computed border from a sibling input,
-    // which has already been styled by the host theme.
+    // Background, text and border colors are all sampled from a sibling input
+    // (Name), which the host theme has already styled, so the closed toggle
+    // and the menu render like the other QR fields. Sampling from an input
+    // also sidesteps host `button { color }` rules that reading from the
+    // toggle itself would inherit. If the input's background is transparent
+    // we fall back to walking up from the toggle to the first opaque
+    // ancestor, and to the QR form's text color.
+    const isOpaque = (color: string) => {
+      const m = color.match(/[\d.]+/g);
+      return !!m && (m.length < 4 || parseFloat(m[3]) > 0.01);
+    };
+
     const syncTheme = () => {
-      const formEl = (QR.nodes?.form || picker.parentElement) as HTMLElement | undefined;
-      const fg = formEl ? window.getComputedStyle(formEl).color : '';
-
+      let fg = '';
       let bg = '';
-      let el: HTMLElement | null = toggle;
-      while (el) {
-        const cs = window.getComputedStyle(el);
-        const m = cs.backgroundColor.match(/[\d.]+/g);
-        if (m && (m.length < 4 || parseFloat(m[3]) > 0.01)) { bg = cs.backgroundColor; break; }
-        el = el.parentElement;
-      }
-
-      const root = d.documentElement;
-      if (bg) {
-        root.style.setProperty('--xt-qr-sampled-bg', bg);
-      }
-      if (fg) {
-        root.style.setProperty('--xt-qr-sampled-fg', fg);
-      }
+      let border = '';
 
       const sibling = QR.nodes?.name as HTMLElement | undefined;
       if (sibling) {
         const cs = window.getComputedStyle(sibling);
-        if (cs.borderTopColor) {
-          root.style.setProperty('--xt-qr-sampled-border', cs.borderTopColor);
+        fg = cs.color;
+        border = cs.borderTopColor;
+        if (isOpaque(cs.backgroundColor)) { bg = cs.backgroundColor; }
+      }
+
+      if (!fg) {
+        const formEl = (QR.nodes?.form || picker.parentElement) as HTMLElement | undefined;
+        if (formEl) { fg = window.getComputedStyle(formEl).color; }
+      }
+
+      if (!bg) {
+        let el: HTMLElement | null = toggle;
+        while (el) {
+          const cs = window.getComputedStyle(el);
+          if (isOpaque(cs.backgroundColor)) { bg = cs.backgroundColor; break; }
+          el = el.parentElement;
         }
       }
+
+      const root = d.documentElement;
+      if (bg && root.style.getPropertyValue('--xt-qr-sampled-bg') !== bg) {
+        root.style.setProperty('--xt-qr-sampled-bg', bg);
+      }
+      if (fg && root.style.getPropertyValue('--xt-qr-sampled-fg') !== fg) {
+        root.style.setProperty('--xt-qr-sampled-fg', fg);
+      }
+      if (border && root.style.getPropertyValue('--xt-qr-sampled-border') !== border) {
+        root.style.setProperty('--xt-qr-sampled-border', border);
+      }
     };
+
+    let themeSyncRaf = 0;
+    const scheduleThemeSync = () => {
+      if (themeSyncRaf) return;
+      themeSyncRaf = requestAnimationFrame(() => {
+        themeSyncRaf = 0;
+        syncTheme();
+      });
+    };
+
+    // Watching the html/body `style` attribute here would loop: syncTheme()
+    // writes the sampled variables to the root's inline style, which would
+    // re-trigger the observer every frame. `class` only, plus stylesheet
+    // mutations in <head>, covers how themes actually apply changes.
+    const themeObserver = new MutationObserver(scheduleThemeSync);
+    themeObserver.observe(d.head, {childList: true, subtree: true, characterData: true});
+    themeObserver.observe(d.documentElement, {attributes: true, attributeFilter: ['class']});
+    themeObserver.observe(d.body, {attributes: true, attributeFilter: ['class']});
 
     const openMenu = () => {
       if (open) return;
@@ -2923,6 +2956,7 @@ var QR = {
     $.on(window, 'resize', onViewportChange);
     $.on(window, 'scroll', onViewportChange);
     $.on(QR.nodes.form, 'scroll', onViewportChange);
+    $.on(QR.nodes.form, 'focusin', syncTheme);
     $.on(select, 'change', syncSelected);
 
     new MutationObserver(() => {
@@ -2939,7 +2973,13 @@ var QR = {
       $.off(window, 'resize', onViewportChange);
       $.off(window, 'scroll', onViewportChange);
       $.off(QR.nodes.form, 'scroll', onViewportChange);
+      $.off(QR.nodes.form, 'focusin', syncTheme);
       $.off(select, 'change', syncSelected);
+      themeObserver.disconnect();
+      if (themeSyncRaf) {
+        cancelAnimationFrame(themeSyncRaf);
+        themeSyncRaf = 0;
+      }
       $.rm(menu);
     };
 

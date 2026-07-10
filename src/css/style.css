@@ -4383,7 +4383,9 @@ body > #overlay:not(.media-preview) {
 :root:not(.catalog-mode) .indexlink,
 :root.catalog-mode .cataloglink,
 :root:not(.catalog-mode) #hidden-label,
-:root:not(.catalog-mode) #index-size {
+:root:not(.catalog-mode) #index-size,
+:root:not(.catalog-mode) #index-columns,
+:root:not(.catalog-mode) #index-thumb-scale-wrap {
   display: none;
 }
 #index-search-help-wrap {
@@ -4539,6 +4541,47 @@ body > #overlay:not(.media-preview) {
 .catalog-large > .catalog-thread {
   width: 270px;
   height: 410px;
+}
+.board.catalog-columns {
+  display: grid;
+  grid-template-columns: repeat(var(--catalog-columns, 4), 1fr);
+  clear: both;
+}
+#index-thumb-scale-wrap {
+  position: relative;
+  display: inline-block;
+  vertical-align: middle;
+}
+#index-thumb-scale {
+  width: 80px;
+  height: 14px;
+  vertical-align: middle;
+  margin: 0 2px;
+}
+#index-thumb-scale-value {
+  position: absolute;
+  bottom: calc(100% + 3px);
+  left: 50%;
+  transform: translateX(-50%);
+  padding: 1px 5px;
+  border-radius: 3px;
+  font-size: 11px;
+  background-color: rgba(0, 0, 0, .75);
+  color: #fff;
+  white-space: nowrap;
+  pointer-events: none;
+  z-index: 1;
+}
+.catalog-columns > .catalog-thread.catalog-thread {
+  width: auto;
+  height: auto;
+  aspect-ratio: var(--catalog-tile-aspect, 270 / 410);
+}
+.catalog-columns > .catalog-group-header {
+  grid-column: 1 / -1;
+}
+.catalog-columns .catalog-thumb {
+  max-width: 100%;
 }
 :root.catalog-hover-expand .catalog-thread:hover {
   z-index: 1;
@@ -5606,7 +5649,7 @@ select.flagSelector {
   align-items: center;
   -webkit-appearance: none;
   appearance: none;
-  background-color: transparent;
+  background-color: var(--xt-qr-sampled-bg, transparent) !important;
   border: 1px solid color-mix(in srgb, currentColor 25%, transparent);
   border-color: var(--xt-qr-sampled-border, color-mix(in srgb, currentColor 25%, transparent)) !important;
   cursor: pointer;
@@ -7376,7 +7419,7 @@ div.post {
   align-items: center;
   justify-content: center;
   background: rgba(0, 0, 0, 0.85);
-  color: var(--xt-text-color, #cfcfd6);
+  color: var(--xt-text-color, inherit);
   font-size: 13px;
 }
 :root.dogiri-open #header-bar,
@@ -7407,7 +7450,7 @@ div.post {
   align-items: center;
   gap: 8px;
   padding: 5px 10px;
-  background: var(--xt-dialog-bg, #1e1e23);
+  background: var(--xt-dialog-bg, var(--xt-background, #1e1e23));
   border: 1px solid var(--xt-border, #34343c);
   border-bottom: 0;
   border-radius: 4px 4px 0 0;
@@ -7442,7 +7485,7 @@ div.post {
   flex-direction: column;
   gap: 8px;
   padding: 10px;
-  background: var(--xt-dialog-bg, #17171b);
+  background: var(--xt-dialog-bg, var(--xt-background, #17171b));
   border: 1px solid var(--xt-border, #34343c);
   border-radius: 0 0 4px 4px;
 }
@@ -7455,7 +7498,7 @@ div.post {
   flex-direction: column;
   gap: 8px;
   padding: 10px;
-  background: var(--xt-dialog-bg, #1e1e23);
+  background: var(--xt-dialog-bg, var(--xt-background, #1e1e23));
   border: 1px solid var(--xt-dogiri-accent, #6a5acd);
   border-radius: 4px;
   box-shadow: 0 4px 16px rgba(0, 0, 0, 0.5);
@@ -7491,7 +7534,7 @@ div.post {
   flex-direction: column;
   gap: 8px;
   padding: 10px;
-  background: var(--xt-dialog-bg, #1e1e23);
+  background: var(--xt-dialog-bg, var(--xt-background, #1e1e23));
   border: 1px solid var(--xt-border, #3a3a44);
   border-radius: 4px;
   box-shadow: 0 4px 16px rgba(0, 0, 0, 0.5);
@@ -7538,7 +7581,7 @@ div.post {
   flex-direction: column;
   gap: 4px;
   padding: 6px;
-  background: var(--xt-dialog-bg, #1e1e23);
+  background: var(--xt-dialog-bg, var(--xt-background, #1e1e23));
   border: 1px solid var(--xt-border, #3a3a44);
   border-radius: 4px;
   box-shadow: 0 4px 16px rgba(0, 0, 0, 0.5);
@@ -7556,7 +7599,7 @@ div.post {
   flex-direction: column;
   gap: 8px;
   padding: 10px;
-  background: var(--xt-dialog-bg, #1e1e23);
+  background: var(--xt-dialog-bg, var(--xt-background, #1e1e23));
   border: 1px solid var(--xt-border, #3a3a44);
   border-radius: 4px;
   box-shadow: 0 4px 16px rgba(0, 0, 0, 0.5);
@@ -7607,7 +7650,7 @@ div.post {
   white-space: nowrap;
 }
 .dogiri-menu-item:hover {
-  background: var(--xt-background, #26262e);
+  background: var(--xt-entry-focus-bg, rgba(127, 127, 127, 0.25));
 }
 #dogiri-preview-box {
   position: relative;
@@ -7762,7 +7805,7 @@ div.post {
   align-items: center;
   gap: 6px;
   padding: 2px 4px 2px 8px;
-  background: var(--xt-dialog-bg, #1e1e23);
+  background: var(--xt-dialog-bg, var(--xt-background, #1e1e23));
   border: 1px solid var(--xt-border, #3a3a44);
   border-radius: 3px;
   box-shadow: 0 2px 8px rgba(0, 0, 0, 0.4);
@@ -7889,7 +7932,7 @@ div.post {
   opacity: 0;
 }
 .dogiri-caption-block.editing {
-  outline: 2px solid var(--xt-text-color, #fff);
+  outline: 2px solid var(--xt-text-color, currentColor);
   outline-offset: 1px;
 }
 .dogiri-caption-block:hover .dogiri-caption-rm {
@@ -7965,7 +8008,7 @@ div.post {
   flex-direction: column;
   gap: 6px;
   padding: 8px;
-  background: var(--xt-dialog-bg, #1e1e23);
+  background: var(--xt-dialog-bg, var(--xt-background, #1e1e23));
   border: 1px solid var(--xt-border, #3a3a44);
   border-radius: 4px;
   box-shadow: 0 4px 16px rgba(0, 0, 0, 0.5);
@@ -8029,7 +8072,7 @@ div.post {
   white-space: nowrap;
 }
 .dogiri-clip-row:hover {
-  background: var(--xt-background, #26262e);
+  background: var(--xt-entry-focus-bg, rgba(127, 127, 127, 0.25));
 }
 .dogiri-clip-row.selected {
   background: color-mix(in srgb, var(--xt-dogiri-accent, #6a5acd) 30%, transparent);

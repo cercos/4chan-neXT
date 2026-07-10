@@ -117,6 +117,12 @@ var Index: any = {
   selectMode: null as any,
   selectRev: null as any,
   selectSort: null as any,
+  selectColumns: null as any,
+  thumbScaleInput: null as any,
+  thumbScaleWrap: null as any,
+  thumbScaleValue: null as any,
+  thumbScaleValueTimeout: 0,
+  columnsResizeTimeout: 0,
   sortedThreadIDs: null as any,
   threadPosition: null as any,
   threadsNumPerPage: null as any,
@@ -248,12 +254,21 @@ var Index: any = {
     this.selectMode  = $('#index-mode', this.navLinks);
     this.selectSort  = $('#index-sort', this.navLinks);
     this.selectSize  = $('#index-size', this.navLinks);
+    this.selectColumns = $('#index-columns', this.navLinks);
+    this.thumbScaleInput = $('#index-thumb-scale', this.navLinks);
+    this.thumbScaleWrap  = $('#index-thumb-scale-wrap', this.navLinks);
+    this.thumbScaleValue = $('#index-thumb-scale-value', this.navLinks);
     $.on(this.selectRev,  'change', this.cb.sort);
     $.on(this.selectMode, 'change', this.cb.mode);
     $.on(this.selectSort, 'change', this.cb.sort);
     $.on(this.selectSize, 'change', $.cb.value);
     $.on(this.selectSize, 'change', this.cb.size);
-    for (var select of [this.selectMode, this.selectSize]) {
+    $.on(this.selectColumns, 'change', $.cb.value);
+    $.on(this.selectColumns, 'change', this.cb.size);
+    $.on(this.thumbScaleInput, 'change', $.cb.value);
+    $.on(this.thumbScaleInput, 'input', this.cb.thumbScale);
+    $.on(window, 'resize', this.cb.columnsResize);
+    for (var select of [this.selectMode, this.selectSize, this.selectColumns, this.thumbScaleInput]) {
       select.value = Conf[select.name];
     }
     this.selectRev.checked = /-rev$/.test(Index.currentSort);
@@ -527,7 +542,38 @@ var Index: any = {
         $.addClass(Index.root, 'catalog-large');
         $.rmClass(Index.root,  'catalog-small');
       }
+      const columns = Index.catalogColumns();
+      if (columns) {
+        $.addClass(Index.root, 'catalog-columns');
+        Index.root.style.setProperty('--catalog-columns', String(columns));
+        const baseWidth = columns === 1 ? 540 : 270;
+        const ratio = Math.round(baseWidth / Index.catalogThumbScale(columns));
+        Index.root.style.setProperty('--catalog-tile-aspect', `${ratio} / 410`);
+      } else {
+        $.rmClass(Index.root, 'catalog-columns');
+        Index.root.style.removeProperty('--catalog-columns');
+        Index.root.style.removeProperty('--catalog-tile-aspect');
+      }
+      if (Index.selectSize) { Index.selectSize.disabled = !!columns; }
+      if (Index.thumbScaleWrap) { Index.thumbScaleWrap.hidden = !columns; }
       if (e) { return Index.buildIndex(); }
+    },
+
+    thumbScale() {
+      const {value} = Index.thumbScaleInput;
+      Conf['Catalog Thumb Scale'] = value;
+      Index.thumbScaleValue.textContent = `${value}%`;
+      Index.thumbScaleValue.hidden = false;
+      clearTimeout(Index.thumbScaleValueTimeout);
+      Index.thumbScaleValueTimeout = window.setTimeout(() => Index.thumbScaleValue.hidden = true, 1000);
+      Index.cb.size();
+      Index.resizeCatalogViews();
+    },
+
+    columnsResize() {
+      if (!Index.catalogColumns()) { return; }
+      clearTimeout(Index.columnsResizeTimeout);
+      Index.columnsResizeTimeout = window.setTimeout(Index.resizeCatalogViews, 100);
     },
 
     replies() {
@@ -1216,17 +1262,59 @@ var Index: any = {
     Main.callbackNodes('CatalogThread', catalogThreads);
   },
 
+  catalogColumns() {
+    if (Conf['Index Mode'] !== 'catalog' || Conf['Catalog Columns'] === 'auto') { return 0; }
+    return $.minmax(parseInt(Conf['Catalog Columns'], 10) || 0, 1, 12);
+  },
+
+  catalogColumnWidth(columns: number) {
+    const rootWidth = Index.root?.clientWidth || doc.clientWidth;
+    return rootWidth / columns;
+  },
+
+  catalogThumbScale(columns: number) {
+    const scale = $.minmax(parseInt(Conf['Catalog Thumb Scale'], 10) || 100, 25, 150) / 100;
+    return Math.min(scale, columns === 1 ? 2 : 1);
+  },
+
   sizeCatalogViews(threads: Thread[]) {
     // XXX When browsers support CSS3 attr(), use it instead.
-    const size = Conf['Index Size'] === 'small' ? 150 : 250;
+    let size = Conf['Index Size'] === 'small' ? 150 : 250;
+    let fullImage = false;
+    const columns = Index.catalogColumns();
+    if (columns) {
+      const columnWidth = Index.catalogColumnWidth(Math.max(columns, 2)) * Index.catalogThumbScale(columns);
+      size = Math.max(50, columnWidth - 14);
+      fullImage = columnWidth > 400;
+    }
     for (var thread of threads) {
       var {thumb} = thread.catalogView.nodes;
       var {width, height} = thumb.dataset;
       if (!width) { continue; }
+      Index.setCatalogThumbSource(thread, fullImage);
       var ratio = size / Math.max(width, height);
       thumb.style.width  = (width  * ratio) + 'px';
       thumb.style.height = (height * ratio) + 'px';
     }
+  },
+
+  setCatalogThumbSource(thread: Thread, fullImage: boolean) {
+    const thumb = thread.catalogView.nodes.thumb as HTMLImageElement;
+    const file = thread.OP.file;
+    if (!file?.thumbURL || !file.url || !file.isImage || /\.gif$/i.test(file.url)) { return; }
+    const src = fullImage ? file.url : file.thumbURL;
+    if (thumb.getAttribute('src') !== src) {
+      thumb.loading = 'lazy';
+      thumb.src = src;
+    }
+  },
+
+  resizeCatalogViews() {
+    const threads: Thread[] = [];
+    g.BOARD!.threads.forEach((thread: Thread) => {
+      if (thread.catalogView) { threads.push(thread); }
+    });
+    Index.sizeCatalogViews(threads);
   },
 
   buildCatalogReplies(thread: Thread) {

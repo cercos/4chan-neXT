@@ -656,6 +656,7 @@ var Main = {
       if (mainStyleSheet = $.id('base-css')) {
         style = mainStyleSheet.href.match(/catalog_(\w+)/)?.[1].replace('_new', '').replace(/_+/g, '-');
         if (knownStyles.includes(style)) {
+          for (const cls of knownStyles) $.rmClass(doc, cls);
           $.addClass(doc, style);
           Settings.applyStylingVars();
           return;
@@ -683,9 +684,13 @@ var Main = {
         // Re-enable native sheet and tear down any leftover custom theme.
         applyCustomTheme(null);
       }
-      // Use preconfigured CSS for 4chan's default themes.
+      // Use preconfigured CSS for 4chan's default themes. Sweep every known
+      // theme class, not just the one this closure last applied: a class left
+      // behind by anything else (earlier session state, another writer) would
+      // otherwise coexist with the new one, and whichever theme's variable
+      // block comes later in the stylesheet would win with the wrong palette.
       if (g.SITE!.software === 'yotsuba' && !customThemeApplied) {
-        $.rmClass(doc, style);
+        for (const cls of knownStyles) $.rmClass(doc, cls);
         style = null;
         for (var styleSheet of styleSheets) {
           if (styleSheet.href === mainStyleSheet?.href) {

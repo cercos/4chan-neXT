@@ -1258,6 +1258,8 @@ http://eye.swfchan.com/search/?q=%name;types:swf
     'Index Mode': 'paged',
     'Previous Index Mode': 'paged',
     'Index Size': 'small',
+    'Catalog Columns': 'auto',
+    'Catalog Thumb Scale': '100',
     'Show Replies':          [true,  'Show replies in the index, and also in the catalog if "Catalog hover expand" is checked.'],
     'Catalog Hover Expand':  [false, 'Expand the comment and show more details when you hover over a thread in the catalog.'],
     'Catalog Hover Toggle':  [true,  'Turn "Catalog hover expand" on and off by clicking in the catalog.'],
