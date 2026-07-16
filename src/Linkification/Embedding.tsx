@@ -614,16 +614,16 @@ var Embedding = {
         if (Conf.XEmbedder === 'tf') {
           const el = $.el('iframe');
           $.on(el, 'load', function(this: HTMLIFrameElement) {
-            return this.contentWindow!.postMessage({element: 't', query: 'height'}, 'https://twitframe.com');
+            return this.contentWindow!.postMessage({element: 't', query: 'height'}, 'https://tf.rita.moe');
           });
           var onMessage = function(e: MessageEvent) {
-            if ((e.source === el.contentWindow) && (e.origin === 'https://twitframe.com')) {
+            if ((e.source === el.contentWindow) && (e.origin === 'https://tf.rita.moe')) {
               $.off(window, 'message', onMessage);
               return (cont || el).style.height = `${+$.minmax(e.data.height, 250, 0.8 * doc.clientHeight)}px`;
             }
           };
           $.on(window, 'message', onMessage);
-          el.src = `https://twitframe.com/show?url=https://twitter.com/${a.dataset.uid}`;
+          el.src = `https://tf.rita.moe/show?url=https://twitter.com/${a.dataset.uid}`;
           if ($.engine === 'gecko') {
             // XXX https://bugzilla.mozilla.org/show_bug.cgi?id=680823
             el.style.cssText = 'border: none; width: 100%; height: 100%;';
