@@ -731,7 +731,7 @@ var Header = {
 
   insertShortcut(shortcut: HTMLElement, container: HTMLElement) {
     for (var item of $$('[data-index]', container)) {
-      if (+item.dataset.index > +shortcut.dataset.index) {
+      if (+item.dataset.index > +shortcut.dataset.index!) {
         $.before(item, shortcut);
         return;
       }

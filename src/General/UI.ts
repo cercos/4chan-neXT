@@ -154,7 +154,7 @@ var Menu: MenuCtor = (function(): MenuCtor {
       $.on(window, 'resize', this.setPosition);
       const anchorHeader = doc.classList.contains('xt-mobile') && !!button?.closest('#header-bar');
       menu.classList.toggle('menu-anchor-header', anchorHeader);
-      menuBackdrop.classList.toggle('menu-anchor-header', anchorHeader);
+      menuBackdrop?.classList.toggle('menu-anchor-header', anchorHeader);
       // Reveal the menu (display:none -> shown) so the @starting-style enter
       // animation runs; the node itself stays in the DOM across opens.
       $.rmClass(menu, 'menu-hidden');
