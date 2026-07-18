@@ -347,7 +347,10 @@ const ScrollMarkers = {
     const container = ScrollMarkers.container;
     if (!container?.parentNode) return;
     // Read Conf directly to avoid a Settings <-> ScrollMarkers import cycle.
-    if (!Conf['Scrollbar Markers'] || Conf['stylingSectionScrollbarMarkers'] === false) {
+    if (
+      !Conf['Scrollbar Markers'] || Conf['stylingSectionScrollbarMarkers'] === false
+      || doc.classList.contains('xt-mobile')
+    ) {
       ScrollMarkers.hidePreview();
       container.textContent = '';
       container.hidden = true;

@@ -2,7 +2,9 @@
 <span class="brackets-wrap cataloglink"><a href="#catalog">Catalog</a></span> 
 <span class="brackets-wrap archlistlink"><a href="./archive">Archive</a></span> 
 <span class="brackets-wrap bottomlink"><a href="#bottom">Bottom</a></span> 
-<span class="brackets-wrap" id="index-last-refresh"><a href="javascript:;"><time title="Last index refresh">...</time></a></span> 
+<span class="brackets-wrap" id="index-last-refresh"><a href="javascript:;"><time title="Last index refresh">...</time></a></span>
+<a id="index-search-toggle" href="javascript:;" title="Search" aria-label="Search" aria-expanded="false"></a>
+<span id="index-search-row">
 <span id="index-search-help-wrap">
   <a id="index-search-help" href="javascript:;" title="Search syntax" aria-label="Search syntax" aria-haspopup="dialog" aria-expanded="false">?</a>
   <span id="index-search-help-popover" class="dialog" role="dialog" aria-label="Search syntax" hidden>
@@ -41,14 +43,18 @@
 </span>
 <input type="search" id="index-search" class="field" placeholder="Search" autocomplete="off">
 <a id="index-search-clear" href="javascript:;" title="Clear search">×</a>
+</span>
+<a id="index-controls-toggle" href="javascript:;" title="Index options" aria-haspopup="dialog"></a>
 <span id="hidden-label" hidden> &mdash; <span id="hidden-count"></span> <span id="hidden-toggle">[<a href="javascript:;">Show</a>]</span></span>
+<span id="index-options-backdrop"></span>
 <span id="index-options">
-  <input type="checkbox" id="index-rev" name="Reverse Sort" title="Reverse sort order">
+  <span class="index-options-header"><span>Options</span><a id="index-options-close" href="javascript:;" title="Close">×</a></span>
+  <span class="index-option-row" id="index-rev-row"><span class="index-option-label">Reverse order</span><input type="checkbox" id="index-rev" name="Reverse Sort" title="Reverse sort order"></span>
   <span id="lastlong-options" hidden>
     <input type="text" title="Minimum letter count (without image)">
     <input type="text" title="Minimum letter count (with image)">
   </span>
-  <select id="index-sort" name="Index Sort">
+  <span class="index-option-row" id="index-sort-row"><span class="index-option-label">Sort</span><select id="index-sort" name="Index Sort">
     <option disabled>Index Sort</option>
     <option value="bump">Bump order</option>
     <option value="lastreply">Last reply</option>
@@ -57,13 +63,13 @@
     <option value="replycount">Reply count</option>
     <option value="filecount">File count</option>
     <option value="activity">Posts per minute</option>
-  </select>
-  <select id="index-size" name="Index Size">
+  </select></span>
+  <span class="index-option-row" id="index-size-row"><span class="index-option-label">Image size</span><select id="index-size" name="Index Size">
     <option disabled>Image Size</option>
     <option value="small">Small</option>
     <option value="large">Large</option>
-  </select>
-  <select id="index-columns" name="Catalog Columns" title="Number of catalog columns">
+  </select></span>
+  <span class="index-option-row" id="index-columns-row"><span class="index-option-label">Columns</span><select id="index-columns" name="Catalog Columns" title="Number of catalog columns">
     <option disabled>Columns</option>
     <option value="auto">Auto</option>
     <option value="1">1</option>
@@ -78,16 +84,12 @@
     <option value="10">10</option>
     <option value="11">11</option>
     <option value="12">12</option>
-  </select>
-  <span id="index-thumb-scale-wrap">
-    <input type="range" id="index-thumb-scale" name="Catalog Thumb Scale" min="25" max="150" step="5" title="Thumbnail size">
-    <output id="index-thumb-scale-value" hidden></output>
-  </span>
-  <select id="index-mode" name="Index Mode">
+  </select></span>
+  <span class="index-option-row" id="index-mode-row"><span class="index-option-label">View mode</span><select id="index-mode" name="Index Mode">
     <option disabled>Index Mode</option>
     <option value="paged">Paged</option>
     <option value="infinite">Infinite scrolling</option>
     <option value="all pages">All threads</option>
     <option value="catalog">Catalog</option>
-  </select>
+  </select></span>
 </span>

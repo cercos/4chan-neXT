@@ -155,15 +155,20 @@
       <option value="tf">Twitframe</option>
     </select>
   </label><br />
-  <label>
-    Language to translate FxTwitter embeds to, as a two character ISO code, like <code>en</code>.
-    Leave empty for no translation.
-    <input name="fxtLang" maxlength="2" class="field" />
-  </label><br />
-  <label>FxTwitter endpoint <input name="fxtUrl" type="url" class="field" /></label><br />
-  <label>FxTwitter maximum amount of replies include
-    <input name="fxtMaxReplies" type="number" min="0" step="1" max="100" class="field" />
-  </label>
+  <div class="xembed-options" data-xembedder="fxt">
+    <label>
+      Language to translate FxTwitter embeds to, as a two character ISO code, like <code>en</code>.
+      Leave empty for no translation.
+      <input name="fxtLang" maxlength="2" class="field" />
+    </label><br />
+    <label>FxTwitter endpoint <input name="fxtUrl" type="url" class="field" /></label><br />
+    <label>FxTwitter maximum amount of replies include
+      <input name="fxtMaxReplies" type="number" min="0" step="1" max="100" class="field" />
+    </label>
+  </div>
+  <div class="xembed-options" data-xembedder="tf">
+    <label>Twitframe endpoint <input name="tfUrl" type="url" class="field" /></label>
+  </div>
 </details>
 
 <details open>

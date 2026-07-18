@@ -13,6 +13,16 @@ export interface CrossOriginAjaxOptions {
   headers?: Record<string, string>;
 }
 
+const violentmonkeyDropsBinaryResponses = (() => {
+  try {
+    const info = (typeof GM !== 'undefined' && GM != null) ? (GM as any).info :
+      (typeof GM_info !== 'undefined' && GM_info != null) ? GM_info : null;
+    return info?.scriptHandler === 'Violentmonkey';
+  } catch (error) {
+    return false;
+  }
+})();
+
 var CrossOrigin = {
   binary(url: string, cb: (data: Uint8Array | null, headers?: any) => void, headers: Record<string, string> = dict()) {
     // XXX https://forums.lanik.us/viewtopic.php?f=64&t=24173&p=78310
@@ -70,6 +80,9 @@ var CrossOrigin = {
           return cb(null);
         }
       };
+      if (violentmonkeyDropsBinaryResponses) {
+        delete (gmOptions as any).responseType;
+      }
       try {
         return (GM?.xmlHttpRequest || GM_xmlhttpRequest)(gmOptions as any);
       } catch (error) {

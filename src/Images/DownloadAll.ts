@@ -7,6 +7,7 @@ import $ from "../platform/$";
 import $$ from "../platform/$$";
 import CrossOrigin from "../platform/CrossOrigin";
 import { dict, SECOND } from "../platform/helpers";
+import { detectMobileDevice, resolveMobileLayout } from "../Miscellaneous/MobileLayout";
 
 type FilterKind = 'all' | 'image' | 'video';
 
@@ -19,6 +20,7 @@ interface MediaItem {
 }
 
 interface Progress {
+  onCancel: (() => void) | null;
   update(done: number, failed: number): void;
   isCancelled(): boolean;
   close(): void;
@@ -45,6 +47,9 @@ const DownloadAll = {
       if (DownloadAll.dialog && !DownloadAll.dialog.hidden) DownloadAll.refreshDialog();
     };
     $.on(d, '4chanXInitFinished PostsInserted ThreadUpdate IndexRefresh', onPostsReady);
+    $.on(d, 'MobileSheetOpened', (e: CustomEvent) => {
+      if (e.detail !== 'download-all' && DownloadAll.dialog && !DownloadAll.dialog.hidden) { DownloadAll.hide(); }
+    });
 
     if (Conf['Persistent Download Media']) DownloadAll.show();
   },
@@ -99,12 +104,15 @@ const DownloadAll = {
   },
 
   hide() {
-    if (DownloadAll.dialog) DownloadAll.dialog.hidden = true;
+if (DownloadAll.dialog) DownloadAll.dialog.hidden = true;
   },
 
   show() {
     if (!DownloadAll.dialog) DownloadAll.buildDialog();
     DownloadAll.dialog!.hidden = false;
+    if (resolveMobileLayout(Conf['Mobile Layout'], detectMobileDevice())) {
+      $.event('MobileSheetOpened', 'download-all');
+    }
     DownloadAll.refreshDialog();
     if (g.VIEW === 'catalog' && !DownloadAll.catalogItems) {
       DownloadAll.fetchCatalog(() => DownloadAll.refreshDialog());
@@ -309,9 +317,8 @@ const DownloadAll = {
     const notice = new Notice('info', wrap, 0);
 
     let cancelled = false;
-    $.on($('.da-progress-cancel', wrap), 'click', () => { cancelled = true; notice.close(); });
-
-    return {
+    const progress: Progress = {
+      onCancel: null,
       update(done: number, failed: number) {
         const label = $('.da-progress-label', wrap);
         if (label) {
@@ -323,13 +330,21 @@ const DownloadAll = {
       isCancelled: () => cancelled,
       close: () => notice.close(),
     };
+    $.on($('.da-progress-cancel', wrap), 'click', () => {
+      cancelled = true;
+      notice.close();
+      progress.onCancel?.();
+    });
+    return progress;
   },
 
   runZip(items: MediaItem[], progress: Progress, done: () => void) {
     const entries: Array<{ name: string; data: Uint8Array }> = [];
-    let i = 0, failed = 0;
+    let i = 0, failed = 0, finished = false;
 
     const finish = () => {
+      if (finished) return;
+      finished = true;
       done();
       if (progress.isCancelled()) return;
       if (!entries.length) {
@@ -346,13 +361,19 @@ const DownloadAll = {
       new Notice('success', `Saved ZIP with ${entries.length} file(s)${failed ? `, ${failed} failed` : ''}.`, 5);
     };
 
+    progress.onCancel = finish;
+
     const step = () => {
       if (progress.isCancelled() || i >= items.length) {
         finish();
         return;
       }
       const item = items[i++];
-      CrossOrigin.binary(item.url, (data: Uint8Array | null) => {
+      let settled = false;
+      const advance = (data: Uint8Array | null) => {
+        if (settled || finished) return;
+        settled = true;
+        clearTimeout(watchdog);
         if (!data) {
           failed++;
         } else {
@@ -360,7 +381,9 @@ const DownloadAll = {
         }
         progress.update(i, failed);
         step();
-      });
+      };
+      const watchdog = setTimeout(() => advance(null), 120 * SECOND);
+      CrossOrigin.binary(item.url, (data: Uint8Array | null) => advance(data));
     };
     step();
   },

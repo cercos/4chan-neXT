@@ -10,6 +10,7 @@ svg.icon {
   position: static;
 }
 :root.shortcut-icons #shortcuts .icon--alt-text,
+:root.shortcut-icons #mobile-bar .icon--alt-text,
 :root:not(.shortcut-icons) .shortcut .icon {
   display: none;
 }

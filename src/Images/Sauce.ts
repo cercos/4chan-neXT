@@ -4,6 +4,8 @@ import type { File } from "../classes/Post";
 import Notice from "../classes/Notice";
 import Filter from "../Filtering/Filter";
 import { g, Conf, doc } from "../globals/globals";
+import Menu from "../Menu/Menu";
+import { detectMobileDevice, resolveMobileLayout } from "../Miscellaneous/MobileLayout";
 import $ from "../platform/$";
 import { dict } from "../platform/helpers";
 
@@ -33,9 +35,47 @@ var Sauce = {
       className: 'sauce'
     }
     );
+
+    if (Conf['Menu'] && resolveMobileLayout(Conf['Mobile Layout'], detectMobileDevice())) {
+      this.addMenuEntry(links);
+    }
+
     return Callbacks.Post.push({
       name: 'Sauce',
       cb:   this.node
+    });
+  },
+
+  addMenuEntry(links: any[]) {
+    Menu.menu.addEntry({
+      el: $.el('div', {textContent: 'Sauce'}),
+      order: 101,
+      open(post: Post) {
+        if (!post.file) { return false; }
+        return links.some(link => {
+          const node = Sauce.createSauceLink(link, post, post.file);
+          return node && !node.dataset.skip;
+        });
+      },
+      subEntries: links.map(function(link) {
+        const el = $.el('a', {target: '_blank'}) as HTMLAnchorElement;
+        return {
+          el,
+          open(post: Post) {
+            if (!post.file) { return false; }
+            const node = Sauce.createSauceLink(link, post, post.file);
+            if (!node || node.dataset.skip) { return false; }
+            el.href = node.href;
+            el.textContent = node.textContent;
+            if (node.hasAttribute('target')) {
+              el.target = '_blank';
+            } else {
+              el.removeAttribute('target');
+            }
+            return true;
+          }
+        };
+      })
     });
   },
 

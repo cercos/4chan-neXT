@@ -13,6 +13,7 @@ import Volume from "./Volume";
 import Audio from "./Audio";
 import type { default as Post, PostClone } from "../classes/Post";
 import Icon from "../Icons/icon";
+import { detectMobileDevice, resolveMobileLayout } from "../Miscellaneous/MobileLayout";
 
 var ImageExpand = {
   // Assigned later; declared so the singleton's type includes them. Loosely typed
@@ -76,6 +77,11 @@ var ImageExpand = {
     toggle(this: HTMLElement, e: MouseEvent) {
       const post = Get.postFromNode(this);
       if (!post?.file) { return; }
+      if ((e.target as HTMLElement).closest?.('.xt-video-contract')) {
+        e.preventDefault();
+        e.stopPropagation();
+        return ImageExpand.toggle(post);
+      }
       if (e.shiftKey && Conf['MD5 Quick Filter in Threads']) {
         Filter.quickFilterMD5.call(post);
         e.preventDefault();
@@ -190,9 +196,10 @@ var ImageExpand = {
     $.rmClass(file.thumb,      'expanding');
     $.rm(file.videoControls);
     if (file.videoOverlay) { $.rm(file.videoOverlay); }
+    if ((file as any).contractButton) { $.rm((file as any).contractButton); }
     (file.thumbLink as HTMLAnchorElement).href   = file.url;
     (file.thumbLink as HTMLAnchorElement).target = '_blank';
-    for (var x of ['isExpanding', 'isExpanded', 'videoControls', 'videoOverlay', 'wasPlaying', 'scrollIntoView']) {
+    for (var x of ['isExpanding', 'isExpanded', 'videoControls', 'videoOverlay', 'wasPlaying', 'scrollIntoView', 'contractButton']) {
       delete (file as any)[x]; // loose: dynamic key delete over File props (shared-decl change deferred)
     }
 
@@ -274,6 +281,15 @@ var ImageExpand = {
       if (!file.videoControls) {
         file.videoControls = ImageExpand.videoControls.cloneNode(true);
         $.add(file.text, file.videoControls);
+      }
+
+      if (resolveMobileLayout(Conf['Mobile Layout'], detectMobileDevice())) {
+        if (!(file as any).contractButton) {
+          const btn = $.el('a', { className: 'xt-video-contract', href: 'javascript:;', title: 'Contract' });
+          Icon.set(btn, 'xmark');
+          (file as any).contractButton = btn;
+        }
+        $.after(el, (file as any).contractButton);
       }
 
       // disable link to file so native controls can work

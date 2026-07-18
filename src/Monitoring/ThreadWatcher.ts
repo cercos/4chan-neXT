@@ -8,6 +8,7 @@ import Thread from '../classes/Thread';
 import type Post from '../classes/Post';
 import Filter from '../Filtering/Filter';
 import Main from '../main/Main';
+import { detectMobileDevice, resolveMobileLayout } from '../Miscellaneous/MobileLayout';
 import $$ from '../platform/$$';
 import Config from '../config/Config';
 import CrossOrigin from '../platform/CrossOrigin';
@@ -171,6 +172,9 @@ var ThreadWatcher = {
     }
 
     this.menu.addHeaderMenuEntry();
+    $.on(d, 'MobileSheetOpened', (e: CustomEvent) => {
+      if (e.detail !== 'watcher' && !ThreadWatcher.dialog.hidden) { ThreadWatcher.toggleWatcher(); }
+    });
     $.on(d, 'QRDialogCreation', ThreadWatcher.onQRDialogCreation);
     $.on(d, '4chanXQRMove', (e: CustomEvent) => {
       if (ThreadWatcher.attached()) {
@@ -198,7 +202,7 @@ var ThreadWatcher = {
     if (Conf['Fixed Thread Watcher']) {
       $.addClass(doc, 'fixed-watcher');
     }
-    if (!Conf['Persistent Thread Watcher']) {
+    if (!Conf['Persistent Thread Watcher'] || resolveMobileLayout(Conf['Mobile Layout'], detectMobileDevice())) {
       $.addClass(ThreadWatcher.shortcut, 'disabled');
       this.dialog.hidden = true;
     }
@@ -364,6 +368,9 @@ var ThreadWatcher = {
       // The list was measured while hidden during build(), so the hint couldn't
       // be sized yet; re-evaluate now that the dialog is laid out and visible.
       ThreadWatcher.updateScrollMore();
+      if (resolveMobileLayout(Conf['Mobile Layout'], detectMobileDevice())) {
+        $.event('MobileSheetOpened', 'watcher');
+      }
     }
     return hidden;
   },
@@ -535,7 +542,7 @@ var ThreadWatcher = {
         var data = db.data[siteID].boards[boardID][threadID];
         if (!data?.isDead && !e.detail.threads.includes(`${boardID}.${threadID}`)) {
           if (!e.detail.threads.some((fullID: string) => +fullID.split('.')[1] > (threadID as any))) { continue; }
-          if (Conf['Auto Prune'] || !(data && (typeof data === 'object'))) { // corrupt data
+          if (ThreadWatcher.shouldAutoPrune(data) || !(data && (typeof data === 'object'))) { // corrupt data
             db.delete({boardID, threadID});
             nKilled++;
           } else {
@@ -773,7 +780,7 @@ var ThreadWatcher = {
       const replies = this.response.posts.length-1;
       isDead = (isArchived = !!(this.response.posts[0].archived || isArchiveURL));
       const thumbURL = ThreadWatcher.getOPThumbURL({siteID, boardID, postObj: this.response.posts[0]});
-      if (isDead && Conf['Auto Prune']) {
+      if (isDead && ThreadWatcher.shouldAutoPrune(data)) {
         ThreadWatcher.rm(siteID, boardID, threadID);
         return;
       }
@@ -913,6 +920,37 @@ var ThreadWatcher = {
     if (!data) { return 0; }
     if ((data.quotingYou || 0) <= (data.dismiss || 0)) { return 0; }
     return data.yousCount || 1;
+  },
+
+  // Whether a watched thread should be auto-removed given the current mode.
+  // `Auto Prune` and `Auto Prune Read Only` are mutually exclusive toggles:
+  // Auto Prune -> remove all dead threads; Read Only -> remove only dead
+  // threads with no unread; neither -> never auto-prune.
+  shouldAutoPrune(data?: {unread?: any}) {
+    if (Conf['Auto Prune']) { return true; }
+    if (Conf['Auto Prune Read Only']) { return !data?.unread; }
+    return false;
+  },
+
+  // Make the two auto-prune checkboxes mutually exclusive: checking one clears
+  // the other (in Conf, storage, and the DOM). Given an array of checkbox
+  // inputs, it finds the pair by name and ignores the rest.
+  linkPruneExclusive(inputs: Array<HTMLInputElement | null | undefined>) {
+    const all = inputs.find(i => i?.name === 'Auto Prune');
+    const read = inputs.find(i => i?.name === 'Auto Prune Read Only');
+    if (!all || !read) { return; }
+    const link = (a: HTMLInputElement, b: HTMLInputElement) => {
+      $.on(a, 'change', function(this: HTMLInputElement) {
+        if (!this.checked || !b.checked) { return; }
+        b.checked = false;
+        Conf[b.name] = false;
+        $.set(b.name, false);
+        const wrapper = b.parentNode?.parentNode as HTMLElement | undefined;
+        if (wrapper?.dataset) { wrapper.dataset.checked = 'false'; }
+      });
+    };
+    link(all, read);
+    link(read, all);
   },
 
   getAll(groupByBoard?: boolean, _unused?: boolean) {
@@ -1602,7 +1640,7 @@ var ThreadWatcher = {
   update(siteID: string, boardID: string, threadID: number | string, newData: any) { // loose: newData is a dynamic watcher record patch
     let data, key: any, line, val;
     if (!(data = ThreadWatcher.db?.get({siteID, boardID, threadID}))) { return; }
-    if (newData.isDead && Conf['Auto Prune']) {
+    if (newData.isDead && ThreadWatcher.shouldAutoPrune({unread: newData.unread ?? data.unread})) {
       ThreadWatcher.rm(siteID, boardID, threadID);
       return;
     }
@@ -1635,7 +1673,7 @@ var ThreadWatcher = {
   set404(boardID: string, threadID: number | string | undefined, cb: () => void) {
     let data;
     if (!(data = ThreadWatcher.db?.get({boardID, threadID}))) { return cb(); }
-    if (Conf['Auto Prune']) {
+    if (ThreadWatcher.shouldAutoPrune(data)) {
       ThreadWatcher.db.delete({boardID, threadID});
       return cb();
     }
@@ -1661,7 +1699,8 @@ var ThreadWatcher = {
     const boardID  = thread.board.ID;
     const threadID = thread.ID;
     if (thread.isDead) {
-      if (Conf['Auto Prune'] && ThreadWatcher.db.get({boardID, threadID})) {
+      const existing = ThreadWatcher.db.get({boardID, threadID});
+      if (existing && ThreadWatcher.shouldAutoPrune(existing)) {
         ThreadWatcher.rm(siteID, boardID, threadID, cb);
         return;
       }
@@ -1845,7 +1884,7 @@ var ThreadWatcher = {
       this.addAttachLocationEntry();
 
       // Settings checkbox entries, grouped into submenus to save vertical space:
-      const automationNames = ['Auto Update Thread Watcher', 'Auto Watch', 'Auto Watch Reply', 'Auto Prune'];
+      const automationNames = ['Auto Update Thread Watcher', 'Auto Watch', 'Auto Watch Reply', 'Auto Prune', 'Auto Prune Read Only'];
       const displayNames = ['Show Page', 'Show Unread Count', 'Show Mark All Read Icon', 'Show Mark Thread Read Icons', 'Show Undo Button', 'Show Site Prefix'];
       // Names that live in a submenu or have their own dedicated control, so they
       // shouldn't also appear as a standalone top-level checkbox.
@@ -1858,9 +1897,11 @@ var ThreadWatcher = {
       // submenu (a child of this anchor), so a click on a checkbox bubbles up
       // here and an `href="javascript:;"` would fire the anchor's navigation,
       // swallowing the toggle (same bug fixed for the Thumbnails entry).
+      const autoEntries = makeCheckboxes(automationNames);
+      ThreadWatcher.linkPruneExclusive(autoEntries.map(e => e.el.firstElementChild as HTMLInputElement));
       this.menu.addEntry({
         el: $.el('a', {textContent: 'Auto'}),
-        subEntries: makeCheckboxes(automationNames)
+        subEntries: autoEntries
       });
       this.menu.addEntry({
         el: $.el('a', {textContent: 'Display'}),

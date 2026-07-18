@@ -3,6 +3,8 @@ import Notice from "../classes/Notice";
 import { Conf, d, doc, E, g } from "../globals/globals";
 import Main from "../main/Main";
 import CatalogLinks from "../Miscellaneous/CatalogLinks";
+import { applyBarLayout, detectMobileDevice, iconsInMobileBar, resolveBarLayout, resolveMobileLayout } from "../Miscellaneous/MobileLayout";
+import BoardPicker from "../Miscellaneous/BoardPicker";
 import $ from "../platform/$";
 import $$ from "../platform/$$";
 import BoardConfig from "./BoardConfig";
@@ -11,6 +13,8 @@ import Settings from "./Settings";
 import UI from "./UI";
 import meta from '../../package.json';
 import Icon from "../Icons/icon";
+
+const PINNED_SHORTCUTS = new Set(['boards', 'catalog', 'menu', 'index-search', 'index-options']);
 
 var Header = {
   // Assigned later; declared so the singleton's type includes them. Loosely typed
@@ -35,15 +39,21 @@ var Header = {
       $.add(this.bar, [this.noticesRoot, this.toggle]);
       $.prepend(d.body, this.bar);
       $.add(d.body, Header.hover);
+      $.add(d.body, Header.mobileBar);
       return this.setBarPosition(Conf['Bottom Header']);
   });
 
     this.menu = new UI.Menu('header');
 
+    const mobile = resolveMobileLayout(Conf['Mobile Layout'], detectMobileDevice());
+
+    this.setBarLayout(Conf['Mobile Bar Layout']);
+    $.sync('Mobile Bar Layout', this.setBarLayout);
+
     const menuButton = $.el('span',
       {className: 'menu-button'}
     );
-    Icon.set(menuButton, 'caretDown', 'Menu');
+    Icon.set(menuButton, mobile ? 'barsStaggered' : 'caretDown', 'Menu');
 
     const box = UI.checkbox;
 
@@ -85,7 +95,7 @@ var Header = {
     $.on(editCustomNav,        'click',  this.editCustomNav);
 
     this.setBarFixed(Conf['Fixed Header']);
-    this.setHideBarOnScroll(Conf['Header auto-hide on scroll']);
+    this.setHideBarOnScroll(Conf['Header auto-hide on scroll'] || mobile);
     this.setBarVisibility(Conf['Header auto-hide']);
     this.setLinkJustify(Conf['Centered links']);
     this.setShortcutIcons(Conf['Shortcut Icons']);
@@ -102,6 +112,17 @@ var Header = {
     $.sync('Hide Board Banner',          this.setBannerVisibility);
 
     this.addShortcut('menu', menuButton, 900);
+
+    if (mobile && g.SITE?.software === 'yotsuba') {
+      BoardPicker.init();
+      this.addShortcut('boards', BoardPicker.trigger!, 0);
+      $.add(this.bar, BoardPicker.panel!);
+      if (g.VIEW === 'thread') {
+        const catalogLink = $.el('a', {href: CatalogLinks.catalog(), title: 'Catalog'});
+        Icon.set(catalogLink, 'grid', 'Catalog');
+        this.addShortcut('catalog', catalogLink, 5);
+      }
+    }
 
     this.menu.addEntry({
       el: $.el('span',
@@ -200,6 +221,13 @@ var Header = {
 
   shortcuts: $.el('span',
     {id: 'shortcuts'}),
+
+  mobileBar: $.el('div', {
+    id: 'mobile-bar',
+    className: 'dialog'
+  }),
+
+  splitActive: false,
 
   hover: $.el('div',
     {id: 'hoverUI'}),
@@ -534,6 +562,7 @@ var Header = {
   },
 
   hideBarOnScroll() {
+    if ($.hasClass(doc, 'xt-boardpicker-open') || $.hasClass(doc, 'xt-index-search-open')) { return; }
     const offsetY = window.pageYOffset;
     if (offsetY > (Header.previousOffset || 0)) {
       $.addClass(Header.bar, 'autohide', 'scroll');
@@ -681,6 +710,35 @@ var Header = {
     }
   },
 
+  setBarLayout(setting: string) {
+    const layout = resolveBarLayout(setting);
+    if (layout !== setting && Conf['Mobile Bar Layout'] === setting) {
+      Conf['Mobile Bar Layout'] = layout;
+      $.set('Mobile Bar Layout', layout);
+    }
+    const mobile = resolveMobileLayout(Conf['Mobile Layout'], detectMobileDevice());
+    applyBarLayout(layout, doc, mobile);
+    Header.splitActive = mobile && iconsInMobileBar(layout);
+    const [from, to] = Header.splitActive ?
+      [Header.shortcuts, Header.mobileBar]
+    :
+      [Header.mobileBar, Header.shortcuts];
+    for (var shortcut of $$('.shortcut', from)) {
+      if (Header.splitActive && PINNED_SHORTCUTS.has(shortcut.id.replace('shortcut-', ''))) { continue; }
+      Header.insertShortcut(shortcut, to);
+    }
+  },
+
+  insertShortcut(shortcut: HTMLElement, container: HTMLElement) {
+    for (var item of $$('[data-index]', container)) {
+      if (+item.dataset.index > +shortcut.dataset.index) {
+        $.before(item, shortcut);
+        return;
+      }
+    }
+    return $.add(container, shortcut);
+  },
+
   addShortcut(id: string, el: HTMLElement, index: number) {
     const shortcut = $.el('span', {
       id: `shortcut-${id}`,
@@ -688,13 +746,11 @@ var Header = {
     });
     $.add(shortcut, el);
     shortcut.dataset.index = index.toString();
-    for (var item of $$('[data-index]', Header.shortcuts)) {
-      if (+item.dataset.index > +index) {
-        $.before(item, shortcut);
-        return;
-      }
-    }
-    return $.add(Header.shortcuts, shortcut);
+    const container = Header.splitActive && !PINNED_SHORTCUTS.has(id) ?
+      Header.mobileBar
+    :
+      Header.shortcuts;
+    return Header.insertShortcut(shortcut, container);
   },
 
   rmShortcut(el: HTMLElement) {

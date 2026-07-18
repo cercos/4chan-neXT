@@ -40,6 +40,7 @@ var QuotePreview = {
 
   mouseover(this: HTMLAnchorElement, e: MouseEvent) {
     let origin;
+    if ($.hasClass(doc, 'xt-mobile')) { return; }
     if (($.hasClass(this, 'inlined') && !$.hasClass(doc, 'catalog-mode')) || !d.contains(this)) { return; }
 
     const {boardID, threadID, postID} = Get.postDataFromLink(this);

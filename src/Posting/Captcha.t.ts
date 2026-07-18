@@ -101,6 +101,7 @@ const CaptchaT = {
     this.crumbHighlightIndex = -1;
     this.answerHistory = [];
     this.editingIndex = null;
+    this.pendingSubmitIntent = false;
     this.stopThemeObservers();
     this.setState('idle');
   },
@@ -615,6 +616,7 @@ const CaptchaT = {
   // solved-challenge path and the "verification not required" path can't both
   // submit the same post. Cleared whenever the captcha leaves the complete state.
   _autoSubmitted: false,
+  pendingSubmitIntent: false,
   // loose: late-assigned singleton state
   isEnabled: false,
   nodes: null as any,
@@ -641,14 +643,19 @@ const CaptchaT = {
   // empty QR -- or one holding only an inserted quote -- doesn't submit.
   maybeAutoSubmit() {
     if (this._autoSubmitted) { return false; }
-    if (!Conf['Post on Captcha Completion'] || QR.cooldown.auto) { return false; }
-    // Only auto-submit a "no captcha required" when the user loaded the captcha
-    // themselves. With Auto-load on, the captcha loads on QR open, so a "not
-    // required" there would fire a restored draft nobody asked to send -- skip it.
-    // (Auto-load off => the captcha only loads on a manual "get captcha" click,
-    // which is the user signalling intent to post.) Solving an actual challenge
-    // submits via submitCaptchaAnswer regardless of this.
-    if (Conf['Auto-load captcha']) { return false; }
+    if (QR.cooldown.auto) { return false; }
+    if (!this.pendingSubmitIntent) {
+      if (!Conf['Post on Captcha Completion']) { return false; }
+      // Only auto-submit a "no captcha required" when the user loaded the captcha
+      // themselves. With Auto-load on, the captcha loads on QR open, so a "not
+      // required" there would fire a restored draft nobody asked to send -- skip it.
+      // (Auto-load off => the captcha only loads on a manual "get captcha" click,
+      // which is the user signalling intent to post.) Solving an actual challenge
+      // submits via submitCaptchaAnswer regardless of this. A pending submit intent
+      // (Submit pressed with no captcha loaded) bypasses both checks -- the user
+      // already asked to post.
+      if (Conf['Auto-load captcha']) { return false; }
+    }
     const post = QR.posts?.[0];
     const com = (QR.nodes?.com?.value || '').trim();
     const quoted = (post?.quotedText || '').trim();
@@ -656,6 +663,7 @@ const CaptchaT = {
     const hasContent = (com.length > 0 && com !== quoted) || !!post?.file;
     if (!hasContent) { return false; }
     this._autoSubmitted = true;
+    this.pendingSubmitIntent = false;
     QR.submit();
     return true;
   },
@@ -681,10 +689,11 @@ const CaptchaT = {
     if (nextId <= lastIndex) {
       TCaptcha.setTaskId(nextId);
       this.createImageGrid(TCaptcha);
-    } else if (Conf['Post on Captcha Completion'] && !QR.cooldown.auto) {
+    } else if ((Conf['Post on Captcha Completion'] || this.pendingSubmitIntent) && !QR.cooldown.auto) {
       // Claim the one-shot before the 'Done.' message below: that text also maps
       // to the 'complete' state and would otherwise trigger maybeAutoSubmit too.
       this._autoSubmitted = true;
+      this.pendingSubmitIntent = false;
       TCaptcha.taskId = TCaptcha.tasks.length;
       TCaptcha.setTaskNodeContent('Done.');
       this.setState('complete');

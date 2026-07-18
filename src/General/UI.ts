@@ -40,10 +40,15 @@ type MenuCtor = { new (type: string): any; initClass(): void };
 var Menu: MenuCtor = (function(): MenuCtor {
   let currentMenu: any = undefined;
   let lastToggledButton: any = undefined;
+  // Set instead of lastToggledButton when the menu is opened at a point (mobile
+  // long-press) rather than from a button. Stored in page coordinates so the
+  // menu follows the pressed post when the document scrolls.
+  let anchorPoint: {x: number, y: number} | null = null;
   // A single #menu node, created once and kept in the DOM. Opening repopulates
   // it and toggles visibility instead of building/removing a node each time, so
   // the enter and exit transitions can finish (see makeMenu/open/close).
   let menuNode: HTMLElement | null = null;
+  let menuBackdrop: HTMLElement | null = null;
   Menu = class Menu {
     // Assigned later; declared so the singleton's type includes them. Loosely typed
     // where a precise type would cascade new errors; tighten during the strict pass.
@@ -86,7 +91,11 @@ var Menu: MenuCtor = (function(): MenuCtor {
         $.on(menuNode, 'keydown', e => currentMenu?.keybinds(e));
         // Append to body so the menu escapes any ancestor stacking context
         // (e.g. #thread-watcher's position:fixed/z-index:5).
-        $.add(d.body, menuNode);
+        menuBackdrop = $.el('div', {
+          id: 'menu-backdrop',
+          className: 'menu-hidden'
+        });
+        $.add(d.body, [menuBackdrop, menuNode]);
       }
       menuNode.dataset.type = this.type;
       return menuNode;
@@ -108,7 +117,17 @@ var Menu: MenuCtor = (function(): MenuCtor {
       return this.open(button, data);
     }
 
-    open(button: HTMLElement, data?: any) {
+    toggleAtPoint(e: Event, point: {x: number, y: number}, data?: any) {
+      e.preventDefault();
+      e.stopPropagation();
+
+      if (currentMenu) { currentMenu.close(); }
+      if (!this.entries.length) { return; }
+      anchorPoint = {x: point.x + window.scrollX, y: point.y + window.scrollY};
+      return this.open(null, data);
+    }
+
+    open(button: HTMLElement | null, data?: any) {
       let entry;
       const menu = (this.menu = this.makeMenu());
       currentMenu       = this;
@@ -122,16 +141,24 @@ var Menu: MenuCtor = (function(): MenuCtor {
         this.insertEntry(entry, menu, data);
       }
 
+      // Entry nodes persist across opens; collapse any submenu left expanded
+      // from a previous mobile tap.
+      for (const openEl of $$('.submenu-open', menu)) { $.rmClass(openEl, 'submenu-open'); }
+
       this.tagNextEntries(menu);
 
-      $.addClass(lastToggledButton, 'active');
+      if (lastToggledButton) { $.addClass(lastToggledButton, 'active'); }
 
       $.on(d, 'click CloseMenu', this.close);
       $.on(d, 'scroll', this.setPosition);
       $.on(window, 'resize', this.setPosition);
+      const anchorHeader = doc.classList.contains('xt-mobile') && !!button?.closest('#header-bar');
+      menu.classList.toggle('menu-anchor-header', anchorHeader);
+      menuBackdrop.classList.toggle('menu-anchor-header', anchorHeader);
       // Reveal the menu (display:none -> shown) so the @starting-style enter
       // animation runs; the node itself stays in the DOM across opens.
       $.rmClass(menu, 'menu-hidden');
+      $.rmClass(menuBackdrop, 'menu-hidden');
 
       this.setPosition();
 
@@ -145,8 +172,19 @@ var Menu: MenuCtor = (function(): MenuCtor {
     }
 
     setPosition() {
+      if (doc.classList.contains('xt-mobile')) {
+        $.extend(this.menu.style, {top: '', right: '', bottom: '', left: ''});
+        return;
+      }
       const mRect   = this.menu.getBoundingClientRect();
-      const bRect   = lastToggledButton.getBoundingClientRect();
+      let bRect;
+      if (anchorPoint) {
+        const x = anchorPoint.x - window.scrollX;
+        const y = anchorPoint.y - window.scrollY;
+        bRect = {top: y, bottom: y, left: x, right: x, height: 0};
+      } else {
+        bRect = lastToggledButton.getBoundingClientRect();
+      }
       const cHeight = doc.clientHeight;
       const cWidth  = doc.clientWidth;
       const [top, bottom] = (bRect.top + bRect.height + mRect.height) < cHeight ?
@@ -245,15 +283,17 @@ var Menu: MenuCtor = (function(): MenuCtor {
     }
 
     close() {
-      if (!menuNode || !lastToggledButton) { return; }
+      if (!menuNode || !(lastToggledButton || anchorPoint)) { return; }
       // Hide instead of removing: the node stays in the DOM so its exit
       // animation can finish. transition-behavior: allow-discrete defers the
       // display:none flip until the opacity/transform transition ends.
       $.addClass(menuNode, 'menu-hidden');
+      $.addClass(menuBackdrop, 'menu-hidden');
       delete this.menu;
-      $.rmClass(lastToggledButton, 'active');
+      if (lastToggledButton) { $.rmClass(lastToggledButton, 'active'); }
       currentMenu       = null;
       lastToggledButton = null;
+      anchorPoint       = null;
       $.off(d, 'click scroll CloseMenu', this.close);
       $.off(d, 'scroll', this.setPosition);
       return $.off(window, 'resize', this.setPosition);
@@ -275,7 +315,7 @@ var Menu: MenuCtor = (function(): MenuCtor {
 
       switch (e.keyCode) {
         case 27: // Esc
-          lastToggledButton.focus();
+          lastToggledButton?.focus();
           this.close();
           break;
         case 13: case 32: // Enter, Space
@@ -372,6 +412,20 @@ var Menu: MenuCtor = (function(): MenuCtor {
       el.style.order = entry.order || 100;
       if (!subEntries) { return; }
       $.addClass(el, 'has-submenu');
+      // On mobile, submenus expand inline on tap; hover-driven opening via
+      // .focused is unreliable on touch (mouseover isn't guaranteed on tap).
+      $.on(el, 'click', (e: Event) => {
+        if (!doc.classList.contains('xt-mobile')) { return; }
+        const submenu = $('.submenu', el);
+        if (submenu && submenu.contains(e.target as Node)) { return; }
+        const open = !el.classList.contains('submenu-open');
+        if (open && el.parentNode) {
+          for (const sibling of el.parentNode.children) {
+            if (sibling !== el) { $.rmClass(sibling, 'submenu-open'); }
+          }
+        }
+        el.classList.toggle('submenu-open', open);
+      });
       for (var subEntry of subEntries) {
         this.parseEntry(subEntry);
       }

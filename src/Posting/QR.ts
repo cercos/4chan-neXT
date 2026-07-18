@@ -3,6 +3,9 @@ import $ from '../platform/$';
 import Callbacks from '../classes/Callbacks';
 import Notice from '../classes/Notice';
 import Main from '../main/Main';
+import { detectMobileDevice, resolveMobileLayout } from '../Miscellaneous/MobileLayout';
+import QRMobile from './QRMobile';
+import { shouldCloseAfterPost } from './QRMobileLogic';
 import Favicon from '../Monitoring/Favicon';
 import $$ from '../platform/$$';
 import CrossOrigin from '../platform/CrossOrigin';
@@ -219,7 +222,8 @@ var QR = {
     Icon.set(this.shortcut, 'comment', 'Quick Reply')
     $.on(sc, 'click', function() {
       if (!QR.postingIsEnabled) { return; }
-      if (Conf['Persistent QR'] || !QR.nodes || QR.nodes.el.hidden) {
+      const mobile = resolveMobileLayout(Conf['Mobile Layout'], detectMobileDevice());
+      if ((Conf['Persistent QR'] && !mobile) || !QR.nodes || QR.nodes.el.hidden) {
         QR.open();
         QR.nodes.com.focus();
       } else {
@@ -233,6 +237,10 @@ var QR = {
       if (event.data?.twister?.error) {
         QR.error($.el('div', { innerHTML: event.data.twister.error }));
       }
+    });
+
+    $.on(d, 'MobileSheetOpened', (e: CustomEvent) => {
+      if (e.detail !== 'qr' && QR.nodes && !QR.nodes.el.hidden) { QR.close(); }
     });
   },
 
@@ -383,7 +391,7 @@ var QR = {
     $.on(d, '4chanXQRMove', QR.repositionFloatingPreview);
     $.on(window, 'resize', QR.repositionFloatingPreview);
 
-    if (!Conf['Persistent QR']) { return; }
+    if (!Conf['Persistent QR'] || resolveMobileLayout(Conf['Mobile Layout'], detectMobileDevice())) { return; }
     QR.open();
     if (Conf['Auto Hide QR']) { return QR.hide(); }
   },
@@ -404,6 +412,18 @@ var QR = {
   },
 
   open() {
+    if (QR._opening) { return; }
+    QR._opening = true;
+    try {
+      return QR._open();
+    } finally {
+      QR._opening = false;
+    }
+  },
+
+  _opening: false,
+
+  _open() {
     if (QR.nodes) {
       const wasHidden = QR.nodes.el.hidden;
       if (wasHidden) { QR.captcha.setup(); }
@@ -430,6 +450,10 @@ var QR = {
         return;
       }
     }
+    $.addClass(doc, 'xt-qr-open');
+    if (resolveMobileLayout(Conf['Mobile Layout'], detectMobileDevice())) {
+      $.event('MobileSheetOpened', 'qr');
+    }
     return $.rmClass(QR.shortcut, 'disabled');
   },
 
@@ -439,6 +463,7 @@ var QR = {
       return;
     }
     QR.nodes.el.hidden = true;
+    $.rmClass(doc, 'xt-qr-open');
     QR.cleanNotifications();
 	    QR.blur();
 	    $.rmClass(QR.nodes.el, 'dump');
@@ -658,6 +683,7 @@ var QR = {
   },
 
   shouldSuppressCommentPreview(): boolean {
+    if (resolveMobileLayout(Conf['Mobile Layout'], detectMobileDevice())) { return true; }
     switch (QR.commentPreviewVisibility()) {
       case 'manual':        return !QR.commentPreviewManualRevealed;
       case 'until-content': return !QR.commentPreviewHasContent();
@@ -2705,6 +2731,10 @@ var QR = {
     QR.cooldown.setup();
     QR.captcha.init();
 
+    if (resolveMobileLayout(Conf['Mobile Layout'], detectMobileDevice())) {
+      QRMobile.setup(nodes);
+    }
+
     $.add(d.body, dialog);
     QR.captcha.setup();
     QR.oekaki.setup();
@@ -3169,7 +3199,12 @@ var QR = {
         if (!captcha) { captcha = Captcha.cache.request(!!threadID); }
       }
       if (!captcha) {
-        err = 'No valid captcha.';
+        if (resolveMobileLayout(Conf['Mobile Layout'], detectMobileDevice()) && QR.captcha === Captcha.t) {
+          (QR.captcha as any).pendingSubmitIntent = true;
+          err = 'Solve the captcha to post.';
+        } else {
+          err = 'No valid captcha.';
+        }
         QR.captcha.setup(!QR.cooldown.auto || (d.activeElement === QR.nodes.status));
       }
     }
@@ -3386,6 +3421,8 @@ var QR = {
     if (postsCount) {
       post.rm();
       QR.captcha.setup(d.activeElement === QR.nodes.status);
+    } else if (shouldCloseAfterPost(QRMobile.enabled, $.hasClass(QR.nodes.el, 'dump'), postsCount)) {
+      QR.close();
     } else if (Conf['Persistent QR']) {
       post.rm();
       if (Conf['Auto Hide QR']) {

@@ -28,6 +28,7 @@ var Gallery = {
   cache: null as any,
   timeoutID: 0,
   fullscreen: false,
+  swipe: null as any,
   colInput: null as any,
   colLabelText: null as any,
 
@@ -109,6 +110,9 @@ var Gallery = {
     nodes.menu = new UI.Menu('gallery');
 
     $.on(nodes.frame, 'click', cb.blank);
+    $.on(nodes.frame, 'pointerdown', cb.swipeStart);
+    $.on(nodes.frame, 'pointerup', cb.swipeEnd);
+    $.on(nodes.frame, 'pointercancel', cb.swipeCancel);
     if (Conf['Mouse Wheel Volume']) { $.on(nodes.frame, 'wheel', Volume.wheel); }
     $.on(nodes.next,  'click', cb.click);
     $.on(nodes.name,  'click', ImageCommon.download);
@@ -230,6 +234,7 @@ var Gallery = {
     if (el = Gallery.images[oldID]) { $.rmClass(el,    'gal-highlight'); }
     $.addClass(thumb, 'gal-highlight');
     nodes.thumbs.scrollTop = (thumb.offsetTop + (thumb.offsetHeight/2)) - (nodes.thumbs.clientHeight/2);
+    nodes.thumbs.scrollLeft = (thumb.offsetLeft + (thumb.offsetWidth/2)) - (nodes.thumbs.clientWidth/2);
 
     // Load image or use preloaded image
     if (Gallery.cache?.dataset.id === (''+newID)) {
@@ -412,6 +417,21 @@ var Gallery = {
     },
 
     advance() { if (!Conf['Autoplay'] && Gallery.nodes.current.paused) { return Gallery.nodes.current.play(); } else { return Gallery.cb.next(); } },
+
+    swipeStart(e: PointerEvent) {
+      if (e.pointerType !== 'touch' || !doc.classList.contains('xt-mobile')) { return; }
+      Gallery.swipe = {x: e.clientX, y: e.clientY, id: e.pointerId};
+    },
+    swipeCancel() { Gallery.swipe = null; },
+    swipeEnd(e: PointerEvent) {
+      const {swipe} = Gallery;
+      if (!swipe || (e.pointerId !== swipe.id)) { return; }
+      Gallery.swipe = null;
+      const dx = e.clientX - swipe.x;
+      const dy = e.clientY - swipe.y;
+      if ((Math.abs(dx) < 50) || (Math.abs(dx) < (Math.abs(dy) * 1.5))) { return; }
+      return dx < 0 ? Gallery.cb.next() : Gallery.cb.prev();
+    },
     toggle() { return (Gallery.nodes ? Gallery.cb.close : Gallery.build)(); },
     blank(this: HTMLElement, e: Event) {
       if (e.target !== this) { return; }
@@ -521,9 +541,14 @@ var Gallery = {
       const MAX_EXTENT = 0.75;          // strip caps at 75% of its docking axis
       const cols   = Math.max(0, parseInt(Conf['Gallery Columns'], 10) || 0);
       const hidden = Conf['Hide Thumbnails'];
-      const grid   = Conf['Grid Thumbnails'] && !hidden;
-      const pos    = Gallery.cb.positions.includes(Conf['Gallery Thumbnails Position'])
+      let grid   = Conf['Grid Thumbnails'] && !hidden;
+      let pos    = Gallery.cb.positions.includes(Conf['Gallery Thumbnails Position'])
         ? Conf['Gallery Thumbnails Position'] : 'right';
+      const mobile = doc.classList.contains('xt-mobile');
+      if (mobile && !(grid && (cols === 0))) {
+        grid = false;
+        pos = 'bottom';
+      }
       const horizontal = (pos === 'top') || (pos === 'bottom');
 
       for (var p of Gallery.cb.positions) { doc.classList.toggle(`gal-thumbs-${p}`, p === pos); }
@@ -550,7 +575,7 @@ var Gallery = {
         effCols = Math.min(cols, maxCols);
         extent = (effCols * THUMB_CELL) + 8;
       } else {
-        extent = 150;
+        extent = mobile ? 96 : 150;
       }
       doc.style.setProperty('--gal-cols', String(effCols || 1));
       return doc.style.setProperty('--gal-thumbs-width', `${extent}px`);

@@ -13,6 +13,8 @@ import { noWebmTitleMetadataSites } from '../Images/Metadata';
 import CustomCSS from '../Miscellaneous/CustomCSS';
 import FileInfo from '../Miscellaneous/FileInfo';
 import Keybinds from '../Miscellaneous/Keybinds';
+import { detectMobileDevice, resolveMobileLayout } from '../Miscellaneous/MobileLayout';
+import { parseFavoriteBoards, serializeFavoriteBoards } from '../Miscellaneous/BoardPickerLogic';
 import Time from '../Miscellaneous/Time';
 import Favicon from '../Monitoring/Favicon';
 import ThreadUpdater from '../Monitoring/ThreadUpdater';
@@ -112,6 +114,7 @@ var Settings: any = {
   stylingEditingVariant: null as StyleVariant | null,
   styleVariantKeySet: new Set<string>(styleVariantKeys),
   resolvedStyleColorCache: null as Record<string, string> | null,
+  styleProbeHosts: null as WeakMap<HTMLElement, HTMLDivElement> | null,
   THEME_BORDER_HIGHLIGHT: '__theme_border_highlight__',
 
   // What's currently applied to the page. Always derived from the board
@@ -157,6 +160,7 @@ var Settings: any = {
     return key.replace(/ (SFW|NSFW)$/, '');
   },
   prepareDrag(this: HTMLElement, e: Event) {
+    if (doc.classList.contains('xt-mobile')) { return; }
     const settingsWindow = $('#fourchanx-settings', Settings.dialog) as HTMLDivElement;
     const rect = settingsWindow.getBoundingClientRect();
     settingsWindow.style.left = `${rect.left}px`;
@@ -188,6 +192,9 @@ var Settings: any = {
     add('General',         this.general);
     add('Styling',         this.styling);
     add('Interface',       this.interface);
+    if (resolveMobileLayout(Conf['Mobile Layout'], detectMobileDevice())) {
+      add('Mobile',        this.mobile);
+    }
     add('Threads & Posts', this.threadsAndPosts);
     add('Media',           this.media);
     add('Posting',         this.posting);
@@ -198,6 +205,7 @@ var Settings: any = {
 
     $.on(d, 'AddSettingsSection',   Settings.addSection);
     $.on(d, 'OpenSettings', e => Settings.open(e.detail));
+    $.on(d, 'CustomSiteThemeChanged', Settings.onSiteThemeChanged);
 
     // Reflect the persisted "Highlight neXT" state on <html> at startup so neXT
     // markers show in dropdown menus even before the settings dialog is opened.
@@ -528,7 +536,7 @@ var Settings: any = {
     if (Settings.rememberLayout) {
       Settings.persistCurrentDetailsState();
       const settingsWindow = $('#fourchanx-settings', Settings.dialog) as HTMLDivElement | null;
-      if (settingsWindow) Settings.saveWindowLayout(settingsWindow);
+      if (settingsWindow && !doc.classList.contains('xt-mobile')) Settings.saveWindowLayout(settingsWindow);
     }
     Settings.closeImpExpPicker();
     Settings.restoreAutoDescriptionTooltips();
@@ -1074,6 +1082,7 @@ var Settings: any = {
 
 
   restoreWindowLayout(settingsWindow: HTMLDivElement) {
+    if (doc.classList.contains('xt-mobile')) { return; }
     if (Settings.rememberLayout && Settings.savedWindowLayout) {
       settingsWindow.style.cssText += `;${Settings.savedWindowLayout}`;
       return;
@@ -2102,6 +2111,26 @@ Enable it on boards.${location.hostname.split('.')[1]}.org in your browser's pri
       });
     }
 
+    const mobileInputs = Settings.addSelectFieldset(section, 'Mobile', [
+      {
+        name: 'Mobile Layout',
+        label: 'Mobile layout',
+        description: 'Adjust the interface for phones and other small touch devices. Auto turns it on when a mobile device is detected.',
+        options: [
+          ['auto', 'Auto'],
+          ['on', 'On'],
+          ['off', 'Off']
+        ]
+      }
+    ]);
+    const mobileLayoutSelect = mobileInputs['Mobile Layout'] as HTMLSelectElement | undefined;
+    if (mobileLayoutSelect) {
+      $.on(mobileLayoutSelect, 'change', function(this: HTMLSelectElement) {
+        if (confirm('Mobile layout changed. Reload the page to apply it?')) {
+          window.location.reload();
+        }
+      });
+    }
     $.add(section, fsNav);
 
     $.get(items, function(items: Record<string, any>) {
@@ -2276,6 +2305,7 @@ Enable it on boards.${location.hostname.split('.')[1]}.org in your browser's pri
       'Auto Watch',
       'Auto Watch Reply',
       'Auto Prune',
+      'Auto Prune Read Only',
       'Show Page',
       'Show Unread Count',
       'Show Site Prefix',
@@ -2366,6 +2396,7 @@ Enable it on boards.${location.hostname.split('.')[1]}.org in your browser's pri
       inputs[name] = input;
       $.add(fs, div);
     }
+    ThreadWatcher.linkPruneExclusive([inputs['Auto Prune'], inputs['Auto Prune Read Only']]);
 
     const heightDiv = $.el('div',
       { innerHTML: '<label>TW Max H <input type="number" name="Thread Watcher Max Height" min="120" max="999" step="1" class="field thread-watcher-height-input"></label><label class="thread-watcher-inline-number">W <input type="number" name="Thread Watcher Max Width" min="120" max="999" step="1" class="field thread-watcher-width-input"></label><span class="description">: <span class="setting-description">Maximum watched-thread list height and width in pixels.</span></span>' });
@@ -2417,6 +2448,84 @@ Enable it on boards.${location.hostname.split('.')[1]}.org in your browser's pri
       if (Number.isFinite(watcherHeight)) syncWatcherHeightToDialog(Math.max(120, Math.min(999, watcherHeight)));
       const watcherWidth = parseInt(`${items['Thread Watcher Max Width']}`, 10);
       if (Number.isFinite(watcherWidth)) syncWatcherWidthToDialog(Math.max(120, Math.min(999, watcherWidth)));
+    });
+  },
+
+  mobile(section: HTMLElement) {
+    const inputs = Settings.addSelectFieldset(section, 'Layout', [
+      {
+        name: 'Mobile Bar Layout',
+        label: 'Icon bar',
+        description: 'Where the shortcut icon bar sits in the mobile layout. The board navigation bar takes the opposite edge.',
+        options: [
+          ['icons-bottom', 'Icons bottom'],
+          ['icons-top', 'Icons top']
+        ]
+      }
+    ]);
+    const barSelect = inputs['Mobile Bar Layout'] as HTMLSelectElement | undefined;
+    if (barSelect) {
+      $.on(barSelect, 'change', function(this: HTMLSelectElement) {
+        Header.setBarLayout(this.value);
+      });
+    }
+
+    const fsReplies = $.el('details',
+      { open: true },
+      { innerHTML: '<summary>Replies</summary>' });
+    const repliesDesc = 'Show replies to a post as a badge that opens them in a popup. When disabled, classic backlinks are shown instead.';
+    const repliesDiv = $.el('div', {
+      innerHTML: `<label><input type="checkbox" name="Mobile Replies Popup"><span class="setting-title">Replies popup</span></label><span class="description">: <span class="setting-description">${repliesDesc}</span></span>`
+    });
+    repliesDiv.dataset.name = 'Mobile Replies Popup';
+    repliesDiv.dataset.settingTitle = 'Replies popup';
+    Settings.registerSettingDescription(repliesDiv, repliesDesc);
+    const repliesInput = $('input', repliesDiv) as HTMLInputElement;
+    $.on(repliesInput, 'change', $.cb.checked);
+    $.on(repliesInput, 'change', function(this: HTMLInputElement) {
+      (this.parentNode!.parentNode as HTMLElement).dataset.checked = this.checked as any;
+      doc.classList.toggle('xt-replies-chip', this.checked);
+    });
+    $.add(fsReplies, repliesDiv);
+    $.add(section, fsReplies);
+    $.get({ 'Mobile Replies Popup': Conf['Mobile Replies Popup'] }, (items: Record<string, any>) => {
+      repliesInput.checked = !!items['Mobile Replies Popup'];
+      repliesDiv.dataset.checked = `${repliesInput.checked}`;
+    });
+
+    const fsNav = $.el('details',
+      { open: true },
+      { innerHTML: '<summary>Board navigation</summary>' });
+    const favDesc = 'Boards listed in the Favorites tab of the board picker, as space-separated board codes, e.g. "g v tv". Starring boards in the picker edits the same list. Separate from the desktop custom board navigation in Interface.';
+    const favDiv = $.el('div');
+    favDiv.dataset.name = 'favoriteBoards';
+    favDiv.dataset.settingTitle = 'Favorite boards';
+    Settings.registerSettingDescription(favDiv, favDesc);
+    const favInput = $.el('input', {
+      name: 'favoriteBoards',
+      className: 'field',
+      spellcheck: false
+    }) as HTMLInputElement;
+    const favLabel = $.el('label');
+    $.add(favLabel, [
+      $.el('span', { className: 'setting-title', textContent: 'Favorite boards: ' }),
+      favInput
+    ]);
+    $.add(favDiv, [favLabel, Settings.descriptionSpan(favDesc)]);
+    $.add(fsNav, favDiv);
+    $.add(section, fsNav);
+    $.on(favInput, 'change', () => {
+      const value = serializeFavoriteBoards(parseFavoriteBoards(favInput.value));
+      favInput.value = value;
+      Conf['favoriteBoards'] = value;
+      $.set('favoriteBoards', value);
+      if (!Conf['favoriteBoardsSeeded']) {
+        Conf['favoriteBoardsSeeded'] = true;
+        $.set('favoriteBoardsSeeded', true);
+      }
+    });
+    $.get({ favoriteBoards: Conf['favoriteBoards'] }, (items: Record<string, any>) => {
+      favInput.value = items['favoriteBoards'];
     });
   },
 
@@ -3524,46 +3633,59 @@ Enable it on boards.${location.hostname.split('.')[1]}.org in your browser's pri
     Settings.initCustomCSSEditor(section, inputs['usercss'] as unknown as HTMLTextAreaElement);
 
     const populateInputsFromLoaded = (loaded: Record<string, any>) => {
-      for (const storageKey in loaded) {
-        const val = loaded[storageKey];
-        const baseName = Settings.styleKeyBase(storageKey);
-        const inp = inputs[baseName];
-        if (!inp) continue;
-        if (inp.type === 'checkbox') {
-          inp.checked = !!val;
-          setCheckedState(inp);
-        } else if (inp.type === 'color') {
-          Settings.setColorInputValue(inp, baseName, val);
-        } else if (inp.type === 'range') {
-          inp.value = (val === '' || val == null) ? '1' : String(val);
-        } else if (baseName === 'siteStyle' && !val) {
-          // Keep whichever style is currently active selected in the picker
-          // when no explicit site style preference has been saved yet.
-        } else {
-          inp.value = val ?? '';
+      const prevBgCache = Settings.styleBgCache;
+      Settings.styleBgCache = prevBgCache || {};
+      try {
+        // Warm the background memo before the loop dirties the section's
+        // style state; reading it later would force a full recalc of all
+        // the accumulated invalidations at once.
+        Settings.getPostBaseBackground();
+        Settings.primeResolvedStyleColorCache(
+          Object.keys(inputs).filter(key => inputs[key].type === 'color')
+        );
+        for (const storageKey in loaded) {
+          const val = loaded[storageKey];
+          const baseName = Settings.styleKeyBase(storageKey);
+          const inp = inputs[baseName];
+          if (!inp) continue;
+          if (inp.type === 'checkbox') {
+            inp.checked = !!val;
+            setCheckedState(inp);
+          } else if (inp.type === 'color') {
+            Settings.setColorInputValue(inp, baseName, val);
+          } else if (inp.type === 'range') {
+            inp.value = (val === '' || val == null) ? '1' : String(val);
+          } else if (baseName === 'siteStyle' && !val) {
+            // Keep whichever style is currently active selected in the picker
+            // when no explicit site style preference has been saved yet.
+          } else {
+            inp.value = val ?? '';
+          }
+          inp.hidden = false;
+          // Don't let merely opening the Styling section apply a *fallback* site
+          // theme onto the live page. With no saved siteStyle for this variant the
+          // picker shows its first option (e.g. Yotsuba); calling Settings.siteStyle
+          // here would push that onto the page, hijacking the theme that's actually
+          // rendered. Only (re-)apply when the user has an explicit saved value.
+          if (baseName === 'siteStyle' && !val) continue;
+          if (baseName in Settings) Settings[baseName].call(inp);
         }
-        inp.hidden = false;
-        // Don't let merely opening the Styling section apply a *fallback* site
-        // theme onto the live page. With no saved siteStyle for this variant the
-        // picker shows its first option (e.g. Yotsuba); calling Settings.siteStyle
-        // here would push that onto the page, hijacking the theme that's actually
-        // rendered. Only (re-)apply when the user has an explicit saved value.
-        if (baseName === 'siteStyle' && !val) continue;
-        if (baseName in Settings) Settings[baseName].call(inp);
+        syncMarkerColorControls();
+        syncCatalogHighlightControls();
+        syncThreadHighlightControls();
+        syncTextColorControls();
+        syncHighlightTextControls();
+        seedManualHighlightTextColors();
+        syncAutoHighlightPreviewInputs();
+        Settings.applyStylingVars();
+        refreshUnsetColorInputs();
+        Settings.refreshCustomCSSEditor(section);
+        syncColorHexInputs();
+        refreshOpacityReadouts();
+        refreshStylingPreview();
+      } finally {
+        Settings.styleBgCache = prevBgCache;
       }
-      syncMarkerColorControls();
-      syncCatalogHighlightControls();
-      syncThreadHighlightControls();
-      syncTextColorControls();
-      syncHighlightTextControls();
-      seedManualHighlightTextColors();
-      syncAutoHighlightPreviewInputs();
-      Settings.applyStylingVars();
-      refreshUnsetColorInputs();
-      Settings.refreshCustomCSSEditor(section);
-      syncColorHexInputs();
-      refreshOpacityReadouts();
-      refreshStylingPreview();
     };
 
     $.get(items, populateInputsFromLoaded);
@@ -3633,8 +3755,7 @@ Enable it on boards.${location.hostname.split('.')[1]}.org in your browser's pri
       const out: any = { own: '#000000', you: '#000000', ghost: '#888888', catalogOwn: '#000000', catalogWatched: '#000000' };
       const scope = Settings.dialog || d.body;
       if (!scope) return out;
-      const host = $.el('div') as HTMLDivElement;
-      host.style.cssText = 'position:absolute;visibility:hidden;pointer-events:none;left:0;top:0';
+      const host = Settings.getStyleProbeHost(scope);
       const probes: Record<string, HTMLSpanElement> = {};
       for (const slot in exprs) {
         const probe = $.el('span') as HTMLSpanElement;
@@ -3642,9 +3763,8 @@ Enable it on boards.${location.hostname.split('.')[1]}.org in your browser's pri
         probes[slot] = probe;
         $.add(host, probe);
       }
-      $.add(scope, host);
       for (const slot in exprs) out[slot] = Settings.toHexColor(window.getComputedStyle(probes[slot]).color) || out[slot];
-      $.rm(host);
+      host.textContent = '';
       return out;
     };
 
@@ -6199,24 +6319,44 @@ Enable it on boards.${location.hostname.split('.')[1]}.org in your browser's pri
   // board behind it stays on its own variant.
   applyStylingVars() {
     const prevBgCache = Settings.styleBgCache;
-    Settings.styleBgCache = {};
+    Settings.styleBgCache = prevBgCache || {};
     try {
-      Settings.writeStyleVarsTo(doc as HTMLElement, Settings.getBoardVariant(), true);
+      let varsChanged = Settings.writeStyleVarsTo(doc as HTMLElement, Settings.getBoardVariant(), true);
       Settings.syncLinkedMarkerColors(undefined, Settings.getBoardVariant());
       if (Settings.dialog && Settings.stylingEditingVariant
           && Settings.stylingEditingVariant !== Settings.getBoardVariant()) {
-        Settings.writeStyleVarsTo(Settings.dialog, Settings.stylingEditingVariant, false);
+        if (Settings.writeStyleVarsTo(Settings.dialog, Settings.stylingEditingVariant, false)) varsChanged = true;
       } else if (Settings.dialog) {
         // Same variant: clear any leftover dialog-scoped overrides so the
         // dialog inherits from :root.
-        Settings.clearStyleVarsOn(Settings.dialog);
+        if (Settings.clearStyleVarsOn(Settings.dialog)) varsChanged = true;
       }
-      Settings.resolvedStyleColorCache = null;
-      Settings.refreshUnsetStylingColorInputs();
+      // Resolved fallback colors only shift when a var actually changed;
+      // skipping the invalidation otherwise saves a full re-prime (and the
+      // style flush it forces) on every no-op call while opening Styling.
+      if (varsChanged) {
+        Settings.resolvedStyleColorCache = null;
+        Settings.refreshUnsetStylingColorInputs();
+      }
       Settings.refreshStylingPreviewFromDialog();
     } finally {
       Settings.styleBgCache = prevBgCache;
     }
+  },
+
+  // Theme swaps change the --xt-* theme vars the resolved fallback colors
+  // were probed against, which applyStylingVars can no longer detect now that
+  // it only invalidates on its own var writes.
+  siteThemeChangedRaf: 0 as number,
+  onSiteThemeChanged() {
+    if (Settings.siteThemeChangedRaf) return;
+    Settings.siteThemeChangedRaf = requestAnimationFrame(() => {
+      Settings.siteThemeChangedRaf = 0;
+      Settings.resolvedStyleColorCache = null;
+      if (!Settings.dialog) return;
+      Settings.refreshUnsetStylingColorInputs();
+      Settings.refreshStylingPreviewFromDialog();
+    });
   },
 
   applyStylingVarsRaf: 0 as number,
@@ -6251,21 +6391,37 @@ Enable it on boards.${location.hostname.split('.')[1]}.org in your browser's pri
     '--xt-catalog-watched-text', '--xt-catalog-watched-subject', '--xt-catalog-watched-link', '--xt-catalog-watched-quote', '--xt-catalog-watched-dead-link',
   ] as const,
 
-  clearStyleVarsOn(target: HTMLElement) {
-    for (const name of Settings.STYLE_VAR_NAMES) target.style.removeProperty(name);
+  clearStyleVarsOn(target: HTMLElement): boolean {
+    let removed = false;
+    for (const name of Settings.STYLE_VAR_NAMES) {
+      if (target.style.getPropertyValue(name)) {
+        target.style.removeProperty(name);
+        removed = true;
+      }
+    }
+    return removed;
   },
 
   // Write all variant-aware CSS variables for `variant` onto `target`.
   // `updateRootClasses` toggles the shared highlight classes on the root
   // element (only true when called with target=doc; the dialog overlay
   // doesn't need them because the cascade already inherits the doc's classes).
-  writeStyleVarsTo(target: HTMLElement, variant: StyleVariant, updateRootClasses: boolean) {
+  writeStyleVarsTo(target: HTMLElement, variant: StyleVariant, updateRootClasses: boolean): boolean {
     const styleVarValue = (value: any) =>
       value === Settings.THEME_BORDER_HIGHLIGHT ? 'var(--xt-border-highlight)' : value;
+    let varsChanged = false;
     const setVar = (cssVar: string, value: string) => {
       const resolved = styleVarValue(value);
-      if (resolved) target.style.setProperty(cssVar, resolved);
-      else target.style.removeProperty(cssVar);
+      const current = target.style.getPropertyValue(cssVar);
+      if (resolved) {
+        if (current !== String(resolved)) {
+          target.style.setProperty(cssVar, resolved);
+          varsChanged = true;
+        }
+      } else if (current) {
+        target.style.removeProperty(cssVar);
+        varsChanged = true;
+      }
     };
     const cv = (key: string) => Settings.styleConf(key, variant);
     const highlightsOn = Settings.stylingSectionEnabled('highlights');
@@ -6578,6 +6734,7 @@ Enable it on boards.${location.hostname.split('.')[1]}.org in your browser's pri
     setVar('--xt-catalog-filter-link', catalogFilterPalette?.link || '');
     setVar('--xt-catalog-filter-quote', catalogFilterPalette?.quote || '');
     setVar('--xt-catalog-filter-dead-link', catalogFilterPalette?.deadLink || '');
+    return varsChanged;
   },
 
   autoTextPalette(rgb?: [number, number, number]): { text: string; subject: string; link: string; quote: string; deadLink: string } {
@@ -6705,6 +6862,8 @@ Enable it on boards.${location.hostname.split('.')[1]}.org in your browser's pri
   },
 
   resolveCanvasBackgroundStyle() {
+    const cache = Settings.styleBgCache;
+    if (cache?.canvas) return cache.canvas;
     const htmlStyle = Settings.backgroundStyleFromComputed(window.getComputedStyle(d.documentElement));
     if (!d.body) return htmlStyle;
     const bodyStyle = Settings.backgroundStyleFromComputed(window.getComputedStyle(d.body));
@@ -6714,7 +6873,9 @@ Enable it on boards.${location.hostname.split('.')[1]}.org in your browser's pri
       htmlStyle.backgroundImage === 'none' &&
       Settings.isTransparentCSSColor(htmlStyle.backgroundColor)
     );
-    return htmlDefersToBody ? bodyStyle : htmlStyle;
+    const result = htmlDefersToBody ? bodyStyle : htmlStyle;
+    if (cache) cache.canvas = result;
+    return result;
   },
 
   applyBackgroundStyle(el: HTMLElement, background: {
@@ -6733,7 +6894,11 @@ Enable it on boards.${location.hostname.split('.')[1]}.org in your browser's pri
     el.style.backgroundAttachment = background.backgroundAttachment;
   },
 
-  styleBgCache: null as { text?: [number, number, number]; post?: [number, number, number] } | null,
+  styleBgCache: null as {
+    text?: [number, number, number];
+    post?: [number, number, number];
+    canvas?: Record<string, string>;
+  } | null,
 
   getTextBaseBackground(): [number, number, number] {
     const cache = Settings.styleBgCache;
@@ -6757,9 +6922,10 @@ Enable it on boards.${location.hostname.split('.')[1]}.org in your browser's pri
       const el = g.SITE?.bgColoredEl?.();
       if (el && d.body) {
         el.style.cssText = 'position:absolute;left:-9999px;top:-9999px;visibility:hidden;pointer-events:none;';
-        d.body.appendChild(el);
+        const host = Settings.getStyleProbeHost(d.body);
+        $.add(host, el);
         bgColor = window.getComputedStyle(el).backgroundColor;
-        $.rm(el);
+        host.textContent = '';
       }
     } catch (e) {
       bgColor = '';
@@ -6914,6 +7080,22 @@ Enable it on boards.${location.hostname.split('.')[1]}.org in your browser's pri
     return null;
   },
 
+  // Persistent probe container: adding/removing a container directly under
+  // body/the dialog invalidates style for the whole document, so each
+  // getComputedStyle probe read would pay a full-page recalc. Keeping the
+  // container attached scopes that cost to its own subtree.
+  getStyleProbeHost(scope: HTMLElement): HTMLDivElement {
+    const hosts = Settings.styleProbeHosts || (Settings.styleProbeHosts = new WeakMap());
+    let host = hosts.get(scope);
+    if (!host || host.parentNode !== scope) {
+      host = $.el('div') as HTMLDivElement;
+      host.style.cssText = 'position:absolute;visibility:hidden;pointer-events:none;left:0;top:0';
+      $.add(scope, host);
+      hosts.set(scope, host);
+    }
+    return host;
+  },
+
   primeResolvedStyleColorCache(keys: string[]) {
     if (!keys.length || !d.body) return;
     const cache = Settings.resolvedStyleColorCache || (Settings.resolvedStyleColorCache = dict());
@@ -6924,15 +7106,10 @@ Enable it on boards.${location.hostname.split('.')[1]}.org in your browser's pri
     ));
     if (!unresolvedKeys.length) return;
 
-    // Resolve all needed fallback colors in one DOM insertion so Firefox
-    // doesn't pay a full style flush per color input while opening Styling.
+    // Resolve all needed fallback colors in one batch so a full style flush
+    // isn't paid per color input while opening Styling.
     const scope = Settings.dialog || d.body;
-    const host = $.el('div') as HTMLDivElement;
-    host.style.position = 'absolute';
-    host.style.visibility = 'hidden';
-    host.style.pointerEvents = 'none';
-    host.style.left = '0';
-    host.style.top = '0';
+    const host = Settings.getStyleProbeHost(scope);
 
     const probes: Record<string, HTMLSpanElement> = dict();
     for (const key of unresolvedKeys) {
@@ -6942,12 +7119,11 @@ Enable it on boards.${location.hostname.split('.')[1]}.org in your browser's pri
       $.add(host, probe);
     }
 
-    $.add(scope, host);
     for (const key of unresolvedKeys) {
       const color = Settings.toHexColor(window.getComputedStyle(probes[key]).color);
       if (color) cache[key] = color;
     }
-    $.rm(host);
+    host.textContent = '';
   },
 
   resolvedColorForKey(key: string): string | null {
@@ -6960,8 +7136,7 @@ Enable it on boards.${location.hostname.split('.')[1]}.org in your browser's pri
     const explicit = (typeof rawValue === 'string' && /^#[0-9a-f]{6}$/i.test(rawValue))
       ? rawValue.toLowerCase()
       : null;
-    const fallback = Settings.resolvedColorForKey(key) || '#000000';
-    input.value = explicit || fallback;
+    input.value = explicit || Settings.resolvedColorForKey(key) || '#000000';
     if (explicit) {
       delete input.dataset.unset;
     } else {
@@ -7790,6 +7965,7 @@ Enable it on boards.${location.hostname.split('.')[1]}.org in your browser's pri
       'fxtLang',
       'fxtUrl',
       'fxtMaxReplies',
+      'tfUrl',
       'beepVolume',
       'soundLibrary',
       'boardSounds',
@@ -8270,10 +8446,12 @@ Enable it on boards.${location.hostname.split('.')[1]}.org in your browser's pri
     }
     // The "edge only" / "border only" toggles were replaced by inverted
     // "background" toggles: the colored edge is now the always-on default, and
-    // checking the box adds the background fill. Migrate existing users by
-    // inverting their old value. This block runs only on upgrade (see
-    // Main.upgrade), so a thread key that's still undefined means a
-    // pre-edge-feature user who had filled highlights -> background on.
+    // checking the box adds the background fill. Migrate users who explicitly
+    // set the old toggle by inverting their stored value. When the old key is
+    // undefined the user was on the edge-only default (old default was true) and
+    // never touched it, so they keep edge mode (background off) to match the
+    // current fresh-install default -- previously this defaulted to true and
+    // wrongly flipped every edge-mode user to background fill on update.
     // Idempotent: only seeds keys not already present.
     for (const [oldKey, newKey] of [
       ['Highlight Own Edge Only', 'Highlight Own Background'],
@@ -8281,7 +8459,7 @@ Enable it on boards.${location.hostname.split('.')[1]}.org in your browser's pri
       ['Highlight Ghost Edge Only', 'Highlight Ghost Background'],
     ]) {
       if (data[newKey] === undefined) {
-        set(newKey, data[oldKey] !== undefined ? !data[oldKey] : true);
+        set(newKey, data[oldKey] !== undefined ? !data[oldKey] : false);
       }
     }
     // Catalog border-only toggles are per-variant (SFW/NSFW). Only seed when the
@@ -9233,6 +9411,19 @@ Enable it on boards.${location.hostname.split('.')[1]}.org in your browser's pri
       Conf['lastarchivecheck'] = 0;
       $.id('lastarchivecheck').textContent = 'never';
     });
+
+    const xEmbedder = inputs['XEmbedder'];
+    if (xEmbedder) {
+      const xEmbedOptions = $$('.xembed-options', section);
+      const syncXEmbedOptions = () => {
+        for (const group of xEmbedOptions) {
+          group.hidden = group.dataset.xembedder !== xEmbedder.value;
+        }
+      };
+      $.on(xEmbedder, 'change', syncXEmbedOptions);
+      xEmbedder.value = Conf['XEmbedder'];
+      syncXEmbedOptions();
+    }
 
     const items = dict();
     for (name in inputs) {

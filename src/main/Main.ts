@@ -33,6 +33,7 @@ import ArchiveLink from "../Menu/ArchiveLink";
 import CopyTextLink from "../Menu/CopyTextLink";
 import DeleteLink from "../Menu/DeleteLink";
 import DownloadLink from "../Menu/DownloadLink";
+import FileNameLink from "../Menu/FileNameLink";
 import ReportLink from "../Menu/ReportLink";
 import SoundLink from "../Menu/SoundLink";
 import AntiAutoplay from "../Miscellaneous/AntiAutoplay";
@@ -48,6 +49,8 @@ import IDColor from "../Miscellaneous/IDColor";
 import IDHighlight from "../Miscellaneous/IDHighlight";
 import IDPostCount from "../Miscellaneous/IDPostCount";
 import Keybinds from "../Miscellaneous/Keybinds";
+import { applyMobileLayout } from "../Miscellaneous/MobileLayout";
+import MobileReplies from "../Miscellaneous/MobileReplies";
 import ModContact from "../Miscellaneous/ModContact";
 import Nav from "../Miscellaneous/Nav";
 import NormalizeURL from "../Miscellaneous/NormalizeURL";
@@ -552,6 +555,7 @@ var Main = {
     doc.dataset.host = location.host;
     $.addClass(doc, `sw-${g.SITE!.software}`);
     $.addClass(doc, g.VIEW === 'thread' ? 'thread-view' : g.VIEW!);
+    applyMobileLayout(Conf['Mobile Layout'], doc);
     $.onExists(doc, '.ad-cnt, .adg-rects > .desktop', ad => $.onExists(ad, 'img, iframe', () => $.addClass(doc, 'ads-loaded')));
     if (Conf['Autohiding Scrollbar']) { $.addClass(doc, 'autohiding-scrollbar'); }
     $.ready(function() {
@@ -1286,11 +1290,13 @@ User agent: ${navigator.userAgent}\
     ['Filter (Menu)',             Filter.menu],
     ['Edit Link',                 QR.oekaki.menu],
     ['Download Link',             DownloadLink],
+    ['File Name Link',            FileNameLink],
     ['Archive Link',              ArchiveLink],
     ['Sound Link',                SoundLink],
     ['Quote Inlining',            QuoteInline],
     ['Quote Previewing',          QuotePreview],
     ['Quote Backlinks',           QuoteBacklink],
+    ['Mobile Replies',            MobileReplies],
     ['Mark Quotes of You',        QuoteYou],
     ['Mark OP Quotes',            QuoteOP],
     ['Mark Cross-thread Quotes',  QuoteCT],

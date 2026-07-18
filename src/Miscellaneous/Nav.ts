@@ -4,17 +4,19 @@ import { g, Conf, d, doc } from "../globals/globals";
 import $ from "../platform/$";
 import $$ from "../platform/$$";
 import Icon from "../Icons/icon";
+import { detectMobileDevice, resolveMobileLayout } from "./MobileLayout";
 
 var Nav = {
   haveExtra: false, // loose:
 
   init() {
+    const mobile = resolveMobileLayout(Conf['Mobile Layout'], detectMobileDevice());
     switch (g.VIEW) {
       case 'index':
-        if (!Conf['Index Navigation']) { return; }
+        if (!Conf['Index Navigation'] && !mobile) { return; }
         break;
       case 'thread':
-        if (!Conf['Reply Navigation']) { return; }
+        if (!Conf['Reply Navigation'] && !mobile) { return; }
         break;
       default:
         return;
@@ -42,11 +44,60 @@ var Nav = {
     $.on(next, 'click', this.next);
 
     $.add(span, [prev, $.tn(' '), next]);
+    Nav.initDock(span);
     var append = function() {
       $.off(d, '4chanXInitFinished', append);
       return $.add(d.body, span);
     };
     return $.on(d, '4chanXInitFinished', append);
+  },
+
+  initDock(span: HTMLElement) {
+    let startX = 0;
+    let startY = 0;
+    let tracking = false;
+    let suppressClick = false;
+    let idleTimer = 0;
+
+    const restartIdle = function() {
+      clearTimeout(idleTimer);
+      idleTimer = window.setTimeout(() => $.addClass(span, 'navlinks-docked'), 2000);
+    };
+    if (g.VIEW === 'thread') {
+      $.addClass(span, 'navlinks-docked');
+    } else {
+      restartIdle();
+    }
+
+    $.on(span, 'pointerdown', function(e: PointerEvent) {
+      startX = e.clientX;
+      startY = e.clientY;
+      tracking = true;
+      suppressClick = false;
+      if (!$.hasClass(span, 'navlinks-docked')) { restartIdle(); }
+    });
+    $.on(span, 'pointermove', function(e: PointerEvent) {
+      if (!tracking || !doc.classList.contains('xt-mobile') || $.hasClass(span, 'navlinks-docked')) { return; }
+      if (((e.clientX - startX) > 30) && (Math.abs(e.clientY - startY) < 40)) {
+        tracking = false;
+        suppressClick = true;
+        clearTimeout(idleTimer);
+        $.addClass(span, 'navlinks-docked');
+      }
+    });
+    $.on(span, 'pointerup', () => tracking = false);
+    span.addEventListener('click', function(e) {
+      if (suppressClick) {
+        suppressClick = false;
+      } else if ($.hasClass(span, 'navlinks-docked')) {
+        $.rmClass(span, 'navlinks-docked');
+        restartIdle();
+      } else {
+        return;
+      }
+      e.preventDefault();
+      e.stopPropagation();
+    }, true);
   },
 
   prev() {

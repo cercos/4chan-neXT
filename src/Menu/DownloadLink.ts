@@ -1,12 +1,15 @@
 import type Post from "../classes/Post";
 import { g, Conf } from "../globals/globals";
 import ImageCommon from "../Images/ImageCommon";
+import { detectMobileDevice, resolveMobileLayout } from "../Miscellaneous/MobileLayout";
 import $ from "../platform/$";
 import Menu from "./Menu";
 
 const DownloadLink = {
   init() {
-    if ((g.VIEW !== 'index' && g.VIEW !== 'thread') || !Conf['Menu'] || !Conf['Download Link']) { return; }
+    if ((g.VIEW !== 'index' && g.VIEW !== 'thread') || !Conf['Menu']) { return; }
+    const mobile = resolveMobileLayout(Conf['Mobile Layout'], detectMobileDevice());
+    if (!Conf['Download Link'] && !mobile) { return; }
 
     const a = $.el('a', {
       className: 'download-link',
@@ -24,6 +27,10 @@ const DownloadLink = {
         if (!file) { return false; }
         a.href     = file.url;
         a.download = file.name;
+        if (mobile) {
+          const details = file.dimensions ? `${file.size}, ${file.dimensions}` : file.size;
+          a.textContent = `Download file (${details})`;
+        }
         return true;
       }
     });

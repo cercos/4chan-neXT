@@ -958,6 +958,9 @@ const Config = {
   'Show Comment Preview Header Icon': true,
   'Spoiler Mode': 'default',
   'Settings Menu Layout': 'vertical',
+  'Mobile Layout': 'auto',
+  'Mobile Bar Layout': 'icons-bottom',
+  'Mobile Replies Popup': true,
 
   threadWatcher: {
     'Current Board': [
@@ -978,7 +981,11 @@ const Config = {
     ],
     'Auto Prune': [
       false,
-      'Automatically remove dead threads.'
+      'Automatically remove all dead threads.'
+    ],
+    'Auto Prune Read Only': [
+      false,
+      'Automatically remove dead threads you have already read.'
     ],
     'Show Page': [
       true,
@@ -1259,7 +1266,6 @@ http://eye.swfchan.com/search/?q=%name;types:swf
     'Previous Index Mode': 'paged',
     'Index Size': 'small',
     'Catalog Columns': 'auto',
-    'Catalog Thumb Scale': '100',
     'Show Replies':          [true,  'Show replies in the index, and also in the catalog if "Catalog hover expand" is checked.'],
     'Catalog Hover Expand':  [false, 'Expand the comment and show more details when you hover over a thread in the catalog.'],
     'Catalog Hover Toggle':  [true,  'Turn "Catalog hover expand" on and off by clicking in the catalog.'],
@@ -1299,6 +1305,10 @@ current-expired-text:"Expired"
 current-archive-text:"Archive"]
 [external-text:"FAQ","${meta.faq}"]\
 `,
+
+  favoriteBoards: '',
+
+  favoriteBoardsSeeded: false,
 
   QR: {
     'QR.personas': `\
@@ -1678,6 +1688,7 @@ current-archive-text:"Archive"]
   fxtLang: '',
   fxtUrl: 'https://api.fxtwitter.com',
   fxtMaxReplies: 5,
+  tfUrl: 'https://tf.rita.moe',
 
   beepSource: '',
   beepVolume: 1,

@@ -12,6 +12,7 @@ import ThreadHiding from '../Filtering/ThreadHiding';
 import Main from '../main/Main';
 import CatalogLinks from '../Miscellaneous/CatalogLinks';
 import RelativeDates from '../Miscellaneous/RelativeDates';
+import { detectMobileDevice, resolveMobileLayout } from '../Miscellaneous/MobileLayout';
 import ThreadWatcher from '../Monitoring/ThreadWatcher';
 import $$ from '../platform/$$';
 import $ from '../platform/$';
@@ -118,10 +119,8 @@ var Index: any = {
   selectRev: null as any,
   selectSort: null as any,
   selectColumns: null as any,
-  thumbScaleInput: null as any,
-  thumbScaleWrap: null as any,
-  thumbScaleValue: null as any,
-  thumbScaleValueTimeout: 0,
+  controlsToggle: null as any,
+  searchToggle: null as unknown as HTMLElement,
   columnsResizeTimeout: 0,
   sortedThreadIDs: null as any,
   threadPosition: null as any,
@@ -255,9 +254,6 @@ var Index: any = {
     this.selectSort  = $('#index-sort', this.navLinks);
     this.selectSize  = $('#index-size', this.navLinks);
     this.selectColumns = $('#index-columns', this.navLinks);
-    this.thumbScaleInput = $('#index-thumb-scale', this.navLinks);
-    this.thumbScaleWrap  = $('#index-thumb-scale-wrap', this.navLinks);
-    this.thumbScaleValue = $('#index-thumb-scale-value', this.navLinks);
     $.on(this.selectRev,  'change', this.cb.sort);
     $.on(this.selectMode, 'change', this.cb.mode);
     $.on(this.selectSort, 'change', this.cb.sort);
@@ -265,12 +261,28 @@ var Index: any = {
     $.on(this.selectSize, 'change', this.cb.size);
     $.on(this.selectColumns, 'change', $.cb.value);
     $.on(this.selectColumns, 'change', this.cb.size);
-    $.on(this.thumbScaleInput, 'change', $.cb.value);
-    $.on(this.thumbScaleInput, 'input', this.cb.thumbScale);
     $.on(window, 'resize', this.cb.columnsResize);
-    for (var select of [this.selectMode, this.selectSize, this.selectColumns, this.thumbScaleInput]) {
+    for (var select of [this.selectMode, this.selectSize, this.selectColumns]) {
       select.value = Conf[select.name];
     }
+    this.searchToggle = $('#index-search-toggle', this.navLinks);
+    Icon.set(this.searchToggle, 'magnifyingGlass');
+    $.on(this.searchToggle, 'click', this.cb.toggleSearch);
+
+    this.controlsToggle = $('#index-controls-toggle', this.navLinks);
+    Icon.set(this.controlsToggle, 'sliders');
+    $.on(this.controlsToggle, 'click', this.cb.toggleOptions);
+
+    if (resolveMobileLayout(Conf['Mobile Layout'], detectMobileDevice())) {
+      const searchRow = $('#index-search-row', this.navLinks);
+      Header.addShortcut('index-search', this.searchToggle, 820);
+      Header.addShortcut('index-options', this.controlsToggle, 830);
+      $.add(Header.bar, searchRow);
+      $.add($('#index-options', this.navLinks), this.hideLabel);
+    }
+    if (Index.search) { this.cb.toggleSearch(); }
+    $.on($('#index-options-close', this.navLinks), 'click', this.cb.toggleOptions);
+    $.on($('#index-options-backdrop', this.navLinks), 'click', this.cb.toggleOptions);
     this.selectRev.checked = /-rev$/.test(Index.currentSort);
     this.selectSort.value  = Index.currentSort.replace(/-rev$/, '');
 
@@ -547,27 +559,27 @@ var Index: any = {
         $.addClass(Index.root, 'catalog-columns');
         Index.root.style.setProperty('--catalog-columns', String(columns));
         const baseWidth = columns === 1 ? 540 : 270;
-        const ratio = Math.round(baseWidth / Index.catalogThumbScale(columns));
+        const ratio = Math.round(baseWidth / Index.catalogThumbScale());
         Index.root.style.setProperty('--catalog-tile-aspect', `${ratio} / 410`);
       } else {
         $.rmClass(Index.root, 'catalog-columns');
         Index.root.style.removeProperty('--catalog-columns');
         Index.root.style.removeProperty('--catalog-tile-aspect');
       }
-      if (Index.selectSize) { Index.selectSize.disabled = !!columns; }
-      if (Index.thumbScaleWrap) { Index.thumbScaleWrap.hidden = !columns; }
       if (e) { return Index.buildIndex(); }
     },
 
-    thumbScale() {
-      const {value} = Index.thumbScaleInput;
-      Conf['Catalog Thumb Scale'] = value;
-      Index.thumbScaleValue.textContent = `${value}%`;
-      Index.thumbScaleValue.hidden = false;
-      clearTimeout(Index.thumbScaleValueTimeout);
-      Index.thumbScaleValueTimeout = window.setTimeout(() => Index.thumbScaleValue.hidden = true, 1000);
-      Index.cb.size();
-      Index.resizeCatalogViews();
+    toggleOptions() {
+      $.toggleClass(doc, 'index-options-open');
+    },
+
+    toggleSearch() {
+      const open = doc.classList.toggle('xt-index-search-open');
+      Index.searchToggle.setAttribute('aria-expanded', open ? 'true' : 'false');
+      if (open && doc.classList.contains('xt-mobile')) {
+        $.rmClass(Header.bar, 'autohide', 'scroll');
+        Index.searchInput.focus();
+      }
     },
 
     columnsResize() {
@@ -1272,9 +1284,8 @@ var Index: any = {
     return rootWidth / columns;
   },
 
-  catalogThumbScale(columns: number) {
-    const scale = $.minmax(parseInt(Conf['Catalog Thumb Scale'], 10) || 100, 25, 150) / 100;
-    return Math.min(scale, columns === 1 ? 2 : 1);
+  catalogThumbScale() {
+    return Conf['Index Size'] === 'small' ? 0.6 : 1;
   },
 
   sizeCatalogViews(threads: Thread[]) {
@@ -1283,7 +1294,7 @@ var Index: any = {
     let fullImage = false;
     const columns = Index.catalogColumns();
     if (columns) {
-      const columnWidth = Index.catalogColumnWidth(Math.max(columns, 2)) * Index.catalogThumbScale(columns);
+      const columnWidth = Index.catalogColumnWidth(Math.max(columns, 2)) * Index.catalogThumbScale();
       size = Math.max(50, columnWidth - 14);
       fullImage = columnWidth > 400;
     }
@@ -1619,9 +1630,9 @@ var Index: any = {
     const navLinks = (Index as any).navLinks;
     if (!navLinks) { return {help: null, popover: null, wrap: null}; }
     return {
-      help: $('#index-search-help', navLinks),
-      popover: $('#index-search-help-popover', navLinks),
-      wrap: $('#index-search-help-wrap', navLinks)
+      help: $('#index-search-help', navLinks) || $.id('index-search-help'),
+      popover: $('#index-search-help-popover', navLinks) || $.id('index-search-help-popover'),
+      wrap: $('#index-search-help-wrap', navLinks) || $.id('index-search-help-wrap')
     };
   },
 
@@ -1643,6 +1654,7 @@ var Index: any = {
 
   setupSearch() {
     Index.searchInput.value = Index.search;
+    doc.classList.toggle('xt-index-searching', !!Index.search);
     if (Index.search) {
       return Index.searchInput.dataset.searching = 1;
     } else {
