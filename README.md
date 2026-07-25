@@ -32,7 +32,7 @@ New users should start with the [User Guide](./docs/user-guide.md).
 
 ## Current Release
 
-`1.2.6.4` (2026-07-24)
+`1.2.6.5` (2026-07-25)
 
 - Big mobile revamp: the whole layout now works on phones and touch screens, and turns on automatically on mobile.
 - Added the Dōgiri video editor: cut, caption, and re-render an attached video right from the Quick Reply.

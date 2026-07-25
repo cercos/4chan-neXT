@@ -1,121 +1,3 @@
-// ==UserScript==
-// @name         4chan-neXT
-// @version      1.2.6.5
-// @minGMVer     1.14
-// @minFFVer     78
-// @namespace    4chan-neXT
-// @description  4chan-neXT is a script that adds various features to anonymous imageboards.
-// @license      MIT; https://github.com/cercos/4chan-next/blob/project-neXT/LICENSE
-// @include      https://boards.4chan.org/*
-// @include      https://sys.4chan.org/*
-// @include      https://4chan.org/*
-// @include      https://www.4chan.org/*
-// @include      https://i.4cdn.org/*
-// @include      https://is.4chan.org/*
-// @include      https://is2.4chan.org/*
-// @include      https://erischan.org/*
-// @include      https://www.erischan.org/*
-// @include      https://fufufu.moe/*
-// @include      https://kakashinenpo.com/*
-// @include      https://www.kakashinenpo.com/*
-// @include      https://kissu.moe/*
-// @include      https://www.kissu.moe/*
-// @include      https://original.kissu.moe/*
-// @include      https://lainchan.org/*
-// @include      https://www.lainchan.org/*
-// @include      https://merorin.com/*
-// @include      https://ota-ch.com/*
-// @include      https://www.ota-ch.com/*
-// @include      https://ponyville.us/*
-// @include      https://www.ponyville.us/*
-// @include      https://smuglo.li/*
-// @include      https://notso.smuglo.li/*
-// @include      https://smugloli.net/*
-// @include      https://smug.nepu.moe/*
-// @include      https://sportschan.org/*
-// @include      https://www.sportschan.org/*
-// @include      https://sushigirl.us/*
-// @include      https://www.sushigirl.us/*
-// @include      https://tvch.moe/*
-// @match        https://boards.4chan.org/*
-// @match        https://sys.4chan.org/*
-// @match        https://4chan.org/*
-// @match        https://www.4chan.org/*
-// @match        https://i.4cdn.org/*
-// @match        https://is.4chan.org/*
-// @match        https://is2.4chan.org/*
-// @match        https://*.4chan.org/*
-// @match        https://*.4cdn.org/*
-// @match        https://erischan.org/*
-// @match        https://www.erischan.org/*
-// @match        https://fufufu.moe/*
-// @match        https://kakashinenpo.com/*
-// @match        https://www.kakashinenpo.com/*
-// @match        https://kissu.moe/*
-// @match        https://www.kissu.moe/*
-// @match        https://original.kissu.moe/*
-// @match        https://lainchan.org/*
-// @match        https://www.lainchan.org/*
-// @match        https://merorin.com/*
-// @match        https://ota-ch.com/*
-// @match        https://www.ota-ch.com/*
-// @match        https://ponyville.us/*
-// @match        https://www.ponyville.us/*
-// @match        https://smuglo.li/*
-// @match        https://notso.smuglo.li/*
-// @match        https://smugloli.net/*
-// @match        https://smug.nepu.moe/*
-// @match        https://sportschan.org/*
-// @match        https://www.sportschan.org/*
-// @match        https://sushigirl.us/*
-// @match        https://www.sushigirl.us/*
-// @match        https://tvch.moe/*
-// @exclude      https://www.4chan.org/advertise
-// @exclude      https://www.4chan.org/advertise?*
-// @exclude      https://www.4chan.org/donate
-// @exclude      https://www.4chan.org/donate?*
-// @connect      4chan.org
-// @connect      4channel.org
-// @connect      4cdn.org
-// @connect      4chenz.github.io
-// @connect      archive.4plebs.org
-// @connect      warosu.org
-// @connect      desuarchive.org
-// @connect      boards.fireden.net
-// @connect      arch.b4k.dev
-// @connect      archived.moe
-// @connect      thebarchive.com
-// @connect      archiveofsins.com
-// @connect      archive.palanq.win
-// @connect      eientei.xyz
-// @connect      api.clyp.it
-// @connect      api.dailymotion.com
-// @connect      api.github.com
-// @connect      soundcloud.com
-// @connect      api.streamable.com
-// @connect      vimeo.com
-// @connect      www.youtube.com
-// @connect      *
-// @grant        GM_getValue
-// @grant        GM_setValue
-// @grant        GM_deleteValue
-// @grant        GM_listValues
-// @grant        GM_addValueChangeListener
-// @grant        GM_openInTab
-// @grant        GM_xmlhttpRequest
-// @grant        GM_addElement
-// @grant        GM.getValue
-// @grant        GM.setValue
-// @grant        GM.deleteValue
-// @grant        GM.listValues
-// @grant        GM.openInTab
-// @grant        GM.xmlHttpRequest
-// @run-at       document-start
-// @updateURL    https://raw.githubusercontent.com/cercos/4chan-next/project-neXT/builds/4chan-neXT.meta.js
-// @downloadURL  https://github.com/cercos/4chan-next/releases/latest/download/4chan-neXT.user.js
-// @icon         data:image/png;base64,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
-// @license      MIT
-// ==/UserScript==
 /*
 * 4chan-neXT
 *
@@ -2641,34 +2523,6 @@ current-archive-text:"Archive"]
 		return root.dispatchEvent(new CustomEvent(event, { bubbles: true, cancelable: true, detail }));
 	};
 
-		(function () {
-			if (!/PaleMoon\//.test(navigator.userAgent) || (+GM_info?.version?.split('.')[0] < 2) || (typeof cloneInto !== 'undefined')) {
-				return;
-			}
-			try {
-				return new CustomEvent('x', { detail: {} });
-			} catch (err) {
-				const unsafeConstructors = {
-					Object: unsafeWindow.Object,
-					Array: unsafeWindow.Array
-				};
-				var clone = function (obj) {
-					let constructor;
-					if ((obj != null) && (typeof obj === 'object') && (constructor = unsafeConstructors[obj.constructor.name])) {
-						const obj2 = new constructor();
-						for (var key in obj) {
-							var val = obj[key];
-							obj2[key] = clone(val);
-						}
-						return obj2;
-					} else {
-						return obj;
-					}
-				};
-				return $.event = (event, detail, root = d) => root.dispatchEvent(new CustomEvent(event, { bubbles: true, cancelable: true, detail: clone(detail) }));
-			}
-		})();
-
 	$.modifiedClick = e => e.shiftKey || e.altKey || e.ctrlKey || e.metaKey || (e.button !== 0);
 	if (!globalThis.chrome?.extension) {
 		$.open =
@@ -2719,6 +2573,15 @@ current-archive-text:"Archive"]
 			Promise.resolve().then(execTask);
 		};
 	})();
+
+		const callbacks = new Map();
+		chrome.runtime.onMessage.addListener(({ id, data }) => {
+			callbacks.get(id)?.(data);
+			callbacks.delete(id);
+		});
+		$.eventPageRequest = (params) => new Promise(resolve => {
+			chrome.runtime.sendMessage(params, id => { callbacks.set(id, resolve); });
+		});
 
 	$.global = async function (fn, data) {
 		if (platform === 'crx' && chrome.runtime.getManifest().manifest_version === 3) {
@@ -2824,217 +2687,175 @@ current-archive-text:"Archive"]
 		}
 	};
 
-		if ((GM?.deleteValue != null) && window.BroadcastChannel && (typeof GM_addValueChangeListener === 'undefined' || GM_addValueChangeListener === null)) {
-			$.syncChannel = new BroadcastChannel(g.NAMESPACE + 'sync');
-			$.on($.syncChannel, 'message', e => (() => {
-				const result = [];
-				for (var key in e.data) {
-					var cb;
-					var val = e.data[key];
-					if (cb = $.syncing[key]) {
-						result.push(cb(dict.json(JSON.stringify(val)), key));
+		$.oldValue = {
+			local: dict(),
+			sync: dict()
+		};
+		chrome.storage.onChanged.addListener(function (changes, area) {
+			for (var key in changes) {
+				var oldValue = $.oldValue.local[key] ?? $.oldValue.sync[key];
+				$.oldValue[area][key] = dict.clone(changes[key].newValue);
+				var newValue = $.oldValue.local[key] ?? $.oldValue.sync[key];
+				var cb = $.syncing[key];
+				if (cb && (JSON.stringify(newValue) !== JSON.stringify(oldValue))) {
+					cb(newValue, key);
+				}
+			}
+		});
+		$.sync = (key, cb) => $.syncing[key] = cb;
+		$.forceSync = function () { };
+		$.crxWorking = function () {
+			try {
+				if (chrome.runtime.getManifest()) {
+					return true;
+				}
+			} catch (error) { }
+			if (!$.crxWarningShown) {
+				const msg = $.el('div', { innerHTML: `${meta.name} seems to have been updated. You will need to <a href="javascript:;">reload</a> the page.` });
+				$.on($('a', msg), 'click', () => location.reload());
+				new Notice('warning', msg);
+				$.crxWarningShown = true;
+			}
+			return false;
+		};
+		$.get = $.oneItemSugar(function (data, cb) {
+			if (!$.crxWorking()) {
+				return;
+			}
+			const results = {};
+			const get = function (area) {
+				let keys = Object.keys(data);
+
+				if (($.engine === 'gecko') && (area === 'sync') && (keys.length > 3)) {
+					keys = null;
+				}
+				return chrome.storage[area].get(keys, function (result) {
+					let key;
+					result = dict.clone(result);
+					if (chrome.runtime.lastError) {
+						c.error(chrome.runtime.lastError.message);
 					}
-				}
-				return result;
-			})());
-			$.sync = (key, cb) => $.syncing[key] = cb;
-			$.forceSync = function () { };
-			$.delete = function (keys, cb) {
-				let key;
-				if (!(keys instanceof Array)) {
-					keys = [keys];
-				}
-				Promise.all(keys.map(key => GM.deleteValue(g.NAMESPACE + key))).then(function () {
-					const items = dict();
-					for (key of keys)
-						items[key] = undefined;
-					$.syncChannel.postMessage(items);
-					cb?.();
+					if (keys === null) {
+						const result2 = dict();
+						for (key in result) {
+							var val = result[key];
+							if ($.hasOwn(data, key)) {
+								result2[key] = val;
+							}
+						}
+						result = result2;
+					}
+					for (key in data) {
+						$.oldValue[area][key] = result[key];
+					}
+					results[area] = result;
+					if (results.local && results.sync) {
+						$.extend(data, results.sync);
+						$.extend(data, results.local);
+						return cb(data);
+					}
 				});
 			};
-			$.get = $.oneItemSugar(function (items, cb) {
-				const keys = Object.keys(items);
-				return Promise.all(keys.map((key) => GM.getValue(g.NAMESPACE + key))).then(function (values) {
-					for (let i = 0; i < values.length; i++) {
-						var val = values[i];
-						if (val) {
-							items[keys[i]] = dict.json(val);
-						}
-					}
-					return cb(items);
-				});
-			});
-			$.set = $.oneItemSugar(function (items, cb) {
-				$.securityCheck(items);
-				return Promise.all((() => {
-					const result = [];
-					for (var key in items) {
-						var val = items[key];
-						result.push(GM.setValue(g.NAMESPACE + key, JSON.stringify(val)));
-					}
-					return result;
-				})()).then(function () {
-					$.syncChannel.postMessage(items);
-					return cb?.();
-				});
-			});
-			$.clear = cb => GM.listValues().then(keys => $.delete(keys.map(key => key.replace(g.NAMESPACE, '')), cb)).catch(() => $.delete(Object.keys(Conf).concat(['previousversion', 'QR Size', 'QR.persona']), cb));
-		} else {
-			if (typeof GM_deleteValue !== 'undefined' && GM_deleteValue !== null) {
-				$.getValue = GM_getValue;
-				$.listValues = () => GM_listValues();
-			} else if ($.hasStorage) {
-				$.getValue = key => localStorage.getItem(key);
-				$.listValues = () => (() => {
-					const result = [];
-					for (var key in localStorage) {
-						if (key.slice(0, g.NAMESPACE.length) === g.NAMESPACE) {
-							result.push(key);
-						}
-					}
-					return result;
-				})();
-			} else {
-				$.getValue = function () { };
-				$.listValues = () => [];
-			}
-			if (typeof GM_addValueChangeListener !== 'undefined' && GM_addValueChangeListener !== null) {
-				$.setValue = GM_setValue;
-				$.deleteValue = GM_deleteValue;
-			} else if (typeof GM_deleteValue !== 'undefined' && GM_deleteValue !== null) {
-				$.oldValue = dict();
-				$.setValue = function (key, val) {
-					GM_setValue(key, val);
-					if (key in $.syncing) {
-						$.oldValue[key] = val;
-						if ($.hasStorage) {
-							return localStorage.setItem(key, val);
-						}
-					}
-				};
-				$.deleteValue = function (key) {
-					GM_deleteValue(key);
-					if (key in $.syncing) {
-						delete $.oldValue[key];
-						if ($.hasStorage) {
-							return localStorage.removeItem(key);
-						}
-					}
-				};
-				if (!$.hasStorage) {
-					$.cantSync = true;
-				}
-			} else if ($.hasStorage) {
-				$.oldValue = dict();
-				$.setValue = function (key, val) {
-					if (key in $.syncing) {
-						$.oldValue[key] = val;
-					}
-					return localStorage.setItem(key, val);
-				};
-				$.deleteValue = function (key) {
-					if (key in $.syncing) {
-						delete $.oldValue[key];
-					}
-					return localStorage.removeItem(key);
-				};
-			} else {
-				$.setValue = function () { };
-				$.deleteValue = function () { };
-				$.cantSync = ($.cantSet = true);
-			}
-			if (typeof GM_addValueChangeListener !== 'undefined' && GM_addValueChangeListener !== null) {
-				$.sync = (key, cb) => $.syncing[key] = GM_addValueChangeListener(g.NAMESPACE + key, function (key2, oldValue, newValue, remote) {
-					if (remote) {
-						if (newValue !== undefined) {
-							newValue = dict.json(newValue);
-						}
-						return cb?.(newValue, key);
-					}
-				});
-				$.forceSync = function () { };
-			} else if ((typeof GM_deleteValue !== 'undefined' && GM_deleteValue !== null) || $.hasStorage) {
-				$.sync = function (key, cb) {
-					key = g.NAMESPACE + key;
-					$.syncing[key] = cb;
-					return $.oldValue[key] = $.getValue(key);
-				};
-				(function () {
-					const onChange = function ({ key, newValue }) {
-						let cb;
-						if (!(cb = $.syncing[key])) {
-							return;
-						}
-						if (newValue != null) {
-							if (newValue === $.oldValue[key]) {
-								return;
-							}
-							$.oldValue[key] = newValue;
-							return cb(dict.json(newValue), key.slice(g.NAMESPACE.length));
-						} else {
-							if ($.oldValue[key] == null) {
-								return;
-							}
-							delete $.oldValue[key];
-							return cb(undefined, key.slice(g.NAMESPACE.length));
-						}
-					};
-					$.on(window, 'storage', onChange);
-					return $.forceSync = function (key) {
-
-						key = g.NAMESPACE + key;
-						return onChange({ key, newValue: $.getValue(key) });
-					};
-				})();
-			} else {
-				$.sync = function () { };
-				$.forceSync = function () { };
-			}
+			get('local');
+			return get('sync');
+		});
+		(function () {
+			const items = {
+				local: dict(),
+				sync: dict()
+			};
+			const exceedsQuota = (key, value) =>
+			unescape(encodeURIComponent(JSON.stringify(key))).length + unescape(encodeURIComponent(JSON.stringify(value))).length > chrome.storage.sync.QUOTA_BYTES_PER_ITEM;
 			$.delete = function (keys) {
-				if (!(keys instanceof Array)) {
+				if (!$.crxWorking()) {
+					return;
+				}
+				if (typeof keys === 'string') {
 					keys = [keys];
 				}
 				for (var key of keys) {
-					$.deleteValue(g.NAMESPACE + key);
+					delete items.local[key];
+					delete items.sync[key];
 				}
+				chrome.storage.local.remove(keys);
+				return chrome.storage.sync.remove(keys);
 			};
-			$.get = $.oneItemSugar((items, cb) => $.queueTask($.getSync, items, cb));
-			$.getSync = function (items, cb) {
-				for (var key in items) {
-					var val2;
-					if (val2 = $.getValue(g.NAMESPACE + key)) {
-						try {
-							items[key] = dict.json(val2);
-						} catch (err) {
-
-							if (!/^(?:undefined)*$/.test(val2)) {
-								throw err;
-							}
+			const timeout = {};
+			var setArea = function (area, cb) {
+				const data = dict();
+				$.extend(data, items[area]);
+				if (!Object.keys(data).length || (timeout[area] > Date.now())) {
+					return;
+				}
+				return chrome.storage[area].set(data, function () {
+					let err;
+					let key;
+					if (err = chrome.runtime.lastError) {
+						c.error(err.message);
+						setTimeout(setArea, MINUTE, area);
+						timeout[area] = Date.now() + MINUTE;
+						return cb?.(err);
+					}
+					delete timeout[area];
+					for (key in data) {
+						if (items[area][key] === data[key]) {
+							delete items[area][key];
 						}
 					}
-				}
-				return cb(items);
-			};
-			$.set = $.oneItemSugar(function (items, cb) {
-				$.securityCheck(items);
-				return $.queueTask(function () {
-					for (var key in items) {
-						var value = items[key];
-						$.setValue(g.NAMESPACE + key, JSON.stringify(value));
+					if (area === 'local') {
+						for (key in data) {
+							var val = data[key];
+							if (!exceedsQuota(key, val)) {
+								items.sync[key] = val;
+							}
+						}
+						setSync();
+					} else {
+						chrome.storage.local.remove(((() => {
+							const result = [];
+							for (key in data) {
+								if (!(key in items.local)) {
+									result.push(key);
+								}
+							}
+							return result;
+						})()));
 					}
 					return cb?.();
 				});
-			});
-			$.clear = function (cb) {
-
-				$.delete(Object.keys(Conf));
-				$.delete(['previousversion', 'QR Size', 'QR.persona']);
-				try {
-					$.delete($.listValues().map(key => key.replace(g.NAMESPACE, '')));
-				} catch (error) { }
-				return cb?.();
 			};
-		}
+			var setSync = debounce(SECOND, () => setArea('sync'));
+			$.set = $.oneItemSugar(function (data, cb) {
+				if (!$.crxWorking()) {
+					return;
+				}
+				$.securityCheck(data);
+				$.extend(items.local, data);
+				return setArea('local', cb);
+			});
+			return $.clear = function (cb) {
+				if (!$.crxWorking()) {
+					return;
+				}
+				items.local = dict();
+				items.sync = dict();
+				let count = 2;
+				let err = null;
+				const done = function () {
+					if (chrome.runtime.lastError) {
+						c.error(chrome.runtime.lastError.message);
+					}
+					if (err == null) {
+						err = chrome.runtime.lastError;
+					}
+					if (!--count) {
+						return cb?.(err);
+					}
+				};
+				chrome.storage.local.clear(done);
+				return chrome.storage.sync.clear(done);
+			};
+		})();
 
 	var Get = {
 		url(type, IDs, ...args) {
@@ -29478,7 +29299,7 @@ aero|asia|biz|cat|com|coop|dance|info|int|jobs|mobi|moe|museum|name|net|org|post
 	}
 	QR.post = post;
 
-	const violentmonkeyDropsBinaryResponses = (() => {
+	(() => {
 		try {
 			const info = (typeof GM !== 'undefined' && GM != null) ? GM.info :
 				(typeof GM_info !== 'undefined' && GM_info != null) ? GM_info : null;
@@ -29492,60 +29313,12 @@ aero|asia|biz|cat|com|coop|dance|info|int|jobs|mobi|moe|museum|name|net|org|post
 
 			url = url.replace(/^((?:https?:)?\/\/(?:\w+\.)?(?:4chan|4channel|4cdn)\.org)\/adv\//, '$1//adv/');
 
-				const fallback = function () {
-					return $.ajax(url, {
-						headers,
-						responseType: 'arraybuffer',
-						onloadend() {
-							if (this.status && this.response) {
-								return cb(new Uint8Array(this.response), this.getAllResponseHeaders());
-							} else {
-								return cb(null);
-							}
-						}
-					});
-				};
-				if ((typeof window.GM_xmlhttpRequest === 'undefined' || window.GM_xmlhttpRequest === null)) {
-					fallback();
-					return;
-				}
-				const gmOptions = {
-					method: "GET",
-					anonymous: true,
-					url,
-					headers,
-					responseType: 'arraybuffer',
-					overrideMimeType: 'text/plain; charset=x-user-defined',
-					onload(xhr) {
-						let data;
-						if (xhr.response instanceof ArrayBuffer) {
-							data = new Uint8Array(xhr.response);
-						} else {
-							const r = xhr.responseText;
-							data = new Uint8Array(r.length);
-							let i = 0;
-							while (i < r.length) {
-								data[i] = r.charCodeAt(i);
-								i++;
-							}
-						}
-						return cb(data, xhr.responseHeaders);
-					},
-					onerror() {
-						return cb(null);
-					},
-					onabort() {
-						return cb(null);
-					}
-				};
-				if (violentmonkeyDropsBinaryResponses) {
-					delete gmOptions.responseType;
-				}
-				try {
-					return (GM?.xmlHttpRequest || GM_xmlhttpRequest)(gmOptions);
-				} catch (error) {
-					return fallback();
-				}
+				$.eventPageRequest({ type: 'ajax', url, headers, responseType: 'arraybuffer' })
+					.then(({ response, responseHeaderString }) => {
+					if (response)
+						response = new Uint8Array(response);
+					cb(response, responseHeaderString);
+				});
 
 		},
 		file(url, cb) {
@@ -29600,7 +29373,6 @@ aero|asia|biz|cat|com|coop|dance|info|int|jobs|mobi|moe|museum|name|net|org|post
 		})(),
 
 		ajax(url, options = {}) {
-			let gmReq;
 			let { onloadend, timeout, responseType, headers } = options;
 			if (responseType == null) {
 				responseType = 'json';
@@ -29609,54 +29381,12 @@ aero|asia|biz|cat|com|coop|dance|info|int|jobs|mobi|moe|museum|name|net|org|post
 			if (onloadend)
 				req.onloadend = onloadend;
 
-				if (window.GM?.xmlHttpRequest == null && window.GM_xmlhttpRequest == null) {
-					return $.ajax(url, options);
-				}
-				const gmOptions = {
-					method: 'GET',
-					anonymous: true,
-					url,
-					headers,
-					timeout,
-					onload(xhr) {
-						try {
-							let response = xhr.responseText;
-
-							if (responseType === 'json' && [200, 203, 206, 304].includes(xhr.status)) {
-								try {
-									response = JSON.parse(xhr.responseText);
-								} catch (error) {
-									console.error(error);
-									console.error(xhr);
-								}
-							}
-							$.extend(req, {
-								url,
-								headers,
-								response,
-								status: xhr.status,
-								statusText: xhr.statusText,
-								responseHeaderString: xhr.responseHeaders
-							});
-						} catch (error) { }
-						return req.onloadend();
-					},
-					onerror() { return req.onloadend(); },
-					onabort() { return req.onloadend(); },
-					ontimeout() { return req.onloadend(); }
-				};
-				try {
-					gmReq = (GM?.xmlHttpRequest || GM_xmlhttpRequest)(gmOptions);
-				} catch (error) {
-					return $.ajax(url, options);
-				}
-				if (gmReq && (typeof gmReq.abort === 'function')) {
-					req.abort = function () {
-						try {
-							return gmReq.abort();
-						} catch (error1) { }
-					};
-				}
+				$.eventPageRequest({ type: 'ajax', url, responseType, headers, timeout }).then((result) => {
+					if (result.status) {
+						$.extend(req, result);
+					}
+					return req.onloadend();
+				});
 
 			return req;
 		},
@@ -29673,7 +29403,13 @@ aero|asia|biz|cat|com|coop|dance|info|int|jobs|mobi|moe|museum|name|net|org|post
 		},
 		permission(cb, cbFail, origins) {
 
-			return cb();
+				return $.eventPageRequest({ type: 'permission', origins }).then((result) => {
+					if (result) {
+						return cb();
+					} else {
+						return cbFail?.();
+					}
+				});
 		},
 	};
 
@@ -46165,6 +45901,8 @@ Enable it on boards.${location.hostname.split('.')[1]}.org in your browser's pri
 
 			try {
 				let w = window;
+
+					w = (w.wrappedJSObject || w);
 
 				if (`${meta.name} antidup` in w) {
 					return;

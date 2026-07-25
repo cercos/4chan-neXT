@@ -1,6 +1,6 @@
 ## 4chan-neXT changelog
 
-### 1.2.6.4 (2026-07-24)
+### 1.2.6.5 (2026-07-25)
 
 - Big mobile revamp: the whole layout now works better on phones and touch screens. Turns on automatically on mobile, or toggle it under `Mobile` in Settings.
 - Added the Dōgiri video editor: edit an attached video before posting without leaving the page. Cut it into clips, add captions, strip the audio, and render a new webm, with size-targeted renders for board limits. Attach a video to the Quick Reply and click the film button to open it. Includes named projects, per-video autosave with restore, undo/redo, a filmstrip timeline, and keyboard shortcuts. Settings live under Posting (`Dogiri Editor`, on by default; requires Quick Reply). See the [User Guide](./docs/user-guide.md) for details.
