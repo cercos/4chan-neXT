@@ -2,7 +2,7 @@ import Callbacks from "../classes/Callbacks";
 import type Post from "../classes/Post";
 import Get from "../General/Get";
 import UI from "../General/UI";
-import { g, Conf, doc } from "../globals/globals";
+import { g, Conf, d, doc } from "../globals/globals";
 import $ from "../platform/$";
 import Icon from "../Icons/icon";
 
@@ -63,14 +63,23 @@ var Menu = {
   initLongPress() {
     let timer: ReturnType<typeof setTimeout> | null = null;
     let pressRoot: HTMLElement | null = null;
+    let pressedEl: HTMLElement | null = null;
     let startX = 0;
     let startY = 0;
     let fired = false;
+    let firing = false;
     let suppressClick = false;
+
+    const setPressed = (el: HTMLElement | null) => {
+      if (pressedEl) { $.rmClass(pressedEl, 'xt-press', 'xt-menu-target'); }
+      pressedEl = el;
+      if (el) { $.addClass(el, 'xt-press'); }
+    };
 
     const cancel = () => {
       if (timer) { clearTimeout(timer); timer = null; }
       pressRoot = null;
+      if (!fired) { setPressed(null); }
     };
 
     const fire = (e: PointerEvent) => {
@@ -82,18 +91,30 @@ var Menu = {
       if (!post) return;
       fired = true;
       suppressClick = true;
+      if (pressedEl) { $.addClass(pressedEl, 'xt-menu-target'); }
+      firing = true;
       Menu.menu.toggleAtPoint(e, {x: startX, y: startY}, post);
+      firing = false;
     };
 
     $.on(doc, 'pointerdown', (e: PointerEvent) => {
       fired = false;
       suppressClick = false;
       if (e.pointerType !== 'touch' || !doc.classList.contains('xt-mobile')) return;
-      const target = e.target as HTMLElement;
-      if (!target?.closest || target.closest('a, input, textarea, select, button, img, video, audio, iframe, .menu-button, #menu, #qr')) return;
+      let target = e.target as HTMLElement;
+      if (target?.id === 'menu-backdrop') {
+        target = (document.elementsFromPoint(e.clientX, e.clientY)
+          .find(el => el.id !== 'menu-backdrop' && !el.closest('#menu')) as HTMLElement) || target;
+      }
+      if (!target?.closest) return;
+      const blocked = target.closest('.catalog-thread')
+        ? 'input, textarea, select, button, .menu-button, #menu, #qr'
+        : 'a, input, textarea, select, button, img, video, audio, iframe, .menu-button, #menu, #qr';
+      if (target.closest(blocked)) return;
       const root = target.closest(g.SITE!.selectors.postContainer) as HTMLElement | null;
       if (!root) return;
       pressRoot = root;
+      setPressed(root);
       startX = e.clientX;
       startY = e.clientY;
       timer = setTimeout(() => fire(e), LONG_PRESS_MS);
@@ -112,7 +133,7 @@ var Menu = {
     $.on(window, 'scroll', cancel);
 
     doc.addEventListener('contextmenu', (e) => {
-      if (fired || pressRoot) {
+      if (fired || pressRoot || (e.target as HTMLElement)?.id === 'menu-backdrop') {
         e.preventDefault();
         fired = false;
       }
@@ -125,6 +146,10 @@ var Menu = {
         e.stopPropagation();
       }
     }, true);
+
+    $.on(d, 'MenuClosed', () => {
+      if (!firing && !timer && !pressRoot) { setPressed(null); }
+    });
   }
 };
 export default Menu;

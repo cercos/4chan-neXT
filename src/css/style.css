@@ -8413,7 +8413,7 @@ div.post {
   left: 0 !important;
   right: 0 !important;
   top: auto !important;
-  bottom: 0 !important;
+  bottom: var(--xt-bar-bottom-inset, 0px) !important;
   width: 100% !important;
   min-width: 0;
   max-width: none !important;
@@ -8536,7 +8536,7 @@ div.post {
   left: 0 !important;
   right: 0 !important;
   top: auto !important;
-  bottom: var(--qr-kb-inset, 0px) !important;
+  bottom: max(var(--qr-kb-inset, 0px), var(--xt-bar-bottom-inset, 0px)) !important;
   width: 100% !important;
   min-width: 0 !important;
   max-width: none !important;
@@ -8546,21 +8546,30 @@ div.post {
   position: fixed;
   left: 0 !important;
   right: 0 !important;
-  top: auto !important;
-  bottom: 0 !important;
+  top: var(--xt-bar-top-inset, 0px) !important;
+  bottom: var(--xt-bar-bottom-inset, 0px) !important;
   width: 100% !important;
   max-width: none !important;
-  max-height: 75vh;
+  max-height: none;
+  height: auto;
   box-sizing: border-box;
-  padding: 6px 8px;
-  overflow-y: auto;
+  padding: calc(6px + env(safe-area-inset-top, 0px)) 8px 0;
+  overflow: hidden;
   z-index: 45;
-  box-shadow: 0 -4px 16px rgba(0, 0, 0, .35);
+  border: none;
+  border-radius: 0;
+  box-shadow: none;
+  white-space: normal;
+}
+:root.xt-mobile #thread-watcher:not([hidden]) {
+  display: flex;
+  flex-direction: column;
 }
 :root.xt-mobile #thread-watcher > .move {
   gap: 10px;
   padding: 4px 2px 8px;
   cursor: default;
+  flex: 0 0 auto;
 }
 :root.xt-mobile #thread-watcher > .move > a {
   width: 34px;
@@ -8572,7 +8581,10 @@ div.post {
 }
 :root.xt-mobile #thread-watcher #watched-threads {
   max-height: none;
-  overflow-y: visible;
+  flex: 1 1 auto;
+  overflow-y: auto;
+  overscroll-behavior: contain;
+  padding-bottom: calc(12px + env(safe-area-inset-bottom, 0px));
 }
 :root.xt-mobile #thread-watcher #watched-threads > div {
   padding: 8px 4px;
@@ -8583,6 +8595,83 @@ div.post {
   max-width: none;
   flex: 1;
   min-width: 0;
+}
+:root.xt-mobile #thread-watcher.watcher-grid #watched-threads {
+  display: grid;
+  grid-template-columns: repeat(2, minmax(0, 1fr));
+  gap: 10px;
+  align-content: start;
+  padding: 4px 2px calc(12px + env(safe-area-inset-bottom, 0px));
+}
+:root.xt-mobile #thread-watcher.watcher-grid #watched-threads > div {
+  display: flex;
+  flex-direction: column;
+  padding: 0;
+  position: relative;
+  min-width: 0;
+}
+:root.xt-mobile #thread-watcher.watcher-grid #watched-threads > div > a:not(.watcher-link) {
+  display: none;
+}
+:root.xt-mobile #thread-watcher.watcher-grid #watched-threads .watcher-link {
+  display: flex;
+  flex-direction: column;
+  position: relative;
+  min-width: 0;
+}
+:root.xt-mobile #thread-watcher.watcher-grid #watched-threads .watcher-thumb {
+  display: block;
+  width: 100%;
+  height: auto;
+  aspect-ratio: 1 / 1;
+  object-fit: cover;
+  border-radius: 10px;
+  margin-right: 0;
+}
+:root.xt-mobile #thread-watcher.watcher-grid #watched-threads > div.current .watcher-thumb {
+  outline: 2px solid var(--xt-link, #57a);
+  outline-offset: -2px;
+}
+:root.xt-mobile #thread-watcher.watcher-grid #watched-threads > div.dead-thread .watcher-thumb {
+  filter: grayscale(1);
+}
+:root.xt-mobile #thread-watcher.watcher-grid #watched-threads .watcher-unread {
+  position: absolute;
+  top: 6px;
+  right: 6px;
+  z-index: 1;
+  margin: 0;
+  padding: 2px 8px;
+  border-radius: 999px;
+  background: rgba(0, 0, 0, .65);
+  color: #fff;
+  font-size: 12px;
+  line-height: 1.4;
+}
+:root.xt-mobile #thread-watcher.watcher-grid #watched-threads .watcher-page {
+  position: absolute;
+  top: 6px;
+  left: 6px;
+  z-index: 1;
+  margin: 0;
+  padding: 2px 6px;
+  border-radius: 6px;
+  background: rgba(0, 0, 0, .5);
+  color: #fff;
+  font-size: 11px;
+  line-height: 1.4;
+}
+:root.xt-mobile #thread-watcher.watcher-grid #watched-threads .watcher-title {
+  display: -webkit-box;
+  -webkit-line-clamp: 2;
+  -webkit-box-orient: vertical;
+  overflow: hidden;
+  white-space: normal;
+  word-break: break-word;
+  font-size: 13px;
+  line-height: 1.35;
+  padding: 6px 2px 2px;
+  margin-left: 0;
 }
 :root.xt-mobile #qr textarea.field {
   width: 100% !important;
@@ -8611,7 +8700,7 @@ div.post {
   flex-direction: column;
   gap: 6px;
   padding: 0 8px 8px;
-  max-height: calc(100dvh - 90px - var(--qr-kb-inset, 0px));
+  max-height: calc(100dvh - 90px - max(var(--qr-kb-inset, 0px), var(--xt-bar-bottom-inset, 0px)));
 }
 :root.xt-mobile #qr.qr-mobile:not(.qr-mobile-expanded) > .move > *:not(.close),
 :root.xt-mobile #qr.qr-mobile:not(.qr-mobile-expanded) .persona,
@@ -8951,7 +9040,7 @@ div.post {
   right: 8px;
   width: auto !important;
   top: auto !important;
-  bottom: calc(8px + env(safe-area-inset-bottom)) !important;
+  bottom: calc(8px + max(env(safe-area-inset-bottom, 0px), var(--xt-bar-bottom-inset, 0px))) !important;
   max-height: 55vh !important;
   border-radius: 12px;
   box-shadow: 0 8px 24px rgba(0, 0, 0, .4);
@@ -9077,6 +9166,9 @@ div.post {
 }
 :root.xt-mobile #shortcut-stats,
 :root.xt-mobile #shortcut-updater,
+:root.xt-mobile #shortcut-prefetch,
+:root.xt-mobile #shortcut-expand-all,
+:root.xt-mobile #shortcut-download-all,
 :root.xt-mobile #blotter,
 :root.xt-mobile .boardTitle,
 :root.xt-mobile.thread-view .qr-link-container,
@@ -9129,7 +9221,7 @@ div.post {
   top: auto;
   left: 0;
   right: 0;
-  bottom: 0;
+  bottom: var(--xt-bar-bottom-inset, 0px);
   width: 100%;
   min-width: 0;
   max-width: none;
@@ -9175,6 +9267,9 @@ div.post {
   :root.xt-mobile.xt-icons-top #menu.menu-anchor-header:not(.menu-hidden) {
     transform: translateY(24px);
   }
+  :root.xt-mobile #menu.menu-anchor-point:not(.menu-hidden) {
+    transform: scale(.97);
+  }
 }
 :root.xt-mobile #menu.menu-hidden {
   transform: translateY(24px);
@@ -9184,6 +9279,33 @@ div.post {
 }
 :root.xt-mobile.xt-icons-top #menu.menu-anchor-header.menu-hidden {
   transform: translateY(24px);
+}
+:root.xt-mobile #menu.menu-anchor-point {
+  top: auto;
+  left: auto;
+  right: auto;
+  bottom: auto;
+  width: auto;
+  min-width: 180px;
+  max-width: min(280px, calc(100vw - 16px));
+  max-height: 60vh;
+  border-radius: 12px;
+  padding-bottom: 4px;
+  transform-origin: top left;
+  box-shadow: 0 8px 24px rgba(0, 0, 0, .4);
+}
+:root.xt-mobile #menu.menu-anchor-point .entry {
+  padding: 10px 14px;
+  font-size: 15px;
+}
+:root.xt-mobile #menu .entry .shortcut-text {
+  display: none;
+}
+:root.xt-mobile #menu.menu-anchor-point.menu-hidden {
+  transform: scale(.97);
+}
+:root.xt-mobile #menu-backdrop.menu-anchor-point {
+  background-color: transparent;
 }
 :root.xt-mobile #menu .entry {
   padding: 13px 16px;
@@ -9348,13 +9470,119 @@ div.post {
   display: inline-flex;
   align-items: center;
   gap: 4px;
-  vertical-align: middle;
-  margin-left: 6px;
+  position: absolute;
+  right: 8px;
+  bottom: 5px;
   padding: 1px 8px;
   border-radius: 999px;
   background: rgba(128, 128, 128, .18);
   text-decoration: none;
   font-size: 12px;
+}
+:root.xt-replies-chip .post:has(> .postInfo .mobile-replies-chip:not([hidden])) {
+  position: relative;
+  padding-bottom: 26px;
+}
+:root.xt-mobile .thread .post.reply,
+:root.xt-mobile .mobile-replies-item .post {
+  width: 100%;
+  box-sizing: border-box;
+}
+:root.xt-mobile .postInfo .watch-thread-link {
+  display: none;
+}
+:root.xt-mobile #shortcut-watch-thread .watch-thread-shortcut {
+  opacity: .45;
+}
+:root.xt-mobile #shortcut-watch-thread .watch-thread-shortcut.watched {
+  opacity: 1;
+}
+:root.xt-mobile __xt-site-postContainer.xt-press {
+  filter: brightness(.82);
+  transition: filter .2s ease .1s;
+}
+:root.xt-mobile __xt-site-postContainer.xt-menu-target > .post {
+  box-shadow: 0 0 0 2px var(--xt-link, #57a), 0 0 12px color-mix(in srgb, var(--xt-link, #57a) 55%, transparent);
+  border-radius: 4px;
+  transition: box-shadow .15s ease;
+}
+:root.xt-mobile #menu {
+  z-index: 70;
+}
+:root.xt-mobile #menu .entry.focused {
+  background: none;
+}
+:root.xt-mobile #menu-backdrop {
+  z-index: 69;
+}
+:root.xt-mobile #select-text-backdrop {
+  position: fixed;
+  inset: 0;
+  z-index: 62;
+  background: rgba(0, 0, 0, .45);
+}
+:root.xt-mobile #select-text {
+  position: fixed;
+  left: 50%;
+  top: 50%;
+  transform: translate(-50%, -50%);
+  z-index: 63;
+  display: flex;
+  flex-direction: column;
+  box-sizing: border-box;
+  width: min(94vw, 500px);
+  max-height: min(72dvh, calc(100dvh - var(--xt-mobile-header-h, 45px) - var(--xt-mobile-bar-h) - 24px));
+  border: 1px solid var(--xt-border, rgba(128, 128, 128, .45));
+  border-radius: 12px;
+}
+:root.xt-mobile .select-text-header {
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+  font-weight: bold;
+  padding: 8px 6px 4px 12px;
+}
+:root.xt-mobile .select-text-title {
+  flex: 1;
+  min-width: 0;
+  overflow: hidden;
+  text-overflow: ellipsis;
+  white-space: nowrap;
+}
+:root.xt-mobile .select-text-close {
+  display: inline-flex;
+  align-items: center;
+  justify-content: center;
+  min-width: 44px;
+  min-height: 44px;
+  font-size: 16px;
+}
+:root.xt-mobile .select-text-body {
+  overflow-y: auto;
+  overscroll-behavior: contain;
+  padding: 0 12px 10px;
+  user-select: text;
+  -webkit-user-select: text;
+  -webkit-touch-callout: default;
+}
+:root.xt-mobile .select-text-body blockquote {
+  margin: 0;
+}
+:root.xt-mobile .select-text-actions {
+  display: flex;
+  gap: 8px;
+  padding: 8px 12px calc(8px + env(safe-area-inset-bottom, 0px));
+}
+:root.xt-mobile .select-text-actions > a {
+  flex: 1;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  min-height: 44px;
+  border: 1px solid var(--xt-border, rgba(128, 128, 128, .45));
+  border-radius: 8px;
+  background: rgba(128, 128, 128, .12);
+  text-decoration: none;
 }
 :root.xt-replies-chip .mobile-replies-chip[hidden] {
   display: none;
@@ -9438,12 +9666,26 @@ div.post {
 :root.xt-mobile {
   --xt-mobile-bar-h: 48px;
   --xt-mobile-header-h: 45px;
+  --xt-bar-bottom-inset: 0px;
+  --xt-bar-top-inset: 0px;
+}
+:root.xt-mobile.xt-bar-split.xt-icons-bottom {
+  --xt-bar-bottom-inset: calc(var(--xt-mobile-bar-h) + env(safe-area-inset-bottom, 0px));
+}
+:root.xt-mobile.xt-bar-split.xt-icons-top {
+  --xt-bar-top-inset: var(--xt-mobile-bar-h);
+}
+:root.xt-mobile #xt-settings-overlay {
+  top: var(--xt-bar-top-inset, 0px);
+  bottom: var(--xt-bar-bottom-inset, 0px);
+  height: auto;
 }
 :root.xt-mobile.xt-bar-split #mobile-bar {
   display: flex;
   position: fixed;
   left: 0;
   right: 0;
+  height: var(--xt-mobile-bar-h);
   z-index: 8;
   justify-content: space-evenly;
   align-items: center;

@@ -1,5 +1,5 @@
 import type Post from "../classes/Post";
-import { g, Conf, d } from "../globals/globals";
+import { g, Conf, d, doc } from "../globals/globals";
 import $ from "../platform/$";
 import Menu from "./Menu";
 
@@ -22,7 +22,7 @@ var CopyTextLink = {
       order: 12,
       open(post: Post) {
         CopyTextLink.text = (post.origin || post).commentOrig();
-        return true;
+        return !doc.classList.contains('xt-mobile');
       }
     });
   },

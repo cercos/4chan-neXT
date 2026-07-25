@@ -39,6 +39,7 @@ const MobileReplies = {
 
     // Delegated so chips inside clones (inline embeds, previews) work too.
     $.on(d, 'click', MobileReplies.chipClick);
+    $.on(d, 'MobileSheetOpened', MobileReplies.close);
 
     Callbacks.Post.push({
       name: 'Mobile Replies',
@@ -229,6 +230,7 @@ const MobileReplies = {
 
   toggleInline(link: HTMLAnchorElement) {
     const {boardID, threadID, postID} = Get.postDataFromLink(link);
+    if (!canDrill(MobileReplies.stack.map(view => view.fullID), `${boardID}.${postID}`)) { return; }
     const isBacklink = $.hasClass(link, 'backlink');
     const root = QuoteInline.findRoot(link, isBacklink);
     if (!root) { return; }

@@ -34,7 +34,9 @@ import CopyTextLink from "../Menu/CopyTextLink";
 import DeleteLink from "../Menu/DeleteLink";
 import DownloadLink from "../Menu/DownloadLink";
 import FileNameLink from "../Menu/FileNameLink";
+import ReplyLink from "../Menu/ReplyLink";
 import ReportLink from "../Menu/ReportLink";
+import SelectTextLink from "../Menu/SelectTextLink";
 import SoundLink from "../Menu/SoundLink";
 import AntiAutoplay from "../Miscellaneous/AntiAutoplay";
 import Banner from "../Miscellaneous/Banner";
@@ -1282,8 +1284,10 @@ User agent: ${navigator.userAgent}\
     ['Pass Link',                 PassLink],
     ['Menu',                      Menu],
     ['Index Generator (Menu)',    Index.menu],
+    ['Reply Link',                ReplyLink],
     ['Report Link',               ReportLink],
     ['Copy Text Link',            CopyTextLink],
+    ['Select Text Link',          SelectTextLink],
     ['Thread Hiding (Menu)',      ThreadHiding.menu],
     ['Reply Hiding (Menu)',       PostHiding.menu],
     ['Delete Link',               DeleteLink],

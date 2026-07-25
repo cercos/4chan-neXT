@@ -961,6 +961,7 @@ const Config = {
   'Mobile Layout': 'auto',
   'Mobile Bar Layout': 'icons-bottom',
   'Mobile Replies Popup': true,
+  'Mobile Watcher View': 'grid',
 
   threadWatcher: {
     'Current Board': [

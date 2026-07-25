@@ -51,6 +51,7 @@ var ThreadWatcher = {
   // where a precise type would cascade new errors; tighten during the strict pass.
   enabled: false,
   shortcut: null as unknown as HTMLElement,
+  headerToggler: null as unknown as HTMLElement,
   db: null as any,
   dbLM: null as any,
   dialog: null as unknown as HTMLElement,
@@ -63,6 +64,9 @@ var ThreadWatcher = {
   menuButton: null as any,
   closeButton: null as any,
   attachButton: null as any,
+  viewToggleButton: null as any,
+  tileMenu: null as any,
+  tileMenuTarget: null as any,
   scrollMore: null as any,
   unreaddb: null as any,
   unreadEnabled: false,
@@ -137,6 +141,7 @@ var ThreadWatcher = {
     this.menuButton = $('.menu-button', this.dialog);
     this.closeButton = $('.move > .close', this.dialog);
     this.attachButton = $('.attach', this.dialog);
+    this.viewToggleButton = $('.view-toggle', this.dialog);
     this.unreaddb = Unread.db || UnreadIndex.db || new DataBoard('lastReadPosts');
     this.unreadEnabled = Conf['Remember Last Read Post'];
 
@@ -151,6 +156,22 @@ var ThreadWatcher = {
       Icon.set(this.scrollMore, 'caretDown');
     }
     ThreadWatcher.applyAttachControlsSetting(Conf['Thread Watcher Attach Controls']);
+
+    if (resolveMobileLayout(Conf['Mobile Layout'], detectMobileDevice())) {
+      this.viewToggleButton.hidden = false;
+      $.on(this.viewToggleButton, 'click', () => {
+        const next = Conf['Mobile Watcher View'] === 'grid' ? 'list' : 'grid';
+        Conf['Mobile Watcher View'] = next;
+        $.set('Mobile Watcher View', next);
+        ThreadWatcher.applyWatcherView();
+      });
+      $.sync('Mobile Watcher View', (val: string) => {
+        Conf['Mobile Watcher View'] = val || 'grid';
+        ThreadWatcher.applyWatcherView();
+      });
+      ThreadWatcher.applyWatcherView();
+      ThreadWatcher.initTilePress();
+    }
 
     $.on(d, 'QRPostSuccessful',   this.cb.post);
     $.on(sc, 'click', this.toggleWatcher);
@@ -209,6 +230,21 @@ var ThreadWatcher = {
 
     Header.addShortcut('watcher', sc, 510,);
 
+    if ((g.VIEW === 'thread') && (g.SITE!.software === 'yotsuba')
+      && resolveMobileLayout(Conf['Mobile Layout'], detectMobileDevice())) {
+      const heart = (this.headerToggler = $.el('a', {
+        href: 'javascript:;',
+        className: 'watch-thread-shortcut'
+      }));
+      Icon.set(heart, 'heart', 'Watch Thread');
+      ThreadWatcher.setToggler(heart, !!this.db.get({boardID: g.BOARD!.ID, threadID: g.THREADID}));
+      $.on(heart, 'click', (e: MouseEvent) => {
+        e.preventDefault();
+        ThreadWatcher.toggle(g.threads!.get(`${g.BOARD}.${g.THREADID}`), true);
+      });
+      Header.addShortcut('watch-thread', heart, 890);
+    }
+
     ThreadWatcher.initLastModified();
     ThreadWatcher.fetchAuto();
     $.on(window, 'visibilitychange focus', () => $.queueTask(ThreadWatcher.fetchAuto));
@@ -240,22 +276,23 @@ var ThreadWatcher = {
       }
     });
 
-    if (Conf['Menu'] && (Index as any).enabled) {
+    if (Conf['Menu'] && ((Index as any).enabled || resolveMobileLayout(Conf['Mobile Layout'], detectMobileDevice()))) {
       (Menu as any).menu.addEntry({
         el: $.el('a', {
           href:      'javascript:;',
           className: 'has-shortcut-text'
         }
         , {innerHTML: '<span></span><span class="shortcut-text"></span>'}),
-        order: 6,
+        order: 9,
         open({thread}: { thread: Thread }) {
-          if (Conf['Index Mode'] !== 'catalog') { return false; }
+          const mobile = doc.classList.contains('xt-mobile');
+          if (!mobile && Conf['Index Mode'] !== 'catalog') { return false; }
           this.el.firstElementChild.textContent = ThreadWatcher.isWatched(thread) ?
-            'Unwatch'
+            (mobile ? 'Unwatch Thread' : 'Unwatch')
           :
-            'Watch';
+            (mobile ? 'Watch Thread' : 'Watch');
           const mods = Conf['Watch (catalog click)'];
-          this.el.lastElementChild.textContent = mods ? `${mods}+click` : '';
+          this.el.lastElementChild.textContent = (mods && !mobile) ? `${mods}+click` : '';
           if (this.cb) { $.off(this.el, 'click', this.cb); }
           this.cb = function() {
             $.event('CloseMenu');
@@ -478,17 +515,7 @@ var ThreadWatcher = {
       if (!line) { return; }
       const {siteID} = line.dataset;
       const [boardID, threadID] = line.dataset.fullID!.split('.');
-      const data = ThreadWatcher.db?.get({siteID, boardID, threadID: +threadID});
-      if (!data) { return; }
-      if (data.last != null) {
-        ThreadWatcher.unreaddb.set({siteID, boardID, threadID: +threadID, val: data.last});
-      }
-      ThreadWatcher.update(siteID!, boardID, +threadID, {
-        unread: 0,
-        quotingYou: 0,
-        yousCount: 0,
-        dismiss: data.quotingYou || 0
-      });
+      ThreadWatcher.markThreadRead(siteID!, boardID, +threadID);
     },
     scrollMore() {
       const {list} = ThreadWatcher;
@@ -496,6 +523,7 @@ var ThreadWatcher = {
       list.scrollBy({ top: Math.max(40, list.clientHeight - 30), behavior: 'smooth' });
     },
     thumbnailHoverIn(this: HTMLImageElement) {
+      if (doc.classList.contains('xt-mobile')) { return; }
       ThreadWatcher.showThumbnailHover(this);
     },
     thumbnailHoverMove(this: HTMLImageElement) {
@@ -1215,6 +1243,11 @@ var ThreadWatcher = {
       if (thread.catalogView) { return thread.catalogView.nodes.root.classList.toggle('watched', isWatched); }
     });
 
+    if (ThreadWatcher.headerToggler) {
+      ThreadWatcher.setToggler(ThreadWatcher.headerToggler,
+        !!ThreadWatcher.db.get({boardID: g.BOARD!.ID, threadID: g.THREADID}));
+    }
+
     if (Conf['Pin Watched Threads']) {
       return $.event('SortIndex', {deferred: !(manual && Conf['Index Mode'] === 'catalog')});
     }
@@ -1393,7 +1426,130 @@ var ThreadWatcher = {
   },
 
   showThumbnails() {
-    return Conf['Show OP Thumbnails'];
+    return Conf['Show OP Thumbnails'] || resolveMobileLayout(Conf['Mobile Layout'], detectMobileDevice());
+  },
+
+  markThreadRead(siteID: string, boardID: string, threadID: number) {
+    if (!ThreadWatcher.unreadEnabled) { return; }
+    const data = ThreadWatcher.db?.get({siteID, boardID, threadID});
+    if (!data) { return; }
+    if (data.last != null) {
+      ThreadWatcher.unreaddb.set({siteID, boardID, threadID, val: data.last});
+    }
+    ThreadWatcher.update(siteID, boardID, threadID, {
+      unread: 0,
+      quotingYou: 0,
+      yousCount: 0,
+      dismiss: data.quotingYou || 0
+    });
+  },
+
+  applyWatcherView() {
+    const grid = Conf['Mobile Watcher View'] === 'grid';
+    ThreadWatcher.dialog.classList.toggle('watcher-grid', grid);
+    Icon.set(ThreadWatcher.viewToggleButton, grid ? 'bars' : 'grid');
+    ThreadWatcher.viewToggleButton.title = grid ? 'Switch to list view' : 'Switch to grid view';
+  },
+
+  initTilePress() {
+    const menu = (this.tileMenu = new UI.Menu('watcher-tile'));
+
+    const openLink = $.el('a', {textContent: 'Open thread', href: 'javascript:;'});
+    menu.addEntry({
+      el: openLink,
+      order: 10,
+      open() {
+        openLink.href = ThreadWatcher.tileMenuTarget?.href || 'javascript:;';
+        return true;
+      }
+    });
+
+    const markRead = $.el('a', {textContent: 'Mark read', href: 'javascript:;'});
+    $.on(markRead, 'click', () => {
+      const t = ThreadWatcher.tileMenuTarget;
+      if (t) { ThreadWatcher.markThreadRead(t.siteID, t.boardID, +t.threadID); }
+      $.event('CloseMenu');
+    });
+    menu.addEntry({
+      el: markRead,
+      order: 20,
+      open: () => ThreadWatcher.unreadEnabled
+    });
+
+    const unwatch = $.el('a', {textContent: 'Unwatch', href: 'javascript:;'});
+    $.on(unwatch, 'click', () => {
+      const t = ThreadWatcher.tileMenuTarget;
+      if (t) { ThreadWatcher.rm(t.siteID, t.boardID, +t.threadID, undefined, true); }
+      $.event('CloseMenu');
+    });
+    menu.addEntry({el: unwatch, order: 30});
+
+    let timer: ReturnType<typeof setTimeout> | null = null;
+    let pressLine: HTMLElement | null = null;
+    let startX = 0;
+    let startY = 0;
+    let fired = false;
+    let suppressClick = false;
+
+    const cancel = () => {
+      if (timer) { clearTimeout(timer); timer = null; }
+      pressLine = null;
+    };
+
+    $.on(this.list, 'pointerdown', (e: PointerEvent) => {
+      fired = false;
+      suppressClick = false;
+      if (e.pointerType !== 'touch' || !doc.classList.contains('xt-mobile')) return;
+      const line = (e.target as HTMLElement).closest?.('#watched-threads > div') as HTMLElement | null;
+      if (!line?.dataset.fullID) return;
+      pressLine = line;
+      startX = e.clientX;
+      startY = e.clientY;
+      timer = setTimeout(() => {
+        timer = null;
+        const l = pressLine;
+        pressLine = null;
+        if (!l) return;
+        fired = true;
+        suppressClick = true;
+        const {siteID} = l.dataset;
+        const [boardID, threadID] = l.dataset.fullID!.split('.');
+        ThreadWatcher.tileMenuTarget = {
+          siteID,
+          boardID,
+          threadID,
+          href: ($('.watcher-link', l) as HTMLAnchorElement)?.href
+        };
+        menu.toggleAtPoint(e, {x: startX, y: startY}, ThreadWatcher.tileMenuTarget);
+      }, 500);
+    });
+
+    $.on(this.list, 'pointermove', (e: PointerEvent) => {
+      if (!pressLine || e.pointerType !== 'touch') return;
+      if (Math.abs(e.clientX - startX) > 10 || Math.abs(e.clientY - startY) > 10) {
+        cancel();
+      }
+    });
+
+    $.on(this.list, 'pointerup pointercancel', (e: PointerEvent) => {
+      if (e.pointerType === 'touch') cancel();
+    });
+    $.on(this.list, 'scroll', cancel);
+
+    doc.addEventListener('contextmenu', (e: Event) => {
+      if (fired || pressLine) {
+        e.preventDefault();
+        fired = false;
+      }
+    });
+
+    doc.addEventListener('click', (e: Event) => {
+      if (suppressClick) {
+        suppressClick = false;
+        e.preventDefault();
+        e.stopPropagation();
+      }
+    }, true);
   },
 
   thumbnailSize() {

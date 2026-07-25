@@ -155,6 +155,9 @@ var Menu: MenuCtor = (function(): MenuCtor {
       const anchorHeader = doc.classList.contains('xt-mobile') && !!button?.closest('#header-bar');
       menu.classList.toggle('menu-anchor-header', anchorHeader);
       menuBackdrop?.classList.toggle('menu-anchor-header', anchorHeader);
+      const anchorPopover = doc.classList.contains('xt-mobile') && !!anchorPoint;
+      menu.classList.toggle('menu-anchor-point', anchorPopover);
+      menuBackdrop?.classList.toggle('menu-anchor-point', anchorPopover);
       // Reveal the menu (display:none -> shown) so the @starting-style enter
       // animation runs; the node itself stays in the DOM across opens.
       $.rmClass(menu, 'menu-hidden');
@@ -173,7 +176,25 @@ var Menu: MenuCtor = (function(): MenuCtor {
 
     setPosition() {
       if (doc.classList.contains('xt-mobile')) {
-        $.extend(this.menu.style, {top: '', right: '', bottom: '', left: ''});
+        if (!anchorPoint) {
+          $.extend(this.menu.style, {top: '', right: '', bottom: '', left: ''});
+          return;
+        }
+        const mWidth  = this.menu.offsetWidth;
+        const mHeight = this.menu.offsetHeight;
+        const vv     = window.visualViewport;
+        const vw     = vv?.width ?? doc.clientWidth;
+        const vh     = vv?.height ?? doc.clientHeight;
+        const ox     = vv?.offsetLeft ?? 0;
+        const oy     = vv?.offsetTop ?? 0;
+        const margin = 8;
+        const x = anchorPoint.x - window.scrollX;
+        const y = anchorPoint.y - window.scrollY;
+        let left = (x + mWidth  + margin > ox + vw) ? x - mWidth  : x;
+        let top  = (y + mHeight + margin > oy + vh) ? y - mHeight : y;
+        left = Math.max(ox + margin, Math.min(left, ox + vw - mWidth  - margin));
+        top  = Math.max(oy + margin, Math.min(top,  oy + vh - mHeight - margin));
+        $.extend(this.menu.style, {top: `${top}px`, left: `${left}px`, right: '', bottom: ''});
         return;
       }
       const mRect   = this.menu.getBoundingClientRect();
@@ -296,7 +317,8 @@ var Menu: MenuCtor = (function(): MenuCtor {
       anchorPoint       = null;
       $.off(d, 'click scroll CloseMenu', this.close);
       $.off(d, 'scroll', this.setPosition);
-      return $.off(window, 'resize', this.setPosition);
+      $.off(window, 'resize', this.setPosition);
+      return $.event('MenuClosed');
     }
 
     findNextEntry(entry: any, direction: number) {

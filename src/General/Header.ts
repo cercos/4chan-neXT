@@ -14,7 +14,7 @@ import UI from "./UI";
 import meta from '../../package.json';
 import Icon from "../Icons/icon";
 
-const PINNED_SHORTCUTS = new Set(['boards', 'catalog', 'menu', 'index-search', 'index-options']);
+const PINNED_SHORTCUTS = new Set(['boards', 'menu', 'index-search', 'index-options', 'watch-thread']);
 
 var Header = {
   // Assigned later; declared so the singleton's type includes them. Loosely typed
