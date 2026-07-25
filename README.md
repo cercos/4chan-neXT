@@ -32,13 +32,13 @@ New users should start with the [User Guide](./docs/user-guide.md).
 
 ## Current Release
 
-`1.2.5` (2026-07-06)
+`1.2.6.4` (2026-07-24)
 
-- Switched the Chrome extension to Manifest V3.
-- Added unit tests and CI test and build steps.
-- Added a "Stacked Captcha Style" setting with three layouts: Classic row, Inline chips (default), and Stepper dots.
-- Fixed the scrollbar thumb color fallback when an external styling script is active.
-- Various small styling and UI fixes.
+- Big mobile revamp: the whole layout now works on phones and touch screens, and turns on automatically on mobile.
+- Added the Dōgiri video editor: cut, caption, and re-render an attached video right from the Quick Reply.
+- Added a Columns option to the catalog: pick a fixed column count (1-12) or leave it on Auto.
+- Fixed the wrong color palette sometimes applying to detached windows after theme switches, and downloads hanging in some userscript managers.
+- Various small refinements to embeds and their settings.
 
 See [CHANGELOG.md](./CHANGELOG.md) for full release notes.
 
