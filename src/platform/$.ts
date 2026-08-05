@@ -6,6 +6,17 @@ import { c, Conf, d, doc, g } from "../globals/globals";
 import { debounce, dict, MINUTE, platform, SECOND } from "./helpers";
 import meta from '../../package.json';
 import PageContextFunctions from "../PageContext/pageContext";
+import {
+  BRIDGE_EVENT,
+  BRIDGE_HELLO,
+  BRIDGE_READY,
+  BRIDGE_REQUEST,
+  BRIDGE_RESPONSE,
+  decodeDetail,
+  encodeDetail,
+  SYNC_QUOTA_BYTES_PER_ITEM_FALLBACK,
+  type BridgeReadyInfo,
+} from '../meta/bridgeProtocol';
 
 // The `$` singleton is built by incremental (and conditional, platform-dependent)
 // property assignment below. TypeScript cannot infer a stable, complete type from
@@ -60,6 +71,11 @@ interface $Static {
   debounce(wait: number, fn: (...args: any[]) => any): (...args: any[]) => any;
   queueTask(fn: (...args: any[]) => any, ...args: any[]): void;
   eventPageRequest(params: any): Promise<any>;
+  hasExtensionAPIs?: boolean;
+  bridgeRequest?(msg: Record<string, any>): Promise<{ data?: any; error?: string }>;
+  bridgeInfo?: BridgeReadyInfo | null;
+  bridgeInvalidated?: boolean;
+  bridgeStorageChanged?: (changes: Record<string, any>, area: 'local' | 'sync') => void;
   global(fn: string, data?: Record<string, any>): Promise<any>;
   bytesToString(size: number): string;
   minmax(value: number, min: number, max: number): number;
@@ -498,16 +514,70 @@ $.queueTask = (function() {
 })() as (fn: (fn: any) => any, ...args: any[]) => void;
 
 if (platform === 'crx') {
-  const callbacks = new Map<number, ((...args: any[]) => any)>();
+  $.hasExtensionAPIs = typeof chrome !== 'undefined' && !!chrome.storage?.onChanged;
 
-  chrome.runtime.onMessage.addListener(({ id, data }) => {
-    callbacks.get(id)?.(data);
-    callbacks.delete(id);
-  });
+  if ($.hasExtensionAPIs) {
+    const callbacks = new Map<number, ((...args: any[]) => any)>();
 
-  $.eventPageRequest = (params) => new Promise(resolve => {
-    chrome.runtime.sendMessage(params, id => { callbacks.set(id, resolve); });
-  });
+    chrome.runtime.onMessage.addListener(({ id, data }) => {
+      callbacks.get(id)?.(data);
+      callbacks.delete(id);
+    });
+
+    $.eventPageRequest = (params) => new Promise(resolve => {
+      chrome.runtime.sendMessage(params, id => { callbacks.set(id, resolve); });
+    });
+  } else {
+    // MV3 MAIN world: no chrome APIs here. Talk to the isolated-world bridge
+    // (src/meta/bridge.ts) over CustomEvents. Requests are queued until the
+    // bridge announces itself, since content script order across worlds is
+    // not guaranteed at document_start.
+    const pending = new Map<number, (res: { data?: any; error?: string }) => void>();
+    let requestID = 0;
+    let sendQueue: (() => void)[] | null = [];
+    $.bridgeInfo = null;
+    $.bridgeInvalidated = false;
+
+    document.addEventListener(BRIDGE_READY, ev => {
+      try { $.bridgeInfo = decodeDetail(ev); } catch (error) { return; }
+      const queued = sendQueue;
+      sendQueue = null;
+      if (queued) { for (const send of queued) send(); }
+    });
+
+    document.addEventListener(BRIDGE_RESPONSE, ev => {
+      let res;
+      try { res = decodeDetail(ev); } catch (error) { return; }
+      const cb = pending.get(res.id);
+      if (!cb) return;
+      pending.delete(res.id);
+      cb(res);
+    });
+
+    document.addEventListener(BRIDGE_EVENT, ev => {
+      let event;
+      try { event = decodeDetail(ev); } catch (error) { return; }
+      if (event.kind === 'invalidated') {
+        $.bridgeInvalidated = true;
+      } else if (event.kind === 'storageChanged') {
+        $.bridgeStorageChanged?.(event.changes, event.area);
+      }
+    });
+
+    $.bridgeRequest = msg => new Promise(resolve => {
+      const id = requestID++;
+      pending.set(id, resolve);
+      const send = () => document.dispatchEvent(
+        new CustomEvent(BRIDGE_REQUEST, { detail: encodeDetail({ ...msg, id }) })
+      );
+      if (sendQueue) { sendQueue.push(send); } else { send(); }
+    });
+
+    document.dispatchEvent(new CustomEvent(BRIDGE_HELLO));
+
+    $.eventPageRequest = params =>
+      $.bridgeRequest!({ type: 'message', params }).then(({ data }) => data);
+  }
 }
 
 /**
@@ -518,6 +588,14 @@ if (platform === 'crx') {
  * still await it to make sure the function is done.
  */
 $.global = async function(fn: string, data?: Record<string, string>) {
+  if (platform === 'crx' && !$.hasExtensionAPIs) {
+    try {
+      (PageContextFunctions[fn as keyof typeof PageContextFunctions] as (data?: any) => void)(data);
+    } catch (error) {
+      console.error(error);
+    }
+    return data;
+  }
   if (platform === 'crx' && chrome.runtime.getManifest().manifest_version === 3) {
     return $.eventPageRequest({ type: 'runInPageContext', fn, data });
   } else {
@@ -632,7 +710,57 @@ if (platform === 'crx') {
     sync:  dict()
   };
 
-  chrome.storage.onChanged.addListener(function(changes, area) {
+  type StorageGetCb = (result: Record<string, any>, err?: string) => void;
+  type StorageDoneCb = (err?: string) => void;
+
+  let ext: {
+    quotaItem(): number;
+    get(area: 'local' | 'sync', keys: string[] | null, cb: StorageGetCb): void;
+    set(area: 'local' | 'sync', data: Record<string, any>, cb: StorageDoneCb): void;
+    remove(area: 'local' | 'sync', keys: string[]): void;
+    clear(area: 'local' | 'sync', cb: StorageDoneCb): void;
+    onChanged(listener: (changes: Record<string, any>, area: 'local' | 'sync') => void): void;
+    working(): boolean;
+  };
+
+  if ($.hasExtensionAPIs) {
+    ext = {
+      quotaItem: () => chrome.storage.sync.QUOTA_BYTES_PER_ITEM,
+      get: (area, keys, cb) =>
+        chrome.storage[area].get(keys, result => cb(result, chrome.runtime.lastError?.message)),
+      set: (area, data, cb) =>
+        chrome.storage[area].set(data, () => cb(chrome.runtime.lastError?.message)),
+      remove: (area, keys) => chrome.storage[area].remove(keys),
+      clear: (area, cb) =>
+        chrome.storage[area].clear(() => cb(chrome.runtime.lastError?.message)),
+      onChanged: listener =>
+        chrome.storage.onChanged.addListener((changes, area) =>
+          listener(changes, area as 'local' | 'sync')),
+      working: () => {
+        try {
+          return !!chrome.runtime.getManifest();
+        } catch (error) {
+          return false;
+        }
+      },
+    };
+  } else {
+    ext = {
+      quotaItem: () => $.bridgeInfo?.quotaBytesPerItem ?? SYNC_QUOTA_BYTES_PER_ITEM_FALLBACK,
+      get: (area, keys, cb) =>
+        $.bridgeRequest!({ type: 'storageGet', area, keys })
+          .then(({ data, error }) => cb(data ?? dict(), error)),
+      set: (area, data, cb) =>
+        $.bridgeRequest!({ type: 'storageSet', area, data }).then(({ error }) => cb(error)),
+      remove: (area, keys) => { $.bridgeRequest!({ type: 'storageRemove', area, keys }); },
+      clear: (area, cb) =>
+        $.bridgeRequest!({ type: 'storageClear', area }).then(({ error }) => cb(error)),
+      onChanged: listener => { $.bridgeStorageChanged = listener; },
+      working: () => !$.bridgeInvalidated,
+    };
+  }
+
+  ext.onChanged(function(changes, area) {
     for (var key in changes) {
       var oldValue = $.oldValue.local[key] ?? $.oldValue.sync[key];
       $.oldValue[area][key] = dict.clone(changes[key].newValue);
@@ -647,11 +775,9 @@ if (platform === 'crx') {
   $.forceSync = function() {  };
 
   $.crxWorking = function() {
-    try {
-      if (chrome.runtime.getManifest()) {
-        return true;
-      }
-    } catch (error) {}
+    if (ext.working()) {
+      return true;
+    }
     if (!$.crxWarningShown) {
       const msg = $.el('div',
         {innerHTML: `${meta.name} seems to have been updated. You will need to <a href="javascript:;">reload</a> the page.`});
@@ -671,11 +797,11 @@ if (platform === 'crx') {
       if (($.engine === 'gecko') && (area === 'sync') && (keys.length > 3)) {
         keys = null;
       }
-      return chrome.storage[area].get(keys, function(result: Record<string, any>) {
+      return ext.get(area, keys, function(result: Record<string, any>, err?: string) {
         let key;
         result = dict.clone(result);
-        if (chrome.runtime.lastError) {
-          c.error(chrome.runtime.lastError.message);
+        if (err) {
+          c.error(err);
         }
         if (keys === null) {
           const result2 = dict();
@@ -704,7 +830,7 @@ if (platform === 'crx') {
     };
 
     const exceedsQuota = (key: string, value: any) => // bytes in UTF-8
-    unescape(encodeURIComponent(JSON.stringify(key))).length + unescape(encodeURIComponent(JSON.stringify(value))).length > chrome.storage.sync.QUOTA_BYTES_PER_ITEM;
+    unescape(encodeURIComponent(JSON.stringify(key))).length + unescape(encodeURIComponent(JSON.stringify(value))).length > ext.quotaItem();
 
     $.delete = function(keys) {
       if (!$.crxWorking()) { return; }
@@ -715,8 +841,8 @@ if (platform === 'crx') {
         delete items.local[key];
         delete items.sync[key];
       }
-      chrome.storage.local.remove(keys);
-      return chrome.storage.sync.remove(keys);
+      ext.remove('local', keys);
+      return ext.remove('sync', keys);
     };
 
     const timeout: Record<string, number> = {};
@@ -724,14 +850,13 @@ if (platform === 'crx') {
       const data = dict();
       $.extend(data, items[area]);
       if (!Object.keys(data).length || (timeout[area] > Date.now())) { return; }
-      return chrome.storage[area].set(data, function() {
-        let err;
+      return ext.set(area, data, function(errMsg?: string) {
         let key;
-        if (err = chrome.runtime.lastError) {
-          c.error(err.message);
+        if (errMsg) {
+          c.error(errMsg);
           setTimeout(setArea, MINUTE, area);
           timeout[area] = Date.now() + MINUTE;
-          return cb?.(err);
+          return cb?.(errMsg);
         }
 
         delete timeout[area];
@@ -740,7 +865,7 @@ if (platform === 'crx') {
           for (key in data) { var val = data[key]; if (!exceedsQuota(key, val)) { items.sync[key] = val; } }
           setSync();
         } else {
-          chrome.storage.local.remove(((() => {
+          ext.remove('local', ((() => {
             const result: string[] = [];
             for (key in data) {
               if (!(key in items.local)) {
@@ -768,16 +893,14 @@ if (platform === 'crx') {
       items.local = dict();
       items.sync =  dict();
       let count = 2;
-      let err: typeof chrome.runtime.lastError | null = null;
-      const done  = function() {
-        if (chrome.runtime.lastError) {
-          c.error(chrome.runtime.lastError.message);
-        }
-        if (err == null) { err = chrome.runtime.lastError; }
+      let err: string | undefined;
+      const done = function(errMsg?: string) {
+        if (errMsg) { c.error(errMsg); }
+        if (err == null) { err = errMsg; }
         if (!--count) { return cb?.(err); }
       };
-      chrome.storage.local.clear(done);
-      return chrome.storage.sync.clear(done);
+      ext.clear('local', done);
+      return ext.clear('sync', done);
     };
   })();
 } else {
