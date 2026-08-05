@@ -465,7 +465,7 @@ $.modifiedClick = e => e.shiftKey || e.altKey || e.ctrlKey || e.metaKey || (e.bu
 
 if (!globalThis.chrome?.extension) {
   $.open =
-    (GM?.openInTab != null) ?
+    (typeof GM !== 'undefined' && GM?.openInTab != null) ?
       GM.openInTab
     : (typeof GM_openInTab !== 'undefined' && GM_openInTab !== null) ?
       GM_openInTab
