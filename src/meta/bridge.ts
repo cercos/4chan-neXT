@@ -10,16 +10,6 @@ import {
   type BridgeRequest,
 } from './bridgeProtocol';
 
-type BridgeInstance = {
-  dispatch: (name: string, detail: unknown) => void;
-  respond: (id: number, data?: any, error?: string) => void;
-  emit: (event: BridgeEvent) => void;
-  invalidate: () => void;
-  working: () => boolean;
-  handlers: { [T in BridgeRequest['type']]: (req: Extract<BridgeRequest, { type: T }>) => void };
-  announce: () => void;
-};
-
 const dispatch = (name: string, detail: unknown) => {
   document.dispatchEvent(new CustomEvent(name, { detail: encodeDetail(detail) }));
 };
@@ -88,55 +78,40 @@ const handlers: { [T in BridgeRequest['type']]: (req: Extract<BridgeRequest, { t
   },
 };
 
-const instance: BridgeInstance = {
-  dispatch, respond, emit, invalidate, working, handlers,
-  announce: () => {
-    if (!working()) {
-      invalidate();
-      return;
-    }
-    dispatch(BRIDGE_READY, {
-      manifestVersion: chrome.runtime.getManifest().manifest_version,
-      quotaBytesPerItem: chrome.storage.sync.QUOTA_BYTES_PER_ITEM,
-    });
-  },
-};
-
-(globalThis as any)._4chanNextBridge = instance;
-
-if (!(globalThis as any)._4chanNextBridgeSetup) {
-  (globalThis as any)._4chanNextBridgeSetup = true;
-
-  document.addEventListener(BRIDGE_REQUEST, ev => {
-    const b = (globalThis as any)._4chanNextBridge as BridgeInstance;
-    let req: BridgeRequest;
-    try {
-      req = decodeDetail(ev);
-    } catch (err) {
-      return;
-    }
-    if (!b.working()) {
-      b.invalidate();
-      b.respond(req.id, undefined, 'extension context invalidated');
-      return;
-    }
-    try {
-      (b.handlers[req.type] as (r: BridgeRequest) => void)(req);
-    } catch (err) {
-      if (!b.working()) b.invalidate();
-      b.respond(req.id, undefined, '' + err);
-    }
-  });
-
-  document.addEventListener(BRIDGE_HELLO, () => {
-    const b = (globalThis as any)._4chanNextBridge as BridgeInstance;
-    b.announce();
-  });
-}
-
-chrome.storage.onChanged.addListener((changes, area) => {
-  const b = (globalThis as any)._4chanNextBridge as BridgeInstance;
-  b.emit({ kind: 'storageChanged', changes, area: area as 'local' | 'sync' });
+document.addEventListener(BRIDGE_REQUEST, ev => {
+  let req: BridgeRequest;
+  try {
+    req = decodeDetail(ev);
+  } catch (err) {
+    return;
+  }
+  if (!working()) {
+    invalidate();
+    respond(req.id, undefined, 'extension context invalidated');
+    return;
+  }
+  try {
+    (handlers[req.type] as (r: BridgeRequest) => void)(req);
+  } catch (err) {
+    if (!working()) invalidate();
+    respond(req.id, undefined, '' + err);
+  }
 });
 
-instance.announce();
+const announce = () => {
+  if (!working()) {
+    invalidate();
+    return;
+  }
+  dispatch(BRIDGE_READY, {
+    manifestVersion: chrome.runtime.getManifest().manifest_version,
+    quotaBytesPerItem: chrome.storage.sync.QUOTA_BYTES_PER_ITEM,
+  });
+};
+
+chrome.storage.onChanged.addListener((changes, area) => {
+  emit({ kind: 'storageChanged', changes, area: area as 'local' | 'sync' });
+});
+
+document.addEventListener(BRIDGE_HELLO, announce);
+announce();

@@ -54,15 +54,26 @@ function request(req: object) {
 
 describe('bridge', () => {
   let chromeStub: ReturnType<typeof makeChromeStub>;
+  let recordedListeners: Array<[string, AnyFn]> = [];
 
   beforeEach(async () => {
     vi.resetModules();
     chromeStub = makeChromeStub();
     (globalThis as any).chrome = chromeStub.stub;
+    recordedListeners = [];
+    const originalAddEventListener = document.addEventListener;
+    document.addEventListener = ((eventName: string, listener: AnyFn, ...args: any[]) => {
+      recordedListeners.push([eventName, listener]);
+      originalAddEventListener.call(document, eventName, listener, ...args);
+    }) as any;
     await import('./bridge');
+    document.addEventListener = originalAddEventListener;
   });
 
   afterEach(() => {
+    for (const [eventName, listener] of recordedListeners) {
+      document.removeEventListener(eventName, listener);
+    }
     delete (globalThis as any).chrome;
   });
 
