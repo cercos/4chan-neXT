@@ -38,8 +38,22 @@ export default function generateManifestJson(p, xtVersion, manifestVersion) {
     manifest.permissions = ["storage", "scripting"];
     manifest.host_permissions = p.meta.matches_only.concat(p.meta.matches);
     manifest.optional_host_permissions = ["*://*/"];
-    manifest.minimum_chrome_version = "102";
     delete manifest.applications;
+
+    manifest.content_scripts = [
+      {
+        "js": ["bridge.js"],
+        "matches": p.meta.matches_only.concat(p.meta.matches, p.meta.matches_extra),
+        "exclude_matches": p.meta.exclude_matches,
+        "all_frames": true,
+        "run_at": "document_start"
+      },
+      {
+        ...manifest.content_scripts[0],
+        "world": "MAIN"
+      }
+    ];
+    manifest.minimum_chrome_version = "111";
   } else {
     manifest.background.scripts = ["eventPage.js"],
     manifest.background.persistent = false;
