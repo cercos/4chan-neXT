@@ -32,7 +32,7 @@ New users should start with the [User Guide](./docs/user-guide.md).
 
 ## Current Release
 
-`1.2.7.0` (2026-11-23)
+`1.2.7.1` (2026-11-23)
 
 - Added a Reply Count filter to hide or highlight threads by how many replies they have.
 - Added automatic MP4-to-WebM conversion for VP8/VP9 video uploads in Quick Reply.

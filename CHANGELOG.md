@@ -1,6 +1,6 @@
 ## 4chan-neXT changelog
 
-### 1.2.7.0
+### 1.2.7.1 (2026-11-23)
 
 - Added a Reply Count filter: hide or highlight threads in the index and catalog by how many replies they have, e.g. `/<10/` or `/>=300/`. Also available in Easy Filters.
 - Added a `Remux Videos` setting (on by default): MP4 uploads using VP8/VP9 video are converted to WebM in Quick Reply so 4chan accepts them, and you get a warning when an attached video won't be accepted.
