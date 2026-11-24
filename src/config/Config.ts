@@ -695,6 +695,11 @@ const Config = {
         'Remove audio from MP4 and WebM uploads in Quick Reply on boards that do not allow audio.',
         1
       ],
+      'Remux Videos': [
+        true,
+        'Rewrap MP4 uploads that use WebM-only codecs (VP8/VP9) into WebM files in Quick Reply. The video is copied without re-encoding; audio is converted to Opus. Also warns when an attached video cannot be accepted by 4chan.',
+        1
+      ],
       'Dogiri Editor': [
         true,
         'Add a button to edit attached videos in Dōgiri, the video editor. Requires Quick Reply.',
@@ -761,11 +766,21 @@ const Config = {
       ],
       'Stacked TCaptcha': [
         false,
-        'Show 4chan\'s TCaptcha as a stacked image grid in Quick Reply instead of the default slider/next UI. Supports keyboard controls: arrows/1-9/Enter pick tiles, Backspace revisits answers.'
+        'Show the captcha as a grid of tiles in Quick Reply. Keys: arrows or 1-9 and Enter pick, Backspace goes back.'
       ],
       'Stacked TCaptcha Style': [
-        'inline',
-        'Layout for the stacked captcha\'s progress chips and review screen. Classic row: large chips on their own row with status text. Inline chips: compact chips beside the Get Captcha button. Stepper dots: minimal dots beside the counter; hover to peek, click to edit.',
+        'stack',
+        'How answered steps and the review screen look. Answer stack: each answered step shrinks to a row above the next one; click a row to change it.',
+        2
+      ],
+      'Captcha Solver': [
+        'off',
+        'EXPERIMENTAL. Fills in answers for you to check before posting. Browser runs our model inside the browser, with no server.',
+        2
+      ],
+      'Save Captchas for Training': [
+        false,
+        'Saves captchas from your successful posts so you can export them and submit them to help train the captcha solver model.',
         2
       ],
       'Pass Link': [
@@ -1032,6 +1047,15 @@ const Config = {
     postID: `\
 # Highlight dubs on [s4s]:
 #/(\\d)\\1$/;highlight;top:no;boards:s4s\
+`,
+
+    replycount: `\
+# Reply counts use numeric comparisons instead of regular expressions.
+# Only applies to threads in the index and catalog.
+# Hide threads with fewer than 10 replies:
+#/<10/
+# Highlight threads with 300 or more replies:
+#/>=300/;highlight;top:no\
 `,
 
     name: `\

@@ -18,6 +18,7 @@ import Recursive from "./Recursive";
 
 interface FilterObj {
   regexp: string | RegExp;
+  cmp?: (count: number) => boolean;
   boards: any;
   excludes: any;
   mask: any;
@@ -45,8 +46,8 @@ export interface FilterResults {
   reasons?: string[];
 };
 
-type FilterType = "postID" | "name" | "uniqueID" | "tripcode" | "capcode" | "pass" | "email" | "subject" | "comment"
-  | "flag" | "filename" | "dimensions" | "filesize" | "MD5";
+type FilterType = "postID" | "replycount" | "name" | "uniqueID" | "tripcode" | "capcode" | "pass" | "email"
+  | "subject" | "comment" | "flag" | "filename" | "dimensions" | "filesize" | "MD5";
 
 var Filter = {
   /**
@@ -67,7 +68,8 @@ var Filter = {
     Filter.injectEasyHighlightColors();
     for (var key in Config.filter) {
       const lines = (Conf[key] as string).split('\n');
-      if (key === 'general' && easyLines.length) lines.push(...easyLines);
+      if (key === 'general' && easyLines.general.length) lines.push(...easyLines.general);
+      if (key === 'replycount' && easyLines.replycount.length) lines.push(...easyLines.replycount);
       for (var line of lines) {
         let hl:       string | undefined;
         let tile =    false;
@@ -83,6 +85,7 @@ var Filter = {
         let noti =    false;
         let override = false;
         let stub =    Conf.Stubs;
+        let cmp:      ((count: number) => boolean) | undefined;
 
         if (line[0] === '#') continue;
 
@@ -94,6 +97,19 @@ var Filter = {
         if (key === 'uniqueID' || key === 'MD5') {
           // MD5 filter will use strings instead of regular expressions.
           regexp = regexpMatch[1];
+        } else if (key === 'replycount') {
+          regexp = regexpMatch[1];
+          cmp = Filter.parseCount(regexpMatch[1]);
+          if (!cmp) {
+            new Notice('warning', [
+              $.tn(`Invalid ${key} filter:`),
+              $.el('br'),
+              $.tn(line),
+              $.el('br'),
+              $.tn('Reply count filters take a number with an optional comparison operator, e.g. /<10/ or />=300/.')
+            ] as unknown as Node, 60);
+            continue;
+          }
         } else {
           try {
             // Please, don't write silly regular expressions.
@@ -179,7 +195,7 @@ var Filter = {
           : `${key}: ${regexp}`;
 
         const filterObj: FilterObj
-          = { regexp, boards, excludes, mask, hide, stub, hl, tile, top, noti, reason, poster, replies, override, label };
+          = { regexp, cmp, boards, excludes, mask, hide, stub, hl, tile, top, noti, reason, poster, replies, override, label };
 
         // Fields that this filter applies to (for 'general' filters)
         if (key === 'general') {
@@ -251,6 +267,19 @@ var Filter = {
 
   parseBoardsMemo: dict(),
 
+  parseCount(expression: string): ((count: number) => boolean) | undefined {
+    const m = expression.match(/^(<=|>=|<|>|=)?(\d+)$/);
+    if (!m) return undefined;
+    const n = +m[2];
+    switch (m[1]) {
+      case '<':  return count => count < n;
+      case '<=': return count => count <= n;
+      case '>':  return count => count > n;
+      case '>=': return count => count >= n;
+      default:   return count => count === n;
+    }
+  },
+
   // loose: late-assigned in catalog(); holds raw catalog JSON items keyed by thread no.
   catalogData: undefined as unknown as Record<string, any>,
 
@@ -286,7 +315,9 @@ var Filter = {
             (filter.boards   && !(filter.boards[board]   || filter.boards[site]  )) ||
             (filter.excludes &&  (filter.excludes[board] || filter.excludes[site])) ||
             (filter.mask & mask) ||
-            (isString ? (filter.regexp !== value) : !(filter.regexp as RegExp).test(value))
+            (filter.cmp ? !filter.cmp(+value)
+              : isString ? (filter.regexp !== value)
+              : !(filter.regexp as RegExp).test(value))
           ) continue;
           if (filter.hide) {
             if (hideable) {
@@ -402,14 +433,19 @@ var Filter = {
     const match = (rule.pattern || '').trim();
     if (!match) return null;
 
-    const flags = rule.caseSensitive ? '' : 'i';
-    let line = `/${Filter.escape(match)}/${flags}`;
+    const type = (rule.type in Config.filter) ? rule.type : 'general';
+    let line: string;
+    if (type === 'replycount') {
+      line = `/${match}/`;
+    } else {
+      const flags = rule.caseSensitive ? '' : 'i';
+      line = `/${Filter.escape(match)}/${flags}`;
+    }
 
     const options: string[] = [];
     if ((rule.boards || '').trim()) options.push(`boards:${rule.boards.trim()}`);
 
-    const type = (rule.type in Config.filter) ? rule.type : 'general';
-    options.push(`type:${type === 'general' ? 'subject,name,comment' : type}`);
+    if (type !== 'replycount') options.push(`type:${type === 'general' ? 'subject,name,comment' : type}`);
 
     if (!rule.hide) {
       const classes = Filter.easyHighlightClasses(rule);
@@ -424,13 +460,14 @@ var Filter = {
     return line;
   },
 
-  easyFilterLines(): string[] {
-    const lines: string[] = [];
+  easyFilterLines(): { general: string[], replycount: string[] } {
+    const general: string[] = [];
+    const replycount: string[] = [];
     for (const rule of Filter.parseEasyFilterRules(Conf['easyFilters'])) {
       const line = Filter.easyRuleToLine(rule);
-      if (line) lines.push(line);
+      if (line) (rule.type === 'replycount' ? replycount : general).push(line);
     }
-    return lines;
+    return { general, replycount };
   },
 
   // Injects a stylesheet defining the highlight color variables for every custom
@@ -595,6 +632,10 @@ var Filter = {
 
   valueF: {
     postID (post) { return [`${post.ID}`]; },
+    replycount(post) {
+      const count = (post as Post & { threadReplies?: number }).threadReplies;
+      return typeof count === 'number' ? [`${count}`] : [];
+    },
     name(post) { return post.info.name === undefined ? [] : [post.info.name]; },
     uniqueID(post) { return [post.info.uniqueID || '']; },
     tripcode(post) { return post.info.tripcode === undefined ? [] : [post.info.tripcode]; },

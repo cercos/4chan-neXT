@@ -246,6 +246,22 @@ const tsPlugin = typescript({
       sourcemap,
     });
 
+    const bridge = await rollup({
+      input: resolve(__dirname, '../src/meta/bridge.ts'),
+      onwarn,
+      plugins: [
+        tsPlugin,
+        noFormat ? undefined : fixTsOutputFormat({ include: ["**/*.ts", "**/*.tsx"] }),
+        cleanupPlugin,
+      ].filter(Boolean),
+    });
+
+    await bridge.write({
+      format: 'iife',
+      file: resolve(crxDir, 'bridge.js'),
+      sourcemap,
+    });
+
     await writeFile(
       resolve(crxDir, 'manifest.json'),
       generateManifestJson(packageJson, version, 3),

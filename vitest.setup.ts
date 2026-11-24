@@ -10,6 +10,18 @@
 (globalThis as Record<string, unknown>).GM = undefined;
 (globalThis as Record<string, unknown>).GM_info = { version: '5.0' };
 
+// jsdom's Blob lacks the arrayBuffer() instance method real browsers have.
+if (typeof Blob.prototype.arrayBuffer !== 'function') {
+  Blob.prototype.arrayBuffer = function (this: Blob): Promise<ArrayBuffer> {
+    return new Promise((resolve, reject) => {
+      const reader = new FileReader();
+      reader.onload = () => resolve(reader.result as ArrayBuffer);
+      reader.onerror = () => reject(reader.error);
+      reader.readAsArrayBuffer(this);
+    });
+  };
+}
+
 // src/main/Main.ts calls $.ready(() => Main.init()) at module scope, and
 // $.ready fires immediately unless document.readyState is 'loading'. Pin it
 // there so importing app modules never boots the whole script inside a test.

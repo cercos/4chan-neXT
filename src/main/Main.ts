@@ -229,7 +229,7 @@ var Main = {
       !SW.yotsuba.regexp.captcha.test(location.href) &&
       !$$('script:not([src])', d as any).filter(s => /this\[/.test(s.textContent)).length
     ) {
-      ($.getSync || $.get)({'jsWhitelist': Conf['jsWhitelist']}, ({jsWhitelist}) => {
+      ($.getSync || $.get)({'jsWhitelist': Conf['jsWhitelist'], 'Captcha Solver': Conf['Captcha Solver']}, ({jsWhitelist, 'Captcha Solver': solver}) => {
         const sources = jsWhitelist.replace(/^#.*$/mg, '').split(/[\s;]+/).filter(Boolean);
         const mathBoard = $$('script:not([src])', d as any).some(s => /\bmath_tags\s*=\s*true\b/.test(s.textContent || ''));
         if (mathBoard) {
@@ -239,7 +239,8 @@ var Main = {
         // whitelist still blocks the page's inline scripts but not our page-context code.
         // MathJax v2 evaluates strings internally, so math boards also need 'unsafe-eval'.
         const extras = [`'nonce-${$.getCSPNonce()}'`];
-        if (mathBoard) extras.push(`'unsafe-eval'`);
+        if (mathBoard || solver === 'browser') extras.push(`'unsafe-eval'`);
+        if (solver === 'browser') extras.push(`'wasm-unsafe-eval'`);
         const parsedList = [...new Set(sources)].join(' ');
         if (parsedList) $.addCSP(`script-src ${parsedList} ${extras.join(' ')}`);
       });

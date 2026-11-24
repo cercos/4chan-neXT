@@ -6,13 +6,15 @@
   },
   "counts": {
     "xt": 259,
-    "next": 431,
-    "added": 166,
-    "changed": 3
+    "next": 439,
+    "added": 174,
+    "changed": 4
   },
   "added": [
     "Allow Browser Autofill",
+    "Auto Prune Read Only",
     "Auto-close Tags",
+    "Catalog Columns",
     "Catalog Highlight Border Width",
     "Catalog Highlight Filter Background",
     "Catalog Highlight Filter Border Style",
@@ -126,9 +128,14 @@
     "Highlight You Text Mode",
     "Icon Set",
     "Link Text Color",
+    "Mobile Bar Layout",
+    "Mobile Layout",
+    "Mobile Replies Popup",
+    "Mobile Watcher View",
     "Persistent Download Media",
     "QR Drafts",
     "Quote Text Color",
+    "Remux Videos",
     "Scroll Marker Ghost Color",
     "Scroll Marker Ghost Match Highlight",
     "Scroll Marker Ghost Opacity",
@@ -180,6 +187,7 @@
     "Watch (catalog click)"
   ],
   "changed": [
+    "Auto Prune",
     "Replace Thumbnails",
     "Scroll Markers",
     "Thread Updater"

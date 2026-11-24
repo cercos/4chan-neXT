@@ -1,5 +1,13 @@
 ## 4chan-neXT changelog
 
+### 1.2.7.1 (2026-11-23)
+
+- Added a Reply Count filter: hide or highlight threads in the index and catalog by how many replies they have, e.g. `/<10/` or `/>=300/`. Also available in Easy Filters.
+- Added a `Remux Videos` setting (on by default): MP4 uploads using VP8/VP9 video are converted to WebM in Quick Reply so 4chan accepts them, and you get a warning when an attached video won't be accepted.
+- Added an experimental Captcha Solver (off by default) that fills in captcha answers for you to check before posting. It runs locally in your browser after a one-time 10.5 MB engine download and a separate model download, both of which need to be downloaded again if you clear your browser cache. Settings shows when a newer model is available.
+- Fixed the captcha not loading in the Chrome extension.
+- Fixed hovered videos restarting from the beginning when opened.
+
 ### 1.2.6.5 (2026-07-25)
 
 - Big mobile revamp: the whole layout now works better on phones and touch screens. Turns on automatically on mobile, or toggle it under `Mobile` in Settings.

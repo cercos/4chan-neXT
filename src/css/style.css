@@ -1551,6 +1551,77 @@ div[data-checked="false"] > .suboption-list {
   display: inline;
   opacity: .72;
 }
+#xt-settings-overlay .settings-captcha-box .description {
+  display: block;
+  margin: 0 0 5px 1.55em;
+  font-size: .9em;
+  opacity: .6;
+}
+#xt-settings-overlay .settings-captcha-box div[data-name="Stacked TCaptcha Style"] > .description,
+#xt-settings-overlay .settings-captcha-box div[data-name="Captcha Solver"] > .description {
+  margin-left: 0;
+}
+#xt-settings-overlay .settings-captcha-box div[data-name] {
+  margin-top: 2px;
+}
+.captcha-engine-box {
+  display: flex;
+  align-items: center;
+  gap: 8px;
+  margin: 4px 0 2px;
+  padding: 6px 8px;
+  border: 1px solid rgba(214, 160, 40, .6);
+  border-radius: 4px;
+  background: rgba(214, 160, 40, .1);
+}
+.captcha-engine-box[hidden] {
+  display: none;
+}
+.captcha-engine-box.ready {
+  border-color: rgba(127, 127, 127, .4);
+  background: none;
+  opacity: .8;
+}
+.captcha-engine-box > span {
+  flex: 1;
+}
+.captcha-engine-box > button {
+  flex: none;
+}
+.captcha-solver-choice {
+  display: inline-flex;
+  vertical-align: middle;
+  border: 1px solid rgba(127, 127, 127, .5);
+  border-radius: 4px;
+  overflow: hidden;
+}
+.captcha-solver-choice > label {
+  text-decoration: none !important;
+  cursor: pointer;
+}
+.captcha-solver-choice > label + label {
+  border-left: 1px solid rgba(127, 127, 127, .5);
+}
+.captcha-solver-choice input {
+  position: absolute;
+  opacity: 0;
+  pointer-events: none;
+}
+.captcha-solver-choice span {
+  display: inline-block;
+  padding: 1px 10px;
+}
+.captcha-solver-choice > label:hover span {
+  background: rgba(127, 127, 127, .15);
+}
+.captcha-solver-choice > label:has(input:checked) span {
+  background: rgba(127, 127, 127, .4);
+  font-weight: bold;
+}
+.captcha-solver-choice > label:has(input:focus-visible) span {
+  outline: 1px solid;
+  outline-offset: -2px;
+}
 #fourchanx-settings.settings-description-tooltips:not(.settings-searching) .description {
   display: none;
 }

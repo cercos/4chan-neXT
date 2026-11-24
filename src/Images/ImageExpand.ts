@@ -254,6 +254,14 @@ var ImageExpand = {
     // Do not expand images of hidden/filtered replies, or already expanded pictures.
     if (post.isHidden || file.isExpanding || file.isExpanded) { return; }
 
+    // If this file is showing in a hover preview, end the hover first so UI.hover's
+    // cleanup returns the element to the cache before the lookup below reads it.
+    // The capture-phase click listener fires before the hover's bubble-phase end
+    // handler, so without this a fresh element is created and playback restarts.
+    if (!file.fullImage && $.id('ihover')?.dataset.fileID === `${post.fullID}.${file.index}`) {
+      thumb.dispatchEvent(new MouseEvent('mouseout'));
+    }
+
     let el: HTMLImageElement| HTMLVideoElement;
 
     $.addClass(thumb, 'expanding');

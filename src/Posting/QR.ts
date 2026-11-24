@@ -4,6 +4,7 @@ import Callbacks from '../classes/Callbacks';
 import Notice from '../classes/Notice';
 import Main from '../main/Main';
 import { detectMobileDevice, resolveMobileLayout } from '../Miscellaneous/MobileLayout';
+import GeoFlag, { type GeoFlagInfo } from './GeoFlag';
 import QRMobile from './QRMobile';
 import { shouldCloseAfterPost } from './QRMobileLogic';
 import Favicon from '../Monitoring/Favicon';
@@ -17,6 +18,7 @@ import Menu from '../Menu/Menu';
 import UI from '../General/UI';
 import BoardConfig from '../General/BoardConfig';
 import Get from '../General/Get';
+import { VideoRemuxer } from './VideoRemuxer';
 import { VideoStripper } from './VideoStripper';
 import QRFileStore from '../platform/QRFileStore';
 import { DAY, dict, platform, SECOND } from '../platform/helpers';
@@ -2459,6 +2461,15 @@ var QR = {
     }
   },
 
+  noteRemuxed(name: string, audioDropped: false | 'board' | 'unsupported' | undefined) {
+    const message = audioDropped === 'board'
+      ? `Converted ${name} to WebM and removed its audio for this board.`
+      : audioDropped === 'unsupported'
+        ? `Converted ${name} to WebM. Its audio was removed because this browser cannot encode Opus.`
+        : `Converted ${name} to WebM.`;
+    new Notice('info', message, 5);
+  },
+
   // setFile reports each stripped video here. If a prior notice is still
   // showing (a batch dump, or a file dropped onto the list moments later) we
   // bump its count in place and refresh its dismiss timer rather than stacking
@@ -2952,6 +2963,29 @@ var QR = {
     };
 
     addFlag('0', g.BOARD!.config.country_flags ? 'Geographic Location' : 'None');
+    const applyGeoFlag = (geo: GeoFlagInfo | null) => {
+        if (!geo || !g.BOARD!.config.country_flags) return;
+        const text = `Geographic Location (${geo.name})`;
+        const iconClass = `flag flag-${geo.code}`;
+        entries['0'] = {text, iconClass};
+        const opt = select.querySelector<HTMLOptionElement>('option[value="0"]');
+        if (opt) opt.textContent = text;
+        const button = menu.querySelector<HTMLElement>('.flagSelector-option[data-value="0"]');
+        if (button) {
+          const optIcon = button.querySelector<HTMLElement>('.flagSelector-icon');
+          if (optIcon) optIcon.className = `flagSelector-icon ${iconClass}`;
+          const optLabel = button.querySelector<HTMLElement>('.flagSelector-label');
+          if (optLabel) optLabel.textContent = text;
+          button.title = `The flag on your last post (${new Date(geo.at).toLocaleDateString()}). ` +
+            '4chan picks it from your IP address, so it can change with a VPN or a new connection.';
+        }
+        syncSelected();
+    };
+    const onGeoFlagChanged = (e: CustomEvent) => applyGeoFlag(e.detail);
+    if (g.BOARD!.config.country_flags) {
+      GeoFlag.get(applyGeoFlag);
+      $.on(d, 'GeoFlagChanged', onGeoFlagChanged);
+    }
     for (const value in g.BOARD!.config.board_flags) {
       addFlag(value, g.BOARD!.config.board_flags[value]);
     }
@@ -3005,6 +3039,7 @@ var QR = {
       $.off(QR.nodes.form, 'scroll', onViewportChange);
       $.off(QR.nodes.form, 'focusin', syncTheme);
       $.off(select, 'change', syncSelected);
+      $.off(d, 'GeoFlagChanged', onGeoFlagChanged);
       themeObserver.disconnect();
       if (themeSyncRaf) {
         cancelAnimationFrame(themeSyncRaf);
@@ -3199,13 +3234,14 @@ var QR = {
         if (!captcha) { captcha = Captcha.cache.request(!!threadID); }
       }
       if (!captcha) {
-        if (resolveMobileLayout(Conf['Mobile Layout'], detectMobileDevice()) && QR.captcha === Captcha.t) {
-          (QR.captcha as any).pendingSubmitIntent = true;
+        const focus = !QR.cooldown.auto || (d.activeElement === QR.nodes.status);
+        if (QR.captcha === Captcha.t) {
           err = 'Solve the captcha to post.';
+          (QR.captcha as any).requestForSubmit(focus);
         } else {
           err = 'No valid captcha.';
+          QR.captcha.setup(focus);
         }
-        QR.captcha.setup(!QR.cooldown.auto || (d.activeElement === QR.nodes.status));
       }
     }
 
@@ -3346,6 +3382,7 @@ var QR = {
         if (wasNoopTCaptcha) {
           (QR.captcha as any).setState?.('failed');
           (QR.captcha as any).forceLoad?.();
+          (QR.captcha as any).pendingSubmitIntent = true;
           err = 'Captcha is now required. A new captcha has been requested.';
         } else {
           // Remove the obnoxious 4chan Pass ad.
@@ -3355,6 +3392,11 @@ var QR = {
           } else if (/expired/i.test(err.textContent)) {
             err = 'This CAPTCHA is no longer valid because it has expired.';
             (QR.captcha as any).setState?.('expired');
+            if (QR.captcha === Captcha.t) {
+              (QR.captcha as any).challengeExpiresAt = 0;
+              (QR.captcha as any).pendingSubmitIntent = true;
+              (QR.captcha as any).forceLoad?.();
+            }
           } else {
             (QR.captcha as any).setState?.('failed');
           }
@@ -5245,8 +5287,24 @@ class post {
       delete this.preStripFile;
     }
     try {
-      // On restore the file was already audio-stripped/renamed when first added,
-      // so skip that reprocessing (and its notices).
+      // On restore the file was already remuxed/audio-stripped/renamed when first
+      // added, so skip that reprocessing (and its notices).
+      if (!opts.restore && Conf['Remux Videos'] && VideoRemuxer.matches(file)) {
+        const remuxed = await VideoRemuxer.process(file, {
+          keepAudio: !(Conf['Strip Video Audio'] && BoardConfig.noAudio(g.BOARD!.ID)),
+        });
+        if (remuxed.file) {
+          if (remuxed.audioDropped) {
+            this.preStripFile = file;
+            this.audioWasStripped = true;
+          }
+          QR.noteRemuxed(file.name, remuxed.audioDropped);
+          file = remuxed.file;
+        } else if (remuxed.warning) {
+          new Notice('warning', remuxed.warning, 15);
+        }
+      }
+
       if (
         !opts.restore &&
         Conf['Strip Video Audio'] &&
