@@ -5,6 +5,7 @@
 - Added a Reply Count filter: hide or highlight threads in the index and catalog by how many replies they have, e.g. `/<10/` or `/>=300/`. Also available in Easy Filters.
 - Added a `Remux Videos` setting (on by default): MP4 uploads using VP8/VP9 video are converted to WebM in Quick Reply so 4chan accepts them, and you get a warning when an attached video won't be accepted.
 - Added an experimental Captcha Solver (off by default) that fills in captcha answers for you to check before posting. It runs locally in your browser after a one-time 10.5 MB engine download and a separate model download, both of which need to be downloaded again if you clear your browser cache. Settings shows when a newer model is available.
+- Added a `Save Captchas for Training` setting (shown when the Captcha Solver is on) to help improve the solver model. It saves captchas from your successful posts so you can export them from Settings as a `.jsonl` file. Please collect at least 100 before exporting. An upload location isn't available yet, so for now just export the file and hang onto it until one is provided.
 - Fixed the captcha not loading in the Chrome extension.
 - Fixed hovered videos restarting from the beginning when opened.
 
