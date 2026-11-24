@@ -778,9 +778,9 @@ const Config = {
         'EXPERIMENTAL. Fills in answers for you to check before posting. Browser runs our model inside the browser, with no server.',
         2
       ],
-      'Save Captchas for Training': [
+      'Send Captchas for Training': [
         false,
-        'Saves captchas from your successful posts so you can export them and submit them to help train the captcha solver model.',
+        'Sends captchas you solve to a server that collects them for training the captcha solver model.',
         2
       ],
       'Pass Link': [

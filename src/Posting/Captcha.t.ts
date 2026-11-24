@@ -49,6 +49,7 @@ const CaptchaT = {
     $.after(QR.nodes.com.parentNode, root);
 
     $.on(d, 'QRPostSuccessful', () => { CaptchaTrainingLog.notePostSuccessful(); });
+    CaptchaTrainingLog.sendPending();
     if (Conf['Captcha Solver'] === 'browser') {
       solverReady().then(ok => ok && warmBrowserSolver()).catch(err => console.warn('[Captcha Solver: browser]', err));
     }

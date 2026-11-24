@@ -1,5 +1,5 @@
 import { describe, expect, it } from 'vitest';
-import { answerSource, buildTrainingRecord, exportFileName, pickTasks, toJsonl } from './CaptchaTrainingLogLogic';
+import { answerSource, buildTrainingRecord, pickTasks } from './CaptchaTrainingLogLogic';
 
 const challenge = (tasks: any[]) => ({ challenge: 'abc123', ttl: 120, tasks });
 const task = (n: number, extra: Record<string, unknown> = {}) => ({ items: Array.from({ length: n }, (_, i) => `img${i}`), ...extra });
@@ -51,18 +51,5 @@ describe('buildTrainingRecord', () => {
   it('rejects challenges without an id or tasks', () => {
     expect(buildTrainingRecord({ ...pending, challenge: { tasks: [task(2)] } }, '0', 5)).toBeNull();
     expect(buildTrainingRecord({ ...pending, challenge: challenge([]) }, '', 5)).toBeNull();
-  });
-});
-
-describe('export helpers', () => {
-  it('names files by local timestamp', () => {
-    expect(exportFileName(new Date(2026, 10, 21, 9, 5, 7))).toBe('captcha-training-20261121-090507.jsonl');
-  });
-  it('writes one JSON object per line', () => {
-    const r = buildTrainingRecord({ challenge: challenge([task(2)]), board: 'g', loadedAt: 1 }, '1', 2)!;
-    const out = toJsonl([r, r]);
-    expect(out.split('\n')).toHaveLength(3);
-    expect(JSON.parse(out.split('\n')[0]).id).toBe('abc123');
-    expect(toJsonl([])).toBe('');
   });
 });
