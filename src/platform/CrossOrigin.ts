@@ -11,6 +11,8 @@ export interface CrossOriginAjaxOptions {
   responseType?: 'json' | 'text',
   /** request headers */
   headers?: Record<string, string>;
+  method?: 'GET' | 'POST';
+  body?: string;
 }
 
 const violentmonkeyDropsBinaryResponses = (() => {
@@ -165,8 +167,9 @@ var CrossOrigin = {
   //   `getResponseHeader` - function for reading response headers
   ajax(url: string, options: CrossOriginAjaxOptions ={}) {
     let gmReq: any; // loose: any — GM_xmlhttpRequest return handle, no shared type decl
-    let {onloadend, timeout, responseType, headers} = options;
+    let {onloadend, timeout, responseType, headers, method, body} = options;
     if (responseType == null) { responseType = 'json'; }
+    if (method == null) { method = 'GET'; }
 
     const req = new CrossOrigin.Request();
     if (onloadend) req.onloadend = onloadend;
@@ -177,11 +180,12 @@ var CrossOrigin = {
       }
 
       const gmOptions = {
-        method: 'GET',
+        method,
         anonymous: true,
         url,
         headers,
         timeout,
+        ...(body != null ? {data: body} : {}),
         onload(xhr: any) { // loose: any — GM_xmlhttpRequest response object, no shared type decl
           try {
             let response = xhr.responseText;
@@ -226,7 +230,7 @@ var CrossOrigin = {
         };
       }
     } else {
-      $.eventPageRequest({type: 'ajax', url, responseType, headers, timeout}).then((result: any) => {
+      $.eventPageRequest({type: 'ajax', url, responseType, headers, timeout, method, body}).then((result: any) => {
         if (result.status) {
           $.extend(req, result);
         }

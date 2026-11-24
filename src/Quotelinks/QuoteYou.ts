@@ -10,6 +10,7 @@ import ScrollMarkers from "../Miscellaneous/ScrollMarkers";
 import $ from "../platform/$";
 import $$ from "../platform/$$";
 import PostRedirect from "../Posting/PostRedirect";
+import GeoFlag from "../Posting/GeoFlag";
 import type Post from "../classes/Post";
 
 var QuoteYou = {
@@ -79,6 +80,7 @@ var QuoteYou = {
     if (QuoteYou.isYou(this)) {
       $.addClass(this.nodes.root, 'yourPost');
       ScrollMarkers.markScroll();
+      GeoFlag.note(this);
     }
 
     // Stop there if there's no quotes in that post.

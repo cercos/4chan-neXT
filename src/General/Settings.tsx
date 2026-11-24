@@ -8,6 +8,8 @@ import SimpleFiltersPage from './Settings/SimpleFilters.html';
 import StylingPage from './Settings/Styling.html';
 import Redirect from '../Archive/Redirect';
 import Config, { styleVariantKeys } from '../config/Config';
+import CaptchaTrainingLog from '../Posting/CaptchaTrainingLog';
+import { ENGINE_SIZE_MB, downloadEngine, downloadModel, engineDownloaded, installedModel, latestModel, modelCompatible, removeEngine, removeModel, type ModelInfo } from '../Posting/CaptchaBrowserSolver';
 import ImageHost from '../Images/ImageHost';
 import { noWebmTitleMetadataSites } from '../Images/Metadata';
 import CustomCSS from '../Miscellaneous/CustomCSS';
@@ -2593,8 +2595,23 @@ Enable it on boards.${location.hostname.split('.')[1]}.org in your browser's pri
   },
 
   posting(section: HTMLElement) {
+      const captchaKeys = [
+        'Auto-load captcha',
+        'Post on Captcha Completion',
+        'Force Noscript Captcha',
+        'Stacked TCaptcha',
+        'Save Captchas for Training',
+        'Pass Link',
+      ];
+      const postingKeys = Object.keys(Config.main['Posting and Captchas']).filter(k => !captchaKeys.includes(k));
       Settings.renderMainGroups(section, {
-        categories: ['Posting and Captchas'],
+        categories: [{
+          name: 'Posting and Captchas',
+          subgroups: [
+            ['Posting', postingKeys],
+            ['Captcha', captchaKeys, 1],
+          ],
+        }],
         includeSetting: (key: string) => ![
           'Comment Preview',
           'Comment Preview Default Mode',
@@ -2605,6 +2622,7 @@ Enable it on boards.${location.hostname.split('.')[1]}.org in your browser's pri
           'Show Comment Preview Header Icon',
           'Dogiri Timeline Size',
           'Stacked TCaptcha Style',
+          'Captcha Solver',
         ].includes(key),
       });
 
@@ -2626,6 +2644,7 @@ Enable it on boards.${location.hostname.split('.')[1]}.org in your browser's pri
       const styleLabel = $.el('label');
       const styleSelect = $.el('select', { name: 'Stacked TCaptcha Style' }) as HTMLSelectElement;
       for (const [value, text] of [
+        ['stack', 'Answer stack'],
         ['classic', 'Classic row'],
         ['inline', 'Inline chips'],
         ['dots', 'Stepper dots'],
@@ -2636,11 +2655,216 @@ Enable it on boards.${location.hostname.split('.')[1]}.org in your browser's pri
       $.on(styleSelect, 'change', () => $.event('StackedCaptchaStyleChanged', null));
       $.add(styleLabel, [$.el('span', { className: 'setting-title', textContent: 'Stacked Captcha Style: ' }), styleSelect]);
       $.add(styleRow, [styleLabel, Settings.descriptionSpan(styleDescription)]);
-      const stackedSub = $.el('div', { className: 'suboption-list' });
-      $.add(stackedSub, styleRow);
-      $.add(stackedRow, stackedSub);
+      let stackedSub = $(':scope > .suboption-list', stackedRow) as HTMLElement | null;
+      if (!stackedSub) {
+        stackedSub = $.el('div', { className: 'suboption-list' });
+        $.add(stackedRow, stackedSub);
+      }
+      $.prepend(stackedSub, styleRow);
       $.get({ 'Stacked TCaptcha Style': Conf['Stacked TCaptcha Style'] }, (items: Record<string, any>) => {
         styleSelect.value = normalizeCaptchaStyle(items['Stacked TCaptcha Style']);
+      });
+
+      const solverDescription = String(Config.main['Posting and Captchas']['Captcha Solver'][1]);
+      const solverRow = $.el('div') as HTMLDivElement;
+      solverRow.dataset.name = 'Captcha Solver';
+      solverRow.dataset.settingTitle = 'Captcha Solver';
+      Settings.registerSettingDescription(solverRow, solverDescription);
+      const solverGroup = $.el('span', { className: 'captcha-solver-choice' });
+      const solverRadios: HTMLInputElement[] = [];
+      const engineBox = $.el('div', { className: 'captcha-engine-box', hidden: true }) as HTMLDivElement;
+      const engineText = $.el('span');
+      const engineButton = $.el('button', { type: 'button' }) as HTMLButtonElement;
+      $.add(engineBox, [engineText, engineButton]);
+      let engineState: 'missing' | 'busy' | 'ready' = 'missing';
+      const renderEngine = (state: typeof engineState, error?: string) => {
+        engineState = state;
+        engineBox.classList.toggle('ready', state === 'ready');
+        engineButton.disabled = state === 'busy';
+        engineButton.hidden = false;
+        if (state === 'ready') {
+          engineText.textContent = 'Engine downloaded. It stays saved until 4chan\'s site data is cleared.';
+          engineButton.textContent = 'Remove';
+        } else if (state === 'busy') {
+          engineText.textContent = `Downloading engine (${ENGINE_SIZE_MB} MB)\u2026`;
+          engineButton.hidden = true;
+        } else {
+          engineText.textContent = error
+            ? `Download failed: ${error}`
+            : `The browser solver needs a one-time ${ENGINE_SIZE_MB} MB engine download. It stays saved until 4chan's site data is cleared.`;
+          engineButton.textContent = error ? 'Retry' : 'Download engine';
+        }
+      };
+      const modelBox = $.el('div', { className: 'captcha-engine-box', hidden: true }) as HTMLDivElement;
+      const modelText = $.el('span');
+      const modelButton = $.el('button', { type: 'button' }) as HTMLButtonElement;
+      $.add(modelBox, [modelText, modelButton]);
+      let modelBusy = false;
+      let modelInstalled: ModelInfo | null = null;
+      let modelLatest: ModelInfo | null = null;
+      const sizeText = (info: ModelInfo | null) => info?.sizeMB ? ` (${info.sizeMB} MB)` : '';
+      const renderModel = (error?: string) => {
+        const inst = modelInstalled;
+        const latest = modelLatest;
+        const canGet = !!latest && modelCompatible(latest);
+        const newer = canGet && (!inst || latest!.version > inst.version);
+        modelBox.classList.toggle('ready', !!inst && !newer && !error);
+        modelButton.disabled = modelBusy;
+        modelButton.hidden = modelBusy;
+        if (modelBusy) {
+          modelText.textContent = `Downloading model${sizeText(latest)}\u2026`;
+        } else if (error) {
+          modelText.textContent = `Model: ${error}`;
+          modelButton.textContent = 'Retry';
+        } else if (newer) {
+          modelText.textContent = inst
+            ? `Model update available: v${latest!.version}${sizeText(latest)}. You have v${inst.version}.`
+            : `The browser solver needs its model${sizeText(latest)}, downloaded separately from the engine.`;
+          modelButton.textContent = inst ? 'Update model' : 'Download model';
+        } else if (inst) {
+          modelText.textContent = latest && !canGet && latest.version > inst.version
+            ? `Model v${inst.version} installed. A newer model needs a 4chan-neXT update.`
+            : `Model v${inst.version} installed and up to date.`;
+          modelButton.textContent = 'Remove';
+        } else {
+          modelText.textContent = latest ? 'The latest model needs a 4chan-neXT update.' : 'Checking for the model\u2026';
+          modelButton.hidden = true;
+        }
+      };
+      const refreshModel = async () => {
+        modelInstalled = await installedModel();
+        renderModel();
+        try {
+          modelLatest = await latestModel();
+          if (!modelBusy) { renderModel(); }
+        } catch (err: any) { // loose: any thrown value
+          if (!modelBusy) {
+            if (modelInstalled) { renderModel(); } else { renderModel(err?.message || String(err)); }
+          }
+        }
+      };
+      $.on(modelButton, 'click', async () => {
+        const latest = modelLatest;
+        const newer = !!latest && modelCompatible(latest) && (!modelInstalled || latest.version > modelInstalled.version);
+        if (modelInstalled && !newer) {
+          await removeModel();
+          modelInstalled = null;
+          renderModel();
+          return;
+        }
+        if (!latest) { refreshModel(); return; }
+        modelBusy = true;
+        renderModel();
+        try {
+          await downloadModel(latest);
+          modelInstalled = latest;
+          modelBusy = false;
+          renderModel();
+        } catch (err: any) { // loose: any thrown value
+          modelBusy = false;
+          renderModel(err?.message || String(err));
+        }
+      });
+      const showEngine = (show: boolean) => {
+        engineBox.hidden = !show;
+        modelBox.hidden = !show;
+        const trainingSetting = $('div[data-name="Save Captchas for Training"]', section) as HTMLDivElement | null;
+        if (trainingSetting) { trainingSetting.style.display = show ? '' : 'none'; }
+        if (show && engineState !== 'busy') {
+          engineDownloaded().then(ok => { if (engineState !== 'busy') { renderEngine(ok ? 'ready' : 'missing'); } });
+        }
+        if (show && !modelBusy) { refreshModel(); }
+      };
+      $.on(engineButton, 'click', async () => {
+        if (engineState === 'ready') {
+          await removeEngine();
+          renderEngine('missing');
+          return;
+        }
+        renderEngine('busy');
+        try {
+          await downloadEngine();
+          renderEngine('ready');
+        } catch (err: any) { // loose: any thrown value
+          renderEngine('missing', err?.message || String(err));
+        }
+      });
+      for (const [value, text] of [
+        ['off', 'Off'],
+        ['browser', 'Browser'],
+      ] as const) {
+        const radio = $.el('input', { type: 'radio', name: 'Captcha Solver', value }) as HTMLInputElement;
+        $.on(radio, 'change', $.cb.value);
+        $.on(radio, 'change', () => showEngine(radio.value === 'browser'));
+        solverRadios.push(radio);
+        const lbl = $.el('label');
+        $.add(lbl, [radio, $.el('span', { textContent: text })]);
+        $.add(solverGroup, lbl);
+      }
+      $.add(solverRow, [
+        $.el('span', { className: 'setting-title', textContent: 'Captcha Solver: ' }),
+        solverGroup,
+        Settings.descriptionSpan(solverDescription),
+        engineBox,
+        modelBox,
+      ]);
+      $.after(styleRow, solverRow);
+      const trainingRow = $('div[data-name="Save Captchas for Training"]', section) as HTMLDivElement | null;
+      const trainingToggle = $('input[name="Save Captchas for Training"]', section) as HTMLInputElement | null;
+      if (trainingRow && trainingToggle) {
+        const trainingBox = $.el('div', { className: 'captcha-engine-box ready', hidden: true }) as HTMLDivElement;
+        const trainingText = $.el('span');
+        const exportButton = $.el('button', { type: 'button', textContent: 'Export' }) as HTMLButtonElement;
+        const clearButton = $.el('button', { type: 'button', textContent: 'Delete exported' }) as HTMLButtonElement;
+        $.add(trainingBox, [trainingText, exportButton, clearButton]);
+        $.add(trainingRow, trainingBox);
+        const refreshTraining = async (note = '') => {
+          try {
+            const { total, unexported } = await CaptchaTrainingLog.counts();
+            trainingBox.hidden = !trainingToggle.checked && total === 0;
+            trainingText.textContent = `${note}${total} saved, ${unexported} not exported yet.`;
+            exportButton.disabled = unexported === 0;
+            clearButton.disabled = total === unexported;
+          } catch (err: any) { // loose: any thrown value
+            trainingBox.hidden = !trainingToggle.checked;
+            trainingText.textContent = `Saved captchas unavailable: ${err?.message || err}`;
+            exportButton.disabled = clearButton.disabled = true;
+          }
+        };
+        $.on(trainingToggle, 'change', () => refreshTraining());
+        $.on(exportButton, 'click', async () => {
+          let note: string;
+          try {
+            const n = await CaptchaTrainingLog.exportNew();
+            note = n ? `Exported ${n}. ` : 'Nothing new to export. ';
+          } catch (err: any) { // loose: any thrown value
+            note = `Export failed: ${err?.message || err}. `;
+          }
+          refreshTraining(note);
+        });
+        $.on(clearButton, 'click', async () => {
+          let note: string;
+          try {
+            note = `Deleted ${await CaptchaTrainingLog.clearExported()}. `;
+          } catch (err: any) { // loose: any thrown value
+            note = `Delete failed: ${err?.message || err}. `;
+          }
+          refreshTraining(note);
+        });
+        refreshTraining();
+      }
+      const captchaBox = stackedRow.closest('details');
+      if (captchaBox) {
+        captchaBox.classList.add('settings-captcha-box');
+        for (const d of $$('.description', captchaBox)) {
+          const first = d.firstChild;
+          if (first?.nodeType === Node.TEXT_NODE) { first.textContent = ''; }
+        }
+      }
+      $.get({ 'Captcha Solver': Conf['Captcha Solver'] }, (items: Record<string, any>) => {
+        const v = ['browser'].includes(items['Captcha Solver']) ? items['Captcha Solver'] : 'off';
+        for (const r of solverRadios) { r.checked = r.value === v; }
+        showEngine(v === 'browser');
       });
     }
 

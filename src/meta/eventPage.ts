@@ -31,7 +31,11 @@ var handlers = {
 
   async ajax(request: any) {
     try {
-      const res = await fetch(request.url, { headers: request.headers || {} });
+      const res = await fetch(request.url, {
+        method: request.method || 'GET',
+        headers: request.headers || {},
+        ...(request.body != null ? { body: request.body } : {}),
+      });
       if (!res.ok) {
         return { error: true };
       }
