@@ -186,7 +186,7 @@ const CaptchaT = {
       el.style.setProperty('-webkit-text-fill-color', color, 'important');
     }
 
-    for (const el of container.querySelectorAll('#t-msg, #t-desc, #t-task, .fourchanx-captcha-load-hint, .fourchanx-captcha-status-text, .fourchanx-captcha-progress, .fourchanx-captcha-crumb')) {
+    for (const el of container.querySelectorAll('#t-msg, #t-desc, #t-task, .fourchanx-captcha-load-hint, .fourchanx-captcha-status-text, .fourchanx-captcha-progress, .fourchanx-captcha-crumb, .fourchanx-captcha-summary, .fourchanx-captcha-answer')) {
       const color = this.pickReadableTextColor(el);
       el.style.setProperty('color', color, 'important');
       el.style.setProperty('-webkit-text-fill-color', color, 'important');
