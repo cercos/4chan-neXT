@@ -2768,8 +2768,6 @@ Enable it on boards.${location.hostname.split('.')[1]}.org in your browser's pri
       const showEngine = (show: boolean) => {
         engineBox.hidden = !show;
         modelBox.hidden = !show;
-        const trainingSetting = $('div[data-name="Send Captchas for Training"]', section) as HTMLDivElement | null;
-        if (trainingSetting) { trainingSetting.style.display = show ? '' : 'none'; }
         if (show && engineState !== 'busy') {
           engineDownloaded().then(ok => { if (engineState !== 'busy') { renderEngine(ok ? 'ready' : 'missing'); } });
         }
