@@ -1,5 +1,9 @@
 ## 4chan-neXT changelog
 
+### 1.2.7.2 (2026-11-24)
+
+- `Save Captchas for Training` is now `Send Captchas for Training`: captchas from your successful posts are sent automatically to help train the captcha solver model, and Settings shows how many you've sent. Export has been removed.
+
 ### 1.2.7.1 (2026-11-23)
 
 - Added a Reply Count filter: hide or highlight threads in the index and catalog by how many replies they have, e.g. `/<10/` or `/>=300/`. Also available in Easy Filters.

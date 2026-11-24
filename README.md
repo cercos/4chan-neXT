@@ -32,8 +32,9 @@ New users should start with the [User Guide](./docs/user-guide.md).
 
 ## Current Release
 
-`1.2.7.1` (2026-11-23)
+`1.2.7.2` (2026-11-24)
 
+- Captchas you solve can now be sent automatically to help train the Captcha Solver (`Send Captchas for Training`, off by default).
 - Added a Reply Count filter to hide or highlight threads by how many replies they have.
 - Added automatic MP4-to-WebM conversion for VP8/VP9 video uploads in Quick Reply.
 - Added an experimental in-browser Captcha Solver (off by default).

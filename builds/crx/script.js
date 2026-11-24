@@ -85,8 +85,8 @@ var FourchanNeXT = (function () {
 	'use strict';
 
 	var version = {
-		"version": "1.2.7.1",
-		"date": "2026-11-23T00:00:00Z"
+		"version": "1.2.7.2",
+		"date": "2026-11-24T00:00:00Z"
 	}
 	;
 
@@ -977,9 +977,9 @@ var FourchanNeXT = (function () {
 					'EXPERIMENTAL. Fills in answers for you to check before posting. Browser runs our model inside the browser, with no server.',
 					2
 				],
-				'Save Captchas for Training': [
+				'Send Captchas for Training': [
 					false,
-					'Saves captchas from your successful posts so you can export them and submit them to help train the captcha solver model.',
+					'Sends captchas you solve to a server that collects them for training the captcha solver model.',
 					2
 				],
 				'Pass Link': [
@@ -3539,169 +3539,6 @@ current-archive-text:"Archive"]
 
 	var StylingPage = `<details open class="styling-site-style" data-styling-section="siteStyle"> <summary>Site Style</summary> <div class="styling-variant-bar"> <label class="styling-variant-mode" data-next-manual-status="added">SFW / NSFW mode: <select name="sfwNsfwMode"> <option value="auto">Auto (per board)</option> <option value="sfw">Force SFW everywhere</option> <option value="nsfw">Force NSFW everywhere</option> </select> </label> <span class="settings-subnav styling-variant-tabs" role="tablist" aria-label="Edit variant"> <button type="button" class="settings-subnav-tab" data-styling-variant="sfw" role="tab">SFW</button> <button type="button" class="settings-subnav-tab" data-styling-variant="nsfw" role="tab">NSFW</button> </span> <span class="styling-variant-hint note" aria-live="polite"></span> </div> <div class="styling-theme-row"> <label>Theme: <span class="styling-theme-picker" data-open="false"> <button type="button" class="styling-theme-toggle" aria-haspopup="listbox" aria-expanded="false"> <span class="styling-theme-current">&mdash;</span> <span class="styling-theme-caret" aria-hidden="true">&#9662;</span> </button> <div class="styling-theme-menu" role="listbox" hidden></div> <select name="siteStyle" hidden></select> </span> </label> <label><input type="checkbox" name="siteStyleHome"> Apply on home page</label> </div> <div id="styling-site-style-note" class="note" hidden></div> </details>  <details open data-styling-section="highlights" data-next-section="added"> <summary>Highlights</summary> <div class="styling-highlight-intro"> <p>Each row is one highlight state. Click a row to open its colors and scrollbar marker; only one stays open at a time. Each row shows a live preview of its style. The master toggles turn whole groups on or off.</p> </div>  <div data-name="Thread Highlights" class="styling-hl-group styling-hl-group-thread"> <div class="styling-hl-grouphead"> <label class="styling-hl-master" title="Master switch for all in-thread post highlights."><input type="checkbox" name="Enable Thread Highlights"> Thread highlights</label> <label class="styling-hl-master" title="Master switch for all scrollbar markers."><input type="checkbox" name="Scrollbar Markers"> Scrollbar markers</label> </div> <div class="styling-hl-acc">  <div class="styling-hl-acc-item" data-highlight-row="own"> <div class="styling-hl-acc-head"> <span class="styling-hl-acc-name">Your post</span> <span class="styling-hl-mkheadslot" data-mk-headslot="own"></span> <span class="styling-hl-color"><input type="color" name="Highlight Own Color" title="Highlight background color"></span> <button type="button" class="styling-hl-acc-chev" aria-label="Expand row">&#9656;</button> </div> <div class="styling-hl-acc-body"> <label class="styling-hl-sub styling-hl-subtoggle" title="Highlight your own posts"><input type="checkbox" name="Highlight Own Posts"><span class="styling-hl-sub-text">Highlight</span></label> <div class="styling-hl-orow"><span class="styling-hl-olabel">Text colors</span><span class="styling-hl-octl"><span class="styling-hl-inlinecolors" data-highlight-text-manual="own" hidden><input type="color" name="Highlight Own Text Color" title="Text color"><input type="color" name="Highlight Own Link Color" title="Link color"><input type="color" name="Highlight Own Quote Color" title="Quote color"><input type="color" name="Highlight Own Dead Link Color" title="Dead link color"></span><select name="Highlight Own Text Mode" title="Defaults: keep the theme's colors; Auto: pick readable colors; Manual: choose your own"><option value="default">Defaults</option><option value="auto">Auto</option><option value="manual">Manual</option></select></span></div> <div class="styling-hl-orow"><span class="styling-hl-olabel" title="Fill the whole post background instead of just the colored left edge (the edge always shows; off is the classic XT look)">Highlight background</span><span class="styling-hl-octl"><input type="checkbox" name="Highlight Own Background"></span></div> <div class="styling-hl-orow"><span class="styling-hl-olabel" title="Width of the colored left edge">Edge width</span><span class="styling-hl-octl"><input type="number" min="1" max="12" step="1" class="field styling-hl-widthnum" name="Highlight Own Edge Width"><span class="styling-hl-unit">px</span></span></div> <div class="styling-hl-orow"><span class="styling-hl-olabel" title="CSS border style for the colored left edge">Edge style</span><span class="styling-hl-octl"><select name="Highlight Own Border Style"><option value="solid">Solid</option><option value="dashed">Dashed</option><option value="dotted">Dotted</option><option value="double">Double</option><option value="groove">Groove</option><option value="ridge">Ridge</option><option value="inset">Inset</option><option value="outset">Outset</option></select></span></div> <div class="styling-hl-orow"><span class="styling-hl-olabel">Opacity</span><span class="styling-hl-octl"><input type="range" name="Highlight Own Opacity" min="0" max="1" step="0.05" title="Highlight opacity"></span></div> <label class="styling-hl-sub styling-hl-subtoggle" title="Show a scrollbar marker for your own posts"><input type="checkbox" name="Scrollbar Mark Own Posts"><span class="styling-hl-sub-text">Scrollbar marker</span></label> <div class="styling-hl-orow"><span class="styling-hl-olabel">Match highlight color</span><span class="styling-hl-octl"><label class="styling-hl-matchlab" data-match-target="own" title="Match this marker color to the highlight color."><input type="checkbox" name="Scroll Marker Own Match Highlight"></label></span></div> <div class="styling-hl-orow"><span class="styling-hl-olabel">Marker color</span><span class="styling-hl-octl styling-hl-mkbodyslot" data-mk-bodyslot="own"><span class="styling-hl-color styling-hl-mkcolor" data-marker-color="own"><input type="color" name="Scroll Marker Own Color" title="Scrollbar marker color"></span></span></div> <div class="styling-hl-orow"><span class="styling-hl-olabel">Marker opacity</span><span class="styling-hl-octl"><input type="range" name="Scroll Marker Own Opacity" min="0" max="1" step="0.05" title="Scrollbar marker opacity"></span></div> <div class="styling-hl-inline-preview styling-preview" data-preview-inline="own"> <span class="styling-hl-preview-title">Live Preview</span> <div class="styling-preview-container"></div> </div> </div> </div>  <div class="styling-hl-acc-item" data-highlight-row="you"> <div class="styling-hl-acc-head"> <span class="styling-hl-acc-name">Quotes you</span> <span class="styling-hl-mkheadslot" data-mk-headslot="you"></span> <span class="styling-hl-color"><input type="color" name="Highlight You Color" title="Highlight background color"></span> <button type="button" class="styling-hl-acc-chev" aria-label="Expand row">&#9656;</button> </div> <div class="styling-hl-acc-body"> <label class="styling-hl-sub styling-hl-subtoggle" title="Highlight posts that quote you"><input type="checkbox" name="Highlight Posts Quoting You"><span class="styling-hl-sub-text">Highlight</span></label> <div class="styling-hl-orow"><span class="styling-hl-olabel">Text colors</span><span class="styling-hl-octl"><span class="styling-hl-inlinecolors" data-highlight-text-manual="you" hidden><input type="color" name="Highlight You Text Color" title="Text color"><input type="color" name="Highlight You Link Color" title="Link color"><input type="color" name="Highlight You Quote Color" title="Quote color"><input type="color" name="Highlight You Dead Link Color" title="Dead link color"></span><select name="Highlight You Text Mode" title="Defaults: keep the theme's colors; Auto: pick readable colors; Manual: choose your own"><option value="default">Defaults</option><option value="auto">Auto</option><option value="manual">Manual</option></select></span></div> <div class="styling-hl-orow"><span class="styling-hl-olabel" title="Fill the whole post background instead of just the colored left edge (the edge always shows; off is the classic XT look)">Highlight background</span><span class="styling-hl-octl"><input type="checkbox" name="Highlight You Background"></span></div> <div class="styling-hl-orow"><span class="styling-hl-olabel" title="Width of the colored left edge">Edge width</span><span class="styling-hl-octl"><input type="number" min="1" max="12" step="1" class="field styling-hl-widthnum" name="Highlight You Edge Width"><span class="styling-hl-unit">px</span></span></div> <div class="styling-hl-orow"><span class="styling-hl-olabel" title="CSS border style for the colored left edge">Edge style</span><span class="styling-hl-octl"><select name="Highlight You Border Style"><option value="solid">Solid</option><option value="dashed">Dashed</option><option value="dotted">Dotted</option><option value="double">Double</option><option value="groove">Groove</option><option value="ridge">Ridge</option><option value="inset">Inset</option><option value="outset">Outset</option></select></span></div> <div class="styling-hl-orow"><span class="styling-hl-olabel">Opacity</span><span class="styling-hl-octl"><input type="range" name="Highlight You Opacity" min="0" max="1" step="0.05" title="Highlight opacity"></span></div> <label class="styling-hl-sub styling-hl-subtoggle" title="Show a scrollbar marker for posts that quote you"><input type="checkbox" name="Scrollbar Mark Quotes You"><span class="styling-hl-sub-text">Scrollbar marker</span></label> <div class="styling-hl-orow"><span class="styling-hl-olabel">Match highlight color</span><span class="styling-hl-octl"><label class="styling-hl-matchlab" data-match-target="you" title="Match this marker color to the highlight color."><input type="checkbox" name="Scroll Marker You Match Highlight"></label></span></div> <div class="styling-hl-orow"><span class="styling-hl-olabel">Marker color</span><span class="styling-hl-octl styling-hl-mkbodyslot" data-mk-bodyslot="you"><span class="styling-hl-color styling-hl-mkcolor" data-marker-color="you"><input type="color" name="Scroll Marker You Color" title="Scrollbar marker color"></span></span></div> <div class="styling-hl-orow"><span class="styling-hl-olabel">Marker opacity</span><span class="styling-hl-octl"><input type="range" name="Scroll Marker You Opacity" min="0" max="1" step="0.05" title="Scrollbar marker opacity"></span></div> <div class="styling-hl-inline-preview styling-preview" data-preview-inline="you"> <span class="styling-hl-preview-title">Live Preview</span> <div class="styling-preview-container"></div> </div> </div> </div>  <div class="styling-hl-acc-item" data-highlight-row="ghost"> <div class="styling-hl-acc-head"> <span class="styling-hl-acc-name">Ghost post</span> <span class="styling-hl-mkheadslot" data-mk-headslot="ghost"></span> <span class="styling-hl-color"><input type="color" name="Highlight Ghost Color" title="Highlight background color"></span> <button type="button" class="styling-hl-acc-chev" aria-label="Expand row">&#9656;</button> </div> <div class="styling-hl-acc-body"> <label class="styling-hl-sub styling-hl-subtoggle" title="Highlight restored (ghost) posts"><input type="checkbox" name="Highlight Ghost Posts"><span class="styling-hl-sub-text">Highlight</span></label> <div class="styling-hl-orow"><span class="styling-hl-olabel">Text colors</span><span class="styling-hl-octl"><span class="styling-hl-inlinecolors" data-highlight-text-manual="ghost" hidden><input type="color" name="Highlight Ghost Text Color" title="Text color"><input type="color" name="Highlight Ghost Link Color" title="Link color"><input type="color" name="Highlight Ghost Quote Color" title="Quote color"><input type="color" name="Highlight Ghost Dead Link Color" title="Dead link color"></span><select name="Highlight Ghost Text Mode" title="Defaults: keep the theme's colors; Auto: pick readable colors; Manual: choose your own"><option value="default">Defaults</option><option value="auto">Auto</option><option value="manual">Manual</option></select></span></div> <div class="styling-hl-orow"><span class="styling-hl-olabel" title="Fill the whole post background instead of just the colored left edge (the edge always shows; off is the classic XT look)">Highlight background</span><span class="styling-hl-octl"><input type="checkbox" name="Highlight Ghost Background"></span></div> <div class="styling-hl-orow"><span class="styling-hl-olabel" title="Width of the colored left edge">Edge width</span><span class="styling-hl-octl"><input type="number" min="1" max="12" step="1" class="field styling-hl-widthnum" name="Highlight Ghost Edge Width"><span class="styling-hl-unit">px</span></span></div> <div class="styling-hl-orow"><span class="styling-hl-olabel" title="CSS border style for the colored left edge">Edge style</span><span class="styling-hl-octl"><select name="Highlight Ghost Border Style"><option value="solid">Solid</option><option value="dashed">Dashed</option><option value="dotted">Dotted</option><option value="double">Double</option><option value="groove">Groove</option><option value="ridge">Ridge</option><option value="inset">Inset</option><option value="outset">Outset</option></select></span></div> <div class="styling-hl-orow"><span class="styling-hl-olabel">Opacity</span><span class="styling-hl-octl"><input type="range" name="Highlight Ghost Opacity" min="0" max="1" step="0.05" title="Highlight opacity"></span></div> <label class="styling-hl-sub styling-hl-subtoggle" title="Show a scrollbar marker for restored (ghost) posts"><input type="checkbox" name="Scrollbar Mark Ghost Posts"><span class="styling-hl-sub-text">Scrollbar marker</span></label> <div class="styling-hl-orow"><span class="styling-hl-olabel">Match highlight color</span><span class="styling-hl-octl"><label class="styling-hl-matchlab" data-match-target="ghost" title="Match this marker color to the highlight color."><input type="checkbox" name="Scroll Marker Ghost Match Highlight"></label></span></div> <div class="styling-hl-orow"><span class="styling-hl-olabel">Marker color</span><span class="styling-hl-octl styling-hl-mkbodyslot" data-mk-bodyslot="ghost"><span class="styling-hl-color styling-hl-mkcolor" data-marker-color="ghost"><input type="color" name="Scroll Marker Ghost Color" title="Scrollbar marker color"></span></span></div> <div class="styling-hl-orow"><span class="styling-hl-olabel">Marker opacity</span><span class="styling-hl-octl"><input type="range" name="Scroll Marker Ghost Opacity" min="0" max="1" step="0.05" title="Scrollbar marker opacity"></span></div> <div class="styling-hl-inline-preview styling-preview" data-preview-inline="ghost"> <span class="styling-hl-preview-title">Live Preview</span> <div class="styling-preview-container"></div> </div> </div> </div>  <div class="styling-hl-acc-item styling-hl-acc-item-markeronly"> <div class="styling-hl-acc-head"> <span class="styling-hl-acc-name">Unread line <span class="styling-hl-type-note">scrollbar only</span></span> <span class="styling-hl-color styling-hl-mkcolor" data-marker-color="unread"><input type="color" name="Scroll Marker Unread Color" title="Scrollbar marker color"></span> <button type="button" class="styling-hl-acc-chev" aria-label="Expand row">&#9656;</button> </div> <div class="styling-hl-acc-body"> <label class="styling-hl-sub styling-hl-subtoggle" title="Show a scrollbar marker for the unread line"><input type="checkbox" name="Scrollbar Mark Unread Line"><span class="styling-hl-sub-text">Scrollbar marker</span></label> <div class="styling-hl-orow"><span class="styling-hl-olabel">Opacity</span><span class="styling-hl-octl"><input type="range" name="Scroll Marker Unread Opacity" min="0" max="1" step="0.05" title="Scrollbar marker opacity"></span></div> </div> </div>  </div> </div>  <div data-name="Catalog Highlights" class="styling-hl-group styling-hl-group-catalog"> <div class="styling-hl-grouphead"> <label class="styling-hl-master" title="Master switch for all catalog tile highlights."><input type="checkbox" name="Enable Catalog Highlights"> Catalog highlights</label> </div> <div class="styling-hl-acc">  <div class="styling-hl-acc-item" data-highlight-row="catalog-own"> <div class="styling-hl-acc-head"> <span class="styling-hl-acc-name">Your post</span> <span class="styling-hl-color"><input type="color" name="Catalog Highlight Own Color" title="Catalog your-post highlight color"></span> <button type="button" class="styling-hl-acc-chev" aria-label="Expand row">&#9656;</button> </div> <div class="styling-hl-acc-body"> <div class="styling-hl-controls"> <label class="styling-hl-sub styling-hl-subtoggle" title="Highlight your own posts in the catalog"><input type="checkbox" name="Catalog Highlight Own Posts"><span class="styling-hl-sub-text">Highlight</span></label> <div class="styling-hl-orow"><span class="styling-hl-olabel" title="Draw the highlight around the whole catalog tile, or just the thumbnail image">Highlight location</span><span class="styling-hl-octl"><select name="Catalog Highlight Own Location" title="Where to draw the highlight"><option value="tile">Tile</option><option value="image">Image</option></select></span></div> <div class="styling-hl-orow"><span class="styling-hl-olabel">Text colors</span><span class="styling-hl-octl"><span class="styling-hl-inlinecolors" data-highlight-text-manual="catalog-own" hidden><input type="color" name="Catalog Highlight Own Text Color" title="Text color"><input type="color" name="Catalog Highlight Own Subject Color" title="Subject color"><input type="color" name="Catalog Highlight Own Link Color" title="Link color"><input type="color" name="Catalog Highlight Own Quote Color" title="Quote color"><input type="color" name="Catalog Highlight Own Dead Link Color" title="Dead link color"></span><select name="Catalog Highlight Own Text Mode" title="Defaults: keep the theme's colors; Auto: pick readable colors; Manual: choose your own"><option value="default">Defaults</option><option value="auto">Auto</option><option value="manual">Manual</option></select></span></div> <div class="styling-hl-orow"><span class="styling-hl-olabel" title="Fill the whole catalog tile background instead of just the colored border (the border always shows)">Highlight background</span><span class="styling-hl-octl"><input type="checkbox" name="Catalog Highlight Own Background"></span></div> <div class="styling-hl-orow"><span class="styling-hl-olabel" title="Width of the colored border">Border width</span><span class="styling-hl-octl"><input type="number" min="0" max="12" step="1" class="field styling-hl-widthnum" name="Catalog Highlight Own Border Width"><span class="styling-hl-unit">px</span></span></div> <div class="styling-hl-orow"><span class="styling-hl-olabel" title="CSS border style for the colored border">Border style</span><span class="styling-hl-octl"><select name="Catalog Highlight Own Border Style"><option value="solid">Solid</option><option value="dashed">Dashed</option><option value="dotted">Dotted</option><option value="double">Double</option><option value="groove">Groove</option><option value="ridge">Ridge</option><option value="inset">Inset</option><option value="outset">Outset</option></select></span></div> <div class="styling-hl-orow"><span class="styling-hl-olabel">Opacity</span><span class="styling-hl-octl"><input type="range" name="Catalog Highlight Own Opacity" min="0" max="1" step="0.05" title="Highlight opacity"></span></div> <div class="styling-hl-orow"><span class="styling-hl-olabel" title="Add a colored glow around the highlight">Glow</span><span class="styling-hl-octl"><input type="checkbox" name="Catalog Highlight Own Glow"></span></div> <div class="styling-hl-orow"><span class="styling-hl-olabel">Glow intensity</span><span class="styling-hl-octl"><input type="range" name="Catalog Highlight Own Glow Intensity" min="0" max="1" step="0.05" title="Glow intensity"></span></div> </div> <div class="styling-hl-inline-preview styling-preview" data-preview-inline="catalog-own"> <span class="styling-hl-preview-title">Live Preview</span> <div class="styling-preview-container"></div> </div> </div> </div>  <div class="styling-hl-acc-item" data-highlight-row="catalog-watched"> <div class="styling-hl-acc-head"> <span class="styling-hl-acc-name">Watched thread</span> <span class="styling-hl-color"><input type="color" name="Catalog Highlight Watched Color" title="Catalog watched-thread highlight color"></span> <button type="button" class="styling-hl-acc-chev" aria-label="Expand row">&#9656;</button> </div> <div class="styling-hl-acc-body"> <div class="styling-hl-controls"> <label class="styling-hl-sub styling-hl-subtoggle" title="Highlight watched threads in the catalog"><input type="checkbox" name="Catalog Highlight Watched Threads"><span class="styling-hl-sub-text">Highlight</span></label> <div class="styling-hl-orow"><span class="styling-hl-olabel" title="Draw the highlight around the whole catalog tile, or just the thumbnail image">Highlight location</span><span class="styling-hl-octl"><select name="Catalog Highlight Watched Location" title="Where to draw the highlight"><option value="tile">Tile</option><option value="image">Image</option></select></span></div> <div class="styling-hl-orow"><span class="styling-hl-olabel">Text colors</span><span class="styling-hl-octl"><span class="styling-hl-inlinecolors" data-highlight-text-manual="catalog-watched" hidden><input type="color" name="Catalog Highlight Watched Text Color" title="Text color"><input type="color" name="Catalog Highlight Watched Subject Color" title="Subject color"><input type="color" name="Catalog Highlight Watched Link Color" title="Link color"><input type="color" name="Catalog Highlight Watched Quote Color" title="Quote color"><input type="color" name="Catalog Highlight Watched Dead Link Color" title="Dead link color"></span><select name="Catalog Highlight Watched Text Mode" title="Defaults: keep the theme's colors; Auto: pick readable colors; Manual: choose your own"><option value="default">Defaults</option><option value="auto">Auto</option><option value="manual">Manual</option></select></span></div> <div class="styling-hl-orow"><span class="styling-hl-olabel" title="Fill the whole catalog tile background instead of just the colored border (the border always shows)">Highlight background</span><span class="styling-hl-octl"><input type="checkbox" name="Catalog Highlight Watched Background"></span></div> <div class="styling-hl-orow"><span class="styling-hl-olabel" title="Width of the colored border">Border width</span><span class="styling-hl-octl"><input type="number" min="0" max="12" step="1" class="field styling-hl-widthnum" name="Catalog Highlight Watched Border Width"><span class="styling-hl-unit">px</span></span></div> <div class="styling-hl-orow"><span class="styling-hl-olabel" title="CSS border style for the colored border">Border style</span><span class="styling-hl-octl"><select name="Catalog Highlight Watched Border Style"><option value="solid">Solid</option><option value="dashed">Dashed</option><option value="dotted">Dotted</option><option value="double">Double</option><option value="groove">Groove</option><option value="ridge">Ridge</option><option value="inset">Inset</option><option value="outset">Outset</option></select></span></div> <div class="styling-hl-orow"><span class="styling-hl-olabel">Opacity</span><span class="styling-hl-octl"><input type="range" name="Catalog Highlight Watched Opacity" min="0" max="1" step="0.05" title="Highlight opacity"></span></div> <div class="styling-hl-orow"><span class="styling-hl-olabel" title="Add a colored glow around the highlight">Glow</span><span class="styling-hl-octl"><input type="checkbox" name="Catalog Highlight Watched Glow"></span></div> <div class="styling-hl-orow"><span class="styling-hl-olabel">Glow intensity</span><span class="styling-hl-octl"><input type="range" name="Catalog Highlight Watched Glow Intensity" min="0" max="1" step="0.05" title="Glow intensity"></span></div> </div> <div class="styling-hl-inline-preview styling-preview" data-preview-inline="catalog-watched"> <span class="styling-hl-preview-title">Live Preview</span> <div class="styling-preview-container"></div> </div> </div> </div>  <div class="styling-hl-acc-item" data-highlight-row="catalog-filter"> <div class="styling-hl-acc-head"> <span class="styling-hl-acc-name">Filtered thread</span> <span class="styling-hl-color"><input type="color" name="Catalog Highlight Filter Color" title="Catalog filtered-thread highlight color"></span> <button type="button" class="styling-hl-acc-chev" aria-label="Expand row">&#9656;</button> </div> <div class="styling-hl-acc-body"> <div class="styling-hl-controls"> <label class="styling-hl-sub styling-hl-subtoggle" title="Highlight catalog threads matched by a highlighting filter"><input type="checkbox" name="Catalog Highlight Filter Posts"><span class="styling-hl-sub-text">Highlight</span></label> <div class="styling-hl-orow"><span class="styling-hl-olabel" title="Draw the highlight around the whole catalog tile, or just the thumbnail image">Highlight location</span><span class="styling-hl-octl"><select name="Catalog Highlight Filter Location" title="Where to draw the highlight"><option value="tile">Tile</option><option value="image">Image</option></select></span></div> <div class="styling-hl-orow"><span class="styling-hl-olabel">Text colors</span><span class="styling-hl-octl"><span class="styling-hl-inlinecolors" data-highlight-text-manual="catalog-filter" hidden><input type="color" name="Catalog Highlight Filter Text Color" title="Text color"><input type="color" name="Catalog Highlight Filter Subject Color" title="Subject color"><input type="color" name="Catalog Highlight Filter Link Color" title="Link color"><input type="color" name="Catalog Highlight Filter Quote Color" title="Quote color"><input type="color" name="Catalog Highlight Filter Dead Link Color" title="Dead link color"></span><select name="Catalog Highlight Filter Text Mode" title="Defaults: keep the theme's colors; Auto: pick readable colors; Manual: choose your own"><option value="default">Defaults</option><option value="auto">Auto</option><option value="manual">Manual</option></select></span></div> <div class="styling-hl-orow"><span class="styling-hl-olabel" title="Fill the whole catalog tile background instead of just the colored border (the border always shows)">Highlight background</span><span class="styling-hl-octl"><input type="checkbox" name="Catalog Highlight Filter Background"></span></div> <div class="styling-hl-orow"><span class="styling-hl-olabel" title="Width of the colored border">Border width</span><span class="styling-hl-octl"><input type="number" min="0" max="12" step="1" class="field styling-hl-widthnum" name="Catalog Highlight Filter Border Width"><span class="styling-hl-unit">px</span></span></div> <div class="styling-hl-orow"><span class="styling-hl-olabel" title="CSS border style for the colored border">Border style</span><span class="styling-hl-octl"><select name="Catalog Highlight Filter Border Style"><option value="solid">Solid</option><option value="dashed">Dashed</option><option value="dotted">Dotted</option><option value="double">Double</option><option value="groove">Groove</option><option value="ridge">Ridge</option><option value="inset">Inset</option><option value="outset">Outset</option></select></span></div> <div class="styling-hl-orow"><span class="styling-hl-olabel">Opacity</span><span class="styling-hl-octl"><input type="range" name="Catalog Highlight Filter Opacity" min="0" max="1" step="0.05" title="Highlight opacity"></span></div> <div class="styling-hl-orow"><span class="styling-hl-olabel" title="Add a colored glow around the highlight">Glow</span><span class="styling-hl-octl"><input type="checkbox" name="Catalog Highlight Filter Glow"></span></div> <div class="styling-hl-orow"><span class="styling-hl-olabel">Glow intensity</span><span class="styling-hl-octl"><input type="range" name="Catalog Highlight Filter Glow Intensity" min="0" max="1" step="0.05" title="Glow intensity"></span></div> <div class="styling-hl-orow styling-hl-rowactions"><button type="button" id="styling-filter-defaults" title="Reset the filtered-thread highlight (color, glow, border, location) to its defaults">Use defaults</button></div> </div> <div class="styling-hl-inline-preview styling-preview" data-preview-inline="catalog-filter"> <span class="styling-hl-preview-title">Live Preview</span> <div class="styling-preview-container"></div> </div> </div> </div>  </div> </div>  <div class="styling-hl-group styling-hl-group-palette"> <div class="styling-hl-grouphead"> <span class="styling-hl-grouptitle">Color tools</span> </div> <div class="styling-hl-acc"> <div class="styling-hl-acc-item styling-hl-acc-item-palette"> <div class="styling-hl-acc-head"> <span class="styling-hl-acc-name">Palette manager <span class="styling-hl-type-note">tools for the colors above</span></span> <button type="button" class="styling-hl-acc-chev" aria-label="Expand row">&#9656;</button> </div> <div class="styling-hl-acc-body"> <div class="styling-palette-toprow"> <div class="styling-saved-palette-controls"> <input type="text" class="field styling-saved-palette-name" id="styling-saved-palette-name" placeholder="Palette name" maxlength="60"> <button type="button" id="styling-save-palette" title="Save current highlight colors as a palette">Save palette</button> </div> <div class="styling-actions"> <button type="button" id="styling-suggest-palettes" title="Show suggested highlight palettes for the current theme">Suggest palettes</button> </div> </div> <div id="styling-palette-suggestions" class="styling-palette-suggestions" hidden></div> <div class="styling-saved-palettes"> <div id="styling-saved-palettes-list" class="styling-saved-palettes-list"></div> </div> </div> </div> </div> </div>  </details>  <details open class="styling-text-colors" data-styling-section="textColors"> <summary>Text Colors</summary> <div class="styling-theme-row"> <label data-next-manual-status="added">Mode: <select name="textColorMode"> <option value="default">Defaults</option> <option value="auto">Auto</option> <option value="manual">Manual</option> </select> </label> </div> <p>Defaults keeps the theme's own text, link and greentext colors. Auto chooses readable text/link colors from the active page background. Switch to Manual to set your own values.</p> <div id="styling-text-color-manual" class="styling-tree"> <div class="styling-inline-option"> <label>Text</label> <span class="styling-inline-controls"> <input type="color" name="Text Color"> <button type="button" data-clear="Text Color" title="Clear">✕</button> </span> </div> <div class="styling-inline-option"> <label>Links</label> <span class="styling-inline-controls"> <input type="color" name="Link Text Color"> <button type="button" data-clear="Link Text Color" title="Clear">✕</button> </span> </div> <div class="styling-inline-option"> <label>Quotes</label> <span class="styling-inline-controls"> <input type="color" name="Quote Text Color"> <button type="button" data-clear="Quote Text Color" title="Clear">✕</button> </span> </div> <div class="styling-inline-option"> <label>Dead links</label> <span class="styling-inline-controls"> <input type="color" name="Dead Link Text Color"> <button type="button" data-clear="Dead Link Text Color" title="Clear">✕</button> </span> </div> </div> </details>  <details open class="styling-custom-css" data-styling-section="customCSS" data-next-section="changed"> <summary>Custom CSS<button type="button" id="custom-css-detach" data-open="false" class="custom-css-summary-detach">Detach</button></summary> <div class="custom-css-toggle-row"> <label><input type="checkbox" name="Custom CSS"> Enable Custom CSS</label> <label><input type="checkbox" name="customCSSHome"> Load on home page</label> </div> <div>For more information about customizing 4chan-neXT&#039;s CSS, see the <a href="https://github.com/cercos/4chan-next/blob/project-neXT/docs/styling-guide.md" target="_blank">styling guide</a>.</div> <div class="custom-css-controls"> <label>Syntax theme: <select id="custom-css-theme"> <option value="xt-system" selected>System</option> <option value="xt-light">Light</option> <option value="xt-dark">Dark</option> <option value="xt-solarized">Solarized</option> </select> </label> <button type="button" id="custom-css-format" title="Reformat the CSS: fix indentation, braces and spacing. Shortcut: Shift+Alt+F">Format CSS</button> <span class="ccss-format-opts" data-open="false"> <button type="button" id="custom-css-format-gear" class="ccss-format-gear" aria-haspopup="true" aria-expanded="false" title="Formatting options">&#9881;</button> <div class="ccss-format-popover" role="menu" hidden> <div class="ccss-format-title">Format options</div> <label class="ccss-format-row">Indent <select id="custom-css-format-indent"> <option value="2">2 spaces</option> <option value="4">4 spaces</option> <option value="tab">Tab</option> </select> </label> <label class="ccss-format-row"><input type="checkbox" id="custom-css-format-blanklines"> Blank line between rules</label> <label class="ccss-format-row"><input type="checkbox" id="custom-css-format-selectorperline"> One selector per line</label> </div> </span> <label class="ccss-controls-right" title="Highlight the bracket matching the one at the caret."><input type="checkbox" id="custom-css-bracket-highlight"> Highlight brackets</label> <label title="Suggest class names that exist on the page while typing a .class selector."><input type="checkbox" id="custom-css-autocomplete" checked> Suggest class names</label> <button type="button" id="custom-css-shortcuts-toggle" class="ccss-shortcuts-toggle" aria-expanded="false" aria-controls="custom-css-shortcuts" title="Show keyboard shortcuts">&#9000;</button> </div> <div class="custom-css-shortcuts" id="custom-css-shortcuts" aria-label="Custom CSS editor shortcuts" hidden> <span><kbd>Ctrl</kbd>+<kbd>/</kbd> comment</span> <span><kbd>Ctrl</kbd>+<kbd>S</kbd> save</span> <span><kbd>Shift</kbd>+<kbd>Alt</kbd>+<kbd>F</kbd> format</span> <span><kbd>Tab</kbd>/<kbd>Shift</kbd>+<kbd>Tab</kbd> indent</span> <span><kbd>Enter</kbd> auto-indent</span> </div> <div class="custom-css-editor" data-theme="xt-system-default"> <pre class="custom-css-highlight" aria-hidden="true"></pre> <textarea hidden name="usercss" class="field custom-css-textarea" spellcheck="false" wrap="off"></textarea> <div class="custom-css-gutter" aria-hidden="true"><div class="custom-css-gutter-inner"><div class="custom-css-linenumbers"></div></div></div> <input type="color" class="ccss-color-input" aria-hidden="true" tabindex="-1"> <div class="custom-css-saved" aria-hidden="true">Saved</div> </div> </details>`;
 
-	const RECORD_VERSION = 1;
-	function answerSource(solverAnswer, response) {
-		if (solverAnswer == null) {
-			return 'manual';
-		}
-		return solverAnswer === response ? 'local' : 'local-edited';
-	}
-	function pickTasks(rawTasks) {
-		return (rawTasks || []).map(t => {
-			const task = { items: Array.isArray(t?.items) ? t.items.filter((i) => typeof i === 'string') : [] };
-			if (typeof t?.str === 'string') {
-				task.str = t.str;
-			}
-			if (typeof t?.img === 'string') {
-				task.img = t.img;
-			}
-			return task;
-		});
-	}
-	function buildTrainingRecord(pending, response, postedAt) {
-		const tasks = pickTasks(pending.challenge?.tasks);
-		const id = pending.challenge?.challenge;
-		if (typeof id !== 'string' || !id || !tasks.length) {
-			return null;
-		}
-		if (response.length !== tasks.length) {
-			return null;
-		}
-		for (let i = 0; i < tasks.length; i++) {
-			const n = Number(response[i]);
-			if (!/^[0-9]$/.test(response[i]) || n >= tasks[i].items.length) {
-				return null;
-			}
-		}
-		return {
-			v: RECORD_VERSION,
-			id,
-			board: pending.board,
-			loadedAt: pending.loadedAt,
-			postedAt,
-			outcome: 'correct',
-			response,
-			source: answerSource(pending.localAnswer, response),
-			localAnswer: pending.localAnswer ?? null,
-			localConfidence: pending.localConfidence ?? null,
-			tasks,
-		};
-	}
-	function exportFileName(now) {
-		const p = (n) => String(n).padStart(2, '0');
-		return `captcha-training-${now.getFullYear()}${p(now.getMonth() + 1)}${p(now.getDate())}-${p(now.getHours())}${p(now.getMinutes())}${p(now.getSeconds())}.jsonl`;
-	}
-	function toJsonl(records) {
-		return records.map(r => JSON.stringify(r)).join('\n') + (records.length ? '\n' : '');
-	}
-
-	const DB_NAME$2 = 'fourchanx-captcha-training';
-	const STORE$2 = 'records';
-	const MAX_PENDING = 20;
-	let dbPromise$2 = null;
-	function openDB$2() {
-		return dbPromise$2 || (dbPromise$2 = new Promise((resolve, reject) => {
-			const req = indexedDB.open(DB_NAME$2, 1);
-			req.onupgradeneeded = () => { req.result.createObjectStore(STORE$2, { keyPath: 'id' }); };
-			req.onsuccess = () => resolve(req.result);
-			req.onerror = () => { dbPromise$2 = null; reject(req.error); };
-		}));
-	}
-	async function withStore(mode, fn) {
-		const db = await openDB$2();
-		return new Promise((resolve, reject) => {
-			const tx = db.transaction(STORE$2, mode);
-			const req = fn(tx.objectStore(STORE$2));
-			tx.oncomplete = () => resolve(req ? req.result : undefined);
-			tx.onerror = () => reject(tx.error);
-			tx.onabort = () => reject(tx.error);
-		});
-	}
-	const pending = new Map();
-	let lastSubmitted = null;
-	const CaptchaTrainingLog = {
-		onChange: null,
-		enabled() { return !!Conf['Save Captchas for Training']; },
-		noteChallenge(challenge, board) {
-			if (!this.enabled() || !challenge?.challenge || !challenge?.tasks?.length) {
-				return;
-			}
-			pending.set(challenge.challenge, { challenge, board, loadedAt: Date.now() });
-			while (pending.size > MAX_PENDING) {
-				pending.delete(pending.keys().next().value);
-			}
-		},
-		noteSolverAnswer(id, answer, confidence) {
-			const p = pending.get(id);
-			if (!p) {
-				return;
-			}
-			p.localAnswer = answer;
-			p.localConfidence = confidence;
-		},
-		noteSubmitted(id, response) {
-			lastSubmitted = pending.has(id) && response ? { id, response } : null;
-		},
-		async notePostSuccessful() {
-			const sub = lastSubmitted;
-			lastSubmitted = null;
-			if (!sub || !this.enabled()) {
-				return;
-			}
-			const p = pending.get(sub.id);
-			pending.delete(sub.id);
-			if (!p) {
-				return;
-			}
-			const record = buildTrainingRecord(p, sub.response, Date.now());
-			if (!record) {
-				return;
-			}
-			try {
-				await withStore('readwrite', s => s.put(record));
-				console.log('[Save Captchas for Training] saved', record.id, record.response, record.source);
-				this.onChange?.();
-			} catch (err) {
-				console.warn('[Save Captchas for Training] save failed', err);
-			}
-		},
-		async all() {
-			return (await withStore('readonly', s => s.getAll())) || [];
-		},
-		async counts() {
-			const records = await this.all();
-			return { total: records.length, unexported: records.filter(r => !r.exported).length };
-		},
-		async exportNew() {
-			const records = (await this.all()).filter(r => !r.exported);
-			if (!records.length) {
-				return 0;
-			}
-			const clean = records.map(({ exported: _e, ...r }) => r);
-			const url = URL.createObjectURL(new Blob([toJsonl(clean)], { type: 'application/x-ndjson' }));
-			const a = document.createElement('a');
-			a.href = url;
-			a.download = exportFileName(new Date());
-			document.body.appendChild(a);
-			a.click();
-			a.remove();
-			setTimeout(() => URL.revokeObjectURL(url), 60000);
-			await withStore('readwrite', s => { for (const r of records) {
-				s.put({ ...r, exported: true });
-			} });
-			this.onChange?.();
-			return records.length;
-		},
-		async clearExported() {
-			const done = (await this.all()).filter(r => r.exported);
-			await withStore('readwrite', s => { for (const r of done) {
-				s.delete(r.id);
-			} });
-			this.onChange?.();
-			return done.length;
-		},
-	};
-
 	var QuickReplyPage = `<div class="move"> <label title="Auto-hide Quick Reply"> <input type="checkbox" id="autohide" title="Auto-hide Quick Reply"> QR </label> <button type="button" id="qr-preview-toggle" title="Toggle comment preview"></button> <select data-name="thread" title="Create a new thread / Reply"> <option value="new">New thread</option> </select> <a href="javascript:;" id="qr-drafts-button" title="Saved drafts" hidden>🗂︎<span id="qr-drafts-badge" hidden></span></a> <a href="javascript:;" class="close" title="Close">✕</a> </div> <form autocomplete="off"> <div class="persona"> <button type="button" id="sjis-toggle" class="qr-button" title="Toggle Mona font">∀</button> <button type="button" id="tex-preview-button" class="qr-button" title="Preview TeX">T<sub>E</sub>X</button> <input name="qr-no-autofill-name" data-name="name" data-no-autofill="true" placeholder="Name" class="field" size="1" autocomplete="off" autocapitalize="off" autocorrect="off" spellcheck="false"> <input name="qr-no-autofill-options" data-name="email" data-no-autofill="true" placeholder="Options" class="field" size="1" autocomplete="off" autocapitalize="off" autocorrect="off" spellcheck="false"> <input name="qr-no-autofill-subject" data-name="sub" data-no-autofill="true" placeholder="Subject" class="field" size="1" maxlength="100" autocomplete="off" autocapitalize="off" autocorrect="off" spellcheck="false"> </div> <div class="textarea"> <textarea data-name="com" placeholder="Comment" class="field"></textarea> <span id="char-count"></span> <div id="tex-preview" class="postMessage"></div> <div id="qr-com-preview" class="postMessage"></div> </div> <div id="dump-list-container"> <div id="dump-list"></div> <a id="add-post" href="javascript:;" title="Add a post">+</a> </div> <div class="oekaki" hidden> <input type="button" id="qr-draw-button" class="qr-button" value="Draw"> <label><span>Width:</span><input name="oekaki-width" value="400" type="number" class="field" size="1"></label> <label><span>Height:</span><input name="oekaki-height" value="400" type="number" class="field" size="1"></label> <span class="oekaki-bg" title="Background Color"><input name="oekaki-bg" type="checkbox" checked><input name="oekaki-bgcolor" type="color" value="#ffffff"></span> </div> <div id="file-n-submit"> <span id="qr-file" class="row"> <input type="button" id="qr-file-button" class="qr-button" value="Files"> <span id="qr-filename-container" class="field"> <span id="qr-no-file">No selected file</span> <input id="qr-filename" data-name="filename" spellcheck="false"> <label id="qr-spoiler-label"> <input type="checkbox" id="qr-file-spoiler" title="Spoiler image"> <a class="checkbox-letter">S</a> </label> <span id="qr-actions" class="row"> <a href="javascript:;" id="qr-oekaki-button" class="qr-action-button" title="Edit in Tegaki">✎︎</a> <a href="javascript:;" id="qr-dogiri-button" class="qr-action-button" title="Edit video in Dōgiri">🎞︎</a> <a href="javascript:;" id="qr-jpg" class="qr-action-button" title="Compress to jpg">C</a> <a href="javascript:;" id="qr-view" class="qr-action-button" title="Preview">V</a> <a href="javascript:;" id="qr-randomize" class="qr-action-button" title="Randomize filename">R</a> <a href="javascript:;" id="qr-restore-name" class="qr-action-button" title="Reset filename">U</a> <a href="javascript:;" id="qr-filerm" class="qr-action-button" title="Remove file">✕</a> <a href="javascript:;" id="url-button" class="qr-action-button" title="Post from URL">🔗︎</a> <a href="javascript:;" hidden id="paste-area" class="qr-action-button" title="Select to paste images" tabindex="-1" contentEditable="true">📋︎</a> <a href="javascript:;" id="custom-cooldown-button" class="qr-action-button" title="Toggle custom cooldown" class="disabled">🕒︎</a> <a href="javascript:;" id="split-post" class="qr-action-button" title="Split into multiple posts" hidden>✂️</a> <a href="javascript:;" id="dump-button" class="qr-action-button" title="Dump list (Shift+Click: Clear list)">➕︎</a> </span> </span> <input class="qr-button" type="submit"> </span> </div> <select data-default="4" name="filetag"> <option value="0">Hentai</option> <option value="6">Porn</option> <option value="1">Japanese</option> <option value="2">Anime</option> <option value="3">Game</option> <option value="5">Loop</option> <option value="4" selected>Other</option> </select> <input type="file" multiple> </form> <div id="qr-drafts-panel" class="qr-drafts-panel" hidden></div>`;
 
 	const PHONE_MAX_SCREEN = 600;
@@ -4246,6 +4083,317 @@ current-archive-text:"Archive"]
 		return !!size && size.w >= 2 * size.h;
 	}
 
+	function parseAnswer(answer, tasks) {
+		return tasks.map((task, i) => {
+			const ch = answer[i];
+			if (ch == null || !/^[0-9]$/.test(ch)) {
+				return null;
+			}
+			const n = +ch;
+			const count = task?.items?.length ?? 0;
+			return n < count ? n : null;
+		});
+	}
+
+	const IMG_SIZE = 96;
+	const STRIP_MIN_ASPECT = 2.0;
+	const VOCAB = 1024;
+	const MAX_TOKENS = 16;
+	const MEAN = [0.485, 0.456, 0.406];
+	const STD = [0.229, 0.224, 0.225];
+	function fnv1a32(s) {
+		let h = 0x811c9dc5;
+		for (const b of new TextEncoder().encode(s)) {
+			h ^= b;
+			h = Math.imul(h, 0x01000193) >>> 0;
+		}
+		return h >>> 0;
+	}
+	function stripTags(html) {
+		return (html || '').replace(/<[^>]+>/g, ' ');
+	}
+	function tokenize(text) {
+		const words = text.toLowerCase().match(/[a-z0-9]+/g) || [];
+		const ids = words.slice(0, MAX_TOKENS).map(w => (fnv1a32(w) % VOCAB) + 1);
+		while (ids.length < MAX_TOKENS) {
+			ids.push(0);
+		}
+		return ids;
+	}
+	function promptImageB64(task) {
+		if (typeof task.img === 'string' && task.img) {
+			return task.img;
+		}
+		const m = typeof task.str === 'string'
+			? task.str.match(/<img[^>]*\bsrc\s*=\s*["']data:image\/[a-z]+;base64,([^"']+)["']/i)
+			: null;
+		return m ? m[1] : null;
+	}
+	function inputSize(w, h) {
+		if (w >= STRIP_MIN_ASPECT * h) {
+			return [Math.round(IMG_SIZE * w / h), IMG_SIZE];
+		}
+		return [IMG_SIZE, IMG_SIZE];
+	}
+	function softmax(logits) {
+		const arr = Array.from(logits);
+		const max = Math.max(...arr);
+		const exps = arr.map(v => Math.exp(v - max));
+		const sum = exps.reduce((a, b) => a + b, 0);
+		return exps.map(v => v / sum);
+	}
+	function rgbaToChw(rgba, w, h) {
+		const out = new Float32Array(3 * w * h);
+		const plane = w * h;
+		for (let i = 0; i < plane; i++) {
+			for (let c = 0; c < 3; c++) {
+				out[c * plane + i] = (rgba[i * 4 + c] / 255 - MEAN[c]) / STD[c];
+			}
+		}
+		return out;
+	}
+
+	const ORT_VERSION = '1.17.3';
+	const ORT_JS_URL = `https://cdn.jsdelivr.net/npm/onnxruntime-web@${ORT_VERSION}/dist/ort.wasm.min.js`;
+	const ORT_WASM_URL = `https://cdn.jsdelivr.net/npm/onnxruntime-web@${ORT_VERSION}/dist/ort-wasm-simd.wasm`;
+	const MODEL_RELEASE_URL = 'https://raw.githubusercontent.com/cercos/4chan-neXT/beta/assets/captcha-model/';
+	const MODEL_MANIFEST_URL = `${MODEL_RELEASE_URL}model.json`;
+	const MODEL_FILE_URL = `${MODEL_RELEASE_URL}model.onnx`;
+	const MODEL_KEY = 'model';
+	const MODEL_INFO_KEY = 'model-info';
+	const MODEL_FORMAT = 1;
+	const DB_NAME$2 = 'fourchanx-captcha-model';
+	const STORE$2 = 'files';
+	let dbPromise$2 = null;
+	function openDB$2() {
+		return dbPromise$2 || (dbPromise$2 = new Promise((resolve, reject) => {
+			const req = indexedDB.open(DB_NAME$2, 1);
+			req.onupgradeneeded = () => { req.result.createObjectStore(STORE$2); };
+			req.onsuccess = () => resolve(req.result);
+			req.onerror = () => { dbPromise$2 = null; reject(req.error); };
+		}));
+	}
+	async function cacheGet(key) {
+		try {
+			const db = await openDB$2();
+			return await new Promise((resolve) => {
+				const req = db.transaction(STORE$2, 'readonly').objectStore(STORE$2).get(key);
+				req.onsuccess = () => resolve(req.result instanceof Uint8Array ? req.result : null);
+				req.onerror = () => resolve(null);
+			});
+		} catch {
+			return null;
+		}
+	}
+	async function cachePut(key, data) {
+		try {
+			const db = await openDB$2();
+			db.transaction(STORE$2, 'readwrite').objectStore(STORE$2).put(data, key);
+		} catch {
+		}
+	}
+	function download(url) {
+		return new Promise((resolve, reject) => {
+			CrossOrigin.binary(url, data => {
+				if (data?.length) {
+					resolve(data);
+				} else {
+					reject(new Error(`Download failed: ${url}`));
+				}
+			});
+		});
+	}
+	async function cacheDelete(key) {
+		try {
+			const db = await openDB$2();
+			db.transaction(STORE$2, 'readwrite').objectStore(STORE$2).delete(key);
+		} catch {
+		}
+	}
+	const ENGINE_URLS = [ORT_JS_URL, ORT_WASM_URL];
+	const ENGINE_SIZE_MB = 10.5;
+	async function engineDownloaded() {
+		for (const url of ENGINE_URLS) {
+			if (!await cacheGet(url)) {
+				return false;
+			}
+		}
+		return true;
+	}
+	async function downloadEngine() {
+		for (const url of ENGINE_URLS) {
+			if (!await cacheGet(url)) {
+				await cachePut(url, await download(url));
+			}
+		}
+	}
+	async function removeEngine() {
+		sessionPromise = null;
+		ortRef = null;
+		for (const url of ENGINE_URLS) {
+			await cacheDelete(url);
+		}
+	}
+	function parseModelInfo(value) {
+		if (!value || typeof value !== 'object') {
+			return null;
+		}
+		const version = +value.version;
+		const format = +value.format;
+		if (!Number.isFinite(version) || !Number.isFinite(format)) {
+			return null;
+		}
+		const sizeMB = +value.sizeMB;
+		return { version, format, ...(Number.isFinite(sizeMB) ? { sizeMB } : {}) };
+	}
+	async function installedModel() {
+		const raw = await cacheGet(MODEL_INFO_KEY);
+		if (!raw || !await cacheGet(MODEL_KEY)) {
+			return null;
+		}
+		try {
+			return parseModelInfo(JSON.parse(new TextDecoder().decode(raw)));
+		} catch {
+			return null;
+		}
+	}
+	async function latestModel() {
+		const req = await CrossOrigin.ajaxPromise(`${MODEL_MANIFEST_URL}?t=${Date.now()}`, { responseType: 'text', timeout: 15000 });
+		if (req.status !== 200) {
+			throw new Error(`could not check for models (HTTP ${req.status || 'network error'})`);
+		}
+		let info = null;
+		try {
+			info = parseModelInfo(JSON.parse(String(req.response)));
+		} catch { }
+		if (!info) {
+			throw new Error('model info is invalid');
+		}
+		return info;
+	}
+	function modelCompatible(info) {
+		return info.format === MODEL_FORMAT;
+	}
+	async function downloadModel(info) {
+		if (!modelCompatible(info)) {
+			throw new Error('this model needs a newer 4chan-neXT');
+		}
+		const data = await download(`${MODEL_FILE_URL}?v=${info.version}`);
+		await cachePut(MODEL_KEY, data);
+		await cachePut(MODEL_INFO_KEY, new TextEncoder().encode(JSON.stringify(info)));
+		sessionPromise = null;
+	}
+	async function removeModel() {
+		sessionPromise = null;
+		await cacheDelete(MODEL_KEY);
+		await cacheDelete(MODEL_INFO_KEY);
+	}
+	async function solverReady() {
+		return await engineDownloaded() && !!await installedModel();
+	}
+	async function engineFile(url) {
+		const hit = await cacheGet(url);
+		if (!hit) {
+			throw new Error('engine not downloaded yet, download it in Settings > Captcha');
+		}
+		return hit;
+	}
+	let sessionPromise = null;
+	let ortRef = null;
+	async function createSession() {
+		const [js, wasm, model] = await Promise.all([
+			engineFile(ORT_JS_URL),
+			engineFile(ORT_WASM_URL),
+			cacheGet(MODEL_KEY),
+		]);
+		if (!model) {
+			throw new Error('model not downloaded yet, download it in Settings > Captcha');
+		}
+		const ort = new Function(`${new TextDecoder().decode(js)}\n;return ort;`)();
+		ort.env.wasm.numThreads = 1;
+		ort.env.wasm.simd = true;
+		ort.env.wasm.proxy = false;
+		ort.env.wasm.wasmPaths = {
+			'ort-wasm-simd.wasm': URL.createObjectURL(new Blob([wasm], { type: 'application/wasm' })),
+		};
+		ortRef = ort;
+		return ort.InferenceSession.create(model);
+	}
+	function warmBrowserSolver() {
+		sessionPromise || (sessionPromise = createSession().catch(err => {
+			sessionPromise = null;
+			throw err;
+		}));
+		return sessionPromise;
+	}
+	async function imageData(b64, size) {
+		const bytes = Uint8Array.from(atob(b64), c => c.charCodeAt(0));
+		const bmp = await createImageBitmap(new Blob([bytes], { type: 'image/png' }));
+		const [w, h] = size || inputSize(bmp.width, bmp.height);
+		const canvas = document.createElement('canvas');
+		canvas.width = w;
+		canvas.height = h;
+		const ctx = canvas.getContext('2d', { willReadFrequently: true });
+		ctx.fillStyle = '#fff';
+		ctx.fillRect(0, 0, w, h);
+		ctx.imageSmoothingEnabled = true;
+		ctx.imageSmoothingQuality = 'medium';
+		ctx.drawImage(bmp, 0, 0, w, h);
+		bmp.close?.();
+		return { data: rgbaToChw(ctx.getImageData(0, 0, w, h).data, w, h), w, h };
+	}
+	function promptText(str) {
+		const ta = document.createElement('textarea');
+		ta.innerHTML = stripTags(typeof str === 'string' ? str : '');
+		return ta.value.trim();
+	}
+	async function browserSolveTasks(challenge) {
+		const tasks = challenge?.tasks;
+		if (!tasks?.length) {
+			throw new Error('No captcha tasks to solve');
+		}
+		let session;
+		try {
+			session = await warmBrowserSolver();
+		} catch (err) {
+			throw new Error(`Browser solver couldn't load (${err?.message || err})`);
+		}
+		const ort = ortRef;
+		let answer = '';
+		let confidence = 1;
+		const taskConfidence = [];
+		for (const task of tasks) {
+			const items = (task?.items || []).filter((i) => typeof i === 'string');
+			if (!items.length || items.length > 10) {
+				answer += ' ';
+				confidence = 0;
+				taskConfidence.push(0);
+				continue;
+			}
+			const first = await imageData(items[0]);
+			const tiles = [first, ...await Promise.all(items.slice(1).map(b => imageData(b, [first.w, first.h])))];
+			const plane = 3 * first.w * first.h;
+			const itemsData = new Float32Array(items.length * plane);
+			tiles.forEach((t, i) => itemsData.set(t.data, i * plane));
+			const pb = promptImageB64(task);
+			const prompt = pb ? (await imageData(pb, [IMG_SIZE, IMG_SIZE])).data : new Float32Array(3 * IMG_SIZE * IMG_SIZE);
+			const feeds = {
+				prompt_img: new ort.Tensor('float32', prompt, [1, 3, IMG_SIZE, IMG_SIZE]),
+				has_prompt: new ort.Tensor('float32', new Float32Array([pb ? 1 : 0]), [1]),
+				tokens: new ort.Tensor('int64', BigInt64Array.from(tokenize(promptText(task.str)).map(BigInt)), [1, MAX_TOKENS]),
+				items: new ort.Tensor('float32', itemsData, [1, items.length, 3, first.h, first.w]),
+				item_mask: new ort.Tensor('float32', new Float32Array(items.length).fill(1), [1, items.length]),
+			};
+			const out = await session.run(feeds);
+			const probs = softmax(out.logits.data);
+			const best = probs.indexOf(Math.max(...probs));
+			answer += String(best);
+			confidence = Math.min(confidence, probs[best]);
+			taskConfidence.push(probs[best]);
+		}
+		return { answer, choices: parseAnswer(answer, tasks), confidence, taskConfidence };
+	}
+
 	const CircleSvg = 'M256 512A256 256 0 1 0 256 0a256 256 0 1 0 0 512z';
 	const CircleW = 512, CircleH = 512;
 
@@ -4289,6 +4437,7 @@ current-archive-text:"Archive"]
 			$.addClass(QR.nodes.el, 'has-captcha', 'captcha-t');
 			$.after(QR.nodes.com.parentNode, root);
 			$.on(d, 'QRPostSuccessful', () => { CaptchaTrainingLog.notePostSuccessful(); });
+			CaptchaTrainingLog.sendPending();
 			if (Conf['Captcha Solver'] === 'browser') {
 				solverReady().then(ok => ok && warmBrowserSolver()).catch(err => console.warn('[Captcha Solver: browser]', err));
 			}
@@ -30471,316 +30620,262 @@ aero|asia|biz|cat|com|coop|dance|info|int|jobs|mobi|moe|museum|name|net|org|post
 		},
 	};
 
-	function parseAnswer(answer, tasks) {
-		return tasks.map((task, i) => {
-			const ch = answer[i];
-			if (ch == null || !/^[0-9]$/.test(ch)) {
-				return null;
+	const RECORD_VERSION = 1;
+	function answerSource(solverAnswer, response) {
+		if (solverAnswer == null) {
+			return 'manual';
+		}
+		return solverAnswer === response ? 'local' : 'local-edited';
+	}
+	function pickTasks(rawTasks) {
+		return (rawTasks || []).map(t => {
+			const task = { items: Array.isArray(t?.items) ? t.items.filter((i) => typeof i === 'string') : [] };
+			if (typeof t?.str === 'string') {
+				task.str = t.str;
 			}
-			const n = +ch;
-			const count = task?.items?.length ?? 0;
-			return n < count ? n : null;
+			if (typeof t?.img === 'string') {
+				task.img = t.img;
+			}
+			return task;
 		});
 	}
-
-	const IMG_SIZE = 96;
-	const STRIP_MIN_ASPECT = 2.0;
-	const VOCAB = 1024;
-	const MAX_TOKENS = 16;
-	const MEAN = [0.485, 0.456, 0.406];
-	const STD = [0.229, 0.224, 0.225];
-	function fnv1a32(s) {
-		let h = 0x811c9dc5;
-		for (const b of new TextEncoder().encode(s)) {
-			h ^= b;
-			h = Math.imul(h, 0x01000193) >>> 0;
+	function buildTrainingRecord(pending, response, postedAt) {
+		const tasks = pickTasks(pending.challenge?.tasks);
+		const id = pending.challenge?.challenge;
+		if (typeof id !== 'string' || !id || !tasks.length) {
+			return null;
 		}
-		return h >>> 0;
-	}
-	function stripTags(html) {
-		return (html || '').replace(/<[^>]+>/g, ' ');
-	}
-	function tokenize(text) {
-		const words = text.toLowerCase().match(/[a-z0-9]+/g) || [];
-		const ids = words.slice(0, MAX_TOKENS).map(w => (fnv1a32(w) % VOCAB) + 1);
-		while (ids.length < MAX_TOKENS) {
-			ids.push(0);
+		if (response.length !== tasks.length) {
+			return null;
 		}
-		return ids;
-	}
-	function promptImageB64(task) {
-		if (typeof task.img === 'string' && task.img) {
-			return task.img;
-		}
-		const m = typeof task.str === 'string'
-			? task.str.match(/<img[^>]*\bsrc\s*=\s*["']data:image\/[a-z]+;base64,([^"']+)["']/i)
-			: null;
-		return m ? m[1] : null;
-	}
-	function inputSize(w, h) {
-		if (w >= STRIP_MIN_ASPECT * h) {
-			return [Math.round(IMG_SIZE * w / h), IMG_SIZE];
-		}
-		return [IMG_SIZE, IMG_SIZE];
-	}
-	function softmax(logits) {
-		const arr = Array.from(logits);
-		const max = Math.max(...arr);
-		const exps = arr.map(v => Math.exp(v - max));
-		const sum = exps.reduce((a, b) => a + b, 0);
-		return exps.map(v => v / sum);
-	}
-	function rgbaToChw(rgba, w, h) {
-		const out = new Float32Array(3 * w * h);
-		const plane = w * h;
-		for (let i = 0; i < plane; i++) {
-			for (let c = 0; c < 3; c++) {
-				out[c * plane + i] = (rgba[i * 4 + c] / 255 - MEAN[c]) / STD[c];
+		for (let i = 0; i < tasks.length; i++) {
+			const n = Number(response[i]);
+			if (!/^[0-9]$/.test(response[i]) || n >= tasks[i].items.length) {
+				return null;
 			}
 		}
-		return out;
+		return {
+			v: RECORD_VERSION,
+			id,
+			board: pending.board,
+			loadedAt: pending.loadedAt,
+			postedAt,
+			outcome: 'correct',
+			response,
+			source: answerSource(pending.localAnswer, response),
+			localAnswer: pending.localAnswer ?? null,
+			localConfidence: pending.localConfidence ?? null,
+			tasks,
+		};
 	}
 
-	const ORT_VERSION = '1.17.3';
-	const ORT_JS_URL = `https://cdn.jsdelivr.net/npm/onnxruntime-web@${ORT_VERSION}/dist/ort.wasm.min.js`;
-	const ORT_WASM_URL = `https://cdn.jsdelivr.net/npm/onnxruntime-web@${ORT_VERSION}/dist/ort-wasm-simd.wasm`;
-	const MODEL_RELEASE_URL = 'https://raw.githubusercontent.com/cercos/4chan-neXT/beta/assets/captcha-model/';
-	const MODEL_MANIFEST_URL = `${MODEL_RELEASE_URL}model.json`;
-	const MODEL_FILE_URL = `${MODEL_RELEASE_URL}model.onnx`;
-	const MODEL_KEY = 'model';
-	const MODEL_INFO_KEY = 'model-info';
-	const MODEL_FORMAT = 1;
-	const DB_NAME = 'fourchanx-captcha-model';
-	const STORE = 'files';
+	const UPLOAD_URL = 'https://captcha-upload.4chan-next.workers.dev/submit';
+	const UPLOAD_BATCH = 20;
+	function toUploadRecord(r) {
+		const { v, id, response, source, localAnswer, localConfidence, tasks } = r;
+		const valid = localAnswer === null || /^[0-9]{1,10}$/.test(localAnswer);
+		return {
+			v, id, response, source, tasks,
+			localAnswer: valid ? localAnswer : null,
+			localConfidence: valid ? localConfidence : null,
+		};
+	}
+	function toNdjson(records) {
+		return records.map(r => JSON.stringify(r)).join('\n');
+	}
+	function classifyStatus(status) {
+		if (status === 200) {
+			return 'sent';
+		}
+		if (status === 400 || status === 413) {
+			return 'rejected';
+		}
+		if (status === 403) {
+			return 'blocked';
+		}
+		return 'retry';
+	}
+	function contributorIdFrom(bytes) {
+		return Array.from(bytes, b => b.toString(16).padStart(2, '0')).join('');
+	}
+	function pendingUploads(records) {
+		return records.filter(r => !r.sent).sort((a, b) => a.postedAt - b.postedAt);
+	}
+	async function sendInBatches(pending, post, mark, batchSize = UPLOAD_BATCH) {
+		for (let i = 0; i < pending.length; i += batchSize) {
+			const batch = pending.slice(i, i + batchSize);
+			const outcome = await post(batch);
+			if (outcome === 'retry' || outcome === 'blocked') {
+				return outcome;
+			}
+			if (outcome === 'rejected' && batch.length > 1) {
+				for (const one of batch) {
+					const single = await post([one]);
+					if (single === 'retry' || single === 'blocked') {
+						return single;
+					}
+					await mark([one], single);
+				}
+				continue;
+			}
+			await mark(batch, outcome);
+		}
+		return 'done';
+	}
+
+	const DB_NAME = 'fourchanx-captcha-training';
+	const STORE = 'records';
+	const MAX_PENDING = 20;
 	let dbPromise = null;
 	function openDB() {
 		return dbPromise || (dbPromise = new Promise((resolve, reject) => {
 			const req = indexedDB.open(DB_NAME, 1);
-			req.onupgradeneeded = () => { req.result.createObjectStore(STORE); };
+			req.onupgradeneeded = () => { req.result.createObjectStore(STORE, { keyPath: 'id' }); };
 			req.onsuccess = () => resolve(req.result);
 			req.onerror = () => { dbPromise = null; reject(req.error); };
 		}));
 	}
-	async function cacheGet(key) {
-		try {
-			const db = await openDB();
-			return await new Promise((resolve) => {
-				const req = db.transaction(STORE, 'readonly').objectStore(STORE).get(key);
-				req.onsuccess = () => resolve(req.result instanceof Uint8Array ? req.result : null);
-				req.onerror = () => resolve(null);
-			});
-		} catch {
-			return null;
-		}
-	}
-	async function cachePut(key, data) {
-		try {
-			const db = await openDB();
-			db.transaction(STORE, 'readwrite').objectStore(STORE).put(data, key);
-		} catch {
-		}
-	}
-	function download(url) {
+	async function withStore(mode, fn) {
+		const db = await openDB();
 		return new Promise((resolve, reject) => {
-			CrossOrigin.binary(url, data => {
-				if (data?.length) {
-					resolve(data);
-				} else {
-					reject(new Error(`Download failed: ${url}`));
+			const tx = db.transaction(STORE, mode);
+			const req = fn(tx.objectStore(STORE));
+			tx.oncomplete = () => resolve(req ? req.result : undefined);
+			tx.onerror = () => reject(tx.error);
+			tx.onabort = () => reject(tx.error);
+		});
+	}
+	const pending = new Map();
+	let lastSubmitted = null;
+	let sending = false;
+	let blocked = false;
+	function contributorId() {
+		return new Promise(resolve => {
+			$.get('captchaContributorId', '', (items) => {
+				const existing = items['captchaContributorId'];
+				if (typeof existing === 'string' && /^[0-9a-f]{32}$/.test(existing)) {
+					resolve(existing);
+					return;
 				}
+				const id = contributorIdFrom(crypto.getRandomValues(new Uint8Array(16)));
+				$.set('captchaContributorId', id);
+				resolve(id);
 			});
 		});
 	}
-	async function cacheDelete(key) {
-		try {
-			const db = await openDB();
-			db.transaction(STORE, 'readwrite').objectStore(STORE).delete(key);
-		} catch {
-		}
+	function sentCount() {
+		return new Promise(resolve => {
+			$.get('captchaSentCount', 0, (items) => { resolve(+items['captchaSentCount'] || 0); });
+		});
 	}
-	const ENGINE_URLS = [ORT_JS_URL, ORT_WASM_URL];
-	const ENGINE_SIZE_MB = 10.5;
-	async function engineDownloaded() {
-		for (const url of ENGINE_URLS) {
-			if (!await cacheGet(url)) {
-				return false;
+	async function addSent(n) {
+		$.set('captchaSentCount', await sentCount() + n);
+	}
+	async function postBatch(batch, id) {
+		const req = await CrossOrigin.ajaxPromise(UPLOAD_URL, {
+			method: 'POST',
+			body: toNdjson(batch.map(toUploadRecord)),
+			headers: { 'Content-Type': 'application/x-ndjson', 'X-Contributor': id },
+			responseType: 'text',
+			timeout: 15000,
+		});
+		const outcome = classifyStatus(req.status);
+		if (outcome === 'rejected') {
+			console.warn('[Send Captchas for Training] rejected', req.status, req.response);
+		}
+		return outcome;
+	}
+	const CaptchaTrainingLog = {
+		onChange: null,
+		enabled() { return !!Conf['Send Captchas for Training']; },
+		noteChallenge(challenge, board) {
+			if (!this.enabled() || !challenge?.challenge || !challenge?.tasks?.length) {
+				return;
 			}
-		}
-		return true;
-	}
-	async function downloadEngine() {
-		for (const url of ENGINE_URLS) {
-			if (!await cacheGet(url)) {
-				await cachePut(url, await download(url));
+			pending.set(challenge.challenge, { challenge, board, loadedAt: Date.now() });
+			while (pending.size > MAX_PENDING) {
+				pending.delete(pending.keys().next().value);
 			}
-		}
-	}
-	async function removeEngine() {
-		sessionPromise = null;
-		ortRef = null;
-		for (const url of ENGINE_URLS) {
-			await cacheDelete(url);
-		}
-	}
-	function parseModelInfo(value) {
-		if (!value || typeof value !== 'object') {
-			return null;
-		}
-		const version = +value.version;
-		const format = +value.format;
-		if (!Number.isFinite(version) || !Number.isFinite(format)) {
-			return null;
-		}
-		const sizeMB = +value.sizeMB;
-		return { version, format, ...(Number.isFinite(sizeMB) ? { sizeMB } : {}) };
-	}
-	async function installedModel() {
-		const raw = await cacheGet(MODEL_INFO_KEY);
-		if (!raw || !await cacheGet(MODEL_KEY)) {
-			return null;
-		}
-		try {
-			return parseModelInfo(JSON.parse(new TextDecoder().decode(raw)));
-		} catch {
-			return null;
-		}
-	}
-	async function latestModel() {
-		const req = await CrossOrigin.ajaxPromise(`${MODEL_MANIFEST_URL}?t=${Date.now()}`, { responseType: 'text', timeout: 15000 });
-		if (req.status !== 200) {
-			throw new Error(`could not check for models (HTTP ${req.status || 'network error'})`);
-		}
-		let info = null;
-		try {
-			info = parseModelInfo(JSON.parse(String(req.response)));
-		} catch { }
-		if (!info) {
-			throw new Error('model info is invalid');
-		}
-		return info;
-	}
-	function modelCompatible(info) {
-		return info.format === MODEL_FORMAT;
-	}
-	async function downloadModel(info) {
-		if (!modelCompatible(info)) {
-			throw new Error('this model needs a newer 4chan-neXT');
-		}
-		const data = await download(`${MODEL_FILE_URL}?v=${info.version}`);
-		await cachePut(MODEL_KEY, data);
-		await cachePut(MODEL_INFO_KEY, new TextEncoder().encode(JSON.stringify(info)));
-		sessionPromise = null;
-	}
-	async function removeModel() {
-		sessionPromise = null;
-		await cacheDelete(MODEL_KEY);
-		await cacheDelete(MODEL_INFO_KEY);
-	}
-	async function solverReady() {
-		return await engineDownloaded() && !!await installedModel();
-	}
-	async function engineFile(url) {
-		const hit = await cacheGet(url);
-		if (!hit) {
-			throw new Error('engine not downloaded yet, download it in Settings > Captcha');
-		}
-		return hit;
-	}
-	let sessionPromise = null;
-	let ortRef = null;
-	async function createSession() {
-		const [js, wasm, model] = await Promise.all([
-			engineFile(ORT_JS_URL),
-			engineFile(ORT_WASM_URL),
-			cacheGet(MODEL_KEY),
-		]);
-		if (!model) {
-			throw new Error('model not downloaded yet, download it in Settings > Captcha');
-		}
-		const ort = new Function(`${new TextDecoder().decode(js)}\n;return ort;`)();
-		ort.env.wasm.numThreads = 1;
-		ort.env.wasm.simd = true;
-		ort.env.wasm.proxy = false;
-		ort.env.wasm.wasmPaths = {
-			'ort-wasm-simd.wasm': URL.createObjectURL(new Blob([wasm], { type: 'application/wasm' })),
-		};
-		ortRef = ort;
-		return ort.InferenceSession.create(model);
-	}
-	function warmBrowserSolver() {
-		sessionPromise || (sessionPromise = createSession().catch(err => {
-			sessionPromise = null;
-			throw err;
-		}));
-		return sessionPromise;
-	}
-	async function imageData(b64, size) {
-		const bytes = Uint8Array.from(atob(b64), c => c.charCodeAt(0));
-		const bmp = await createImageBitmap(new Blob([bytes], { type: 'image/png' }));
-		const [w, h] = size || inputSize(bmp.width, bmp.height);
-		const canvas = document.createElement('canvas');
-		canvas.width = w;
-		canvas.height = h;
-		const ctx = canvas.getContext('2d', { willReadFrequently: true });
-		ctx.fillStyle = '#fff';
-		ctx.fillRect(0, 0, w, h);
-		ctx.imageSmoothingEnabled = true;
-		ctx.imageSmoothingQuality = 'medium';
-		ctx.drawImage(bmp, 0, 0, w, h);
-		bmp.close?.();
-		return { data: rgbaToChw(ctx.getImageData(0, 0, w, h).data, w, h), w, h };
-	}
-	function promptText(str) {
-		const ta = document.createElement('textarea');
-		ta.innerHTML = stripTags(typeof str === 'string' ? str : '');
-		return ta.value.trim();
-	}
-	async function browserSolveTasks(challenge) {
-		const tasks = challenge?.tasks;
-		if (!tasks?.length) {
-			throw new Error('No captcha tasks to solve');
-		}
-		let session;
-		try {
-			session = await warmBrowserSolver();
-		} catch (err) {
-			throw new Error(`Browser solver couldn't load (${err?.message || err})`);
-		}
-		const ort = ortRef;
-		let answer = '';
-		let confidence = 1;
-		const taskConfidence = [];
-		for (const task of tasks) {
-			const items = (task?.items || []).filter((i) => typeof i === 'string');
-			if (!items.length || items.length > 10) {
-				answer += ' ';
-				confidence = 0;
-				taskConfidence.push(0);
-				continue;
+		},
+		noteSolverAnswer(id, answer, confidence) {
+			const p = pending.get(id);
+			if (!p) {
+				return;
 			}
-			const first = await imageData(items[0]);
-			const tiles = [first, ...await Promise.all(items.slice(1).map(b => imageData(b, [first.w, first.h])))];
-			const plane = 3 * first.w * first.h;
-			const itemsData = new Float32Array(items.length * plane);
-			tiles.forEach((t, i) => itemsData.set(t.data, i * plane));
-			const pb = promptImageB64(task);
-			const prompt = pb ? (await imageData(pb, [IMG_SIZE, IMG_SIZE])).data : new Float32Array(3 * IMG_SIZE * IMG_SIZE);
-			const feeds = {
-				prompt_img: new ort.Tensor('float32', prompt, [1, 3, IMG_SIZE, IMG_SIZE]),
-				has_prompt: new ort.Tensor('float32', new Float32Array([pb ? 1 : 0]), [1]),
-				tokens: new ort.Tensor('int64', BigInt64Array.from(tokenize(promptText(task.str)).map(BigInt)), [1, MAX_TOKENS]),
-				items: new ort.Tensor('float32', itemsData, [1, items.length, 3, first.h, first.w]),
-				item_mask: new ort.Tensor('float32', new Float32Array(items.length).fill(1), [1, items.length]),
-			};
-			const out = await session.run(feeds);
-			const probs = softmax(out.logits.data);
-			const best = probs.indexOf(Math.max(...probs));
-			answer += String(best);
-			confidence = Math.min(confidence, probs[best]);
-			taskConfidence.push(probs[best]);
-		}
-		return { answer, choices: parseAnswer(answer, tasks), confidence, taskConfidence };
-	}
+			p.localAnswer = answer;
+			p.localConfidence = confidence;
+		},
+		noteSubmitted(id, response) {
+			lastSubmitted = pending.has(id) && response ? { id, response } : null;
+		},
+		async notePostSuccessful() {
+			const sub = lastSubmitted;
+			lastSubmitted = null;
+			if (!sub || !this.enabled()) {
+				return;
+			}
+			const p = pending.get(sub.id);
+			pending.delete(sub.id);
+			if (!p) {
+				return;
+			}
+			const record = buildTrainingRecord(p, sub.response, Date.now());
+			if (!record) {
+				return;
+			}
+			try {
+				await withStore('readwrite', s => s.put(record));
+				console.log('[Send Captchas for Training] saved', record.id, record.response, record.source);
+				this.onChange?.();
+				this.sendPending();
+			} catch (err) {
+				console.warn('[Send Captchas for Training] save failed', err);
+			}
+		},
+		async all() {
+			return (await withStore('readonly', s => s.getAll())) || [];
+		},
+		async counts() {
+			return { waiting: (await this.all()).filter(r => !r.sent).length, sent: await sentCount() };
+		},
+		async sendPending() {
+			if (!this.enabled() || sending || blocked) {
+				return;
+			}
+			sending = true;
+			try {
+				const records = await this.all();
+				const done = records.filter(r => r.sent);
+				if (done.length) {
+					await withStore('readwrite', s => { for (const r of done) {
+						s.delete(r.id);
+					} });
+				}
+				const pending = pendingUploads(records);
+				if (!pending.length) {
+					return;
+				}
+				const id = await contributorId();
+				const result = await sendInBatches(pending, batch => postBatch(batch, id), async (batch, outcome) => {
+					await withStore('readwrite', s => { for (const r of batch) {
+						s.delete(r.id);
+					} });
+					if (outcome === 'sent') {
+						await addSent(batch.length);
+					}
+					this.onChange?.();
+				});
+				if (result === 'blocked') {
+					blocked = true;
+				}
+			} catch (err) {
+				console.warn('[Send Captchas for Training] send failed', err);
+			} finally {
+				sending = false;
+				this.onChange?.();
+			}
+		},
+	};
 
 	const noWebmTitleMetadataSites = ['4chan.org'];
 	var Metadata = {
@@ -34813,7 +34908,7 @@ Enable it on boards.${location.hostname.split('.')[1]}.org in your browser's pri
 				'Post on Captcha Completion',
 				'Force Noscript Captcha',
 				'Stacked TCaptcha',
-				'Save Captchas for Training',
+				'Send Captchas for Training',
 				'Pass Link',
 			];
 			const postingKeys = Object.keys(Config.main['Posting and Captchas']).filter(k => !captchaKeys.includes(k));
@@ -34986,7 +35081,7 @@ Enable it on boards.${location.hostname.split('.')[1]}.org in your browser's pri
 				const showEngine = (show) => {
 					engineBox.hidden = !show;
 					modelBox.hidden = !show;
-					const trainingSetting = $('div[data-name="Save Captchas for Training"]', section);
+					const trainingSetting = $('div[data-name="Send Captchas for Training"]', section);
 					if (trainingSetting) {
 						trainingSetting.style.display = show ? '' : 'none';
 					}
@@ -35033,47 +35128,36 @@ Enable it on boards.${location.hostname.split('.')[1]}.org in your browser's pri
 					modelBox,
 				]);
 				$.after(styleRow, solverRow);
-				const trainingRow = $('div[data-name="Save Captchas for Training"]', section);
-				const trainingToggle = $('input[name="Save Captchas for Training"]', section);
+				const trainingRow = $('div[data-name="Send Captchas for Training"]', section);
+				const trainingToggle = $('input[name="Send Captchas for Training"]', section);
 				if (trainingRow && trainingToggle) {
 					const trainingBox = $.el('div', { className: 'captcha-engine-box ready', hidden: true });
 					const trainingText = $.el('span');
-					const exportButton = $.el('button', { type: 'button', textContent: 'Export' });
-					const clearButton = $.el('button', { type: 'button', textContent: 'Delete exported' });
-					$.add(trainingBox, [trainingText, exportButton, clearButton]);
+					$.add(trainingBox, trainingText);
 					$.add(trainingRow, trainingBox);
-					const refreshTraining = async (note = '') => {
+					const refreshTraining = async () => {
 						try {
-							const { total, unexported } = await CaptchaTrainingLog.counts();
-							trainingBox.hidden = !trainingToggle.checked && total === 0;
-							trainingText.textContent = `${note}${total} saved, ${unexported} not exported yet.`;
-							exportButton.disabled = unexported === 0;
-							clearButton.disabled = total === unexported;
+							const { waiting, sent } = await CaptchaTrainingLog.counts();
+							trainingBox.hidden = waiting === 0 && sent === 0;
+							const parts = [];
+							if (sent) {
+								parts.push(`${sent} captcha${sent === 1 ? '' : 's'} sent`);
+							}
+							if (waiting) {
+								parts.push(`${waiting} waiting to send`);
+							}
+							trainingText.textContent = `${parts.join(', ')}.`;
 						} catch (err) {
 							trainingBox.hidden = !trainingToggle.checked;
 							trainingText.textContent = `Saved captchas unavailable: ${err?.message || err}`;
-							exportButton.disabled = clearButton.disabled = true;
 						}
 					};
-					$.on(trainingToggle, 'change', () => refreshTraining());
-					$.on(exportButton, 'click', async () => {
-						let note;
-						try {
-							const n = await CaptchaTrainingLog.exportNew();
-							note = n ? `Exported ${n}. ` : 'Nothing new to export. ';
-						} catch (err) {
-							note = `Export failed: ${err?.message || err}. `;
+					CaptchaTrainingLog.onChange = refreshTraining;
+					$.on(trainingToggle, 'change', async () => {
+						if (trainingToggle.checked) {
+							await CaptchaTrainingLog.sendPending();
 						}
-						refreshTraining(note);
-					});
-					$.on(clearButton, 'click', async () => {
-						let note;
-						try {
-							note = `Deleted ${await CaptchaTrainingLog.clearExported()}. `;
-						} catch (err) {
-							note = `Delete failed: ${err?.message || err}. `;
-						}
-						refreshTraining(note);
+						refreshTraining();
 					});
 					refreshTraining();
 				}
