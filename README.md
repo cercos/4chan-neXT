@@ -32,13 +32,12 @@ New users should start with the [User Guide](./docs/user-guide.md).
 
 ## Current Release
 
-`1.2.6.5` (2026-07-25)
+`1.2.7.0` (2026-11-23)
 
-- Big mobile revamp: the whole layout now works on phones and touch screens, and turns on automatically on mobile.
-- Added the Dōgiri video editor: cut, caption, and re-render an attached video right from the Quick Reply.
-- Added a Columns option to the catalog: pick a fixed column count (1-12) or leave it on Auto.
-- Fixed the wrong color palette sometimes applying to detached windows after theme switches, and downloads hanging in some userscript managers.
-- Various small refinements to embeds and their settings.
+- Added a Reply Count filter to hide or highlight threads by how many replies they have.
+- Added automatic MP4-to-WebM conversion for VP8/VP9 video uploads in Quick Reply.
+- Added an experimental in-browser Captcha Solver (off by default).
+- Fixed the captcha not loading in the Chrome extension, and hovered videos restarting when opened.
 
 See [CHANGELOG.md](./CHANGELOG.md) for full release notes.
 
