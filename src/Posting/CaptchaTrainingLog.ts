@@ -1,14 +1,17 @@
 import { Conf } from "../globals/globals";
+import $ from "../platform/$";
+import CrossOrigin from "../platform/CrossOrigin";
+import { buildTrainingRecord, type PendingChallenge, type TrainingRecord } from "./CaptchaTrainingLogLogic";
 import {
-  buildTrainingRecord, exportFileName, toJsonl,
-  type PendingChallenge, type TrainingRecord,
-} from "./CaptchaTrainingLogLogic";
+  UPLOAD_URL, classifyStatus, contributorIdFrom, pendingUploads, sendInBatches, toNdjson, toUploadRecord,
+  type UploadOutcome,
+} from "./CaptchaUploadLogic";
 
 const DB_NAME = 'fourchanx-captcha-training';
 const STORE = 'records';
 const MAX_PENDING = 20;
 
-type StoredRecord = TrainingRecord & { exported?: boolean };
+type StoredRecord = TrainingRecord & { sent?: boolean };
 
 let dbPromise: Promise<IDBDatabase> | null = null;
 function openDB(): Promise<IDBDatabase> {
@@ -33,11 +36,48 @@ async function withStore<T>(mode: IDBTransactionMode, fn: (store: IDBObjectStore
 
 const pending = new Map<string, PendingChallenge>();
 let lastSubmitted: { id: string; response: string } | null = null;
+let sending = false;
+let blocked = false;
+
+function contributorId(): Promise<string> {
+  return new Promise(resolve => {
+    $.get('captchaContributorId', '', (items: Record<string, any>) => {
+      const existing = items['captchaContributorId'];
+      if (typeof existing === 'string' && /^[0-9a-f]{32}$/.test(existing)) { resolve(existing); return; }
+      const id = contributorIdFrom(crypto.getRandomValues(new Uint8Array(16)));
+      $.set('captchaContributorId', id);
+      resolve(id);
+    });
+  });
+}
+
+function sentCount(): Promise<number> {
+  return new Promise(resolve => {
+    $.get('captchaSentCount', 0, (items: Record<string, any>) => { resolve(+items['captchaSentCount'] || 0); });
+  });
+}
+
+async function addSent(n: number): Promise<void> {
+  $.set('captchaSentCount', await sentCount() + n);
+}
+
+async function postBatch(batch: StoredRecord[], id: string): Promise<UploadOutcome> {
+  const req = await CrossOrigin.ajaxPromise(UPLOAD_URL, {
+    method: 'POST',
+    body: toNdjson(batch.map(toUploadRecord)),
+    headers: { 'Content-Type': 'application/x-ndjson', 'X-Contributor': id },
+    responseType: 'text',
+    timeout: 15000,
+  });
+  const outcome = classifyStatus(req.status);
+  if (outcome === 'rejected') { console.warn('[Send Captchas for Training] rejected', req.status, req.response); }
+  return outcome;
+}
 
 const CaptchaTrainingLog = {
   onChange: null as null | (() => void),
 
-  enabled() { return !!Conf['Save Captchas for Training']; },
+  enabled() { return !!Conf['Send Captchas for Training']; },
 
   noteChallenge(challenge: any, board: string) { // loose: raw TCaptcha `twister` JSON
     if (!this.enabled() || !challenge?.challenge || !challenge?.tasks?.length) { return; }
@@ -67,10 +107,11 @@ const CaptchaTrainingLog = {
     if (!record) { return; }
     try {
       await withStore('readwrite', s => s.put(record));
-      console.log('[Save Captchas for Training] saved', record.id, record.response, record.source);
+      console.log('[Send Captchas for Training] saved', record.id, record.response, record.source);
       this.onChange?.();
+      this.sendPending();
     } catch (err) {
-      console.warn('[Save Captchas for Training] save failed', err);
+      console.warn('[Send Captchas for Training] save failed', err);
     }
   },
 
@@ -78,33 +119,36 @@ const CaptchaTrainingLog = {
     return (await withStore<StoredRecord[]>('readonly', s => s.getAll())) || [];
   },
 
-  async counts() {
-    const records = await this.all();
-    return { total: records.length, unexported: records.filter(r => !r.exported).length };
+  async counts(): Promise<{ waiting: number; sent: number }> {
+    return { waiting: (await this.all()).filter(r => !r.sent).length, sent: await sentCount() };
   },
 
-  async exportNew(): Promise<number> {
-    const records = (await this.all()).filter(r => !r.exported);
-    if (!records.length) { return 0; }
-    const clean = records.map(({ exported: _e, ...r }) => r as TrainingRecord);
-    const url = URL.createObjectURL(new Blob([toJsonl(clean)], { type: 'application/x-ndjson' }));
-    const a = document.createElement('a');
-    a.href = url;
-    a.download = exportFileName(new Date());
-    document.body.appendChild(a);
-    a.click();
-    a.remove();
-    setTimeout(() => URL.revokeObjectURL(url), 60_000);
-    await withStore('readwrite', s => { for (const r of records) { s.put({ ...r, exported: true }); } });
-    this.onChange?.();
-    return records.length;
-  },
-
-  async clearExported(): Promise<number> {
-    const done = (await this.all()).filter(r => r.exported);
-    await withStore('readwrite', s => { for (const r of done) { s.delete(r.id); } });
-    this.onChange?.();
-    return done.length;
+  async sendPending(): Promise<void> {
+    if (!this.enabled() || sending || blocked) { return; }
+    sending = true;
+    try {
+      const records = await this.all();
+      const done = records.filter(r => r.sent);
+      if (done.length) { await withStore('readwrite', s => { for (const r of done) { s.delete(r.id); } }); }
+      const pending = pendingUploads<StoredRecord>(records);
+      if (!pending.length) { return; }
+      const id = await contributorId();
+      const result = await sendInBatches(
+        pending,
+        batch => postBatch(batch, id),
+        async (batch, outcome) => {
+          await withStore('readwrite', s => { for (const r of batch) { s.delete(r.id); } });
+          if (outcome === 'sent') { await addSent(batch.length); }
+          this.onChange?.();
+        },
+      );
+      if (result === 'blocked') { blocked = true; }
+    } catch (err) {
+      console.warn('[Send Captchas for Training] send failed', err);
+    } finally {
+      sending = false;
+      this.onChange?.();
+    }
   },
 };
 

@@ -37,7 +37,7 @@ var handlers = {
         ...(request.body != null ? { body: request.body } : {}),
       });
       if (!res.ok) {
-        return { error: true };
+        return { error: true, status: res.status, statusText: res.statusText };
       }
       let response;
       if (request.responseType === 'arraybuffer') {

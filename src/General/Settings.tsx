@@ -2600,7 +2600,7 @@ Enable it on boards.${location.hostname.split('.')[1]}.org in your browser's pri
         'Post on Captcha Completion',
         'Force Noscript Captcha',
         'Stacked TCaptcha',
-        'Save Captchas for Training',
+        'Send Captchas for Training',
         'Pass Link',
       ];
       const postingKeys = Object.keys(Config.main['Posting and Captchas']).filter(k => !captchaKeys.includes(k));
@@ -2768,7 +2768,7 @@ Enable it on boards.${location.hostname.split('.')[1]}.org in your browser's pri
       const showEngine = (show: boolean) => {
         engineBox.hidden = !show;
         modelBox.hidden = !show;
-        const trainingSetting = $('div[data-name="Save Captchas for Training"]', section) as HTMLDivElement | null;
+        const trainingSetting = $('div[data-name="Send Captchas for Training"]', section) as HTMLDivElement | null;
         if (trainingSetting) { trainingSetting.style.display = show ? '' : 'none'; }
         if (show && engineState !== 'busy') {
           engineDownloaded().then(ok => { if (engineState !== 'busy') { renderEngine(ok ? 'ready' : 'missing'); } });
@@ -2809,47 +2809,30 @@ Enable it on boards.${location.hostname.split('.')[1]}.org in your browser's pri
         modelBox,
       ]);
       $.after(styleRow, solverRow);
-      const trainingRow = $('div[data-name="Save Captchas for Training"]', section) as HTMLDivElement | null;
-      const trainingToggle = $('input[name="Save Captchas for Training"]', section) as HTMLInputElement | null;
+      const trainingRow = $('div[data-name="Send Captchas for Training"]', section) as HTMLDivElement | null;
+      const trainingToggle = $('input[name="Send Captchas for Training"]', section) as HTMLInputElement | null;
       if (trainingRow && trainingToggle) {
         const trainingBox = $.el('div', { className: 'captcha-engine-box ready', hidden: true }) as HTMLDivElement;
         const trainingText = $.el('span');
-        const exportButton = $.el('button', { type: 'button', textContent: 'Export' }) as HTMLButtonElement;
-        const clearButton = $.el('button', { type: 'button', textContent: 'Delete exported' }) as HTMLButtonElement;
-        $.add(trainingBox, [trainingText, exportButton, clearButton]);
+        $.add(trainingBox, trainingText);
         $.add(trainingRow, trainingBox);
-        const refreshTraining = async (note = '') => {
+        const refreshTraining = async () => {
           try {
-            const { total, unexported } = await CaptchaTrainingLog.counts();
-            trainingBox.hidden = !trainingToggle.checked && total === 0;
-            trainingText.textContent = `${note}${total} saved, ${unexported} not exported yet.`;
-            exportButton.disabled = unexported === 0;
-            clearButton.disabled = total === unexported;
+            const { waiting, sent } = await CaptchaTrainingLog.counts();
+            trainingBox.hidden = waiting === 0 && sent === 0;
+            const parts = [];
+            if (sent) { parts.push(`${sent} captcha${sent === 1 ? '' : 's'} sent`); }
+            if (waiting) { parts.push(`${waiting} waiting to send`); }
+            trainingText.textContent = `${parts.join(', ')}.`;
           } catch (err: any) { // loose: any thrown value
             trainingBox.hidden = !trainingToggle.checked;
             trainingText.textContent = `Saved captchas unavailable: ${err?.message || err}`;
-            exportButton.disabled = clearButton.disabled = true;
           }
         };
-        $.on(trainingToggle, 'change', () => refreshTraining());
-        $.on(exportButton, 'click', async () => {
-          let note: string;
-          try {
-            const n = await CaptchaTrainingLog.exportNew();
-            note = n ? `Exported ${n}. ` : 'Nothing new to export. ';
-          } catch (err: any) { // loose: any thrown value
-            note = `Export failed: ${err?.message || err}. `;
-          }
-          refreshTraining(note);
-        });
-        $.on(clearButton, 'click', async () => {
-          let note: string;
-          try {
-            note = `Deleted ${await CaptchaTrainingLog.clearExported()}. `;
-          } catch (err: any) { // loose: any thrown value
-            note = `Delete failed: ${err?.message || err}. `;
-          }
-          refreshTraining(note);
+        CaptchaTrainingLog.onChange = refreshTraining;
+        $.on(trainingToggle, 'change', async () => {
+          if (trainingToggle.checked) { await CaptchaTrainingLog.sendPending(); }
+          refreshTraining();
         });
         refreshTraining();
       }

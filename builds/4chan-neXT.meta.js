@@ -1,6 +1,6 @@
 // ==UserScript==
 // @name         4chan-neXT
-// @version      1.2.7.1
+// @version      1.2.7.2
 // @minGMVer     1.14
 // @minFFVer     78
 // @namespace    4chan-neXT
@@ -95,6 +95,7 @@
 // @connect      api.streamable.com
 // @connect      vimeo.com
 // @connect      www.youtube.com
+// @connect      captcha-upload.4chan-next.workers.dev
 // @connect      *
 // @grant        GM_getValue
 // @grant        GM_setValue
