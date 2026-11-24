@@ -17,6 +17,7 @@ import Menu from '../Menu/Menu';
 import UI from '../General/UI';
 import BoardConfig from '../General/BoardConfig';
 import Get from '../General/Get';
+import { VideoRemuxer } from './VideoRemuxer';
 import { VideoStripper } from './VideoStripper';
 import QRFileStore from '../platform/QRFileStore';
 import { DAY, dict, platform, SECOND } from '../platform/helpers';
@@ -2457,6 +2458,15 @@ var QR = {
     } finally {
       QR.isProcessingPendingFiles = false;
     }
+  },
+
+  noteRemuxed(name: string, audioDropped: false | 'board' | 'unsupported' | undefined) {
+    const message = audioDropped === 'board'
+      ? `Converted ${name} to WebM and removed its audio for this board.`
+      : audioDropped === 'unsupported'
+        ? `Converted ${name} to WebM. Its audio was removed because this browser cannot encode Opus.`
+        : `Converted ${name} to WebM.`;
+    new Notice('info', message, 5);
   },
 
   // setFile reports each stripped video here. If a prior notice is still
@@ -5245,8 +5255,24 @@ class post {
       delete this.preStripFile;
     }
     try {
-      // On restore the file was already audio-stripped/renamed when first added,
-      // so skip that reprocessing (and its notices).
+      // On restore the file was already remuxed/audio-stripped/renamed when first
+      // added, so skip that reprocessing (and its notices).
+      if (!opts.restore && Conf['Remux Videos'] && VideoRemuxer.matches(file)) {
+        const remuxed = await VideoRemuxer.process(file, {
+          keepAudio: !(Conf['Strip Video Audio'] && BoardConfig.noAudio(g.BOARD!.ID)),
+        });
+        if (remuxed.file) {
+          if (remuxed.audioDropped) {
+            this.preStripFile = file;
+            this.audioWasStripped = true;
+          }
+          QR.noteRemuxed(file.name, remuxed.audioDropped);
+          file = remuxed.file;
+        } else if (remuxed.warning) {
+          new Notice('warning', remuxed.warning, 15);
+        }
+      }
+
       if (
         !opts.restore &&
         Conf['Strip Video Audio'] &&

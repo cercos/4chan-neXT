@@ -695,6 +695,11 @@ const Config = {
         'Remove audio from MP4 and WebM uploads in Quick Reply on boards that do not allow audio.',
         1
       ],
+      'Remux Videos': [
+        true,
+        'Rewrap MP4 uploads that use WebM-only codecs (VP8/VP9) into WebM files in Quick Reply. The video is copied without re-encoding; audio is converted to Opus. Also warns when an attached video cannot be accepted by 4chan.',
+        1
+      ],
       'Dogiri Editor': [
         true,
         'Add a button to edit attached videos in Dōgiri, the video editor. Requires Quick Reply.',
@@ -1032,6 +1037,15 @@ const Config = {
     postID: `\
 # Highlight dubs on [s4s]:
 #/(\\d)\\1$/;highlight;top:no;boards:s4s\
+`,
+
+    replycount: `\
+# Reply counts use numeric comparisons instead of regular expressions.
+# Only applies to threads in the index and catalog.
+# Hide threads with fewer than 10 replies:
+#/<10/
+# Highlight threads with 300 or more replies:
+#/>=300/;highlight;top:no\
 `,
 
     name: `\

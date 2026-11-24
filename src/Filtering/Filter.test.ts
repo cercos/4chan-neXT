@@ -86,6 +86,34 @@ describe('Filter.parseEasyFilterRules', () => {
   });
 });
 
+describe('Filter.parseCount', () => {
+  it('parses comparison operators', () => {
+    expect(Filter.parseCount('<10')!(9)).toBe(true);
+    expect(Filter.parseCount('<10')!(10)).toBe(false);
+    expect(Filter.parseCount('<=10')!(10)).toBe(true);
+    expect(Filter.parseCount('<=10')!(11)).toBe(false);
+    expect(Filter.parseCount('>300')!(301)).toBe(true);
+    expect(Filter.parseCount('>300')!(300)).toBe(false);
+    expect(Filter.parseCount('>=300')!(300)).toBe(true);
+    expect(Filter.parseCount('>=300')!(299)).toBe(false);
+  });
+
+  it('treats a bare or =-prefixed number as an exact match', () => {
+    expect(Filter.parseCount('42')!(42)).toBe(true);
+    expect(Filter.parseCount('42')!(43)).toBe(false);
+    expect(Filter.parseCount('=42')!(42)).toBe(true);
+  });
+
+  it('rejects invalid expressions', () => {
+    expect(Filter.parseCount('')).toBeUndefined();
+    expect(Filter.parseCount('ten')).toBeUndefined();
+    expect(Filter.parseCount('10<')).toBeUndefined();
+    expect(Filter.parseCount('<')).toBeUndefined();
+    expect(Filter.parseCount('<-5')).toBeUndefined();
+    expect(Filter.parseCount('=<10')).toBeUndefined();
+  });
+});
+
 describe('Filter.easyHighlightClasses', () => {
   it('combines the generated color class and the custom class', () => {
     expect(Filter.easyHighlightClasses({ colorOn: true, color: '#aabbcc', hlClass: 'mine' }))
@@ -121,6 +149,15 @@ describe('Filter.easyRuleToLine', () => {
       pattern: 'foo', action: 'highlight', color: '#aabbcc', auto: true, override: true,
     }));
     expect(line).toBe('/foo/i;type:subject,name,comment;highlight:xt-hl-aabbcc;top:yes;override');
+  });
+
+  it('emits reply count rules with the comparison syntax intact', () => {
+    expect(Filter.easyRuleToLine(normalize({ pattern: '<10', type: 'replycount' })))
+      .toBe('/<10/');
+    expect(Filter.easyRuleToLine(normalize({ pattern: '<10', type: 'replycount', boards: 'g' })))
+      .toBe('/<10/;boards:g');
+    expect(Filter.easyRuleToLine(normalize({ pattern: '>=300', type: 'replycount', action: 'highlight' })))
+      .toBe('/>=300/;highlight;top:no');
   });
 
   it('appends notify', () => {

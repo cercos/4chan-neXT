@@ -8665,6 +8665,7 @@ Enable it on boards.${location.hostname.split('.')[1]}.org in your browser's pri
   easyFilterTypes: [
     ['General', 'general'],
     ['Post Number', 'postID'],
+    ['Reply Count', 'replycount'],
     ['Name', 'name'],
     ['Unique ID', 'uniqueID'],
     ['Tripcode', 'tripcode'],
@@ -9024,7 +9025,7 @@ Enable it on boards.${location.hostname.split('.')[1]}.org in your browser's pri
       }
 
       activeRules++;
-      const parsed = Settings.parseFilterPreviewLine('general', lineText);
+      const parsed = Settings.parseFilterPreviewLine(rule.type === 'replycount' ? 'replycount' : 'general', lineText);
       if (parsed?.invalid) {
         stats.push({ rowNo, rule, invalid: parsed.invalid });
         continue;
@@ -9068,7 +9069,7 @@ Enable it on boards.${location.hostname.split('.')[1]}.org in your browser's pri
       if (stat.invalid) {
         $.add(row, $.el('div', {
           className: 'filter-stat-invalid',
-          textContent: `Rule ${stat.rowNo}: invalid regex (${stat.invalid})`,
+          textContent: `Rule ${stat.rowNo}: invalid pattern (${stat.invalid})`,
         }));
         $.add(panel, row);
         continue;
@@ -9243,7 +9244,11 @@ Enable it on boards.${location.hostname.split('.')[1]}.org in your browser's pri
 
     const isstring = key === 'uniqueID' || key === 'MD5';
     let regexp: any = regexpMatch[1];
-    if (!isstring) {
+    let cmp: ((count: number) => boolean) | undefined;
+    if (key === 'replycount') {
+      cmp = Filter.parseCount(regexpMatch[1]);
+      if (!cmp) return { invalid: 'Invalid reply count expression' };
+    } else if (!isstring) {
       try {
         regexp = RegExp(regexpMatch[1], regexpMatch[2]);
       } catch (err) {
@@ -9268,7 +9273,7 @@ Enable it on boards.${location.hostname.split('.')[1]}.org in your browser's pri
       ? (filter.match(/(?:^|;)\s*type:([^;]*)/)?.[1].split(',') || ['subject', 'name', 'filename', 'comment'])
       : [key];
 
-    return { regexp, isstring, boards, excludes, mask, hide, keys };
+    return { regexp, cmp, isstring, boards, excludes, mask, hide, keys };
   },
 
   collectFilterPreviewMatches(parsed: any, entries: any[]) {
@@ -9303,7 +9308,9 @@ Enable it on boards.${location.hostname.split('.')[1]}.org in your browser's pri
 
     for (const key of parsed.keys) {
       for (const value of Filter.values(key, post)) {
-        if (parsed.isstring) {
+        if (parsed.cmp) {
+          if (parsed.cmp(+value)) return true;
+        } else if (parsed.isstring) {
           if (parsed.regexp === value) return true;
         } else {
           (parsed.regexp as RegExp).lastIndex = 0;
