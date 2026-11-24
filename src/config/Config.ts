@@ -780,7 +780,7 @@ const Config = {
       ],
       'Send Captchas for Training': [
         false,
-        'Sends captchas you solve to a server that collects them for training the captcha solver model.',
+        'Sends the captchas you solve to help train the captcha solver, so it gets more of them right. Only the captcha images and your answers are sent.',
         2
       ],
       'Pass Link': [
