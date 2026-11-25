@@ -3,15 +3,15 @@ import $ from "../platform/$";
 import CrossOrigin from "../platform/CrossOrigin";
 import { buildTrainingRecord, type PendingChallenge, type TrainingRecord } from "./CaptchaTrainingLogLogic";
 import {
-  UPLOAD_URL, classifyStatus, contributorIdFrom, pendingUploads, sendInBatches, toNdjson, toUploadRecord,
-  type UploadOutcome,
+  MAX_SEND_TRIES, UPLOAD_URL, classifyStatus, contributorIdFrom, pendingUploads, sendInBatches, takeTry, toNdjson,
+  toUploadRecord, withTimeout, type UploadOutcome,
 } from "./CaptchaUploadLogic";
 
 const DB_NAME = 'fourchanx-captcha-training';
 const STORE = 'records';
 const MAX_PENDING = 20;
 
-type StoredRecord = TrainingRecord & { sent?: boolean };
+type StoredRecord = TrainingRecord & { sent?: boolean; tries?: number };
 
 let dbPromise: Promise<IDBDatabase> | null = null;
 function openDB(): Promise<IDBDatabase> {
@@ -130,12 +130,20 @@ const CaptchaTrainingLog = {
       const records = await this.all();
       const done = records.filter(r => r.sent);
       if (done.length) { await withStore('readwrite', s => { for (const r of done) { s.delete(r.id); } }); }
-      const pending = pendingUploads<StoredRecord>(records);
+      const { send: pending, drop } = takeTry(pendingUploads<StoredRecord>(records));
+      await withStore('readwrite', s => {
+        for (const r of drop) { s.delete(r.id); }
+        for (const r of pending) { s.put(r); }
+      });
+      if (drop.length) {
+        console.warn(`[Send Captchas for Training] gave up on ${drop.length} after ${MAX_SEND_TRIES} tries`);
+        this.onChange?.();
+      }
       if (!pending.length) { return; }
       const id = await contributorId();
       const result = await sendInBatches(
         pending,
-        batch => postBatch(batch, id),
+        batch => withTimeout(postBatch(batch, id), 30000, 'retry' as UploadOutcome),
         async (batch, outcome) => {
           await withStore('readwrite', s => { for (const r of batch) { s.delete(r.id); } });
           if (outcome === 'sent') { await addSent(batch.length); }

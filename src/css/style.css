@@ -936,6 +936,44 @@ html.highlight-next-global #menu .entry[data-next-status="changed"] {
   background-color: var(--xt-dialog-bg, var(--xt-background, var(--background, Canvas)));
   color: inherit;
 }
+#xt-settings-overlay select:not([multiple]):not([size]) {
+  -webkit-appearance: none;
+  appearance: none;
+  box-sizing: border-box;
+  height: 24px;
+  padding: 0 24px 0 8px;
+  border: 1px solid rgba(128, 128, 128, .45);
+  border-radius: 4px;
+  background-color: transparent;
+  background-image:
+    linear-gradient(45deg, transparent 50%, currentColor 50%),
+    linear-gradient(135deg, currentColor 50%, transparent 50%);
+  background-position: calc(100% - 13px) 50%, calc(100% - 9px) 50%;
+  background-size: 4px 4px;
+  background-repeat: no-repeat;
+  color: inherit;
+  font-family: inherit;
+  line-height: 22px;
+  vertical-align: middle;
+  cursor: pointer;
+}
+#xt-settings-overlay select:not([multiple]):not([size]):hover:not(:disabled) {
+  border-color: rgba(128, 128, 128, .8);
+  background-color: rgba(128, 128, 128, .1);
+}
+#xt-settings-overlay select:not([multiple]):not([size]):focus-visible {
+  outline: none;
+  border-color: var(--xt-link-text-color, #5b8dd6);
+  box-shadow: 0 0 0 1px var(--xt-link-text-color, #5b8dd6);
+}
+#xt-settings-overlay select:disabled {
+  cursor: default;
+  opacity: .5;
+}
+#xt-settings-overlay select option {
+  background-color: var(--xt-dialog-bg, var(--xt-background, var(--background, Canvas)));
+  color: inherit;
+}
 #xt-settings-overlay .close {
   text-decoration: none;
   padding: 2px 4px;
@@ -1532,10 +1570,11 @@ div[data-checked="false"] > .suboption-list {
   display: inline-block;
   position: absolute;
   left: .7em;
-  width: .7em;
-  height: .6em;
-  border-left: 1px solid;
-  border-bottom: 1px solid;
+  width: .5em;
+  height: .65em;
+  border-left: 1px solid rgba(128, 128, 128, .55);
+  border-bottom: 1px solid rgba(128, 128, 128, .55);
+  border-bottom-left-radius: 4px;
 }
 .suboption-list > div:not(:last-of-type)::after {
   content: "";
@@ -1545,7 +1584,7 @@ div[data-checked="false"] > .suboption-list {
   top: .6em;
   bottom: 0;
   width: 0;
-  border-left: 1px solid;
+  border-left: 1px solid rgba(128, 128, 128, .55);
 }
 #xt-settings-overlay .description {
   display: inline;
@@ -1568,39 +1607,60 @@ div[data-checked="false"] > .suboption-list {
   display: flex;
   align-items: center;
   gap: 8px;
-  margin: 4px 0 2px;
-  padding: 6px 8px;
-  border: 1px solid rgba(214, 160, 40, .6);
-  border-radius: 4px;
-  background: rgba(214, 160, 40, .1);
+  margin: 2px 0;
+  padding: 2px 0;
+  font-size: .9em;
 }
 .captcha-engine-box[hidden] {
   display: none;
 }
-.captcha-engine-box.ready {
-  border-color: rgba(127, 127, 127, .4);
-  background: none;
-  opacity: .8;
+.captcha-engine-box::before {
+  content: "";
+  flex: none;
+  width: 7px;
+  height: 7px;
+  border-radius: 50%;
+  background: #d6a028;
+}
+.captcha-engine-box.ready::before {
+  background: #3fb950;
 }
 .captcha-engine-box > span {
-  flex: 1;
+  flex: 0 1 auto;
+  opacity: .8;
 }
 .captcha-engine-box > button {
   flex: none;
+  padding: 0 8px;
+  border: 1px solid rgba(128, 128, 128, .45);
+  border-radius: 4px;
+  background: transparent;
+  color: inherit;
+  font: inherit;
+  line-height: 18px;
+  cursor: pointer;
+}
+.captcha-engine-box > button:hover:not(:disabled) {
+  border-color: rgba(128, 128, 128, .8);
+  background: rgba(128, 128, 128, .15);
+}
+.captcha-engine-box:not(.ready) > button {
+  border-color: rgba(214, 160, 40, .7);
+}
+#xt-settings-overlay .settings-captcha-box div[data-name="Send Captchas for Training"] > .captcha-engine-box {
+  margin-left: 1.55em;
 }
 .captcha-solver-choice {
   display: inline-flex;
   vertical-align: middle;
-  border: 1px solid rgba(127, 127, 127, .5);
+  padding: 1px;
+  gap: 1px;
+  border: 1px solid rgba(128, 128, 128, .45);
   border-radius: 4px;
-  overflow: hidden;
 }
 .captcha-solver-choice > label {
   text-decoration: none !important;
   cursor: pointer;
-}
-.captcha-solver-choice > label + label {
-  border-left: 1px solid rgba(127, 127, 127, .5);
 }
 .captcha-solver-choice input {
   position: absolute;
@@ -1609,14 +1669,16 @@ div[data-checked="false"] > .suboption-list {
 }
 .captcha-solver-choice span {
   display: inline-block;
-  padding: 1px 10px;
+  padding: 0 10px;
+  border-radius: 3px;
+  line-height: 20px;
 }
 .captcha-solver-choice > label:hover span {
-  background: rgba(127, 127, 127, .15);
+  background: rgba(128, 128, 128, .15);
 }
 .captcha-solver-choice > label:has(input:checked) span {
-  background: rgba(127, 127, 127, .4);
-  font-weight: bold;
+  background: color-mix(in srgb, var(--xt-link-text-color, #5b8dd6) 30%, transparent);
+  box-shadow: inset 0 0 0 1px color-mix(in srgb, var(--xt-link-text-color, #5b8dd6) 60%, transparent);
 }
 .captcha-solver-choice > label:has(input:focus-visible) span {
   outline: 1px solid;
@@ -2796,22 +2858,6 @@ body > #overlay:not(.media-preview) {
   background: transparent;
   border: 1px solid rgba(128, 128, 128, .45);
   border-radius: 3px;
-  color: inherit;
-}
-/* Bring the styling section's native dropdowns in line with the same subtle,
-   theme-adaptive frame (they previously rendered with the browser's stark
-   default control, clashing with the theme picker and hex/name fields). */
-.section-styling :is(.styling-variant-mode, .styling-theme-row, .styling-hl-octl, .custom-css-controls) select {
-  background: transparent;
-  border: 1px solid rgba(128, 128, 128, .45);
-  border-radius: 3px;
-  color: inherit;
-  padding: 2px 6px;
-}
-/* Keep the popped-open option list readable: an inherited light text colour
-   would otherwise sit on the browser's default light popup on dark themes. */
-.section-styling :is(.styling-variant-mode, .styling-theme-row, .styling-hl-octl, .custom-css-controls) select option {
-  background: var(--xt-dialog-bg, var(--xt-background, var(--background, Canvas)));
   color: inherit;
 }
 .section-styling .styling-inline-controls .styling-color-hex {
