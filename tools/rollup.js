@@ -43,6 +43,16 @@ const channelBaseUrl = process.argv.find(arg => arg.startsWith('-channel-base=')
 const stripComments = !process.argv.includes('-keep-comments');
 const sourcemap = minify;
 
+const MODEL_RELEASE_URL = 'https://raw.githubusercontent.com/cercos/4chan-neXT/beta/assets/captcha-model/';
+const localCaptchaModel = (url) => ({
+  name: 'local-captcha-model',
+  transform(code, id) {
+    if (!id.endsWith('CaptchaBrowserSolver.ts')) return null;
+    if (!code.includes(MODEL_RELEASE_URL)) this.error('captcha model URL not found in CaptchaBrowserSolver.ts');
+    return { code: code.replace(MODEL_RELEASE_URL, url), map: null };
+  },
+});
+
 const onwarn = (warning, warn) => {
   // The legacy feature registry has tolerated singleton cycles; keep testbuild output focused on actionable warnings.
   if (warning.code === 'CIRCULAR_DEPENDENCY') return;
@@ -102,6 +112,8 @@ const tsPlugin = typescript({
       noFormat || minify ? undefined : removeDecaffeinateComments({
         include: ["**/*.js", "**/*.ts", "**/*.tsx"],
       }),
+      channel && ['localhost', '127.0.0.1'].includes(new URL(channelBaseUrl).hostname)
+        ? localCaptchaModel(new URL('/assets/captcha-model/', channelBaseUrl).href) : undefined,
       tsPlugin,
       alias({
         entries: [
