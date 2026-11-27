@@ -32,8 +32,10 @@ New users should start with the [User Guide](./docs/user-guide.md).
 
 ## Current Release
 
-`1.2.7.2` (2026-11-24)
+`1.2.7.3` (2026-11-27)
 
+- Updated the Captcha Solver model to v1.2, and the solver now leaves answers it isn't sure of for you to pick.
+- The stacked captcha now uses a single answer-stack layout.
 - Captchas you solve can now be sent automatically to help train the Captcha Solver (`Send Captchas for Training`, off by default).
 - Added a Reply Count filter to hide or highlight threads by how many replies they have.
 - Added automatic MP4-to-WebM conversion for VP8/VP9 video uploads in Quick Reply.
