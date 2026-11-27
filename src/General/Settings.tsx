@@ -9,7 +9,8 @@ import StylingPage from './Settings/Styling.html';
 import Redirect from '../Archive/Redirect';
 import Config, { styleVariantKeys } from '../config/Config';
 import CaptchaTrainingLog from '../Posting/CaptchaTrainingLog';
-import { ENGINE_SIZE_MB, downloadEngine, downloadModel, engineDownloaded, installedModel, latestModel, modelCompatible, removeEngine, removeModel, type ModelInfo } from '../Posting/CaptchaBrowserSolver';
+import { extraSolver } from '../Posting/CaptchaExtraSolver';
+import { ENGINE_SIZE_MB, downloadEngine, downloadModel, engineDownloaded, installedModel, latestModel, modelCompatible, modelLabel, modelUpdateAvailable, removeEngine, removeModel, type ModelInfo } from '../Posting/CaptchaBrowserSolver';
 import ImageHost from '../Images/ImageHost';
 import { noWebmTitleMetadataSites } from '../Images/Metadata';
 import CustomCSS from '../Miscellaneous/CustomCSS';
@@ -38,7 +39,6 @@ import QuoteYou from '../Quotelinks/QuoteYou';
 import Index from './Index';
 import BoardConfig from './BoardConfig';
 import nextSettingsDiff from '../config/nextSettingsDiff.json';
-import { normalizeCaptchaStyle } from "../Posting/CaptchaStyles";
 
 export type StyleVariant = 'sfw' | 'nsfw';
 
@@ -2621,7 +2621,6 @@ Enable it on boards.${location.hostname.split('.')[1]}.org in your browser's pri
           'Comment Preview Catalog Behavior',
           'Show Comment Preview Header Icon',
           'Dogiri Timeline Size',
-          'Stacked TCaptcha Style',
           'Captcha Solver',
         ].includes(key),
       });
@@ -2636,34 +2635,11 @@ Enable it on boards.${location.hostname.split('.')[1]}.org in your browser's pri
     const stackedToggle = $('input[name="Stacked TCaptcha"]', section) as HTMLInputElement | null;
     const stackedRow = stackedToggle?.closest('div[data-name="Stacked TCaptcha"]') as HTMLDivElement | null;
     if (stackedRow) {
-      const styleDescription = String(Config.main['Posting and Captchas']['Stacked TCaptcha Style'][1]);
-      const styleRow = $.el('div') as HTMLDivElement;
-      styleRow.dataset.name = 'Stacked TCaptcha Style';
-      styleRow.dataset.settingTitle = 'Stacked Captcha Style';
-      Settings.registerSettingDescription(styleRow, styleDescription);
-      const styleLabel = $.el('label');
-      const styleSelect = $.el('select', { name: 'Stacked TCaptcha Style' }) as HTMLSelectElement;
-      for (const [value, text] of [
-        ['stack', 'Answer stack'],
-        ['classic', 'Classic row'],
-        ['inline', 'Inline chips'],
-        ['dots', 'Stepper dots'],
-      ] as const) {
-        $.add(styleSelect, $.el('option', { value, textContent: text }));
-      }
-      $.on(styleSelect, 'change', $.cb.value);
-      $.on(styleSelect, 'change', () => $.event('StackedCaptchaStyleChanged', null));
-      $.add(styleLabel, [$.el('span', { className: 'setting-title', textContent: 'Stacked Captcha Style: ' }), styleSelect]);
-      $.add(styleRow, [styleLabel, Settings.descriptionSpan(styleDescription)]);
       let stackedSub = $(':scope > .suboption-list', stackedRow) as HTMLElement | null;
       if (!stackedSub) {
         stackedSub = $.el('div', { className: 'suboption-list' });
         $.add(stackedRow, stackedSub);
       }
-      $.prepend(stackedSub, styleRow);
-      $.get({ 'Stacked TCaptcha Style': Conf['Stacked TCaptcha Style'] }, (items: Record<string, any>) => {
-        styleSelect.value = normalizeCaptchaStyle(items['Stacked TCaptcha Style']);
-      });
 
       const solverDescription = String(Config.main['Posting and Captchas']['Captcha Solver'][1]);
       const solverRow = $.el('div') as HTMLDivElement;
@@ -2707,7 +2683,7 @@ Enable it on boards.${location.hostname.split('.')[1]}.org in your browser's pri
         const inst = modelInstalled;
         const latest = modelLatest;
         const canGet = !!latest && modelCompatible(latest);
-        const newer = canGet && (!inst || latest!.version > inst.version);
+        const newer = canGet && modelUpdateAvailable(latest!, inst);
         modelBox.classList.toggle('ready', !!inst && !newer && !error);
         modelButton.disabled = modelBusy;
         modelButton.hidden = modelBusy;
@@ -2718,13 +2694,13 @@ Enable it on boards.${location.hostname.split('.')[1]}.org in your browser's pri
           modelButton.textContent = 'Retry';
         } else if (newer) {
           modelText.textContent = inst
-            ? `Model update available: v${latest!.version}${sizeText(latest)}. You have v${inst.version}.`
+            ? `Model update available: v${modelLabel(latest!)}${sizeText(latest)}. You have v${modelLabel(inst)}.`
             : `The browser solver needs its model${sizeText(latest)}, downloaded separately from the engine.`;
           modelButton.textContent = inst ? 'Update model' : 'Download model';
         } else if (inst) {
           modelText.textContent = latest && !canGet && latest.version > inst.version
-            ? `Model v${inst.version} installed. A newer model needs a 4chan-neXT update.`
-            : `Model v${inst.version} installed and up to date.`;
+            ? `Model v${modelLabel(inst)} installed. A newer model needs a 4chan-neXT update.`
+            : `Model v${modelLabel(inst)} installed and up to date.`;
           modelButton.textContent = 'Remove';
         } else {
           modelText.textContent = latest ? 'The latest model needs a 4chan-neXT update.' : 'Checking for the model\u2026';
@@ -2745,7 +2721,7 @@ Enable it on boards.${location.hostname.split('.')[1]}.org in your browser's pri
       };
       $.on(modelButton, 'click', async () => {
         const latest = modelLatest;
-        const newer = !!latest && modelCompatible(latest) && (!modelInstalled || latest.version > modelInstalled.version);
+        const newer = !!latest && modelCompatible(latest) && modelUpdateAvailable(latest, modelInstalled);
         if (modelInstalled && !newer) {
           await removeModel();
           modelInstalled = null;
@@ -2768,8 +2744,6 @@ Enable it on boards.${location.hostname.split('.')[1]}.org in your browser's pri
       const showEngine = (show: boolean) => {
         engineBox.hidden = !show;
         modelBox.hidden = !show;
-        const trainingSetting = $('div[data-name="Send Captchas for Training"]', section) as HTMLDivElement | null;
-        if (trainingSetting) { trainingSetting.style.display = show ? '' : 'none'; }
         if (show && engineState !== 'busy') {
           engineDownloaded().then(ok => { if (engineState !== 'busy') { renderEngine(ok ? 'ready' : 'missing'); } });
         }
@@ -2789,10 +2763,9 @@ Enable it on boards.${location.hostname.split('.')[1]}.org in your browser's pri
           renderEngine('missing', err?.message || String(err));
         }
       });
-      for (const [value, text] of [
-        ['off', 'Off'],
-        ['browser', 'Browser'],
-      ] as const) {
+      const solverChoices: [string, string][] = [['off', 'Off'], ['browser', 'Browser']];
+      if (extraSolver) { solverChoices.push([extraSolver.id, extraSolver.label]); }
+      for (const [value, text] of solverChoices) {
         const radio = $.el('input', { type: 'radio', name: 'Captcha Solver', value }) as HTMLInputElement;
         $.on(radio, 'change', $.cb.value);
         $.on(radio, 'change', () => showEngine(radio.value === 'browser'));
@@ -2808,7 +2781,7 @@ Enable it on boards.${location.hostname.split('.')[1]}.org in your browser's pri
         engineBox,
         modelBox,
       ]);
-      $.after(styleRow, solverRow);
+      $.prepend(stackedSub, solverRow);
       const trainingRow = $('div[data-name="Send Captchas for Training"]', section) as HTMLDivElement | null;
       const trainingToggle = $('input[name="Send Captchas for Training"]', section) as HTMLInputElement | null;
       if (trainingRow && trainingToggle) {
@@ -2845,7 +2818,7 @@ Enable it on boards.${location.hostname.split('.')[1]}.org in your browser's pri
         }
       }
       $.get({ 'Captcha Solver': Conf['Captcha Solver'] }, (items: Record<string, any>) => {
-        const v = ['browser'].includes(items['Captcha Solver']) ? items['Captcha Solver'] : 'off';
+        const v = solverChoices.some(([c]) => c === items['Captcha Solver']) ? items['Captcha Solver'] : 'off';
         for (const r of solverRadios) { r.checked = r.value === v; }
         showEngine(v === 'browser');
       });

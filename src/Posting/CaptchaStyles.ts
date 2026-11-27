@@ -1,30 +1,3 @@
-export type CaptchaStyle = 'stack' | 'classic' | 'inline' | 'dots';
-
-export const CAPTCHA_STYLE_VALUES: readonly CaptchaStyle[] = ['stack', 'classic', 'inline', 'dots'];
-
-export const DEFAULT_CAPTCHA_STYLE: CaptchaStyle = 'stack';
-
-export function normalizeCaptchaStyle(value: unknown): CaptchaStyle {
-  return CAPTCHA_STYLE_VALUES.includes(value as CaptchaStyle) ? value as CaptchaStyle : DEFAULT_CAPTCHA_STYLE;
-}
-
-export function applyCaptchaStyleClass(root: Element, style: CaptchaStyle | null): void {
-  for (const name of CAPTCHA_STYLE_VALUES) {
-    root.classList.toggle(`fourchanx-captcha-style-${name}`, style === name);
-  }
-}
-
-const NARRATION = {
-  complete: 'Done.',
-  review: 'Click an image to edit, or post.',
-} as const;
-
-export function captchaNarration(style: CaptchaStyle, kind: keyof typeof NARRATION): string {
-  if (style === 'classic') { return NARRATION[kind]; }
-  if (style === 'stack' && kind === 'review') { return 'Click an answer to change it, or post.'; }
-  return '';
-}
-
 export function pngSize(b64: string): { w: number; h: number } | null {
   try {
     const head = atob(b64.slice(0, 44));

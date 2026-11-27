@@ -1,6 +1,7 @@
 import { describe, expect, it } from 'vitest';
 import {
-  classifyStatus, contributorIdFrom, pendingUploads, sendInBatches, toNdjson, toUploadRecord, type UploadOutcome,
+  MAX_SEND_TRIES, classifyStatus, contributorIdFrom, pendingUploads, sendInBatches, takeTry, toNdjson, toUploadRecord,
+  withTimeout, type UploadOutcome,
 } from './CaptchaUploadLogic';
 import type { TrainingRecord } from './CaptchaTrainingLogLogic';
 
@@ -14,6 +15,22 @@ describe('toUploadRecord', () => {
     expect(toUploadRecord(rec('x'))).toEqual({
       v: 1, id: 'x', response: '1', source: 'manual', localAnswer: null, localConfidence: null, tasks: [{ items: ['a', 'b'] }],
     });
+  });
+});
+
+describe('toUploadRecord extra solver answer', () => {
+  it('names the fields after the solver', () => {
+    const r = toUploadRecord({ ...rec('x'), source: 'demo', extraSolver: 'demo', extraAnswer: '12', extraConfidence: 0.95 });
+    expect(r.demoAnswer).toBe('12');
+    expect(r.demoConfidence).toBe(0.95);
+    expect('extraAnswer' in r).toBe(false);
+  });
+  it('leaves the fields out when there is no usable answer', () => {
+    expect('demoAnswer' in toUploadRecord({ ...rec('x'), extraSolver: 'demo', extraAnswer: '1 2', extraConfidence: 0.9 })).toBe(false);
+    expect(toUploadRecord({ ...rec('x'), extraSolver: 'demo', extraAnswer: '12', extraConfidence: 7 }).demoConfidence).toBeNull();
+  });
+  it('never overwrites the local fields', () => {
+    expect(toUploadRecord({ ...rec('x'), extraSolver: 'local', extraAnswer: '12', extraConfidence: 0.9 }).localAnswer).toBeNull();
   });
 });
 
@@ -98,5 +115,31 @@ describe('sendInBatches', () => {
     const r = await run(['a', 'b'], () => (++calls === 1 ? 'rejected' : 'retry'));
     expect(r.result).toBe('retry');
     expect(r.marks).toEqual([]);
+  });
+});
+
+describe('takeTry', () => {
+  it('counts a try on each record it sends', () => {
+    const { send, drop } = takeTry([{ id: 'a' }, { id: 'b', tries: 3 }]);
+    expect(send).toEqual([{ id: 'a', tries: 1 }, { id: 'b', tries: 4 }]);
+    expect(drop).toEqual([]);
+  });
+  it('gives up after the last try', () => {
+    const { send, drop } = takeTry([{ id: 'a', tries: MAX_SEND_TRIES - 1 }, { id: 'b', tries: MAX_SEND_TRIES }]);
+    expect(send.map(r => r.id)).toEqual(['a']);
+    expect(drop.map(r => r.id)).toEqual(['b']);
+  });
+  it('defaults to 5 tries', () => {
+    expect(MAX_SEND_TRIES).toBe(5);
+  });
+});
+
+describe('withTimeout', () => {
+  it('passes the result through', async () => {
+    expect(await withTimeout(Promise.resolve('sent'), 1000, 'retry')).toBe('sent');
+  });
+  it('falls back when the promise hangs or fails', async () => {
+    expect(await withTimeout(new Promise<string>(() => {}), 10, 'retry')).toBe('retry');
+    expect(await withTimeout(Promise.reject(new Error('x')), 1000, 'retry')).toBe('retry');
   });
 });

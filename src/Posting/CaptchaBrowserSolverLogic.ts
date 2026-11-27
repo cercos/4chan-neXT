@@ -56,3 +56,23 @@ export function rgbaToChw(rgba: ArrayLike<number>, w: number, h: number): Float3
   }
   return out;
 }
+
+export interface ModelInfo { version: number; format: number; sizeMB?: number; label?: string }
+
+export function modelUpdateAvailable(latest: ModelInfo, installed: ModelInfo | null): boolean {
+  return !installed || latest.version !== installed.version;
+}
+
+export function modelLabel(info: ModelInfo): string {
+  return info.label || String(info.version);
+}
+
+export function parseModelInfo(value: any): ModelInfo | null { // loose: untrusted JSON
+  if (!value || typeof value !== 'object') { return null; }
+  const version = +value.version;
+  const format = +value.format;
+  if (!Number.isFinite(version) || !Number.isFinite(format)) { return null; }
+  const sizeMB = +value.sizeMB;
+  const label = typeof value.label === 'string' && /^[0-9]+(\.[0-9]+){0,3}$/.test(value.label) ? value.label : null;
+  return { version, format, ...(Number.isFinite(sizeMB) ? { sizeMB } : {}), ...(label ? { label } : {}) };
+}

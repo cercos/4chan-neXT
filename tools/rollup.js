@@ -6,6 +6,7 @@ import { dirname, resolve, relative, sep } from 'path';
 import { fileURLToPath } from 'url';
 import generateMetadata from '../src/meta/metadata.js';
 import { copyFile, mkdir, readFile, writeFile } from 'fs/promises';
+import { existsSync } from 'fs';
 import importBase64 from './rollup-plugin-base64.js';
 import generateManifestJson from '../src/meta/manifestJson.js';
 import terser from '@rollup/plugin-terser';
@@ -42,6 +43,24 @@ const channelBaseUrl = process.argv.find(arg => arg.startsWith('-channel-base=')
 // Pass -keep-comments for a fully commented build.
 const stripComments = !process.argv.includes('-keep-comments');
 const sourcemap = minify;
+
+const MODEL_RELEASE_URL = 'https://raw.githubusercontent.com/cercos/4chan-neXT/beta/assets/captcha-model/';
+const EXTRA_SOLVER_OFF = 'export const extraSolver: ExtraSolver | null = null;';
+const LOCAL_EXTRA_SOLVER = resolve(__dirname, '../src/local/ExtraSolver.ts');
+const localCaptchaModel = (url) => ({
+  name: 'local-captcha-model',
+  transform(code, id) {
+    if (id.endsWith('CaptchaBrowserSolver.ts')) {
+      if (!code.includes(MODEL_RELEASE_URL)) this.error('captcha model URL not found in CaptchaBrowserSolver.ts');
+      return { code: code.replace(MODEL_RELEASE_URL, url), map: null };
+    }
+    if (id.endsWith('CaptchaExtraSolver.ts') && existsSync(LOCAL_EXTRA_SOLVER)) {
+      if (!code.includes(EXTRA_SOLVER_OFF)) this.error('extra solver slot not found in CaptchaExtraSolver.ts');
+      return { code: `import localExtraSolver from "../local/ExtraSolver";\n${code.replace(EXTRA_SOLVER_OFF, 'export const extraSolver: ExtraSolver | null = localExtraSolver;')}`, map: null };
+    }
+    return null;
+  },
+});
 
 const onwarn = (warning, warn) => {
   // The legacy feature registry has tolerated singleton cycles; keep testbuild output focused on actionable warnings.
@@ -102,6 +121,8 @@ const tsPlugin = typescript({
       noFormat || minify ? undefined : removeDecaffeinateComments({
         include: ["**/*.js", "**/*.ts", "**/*.tsx"],
       }),
+      channel && ['localhost', '127.0.0.1'].includes(new URL(channelBaseUrl).hostname)
+        ? localCaptchaModel(new URL('/assets/captcha-model/', channelBaseUrl).href) : undefined,
       tsPlugin,
       alias({
         entries: [

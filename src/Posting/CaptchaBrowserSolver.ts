@@ -21,7 +21,8 @@ const MODEL_KEY = 'model';
 const MODEL_INFO_KEY = 'model-info';
 export const MODEL_FORMAT = 1;
 
-export interface ModelInfo { version: number; format: number; sizeMB?: number }
+export { modelLabel, modelUpdateAvailable, parseModelInfo, type ModelInfo } from './CaptchaBrowserSolverLogic';
+import { parseModelInfo, type ModelInfo } from './CaptchaBrowserSolverLogic';
 
 const DB_NAME = 'fourchanx-captcha-model';
 const STORE = 'files';
@@ -95,14 +96,6 @@ export async function removeEngine(): Promise<void> {
   for (const url of ENGINE_URLS) { await cacheDelete(url); }
 }
 
-function parseModelInfo(value: any): ModelInfo | null { // loose: untrusted JSON
-  if (!value || typeof value !== 'object') { return null; }
-  const version = +value.version;
-  const format = +value.format;
-  if (!Number.isFinite(version) || !Number.isFinite(format)) { return null; }
-  const sizeMB = +value.sizeMB;
-  return { version, format, ...(Number.isFinite(sizeMB) ? { sizeMB } : {}) };
-}
 
 export async function installedModel(): Promise<ModelInfo | null> {
   const raw = await cacheGet(MODEL_INFO_KEY);

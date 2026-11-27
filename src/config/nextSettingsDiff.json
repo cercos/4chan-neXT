@@ -6,14 +6,15 @@
   },
   "counts": {
     "xt": 259,
-    "next": 439,
-    "added": 174,
+    "next": 440,
+    "added": 175,
     "changed": 4
   },
   "added": [
     "Allow Browser Autofill",
     "Auto Prune Read Only",
     "Auto-close Tags",
+    "Captcha Solver",
     "Catalog Columns",
     "Catalog Highlight Border Width",
     "Catalog Highlight Filter Background",
@@ -155,6 +156,7 @@
     "Scrollbar Marker Hover Preview",
     "Scrollbar Marker Position",
     "Scrollbar Markers",
+    "Send Captchas for Training",
     "Settings Descriptions as Tooltips",
     "Settings Menu Layout",
     "Show Comment Preview Header Icon",
@@ -166,7 +168,6 @@
     "Show Undo Button",
     "Spoiler Mode",
     "Stacked TCaptcha",
-    "Stacked TCaptcha Style",
     "Strip Video Audio",
     "Text Color",
     "Thread Highlight Edge Width",

@@ -1,5 +1,11 @@
 ## 4chan-neXT changelog
 
+### 1.2.7.3 (2026-11-27)
+
+- Updated the model to v1.2, now above a 95% success rate. To get it, open Settings > Posting and click `Update model` under the Captcha Solver. If there's no update button, click `Remove`, then `Download model`.
+- Captcha improvements and fixes: the solver now leaves answers it isn't sure of for you to pick, and training sends and message text are more reliable.
+- Removed the other stacked captcha styles in favor of the answer stack, since they didn't work well with the auto-solver.
+
 ### 1.2.7.2 (2026-11-24)
 
 - `Save Captchas for Training` is now `Send Captchas for Training`: captchas from your successful posts are sent automatically to help train the captcha solver model, and Settings shows how many you've sent. Export has been removed.
