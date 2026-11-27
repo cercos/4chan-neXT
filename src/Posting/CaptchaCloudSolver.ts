@@ -16,6 +16,7 @@ export async function cloudSolveTasks(challenge: {tasks?: any[]}): Promise<Solve
     timeout: TIMEOUT_MS,
   });
   if (req.status === 429) { throw new Error('Cloud solver is busy for you right now, try again in a minute'); }
+  if (req.status === 503) { throw new Error('Cloud solver is offline right now'); }
   if (req.status !== 200) { throw new Error(`Cloud solver unavailable (${req.status ? `HTTP ${req.status}` : 'no connection'})`); }
   const answer = String(req.response ?? '');
   if (!/^[0-9 ]{1,12}$/.test(answer)) { throw new Error('Unexpected cloud solver response'); }
