@@ -10,7 +10,7 @@ import Redirect from '../Archive/Redirect';
 import Config, { styleVariantKeys } from '../config/Config';
 import CaptchaTrainingLog from '../Posting/CaptchaTrainingLog';
 import { extraSolver } from '../Posting/CaptchaExtraSolver';
-import { ENGINE_SIZE_MB, downloadEngine, downloadModel, engineDownloaded, installedModel, latestModel, modelCompatible, modelLabel, removeEngine, removeModel, type ModelInfo } from '../Posting/CaptchaBrowserSolver';
+import { ENGINE_SIZE_MB, downloadEngine, downloadModel, engineDownloaded, installedModel, latestModel, modelCompatible, modelLabel, modelUpdateAvailable, removeEngine, removeModel, type ModelInfo } from '../Posting/CaptchaBrowserSolver';
 import ImageHost from '../Images/ImageHost';
 import { noWebmTitleMetadataSites } from '../Images/Metadata';
 import CustomCSS from '../Miscellaneous/CustomCSS';
@@ -2683,7 +2683,7 @@ Enable it on boards.${location.hostname.split('.')[1]}.org in your browser's pri
         const inst = modelInstalled;
         const latest = modelLatest;
         const canGet = !!latest && modelCompatible(latest);
-        const newer = canGet && (!inst || latest!.version > inst.version);
+        const newer = canGet && modelUpdateAvailable(latest!, inst);
         modelBox.classList.toggle('ready', !!inst && !newer && !error);
         modelButton.disabled = modelBusy;
         modelButton.hidden = modelBusy;
@@ -2721,7 +2721,7 @@ Enable it on boards.${location.hostname.split('.')[1]}.org in your browser's pri
       };
       $.on(modelButton, 'click', async () => {
         const latest = modelLatest;
-        const newer = !!latest && modelCompatible(latest) && (!modelInstalled || latest.version > modelInstalled.version);
+        const newer = !!latest && modelCompatible(latest) && modelUpdateAvailable(latest, modelInstalled);
         if (modelInstalled && !newer) {
           await removeModel();
           modelInstalled = null;

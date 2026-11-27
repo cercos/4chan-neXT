@@ -59,6 +59,10 @@ export function rgbaToChw(rgba: ArrayLike<number>, w: number, h: number): Float3
 
 export interface ModelInfo { version: number; format: number; sizeMB?: number; label?: string }
 
+export function modelUpdateAvailable(latest: ModelInfo, installed: ModelInfo | null): boolean {
+  return !installed || latest.version !== installed.version;
+}
+
 export function modelLabel(info: ModelInfo): string {
   return info.label || String(info.version);
 }

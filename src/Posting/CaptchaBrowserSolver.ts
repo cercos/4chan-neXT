@@ -21,7 +21,7 @@ const MODEL_KEY = 'model';
 const MODEL_INFO_KEY = 'model-info';
 export const MODEL_FORMAT = 1;
 
-export { modelLabel, parseModelInfo, type ModelInfo } from './CaptchaBrowserSolverLogic';
+export { modelLabel, modelUpdateAvailable, parseModelInfo, type ModelInfo } from './CaptchaBrowserSolverLogic';
 import { parseModelInfo, type ModelInfo } from './CaptchaBrowserSolverLogic';
 
 const DB_NAME = 'fourchanx-captcha-model';
