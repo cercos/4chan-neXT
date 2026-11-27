@@ -18,6 +18,22 @@ describe('toUploadRecord', () => {
   });
 });
 
+describe('toUploadRecord extra solver answer', () => {
+  it('names the fields after the solver', () => {
+    const r = toUploadRecord({ ...rec('x'), source: 'demo', extraSolver: 'demo', extraAnswer: '12', extraConfidence: 0.95 });
+    expect(r.demoAnswer).toBe('12');
+    expect(r.demoConfidence).toBe(0.95);
+    expect('extraAnswer' in r).toBe(false);
+  });
+  it('leaves the fields out when there is no usable answer', () => {
+    expect('demoAnswer' in toUploadRecord({ ...rec('x'), extraSolver: 'demo', extraAnswer: '1 2', extraConfidence: 0.9 })).toBe(false);
+    expect(toUploadRecord({ ...rec('x'), extraSolver: 'demo', extraAnswer: '12', extraConfidence: 7 }).demoConfidence).toBeNull();
+  });
+  it('never overwrites the local fields', () => {
+    expect(toUploadRecord({ ...rec('x'), extraSolver: 'local', extraAnswer: '12', extraConfidence: 0.9 }).localAnswer).toBeNull();
+  });
+});
+
 describe('toUploadRecord local answer', () => {
   it('nulls an answer the server would reject', () => {
     const r = toUploadRecord({ ...rec('x'), localAnswer: '2 1', localConfidence: 0.7 });

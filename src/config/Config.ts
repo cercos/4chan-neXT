@@ -768,11 +768,6 @@ const Config = {
         false,
         'Show the captcha as a grid of tiles in Quick Reply. Keys: arrows or 1-9 and Enter pick, Backspace goes back.'
       ],
-      'Stacked TCaptcha Style': [
-        'stack',
-        'How answered steps and the review screen look. Answer stack: each answered step shrinks to a row above the next one; click a row to change it.',
-        2
-      ],
       'Captcha Solver': [
         'off',
         'EXPERIMENTAL. Fills in answers for you to check before posting. Browser runs our model inside the browser, with no server.',

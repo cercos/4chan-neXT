@@ -1,7 +1,7 @@
 
 export const RECORD_VERSION = 1;
 
-export type AnswerSource = 'manual' | 'local' | 'local-edited';
+export type AnswerSource = 'manual' | 'local' | 'local-edited' | (string & {});
 export type Outcome = 'correct';
 
 export interface TrainingTask {
@@ -21,6 +21,9 @@ export interface TrainingRecord {
   source: AnswerSource;
   localAnswer: string | null;
   localConfidence: number | null;
+  extraSolver?: string;
+  extraAnswer?: string | null;
+  extraConfidence?: number | null;
   tasks: TrainingTask[];
 }
 
@@ -30,6 +33,9 @@ export interface PendingChallenge {
   loadedAt: number;
   localAnswer?: string;
   localConfidence?: number;
+  extraSolver?: string;
+  extraAnswer?: string;
+  extraConfidence?: number;
 }
 
 export function answerSource(solverAnswer: string | undefined | null, response: string): AnswerSource {
@@ -63,9 +69,12 @@ export function buildTrainingRecord(pending: PendingChallenge, response: string,
     postedAt,
     outcome: 'correct',
     response,
-    source: answerSource(pending.localAnswer, response),
+    source: pending.extraSolver && pending.extraAnswer != null
+      ? (pending.extraAnswer === response ? pending.extraSolver : 'manual')
+      : answerSource(pending.localAnswer, response),
     localAnswer: pending.localAnswer ?? null,
     localConfidence: pending.localConfidence ?? null,
+    ...(pending.extraSolver && pending.extraAnswer != null ? { extraSolver: pending.extraSolver, extraAnswer: pending.extraAnswer, extraConfidence: pending.extraConfidence ?? null } : {}),
     tasks,
   };
 }

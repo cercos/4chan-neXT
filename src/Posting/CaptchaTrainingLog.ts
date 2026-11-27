@@ -85,9 +85,15 @@ const CaptchaTrainingLog = {
     while (pending.size > MAX_PENDING) { pending.delete(pending.keys().next().value!); }
   },
 
-  noteSolverAnswer(id: string, answer: string, confidence: number) {
+  noteSolverAnswer(id: string, answer: string, confidence: number, solver = 'browser') {
     const p = pending.get(id);
     if (!p) { return; }
+    if (solver !== 'browser') {
+      p.extraSolver = solver;
+      p.extraAnswer = answer;
+      p.extraConfidence = confidence;
+      return;
+    }
     p.localAnswer = answer;
     p.localConfidence = confidence;
   },

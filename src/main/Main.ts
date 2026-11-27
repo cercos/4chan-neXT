@@ -239,8 +239,9 @@ var Main = {
         // whitelist still blocks the page's inline scripts but not our page-context code.
         // MathJax v2 evaluates strings internally, so math boards also need 'unsafe-eval'.
         const extras = [`'nonce-${$.getCSPNonce()}'`];
-        if (mathBoard || solver === 'browser') extras.push(`'unsafe-eval'`);
-        if (solver === 'browser') extras.push(`'wasm-unsafe-eval'`);
+        const solverOn = !!solver && solver !== 'off';
+        if (mathBoard || solverOn) extras.push(`'unsafe-eval'`);
+        if (solverOn) extras.push(`'wasm-unsafe-eval'`);
         const parsedList = [...new Set(sources)].join(' ');
         if (parsedList) $.addCSP(`script-src ${parsedList} ${extras.join(' ')}`);
       });

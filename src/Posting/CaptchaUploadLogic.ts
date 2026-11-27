@@ -4,17 +4,27 @@ export const UPLOAD_URL = 'https://captcha-upload.4chan-next.workers.dev/submit'
 export const UPLOAD_BATCH = 20;
 export const MAX_SEND_TRIES = 5;
 
-export type UploadRecord = Pick<TrainingRecord, 'v' | 'id' | 'response' | 'source' | 'localAnswer' | 'localConfidence' | 'tasks'>;
+export type UploadRecord = Pick<TrainingRecord, 'v' | 'id' | 'response' | 'source' | 'localAnswer' | 'localConfidence' | 'tasks'> & {
+  [key: `${string}Answer`]: string | null;
+  [key: `${string}Confidence`]: number | null;
+};
 export type UploadOutcome = 'sent' | 'retry' | 'rejected' | 'blocked';
 
 export function toUploadRecord(r: TrainingRecord): UploadRecord {
   const { v, id, response, source, localAnswer, localConfidence, tasks } = r;
   const valid = localAnswer === null || /^[0-9]{1,10}$/.test(localAnswer);
-  return {
+  const out: UploadRecord = {
     v, id, response, source, tasks,
     localAnswer: valid ? localAnswer : null,
     localConfidence: valid ? localConfidence : null,
   };
+  const solver = r.extraSolver;
+  if (solver && solver !== 'local' && /^[a-z]{1,16}$/.test(solver) && typeof r.extraAnswer === 'string' && /^[0-9]{1,10}$/.test(r.extraAnswer)) {
+    const c = r.extraConfidence;
+    out[`${solver}Answer` as const] = r.extraAnswer;
+    out[`${solver}Confidence` as const] = typeof c === 'number' && c >= 0 && c <= 1 ? c : null;
+  }
+  return out;
 }
 
 export function toNdjson(records: UploadRecord[]): string {

@@ -1596,7 +1596,6 @@ div[data-checked="false"] > .suboption-list {
   font-size: .9em;
   opacity: .6;
 }
-#xt-settings-overlay .settings-captcha-box div[data-name="Stacked TCaptcha Style"] > .description,
 #xt-settings-overlay .settings-captcha-box div[data-name="Captcha Solver"] > .description {
   margin-left: 0;
 }
