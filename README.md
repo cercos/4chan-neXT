@@ -34,7 +34,7 @@ New users should start with the [User Guide](./docs/user-guide.md).
 
 `1.2.7.3` (2026-11-27)
 
-- Updated the Captcha Solver model to v1.2, and the solver now leaves answers it isn't sure of for you to pick. To get it, open Settings > Posting and click `Update model` under the Captcha Solver. If there's no update button, click `Remove`, then `Download model`.
+- Updated the model to v1.2, now above a 95% success rate, and the solver now leaves answers it isn't sure of for you to pick. To get it, open Settings > Posting and click `Update model` under the Captcha Solver. If there's no update button, click `Remove`, then `Download model`.
 - The stacked captcha now uses a single answer-stack layout.
 - Captchas you solve can now be sent automatically to help train the Captcha Solver (`Send Captchas for Training`, off by default).
 - Added a Reply Count filter to hide or highlight threads by how many replies they have.
