@@ -11,9 +11,9 @@ export interface SolveResult {
   taskConfidence: number[] | null;
 }
 
-const ORT_VERSION = '1.17.3';
-const ORT_JS_URL = `https://cdn.jsdelivr.net/npm/onnxruntime-web@${ORT_VERSION}/dist/ort.wasm.min.js`;
-const ORT_WASM_URL = `https://cdn.jsdelivr.net/npm/onnxruntime-web@${ORT_VERSION}/dist/ort-wasm-simd.wasm`;
+export const ORT_VERSION = '1.17.3';
+export const ORT_JS_URL = `https://cdn.jsdelivr.net/npm/onnxruntime-web@${ORT_VERSION}/dist/ort.wasm.min.js`;
+export const ORT_WASM_URL = `https://cdn.jsdelivr.net/npm/onnxruntime-web@${ORT_VERSION}/dist/ort-wasm-simd.wasm`;
 const MODEL_RELEASE_URL = 'https://raw.githubusercontent.com/cercos/4chan-neXT/beta/assets/captcha-model/';
 const MODEL_MANIFEST_URL = `${MODEL_RELEASE_URL}model.json`;
 const MODEL_FILE_URL = `${MODEL_RELEASE_URL}model.onnx`;

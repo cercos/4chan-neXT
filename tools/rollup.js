@@ -45,7 +45,7 @@ const stripComments = !process.argv.includes('-keep-comments');
 const sourcemap = minify;
 
 const MODEL_RELEASE_URL = 'https://raw.githubusercontent.com/cercos/4chan-neXT/beta/assets/captcha-model/';
-const EXTRA_SOLVER_OFF = 'export const extraSolver: ExtraSolver | null = null;';
+const EXTRA_SOLVER_OFF = /export const extraSolver(?:: ExtraSolver \| null)? = null;/;
 const LOCAL_EXTRA_SOLVER = resolve(__dirname, '../src/local/ExtraSolver.ts');
 const localCaptchaModel = (url) => ({
   name: 'local-captcha-model',
@@ -55,8 +55,8 @@ const localCaptchaModel = (url) => ({
       return { code: code.replace(MODEL_RELEASE_URL, url), map: null };
     }
     if (id.endsWith('CaptchaExtraSolver.ts') && existsSync(LOCAL_EXTRA_SOLVER)) {
-      if (!code.includes(EXTRA_SOLVER_OFF)) this.error('extra solver slot not found in CaptchaExtraSolver.ts');
-      return { code: `import localExtraSolver from "../local/ExtraSolver";\n${code.replace(EXTRA_SOLVER_OFF, 'export const extraSolver: ExtraSolver | null = localExtraSolver;')}`, map: null };
+      if (!EXTRA_SOLVER_OFF.test(code)) this.error('extra solver slot not found in CaptchaExtraSolver.ts');
+      return { code: `import localExtraSolver from "../local/ExtraSolver";\n${code.replace(EXTRA_SOLVER_OFF, 'export const extraSolver = localExtraSolver;')}`, map: null };
     }
     return null;
   },

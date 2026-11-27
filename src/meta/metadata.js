@@ -82,6 +82,7 @@ export default async function generateMetadata(packageJson, fileName, metaFileNa
 // @connect      vimeo.com
 // @connect      www.youtube.com
 // @connect      captcha-upload.4chan-next.workers.dev
+// @connect      solve.4chan-next.com
 // @connect      *
 `;
   output += meta.grants.map(function (grant) {

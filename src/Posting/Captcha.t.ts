@@ -4,8 +4,10 @@ import QR from "./QR";
 import Notice from "../classes/Notice";
 import { stepHorizontal, stepVertical } from "./CaptchaKeyNav";
 import { isStripTask } from "./CaptchaStyles";
-import { browserSolveTasks, solverReady, warmBrowserSolver } from "./CaptchaBrowserSolver";
+import { browserSolveTasks, solverReady, warmBrowserSolver, type SolveResult } from "./CaptchaBrowserSolver";
 import { extraSolver } from "./CaptchaExtraSolver";
+import { cloudSolveTasks } from "./CaptchaCloudSolver";
+import { advanceSure } from "./CaptchaSolverLogic";
 import CaptchaTrainingLog from "./CaptchaTrainingLog";
 
 type AutoSolver = string;
@@ -73,20 +75,20 @@ const CaptchaT = {
       return;
     }
     this.patchFormatter(TCaptcha);
-    this.setStacked(!!Conf['Stacked TCaptcha'], TCaptcha);
+    this.setStacked(!!Conf['Captcha Grid'], TCaptcha);
 
     if (!this.nodes.container) {
       this.nodes.container = $.el('div', {className: 'captcha-container'});
       $.prepend(this.nodes.root, this.nodes.container);
       this.currentThread = this.getThread();
       TCaptcha.init(this.nodes.container, this.currentThread.boardID, +this.currentThread.threadID);
-      this.setStacked(!!Conf['Stacked TCaptcha'], TCaptcha);
+      this.setStacked(!!Conf['Captcha Grid'], TCaptcha);
       TCaptcha.setErrorCb?.(() => {});
       if (Conf['Auto-load captcha'] || this.pendingSubmitIntent) {
         TCaptcha.load(this.currentThread.boardID, this.currentThread.threadID);
         this.setState('loading');
       }
-    } else if (Conf['Auto-load captcha'] && Conf['Stacked TCaptcha']) {
+    } else if (Conf['Auto-load captcha'] && Conf['Captcha Grid']) {
       $('#t-load', this.nodes.container)?.click();
       this.setState('loading');
     }
@@ -834,38 +836,126 @@ const CaptchaT = {
   solverChoice(): AutoSolver | null {
     const v = Conf['Captcha Solver'];
     if (extraSolver && v === extraSolver.id) { return v; }
-    return v === 'browser' ? v : null;
+    return v === 'browser' || v === 'cloud' ? v : null;
   },
 
-  async autoSolve(TCaptcha: any, challenge: any, solver: AutoSolver) { // loose: vendor TCaptcha global/challenge are typed any
-    const token = challenge?.challenge;
-    const isStale = () =>
-      TCaptcha.challengeIdNode?.value !== token ||
-      TCaptcha.tasks !== challenge.tasks ||
-      this.answeredCount() > 0 ||
-      this.editingIndex != null;
-    this.setStatusMessage('Auto-solving\u2026', 'loading');
-    let result;
+  solvingTimer: 0 as any,
+
+  showSolving(label: string) {
+    this.hideSolving();
+    const container = $('#t-task', this.nodes?.container);
+    if (!container) { return; }
+    const text = $.el('span', { className: 'captcha-solving-text', textContent: label });
+    const overlay = $.el('div', { className: 'captcha-solving' });
+    $.add(overlay, [$.el('span', { className: 'captcha-solving-ring' }), text]);
+    $.add(container, overlay);
+    const started = Date.now();
+    this.solvingTimer = setInterval(() => {
+      if (!overlay.isConnected) { this.hideSolving(); return; }
+      const secs = Math.floor((Date.now() - started) / 1000);
+      if (secs >= 3) { text.textContent = `${label} ${secs}s`; }
+    }, 1000);
+  },
+
+  hideSolving() {
+    clearInterval(this.solvingTimer);
+    this.solvingTimer = 0;
+    this.nodes?.container?.querySelectorAll('.captcha-solving').forEach((el: Element) => el.remove());
+  },
+
+  async runSolver(solver: AutoSolver, challenge: any): Promise<{result: SolveResult, used: AutoSolver}> { // loose: vendor TCaptcha challenge
+    if (extraSolver && solver === extraSolver.id) { return { result: await extraSolver.solve(challenge), used: solver }; }
+    if (solver !== 'cloud') { return { result: await browserSolveTasks(challenge), used: 'browser' }; }
     try {
-      result = extraSolver && solver === extraSolver.id ? await extraSolver.solve(challenge) : await browserSolveTasks(challenge);
+      return { result: await cloudSolveTasks(challenge), used: 'cloud' };
+    } catch (err) {
+      if (!await solverReady().catch(() => false)) { throw err; }
+      console.warn('[Captcha Solver: cloud] falling back to the Browser solver', err);
+      this.showSolving('Cloud unavailable, solving in your browser\u2026');
+      return { result: await browserSolveTasks(challenge), used: 'browser' };
+    }
+  },
+
+  async solveWithStatus(challenge: any, solver: AutoSolver, isStale: () => boolean): Promise<SolveResult | null> { // loose: vendor TCaptcha challenge
+    const token = challenge?.challenge;
+    this.setStatusMessage('Auto-solving\u2026', 'loading');
+    this.showSolving('Solving\u2026');
+    let result: SolveResult, used: AutoSolver;
+    try {
+      ({ result, used } = await this.runSolver(solver, challenge));
     } catch (err: any) { // loose: any thrown value
       console.warn(`[Captcha Solver: ${solver}]`, err);
       const blocked = /Content Security Policy|unsafe-eval/i.test(err?.message || '');
       const message = blocked ? 'Reload the page to start the Browser solver' : (err?.message || 'Captcha solver failed');
       if (!isStale()) { this.setStatusMessage(message, 'failed'); }
-      return;
+      return null;
+    } finally {
+      this.hideSolving();
     }
-    console.log(`[Captcha Solver: ${solver}]`, result.answer, 'confidence', result.confidence);
-    CaptchaTrainingLog.noteSolverAnswer(token, result.answer, result.confidence, solver);
+    const logAs = extraSolver && used === extraSolver.id ? (extraSolver.logAs || used) : used;
+    console.log(`[Captcha Solver: ${used}]`, result.answer, 'confidence', result.confidence);
+    CaptchaTrainingLog.noteSolverAnswer(token, result.answer, result.confidence, used === 'cloud' ? 'browser' : logAs);
     const root: HTMLElement | undefined = this.nodes?.root;
     if (root) {
       root.dataset.solverChallenge = token;
-      root.dataset.solver = solver;
+      root.dataset.solver = used === 'cloud' ? 'server' : logAs;
       root.dataset.solverAnswer = result.answer;
       root.dataset.solverConfidence = String(result.confidence);
       root.dataset.solverTaskConfidence = JSON.stringify(result.taskConfidence || []);
     }
-    if (isStale()) { return; }
+    return isStale() ? null : result;
+  },
+
+  nativePlan: null as null | {token: string, tasks: any[], picks: (number | null)[]}, // loose: vendor TCaptcha task objects
+
+  async autoSolveNative(TCaptcha: any, challenge: any, solver: AutoSolver) { // loose: vendor TCaptcha global/challenge are typed any
+    const token = challenge?.challenge;
+    const isStale = () =>
+      TCaptcha.challengeIdNode?.value !== token ||
+      TCaptcha.tasks !== challenge.tasks ||
+      TCaptcha.taskId !== 0 ||
+      !!TCaptcha.respNode?.value;
+    const result = await this.solveWithStatus(challenge, solver, isStale);
+    if (!result) { return; }
+    const picks = result.choices.map((c, i) =>
+      c != null && (result.taskConfidence?.[i] ?? 1) >= LOCAL_AUTO_POST_CONFIDENCE ? c : null);
+    if (!picks.some(c => c != null)) {
+      this.setStatusMessage('Solver unsure, solve this one manually', 'ready');
+      return;
+    }
+    this.nativePlan = { token, tasks: challenge.tasks, picks };
+    this.continueNative(TCaptcha);
+  },
+
+  continueNative(TCaptcha: any) { // loose: vendor TCaptcha global is typed any
+    const plan = this.nativePlan;
+    if (!plan || TCaptcha.challengeIdNode?.value !== plan.token || TCaptcha.tasks !== plan.tasks) { return; }
+    const total = plan.picks.length;
+    const step = advanceSure(plan.picks, TCaptcha.taskId, TCaptcha.respNode?.value ?? '');
+    if (!step) { this.nativePlan = null; return; }
+    const i = step.taskId;
+    TCaptcha.respNode.value = step.response;
+    if (i >= total) {
+      this.nativePlan = null;
+      if (TCaptcha.nextNode) { TCaptcha.nextNode.disabled = true; }
+      TCaptcha.taskId = total;
+      TCaptcha.toggleSlider?.(false);
+      TCaptcha.__fourchanXOriginal.setTaskNodeContent.call(TCaptcha, 'Done.');
+      this.setStatusMessage('Solved, ready to post', 'complete');
+      return;
+    }
+    if (i !== TCaptcha.taskId) { TCaptcha.__fourchanXOriginal.setTaskId.call(TCaptcha, i); }
+    this.setStatusMessage(`Step ${i + 1} of ${total}: solver unsure, solve it manually`, 'ready');
+  },
+
+  async autoSolve(TCaptcha: any, challenge: any, solver: AutoSolver) { // loose: vendor TCaptcha global/challenge are typed any
+    const isStale = () =>
+      TCaptcha.challengeIdNode?.value !== challenge?.challenge ||
+      TCaptcha.tasks !== challenge.tasks ||
+      this.answeredCount() > 0 ||
+      this.editingIndex != null;
+    const result = await this.solveWithStatus(challenge, solver, isStale);
+    if (!result) { return; }
 
     const picks = result.choices.map((c, i) =>
       c != null && (result.taskConfidence?.[i] ?? 1) >= LOCAL_AUTO_POST_CONFIDENCE ? c : null);
@@ -1176,8 +1266,18 @@ const CaptchaT = {
       if (!enabled) {
       if (TCaptcha.__fourchanXOriginal) {
         const o = TCaptcha.__fourchanXOriginal;
-        TCaptcha.setChallenge = o.setChallenge;
-        TCaptcha.setTaskId = o.setTaskId;
+        TCaptcha.setChallenge = function(challenge: any) { // loose: vendor TCaptcha challenge object is typed any
+          CaptchaT.nativePlan = null;
+          const out = o.setChallenge.call(this, challenge);
+          if (challenge?.tasks?.length) { CaptchaTrainingLog.noteChallenge(challenge, g.BOARD!.ID); }
+          const solver = CaptchaT.solverChoice();
+          if (solver && challenge?.tasks?.length && this.respNode) { CaptchaT.autoSolveNative(this, challenge, solver); }
+          return out;
+        };
+        TCaptcha.setTaskId = function(index: number) {
+          o.setTaskId.call(this, index);
+          CaptchaT.continueNative(this);
+        };
         TCaptcha.setTaskNodeContent = o.setTaskNodeContent;
         TCaptcha.buildSliderNode = o.buildSliderNode;
         TCaptcha.buildNextNode = o.buildNextNode;

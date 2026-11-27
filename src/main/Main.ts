@@ -252,6 +252,7 @@ var Main = {
     for (const key in Conf) items[key] = undefined;
     for (const key of legacyReplaceThumbnailKeys) items[key] = undefined;
     for (const key of legacyQRRemoveFileFirstKeys) items[key] = undefined;
+    items['Stacked TCaptcha'] = undefined;
     items['previousversion'] = undefined;
     ($.getSync || $.get)(items, function(items) {
       $.asap(docSet, function() {
@@ -266,11 +267,11 @@ var Main = {
           // New-install-only defaults. Existing users keep their current value on update,
           // since this branch never runs for them. Apply in-memory for this session and
           // persist so it survives once `previousversion` is set below.
-          items['Stacked TCaptcha'] = true;
+          items['Captcha Grid'] = true;
           items['Scrollbar Markers'] = false;
           Main.ready(function() {
             $.set('previousversion', g.VERSION);
-            $.set('Stacked TCaptcha', true);
+            $.set('Captcha Grid', true);
             $.set('Scrollbar Markers', false);
             return Settings.open();
           });
@@ -289,6 +290,10 @@ var Main = {
         if (!Conf['Replace Thumbnails'] && legacyReplaceThumbnailKeys.some((key) => items[key] === true)) {
           Conf['Replace Thumbnails'] = true;
           $.set('Replace Thumbnails', true);
+        }
+        if (items['Stacked TCaptcha'] !== undefined && items['Captcha Grid'] === undefined) {
+          Conf['Captcha Grid'] = !!items['Stacked TCaptcha'];
+          $.set('Captcha Grid', Conf['Captcha Grid']);
         }
         const legacyQRRemoveFileFirst = legacyQRRemoveFileFirstKeys
           .map(key => items[key])

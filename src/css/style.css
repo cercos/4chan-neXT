@@ -1613,6 +1613,16 @@ div[data-checked="false"] > .suboption-list {
 .captcha-engine-box[hidden] {
   display: none;
 }
+.captcha-engine-box:has(> .captcha-engine-about) {
+  flex-wrap: wrap;
+}
+.captcha-engine-about {
+  flex-basis: 100%;
+  padding-left: 15px;
+  opacity: .7;
+  font-size: .92em;
+  line-height: 1.4;
+}
 .captcha-engine-box::before {
   content: "";
   flex: none;
@@ -6406,6 +6416,47 @@ input.field.tripped:not(:hover):not(:focus) {
 }
 #qr.captcha-t .fourchanx-captcha-status-icon.state-idle {
   color: #6f7c8f;
+}
+#qr.captcha-t #t-task:has(> .captcha-solving) {
+  position: relative;
+}
+#qr.captcha-t #t-task:has(> .captcha-solving) > :not(.captcha-solving) {
+  opacity: .35;
+  filter: blur(1px);
+  transition: opacity .2s, filter .2s;
+}
+#qr.captcha-t .captcha-solving {
+  position: absolute;
+  inset: 0;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  gap: 8px;
+  pointer-events: none;
+  font-size: 12px;
+  font-weight: 600;
+  z-index: 2;
+}
+#qr.captcha-t .captcha-solving-text {
+  padding: 3px 9px;
+  border-radius: 10px;
+  background: rgba(20, 28, 40, .78);
+  color: #fff !important;
+  -webkit-text-fill-color: #fff !important;
+}
+#qr.captcha-t .captcha-solving-ring {
+  width: 18px;
+  height: 18px;
+  border-radius: 50%;
+  border: 2.5px solid rgba(79, 126, 170, .3);
+  border-top-color: #4f7eaa;
+  animation: captcha-solving-spin .8s linear infinite;
+}
+@keyframes captcha-solving-spin {
+  to { transform: rotate(360deg); }
+}
+@media (prefers-reduced-motion: reduce) {
+  #qr.captcha-t .captcha-solving-ring { animation-duration: 2.4s; }
 }
 #qr.captcha-t .fourchanx-captcha-progress {
   font-size: 11px;

@@ -764,19 +764,19 @@ const Config = {
         false,
         'Use the non-Javascript fallback captcha even if Javascript is enabled.'
       ],
-      'Stacked TCaptcha': [
+      'Captcha Grid': [
         false,
         'Show the captcha as a grid of tiles in Quick Reply. Keys: arrows or 1-9 and Enter pick, Backspace goes back.'
       ],
       'Captcha Solver': [
         'off',
-        'EXPERIMENTAL. Fills in answers for you to check before posting. Browser runs our model inside the browser, with no server.',
-        2
+        'EXPERIMENTAL. Fills in answers for you to check. Cloud solves on a server. Browser solves on your device: usually faster, no limits, and works even if the server is slow or down, but needs the engine installed first.',
+        1
       ],
       'Send Captchas for Training': [
         false,
         'Sends the captchas you solve to help train the captcha solver, so it gets more of them right. Only the captcha images and your answers are sent.',
-        2
+        1
       ],
       'Pass Link': [
         false,

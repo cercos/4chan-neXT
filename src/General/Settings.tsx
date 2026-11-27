@@ -10,7 +10,7 @@ import Redirect from '../Archive/Redirect';
 import Config, { styleVariantKeys } from '../config/Config';
 import CaptchaTrainingLog from '../Posting/CaptchaTrainingLog';
 import { extraSolver } from '../Posting/CaptchaExtraSolver';
-import { ENGINE_SIZE_MB, downloadEngine, downloadModel, engineDownloaded, installedModel, latestModel, modelCompatible, modelLabel, modelUpdateAvailable, removeEngine, removeModel, type ModelInfo } from '../Posting/CaptchaBrowserSolver';
+import { ENGINE_SIZE_MB, ORT_JS_URL, ORT_VERSION, ORT_WASM_URL, downloadEngine, downloadModel, engineDownloaded, installedModel, latestModel, modelCompatible, modelLabel, modelUpdateAvailable, removeEngine, removeModel, type ModelInfo } from '../Posting/CaptchaBrowserSolver';
 import ImageHost from '../Images/ImageHost';
 import { noWebmTitleMetadataSites } from '../Images/Metadata';
 import CustomCSS from '../Miscellaneous/CustomCSS';
@@ -2599,7 +2599,7 @@ Enable it on boards.${location.hostname.split('.')[1]}.org in your browser's pri
         'Auto-load captcha',
         'Post on Captcha Completion',
         'Force Noscript Captcha',
-        'Stacked TCaptcha',
+        'Captcha Grid',
         'Send Captchas for Training',
         'Pass Link',
       ];
@@ -2632,8 +2632,8 @@ Enable it on boards.${location.hostname.split('.')[1]}.org in your browser's pri
       $.on(rememberQRState, 'change', () => $.event('QRStateChanged', null));
     }
 
-    const stackedToggle = $('input[name="Stacked TCaptcha"]', section) as HTMLInputElement | null;
-    const stackedRow = stackedToggle?.closest('div[data-name="Stacked TCaptcha"]') as HTMLDivElement | null;
+    const stackedToggle = $('input[name="Captcha Grid"]', section) as HTMLInputElement | null;
+    const stackedRow = stackedToggle?.closest('div[data-name="Captcha Grid"]') as HTMLDivElement | null;
     if (stackedRow) {
       let stackedSub = $(':scope > .suboption-list', stackedRow) as HTMLElement | null;
       if (!stackedSub) {
@@ -2651,7 +2651,20 @@ Enable it on boards.${location.hostname.split('.')[1]}.org in your browser's pri
       const engineBox = $.el('div', { className: 'captcha-engine-box', hidden: true }) as HTMLDivElement;
       const engineText = $.el('span');
       const engineButton = $.el('button', { type: 'button' }) as HTMLButtonElement;
-      $.add(engineBox, [engineText, engineButton]);
+      const engineAbout = $.el('div', { className: 'captcha-engine-about' });
+      const link = (href: string, text: string) => $.el('a', { href, textContent: text, target: '_blank', rel: 'noopener noreferrer' });
+      $.add(engineAbout, [
+        $.tn('Why an engine? The model is only what the solver has learned, like a recipe. It can\'t run by itself, so it needs a program to run it: that\'s the engine. It is '),
+        link('https://onnxruntime.ai/', `ONNX Runtime Web ${ORT_VERSION}`),
+        $.tn(', a free, open-source tool from Microsoft for running AI models in a web page. Downloaded once from jsDelivr ('),
+        link(ORT_JS_URL, 'script'),
+        $.tn(', '),
+        link(ORT_WASM_URL, 'WebAssembly'),
+        $.tn('). It only runs the captcha model. '),
+        link(`https://www.jsdelivr.com/package/npm/onnxruntime-web?version=${ORT_VERSION}`, 'All package files'),
+        $.tn('.'),
+      ]);
+      $.add(engineBox, [engineText, engineButton, engineAbout]);
       let engineState: 'missing' | 'busy' | 'ready' = 'missing';
       const renderEngine = (state: typeof engineState, error?: string) => {
         engineState = state;
@@ -2763,7 +2776,7 @@ Enable it on boards.${location.hostname.split('.')[1]}.org in your browser's pri
           renderEngine('missing', err?.message || String(err));
         }
       });
-      const solverChoices: [string, string][] = [['off', 'Off'], ['browser', 'Browser']];
+      const solverChoices: [string, string][] = [['off', 'Off'], ['cloud', 'Cloud'], ['browser', 'Browser']];
       if (extraSolver) { solverChoices.push([extraSolver.id, extraSolver.label]); }
       for (const [value, text] of solverChoices) {
         const radio = $.el('input', { type: 'radio', name: 'Captcha Solver', value }) as HTMLInputElement;
@@ -2781,9 +2794,11 @@ Enable it on boards.${location.hostname.split('.')[1]}.org in your browser's pri
         engineBox,
         modelBox,
       ]);
-      $.prepend(stackedSub, solverRow);
+      $.after(stackedRow, solverRow);
+      if (!stackedSub.children.length) { stackedSub.remove(); }
       const trainingRow = $('div[data-name="Send Captchas for Training"]', section) as HTMLDivElement | null;
       const trainingToggle = $('input[name="Send Captchas for Training"]', section) as HTMLInputElement | null;
+      if (trainingRow) { $.after(solverRow, trainingRow); }
       if (trainingRow && trainingToggle) {
         const trainingBox = $.el('div', { className: 'captcha-engine-box ready', hidden: true }) as HTMLDivElement;
         const trainingText = $.el('span');
@@ -8157,6 +8172,7 @@ Enable it on boards.${location.hostname.split('.')[1]}.org in your browser's pri
   },
 
   optionForKey(key: string, keysByOption: Record<string, string[]>) {
+    if (key === 'Stacked TCaptcha') key = 'Captcha Grid';
     for (const name in keysByOption) {
       if (keysByOption[name].includes(key)) return name;
     }
@@ -8597,6 +8613,9 @@ Enable it on boards.${location.hostname.split('.')[1]}.org in your browser's pri
       set('XEmbedder', data['Embed Tweets inline with fxTwitter'] ? 'fxt' : 'tf');
       set('fxtMaxReplies', data['Resolve Tweet Replies'] ? (data['Resolve all Tweet Replies'] ? 100 : 1) : 0);
       set('fxtLang', data['Translate non-English Tweets to English'] ? 'en' : '');
+    }
+    if (data['Captcha Grid'] === undefined && data['Stacked TCaptcha'] !== undefined) {
+      set('Captcha Grid', data['Stacked TCaptcha']);
     }
     // Seed SFW/NSFW siblings from each legacy styling value, once. Idempotent:
     // skipped per-key as soon as a sibling already exists.
